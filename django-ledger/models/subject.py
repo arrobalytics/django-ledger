@@ -1,6 +1,8 @@
-from books.models.mixins import LedgerMixIn
+from .mixins import BaseSubjectModel, LedgerMixIn
 
 
-class SubjectModel(LedgerMixIn):
+class SubjectModel(BaseSubjectModel,
+                   LedgerMixIn):
+
     class Meta:
         abstract = True

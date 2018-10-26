@@ -1,17 +1,12 @@
-from books.coa import CHART_OF_ACCOUNTS
-from books.models.accounts import AccountModel
 from django_pandas.io import read_frame
 from pandas import merge
-from datetime import datetime
-from calendar import monthrange
+
+from .accounts import AccountModel
+from .coa import CHART_OF_ACCOUNTS
 
 
 # todo: Add CoA Support
-def get_acc_idx(coa=None):
-    """
-    Moving to Utils
-    :return:
-    """
+def get_acc_idx():
     accounts = AccountModel.objects.all()
     acc_idx = read_frame(accounts,
                          fieldnames=['role_bs', 'parent', 'code', 'role', 'name',
@@ -28,11 +23,6 @@ def get_acc_idx(coa=None):
                       inplace=True)
     acc_idx.sort_index(inplace=True)
     return acc_idx
-
-
-def monthend(dt):
-    if isinstance(dt, datetime):
-        return datetime(dt.year, dt.month, monthrange(dt.year, dt.month)[-1])
 
 
 class COAUtils(object):

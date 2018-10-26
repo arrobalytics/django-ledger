@@ -1,14 +1,13 @@
 import pandas as pd
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models.signals import post_init
 from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
-from books.models.io.generic import IOGenericMixIn
-from books.models.io.preproc import IOPreProcMixIn
-from books.models.transactions import TransactionModel
-from books.utils import get_acc_idx
+from .io.generic import IOGenericMixIn
+from .io.preproc import IOPreProcMixIn
+from .transactions import TransactionModel
+from .utils import get_acc_idx
 
 
 class LedgerModel(models.Model,
@@ -307,21 +306,3 @@ class LedgerModel(models.Model,
     def get_accout_balance(self, acc_code, period):
         return self.get_ts_df(account=acc_code).iloc[0][period].iloc[0]
 
-
-# def ledger_postinit(sender, instance, *args, **kwargs):
-#     print('Hello {x1} Forecast Ledger Post Init'.format(x1=instance.name))
-#
-#
-# post_init.connect(ledger_postinit, sender=BaseLedgerModel)
-
-
-# class ActualsLedgerModel(LedgerModel):
-#     pass
-#
-#
-# class ForecastLedgerModel(LedgerModel):
-#     pass
-#
-#
-# class BaselineLedgerModel(LedgerModel):
-#     pass

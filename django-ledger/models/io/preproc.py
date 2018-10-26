@@ -3,7 +3,7 @@ from datetime import datetime, date
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 
-from books.utils import monthend
+from .utils import monthend
 
 
 class IOPreProcMixIn:

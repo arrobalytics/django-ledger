@@ -3,8 +3,8 @@ from django_pandas.io import read_frame
 from jsonfield import JSONField
 from pandas import merge
 
-from books.coa import CHART_OF_ACCOUNTS
-from books.models.accounts import AccountModel
+from .coa_accounts import CHART_OF_ACCOUNTS
+from .accounts import AccountModel
 
 
 class ChartOfAccountsModel(models.Model):

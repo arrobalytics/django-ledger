@@ -1,8 +1,7 @@
 from django.urls import path
-from books import views
+from . import views
 
-app_name = 'books'
+app_name = 'django-ledger'
 
 urlpatterns = [
-    path('debug/', views.debug)
 ]
