@@ -2,8 +2,8 @@ from django.db import models
 
 
 class LedgerMixIn(models.Model):
-    entity = models.ForeignKey('books.EntityModel', on_delete=models.CASCADE)
-    ledgers = models.ManyToManyField('books.LedgerModel')
+    entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE)
+    ledgers = models.ManyToManyField('django_ledger.LedgerModel')
 
     def ledgers_init(self):
         actuals_ledger, created = self.ledgers.get_or_create(scope='a',

@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 
 class IOGenericMixIn:
-    ACM = apps.get_model('books.AccountModel', require_ready=False)
+    ACM = apps.get_model('django_ledger.AccountModel', require_ready=False)
     DEFAULT_CASH_ACCOUNT = 1010
     DEFAULT_REVENUE_ACCOUNT = 4020
     DEFAULT_CAPITAL_ACCOUNT = 3010

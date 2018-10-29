@@ -8,6 +8,7 @@ django = "*"
 jsonfield = "*"
 pandas = "*"
 django-pandas = "*"
+django-mptt = "*"
 
 [dev-packages]
 

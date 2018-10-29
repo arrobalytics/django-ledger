@@ -2,8 +2,8 @@ from django.apps.registry import apps
 
 
 class IOCore:
-    TXM = apps.get_model('books.TransactionModel', require_ready=False)
-    ACM = apps.get_model('books.AccountModel', require_ready=False)
+    TXM = apps.get_model('django_ledger.TransactionModel', require_ready=False)
+    ACM = apps.get_model('django_ledger.AccountModel', require_ready=False)
 
     def __init__(self, subject):
         self.subject = subject

@@ -2,9 +2,13 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save, post_init
+from mptt.models import MPTTModel, TreeForeignKey
+
+from .mixins import CreateUpdateMixIn
 
 
-class AccountModel(models.Model):
+class AccountModelAbstract(MPTTModel,
+                           CreateUpdateMixIn):
     ACCOUNT_ROLE = [
         ('Assets', (
             ('ca', 'Current Asset'),
@@ -41,17 +45,25 @@ class AccountModel(models.Model):
         ('debit', 'Debit')
     ]
 
-    code = models.CharField(max_length=5, unique=True)
-    parent = models.CharField(max_length=5, null=True, blank=True)
-    name = models.TextField()
-    role = models.CharField(max_length=10, choices=ACCOUNT_ROLE)
-    role_bs = models.CharField(max_length=20, null=True)
-    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE)
-
+    # Add Account Length Setting...
+    code = models.CharField(max_length=5, unique=True, verbose_name='Account Code')
+    name = models.CharField(max_length=100, verbose_name='Account Name')
+    parent = TreeForeignKey('self',
+                            null=True,
+                            blank=True,
+                            related_name='children',
+                            db_index=True,
+                            on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ACCOUNT_ROLE, verbose_name='Account Role')
+    role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')
+    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name='Account Balance Type')
     locked = models.BooleanField(default=False)
 
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+    class Meta:
+        abstract = True
+
+    class MPTTMeta:
+        order_insertion_by = ['name']
 
     def __str__(self):
         return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(x1=self.role_bs.upper(),
@@ -98,13 +110,19 @@ class AccountModel(models.Model):
             return debits - credits
 
 
+class AccountModel(AccountModelAbstract):
+    """
+    Final AccountModel from Abstracts
+    """
+
+
 # AccountModel Signals ----------------
-def accountmodel_postinit(sender, instance, *args, **kwargs):
-    print('Hello Account {x1}-{x2} Post Init'.format(x1=instance.code,
-                                                     x2=instance.name))
-
-
-post_init.connect(accountmodel_postinit, sender=AccountModel)
+# def accountmodel_postinit(sender, instance, *args, **kwargs):
+#     print('Hello Account {x1}-{x2} Post Init'.format(x1=instance.code,
+#                                                      x2=instance.name))
+#
+#
+# post_init.connect(accountmodel_postinit, sender=AccountModel)
 
 
 def accountmodel_presave(sender, instance, raw, using, update_fields, *args, **kwargs):

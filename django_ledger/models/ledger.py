@@ -6,31 +6,29 @@ from pandas.tseries.offsets import MonthEnd
 
 from .io.generic import IOGenericMixIn
 from .io.preproc import IOPreProcMixIn
+from .mixins import CreateUpdateMixIn, SlugNameMixIn
 from .transactions import TransactionModel
 from .utils import get_acc_idx
 
 
-class LedgerModel(models.Model,
-                  IOPreProcMixIn,
-                  IOGenericMixIn):
-
+class LedgerModelAbstract(SlugNameMixIn,
+                          CreateUpdateMixIn,
+                          IOPreProcMixIn,
+                          IOGenericMixIn):
     SCOPES = (
         ('a', 'Actual'),
         ('f', 'Forecast'),
         ('b', 'Baseline')
     )
 
-    name = models.CharField(max_length=50)
     scope = models.CharField(max_length=1, choices=SCOPES)
-    entity = models.ForeignKey('books.EntityModel',
+    entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE)
 
     years_horizon = models.IntegerField(default=10, validators=[MinValueValidator(0)])
 
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
-
     class Meta:
+        abstract = True
         verbose_name = 'Ledger'
 
     def __str__(self):
@@ -306,3 +304,8 @@ class LedgerModel(models.Model,
     def get_accout_balance(self, acc_code, period):
         return self.get_ts_df(account=acc_code).iloc[0][period].iloc[0]
 
+
+class LedgerModel(LedgerModelAbstract):
+    """
+    Final LedgerModel from Abstracts
+    """

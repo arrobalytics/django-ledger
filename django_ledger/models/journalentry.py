@@ -3,9 +3,10 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.signals import pre_save
 
+from .mixins import CreateUpdateMixIn
 
-class JournalEntryModel(models.Model):
 
+class JournalEntryModelAbstract(CreateUpdateMixIn):
     FREQUENCY = (
         ('nr', 'Non-Recurring'),
         ('d', 'Daily'),
@@ -39,12 +40,12 @@ class JournalEntryModel(models.Model):
                                related_name="children",
                                on_delete=models.CASCADE)
 
-    ledger = models.ForeignKey('books.LedgerModel',
+    ledger = models.ForeignKey('django_ledger.LedgerModel',
                                related_name='jes',
                                on_delete=models.CASCADE)
 
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.desc)
@@ -88,8 +89,16 @@ class JournalEntryModel(models.Model):
                 # check4 = 'Series validator'
 
 
+class JournalEntryModel(JournalEntryModelAbstract):
+    """
+    Final JournalEntryModel from Abstracts
+    """
+
+
+### JournalEntryModel Signals --------
 def je_presave(sender, instance, *args, **kwargs):
     instance.clean_fields()
+    instance.clean()
 
 
 pre_save.connect(je_presave, sender=JournalEntryModel)
