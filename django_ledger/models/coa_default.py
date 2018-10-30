@@ -163,25 +163,6 @@ CHART_OF_ACCOUNTS = [
      'acc_parent': 6000},
     {'acc_code': 6400, 'acc_role': 'ex', 'acc_type': 'debit', 'acc_name': 'Vacancy', 'acc_parent': 6000},
 
-    ### CAP EXPENDITURES ###
-    # '83': {'acc_code': 6900, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'CAPITAL EXPENDITURES',
-    #        'acc_parent': 6900},
-    # {'acc_code': 6901, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Roof', 'acc_parent': 6000},
-    # {'acc_code': 6902, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Water Heater', 'acc_parent': 6000},
-    # {'acc_code': 6903, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Appliances', 'acc_parent': 6000},
-    # {'acc_code': 6904, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Driveway & Parking',
-    #  'acc_parent': 6000},
-    # {'acc_code': 6905, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'HVAC', 'acc_parent': 6000},
-    # {'acc_code': 6906, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Floring', 'acc_parent': 6000},
-    # {'acc_code': 6907, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Plumbing', 'acc_parent': 6000},
-    # {'acc_code': 6908, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Windows', 'acc_parent': 6000},
-    # {'acc_code': 6909, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Paint', 'acc_parent': 6000},
-    # {'acc_code': 6910, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Cabinets & Counters',
-    #  'acc_parent': 6000},
-    # {'acc_code': 6911, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Structure', 'acc_parent': 6000},
-    # {'acc_code': 6912, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Components', 'acc_parent': 6000},
-    # {'acc_code': 6913, 'acc_role': 'capex', 'acc_type': 'debit', 'acc_name': 'Landscaping', 'acc_parent': 6000},
-
     # MISC REVENUE ACCOUNTS ------
     {'acc_code': 7000, 'acc_role': 'in', 'acc_type': 'credit', 'acc_name': 'MISC. REVENUE ACCOUNTS',
      'acc_parent': 7000},

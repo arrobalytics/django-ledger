@@ -4,11 +4,8 @@ from pandas import merge
 from django_ledger.models.accounts import AccountModel
 
 
-# from .coa import CHART_OF_ACCOUNTS
-
-
 # todo: Add CoA Support
-def get_acc_idx():
+def get_acc_idx(coa_model=None):
     accounts = AccountModel.objects.all()
     acc_idx = read_frame(accounts,
                          fieldnames=['role_bs', 'parent', 'parent__code', 'code', 'role', 'name',

@@ -12,7 +12,7 @@ from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import get_acc_idx
 
-COA_ATTR = 'COA'
+COA_ATTR = 'coa_model'
 
 
 def get_ledger_coa(ledger_model):
@@ -36,7 +36,8 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     scope = models.CharField(max_length=1, choices=SCOPES)
     entity = models.ForeignKey('django_ledger.EntityModel',
-                               on_delete=models.CASCADE)
+                               on_delete=models.CASCADE,
+                               related_name='ledgers')
 
     years_horizon = models.IntegerField(default=10, validators=[MinValueValidator(0)])
 
@@ -60,7 +61,6 @@ class LedgerModelAbstract(SlugNameMixIn,
             return getattr(coa.acc_assignments, status)()
         else:
             raise ValueError('Invalid account status.')
-
 
     def get_account(self, code):
         """
