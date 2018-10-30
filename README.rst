@@ -13,3 +13,5 @@ Django Ledger supports:
 - Journal Entries
 
 **THIS PACKAGE IS UNDER ACTIVE DEVELOPMENT AND IS NOT SUITABLE FOR PRODUCTION**
+
+Want to contribute? Don't hesitate to contact me.
