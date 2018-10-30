@@ -1,7 +1,9 @@
 from django_pandas.io import read_frame
 from pandas import merge
 
-from .accounts import AccountModel
+from django_ledger.models.accounts import AccountModel
+
+
 # from .coa import CHART_OF_ACCOUNTS
 
 
@@ -9,12 +11,13 @@ from .accounts import AccountModel
 def get_acc_idx():
     accounts = AccountModel.objects.all()
     acc_idx = read_frame(accounts,
-                         fieldnames=['role_bs', 'parent', 'code', 'role', 'name',
+                         fieldnames=['role_bs', 'parent', 'parent__code', 'code', 'role', 'name',
                                      'balance_type'])
-    parents = acc_idx[acc_idx['parent'] == acc_idx['code']][['code', 'name']]
+    acc_idx.rename(columns={'parent__code': 'parent_code'}, inplace=True)
+    parents = acc_idx[acc_idx['parent'].isnull()][['code', 'name']]
     parents.rename(columns={'name': 'parent_name', 'code': 'parent_code'}, inplace=True)
-    acc_idx = acc_idx[acc_idx['parent'] != acc_idx['code']]
-    acc_idx = merge(left=acc_idx, right=parents, left_on='parent', right_on='parent_code')
+    acc_idx = acc_idx[acc_idx['parent'].notnull()]
+    acc_idx = merge(left=acc_idx, right=parents, left_on='parent_code', right_on='parent_code')
     acc_idx.drop('parent', axis=1, inplace=True)
     acc_idx['balance_type'] = acc_idx['balance_type'].str.lower()
     acc_idx['role_bs'] = acc_idx['role_bs'].str.upper()
@@ -23,7 +26,6 @@ def get_acc_idx():
                       inplace=True)
     acc_idx.sort_index(inplace=True)
     return acc_idx
-
 
 # class COAUtils(object):
 #

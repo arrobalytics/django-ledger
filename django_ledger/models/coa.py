@@ -1,9 +1,10 @@
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 from django_pandas.io import read_frame
 from pandas import merge
 
-from .accounts import AccountModel
-from .mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn,
@@ -39,7 +40,39 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
         return accounts_df
 
 
+def get_coa_account(coa_model, code):
+    try:
+        qs = coa_model.acc_assignments.available()
+        acc_model = qs.get(account__code__iexact=code)
+        return acc_model
+    except ObjectDoesNotExist:
+        raise ValueError('Account {acc} is either not assigned, inactive, locked or non existent for CoA: {coa}'.format(
+            acc=code,
+            coa=coa_model.__str__()
+        ))
+
+
+class AccountAssignmentsManager(models.Manager):
+
+    def available(self):
+        return self.get_queryset().filter(locked=False,
+                                          active=True)
+
+    def inactive(self):
+        return self.get_queryset().filter(active=False)
+
+    def active(self):
+        return self.get_queryset().filter(active=True)
+
+    def locked(self):
+        return self.get_queryset().filter(locked=True)
+
+    def unlocked(self):
+        return self.get_queryset().filter(locked=False)
+
+
 class CoAAccountAssignments(models.Model):
+    # todo: add unique coa-acccode index.
 
     account = models.ForeignKey('django_ledger.AccountModel',
                                 on_delete=models.CASCADE,
@@ -53,6 +86,8 @@ class CoAAccountAssignments(models.Model):
 
     locked = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
+
+    objects = AccountAssignmentsManager()
 
     def __str__(self):
         return '{coa}: {acc}'.format(coa=self.coa.__str__(),

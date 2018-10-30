@@ -1,14 +1,27 @@
 import pandas as pd
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models.signals import post_init
 from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
-from .io.generic import IOGenericMixIn
-from .io.preproc import IOPreProcMixIn
-from .mixins import CreateUpdateMixIn, SlugNameMixIn
-from .transactions import TransactionModel
-from .utils import get_acc_idx
+from django_ledger.models.coa import get_coa_account
+from django_ledger.models.io.generic import IOGenericMixIn
+from django_ledger.models.io.preproc import IOPreProcMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.models.utils import get_acc_idx
+
+COA_ATTR = 'COA'
+
+
+def get_ledger_coa(ledger_model):
+    """
+    Utility function to get the associated ledger's Chart of Account model.
+    :param ledger: A Ledger model instance
+    :return:
+    """
+    return ledger_model.entity.coa
 
 
 class LedgerModelAbstract(SlugNameMixIn,
@@ -34,6 +47,29 @@ class LedgerModelAbstract(SlugNameMixIn,
     def __str__(self):
         return '{scope}: {id}'.format(scope=self.get_scope_display(),
                                       id=self.pk)
+
+    def get_coa(self):
+        return getattr(self, COA_ATTR)
+
+    def get_accounts(self, status='available'):
+        stats = [
+            'available', 'inactive', 'active', 'locked', 'unlocked'
+        ]
+        if status in stats:
+            coa = self.get_coa()
+            return getattr(coa.acc_assignments, status)()
+        else:
+            raise ValueError('Invalid account status.')
+
+
+    def get_account(self, code):
+        """
+        Convenience method to get an account model instance from the ledger entity Chart of Accounts.
+        :param code: Account code.
+        :return:
+        """
+        return get_coa_account(coa_model=self.get_coa(),
+                               code=code)
 
     def get_jes_df(self):
         jes = self.jes.all()
@@ -151,7 +187,7 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_ts_df(self, cum=True, to_json=False, method='bs', activity=None, role=None, account=None):
 
-        # todo: Remove capex!!!
+        # todo: Remove capex
         if method == 'ic':
             role = ['in', 'ex']
         elif method == 'ic-op':
@@ -309,3 +345,12 @@ class LedgerModel(LedgerModelAbstract):
     """
     Final LedgerModel from Abstracts
     """
+
+
+def ledgermodel_postinit(sender, instance, **kwargs):
+    coa = get_ledger_coa(instance)
+    setattr(instance, COA_ATTR, coa)
+    print('CoA instantiated!')
+
+
+post_init.connect(ledgermodel_postinit, LedgerModel)

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 
 class IOGenericMixIn:
+
     ACM = apps.get_model('django_ledger.AccountModel', require_ready=False)
     DEFAULT_CASH_ACCOUNT = 1010
     DEFAULT_REVENUE_ACCOUNT = 4020
@@ -11,7 +12,6 @@ class IOGenericMixIn:
     def tx_generic(self, amount, start_date, debit_acc, credit_acc, activity, ledger=None, tx_params=None,
                    freq='nr', end_date=None, desc=None, origin=None, parent_je=None):
 
-        # ledger = ledger or getattr(self, 'ledger') or self
         ledger = ledger or self
 
         if freq != 'nr' and end_date is None:
@@ -39,8 +39,10 @@ class IOGenericMixIn:
         if tx_params and isinstance(tx_params, dict):
             gen_params.update(tx_params)
 
-        debit_acc = self.ACM.objects.get(code__exact=debit_acc)
-        credit_acc = self.ACM.objects.get(code__exact=credit_acc)
+        avail_accounts = self.get_accounts(status='available')
+
+        debit_acc = avail_accounts.get(account__code__iexact=debit_acc).account
+        credit_acc = avail_accounts.get(account__code__iexact=credit_acc).account
 
         je.txs.create(tx_type='debit',
                       account=debit_acc,
