@@ -251,7 +251,9 @@ class LedgerModelAbstract(SlugNameMixIn,
             df.index.rename('code', inplace=True)
             df = df.groupby('code').sum()
 
-            df = pd.merge(left=get_acc_idx(), right=df, how='inner', left_index=True, right_index=True)
+            df = pd.merge(left=get_acc_idx(
+                coa=get_ledger_coa(self)
+            ), right=df, how='inner', left_index=True, right_index=True)
             df.fillna(value=0, inplace=True)
             df.columns.name = 'timestamp'
 
@@ -350,7 +352,6 @@ class LedgerModel(LedgerModelAbstract):
 def ledgermodel_postinit(sender, instance, **kwargs):
     coa = get_ledger_coa(instance)
     setattr(instance, COA_ATTR, coa)
-    print('CoA instantiated!')
 
 
 post_init.connect(ledgermodel_postinit, LedgerModel)

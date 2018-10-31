@@ -1,20 +1,25 @@
 from django.contrib import admin
 
-from django_ledger.models import LedgerModel, EntityModel, ChartOfAccountModel, AccountModel, CoAAccountAssignments
+from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel, AccountModel, CoAAccountAssignments,
+                                  JournalEntryModel, TransactionModel)
+
+
+class TransactionModelInLine(admin.TabularInline):
+    model = TransactionModel
+
+
+class JournalEntryModelAdmin(admin.ModelAdmin):
+    inlines = [
+        TransactionModelInLine
+    ]
+
+    class Meta:
+        model = JournalEntryModel
 
 
 class EntityModelAdmin(admin.ModelAdmin):
     class Meta:
         model = EntityModel
-
-
-# class CoAAccountThroughAdmin(admin.ModelAdmin):
-#     list_filter = [
-#         'coa',
-#     ]
-#
-#     class Meta:
-#         model = CoAAccountAssignments
 
 
 class CoAAssignmentsInLine(admin.TabularInline):
@@ -77,7 +82,7 @@ class LedgerModelAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EntityModel, EntityModelAdmin)
+admin.site.register(JournalEntryModel, JournalEntryModelAdmin)
 admin.site.register(LedgerModel, LedgerModelAdmin)
-# admin.site.register(CoAAccountAssignments, CoAAccountThroughAdmin)
 admin.site.register(ChartOfAccountModel, ChartOfAccountsModelAdmin)
 admin.site.register(AccountModel, AccountModelAdmin)

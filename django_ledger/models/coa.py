@@ -18,11 +18,8 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     def __str__(self):
         return self.name
 
-    # todo: this is a duplicate from fcts model.
     def get_accounts_index(self, as_dataframe=False):
-        idx = get_acc_idx(self)
-        if not as_dataframe:
-            idx = idx.reset_index().to_dict(orient='records')
+        idx = get_acc_idx(self, as_dataframe=as_dataframe)
         return idx
 
 
@@ -82,6 +79,12 @@ class CoAAccountAssignments(models.Model):
 
     class Meta:
         verbose_name = 'Chart of Account Assignment'
+        indexes = [
+            models.Index(fields=[
+                'account',
+                'coa'
+            ])
+        ]
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):
