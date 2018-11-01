@@ -30,7 +30,6 @@ class AccountModelAbstract(MPTTModel,
             ('cadj', 'Capital Adjustments'),
             ('in', 'Income'),
             ('ex', 'Expense'),
-            ('capex', 'Capital Expenditure')
         )
          ),
 
