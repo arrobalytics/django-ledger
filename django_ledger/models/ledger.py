@@ -54,8 +54,13 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_accounts(self, status='available'):
         stats = [
-            'available', 'inactive', 'active', 'locked', 'unlocked'
+            'available',
+            'inactive',
+            'active',
+            'locked',
+            'unlocked'
         ]
+
         if status in stats:
             coa = self.get_coa()
             return getattr(coa.acc_assignments, status)()
@@ -71,22 +76,24 @@ class LedgerModelAbstract(SlugNameMixIn,
         return get_coa_account(coa_model=self.get_coa(),
                                code=code)
 
-    def get_jes_df(self):
-        jes = self.jes.all()
-        jes_df = read_frame(jes, verbose=False)
-        jes_df.rename(columns={'id': 'je_id'}, inplace=True)
-        jes_df.set_index('je_id', inplace=True)
-        jes_df['start_date'] = pd.to_datetime(jes_df['start_date'])
-        jes_df['end_date'] = pd.to_datetime(jes_df['end_date'])
-        return jes_df
+    def get_jes_data(self, as_dataframe=False):
+        jes = list(self.jes.all().values())
+        if as_dataframe:
+            jes = pd.DataFrame(jes)
+            jes.rename(columns={'id': 'je_id'}, inplace=True)
+            jes.set_index('je_id', inplace=True)
+            jes['start_date'] = pd.to_datetime(jes['start_date'])
+            jes['end_date'] = pd.to_datetime(jes['end_date'])
+        return jes
 
-    def get_tx_df(self):
-        # todo: Do we need to hit DB twice to get TXs if we got JEs???
+    def get_tx_data(self, as_dataframe=False):
         tx = TransactionModel.objects.filter(journal_entry__ledger__exact=self)
-        tx_df = read_frame(tx, verbose=False)
-        tx_df.rename(columns={'id': 'tx_id'}, inplace=True)
-        tx_df.set_index('tx_id', inplace=True)
-        return tx_df
+        tx = list(tx.values())
+        if as_dataframe:
+            tx = pd.DataFrame(tx)
+            tx.rename(columns={'id': 'tx_id'}, inplace=True)
+            tx.set_index('tx_id', inplace=True)
+        return tx
 
     def get_jes_tx_df(self, as_dataframe=False, activity=None, role=None, account=None):
 
