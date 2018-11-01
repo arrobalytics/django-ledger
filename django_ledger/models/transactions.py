@@ -6,6 +6,7 @@ from .mixins import CreateUpdateMixIn
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):
+
     TX_TYPE = [
         ('credit', 'Credit'),
         ('debit', 'Debit')
@@ -24,9 +25,12 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                  max_digits=20,
                                  null=True,
                                  blank=True,
-                                 validators=[MinValueValidator(0)])
+                                 validators=[
+                                     MinValueValidator(0)
+                                 ])
 
-    params = JSONField(null=True, blank=True)
+    params = JSONField(null=True,
+                       blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)

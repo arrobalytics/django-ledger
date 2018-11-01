@@ -88,12 +88,12 @@ class LedgerModelAbstract(SlugNameMixIn,
         tx_df.set_index('tx_id', inplace=True)
         return tx_df
 
-    def get_jes_tx_df(self, to_json=False, activity=None, role=None, account=None):
+    def get_jes_tx_df(self, as_dataframe=False, activity=None, role=None, account=None):
 
         """
         If account is present all other parameters will be ignored.
 
-        :param to_json:
+        :param as_dataframe:
         :param activity:
         :param role:
         :param account:
@@ -109,11 +109,14 @@ class LedgerModelAbstract(SlugNameMixIn,
             if activity is None and role is None:
                 jes = self.jes.filter(ledger__exact=self)
             elif activity is not None and role is None:
-                jes = self.jes.filter(ledger__exact=self, activity__in=activity)
+                jes = self.jes.filter(ledger__exact=self,
+                                      activity__in=activity)
             elif activity is None and role is not None:
-                jes = self.jes.filter(ledger__exact=self, txs__account__role__in=role)
+                jes = self.jes.filter(ledger__exact=self,
+                                      txs__account__role__in=role)
             elif activity is not None and role is not None:
-                jes = self.jes.filter(ledger__exact=self, activity__in=activity,
+                jes = self.jes.filter(ledger__exact=self,
+                                      activity__in=activity,
                                       txs__account__role__in=role)
             else:
                 jes = self.jes.filter(forecast__exact=self)
@@ -180,14 +183,13 @@ class LedgerModelAbstract(SlugNameMixIn,
 
         jes_tx_df = jes_tx_df.apply(func=sm_pe, axis=1)
 
-        if to_json is True:
-            return jes_tx_df.to_json()
-        else:
-            return jes_tx_df
+        if not as_dataframe:
+            jes_tx_df = jes_tx_df.reset_index().to_dict(orient='records')
 
-    def get_ts_df(self, cum=True, to_json=False, method='bs', activity=None, role=None, account=None):
+        return jes_tx_df
 
-        # todo: Remove capex
+    def get_ts_df(self, cum=True, as_dataframe=False, method='bs', activity=None, role=None, account=None):
+
         if method == 'ic':
             role = ['in', 'ex']
         elif method == 'ic-op':
@@ -200,7 +202,10 @@ class LedgerModelAbstract(SlugNameMixIn,
             role = ['in', 'ex']
             activity = ['fin']
 
-        je_txs = self.get_jes_tx_df(activity=activity, role=role, account=account)
+        je_txs = self.get_jes_tx_df(activity=activity,
+                                    role=role,
+                                    account=account,
+                                    as_dataframe=True)
 
         if not je_txs.empty:
 
@@ -252,35 +257,32 @@ class LedgerModelAbstract(SlugNameMixIn,
             df = df.groupby('code').sum()
 
             df = pd.merge(left=get_acc_idx(
-                coa=get_ledger_coa(self)
+                coa=get_ledger_coa(self),
+                as_dataframe=True
             ), right=df, how='inner', left_index=True, right_index=True)
             df.fillna(value=0, inplace=True)
-            df.columns.name = 'timestamp'
+            df.columns.name = 'period'
 
-        else:
-            return pd.DataFrame()
+            if cum:
+                df = df.cumsum(axis=1)
 
-        if to_json is True:
-            if cum is True:
-                return_df = df.cumsum().stack()
-            else:
-                return_df = df.stack()
-            return_df = return_df.to_json(orient='index', date_format='iso')
-            # return_df = return_df.rename(columns={'level_7': 'period', 0: 'amount'}).to_json(date_format='iso')
-            return return_df
-        else:
-            if cum is True:
-                return df.cumsum(axis=1)
-            else:
+            if as_dataframe:
                 return df
+            else:
+                df = df.stack()
+                df.name = 'value'
+                df = df.to_frame()
+                return df.reset_index().to_dict(orient='records')
 
     # Financial Statements -----
+    def balance_sheet(self, cum=True, signs=False, as_dataframe=False, activity=None):
 
-    def balance_sheet(self, cum=True, signs=False, to_json=False, activity=None):
+        bs_df = self.get_ts_df(cum=cum,
+                               activity=activity,
+                               method='bs',
+                               as_dataframe=True)
 
-        bs_df = self.get_ts_df(cum=cum, activity=activity, method='bs')
-
-        if signs is True:
+        if signs:
 
             def fcst_bs_xform(df_row):
                 idx = [x.lower() for x in df_row.name]
@@ -292,24 +294,25 @@ class LedgerModelAbstract(SlugNameMixIn,
 
             bs_df = bs_df.apply(fcst_bs_xform, axis=1)
 
-        if to_json is True:
+        if not as_dataframe:
             bs_df = bs_df.stack()
-            bs_df.name = 'amount'
-            bs_df = bs_df.reset_index()
-            return bs_df.to_json(orient='records', date_format='iso')
-        else:
-            return bs_df
+            bs_df.name = 'value'
+            bs_df = bs_df.reset_index().to_dict(orient='records')
 
-    def income_statement(self, cum=True, signs=False, to_json=False, activity=None):
+        return bs_df
+
+    def income_statement(self, cum=True, signs=False, as_dataframe=False, activity=None):
 
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_df = self.get_ts_df(cum=cum, method=method)
+        ic_df = self.get_ts_df(cum=cum,
+                               method=method,
+                               as_dataframe=True)
 
         if signs is True:
-            # fixme: change to appropiate function
+            # fixme: change to appropriate function
             def fcst_ic_xform(df_row):
                 idx = [x.lower() for x in df_row.name]
                 if 'assets' in idx and 'credit' in idx:
@@ -320,13 +323,15 @@ class LedgerModelAbstract(SlugNameMixIn,
 
             ic_df = ic_df.apply(fcst_ic_xform, axis=1)
 
-        if to_json is True:
-            return ic_df.stack().to_json(orient='index', date_format='iso')
-        else:
-            return ic_df
+        if not as_dataframe:
+            ic_df = ic_df.stack()
+            ic_df.name = 'value'
+            ic_df = ic_df.reset_index().to_dict(orient='records')
+
+        return ic_df
 
     def income(self, activity=None):
-        inc_df = self.income_statement(cum=False, signs=True, to_json=False, activity=activity).sum()
+        inc_df = self.income_statement(cum=False, signs=True, as_dataframe=False, activity=activity).sum()
         return inc_df
 
     # def acc_balance(self, acc_code, date):
