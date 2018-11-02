@@ -6,6 +6,9 @@ from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel,
 
 class TransactionModelInLine(admin.TabularInline):
     model = TransactionModel
+    readonly_fields = [
+        'params'
+    ]
 
 
 class JournalEntryModelAdmin(admin.ModelAdmin):
@@ -50,6 +53,7 @@ class AccountModelAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         'role_bs',
+        'role',
         'balance_type',
     ]
     fieldsets = (
