@@ -55,8 +55,6 @@ class AccountAssignmentsManager(models.Manager):
 
 
 class CoAAccountAssignments(models.Model):
-    # todo: add unique coa-acccode index.
-
     account = models.ForeignKey('django_ledger.AccountModel',
                                 on_delete=models.CASCADE,
                                 verbose_name='Accounts',

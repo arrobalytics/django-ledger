@@ -5,6 +5,7 @@ from django_ledger.models import LedgerModel
 
 class EntityModelAbstract(SlugNameMixIn,
                           CreateUpdateMixIn):
+
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.DO_NOTHING,
                             verbose_name='Chart of Accounts')
