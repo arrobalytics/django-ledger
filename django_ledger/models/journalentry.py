@@ -53,6 +53,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def get_balances(self):
         credits = self.txs.filter(tx_type__iexact='credit').aggregate(Sum('amount'))
         debits = self.txs.filter(tx_type__iexact='debit').aggregate(Sum('amount'))
+
         balances = dict()
         balances['credits'] = credits
         balances['debits'] = debits
