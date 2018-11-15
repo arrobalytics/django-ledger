@@ -2,10 +2,17 @@ from django.core.exceptions import ValidationError
 
 
 class IOGenericMixIn:
+    """
+    Controls how transactions are recorded into the ledger.
+    Contains functions to programmatically get accounts for Journal Entries.
+    """
 
-    DEFAULT_CASH_ACCOUNT = 1010
-    DEFAULT_REVENUE_ACCOUNT = 4020
+    DEFAULT_ASSET_ACCOUNT = 1010
+    DEFAULT_LIABILITY_ACCOUNT = None
     DEFAULT_CAPITAL_ACCOUNT = 3010
+
+    DEFAULT_INCOME_ACCOUNT = 4020
+    DEFAULT_EXPENSE_ACCOUNT = None
 
     def tx_generic(self, amount, start_date, debit_acc, credit_acc, activity, ledger=None, tx_params=None,
                    freq='nr', end_date=None, desc=None, origin=None, parent_je=None):
@@ -31,13 +38,15 @@ class IOGenericMixIn:
                                parent=parent_je)
 
         gen_params = dict()
+
         gen_params['amount'] = amount
         gen_params['freq'] = freq
 
         if tx_params and isinstance(tx_params, dict):
             gen_params.update(tx_params)
 
-        avail_accounts = self.get_accounts(status='available')
+        get_accounts = getattr(self, 'get_accounts')
+        avail_accounts = get_accounts(status='available')
         debit_acc = avail_accounts.get(account__code__iexact=debit_acc).account
         credit_acc = avail_accounts.get(account__code__iexact=credit_acc).account
 
@@ -58,6 +67,55 @@ class IOGenericMixIn:
             je.transactions.all().delete()
             je.delete()
             raise ValidationError('Something went wrong cleaning journal entry ID:{x1}'.format(x1=je.id))
+
+    def get_asset_account(self):
+        """
+        This function programmatically returns the asset account to be used on a journal entry.
+        :return: Account code as a string in order to match field data type.
+        """
+        return str(self.DEFAULT_ASSET_ACCOUNT)
+
+    def get_liability_account(self):
+        """
+        This function programmatically returns the liability account to be used on a journal entry.
+        :return: Account code as a string in order to match field data type.
+        """
+        return self.DEFAULT_LIABILITY_ACCOUNT
+
+    def get_capital_account(self):
+        """
+        This function programmatically returns the capital account to be used on a journal entry.
+        :return: Account code as a string in order to match field data type.
+        """
+        return self.DEFAULT_CAPITAL_ACCOUNT
+
+    def get_income_account(self):
+        """
+        This function programmatically returns the income account to be used on a journal entry.
+        :return: Account code as a string in order to match field data type.
+        """
+        return self.DEFAULT_EXPENSE_ACCOUNT
+
+    def get_expense_account(self):
+        """
+        This function programmatically returns the expense account to be used on a journal entry.
+        :return: Account code as a string in order to match field data type.
+        """
+        return self.DEFAULT_EXPENSE_ACCOUNT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # # PreSet Transactions -----
     # def tx_income(self, income, start_date, activity, ledger=None, end_date=None, desc=None, freq='nr',

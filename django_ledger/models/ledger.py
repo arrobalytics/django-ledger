@@ -24,6 +24,18 @@ def get_ledger_coa(ledger_model):
     return ledger_model.entity.coa
 
 
+class LedgerModelManager(models.Manager):
+
+    def actuals(self):
+        return self.get_queryset().filter(scope='a')
+
+    def forecast(self):
+        return self.get_queryset().filter(scope='f')
+
+    def baseline(self):
+        return self.get_queryset().filter(scope='b')
+
+
 class LedgerModelAbstract(SlugNameMixIn,
                           CreateUpdateMixIn,
                           IOPreProcMixIn,
@@ -41,17 +53,21 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     years_horizon = models.IntegerField(default=10, validators=[MinValueValidator(0)])
 
+    objects = LedgerModelManager()
+
     class Meta:
         abstract = True
         verbose_name = 'Ledger'
 
     def __str__(self):
-        return '{scope}: {id}'.format(scope=self.get_scope_display(),
+        get_scope = getattr(self, 'get_scope_display')
+        return '{scope}: {id}'.format(scope=get_scope(),
                                       id=self.pk)
 
     def get_coa(self):
         return getattr(self, COA_ATTR)
 
+    # TODO: This can be handled by the Model Manager...?
     def get_accounts(self, status='available'):
         stats = [
             'available',
