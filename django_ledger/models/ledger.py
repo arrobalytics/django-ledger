@@ -5,6 +5,7 @@ from django.db.models.signals import post_init
 from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
+from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_coa_account
 from django_ledger.models.io.generic import IOGenericMixIn
 from django_ledger.models.io.preproc import IOPreProcMixIn
@@ -19,7 +20,7 @@ COA_ATTR = 'coa_model'
 def get_ledger_coa(ledger_model):
     """
     Utility function to get the associated ledger's Chart of Account model.
-    :param ledger: A Ledger model instance
+    :param ledger_model: A Ledger model instance
     :return:
     """
     return ledger_model.entity.coa
@@ -132,11 +133,10 @@ class LedgerModelAbstract(SlugNameMixIn,
         :return:
         """
         activity = validate_activity(activity)
-        # todo: valida roles function
+        role = validate_roles(role)
 
         jes = self.jes.filter(ledger__exact=self)
 
-        # fixme: add criteria for acc & other params.
         if account:
             if isinstance(account, str) or isinstance(account, int):
                 account = [account]
