@@ -6,6 +6,8 @@ from mptt.models import MPTTModel, TreeForeignKey
 
 from .mixins import CreateUpdateMixIn
 
+# todo: Move to a settings module.
+LEDGER_ACCOUNTMAXLENGTH = 5
 
 class AccountModelAbstract(MPTTModel,
                            CreateUpdateMixIn):
@@ -18,13 +20,11 @@ class AccountModelAbstract(MPTTModel,
             ('aadj', 'Asset Adjustments'),
         )
          ),
-
         ('Liabilities', (
             ('cl', 'Current Liabilities'),
             ('ltl', 'Long Term Liabilities'),
         )
          ),
-
         ("Equity", (
             ('cap', 'Capital'),
             ('cadj', 'Capital Adjustments'),
@@ -32,7 +32,6 @@ class AccountModelAbstract(MPTTModel,
             ('ex', 'Expense'),
         )
          ),
-
         ("Other", (
             ('excl', 'Excluded'),
         )
@@ -44,8 +43,7 @@ class AccountModelAbstract(MPTTModel,
         ('debit', 'Debit')
     ]
 
-    # Add Account Length Setting...
-    code = models.CharField(max_length=5, unique=True, verbose_name='Account Code')
+    code = models.CharField(max_length=LEDGER_ACCOUNTMAXLENGTH, unique=True, verbose_name='Account Code')
     name = models.CharField(max_length=100, verbose_name='Account Name')
     parent = TreeForeignKey('self',
                             null=True,

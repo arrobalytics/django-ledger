@@ -5,6 +5,26 @@ from django.db.models.signals import pre_save
 
 from .mixins import CreateUpdateMixIn
 
+ACTIVITIES = (
+    ('op', 'Operating'),
+    ('fin', 'Financing'),
+    ('inv', 'Investing'),
+    ('other', 'Other'),
+)
+
+ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
+
+
+def validate_activity(acts):
+    if acts:
+        if isinstance(acts, str):
+            acts = [acts]
+        for act in acts:
+            if act not in ACTIVITY_ALLOWS:
+                raise ValidationError('{a} is invalid. Choices are {ch}'.format(ch=', '.join(ACTIVITY_ALLOWS),
+                                                                                a=act))
+    return acts
+
 
 class JournalEntryModelAbstract(CreateUpdateMixIn):
     FREQUENCY = (
@@ -17,20 +37,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         ('sy', 'Yearly Series'),
     )
 
-    ACTIVITY = (
-        ('op', 'Operating'),
-        ('fin', 'Financing'),
-        ('inv', 'Investing'),
-        ('other', 'Other'),
-    )
-
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
 
     desc = models.CharField(max_length=70, blank=True, null=True)
     freq = models.CharField(max_length=2,
                             choices=FREQUENCY)
-    activity = models.CharField(choices=ACTIVITY,
+    activity = models.CharField(choices=ACTIVITIES,
                                 max_length=5)
     origin = models.CharField(max_length=30, blank=True, null=True)
 

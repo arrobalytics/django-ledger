@@ -7,15 +7,17 @@ setup(
     packages=find_packages(),
     url=django_ledger.__url__,
     license=django_ledger.__license__,
-    keywords='django, finance, accounting, balance,sheet, income, statement, general, ledger',
+    keywords='django, finance, accounting, balance sheet, income, statement, general, ledger',
     author=django_ledger.__author__,
     author_email=django_ledger.__email__,
     description='Financial analysis backend for Django. Balance Sheet, Income Statements, Chart of Accounts, Entities',
     install_requires=[
+        'python-dateutil',
         'pandas',
         'django-mptt',
         'django-pandas',
         'jsonfield',
+        'django'
     ],
     project_urls={
         # "Bug Tracker": "https://bugs.example.com/HelloWorld/",
