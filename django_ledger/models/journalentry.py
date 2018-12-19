@@ -14,6 +14,18 @@ ACTIVITIES = (
 
 ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
 
+FREQUENCY = (
+    ('nr', 'Non-Recurring'),
+    ('d', 'Daily'),
+    ('m', 'Monthly'),
+    ('q', 'Quarterly'),
+    ('y', 'Yearly'),
+    ('sm', 'Monthly Series'),
+    ('sy', 'Yearly Series'),
+)
+
+FREQUENCY_ALLOWS = [f[0] for f in FREQUENCY]
+
 
 def validate_activity(acts):
     if acts:
@@ -26,17 +38,15 @@ def validate_activity(acts):
     return acts
 
 
-class JournalEntryModelAbstract(CreateUpdateMixIn):
-    FREQUENCY = (
-        ('nr', 'Non-Recurring'),
-        ('d', 'Daily'),
-        ('m', 'Monthly'),
-        ('q', 'Quarterly'),
-        ('y', 'Yearly'),
-        ('sm', 'Monthly Series'),
-        ('sy', 'Yearly Series'),
-    )
+def validate_freq(freq):
+    for freq in FREQUENCY_ALLOWS:
+        if freq not in FREQUENCY_ALLOWS:
+            raise ValidationError('{f} is invalid. Choices are {ch}'.format(ch=', '.join(FREQUENCY_ALLOWS),
+                                                                            f=freq))
+    return freq
 
+
+class JournalEntryModelAbstract(CreateUpdateMixIn):
     start_date = models.DateField()
     end_date = models.DateField(null=True, blank=True)
 

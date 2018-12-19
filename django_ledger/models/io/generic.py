@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 
-from django_ledger.models.journalentry import validate_activity
+from django_ledger.models.journalentry import validate_activity, validate_freq
 
 
 class IOGenericMixIn:
@@ -20,7 +20,7 @@ class IOGenericMixIn:
                    freq='nr', end_date=None, desc=None, origin=None, parent_je=None):
 
         activity = validate_activity(activity)
-        # todo: validate freq.
+        freq = validate_freq(freq)
 
         ledger = ledger or self
 

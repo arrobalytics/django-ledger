@@ -44,7 +44,6 @@ def get_acc_idx(coa, as_dataframe=False):
                                                      'balance_type'])
     return acc_idx
 
-# # todo: Add CoA Support
 # def get_acc_idx():
 #     accounts = AccountModel.objects.all()
 #     acc_idx = read_frame(accounts,
@@ -79,7 +78,6 @@ def get_acc_idx(coa, as_dataframe=False):
 #         account.clean()
 #         account.save()
 #
-#     # fixme: Hitting database twice when creating accounts!!!
 #     def refresh_coa(self, force=False):
 #
 #         for data in CHART_OF_ACCOUNTS.values():

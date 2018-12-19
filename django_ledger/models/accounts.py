@@ -1,7 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
-from django.db.models.signals import pre_save, post_init
+from django.db.models.signals import pre_save
 from mptt.models import MPTTModel, TreeForeignKey
 
 from .mixins import CreateUpdateMixIn
@@ -9,35 +10,49 @@ from .mixins import CreateUpdateMixIn
 # todo: Move to a settings module.
 LEDGER_ACCOUNTMAXLENGTH = 5
 
+ACCOUNT_ROLE = [
+    ('Assets', (
+        ('ca', 'Current Asset'),
+        ('lti', 'Long Term Investments'),
+        ('ppe', 'Property Plant & Equipment'),
+        ('ia', 'Intangible Assets'),
+        ('aadj', 'Asset Adjustments'),
+    )
+     ),
+    ('Liabilities', (
+        ('cl', 'Current Liabilities'),
+        ('ltl', 'Long Term Liabilities'),
+    )
+     ),
+    ("Equity", (
+        ('cap', 'Capital'),
+        ('cadj', 'Capital Adjustments'),
+        ('in', 'Income'),
+        ('ex', 'Expense'),
+    )
+     ),
+    ("Other", (
+        ('excl', 'Excluded'),
+    )
+     )
+]
+
+BS_ROLES = [x[0] for x in ACCOUNT_ROLE]
+
+
+def validate_roles(roles):
+    if roles:
+        if isinstance(roles, str):
+            roles = [roles]
+        for r in roles:
+            if r not in BS_ROLES:
+                raise ValidationError('{roles} is invalid. Choices are {ch}'.format(ch=', '.join(BS_ROLES),
+                                                                                    roles=r))
+    return roles
+
+
 class AccountModelAbstract(MPTTModel,
                            CreateUpdateMixIn):
-    ACCOUNT_ROLE = [
-        ('Assets', (
-            ('ca', 'Current Asset'),
-            ('lti', 'Long Term Investments'),
-            ('ppe', 'Property Plant & Equipment'),
-            ('ia', 'Intangible Assets'),
-            ('aadj', 'Asset Adjustments'),
-        )
-         ),
-        ('Liabilities', (
-            ('cl', 'Current Liabilities'),
-            ('ltl', 'Long Term Liabilities'),
-        )
-         ),
-        ("Equity", (
-            ('cap', 'Capital'),
-            ('cadj', 'Capital Adjustments'),
-            ('in', 'Income'),
-            ('ex', 'Expense'),
-        )
-         ),
-        ("Other", (
-            ('excl', 'Excluded'),
-        )
-         )
-    ]
-
     BALANCE_TYPE = [
         ('credit', 'Credit'),
         ('debit', 'Debit')
@@ -71,7 +86,7 @@ class AccountModelAbstract(MPTTModel,
 
     def get_bs_role(self):
         if self.role:
-            for role, value in dict(self.ACCOUNT_ROLE).items():
+            for role, value in dict(ACCOUNT_ROLE).items():
                 if self.role in [x[0] for x in value]:
                     return role.lower()
 
