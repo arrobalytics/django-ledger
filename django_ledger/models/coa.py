@@ -38,8 +38,7 @@ def get_coa_account(coa_model, code):
 class AccountAssignmentsManager(models.Manager):
 
     def available(self):
-        return self.get_queryset().filter(locked=False,
-                                          active=True)
+        return self.get_queryset().filter(locked=False, active=True)
 
     def inactive(self):
         return self.get_queryset().filter(active=False)

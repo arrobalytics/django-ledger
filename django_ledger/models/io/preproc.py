@@ -20,7 +20,6 @@ class IOPreProcMixIn:
         if all([start_date, end_date]):
             return start_date, end_date
         else:
-
             if any([years, months, days]):
                 end_date = start_date + relativedelta(years=years or 0,
                                                       months=months or 0,
@@ -30,11 +29,10 @@ class IOPreProcMixIn:
             start_date = monthend(start_date)
             if end_date:
                 end_date = monthend(end_date)
-
         return start_date, end_date or None
 
     def preproc_je(self, start_date, end_date=None, plus_years=None, plus_months=None, plus_days=None,
-                   desc=None, origin=None):
+                   desc=None, origin=None, ledger=None):
         """
         Pre-processing for all JEs. Will take dates as strings, parse and return datetime.
         Returns concatenation of JE description + origin for documenting JE.
@@ -56,9 +54,11 @@ class IOPreProcMixIn:
                                                   months=plus_months,
                                                   days=plus_days)
 
+        if not ledger:
+            ledger = getattr(self, 'ledger')
+
         if not desc:
-            desc = getattr(self, 'ledger').name
+            desc = ledger.name
         if origin:
             desc = desc + '-' + origin
-
         return start_date, end_date, desc

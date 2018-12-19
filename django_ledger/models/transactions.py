@@ -29,6 +29,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                      MinValueValidator(0)
                                  ])
 
+    # todo: Remove JSONField dependency.
     params = JSONField(null=True,
                        blank=True)
 

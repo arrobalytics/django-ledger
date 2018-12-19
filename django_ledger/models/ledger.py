@@ -11,6 +11,7 @@ from django_ledger.models.io.preproc import IOPreProcMixIn
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import get_acc_idx
+from django_ledger.models.journalentry import validate_activity
 
 COA_ATTR = 'coa_model'
 
@@ -22,6 +23,15 @@ def get_ledger_coa(ledger_model):
     :return:
     """
     return ledger_model.entity.coa
+
+
+def process_signs(row):
+    idx = [x.lower() for x in row.name]
+    if 'assets' in idx and 'credit' in idx:
+        row = -row
+    if ('liabilities' in idx or 'equity' in idx or 'other' in idx) and 'debit' in idx:
+        row = -row
+    return row
 
 
 class LedgerModelManager(models.Manager):
@@ -69,19 +79,18 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     # TODO: This can be handled by the Model Manager...?
     def get_accounts(self, status='available'):
-        stats = [
+        choices = (
             'available',
             'inactive',
             'active',
             'locked',
             'unlocked'
-        ]
+        )
 
-        if status in stats:
-            coa = self.get_coa()
-            return getattr(coa.acc_assignments, status)()
-        else:
+        if status not in choices:
             raise ValueError('Invalid account status.')
+        coa = self.get_coa()
+        return getattr(coa.acc_assignments, status)()
 
     def get_account(self, code):
         """
@@ -122,51 +131,24 @@ class LedgerModelAbstract(SlugNameMixIn,
         :param account:
         :return:
         """
+        activity = validate_activity(activity)
+        # todo: valida roles function
+
+        jes = self.jes.filter(ledger__exact=self)
+
         # fixme: add criteria for acc & other params.
-        if account is None:
-            if isinstance(activity, str):
-                activity = [activity]
-            if isinstance(role, str):
-                role = [role]
-
-            if activity is None and role is None:
-                jes = self.jes.filter(ledger__exact=self)
-            elif activity is not None and role is None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      activity__in=activity)
-            elif activity is None and role is not None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      txs__account__role__in=role)
-            elif activity is not None and role is not None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      activity__in=activity,
-                                      txs__account__role__in=role)
-            else:
-                jes = self.jes.filter(forecast__exact=self)
-
-        else:
+        if account:
             if isinstance(account, str) or isinstance(account, int):
                 account = [account]
-
-            if activity is None and role is None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      txs__account__code__in=account)
-            elif activity is not None and role is None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      activity__in=activity,
-                                      txs__account__code__in=account)
-            elif activity is None and role is not None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      txs__account__acc_role__in=role,
-                                      txs__account__code__in=account)
-            elif activity is not None and role is not None:
-                jes = self.jes.filter(ledger__exact=self,
-                                      activity__in=activity,
-                                      txs__account__role__in=role,
-                                      txs__account__code__in=account)
-            else:
-                jes = self.jes.filter(ledger__exact=self,
-                                      txs__account__code__in=account)
+            jes = self.jes.filter(txs__account__code__in=account)
+        if activity:
+            if isinstance(activity, str):
+                activity = [activity]
+            jes = jes.filter(activity__in=activity)
+        if role:
+            if isinstance(role, str):
+                role = [role]
+            jes = jes.filter(txs__account__role__in=role)
 
         jes_tx_df = read_frame(jes, fieldnames=['id', 'origin', 'freq', 'start_date', 'end_date', 'activity',
                                                 'txs__id', 'txs__tx_type',
@@ -306,16 +288,7 @@ class LedgerModelAbstract(SlugNameMixIn,
                                as_dataframe=True)
 
         if signs:
-
-            def fcst_bs_xform(df_row):
-                idx = [x.lower() for x in df_row.name]
-                if 'assets' in idx and 'credit' in idx:
-                    df_row = -df_row
-                if ('liabilities' in idx or 'equity' in idx or 'other' in idx) and 'debit' in idx:
-                    df_row = -df_row
-                return df_row
-
-            bs_df = bs_df.apply(fcst_bs_xform, axis=1)
+            bs_df = bs_df.apply(process_signs, axis=1)
 
         if not as_dataframe:
             bs_df = bs_df.stack()
@@ -334,17 +307,8 @@ class LedgerModelAbstract(SlugNameMixIn,
                                method=method,
                                as_dataframe=True)
 
-        if signs is True:
-            # fixme: change to appropriate function
-            def fcst_ic_xform(df_row):
-                idx = [x.lower() for x in df_row.name]
-                if 'assets' in idx and 'credit' in idx:
-                    df_row = -df_row
-                if ('liabilities' in idx or 'equity' in idx or 'other' in idx) and 'debit' in idx:
-                    df_row = -df_row
-                return df_row
-
-            ic_df = ic_df.apply(fcst_ic_xform, axis=1)
+        if signs:
+            ic_df = ic_df.apply(process_signs, axis=1)
 
         if not as_dataframe:
             ic_df = ic_df.stack()

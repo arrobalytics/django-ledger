@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 
+from django_ledger.models.journalentry import validate_activity
+
 
 class IOGenericMixIn:
     """
@@ -17,6 +19,9 @@ class IOGenericMixIn:
     def tx_generic(self, amount, start_date, debit_acc, credit_acc, activity, ledger=None, tx_params=None,
                    freq='nr', end_date=None, desc=None, origin=None, parent_je=None):
 
+        activity = validate_activity(activity)
+        # todo: validate freq.
+
         ledger = ledger or self
 
         if freq != 'nr' and end_date is None:
@@ -24,10 +29,11 @@ class IOGenericMixIn:
         if not origin:
             origin = 'tx_generic'
 
-        start_date, end_date, je_desc = getattr(self, 'preproc_je')(start_date=start_date,
-                                                                    end_date=end_date,
-                                                                    desc=desc,
-                                                                    origin=origin)
+        preproc_je = getattr(self, 'preproc_je')
+        start_date, end_date, je_desc = preproc_je(start_date=start_date,
+                                                   end_date=end_date,
+                                                   desc=desc,
+                                                   origin=origin)
 
         je = ledger.jes.create(desc=je_desc,
                                freq=freq,
@@ -38,7 +44,6 @@ class IOGenericMixIn:
                                parent=parent_je)
 
         gen_params = dict()
-
         gen_params['amount'] = amount
         gen_params['freq'] = freq
 
@@ -102,20 +107,6 @@ class IOGenericMixIn:
         :return: Account code as a string in order to match field data type.
         """
         return self.DEFAULT_EXPENSE_ACCOUNT
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     # # PreSet Transactions -----
     # def tx_income(self, income, start_date, activity, ledger=None, end_date=None, desc=None, freq='nr',
