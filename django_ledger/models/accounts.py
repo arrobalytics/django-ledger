@@ -8,9 +8,9 @@ from mptt.models import MPTTModel, TreeForeignKey
 from .mixins import CreateUpdateMixIn
 
 # todo: Move to a settings module.
-LEDGER_ACCOUNTMAXLENGTH = 5
+LEDGER_ACCOUNT_MAX_LENGTH = 5
 
-ACCOUNT_ROLE = [
+ACCOUNT_ROLES = [
     ('Assets', (
         ('ca', 'Current Asset'),
         ('lti', 'Long Term Investments'),
@@ -37,7 +37,7 @@ ACCOUNT_ROLE = [
      )
 ]
 
-BS_ROLES = [x[0] for x in ACCOUNT_ROLE]
+BS_ROLES = [x[0] for x in ACCOUNT_ROLES]
 
 
 def validate_roles(roles):
@@ -58,18 +58,19 @@ class AccountModelAbstract(MPTTModel,
         ('debit', 'Debit')
     ]
 
-    code = models.CharField(max_length=LEDGER_ACCOUNTMAXLENGTH, unique=True, verbose_name='Account Code')
+    code = models.CharField(max_length=LEDGER_ACCOUNT_MAX_LENGTH, unique=True, verbose_name='Account Code')
     name = models.CharField(max_length=100, verbose_name='Account Name')
+    role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name='Account Role')
+    role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')
+    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name='Account Balance Type')
+    locked = models.BooleanField(default=False)
+
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
                             related_name='children',
                             db_index=True,
                             on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=ACCOUNT_ROLE, verbose_name='Account Role')
-    role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')
-    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name='Account Balance Type')
-    locked = models.BooleanField(default=False)
 
     class Meta:
         abstract = True
@@ -86,7 +87,7 @@ class AccountModelAbstract(MPTTModel,
 
     def get_bs_role(self):
         if self.role:
-            for role, value in dict(ACCOUNT_ROLE).items():
+            for role, value in dict(ACCOUNT_ROLES).items():
                 if self.role in [x[0] for x in value]:
                     return role.lower()
 
@@ -137,11 +138,10 @@ class AccountModel(AccountModelAbstract):
 # post_init.connect(accountmodel_postinit, sender=AccountModel)
 
 
-def accountmodel_presave(sender, instance, raw, using, update_fields, *args, **kwargs):
-    print('Hello Account {x1}-{x2} Pre Save'.format(x1=instance.code,
-                                                    x2=instance.name))
-    if not instance.check_bs_role():
-        instance.set_bs_role()
+def accountmodel_presave(sender, instance, *args, **kwargs):
+    print('Account {x1}-{x2} Pre Save'.format(x1=instance.code,
+                                              x2=instance.name))
+    instance.set_bs_role()
 
 
 pre_save.connect(accountmodel_presave, sender=AccountModel)
