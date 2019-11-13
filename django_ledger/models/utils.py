@@ -1,5 +1,4 @@
-from django_pandas.io import read_frame
-from pandas import merge, DataFrame
+from pandas import DataFrame
 
 from django_ledger.models.accounts import AccountModel
 
