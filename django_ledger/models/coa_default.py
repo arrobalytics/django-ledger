@@ -6,7 +6,7 @@ CHART_OF_ACCOUNTS = [
     {'code': 1010, 'role': 'ca', 'balance_type': 'debit', 'name': 'Cash', 'parent': 1000},
     {'code': 1050, 'role': 'ca', 'balance_type': 'debit', 'name': 'Short Term Investments', 'parent': 1000},
     {'code': 1100, 'role': 'ca', 'balance_type': 'debit', 'name': 'Accounts Receivable', 'parent': 1000},
-    {'code': 1101, 'role': 'ca', 'balance_type': 'credit', 'name': 'Uncollectibles', 'parent': 1100},
+    {'code': 1101, 'role': 'ca', 'balance_type': 'credit', 'name': 'Uncollectibles', 'parent': 1000},
     {'code': 1200, 'role': 'ca', 'balance_type': 'debit', 'name': 'Inventory', 'parent': 1000},
     {'code': 1300, 'role': 'ca', 'balance_type': 'debit', 'name': 'Prepaid Expenses', 'parent': 1000},
 

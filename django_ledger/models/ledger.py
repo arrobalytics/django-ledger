@@ -6,12 +6,11 @@ from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
 from django_ledger.models.accounts import validate_roles
-from django_ledger.models.coa import get_coa_account
+from django_ledger.models.coa import get_coa_account, get_acc_idx
 from django_ledger.models.io.generic import IOGenericMixIn
 from django_ledger.models.io.preproc import IOPreProcMixIn
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.transactions import TransactionModel
-from django_ledger.models.utils import get_acc_idx
 from django_ledger.models.journalentry import validate_activity
 
 COA_ATTR = 'coa_model'
@@ -262,7 +261,7 @@ class LedgerModelAbstract(SlugNameMixIn,
             df = df.groupby('code').sum()
 
             df = pd.merge(left=get_acc_idx(
-                coa=get_ledger_coa(self),
+                coa_model=get_ledger_coa(self),
                 as_dataframe=True
             ), right=df, how='inner', left_index=True, right_index=True)
             df.fillna(value=0, inplace=True)
