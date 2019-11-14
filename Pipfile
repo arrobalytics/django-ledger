@@ -8,6 +8,7 @@ django = "~=2.2"
 django-mptt = "*"
 numpy = "~=1.17"
 pandas = "~=0.25"
+jsonfield = "*"
 
 [dev-packages]
 

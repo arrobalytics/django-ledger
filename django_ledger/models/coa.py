@@ -65,7 +65,7 @@ def make_account_active(coa_model, account_codes: str or list):
 
 class ChartOfAccountModelAbstract(SlugNameMixIn,
                                   CreateUpdateMixIn):
-    desc = models.TextField(verbose_name='CoA Description')
+    desc = models.TextField(verbose_name='CoA Description', null=True, blank=True)
     accounts = models.ManyToManyField('django_ledger.AccountModel',
                                       related_name='coas',
                                       through='CoAAccountAssignments')

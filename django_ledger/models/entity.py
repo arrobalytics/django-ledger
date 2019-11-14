@@ -3,8 +3,7 @@ from django.db import models
 from django_ledger.models import LedgerModel
 
 
-class EntityModelAbstract(SlugNameMixIn,
-                          CreateUpdateMixIn):
+class EntityModelAbstract(SlugNameMixIn,  CreateUpdateMixIn):
 
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.DO_NOTHING,
