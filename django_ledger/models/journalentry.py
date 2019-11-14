@@ -69,6 +69,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     class Meta:
         abstract = True
+        verbose_name = 'Journal Entry'
+        verbose_name_plural = 'Journal Entries'
 
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.desc)

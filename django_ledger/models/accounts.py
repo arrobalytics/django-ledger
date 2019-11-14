@@ -51,8 +51,7 @@ def validate_roles(roles):
     return roles
 
 
-class AccountModelAbstract(MPTTModel,
-                           CreateUpdateMixIn):
+class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     BALANCE_TYPE = [
         ('credit', 'Credit'),
         ('debit', 'Debit')
@@ -74,6 +73,7 @@ class AccountModelAbstract(MPTTModel,
 
     class Meta:
         abstract = True
+        verbose_name = 'Account'
 
     class MPTTMeta:
         order_insertion_by = ['name']

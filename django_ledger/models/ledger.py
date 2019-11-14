@@ -50,29 +50,29 @@ class LedgerModelAbstract(SlugNameMixIn,
                           CreateUpdateMixIn,
                           IOPreProcMixIn,
                           IOGenericMixIn):
-    SCOPES = (
+    SCOPES = [
         ('a', 'Actual'),
         ('f', 'Forecast'),
         ('b', 'Baseline')
-    )
+    ]
 
     scope = models.CharField(max_length=1, choices=SCOPES)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                related_name='ledgers')
 
-    years_horizon = models.IntegerField(default=10, validators=[MinValueValidator(0)])
-
     objects = LedgerModelManager()
 
     class Meta:
         abstract = True
+        unique_together = [
+            ('slug', 'scope')
+        ]
         verbose_name = 'Ledger'
 
     def __str__(self):
-        get_scope = getattr(self, 'get_scope_display')
-        return '{scope}: {id}'.format(scope=get_scope(),
-                                      id=self.pk)
+        return '{slug}: {scope}'.format(scope=self.get_scope_display(),
+                                        slug=self.slug)
 
     def get_coa(self):
         return getattr(self, COA_ATTR)
@@ -86,7 +86,6 @@ class LedgerModelAbstract(SlugNameMixIn,
             'locked',
             'unlocked'
         )
-
         if status not in choices:
             raise ValueError('Invalid account status.')
         coa = self.get_coa()
