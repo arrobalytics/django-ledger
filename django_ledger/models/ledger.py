@@ -299,11 +299,10 @@ class LedgerModelAbstract(SlugNameMixIn,
             ic_df = ic_df.stack()
             ic_df.name = 'value'
             ic_df = ic_df.reset_index().to_dict(orient='records')
-
         return ic_df
 
     def income(self, activity=None):
-        inc_df = self.income_statement(cum=False, signs=True, as_dataframe=False, activity=activity).sum()
+        inc_df = self.income_statement(cum=False, signs=True, as_dataframe=True, activity=activity).sum()
         return inc_df
 
     # def acc_balance(self, acc_code, date):

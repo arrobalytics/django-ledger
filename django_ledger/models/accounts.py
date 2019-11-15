@@ -37,7 +37,7 @@ ACCOUNT_ROLES = [
      )
 ]
 
-BS_ROLES = [x[0] for x in ACCOUNT_ROLES]
+BS_ROLES = sum([[s[0] for s in r[1]] for r in ACCOUNT_ROLES], list())
 
 
 def validate_roles(roles):
