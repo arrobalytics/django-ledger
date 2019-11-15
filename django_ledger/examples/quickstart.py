@@ -5,7 +5,7 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
 from django_ledger.models.accounts import ACCOUNT_ROLES
 
-RECREATE_COA = True
+RECREATE_COA = False
 
 if RECREATE_COA:
     EntityModel.objects.all().delete()
@@ -48,6 +48,7 @@ myco_ledger.tx_generic(
     desc='Company funding to buy real estate.'
 )
 
+# Funding Company ---
 myco_ledger.tx_generic(
     amount=80000,
     start_date='2019-10-02',
@@ -57,6 +58,7 @@ myco_ledger.tx_generic(
     desc='Company funding to buy real estate.'
 )
 
+# An expense ----
 myco_ledger.tx_generic(
     amount=100,
     start_date='2019-11-02',
@@ -66,6 +68,7 @@ myco_ledger.tx_generic(
     desc='HOA Expenses Nov 2019'
 )
 
+# An Income ----
 myco_ledger.tx_generic(
     amount=1200,
     start_date='2019-11-06',
@@ -75,6 +78,8 @@ myco_ledger.tx_generic(
     desc='HOA Expenses Nov 2019'
 )
 
-
+# Balance Sheet & Income Statement ----
 bs = myco_ledger.balance_sheet(as_dataframe=True)
 ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
+
+myco_ledger.get_coa()
