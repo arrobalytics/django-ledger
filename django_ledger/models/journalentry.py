@@ -27,22 +27,18 @@ FREQUENCY = (
 FREQUENCY_ALLOWS = [f[0] for f in FREQUENCY]
 
 
-def validate_activity(acts):
-    if acts:
-        if isinstance(acts, str):
-            acts = [acts]
-        for act in acts:
-            if act not in ACTIVITY_ALLOWS:
-                raise ValidationError('{a} is invalid. Choices are {ch}'.format(ch=', '.join(ACTIVITY_ALLOWS),
-                                                                                a=act))
-    return acts
+def validate_activity(act):
+    if act:
+        valid = act in ACTIVITY_ALLOWS
+        if not valid:
+            raise ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
+    return act
 
 
 def validate_freq(freq):
-    for freq in FREQUENCY_ALLOWS:
-        if freq not in FREQUENCY_ALLOWS:
-            raise ValidationError('{f} is invalid. Choices are {ch}'.format(ch=', '.join(FREQUENCY_ALLOWS),
-                                                                            f=freq))
+    valid_freq = freq in FREQUENCY_ALLOWS
+    if not valid_freq:
+        raise ValidationError(f'{freq} is invalid. Choices are {FREQUENCY_ALLOWS}.')
     return freq
 
 
@@ -64,7 +60,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                on_delete=models.CASCADE)
 
     ledger = models.ForeignKey('django_ledger.LedgerModel',
-                               related_name='jes',
+                               related_name='journal_entry',
                                on_delete=models.CASCADE)
 
     class Meta:
