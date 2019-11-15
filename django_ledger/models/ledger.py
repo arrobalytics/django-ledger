@@ -2,7 +2,7 @@ from random import randint
 
 import pandas as pd
 from django.db import models
-from django.db.models.signals import post_init, pre_save
+from django.db.models.signals import pre_save
 from django.utils.text import slugify
 from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
@@ -62,7 +62,7 @@ class LedgerModelAbstract(SlugNameMixIn,
                                        slug=self.slug)
 
     def get_coa(self):
-        return getattr(self, COA_ATTR)
+        return self.entity.coa
 
     # TODO: This can be handled by the Model Manager...?
     def get_accounts(self, status='available'):
@@ -220,13 +220,13 @@ class LedgerModelAbstract(SlugNameMixIn,
                     if freq[1] == 'y':
                         offset = MonthEnd(12)
                         iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                                      freq=offset)
+                                                   freq=offset)
                     else:
                         iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                                      freq=row[1]['freq'][1])
+                                                   freq=row[1]['freq'][1])
                 else:
                     iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                                  freq=row[1]['freq'])
+                                               freq=row[1]['freq'])
 
                 idx_df = pd.DataFrame(index=iter_index)
 
@@ -323,14 +323,6 @@ class LedgerModel(LedgerModelAbstract):
     """
     Final LedgerModel from Abstracts
     """
-
-
-def ledgermodel_postinit(sender, instance, **kwargs):
-    coa = get_ledger_coa(instance)
-    setattr(instance, COA_ATTR, coa)
-
-
-post_init.connect(ledgermodel_postinit, LedgerModel)
 
 
 def ledgermodel_presave(sender, instance, **kwargs):
