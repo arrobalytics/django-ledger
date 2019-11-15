@@ -33,9 +33,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     params = JSONField(null=True,
                        blank=True)
 
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
-
     class Meta:
         abstract = True
 

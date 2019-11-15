@@ -1,7 +1,9 @@
+from random import randint
+
 import pandas as pd
-from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models.signals import post_init
+from django.db.models.signals import post_init, pre_save
+from django.utils.text import slugify
 from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
@@ -9,9 +11,9 @@ from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_coa_account, get_acc_idx
 from django_ledger.models.io.generic import IOGenericMixIn
 from django_ledger.models.io.preproc import IOPreProcMixIn
+from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.transactions import TransactionModel
-from django_ledger.models.journalentry import validate_activity
 
 COA_ATTR = 'coa_model'
 
@@ -36,43 +38,28 @@ def process_signs(row):
 
 class LedgerModelManager(models.Manager):
 
-    def actuals(self):
-        return self.get_queryset().filter(scope='a')
-
-    def forecast(self):
-        return self.get_queryset().filter(scope='f')
-
-    def baseline(self):
-        return self.get_queryset().filter(scope='b')
+    def posted(self):
+        return self.get_queryset().filter(posted=True)
 
 
 class LedgerModelAbstract(SlugNameMixIn,
                           CreateUpdateMixIn,
                           IOPreProcMixIn,
                           IOGenericMixIn):
-    SCOPES = [
-        ('a', 'Actual'),
-        ('f', 'Forecast'),
-        ('b', 'Baseline')
-    ]
-
-    scope = models.CharField(max_length=1, choices=SCOPES)
+    posted = models.BooleanField(default=False)
+    locked = models.BooleanField(default=False)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
-                               related_name='ledgers')
+                               related_name='general_ledger')
 
     objects = LedgerModelManager()
 
     class Meta:
         abstract = True
-        unique_together = [
-            ('slug', 'scope')
-        ]
-        verbose_name = 'Ledger'
 
     def __str__(self):
-        return '{slug}: {scope}'.format(scope=self.get_scope_display(),
-                                        slug=self.slug)
+        return '{slug}: {name}'.format(name=self.name,
+                                       slug=self.slug)
 
     def get_coa(self):
         return getattr(self, COA_ATTR)
@@ -133,12 +120,12 @@ class LedgerModelAbstract(SlugNameMixIn,
         activity = validate_activity(activity)
         role = validate_roles(role)
 
-        jes = self.jes.filter(ledger__exact=self)
+        jes = self.journal_entry.filter(ledger__exact=self)
 
         if account:
             if isinstance(account, str) or isinstance(account, int):
                 account = [account]
-            jes = self.jes.filter(txs__account__code__in=account)
+            jes = self.journal_entry.filter(txs__account__code__in=account)
         if activity:
             if isinstance(activity, str):
                 activity = [activity]
@@ -221,24 +208,24 @@ class LedgerModelAbstract(SlugNameMixIn,
             #     i_finish = i_start + relativedelta(years=self.years_horizon)
 
             # Creating empty DF with the index.
-            index = pd.DatetimeIndex(start=i_start, end=i_finish, freq='m')
+            index = pd.date_range(start=i_start, end=i_finish, freq='m')
             df = pd.DataFrame(index=index)
 
             for row in je_txs.iterrows():
                 freq = row[1]['freq']
                 if freq == 'nr':
-                    iter_index = pd.DatetimeIndex(start=row[1]['pe_start'], end=row[1]['pe_start'], freq='m')
+                    iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_start'], freq='m')
                 elif freq[0] == 's':
 
                     if freq[1] == 'y':
                         offset = MonthEnd(12)
-                        iter_index = pd.DatetimeIndex(start=row[1]['pe_start'], end=row[1]['pe_finish'],
+                        iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
                                                       freq=offset)
                     else:
-                        iter_index = pd.DatetimeIndex(start=row[1]['pe_start'], end=row[1]['pe_finish'],
+                        iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
                                                       freq=row[1]['freq'][1])
                 else:
-                    iter_index = pd.DatetimeIndex(start=row[1]['pe_start'], end=row[1]['pe_finish'],
+                    iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
                                                   freq=row[1]['freq'])
 
                 idx_df = pd.DataFrame(index=iter_index)
@@ -345,3 +332,14 @@ def ledgermodel_postinit(sender, instance, **kwargs):
 
 
 post_init.connect(ledgermodel_postinit, LedgerModel)
+
+
+def ledgermodel_presave(sender, instance, **kwargs):
+    if not instance.slug:
+        r_int = randint(10000, 99999)
+        slug = slugify(instance.name)
+        instance.slug = f'{slug}-{r_int}'
+    print('Ledger {} Pre-Save...'.format(instance.slug))
+
+
+pre_save.connect(ledgermodel_presave, LedgerModel)

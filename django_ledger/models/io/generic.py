@@ -16,15 +16,25 @@ class IOGenericMixIn:
     DEFAULT_INCOME_ACCOUNT = 4020
     DEFAULT_EXPENSE_ACCOUNT = None
 
-    def tx_generic(self, amount, start_date, debit_acc, credit_acc, activity, ledger=None, tx_params=None,
-                   freq='nr', end_date=None, desc=None, origin=None, parent_je=None):
+    def tx_generic(self,
+                   amount: float,
+                   start_date,
+                   debit_acc,
+                   credit_acc,
+                   activity: str,
+                   ledger=None,
+                   tx_params=None,
+                   freq='nr',
+                   end_date=None,
+                   desc=None,
+                   origin=None,
+                   parent_je=None):
 
         activity = validate_activity(activity)
         freq = validate_freq(freq)
-
         ledger = ledger or self
 
-        if freq != 'nr' and end_date is None:
+        if freq != 'nr' and not end_date:
             raise ValidationError('Must provide end_date for recurring transaction')
         if not origin:
             origin = 'tx_generic'
@@ -33,15 +43,16 @@ class IOGenericMixIn:
         start_date, end_date, je_desc = preproc_je(start_date=start_date,
                                                    end_date=end_date,
                                                    desc=desc,
+                                                   ledger=ledger,
                                                    origin=origin)
 
-        je = ledger.jes.create(desc=je_desc,
-                               freq=freq,
-                               start_date=start_date,
-                               end_date=end_date,
-                               origin=origin,
-                               activity=activity,
-                               parent=parent_je)
+        je = ledger.journal_entry.create(desc=je_desc,
+                                         freq=freq,
+                                         start_date=start_date,
+                                         end_date=end_date,
+                                         origin=origin,
+                                         activity=activity,
+                                         parent=parent_je)
 
         gen_params = dict()
         gen_params['amount'] = amount
@@ -52,6 +63,8 @@ class IOGenericMixIn:
 
         get_accounts = getattr(self, 'get_accounts')
         avail_accounts = get_accounts(status='available')
+
+        # todo: Use filter to evaluate QS then get...
         debit_acc = avail_accounts.get(account__code__iexact=debit_acc).account
         credit_acc = avail_accounts.get(account__code__iexact=credit_acc).account
 
