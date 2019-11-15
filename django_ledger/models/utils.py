@@ -46,6 +46,8 @@ def create_coa_structure(coa_data: dict, coa_name: str, coa_desc: str = None, co
         c_qs = AccountModel.objects.filter(code__in=acc_c)
         p_obj.children.set(c_qs)
 
+    return coa
+
 # def get_acc_idx():
 #     accounts = AccountModel.objects.all()
 #     acc_idx = read_frame(accounts,

@@ -178,16 +178,14 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_ts_df(self, cum=True, as_dataframe=False, method='bs', activity=None, role=None, account=None):
 
-        if method == 'ic':
+        if method != 'bs':
             role = ['in', 'ex']
-        elif method == 'ic-op':
-            role = ['in', 'ex']
+
+        if method == 'ic-op':
             activity = ['op']
         elif method == 'ic-inv':
-            role = ['in', 'ex']
             activity = ['inv']
         elif method == 'ic-fin':
-            role = ['in', 'ex']
             activity = ['fin']
 
         je_txs = self.get_jes_tx_df(activity=activity,
@@ -328,7 +326,6 @@ def ledgermodel_presave(sender, instance, **kwargs):
         r_int = randint(10000, 99999)
         slug = slugify(instance.name)
         instance.slug = f'{slug}-{r_int}'
-    print('Ledger {} Pre-Save...'.format(instance.slug))
 
 
 pre_save.connect(ledgermodel_presave, LedgerModel)
