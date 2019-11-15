@@ -15,8 +15,6 @@ from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.transactions import TransactionModel
 
-COA_ATTR = 'coa_model'
-
 
 def get_ledger_coa(ledger_model):
     """
@@ -247,7 +245,7 @@ class LedgerModelAbstract(SlugNameMixIn,
             df = df.groupby('code').sum()
 
             df = pd.merge(left=get_acc_idx(
-                coa_model=get_ledger_coa(self),
+                coa_model=self.get_coa(),
                 as_dataframe=True
             ), right=df, how='inner', left_index=True, right_index=True)
             df.fillna(value=0, inplace=True)
