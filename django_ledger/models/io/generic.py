@@ -63,8 +63,6 @@ class IOGenericMixIn:
 
         get_accounts = getattr(self, 'get_accounts')
         avail_accounts = get_accounts(status='available')
-
-        # todo: Use filter to evaluate QS then get...
         debit_acc = avail_accounts.get(account__code__iexact=debit_acc).account
         credit_acc = avail_accounts.get(account__code__iexact=credit_acc).account
 

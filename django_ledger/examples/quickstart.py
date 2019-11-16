@@ -4,7 +4,7 @@ from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
 
-RESET_DATABASE = False
+RESET_DATABASE = True
 
 # USE WITH CAUTION!!!!, WILL DELETE ENTIRE DATABASE.
 if RESET_DATABASE:
