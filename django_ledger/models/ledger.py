@@ -4,7 +4,6 @@ import pandas as pd
 from django.db import models
 from django.db.models.signals import pre_save
 from django.utils.text import slugify
-from django_pandas.io import read_frame
 from pandas.tseries.offsets import MonthEnd
 
 from django_ledger.models.accounts import validate_roles
@@ -133,15 +132,15 @@ class LedgerModelAbstract(SlugNameMixIn,
                 role = [role]
             jes = jes.filter(txs__account__role__in=role)
 
-        jes_tx_df = read_frame(jes, fieldnames=['id', 'origin', 'freq', 'start_date', 'end_date', 'activity',
-                                                'txs__id', 'txs__tx_type',
-                                                'txs__account__code',
-                                                'txs__account__name',
-                                                'txs__account__balance_type',
-                                                'txs__account__role',
-                                                'txs__amount', 'txs__params'],
-                               verbose=False)
-
+        fieldnames = ['id', 'origin', 'freq', 'start_date', 'end_date', 'activity',
+                      'txs__id', 'txs__tx_type',
+                      'txs__account__code',
+                      'txs__account__name',
+                      'txs__account__balance_type',
+                      'txs__account__role',
+                      'txs__amount', 'txs__params']
+        jes_records = list(jes.values_list(*fieldnames))
+        jes_tx_df = pd.DataFrame.from_records(jes_records, columns=fieldnames)
         jes_tx_df.rename(columns={'id': 'je_id',
                                   'txs__id': 'tx_id',
                                   'txs__tx_type': 'tx_type',
@@ -198,10 +197,6 @@ class LedgerModelAbstract(SlugNameMixIn,
             # Comment: Looking for the min & max dates of all JE's & transactions for index.
             i_start = je_txs[['pe_start', 'pe_finish']].min().min().date()
             i_finish = je_txs[['pe_start', 'pe_finish']].max().max().date()
-
-            # Comment: If horizon for model, trim index.
-            # if i_finish.year - i_start.year > self.years_horizon:
-            #     i_finish = i_start + relativedelta(years=self.years_horizon)
 
             # Creating empty DF with the index.
             index = pd.date_range(start=i_start, end=i_finish, freq='m')
