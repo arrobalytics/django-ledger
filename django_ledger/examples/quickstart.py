@@ -50,7 +50,7 @@ def quickstart(reset_db=False):
         desc='Real estate down payment'
     )
 
-    # Funding Company ---
+    # Issuing Debt ---
     myco_ledger.tx_generic(
         amount=80000,
         start_date='2019-10-02',
@@ -90,11 +90,23 @@ def quickstart(reset_db=False):
         desc='November Electricity Bill'
     )
 
+    # Debt Payment ----
+    myco_ledger.tx_generic(
+        amount=10550,
+        start_date='2020-1-03',
+        debit_acc='2110',
+        credit_acc='1010',
+        activity='op',
+        desc='Debt Payment'
+    )
+
     # Balance Sheet & Income Statement ----
-    bs = myco_ledger.balance_sheet(as_dataframe=True, signs=0)
-    bs_f = myco_ledger.balance_sheet(as_dataframe=False, signs=0)
+    bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-01-31')
+    bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op', signs=True)
+
+    bs_f = myco_ledger.balance_sheet(as_dataframe=False)
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
-    return bs, bs_f, ic
+    return bs, bs_op, bs_f, ic
 
 
-# bs, bs_f, ic = quickstart(reset_db=False)
+bs, bs_op, bs_f, ic = quickstart(reset_db=False)
