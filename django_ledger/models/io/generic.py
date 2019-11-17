@@ -34,8 +34,10 @@ class IOGenericMixIn:
         freq = validate_freq(freq)
         ledger = ledger or self
 
-        if freq != 'nr' and not end_date:
+        if all([freq != 'nr',
+                not end_date]):
             raise ValidationError('Must provide end_date for recurring transaction')
+
         if not origin:
             origin = 'tx_generic'
 
@@ -66,6 +68,7 @@ class IOGenericMixIn:
         debit_acc = avail_accounts.get(account__code__iexact=debit_acc).account
         credit_acc = avail_accounts.get(account__code__iexact=credit_acc).account
 
+        # todo: can both create be done at once?
         je.txs.create(tx_type='debit',
                       account=debit_acc,
                       params=gen_params,
