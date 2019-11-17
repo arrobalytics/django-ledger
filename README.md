@@ -17,7 +17,6 @@ The author is working on incorporating the following functionality:
 - Multiple debit/credit operations with transactions.
 - Internationalization.
 - Views & template tags.
-___
 
 ## Quick Start
 

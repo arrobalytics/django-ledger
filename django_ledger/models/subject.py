@@ -5,5 +5,7 @@ class SubjectModelAbstract(SlugNameMixIn,
                            CreateUpdateMixIn,
                            LedgerMixIn):
 
+    # entitifk
+
     class Meta:
         abstract = True

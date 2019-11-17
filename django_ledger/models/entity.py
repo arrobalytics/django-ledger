@@ -1,6 +1,6 @@
-from .mixins import CreateUpdateMixIn, SlugNameMixIn
 from django.db import models
-from django_ledger.models import LedgerModel
+
+from .mixins import CreateUpdateMixIn, SlugNameMixIn
 
 
 class EntityModelAbstract(SlugNameMixIn,  CreateUpdateMixIn):
@@ -17,8 +17,6 @@ class EntityModelAbstract(SlugNameMixIn,  CreateUpdateMixIn):
                                     x2=self.slug)
 
     def get_ledgers(self, scope):
-        if scope not in [sc[0] for sc in LedgerModel.SCOPES]:
-            raise ValueError('Scope not valid')
         return self.ledgers.filter(scope=scope)
 
 

@@ -7,7 +7,6 @@ import pandas as pd
 from django.db import models
 from django.db.models.signals import pre_save
 from django.utils.text import slugify
-from pandas.tseries.offsets import MonthEnd
 
 from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_coa_account, get_acc_idx
@@ -28,15 +27,29 @@ def get_ledger_coa(ledger_model):
 
 
 def process_signs(row):
+    """
+    Reverse the signs for contra accounts if requested.
+    :param row: DF row.
+    :return: A Df Row.
+    """
     idx = [x.lower() for x in row.name]
-    if 'assets' in idx and 'credit' in idx:
+    if all(['assets' in idx,
+            'credit' in idx]):
         row = -row
-    if ('liabilities' in idx or 'equity' in idx or 'other' in idx) and 'debit' in idx:
+    if all([any(['liabilities' in idx,
+                 'equity' in idx,
+                 'other' in idx]),
+            'debit' in idx]):
         row = -row
     return row
 
 
 def tx_type_digest(je):
+    """
+    Interprets the transaction type agains the account balance type and adds/substracts accordingly.
+    :param je: Joutnal entry named tuple.
+    :return: JE namedtuple.
+    """
     if je['tx_type'] == je['balance_type']:
         je['amount'] = pd.to_numeric(je['amount'])
     else:
@@ -114,7 +127,7 @@ class LedgerModelAbstract(SlugNameMixIn,
             tx.set_index('tx_id', inplace=True)
         return tx
 
-    def get_jes_tx_df(self, as_dataframe=False, activity=None, role=None, account=None):
+    def get_je_txs(self, activity=None, role=None, account=None):
 
         """
         If account is present all other parameters will be ignored.
@@ -180,10 +193,9 @@ class LedgerModelAbstract(SlugNameMixIn,
         new_fields.append('pe_finish')
         je_tuple = namedtuple('JERecord', ', '.join(new_fields))
         jes_records = [je_tuple(*je) for je in jes_list]
-
         return jes_records
 
-    def get_ts_df(self, cum=True, as_dataframe=False, method='bs', activity=None, role=None, account=None):
+    def get_ts_df(self, as_dataframe=False, method='bs', activity=None, role=None, account=None):
 
         if method != 'bs':
             role = ['in', 'ex']
@@ -195,68 +207,34 @@ class LedgerModelAbstract(SlugNameMixIn,
         elif method == 'ic-fin':
             activity = ['fin']
 
-        je_txs = self.get_jes_tx_df(activity=activity,
-                                    role=role,
-                                    account=account,
-                                    as_dataframe=True)
+        je_txs = self.get_je_txs(activity=activity,
+                                 role=role,
+                                 account=account)
 
-        new_method = False
-        if new_method:
-            je_txs = pd.DataFrame(je_txs)
-            df_list = list()
-            for row in je_txs.iterrows():
-
-                iter_index = pd.date_range(start=row[1]['pe_start'],
-                                           end=row[1]['pe_start'],
-                                           freq='m')
-                idx_df = pd.DataFrame(index=iter_index)
-                amount = row[1]['amount']
-
-                # can be executed with .appy????
-                if row[1]['tx_type'] == row[1]['balance_type']:
-                    idx_df[row[1]['code']] = pd.to_numeric(amount)
-                else:
-                    idx_df[row[1]['code']] = -pd.to_numeric(amount)
-
-                df_list.append(idx_df)
-            df = pd.concat(df_list, axis=1).transpose()
-
-        else:
-            df = pd.DataFrame([(je.code,
-                                je.amount,
-                                je.tx_type,
-                                je.balance_type) for je in je_txs],
-                              columns=['code', 'amount', 'tx_type', 'balance_type'])
-
-            df = df.apply(tx_type_digest, axis=1).loc[:, ['code', 'amount']].set_index('code')
-
+        df = pd.DataFrame([(je.code,
+                            je.amount,
+                            je.tx_type,
+                            je.balance_type) for je in je_txs],
+                          columns=['code', 'amount', 'tx_type', 'balance_type'])
+        df = df.apply(tx_type_digest, axis=1).loc[:, ['code', 'amount']].set_index('code')
         df = df.groupby('code').sum()
-        df = pd.merge(left=get_acc_idx(
-            coa_model=self.get_coa(),
-            as_dataframe=True
-        ), right=df,
+        df.rename(columns={
+            'amount': 'balance'
+        }, inplace=True)
+        df = pd.merge(
+            left=get_acc_idx(coa_model=self.get_coa(), as_dataframe=True),
+            right=df,
             how='inner',
             left_index=True,
             right_index=True)
 
-        df.fillna(value=0, inplace=True)
-        df.columns.name = 'period'
-
-        if cum:
-            df = df.cumsum(axis=1)
-
         if as_dataframe:
             return df
-        else:
-            df = df.stack()
-            df.name = 'value'
-            df = df.to_frame()
         return df.reset_index().to_dict(orient='records')
 
     # Financial Statements -----
-    def balance_sheet(self, cum=True, signs=False, as_dataframe=False, activity=None):
-        bs_df = self.get_ts_df(cum=cum,
-                               activity=activity,
+    def balance_sheet(self, signs=False, as_dataframe=False, activity=None):
+        bs_df = self.get_ts_df(activity=activity,
                                method='bs',
                                as_dataframe=True)
 
@@ -264,32 +242,26 @@ class LedgerModelAbstract(SlugNameMixIn,
             bs_df = bs_df.apply(process_signs, axis=1)
 
         if not as_dataframe:
-            bs_df = bs_df.stack()
-            bs_df.name = 'value'
-            bs_df = bs_df.reset_index().to_dict(orient='records')
-
+            return bs_df.reset_index().to_dict(orient='records')
         return bs_df
 
-    def income_statement(self, cum=True, signs=False, as_dataframe=False, activity=None):
+    def income_statement(self, signs=False, as_dataframe=False, activity=None):
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_df = self.get_ts_df(cum=cum,
-                               method=method,
+        ic_df = self.get_ts_df(method=method,
                                as_dataframe=True)
 
         if signs:
             ic_df = ic_df.apply(process_signs, axis=1)
 
         if not as_dataframe:
-            ic_df = ic_df.stack()
-            ic_df.name = 'value'
-            ic_df = ic_df.reset_index().to_dict(orient='records')
+            return ic_df.reset_index().to_dict(orient='records')
         return ic_df
 
     def income(self, activity=None):
-        inc_df = self.income_statement(cum=False, signs=True, as_dataframe=True, activity=activity).sum()
+        inc_df = self.income_statement(signs=True, as_dataframe=True, activity=activity).sum()
         return inc_df
 
     # def acc_balance(self, acc_code, date):
