@@ -14,7 +14,6 @@ from django_ledger.models.io.generic import IOGenericMixIn
 from django_ledger.models.io.preproc import IOPreProcMixIn
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
-from django_ledger.models.transactions import TransactionModel
 
 
 def get_ledger_coa(ledger_model):
@@ -118,16 +117,16 @@ class LedgerModelAbstract(SlugNameMixIn,
             jes['end_date'] = pd.to_datetime(jes['end_date'])
         return jes
 
-    def get_tx_data(self, as_dataframe=False):
-        tx = TransactionModel.objects.filter(journal_entry__ledger__exact=self)
-        tx = list(tx.values())
-        if as_dataframe:
-            tx = pd.DataFrame(tx)
-            tx.rename(columns={'id': 'tx_id'}, inplace=True)
-            tx.set_index('tx_id', inplace=True)
-        return tx
+    # def get_tx_data(self, as_dataframe=False):
+    #     tx = TransactionModel.objects.filter(journal_entry__ledger__exact=self)
+    #     tx = list(tx.values())
+    #     if as_dataframe:
+    #         tx = pd.DataFrame(tx)
+    #         tx.rename(columns={'id': 'tx_id'}, inplace=True)
+    #         tx.set_index('tx_id', inplace=True)
+    #     return tx
 
-    def get_je_txs(self, activity=None, role=None, account=None):
+    def get_je_txs(self, as_of=None, activity=None, role=None, account=None):
 
         """
         If account is present all other parameters will be ignored.
@@ -142,6 +141,8 @@ class LedgerModelAbstract(SlugNameMixIn,
         activity = validate_activity(activity)
         role = validate_roles(role)
         jes = self.journal_entry.filter(ledger__exact=self)
+        if as_of:
+            jes = jes.filter(start_date__lte=as_of)
 
         if account:
             if isinstance(account, str) or isinstance(account, int):
@@ -195,7 +196,7 @@ class LedgerModelAbstract(SlugNameMixIn,
         jes_records = [je_tuple(*je) for je in jes_list]
         return jes_records
 
-    def get_ts_df(self, as_dataframe=False, method='bs', activity=None, role=None, account=None):
+    def get_jes(self, as_of=None, as_dataframe=False, method='bs', activity=None, role=None, account=None):
 
         if method != 'bs':
             role = ['in', 'ex']
@@ -207,7 +208,8 @@ class LedgerModelAbstract(SlugNameMixIn,
         elif method == 'ic-fin':
             activity = ['fin']
 
-        je_txs = self.get_je_txs(activity=activity,
+        je_txs = self.get_je_txs(as_of=as_of,
+                                 activity=activity,
                                  role=role,
                                  account=account)
 
@@ -216,13 +218,15 @@ class LedgerModelAbstract(SlugNameMixIn,
                             je.tx_type,
                             je.balance_type) for je in je_txs],
                           columns=['code', 'amount', 'tx_type', 'balance_type'])
-        df = df.apply(tx_type_digest, axis=1).loc[:, ['code', 'amount']].set_index('code')
+        df = df.apply(tx_type_digest,
+                      axis=1).loc[:, ['code', 'amount']].set_index('code')
         df = df.groupby('code').sum()
         df.rename(columns={
             'amount': 'balance'
         }, inplace=True)
         df = pd.merge(
-            left=get_acc_idx(coa_model=self.get_coa(), as_dataframe=True),
+            left=get_acc_idx(coa_model=self.get_coa(),
+                             as_dataframe=True),
             right=df,
             how='inner',
             left_index=True,
@@ -233,10 +237,11 @@ class LedgerModelAbstract(SlugNameMixIn,
         return df.reset_index().to_dict(orient='records')
 
     # Financial Statements -----
-    def balance_sheet(self, signs=False, as_dataframe=False, activity=None):
-        bs_df = self.get_ts_df(activity=activity,
-                               method='bs',
-                               as_dataframe=True)
+    def balance_sheet(self, as_of=None, signs=False, as_dataframe=False, activity=None):
+        bs_df = self.get_jes(as_of=as_of,
+                             activity=activity,
+                             method='bs',
+                             as_dataframe=True)
 
         if signs:
             bs_df = bs_df.apply(process_signs, axis=1)
@@ -250,8 +255,8 @@ class LedgerModelAbstract(SlugNameMixIn,
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_df = self.get_ts_df(method=method,
-                               as_dataframe=True)
+        ic_df = self.get_jes(method=method,
+                             as_dataframe=True)
 
         if signs:
             ic_df = ic_df.apply(process_signs, axis=1)
@@ -275,7 +280,7 @@ class LedgerModelAbstract(SlugNameMixIn,
     #     return balance
 
     def get_accout_balance(self, acc_code, period):
-        return self.get_ts_df(account=acc_code).iloc[0][period].iloc[0]
+        return self.get_jes(account=acc_code).iloc[0][period].iloc[0]
 
 
 class LedgerModel(LedgerModelAbstract):
