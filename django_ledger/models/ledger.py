@@ -1,3 +1,6 @@
+import calendar
+from collections import namedtuple, OrderedDict
+from datetime import datetime
 from random import randint
 
 import pandas as pd
@@ -31,6 +34,14 @@ def process_signs(row):
     if ('liabilities' in idx or 'equity' in idx or 'other' in idx) and 'debit' in idx:
         row = -row
     return row
+
+
+def tx_type_digest(je):
+    if je['tx_type'] == je['balance_type']:
+        je['amount'] = pd.to_numeric(je['amount'])
+    else:
+        je['amount'] = -pd.to_numeric(je['amount'])
+    return je
 
 
 class LedgerModelManager(models.Manager):
@@ -114,9 +125,9 @@ class LedgerModelAbstract(SlugNameMixIn,
         :param account:
         :return:
         """
+
         activity = validate_activity(activity)
         role = validate_roles(role)
-
         jes = self.journal_entry.filter(ledger__exact=self)
 
         if account:
@@ -132,48 +143,45 @@ class LedgerModelAbstract(SlugNameMixIn,
                 role = [role]
             jes = jes.filter(txs__account__role__in=role)
 
-        fieldnames = ['id', 'origin', 'freq', 'start_date', 'end_date', 'activity',
-                      'txs__id', 'txs__tx_type',
-                      'txs__account__code',
-                      'txs__account__name',
-                      'txs__account__balance_type',
-                      'txs__account__role',
-                      'txs__amount', 'txs__params']
-        jes_records = list(jes.values_list(*fieldnames))
-        jes_tx_df = pd.DataFrame.from_records(jes_records, columns=fieldnames)
-        jes_tx_df.rename(columns={'id': 'je_id',
-                                  'txs__id': 'tx_id',
-                                  'txs__tx_type': 'tx_type',
-                                  'txs__account': 'account',
-                                  'txs__account__code': 'code',
-                                  'txs__account__name': 'name',
-                                  'txs__account__balance_type': 'balance_type',
-                                  'txs__account__role': 'role',
-                                  'txs__amount': 'amount',
-                                  'txs__params': 'params'},
-                         inplace=True)
+        field_map = OrderedDict({'id': 'je_id',
+                                 'origin': 'origin',
+                                 'freq': 'freq',
+                                 'start_date': 'start_date',
+                                 'end_date': 'end_date',
+                                 'activity': 'activity',
+                                 'txs__id': 'tx_id',
+                                 'txs__tx_type': 'tx_type',
+                                 'txs__account': 'account',
+                                 'txs__account__code': 'code',
+                                 'txs__account__name': 'name',
+                                 'txs__account__balance_type': 'balance_type',
+                                 'txs__account__role': 'role',
+                                 'txs__amount': 'amount',
+                                 'txs__params': 'params'})
 
-        jes_tx_df.set_index(keys=['je_id', 'tx_id'], inplace=True)
-        jes_tx_df['start_date'] = pd.to_datetime(jes_tx_df['start_date'])
-        jes_tx_df['end_date'] = pd.to_datetime(jes_tx_df['end_date'])
+        db_fields = [k for k, _ in field_map.items()]
+        new_fields = [v for _, v in field_map.items()]
+        sd_idx = new_fields.index('start_date')
+        ed_idx = new_fields.index('end_date')
+        jes_records = jes.values_list(*db_fields)
+        jes_list = list()
+        for jer in jes_records:
+            sd = jer[sd_idx]
+            sd = datetime(year=sd.year, month=sd.month, day=calendar.monthrange(sd.year, sd.month)[-1])
+            jer = jer + (sd,)
+            ed = jer[ed_idx]
+            if ed:
+                ed = datetime(year=ed.year, month=ed.month, day=calendar.monthrange(ed.year, ed.month)[-1])
+            else:
+                ed = sd
+            jer = jer + (ed,)
+            jes_list.append(jer)
+        new_fields.append('pe_start')
+        new_fields.append('pe_finish')
+        je_tuple = namedtuple('JERecord', ', '.join(new_fields))
+        jes_records = [je_tuple(*je) for je in jes_list]
 
-        pe_start = pd.to_datetime(jes_tx_df['start_date'], format="%Y%m") + MonthEnd(0)
-        jes_tx_df['pe_start'] = pe_start
-
-        pe_finish = pd.to_datetime(jes_tx_df['end_date'], format="%Y%m") + MonthEnd(0)
-        jes_tx_df['pe_finish'] = pe_finish
-
-        def sm_pe(row):
-            if row['freq'][0] == 's':
-                row['pe_finish'] = row['pe_finish'] - pd.DateOffset(months=1) + MonthEnd(0)
-            return row
-
-        jes_tx_df = jes_tx_df.apply(func=sm_pe, axis=1)
-
-        if not as_dataframe:
-            jes_tx_df = jes_tx_df.reset_index().to_dict(orient='records')
-
-        return jes_tx_df
+        return jes_records
 
     def get_ts_df(self, cum=True, as_dataframe=False, method='bs', activity=None, role=None, account=None):
 
@@ -192,72 +200,61 @@ class LedgerModelAbstract(SlugNameMixIn,
                                     account=account,
                                     as_dataframe=True)
 
-        if not je_txs.empty:
-
-            # Comment: Looking for the min & max dates of all JE's & transactions for index.
-            i_start = je_txs[['pe_start', 'pe_finish']].min().min().date()
-            i_finish = je_txs[['pe_start', 'pe_finish']].max().max().date()
-
-            # Creating empty DF with the index.
-            index = pd.date_range(start=i_start, end=i_finish, freq='m')
-            df = pd.DataFrame(index=index)
-
+        new_method = False
+        if new_method:
+            je_txs = pd.DataFrame(je_txs)
+            df_list = list()
             for row in je_txs.iterrows():
-                freq = row[1]['freq']
-                if freq == 'nr':
-                    iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_start'], freq='m')
-                elif freq[0] == 's':
 
-                    if freq[1] == 'y':
-                        offset = MonthEnd(12)
-                        iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                                   freq=offset)
-                    else:
-                        iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                                   freq=row[1]['freq'][1])
-                else:
-                    iter_index = pd.date_range(start=row[1]['pe_start'], end=row[1]['pe_finish'],
-                                               freq=row[1]['freq'])
-
+                iter_index = pd.date_range(start=row[1]['pe_start'],
+                                           end=row[1]['pe_start'],
+                                           freq='m')
                 idx_df = pd.DataFrame(index=iter_index)
+                amount = row[1]['amount']
 
-                if row[1]['freq'][0] == 's':
-                    amount = pd.DataFrame(eval(row[1]['params'])['series'], index=iter_index).iloc[:, 0]
-                else:
-                    amount = row[1]['amount']
-
+                # can be executed with .appy????
                 if row[1]['tx_type'] == row[1]['balance_type']:
                     idx_df[row[1]['code']] = pd.to_numeric(amount)
                 else:
                     idx_df[row[1]['code']] = -pd.to_numeric(amount)
 
-                df = pd.concat([df, idx_df], axis=1)
+                df_list.append(idx_df)
+            df = pd.concat(df_list, axis=1).transpose()
 
-            df = df.transpose()
-            df.index.rename('code', inplace=True)
-            df = df.groupby('code').sum()
+        else:
+            df = pd.DataFrame([(je.code,
+                                je.amount,
+                                je.tx_type,
+                                je.balance_type) for je in je_txs],
+                              columns=['code', 'amount', 'tx_type', 'balance_type'])
 
-            df = pd.merge(left=get_acc_idx(
-                coa_model=self.get_coa(),
-                as_dataframe=True
-            ), right=df, how='inner', left_index=True, right_index=True)
-            df.fillna(value=0, inplace=True)
-            df.columns.name = 'period'
+            df = df.apply(tx_type_digest, axis=1).loc[:, ['code', 'amount']].set_index('code')
 
-            if cum:
-                df = df.cumsum(axis=1)
+        df = df.groupby('code').sum()
+        df = pd.merge(left=get_acc_idx(
+            coa_model=self.get_coa(),
+            as_dataframe=True
+        ), right=df,
+            how='inner',
+            left_index=True,
+            right_index=True)
 
-            if as_dataframe:
-                return df
-            else:
-                df = df.stack()
-                df.name = 'value'
-                df = df.to_frame()
-                return df.reset_index().to_dict(orient='records')
+        df.fillna(value=0, inplace=True)
+        df.columns.name = 'period'
+
+        if cum:
+            df = df.cumsum(axis=1)
+
+        if as_dataframe:
+            return df
+        else:
+            df = df.stack()
+            df.name = 'value'
+            df = df.to_frame()
+        return df.reset_index().to_dict(orient='records')
 
     # Financial Statements -----
     def balance_sheet(self, cum=True, signs=False, as_dataframe=False, activity=None):
-
         bs_df = self.get_ts_df(cum=cum,
                                activity=activity,
                                method='bs',
@@ -274,7 +271,6 @@ class LedgerModelAbstract(SlugNameMixIn,
         return bs_df
 
     def income_statement(self, cum=True, signs=False, as_dataframe=False, activity=None):
-
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
