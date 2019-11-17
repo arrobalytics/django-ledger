@@ -45,7 +45,7 @@ def process_signs(row):
 
 def tx_type_digest(je):
     """
-    Interprets the transaction type agains the account balance type and adds/substracts accordingly.
+    Interprets the transaction type against the account balance type and adds/subtracts accordingly.
     :param je: Joutnal entry named tuple.
     :return: JE namedtuple.
     """
@@ -117,16 +117,7 @@ class LedgerModelAbstract(SlugNameMixIn,
             jes['end_date'] = pd.to_datetime(jes['end_date'])
         return jes
 
-    # def get_tx_data(self, as_dataframe=False):
-    #     tx = TransactionModel.objects.filter(journal_entry__ledger__exact=self)
-    #     tx = list(tx.values())
-    #     if as_dataframe:
-    #         tx = pd.DataFrame(tx)
-    #         tx.rename(columns={'id': 'tx_id'}, inplace=True)
-    #         tx.set_index('tx_id', inplace=True)
-    #     return tx
-
-    def get_je_txs(self, as_of=None, activity=None, role=None, account=None):
+    def get_je_txs(self, as_of: str = None, activity: str = None, role: str = None, account: str = None) -> list:
 
         """
         If account is present all other parameters will be ignored.
@@ -196,7 +187,8 @@ class LedgerModelAbstract(SlugNameMixIn,
         jes_records = [je_tuple(*je) for je in jes_list]
         return jes_records
 
-    def get_jes(self, as_of=None, as_dataframe=False, method='bs', activity=None, role=None, account=None):
+    def get_jes(self, as_of: str = None, as_dataframe: bool = False, method: str = 'bs', activity: str = None,
+                role: str = None, account: str = None):
 
         if method != 'bs':
             role = ['in', 'ex']
@@ -237,7 +229,8 @@ class LedgerModelAbstract(SlugNameMixIn,
         return df.reset_index().to_dict(orient='records')
 
     # Financial Statements -----
-    def balance_sheet(self, as_of=None, signs=False, as_dataframe=False, activity=None):
+    def balance_sheet(self, as_of: str = None, signs: bool = False, as_dataframe: bool = False, activity: str = None):
+
         bs_df = self.get_jes(as_of=as_of,
                              activity=activity,
                              method='bs',
@@ -250,7 +243,7 @@ class LedgerModelAbstract(SlugNameMixIn,
             return bs_df.reset_index().to_dict(orient='records')
         return bs_df
 
-    def income_statement(self, signs=False, as_dataframe=False, activity=None):
+    def income_statement(self, signs: bool = False, as_dataframe: bool = False, activity: str = None):
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
@@ -265,22 +258,12 @@ class LedgerModelAbstract(SlugNameMixIn,
             return ic_df.reset_index().to_dict(orient='records')
         return ic_df
 
-    def income(self, activity=None):
+    def income(self, activity: str = None):
         inc_df = self.income_statement(signs=True, as_dataframe=True, activity=activity).sum()
         return inc_df
 
-    # def acc_balance(self, acc_code, date):
-    #     acc_code = str(acc_code)
-    #     ts_df = self.get_ts_df().stack()
-    #     ts_df.index.rename('timestamp', level=7, inplace=True)
-    #     ts_df.name = 'balance'
-    #     ts_df = ts_df.reset_index()[['acc_code', 'timestamp', 'balance']]
-    #     ts_df.set_index(keys=['acc_code', 'timestamp'], inplace=True)
-    #     balance = ts_df.loc[acc_code].loc[date]['balance'][-1]
-    #     return balance
-
-    def get_accout_balance(self, acc_code, period):
-        return self.get_jes(account=acc_code).iloc[0][period].iloc[0]
+    def get_account_balance(self, account_code: str, as_of: str = None):
+        return self.get_jes(account=account_code, as_of=as_of)
 
 
 class LedgerModel(LedgerModelAbstract):
