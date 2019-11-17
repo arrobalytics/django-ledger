@@ -1,4 +1,3 @@
-from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel, make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
@@ -8,13 +7,16 @@ from django_ledger.models.utils import create_coa_structure
 def quickstart(reset_db=False):
     """
     Django Ledger QuickStart Function
-    :param reset_db: USE WITH CAUTION!!!!, WILL DELETE ENTIRE DATABASE.
+    :param reset_db: USE WITH CAUTION!!!!
     :return:
     """
     if reset_db:
-        EntityModel.objects.all().delete()
-        ChartOfAccountModel.objects.all().delete()
-        AccountModel.objects.all().delete()
+        # Uncoment these if needed ....
+
+        # EntityModel.objects.all().delete()
+        # ChartOfAccountModel.objects.all().delete()
+        # AccountModel.objects.all().delete()
+
         coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS, coa_name='CoA QuickStart')
         make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
 
@@ -100,13 +102,18 @@ def quickstart(reset_db=False):
         desc='Debt Payment'
     )
 
-    # Balance Sheet & Income Statement ----
+    # Balance Sheet as_of='2019-01-31' ----
     bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-01-31')
-    bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op', signs=True)
 
+    # Balance Sheet Latest / Operational Activities Only
+    bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op')
+
+    # Balance Sheet Latest / As list
     bs_f = myco_ledger.balance_sheet(as_dataframe=False)
+
+    # Income Statement / Sign adjustment (negative -> expenses / positive -> income)
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
     return bs, bs_op, bs_f, ic
 
 
-bs, bs_op, bs_f, ic = quickstart(reset_db=False)
+# bs, bs_op, bs_f, ic = quickstart(reset_db=False)

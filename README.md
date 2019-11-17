@@ -9,7 +9,7 @@ Django Ledger supports:
 - Entities (LLC, Corps, etc.)
 - General Ledgers
 - Journal Entries & Transactions.
-- Recurring transactions.
+- Financial Activities Support (Operational/Financial/Investing)
 
 Currently this project is under active development and is not recommended for production environments.
 The author is working on incorporating the following functionality:
@@ -30,15 +30,18 @@ from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
 
-# USE WITH CAUTION!!!!, WILL DELETE ENTIRE DATABASE.
-RESET_DATABASE = False
+# USE WITH CAUTION!!!!
+reset_db = False
 
-if RESET_DATABASE:
-    EntityModel.objects.all().delete()
-    ChartOfAccountModel.objects.all().delete()
-    AccountModel.objects.all().delete()
+if reset_db:
+
+    # UNCOMMENT THESE IF NEEDED ....
+    # EntityModel.objects.all().delete()
+    # ChartOfAccountModel.objects.all().delete()
+    # AccountModel.objects.all().delete()
+
     coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS, coa_name='CoA QuickStart')
-    make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '4020'])
+    make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
 
 coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
 
@@ -72,7 +75,7 @@ myco_ledger.tx_generic(
     desc='Real estate down payment'
 )
 
-# Funding Company ---
+# Issuing Debt ---
 myco_ledger.tx_generic(
     amount=80000,
     start_date='2019-10-02',
@@ -102,10 +105,37 @@ myco_ledger.tx_generic(
     desc='HOA Expenses Nov 2019'
 )
 
-# Balance Sheet & Income Statement, optional as pandas DataFrame parameter ----
-bs = myco_ledger.balance_sheet(as_dataframe=True, signs=0)
-ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
+# Another Expense ----
+myco_ledger.tx_generic(
+    amount=115.50,
+    start_date='2019-12-22',
+    debit_acc='6290',
+    credit_acc='1010',
+    activity='op',
+    desc='November Electricity Bill'
+)
 
+# Debt Payment ----
+myco_ledger.tx_generic(
+    amount=10550,
+    start_date='2020-1-03',
+    debit_acc='2110',
+    credit_acc='1010',
+    activity='op',
+    desc='Debt Payment'
+)
+
+# Balance Sheet as_of='2019-01-31' ----
+bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-01-31')
+
+# Balance Sheet Latest / Operational Activities Only
+bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op')
+
+# Balance Sheet Latest / As list
+bs_f = myco_ledger.balance_sheet(as_dataframe=False)
+
+# Income Statement / Sign adjustment (negative -> expenses / positive -> income)
+ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
 ```
 
 
