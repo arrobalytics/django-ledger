@@ -43,22 +43,15 @@ def validate_freq(freq):
 
 
 class JournalEntryModelAbstract(CreateUpdateMixIn):
-    start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
-
-    desc = models.CharField(max_length=70, blank=True, null=True)
-    freq = models.CharField(max_length=2,
-                            choices=FREQUENCY)
-    activity = models.CharField(choices=ACTIVITIES,
-                                max_length=5)
+    date = models.DateField()
+    description = models.CharField(max_length=70, blank=True, null=True)
+    activity = models.CharField(choices=ACTIVITIES, max_length=5)
     origin = models.CharField(max_length=30, blank=True, null=True)
-
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
                                related_name="children",
                                on_delete=models.CASCADE)
-
     ledger = models.ForeignKey('django_ledger.LedgerModel',
                                related_name='journal_entry',
                                on_delete=models.CASCADE)
@@ -91,24 +84,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def clean(self):
 
-        # check1 = 'JE must have either a "ledger" or "forecast" models assigned'
-        # if self.ledger is None and self.actuals is None:
-        #     raise ValidationError(check1)
-        # elif self.forecast is not None and self.actuals is not None:
-        #     raise ValidationError(check1)
-
-        check2 = 'Debits and credits do not balance'
+        check1 = 'Debits and credits do not balance'
         if not self.je_is_valid():
-            raise ValidationError(check2)
-
-        check3 = 'Recurring JE must have an "end_date"'
-        if self.freq != 'nr':
-            if self.end_date is None:
-                raise ValidationError(check3)
-            else:
-                self.end_date = self.start_date
-                # todo: 'JE Series validator'
-                # check4 = 'Series validator'
+            raise ValidationError(check1)
 
 
 class JournalEntryModel(JournalEntryModelAbstract):
@@ -125,7 +103,6 @@ def je_presave(sender, instance, *args, **kwargs):
     except ValidationError:
         instance.txs.all().delete()
         raise ValidationError('Something went wrong cleaning journal entry ID:{x1}'.format(x1=instance.id))
-
 
 
 pre_save.connect(je_presave, sender=JournalEntryModel)

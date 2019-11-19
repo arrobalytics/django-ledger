@@ -98,54 +98,40 @@ class IOGenericMixIn:
     def tx_optimized(self,
                      je_date: str,
                      je_txs: dict,
-                     activity: str,
-                     ledger=None,
-                     tx_params=None,
-                     desc=None,
-                     origin=None,
-                     parent_je=None):
+                     je_activity: str,
+                     je_ledger=None,
+                     je_desc=None,
+                     je_origin=None,
+                     je_parent=None):
 
         freq = 'nr'
         validate_tx_data(je_txs)
 
         # todo: make this a function without a return.
-        activity = validate_activity(activity)
-        ledger = ledger or self
+        je_activity = validate_activity(je_activity)
+        if not je_ledger:
+            je_ledger = self
 
-        if not origin:
-            origin = 'tx_optimized'
-
-        preproc_je = getattr(self, 'preproc_je')
-        je_date, end_date, je_desc = preproc_je(start_date=je_date,
-                                                end_date=None,
-                                                desc=desc,
-                                                ledger=ledger,
-                                                origin=origin)
-
-        gen_params = dict()
-
-        if tx_params and isinstance(tx_params, dict):
-            gen_params.update(tx_params)
+        if not je_origin:
+            je_origin = 'tx_optimized'
 
         tx_axcounts = [acc['code'] for acc in je_txs]
         account_models = getattr(self, 'get_accounts')
         avail_accounts = account_models(status='available').filter(code__in=tx_axcounts)
         je = JournalEntryModel.objects.create(
-            ledger=ledger,
-            desc=je_desc,
-            freq=freq,
-            start_date=je_date,
-            end_date=end_date,
-            origin=origin,
-            activity=activity,
-            parent=parent_je
+            ledger=je_ledger,
+            description=je_desc,
+            date=je_date,
+            origin=je_origin,
+            activity=je_activity,
+            parent=je_parent
         )
         txs_list = [
             TransactionModel(
                 account=avail_accounts.get(code__iexact=tx['code']),
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
-                params=gen_params,
+                description=tx['description'],
                 journal_entry=je
             ) for tx in je_txs
         ]

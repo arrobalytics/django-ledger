@@ -132,24 +132,39 @@ def quickstart_2(reset_db=False):
     txs_data = [
         {
             'code': '1010',
+            'amount': 200000,
+            'tx_type': 'debit',
+            'description': 'Company Funding'
+        },
+        {
+            'code': '3010',
+            'amount': 200000,
+            'tx_type': 'credit',
+            'description': 'Capital contribution'
+        },
+        {
+            'code': '1010',
             'amount': 40000,
-            'tx_type': 'credit'
+            'tx_type': 'credit',
+            'description': 'Downpayment'
         },
         {
             'code': '2110',
             'amount': 80000,
-            'tx_type': 'credit'
+            'tx_type': 'credit',
+            'description': 'Issue debt'
         },
         {
             'code': '1610',
             'amount': 120000,
-            'tx_type': 'debit'
+            'tx_type': 'debit',
+            'description': 'Property cost base'
         }
     ]
 
     myco_ledger.tx_optimized(je_date='2019-04-09',
                              je_txs=txs_data,
-                             activity='inv')
+                             je_activity='inv')
 
     # Balance Sheet as_of='2019-01-31' ----
     bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-05-31')
@@ -164,6 +179,6 @@ def quickstart_2(reset_db=False):
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
     return bs, bs_op, bs_f, ic
 
-# bs, bs_op, bs_f, ic = quickstart_2(reset_db=True)
+bs, bs_op, bs_f, ic = quickstart_2(reset_db=False)
 
 # bss = pd.DataFrame(bs_f)
