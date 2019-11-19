@@ -72,12 +72,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.desc)
 
     def get_balances(self):
-        credits = self.txs.filter(tx_type__iexact='credit').aggregate(Sum('amount'))
-        debits = self.txs.filter(tx_type__iexact='debit').aggregate(Sum('amount'))
+        txs = self.txs.only('tx_type', 'amount')
+        credits = txs.filter(tx_type__iexact='credit').aggregate(Sum('amount'))
+        debits = txs.filter(tx_type__iexact='debit').aggregate(Sum('amount'))
 
         balances = dict()
-        balances['credits'] = credits
-        balances['debits'] = debits
+        balances['credits'] = credits['amount__sum']
+        balances['debits'] = debits['amount__sum']
 
         if credits == debits:
             balances['valid'] = True
@@ -106,7 +107,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 raise ValidationError(check3)
             else:
                 self.end_date = self.start_date
-
                 # todo: 'JE Series validator'
                 # check4 = 'Series validator'
 
@@ -119,8 +119,13 @@ class JournalEntryModel(JournalEntryModelAbstract):
 
 ### JournalEntryModel Signals --------
 def je_presave(sender, instance, *args, **kwargs):
-    instance.clean_fields()
-    instance.clean()
+    try:
+        instance.clean_fields()
+        instance.clean()
+    except ValidationError:
+        instance.txs.all().delete()
+        raise ValidationError('Something went wrong cleaning journal entry ID:{x1}'.format(x1=instance.id))
+
 
 
 pre_save.connect(je_presave, sender=JournalEntryModel)

@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.utils.text import slugify
 
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_coa_account, get_acc_idx
 from django_ledger.models.io.generic import IOGenericMixIn
@@ -95,8 +96,14 @@ class LedgerModelAbstract(SlugNameMixIn,
         )
         if status not in choices:
             raise ValueError('Invalid account status.')
-        coa = self.get_coa()
-        return getattr(coa.acc_assignments, status)()
+        # coa = self.get_coa()
+        account_models = AccountModel.objects.filter(
+            coa_assignments__active=True,
+            coa_assignments__locked=False,
+            coa_assignments__coa=self.get_coa()
+        )
+        return account_models
+        # return getattr(coa.acc_assignments, status)()
 
     def get_account(self, code):
         """
