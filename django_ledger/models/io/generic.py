@@ -130,7 +130,6 @@ class IOGenericMixIn:
         tx_axcounts = [acc['code'] for acc in je_txs]
         account_models = getattr(self, 'get_accounts')
         avail_accounts = account_models(status='available').filter(code__in=tx_axcounts)
-
         je = JournalEntryModel.objects.create(
             ledger=ledger,
             desc=je_desc,
@@ -150,10 +149,7 @@ class IOGenericMixIn:
                 journal_entry=je
             ) for tx in je_txs
         ]
-
-        txs = TransactionModel.objects.bulk_create(txs_list)
-        je.txs.add(*txs, bulk=False)
-        # je.save()
+        TransactionModel.objects.bulk_create(txs_list)
 
     def get_asset_account(self):
         """
@@ -189,46 +185,3 @@ class IOGenericMixIn:
         :return: Account code as a string in order to match field data type.
         """
         return self.DEFAULT_EXPENSE_ACCOUNT
-
-    # # PreSet Transactions -----
-    # def tx_income(self, income, start_date, activity, ledger=None, end_date=None, desc=None, freq='nr',
-    #               cash_acc=None, revenue_acc=None):
-    #
-    #     ledger = ledger or self
-    #
-    #     if not cash_acc:
-    #         cash_acc = self.DEFAULT_CASH_ACCOUNT
-    #     if not revenue_acc:
-    #         revenue_acc = self.DEFAULT_REVENUE_ACCOUNT
-    #
-    #     origin = 'tx_income'
-    #
-    #     self.tx_generic(ledger=ledger, amount=income, start_date=start_date, end_date=end_date, debit_acc=cash_acc,
-    #                     credit_acc=revenue_acc, origin=origin, activity=activity, freq=freq, desc=desc)
-    #
-    # def tx_expense(self, amount, start_date, activity, exp_acc, cash_acc=None, ledger=None, end_date=None, desc=None,
-    #                freq='nr'):
-    #     ledger = ledger or getattr(self, 'ledger')
-    #
-    #     if not cash_acc:
-    #         cash_acc = self.DEFAULT_CASH_ACCOUNT
-    #
-    #     origin = 'tx_expense'
-    #     self.tx_generic(ledger=ledger, amount=amount, start_date=start_date, end_date=end_date, debit_acc=exp_acc,
-    #                     credit_acc=cash_acc, origin=origin, activity=activity, freq=freq, desc=desc)
-    #
-    # def tx_capital(self, capital, start_date, end_date=None, desc=None, freq='nr',
-    #                cash_acc=None, cap_acc=None, ledger=None):
-    #
-    #     if not cash_acc:
-    #         cash_acc = self.DEFAULT_CASH_ACCOUNT
-    #     if not cap_acc:
-    #         cap_acc = self.DEFAULT_CAPITAL_ACCOUNT
-    #
-    #     ledger = ledger or self
-    #
-    #     origin = 'tx_capital'
-    #     activity = 'other'
-    #
-    #     self.tx_generic(ledger=ledger, amount=capital, start_date=start_date, end_date=end_date, debit_acc=cash_acc,
-    #                     credit_acc=cap_acc, origin=origin, activity=activity, freq=freq, desc=desc)

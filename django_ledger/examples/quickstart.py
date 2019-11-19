@@ -115,9 +115,7 @@ def quickstart(reset_db=False):
 
 
 def quickstart_2(reset_db=False):
-
     if reset_db:
-
         EntityModel.objects.all().delete()
         ChartOfAccountModel.objects.all().delete()
         AccountModel.objects.all().delete()
@@ -131,8 +129,6 @@ def quickstart_2(reset_db=False):
     ledger_id = 'my-co-ledger'  # auto generated if not provided
     myco_ledger, created = company.general_ledger.get_or_create(slug=ledger_id, name='My Debug Ledger')
     myco_ledger.journal_entry.all().delete()
-
-
     txs_data = [
         {
             'code': '1010',
@@ -155,4 +151,19 @@ def quickstart_2(reset_db=False):
                              je_txs=txs_data,
                              activity='inv')
 
-# bs, bs_op, bs_f, ic = quickstart(reset_db=False)
+    # Balance Sheet as_of='2019-01-31' ----
+    bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-05-31')
+
+    # Balance Sheet Latest / Operational Activities Only
+    bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op')
+
+    # Balance Sheet Latest / As list
+    bs_f = myco_ledger.balance_sheet(as_dataframe=False)
+
+    # Income Statement / Sign adjustment (negative -> expenses / positive -> income)
+    ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
+    return bs, bs_op, bs_f, ic
+
+# bs, bs_op, bs_f, ic = quickstart_2(reset_db=True)
+
+# bss = pd.DataFrame(bs_f)
