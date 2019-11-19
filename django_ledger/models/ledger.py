@@ -140,7 +140,7 @@ class LedgerModelAbstract(SlugNameMixIn,
         role = validate_roles(role)
         jes = self.journal_entry.filter(ledger__exact=self)
         if as_of:
-            jes = jes.filter(start_date__lte=as_of)
+            jes = jes.filter(date__lte=as_of)
 
         if account:
             if isinstance(account, str) or isinstance(account, int):
@@ -157,9 +157,7 @@ class LedgerModelAbstract(SlugNameMixIn,
 
         field_map = OrderedDict({'id': 'je_id',
                                  'origin': 'origin',
-                                 'freq': 'freq',
-                                 'start_date': 'start_date',
-                                 'end_date': 'end_date',
+                                 'date': 'date',
                                  'activity': 'activity',
                                  'txs__id': 'tx_id',
                                  'txs__tx_type': 'tx_type',
@@ -168,28 +166,21 @@ class LedgerModelAbstract(SlugNameMixIn,
                                  'txs__account__name': 'name',
                                  'txs__account__balance_type': 'balance_type',
                                  'txs__account__role': 'role',
-                                 'txs__amount': 'amount',
-                                 'txs__params': 'params'})
+                                 'txs__amount': 'amount'})
 
         db_fields = [k for k, _ in field_map.items()]
         new_fields = [v for _, v in field_map.items()]
-        sd_idx = new_fields.index('start_date')
-        ed_idx = new_fields.index('end_date')
+        sd_idx = new_fields.index('date')
         jes_records = jes.values_list(*db_fields)
         jes_list = list()
         for jer in jes_records:
-            sd = jer[sd_idx]
-            sd = datetime(year=sd.year, month=sd.month, day=calendar.monthrange(sd.year, sd.month)[-1])
-            jer = jer + (sd,)
-            ed = jer[ed_idx]
-            if ed:
-                ed = datetime(year=ed.year, month=ed.month, day=calendar.monthrange(ed.year, ed.month)[-1])
-            else:
-                ed = sd
-            jer = jer + (ed,)
+            date = jer[sd_idx]
+            je_date = datetime(year=date.year,
+                               month=date.month,
+                               day=calendar.monthrange(date.year, date.month)[-1])
+            jer = jer + (je_date,)
             jes_list.append(jer)
-        new_fields.append('pe_start')
-        new_fields.append('pe_finish')
+        new_fields.append('je_date')
         je_tuple = namedtuple('JERecord', ', '.join(new_fields))
         jes_records = [je_tuple(*je) for je in jes_list]
         return jes_records
@@ -199,7 +190,6 @@ class LedgerModelAbstract(SlugNameMixIn,
 
         if method != 'bs':
             role = ['in', 'ex']
-
         if method == 'ic-op':
             activity = ['op']
         elif method == 'ic-inv':

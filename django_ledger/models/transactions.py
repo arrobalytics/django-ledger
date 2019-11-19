@@ -1,12 +1,10 @@
 from django.core.validators import MinValueValidator
 from django.db import models
-from jsonfield import JSONField
 
 from .mixins import CreateUpdateMixIn
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):
-
     TX_TYPE = [
         ('credit', 'Credit'),
         ('debit', 'Debit')
@@ -28,10 +26,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                  validators=[
                                      MinValueValidator(0)
                                  ])
-
-    # todo: Remove JSONField dependency.
-    params = JSONField(null=True,
-                       blank=True)
+    description = models.CharField(max_length=100, null=True, blank=True, verbose_name='Tx Description')
 
     class Meta:
         abstract = True
