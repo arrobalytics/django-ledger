@@ -1,6 +1,14 @@
 from django.core.exceptions import ValidationError
 
-from django_ledger.models.journalentry import validate_activity, validate_freq
+from django_ledger.models.journalentry import validate_activity, validate_freq, JournalEntryModel
+from django_ledger.models.transactions import TransactionModel
+
+
+def validate_tx_data(tx_data: dict) -> dict:
+    credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
+    debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
+    if not credits == debits:
+        raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
 
 
 class IOGenericMixIn:
@@ -86,6 +94,66 @@ class IOGenericMixIn:
             je.transactions.all().delete()
             je.delete()
             raise ValidationError('Something went wrong cleaning journal entry ID:{x1}'.format(x1=je.id))
+
+    def tx_optimized(self,
+                     je_date: str,
+                     je_txs: dict,
+                     activity: str,
+                     ledger=None,
+                     tx_params=None,
+                     desc=None,
+                     origin=None,
+                     parent_je=None):
+
+        freq = 'nr'
+        validate_tx_data(je_txs)
+
+        # todo: make this a function without a return.
+        activity = validate_activity(activity)
+        ledger = ledger or self
+
+        if not origin:
+            origin = 'tx_optimized'
+
+        preproc_je = getattr(self, 'preproc_je')
+        je_date, end_date, je_desc = preproc_je(start_date=je_date,
+                                                end_date=None,
+                                                desc=desc,
+                                                ledger=ledger,
+                                                origin=origin)
+
+        gen_params = dict()
+
+        if tx_params and isinstance(tx_params, dict):
+            gen_params.update(tx_params)
+
+        tx_axcounts = [acc['code'] for acc in je_txs]
+        account_models = getattr(self, 'get_accounts')
+        avail_accounts = account_models(status='available').filter(code__in=tx_axcounts)
+
+        je = JournalEntryModel.objects.create(
+            ledger=ledger,
+            desc=je_desc,
+            freq=freq,
+            start_date=je_date,
+            end_date=end_date,
+            origin=origin,
+            activity=activity,
+            parent=parent_je
+        )
+        txs_list = [
+            TransactionModel(
+                account=avail_accounts.get(code__iexact=tx['code']),
+                tx_type=tx['tx_type'],
+                amount=tx['amount'],
+                params=gen_params,
+                journal_entry=je
+            ) for tx in je_txs
+        ]
+
+        txs = TransactionModel.objects.bulk_create(txs_list)
+        je.txs.add(*txs, bulk=False)
+        # je.save()
 
     def get_asset_account(self):
         """

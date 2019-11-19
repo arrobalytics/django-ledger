@@ -1,3 +1,4 @@
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel, make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
@@ -18,17 +19,14 @@ def quickstart(reset_db=False):
         # AccountModel.objects.all().delete()
 
         coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS, coa_name='CoA QuickStart')
-        make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
 
+    make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
     coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
-
     company, created = EntityModel.objects.get_or_create(slug='my-co-inc',
                                                          coa=coa,
                                                          name='MyCo Inc')
-
     ledger_id = 'my-co-ledger'  # auto generated if not provided
     myco_ledger, created = company.general_ledger.get_or_create(slug=ledger_id, name='My Debug Ledger')
-
     myco_ledger.journal_entry.all().delete()
 
     # Company Funding
@@ -115,5 +113,46 @@ def quickstart(reset_db=False):
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
     return bs, bs_op, bs_f, ic
 
+
+def quickstart_2(reset_db=False):
+
+    if reset_db:
+
+        EntityModel.objects.all().delete()
+        ChartOfAccountModel.objects.all().delete()
+        AccountModel.objects.all().delete()
+        coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS, coa_name='CoA QuickStart')
+
+    coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
+    make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
+    company, created = EntityModel.objects.get_or_create(slug='my-co-inc',
+                                                         coa=coa,
+                                                         name='MyCo Inc')
+    ledger_id = 'my-co-ledger'  # auto generated if not provided
+    myco_ledger, created = company.general_ledger.get_or_create(slug=ledger_id, name='My Debug Ledger')
+    myco_ledger.journal_entry.all().delete()
+
+
+    txs_data = [
+        {
+            'code': '1010',
+            'amount': 40000,
+            'tx_type': 'credit'
+        },
+        {
+            'code': '2110',
+            'amount': 80000,
+            'tx_type': 'credit'
+        },
+        {
+            'code': '1610',
+            'amount': 120000,
+            'tx_type': 'debit'
+        }
+    ]
+
+    myco_ledger.tx_optimized(je_date='2019-04-09',
+                             je_txs=txs_data,
+                             activity='inv')
 
 # bs, bs_op, bs_f, ic = quickstart(reset_db=False)
