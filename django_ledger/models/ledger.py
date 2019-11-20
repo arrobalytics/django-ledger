@@ -16,6 +16,23 @@ from django_ledger.models.io.preproc import IOPreProcMixIn
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
+FIELD_MAP = OrderedDict({'id': 'je_id',
+                         'origin': 'origin',
+                         'date': 'date',
+                         'activity': 'activity',
+                         'txs__id': 'tx_id',
+                         'txs__tx_type': 'tx_type',
+                         'txs__account': 'account',
+                         'txs__account__code': 'code',
+                         'txs__account__name': 'name',
+                         'txs__account__balance_type': 'balance_type',
+                         'txs__account__role': 'role',
+                         'txs__amount': 'amount'})
+
+DB_FIELDS = [k for k, _ in FIELD_MAP.items()]
+NEW_FIELDS = [v for _, v in FIELD_MAP.items()]
+NEW_FIELDS.append('je_date')
+
 
 def get_ledger_coa(ledger_model):
     """
@@ -87,23 +104,13 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     # TODO: This can be handled by the Model Manager...?
     def get_accounts(self, status='available'):
-        choices = (
-            'available',
-            'inactive',
-            'active',
-            'locked',
-            'unlocked'
-        )
-        if status not in choices:
-            raise ValueError('Invalid account status.')
-        # coa = self.get_coa()
+        assert status in ('available', 'inactive', 'active', 'locked', 'unlocked'), f'Invalid account status {status}'
         account_models = AccountModel.objects.filter(
             coa_assignments__active=True,
             coa_assignments__locked=False,
             coa_assignments__coa=self.get_coa()
         )
         return account_models
-        # return getattr(coa.acc_assignments, status)()
 
     def get_account(self, code):
         """
@@ -113,16 +120,6 @@ class LedgerModelAbstract(SlugNameMixIn,
         """
         return get_coa_account(coa_model=self.get_coa(),
                                code=code)
-
-    def get_jes_data(self, as_dataframe=False):
-        jes = list(self.jes.all().values())
-        if as_dataframe:
-            jes = pd.DataFrame(jes)
-            jes.rename(columns={'id': 'je_id'}, inplace=True)
-            jes.set_index('je_id', inplace=True)
-            jes['start_date'] = pd.to_datetime(jes['start_date'])
-            jes['end_date'] = pd.to_datetime(jes['end_date'])
-        return jes
 
     def get_je_txs(self, as_of: str = None, activity: str = None, role: str = None, account: str = None) -> list:
 
@@ -155,23 +152,8 @@ class LedgerModelAbstract(SlugNameMixIn,
                 role = [role]
             jes = jes.filter(txs__account__role__in=role)
 
-        field_map = OrderedDict({'id': 'je_id',
-                                 'origin': 'origin',
-                                 'date': 'date',
-                                 'activity': 'activity',
-                                 'txs__id': 'tx_id',
-                                 'txs__tx_type': 'tx_type',
-                                 'txs__account': 'account',
-                                 'txs__account__code': 'code',
-                                 'txs__account__name': 'name',
-                                 'txs__account__balance_type': 'balance_type',
-                                 'txs__account__role': 'role',
-                                 'txs__amount': 'amount'})
-
-        db_fields = [k for k, _ in field_map.items()]
-        new_fields = [v for _, v in field_map.items()]
-        sd_idx = new_fields.index('date')
-        jes_records = jes.values_list(*db_fields)
+        sd_idx = NEW_FIELDS.index('date')
+        jes_records = jes.values_list(*DB_FIELDS)
         jes_list = list()
         for jer in jes_records:
             date = jer[sd_idx]
@@ -180,8 +162,7 @@ class LedgerModelAbstract(SlugNameMixIn,
                                day=calendar.monthrange(date.year, date.month)[-1])
             jer = jer + (je_date,)
             jes_list.append(jer)
-        new_fields.append('je_date')
-        je_tuple = namedtuple('JERecord', ', '.join(new_fields))
+        je_tuple = namedtuple('JERecord', ', '.join(NEW_FIELDS))
         jes_records = [je_tuple(*je) for je in jes_list]
         return jes_records
 

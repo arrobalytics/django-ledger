@@ -68,22 +68,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         txs = self.txs.only('tx_type', 'amount')
         credits = txs.filter(tx_type__iexact='credit').aggregate(Sum('amount'))
         debits = txs.filter(tx_type__iexact='debit').aggregate(Sum('amount'))
-
-        balances = dict()
-        balances['credits'] = credits['amount__sum']
-        balances['debits'] = debits['amount__sum']
-
-        if credits == debits:
-            balances['valid'] = True
-        else:
-            balances['valid'] = False
+        balances = {
+            'credits': credits['amount__sum'],
+            'debits': debits['amount__sum']
+        }
         return balances
 
     def je_is_valid(self):
-        return self.get_balances()['valid']
+        balances = self.get_balances()
+        return balances['credits'] == balances['debits']
 
     def clean(self):
-
         check1 = 'Debits and credits do not balance'
         if not self.je_is_valid():
             raise ValidationError(check1)

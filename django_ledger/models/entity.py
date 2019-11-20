@@ -3,8 +3,7 @@ from django.db import models
 from .mixins import CreateUpdateMixIn, SlugNameMixIn
 
 
-class EntityModelAbstract(SlugNameMixIn,  CreateUpdateMixIn):
-
+class EntityModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.DO_NOTHING,
                             verbose_name='Chart of Accounts')
@@ -18,7 +17,6 @@ class EntityModelAbstract(SlugNameMixIn,  CreateUpdateMixIn):
 
     def get_ledgers(self, scope):
         return self.ledgers.filter(scope=scope)
-
 
 
 class EntityModel(EntityModelAbstract):
