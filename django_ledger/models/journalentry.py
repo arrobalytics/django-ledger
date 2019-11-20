@@ -62,7 +62,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         verbose_name_plural = 'Journal Entries'
 
     def __str__(self):
-        return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.desc)
+        return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
 
     def get_balances(self):
         txs = self.txs.only('tx_type', 'amount')
