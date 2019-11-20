@@ -162,9 +162,9 @@ def quickstart_2(reset_db=False):
         }
     ]
 
-    myco_ledger.tx_optimized(je_date='2019-04-09',
-                             je_txs=txs_data,
-                             je_activity='inv')
+    myco_ledger.create_je(je_date='2019-04-09',
+                          je_txs=txs_data,
+                          je_activity='inv')
 
     # Balance Sheet as_of='2019-01-31' ----
     bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-05-31')
