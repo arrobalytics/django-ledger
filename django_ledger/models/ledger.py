@@ -11,10 +11,9 @@ from django.utils.text import slugify
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_coa_account, get_acc_idx
-from django_ledger.models.io.generic import IOGenericMixIn
-from django_ledger.models.io.preproc import IOPreProcMixIn
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins.io import IOMixIn
 
 FIELD_MAP = OrderedDict({'id': 'je_id',
                          'origin': 'origin',
@@ -82,8 +81,8 @@ class LedgerModelManager(models.Manager):
 
 class LedgerModelAbstract(SlugNameMixIn,
                           CreateUpdateMixIn,
-                          IOPreProcMixIn,
-                          IOGenericMixIn):
+                          # IOPreProcMixIn,
+                          IOMixIn):
     posted = models.BooleanField(default=False)
     locked = models.BooleanField(default=False)
     entity = models.ForeignKey('django_ledger.EntityModel',
