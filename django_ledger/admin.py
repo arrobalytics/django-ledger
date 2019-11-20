@@ -9,6 +9,9 @@ class TransactionModelInLine(admin.TabularInline):
 
 
 class JournalEntryModelAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'ledger'
+    ]
     inlines = [
         TransactionModelInLine
     ]
@@ -18,6 +21,9 @@ class JournalEntryModelAdmin(admin.ModelAdmin):
 
 
 class EntityModelAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'coa'
+    ]
     class Meta:
         model = EntityModel
 

@@ -74,7 +74,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
         abstract = True
 
     def __str__(self):
-        return self.name
+        return f'{self.slug}: {self.name}'
 
     def get_coa_account(self, code):
         try:

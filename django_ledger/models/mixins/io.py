@@ -33,16 +33,12 @@ class IOMixIn:
                   je_origin=None,
                   je_parent=None):
 
-        freq = 'nr'
         validate_tx_data(je_txs)
 
         # todo: make this a function without a return.
         je_activity = validate_activity(je_activity)
         if not je_ledger:
             je_ledger = self
-
-        if not je_origin:
-            je_origin = 'tx_optimized'
 
         tx_axcounts = [acc['code'] for acc in je_txs]
         account_models = getattr(self, 'get_accounts')
