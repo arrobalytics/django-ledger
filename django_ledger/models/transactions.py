@@ -1,7 +1,7 @@
 from django.core.validators import MinValueValidator
 from django.db import models
 
-from .mixins import CreateUpdateMixIn
+from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):

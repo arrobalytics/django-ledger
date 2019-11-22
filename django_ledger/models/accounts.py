@@ -5,7 +5,7 @@ from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from mptt.models import MPTTModel, TreeForeignKey
 
-from .mixins import CreateUpdateMixIn
+from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 # todo: Move to a settings module.
 LEDGER_ACCOUNT_MAX_LENGTH = 5
@@ -51,6 +51,16 @@ def validate_roles(roles):
     return roles
 
 
+class AccountModelManager(models.Manager):
+
+    def available(self, coa):
+        return self.get_queryset().filter(
+            coa_assignments__active=True,
+            coa_assignments__locked=False,
+            coa_assignments__coa=coa
+        )
+
+
 class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     BALANCE_TYPE = [
         ('credit', 'Credit'),
@@ -70,6 +80,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
                             related_name='children',
                             db_index=True,
                             on_delete=models.CASCADE)
+
+    on_coa = AccountModelManager()
 
     class Meta:
         abstract = True

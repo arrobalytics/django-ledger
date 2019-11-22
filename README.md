@@ -48,7 +48,7 @@ def quickstart(reset_db=reset_db):
                                                          coa=coa,
                                                          name='MyCo Inc')
     ledger_id = 'my-co-ledger'  # auto generated if not provided
-    myco_ledger, created = company.general_ledger.get_or_create(slug=ledger_id, name='My Debug Ledger')
+    myco_ledger, created = company.ledgers.get_or_create(slug=ledger_id, name='My Debug Ledger')
     myco_ledger.journal_entry.all().delete()
     txs_data = [
         {
@@ -83,11 +83,12 @@ def quickstart(reset_db=reset_db):
         }
     ]
 
-    myco_ledger.create_je(je_date='2019-04-09',
-                          je_txs=txs_data,
-                          je_origin='quickstart',
-                          je_desc='Purchase of property at 123 Main St',
-                          je_activity='inv')
+    company.create_je(je_date='2019-04-09',
+                      je_txs=txs_data,
+                      je_origin='quickstart',
+                      je_ledger=myco_ledger,
+                      je_desc='Purchase of property at 123 Main St',
+                      je_activity='inv')
 
     # Balance Sheet as_of='2019-01-31' ----
     bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-05-31')
