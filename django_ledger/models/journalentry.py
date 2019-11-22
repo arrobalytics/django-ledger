@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.signals import pre_save
 
-from .mixins import CreateUpdateMixIn
+from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 ACTIVITIES = (
     ('op', 'Operating'),
@@ -42,6 +42,12 @@ def validate_freq(freq):
     return freq
 
 
+class JournalEntryModelManager(models.Manager):
+
+    def on_entity(self, entity):
+        return self.get_queryset().filter(ledger__entity=entity)
+
+
 class JournalEntryModelAbstract(CreateUpdateMixIn):
     date = models.DateField()
     description = models.CharField(max_length=70, blank=True, null=True)
@@ -55,6 +61,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     ledger = models.ForeignKey('django_ledger.LedgerModel',
                                related_name='journal_entry',
                                on_delete=models.CASCADE)
+
+    objects = JournalEntryModelManager()
 
     class Meta:
         abstract = True

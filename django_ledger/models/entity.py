@@ -1,9 +1,11 @@
 from django.db import models
 
-from .mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.mixins import io
+from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 
-class EntityModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
+class EntityModelAbstract(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.DO_NOTHING,
                             verbose_name='Chart of Accounts')
@@ -15,8 +17,8 @@ class EntityModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return '{x1} ({x2})'.format(x1=self.name,
                                     x2=self.slug)
 
-    def get_ledgers(self, scope):
-        return self.ledgers.filter(scope=scope)
+    def get_accounts(self):
+        return AccountModel.on_coa.available(coa=self.coa)
 
 
 class EntityModel(EntityModelAbstract):

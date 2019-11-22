@@ -3,7 +3,7 @@ from django.db import models
 from pandas import DataFrame
 
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 
 def get_coa_account(coa_model, code):
