@@ -76,6 +76,6 @@ def quickstart(reset_db=False):
     return bs, bs_op, bs_f, ic
 
 
-bs, bs_op, bs_f, ic = quickstart(reset_db=False)
+# bs, bs_op, bs_f, ic = quickstart(reset_db=False)
 
 # bss = pd.DataFrame(bs_f)
