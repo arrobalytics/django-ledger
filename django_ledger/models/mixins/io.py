@@ -11,15 +11,27 @@ from django_ledger.models.journalentry import validate_activity, JournalEntryMod
 from django_ledger.models.transactions import TransactionModel
 
 
-def get_entity_model():
-    from django_ledger.models.entity import EntityModel
-    return EntityModel
+class ModelImporter:
+    EM_IMPORTED = False
+    LM_IMPORTED = False
+
+    def get_entity_model(self):
+        global EntityModel
+        if not self.EM_IMPORTED:
+            print('Entity Not Imported Yet')
+            from django_ledger.models.entity import EntityModel
+            self.EM_IMPORTED = True
+        return EntityModel
+
+    def get_ledger_model(self):
+        global LedgerModel
+        if not self.LM_IMPORTED:
+            from django_ledger.models.ledger import LedgerModel
+            self.LM_IMPORTED = True
+        return LedgerModel
 
 
-def get_ledger_model():
-    from django_ledger.models.ledger import LedgerModel
-    return LedgerModel
-
+model_importer = ModelImporter()
 
 FIELD_MAP = OrderedDict({'id': 'je_id',
                          'origin': 'origin',
@@ -120,7 +132,7 @@ class IOMixIn:
         # todo: make this a function without a return.
         je_activity = validate_activity(je_activity)
 
-        if all([isinstance(self, get_entity_model()),
+        if all([isinstance(self, model_importer.get_entity_model()),
                 not je_ledger]):
             raise ValidationError('Must pass an instance of LedgerModel')
 
@@ -170,9 +182,9 @@ class IOMixIn:
         activity = validate_activity(activity)
         role = validate_roles(role)
 
-        if isinstance(self, get_entity_model()):
+        if isinstance(self, model_importer.get_entity_model()):
             jes = JournalEntryModel.objects.on_entity(entity=self)
-        elif isinstance(self, get_ledger_model()):
+        elif isinstance(self, model_importer.get_ledger_model()):
             jes = self.journal_entry.filter(ledger__exact=self)
 
         if as_of:
