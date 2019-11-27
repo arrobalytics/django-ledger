@@ -88,7 +88,7 @@ def quickstart(reset_db=False):
             'code': '6070',
             'amount': 465.50,
             'tx_type': 'debit',
-            'description': 'HOA Exoense'
+            'description': 'HOA Expense'
         },
 
     ]

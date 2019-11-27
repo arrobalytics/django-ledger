@@ -34,6 +34,7 @@ from django_ledger.models.utils import create_coa_structure
 reset_db = False
 
 def quickstart(reset_db=reset_db):
+    coa = None
     if reset_db:
         EntityModel.objects.filter(slug='my-co-inc').delete()
         ChartOfAccountModel.objects.filter(name='CoA QuickStart').delete()
@@ -41,9 +42,9 @@ def quickstart(reset_db=reset_db):
         coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS,
                                    coa_name='CoA QuickStart',
                                    coa_desc='Django Ledger Default CoA')
-
-    coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
-    make_account_active(coa, ['1010', '3010', '1610', '2110', '6253', '6290', '4020'])
+    if not coa:
+        coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
+    make_account_active(coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
     company, created = EntityModel.objects.get_or_create(slug='my-co-inc',
                                                          coa=coa,
                                                          name='MyCo Inc')
@@ -80,7 +81,44 @@ def quickstart(reset_db=reset_db):
             'amount': 120000,
             'tx_type': 'debit',
             'description': 'Property cost base'
-        }
+        },
+        {
+            'code': '4020',
+            'amount': 1500,
+            'tx_type': 'credit',
+            'description': 'Rental Income'
+        },
+        {
+            'code': '1010',
+            'amount': 1500,
+            'tx_type': 'debit',
+            'description': 'Rental Income'
+        },
+        {
+            'code': '1010',
+            'amount': 180.45,
+            'tx_type': 'credit',
+            'description': 'HOA expense'
+        },
+        {
+            'code': '6253',
+            'amount': 180.45,
+            'tx_type': 'debit',
+            'description': 'HOA Exoense'
+        },
+        {
+            'code': '1611',
+            'amount': 465.50,
+            'tx_type': 'credit',
+            'description': 'Accumulated Depreciation'
+        },
+        {
+            'code': '6070',
+            'amount': 465.50,
+            'tx_type': 'debit',
+            'description': 'HOA Expense'
+        },
+
     ]
 
     company.create_je(je_date='2019-04-09',
@@ -91,13 +129,15 @@ def quickstart(reset_db=reset_db):
                       je_activity='inv')
 
     # Balance Sheet as_of='2019-01-31' ----
-    bs = myco_ledger.balance_sheet(as_dataframe=True, as_of='2019-05-31')
+    bs = myco_ledger.balance_sheet(as_dataframe=True,
+                                   signs=True,
+                                   as_of='2019-05-09')
 
     # Balance Sheet Latest / Operational Activities Only
     bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op')
 
     # Balance Sheet Latest / As list
-    bs_f = myco_ledger.balance_sheet(as_dataframe=False)
+    bs_f = myco_ledger.balance_sheet(signs=True)
 
     # Income Statement / Sign adjustment (negative -> expenses / positive -> income)
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
