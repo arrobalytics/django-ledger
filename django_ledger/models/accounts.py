@@ -67,6 +67,7 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
         ('debit', 'Debit')
     ]
 
+    # todo: address uniqueness of the code field...?
     code = models.CharField(max_length=LEDGER_ACCOUNT_MAX_LENGTH, unique=True, verbose_name='Account Code')
     name = models.CharField(max_length=100, verbose_name='Account Name')
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name='Account Role')

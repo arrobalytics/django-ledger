@@ -1,18 +1,17 @@
-import calendar
-from collections import OrderedDict, namedtuple
-from datetime import datetime
+from collections import OrderedDict
 
-from pandas import DataFrame, to_numeric, merge
 from django.core.exceptions import ValidationError
-from django.db.models.functions import ExtractYear, ExtractMonth
+from pandas import DataFrame
 
 from django_ledger.models.accounts import validate_roles
-from django_ledger.models.coa import get_acc_idx
 from django_ledger.models.journalentry import validate_activity, JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 
 
 class LazyImporter:
+    """
+    This class eliminates the circle dependency between models.
+    """
     EM_IMPORTED = None
     LM_IMPORTED = None
 
@@ -32,58 +31,36 @@ class LazyImporter:
 lazy_importer = LazyImporter()
 
 FIELD_MAP = OrderedDict({'id': 'je_id',
-                         'origin': 'origin',
-                         'date': 'date',
-                         'tx_month': 'tx_month',
-                         'tx_year': 'tx_year',
-                         'activity': 'activity',
-                         'txs__id': 'tx_id',
                          'txs__tx_type': 'tx_type',
-                         'txs__account': 'account',
                          'txs__account__code': 'code',
                          'txs__account__name': 'name',
-                         'txs__account__balance_type': 'balance_type',
                          'txs__account__role': 'role',
+                         'txs__account__role_bs': 'role_bs',
+                         'txs__account__balance_type': 'balance_type',
                          'txs__amount': 'amount'})
 
 DB_FIELDS = [k for k, _ in FIELD_MAP.items()]
-TUPLE_FIELDS = [v for _, v in FIELD_MAP.items()]
+VALUES_IDX = [v for _, v in FIELD_MAP.items()]
 
-IDX_CODE = TUPLE_FIELDS.index('code')
-IDX_AMOUNT = TUPLE_FIELDS.index('amount')
-IDX_TX_TYPE = TUPLE_FIELDS.index('tx_type')
-IDX_BALANCE_TYPE = TUPLE_FIELDS.index('balance_type')
+IDX_CODE = VALUES_IDX.index('code')
+IDX_BALANCE = VALUES_IDX.index('amount')
+IDX_TX_TYPE = VALUES_IDX.index('tx_type')
+IDX_BALANCE_TYPE = VALUES_IDX.index('balance_type')
 
 
-def process_signs(row):
+def process_signs(record):
     """
     Reverse the signs for contra accounts if requested.
-    :param row: DF row.
+    :param record: DF row.
     :return: A Df Row.
     """
-    idx = [x.lower() for x in row.name]
-    if all(['assets' in idx,
-            'credit' in idx]):
-        row = -row
-    if all([any(['liabilities' in idx,
-                 'equity' in idx,
-                 'other' in idx]),
-            'debit' in idx]):
-        row = -row
-    return row
-
-
-def tx_type_digest(je):
-    """
-    Interprets the transaction type against the account balance type and adds/subtracts accordingly.
-    :param je: Joutnal entry named tuple.
-    :return: JE namedtuple.
-    """
-    if je['tx_type'] == je['balance_type']:
-        je['amount'] = to_numeric(je['amount'])
-    else:
-        je['amount'] = -to_numeric(je['amount'])
-    return je
+    if all([record['role_bs'] == 'assets',
+            record['balance_type'] == 'credit']):
+        record['balance'] = -record['balance']
+    if all([record['role_bs'] in ('liabilities', 'equity', 'other'),
+            record['balance_type'] == 'debit']):
+        record['balance'] = -record['balance']
+    return record
 
 
 def validate_tx_data(tx_data: dict) -> dict:
@@ -189,9 +166,7 @@ class IOMixIn:
             if isinstance(role, str):
                 role = [role]
             jes = jes.filter(txs__account__role__in=role)
-        jes = jes.annotate(tx_year=ExtractYear('date'),
-                           tx_month=ExtractMonth('date'))
-        jes = jes.values_list(*DB_FIELDS)
+        jes = jes.values(*DB_FIELDS)
         return jes
 
     def get_jes(self,
@@ -211,67 +186,70 @@ class IOMixIn:
         elif method == 'ic-fin':
             activity = ['fin']
 
+        # values
         je_txs = self.get_je_txs(as_of=as_of,
                                  activity=activity,
                                  role=role,
                                  account=account)
 
-        df = DataFrame([(je[IDX_CODE],
-                         je[IDX_AMOUNT],
-                         je[IDX_TX_TYPE],
-                         je[IDX_BALANCE_TYPE]) for je in je_txs],
-                       columns=['code', 'amount', 'tx_type', 'balance_type'])
-        df = df.apply(tx_type_digest,
-                      axis=1).loc[:, ['code', 'amount']].set_index('code')
-        df = df.groupby('code').sum()
-        df.rename(columns={
-            'amount': 'balance'
-        }, inplace=True)
-        df = merge(
-            left=get_acc_idx(coa_model=self.get_coa(),
-                             as_dataframe=True),
-            right=df,
-            how='inner',
-            left_index=True,
-            right_index=True)
+        for tx in je_txs:
+            if tx['txs__account__balance_type'] != tx['txs__tx_type']:
+                tx['txs__amount'] = -tx['txs__amount']
+
+        account_idx = sorted(set([(acc['txs__account__role_bs'],
+                                   acc['txs__account__role'],
+                                   acc['txs__account__code'],
+                                   acc['txs__account__name'],
+                                   acc['txs__account__balance_type']) for acc in je_txs]))
+        acc_agg = [
+            {
+                'role_bs': acc[0],
+                'role': acc[1],
+                'code': acc[2],
+                'name': acc[3],
+                'balance_type': acc[4],
+                'balance': sum([amt for amt in [je['txs__amount']
+                                                for je in je_txs if je['txs__account__code'] == acc[2]]]),
+            } for acc in account_idx
+        ]
 
         if as_dataframe:
-            return df
-        return df.reset_index().to_dict(orient='records')
+            return DataFrame(acc_agg)
+        return acc_agg
 
     # Financial Statements -----
     def balance_sheet(self, as_of: str = None, signs: bool = False, as_dataframe: bool = False, activity: str = None):
 
-        bs_df = self.get_jes(as_of=as_of,
-                             activity=activity,
-                             method='bs',
-                             as_dataframe=True)
+        bs_data = self.get_jes(as_of=as_of,
+                               activity=activity,
+                               method='bs',
+                               as_dataframe=False)
 
         if signs:
-            bs_df = bs_df.apply(process_signs, axis=1)
+            bs_data = [process_signs(rec) for rec in bs_data]
 
-        if not as_dataframe:
-            return bs_df.reset_index().to_dict(orient='records')
-        return bs_df
+        if as_dataframe:
+            return DataFrame(bs_data)
+        return bs_data
 
     def income_statement(self, signs: bool = False, as_dataframe: bool = False, activity: str = None):
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_df = self.get_jes(method=method,
-                             as_dataframe=True)
+        ic_data = self.get_jes(method=method,
+                               as_dataframe=False)
 
         if signs:
-            ic_df = ic_df.apply(process_signs, axis=1)
+            ic_data = [process_signs(rec) for rec in ic_data]
 
-        if not as_dataframe:
-            return ic_df.reset_index().to_dict(orient='records')
-        return ic_df
+        if as_dataframe:
+            return DataFrame(ic_data)
+        return ic_data
 
-    def income(self, activity: str = None):
-        inc_df = self.income_statement(signs=True, as_dataframe=True, activity=activity).sum()
-        return inc_df
+    # def income(self, activity: str = None):
+    #     inc_df = self.income_statement(signs=True, as_dataframe=True, activity=activity).sum()
+    #     return inc_df
 
     def get_asset_account(self):
         """
