@@ -6,9 +6,7 @@ from django.db.models.signals import pre_save
 from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
-
-# todo: Move to a settings module.
-LEDGER_ACCOUNT_MAX_LENGTH = 5
+from django_ledger.settings import DJANGO_LEDGER_SETTINGS
 
 ACCOUNT_ROLES = [
     ('Assets', (
@@ -68,7 +66,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     ]
 
     # todo: address uniqueness of the code field...?
-    code = models.CharField(max_length=LEDGER_ACCOUNT_MAX_LENGTH, unique=True, verbose_name='Account Code')
+    code = models.CharField(max_length=DJANGO_LEDGER_SETTINGS.get('ACCOUNT_MAX_LENGTH'),
+                            unique=True, verbose_name='Account Code')
     name = models.CharField(max_length=100, verbose_name='Account Name')
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name='Account Role')
     role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')

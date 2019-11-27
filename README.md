@@ -1,6 +1,6 @@
 # Django Ledger
 
-### A bookkeeping & financial analysis app for the Django Framework.
+### A bookkeeping & financial analysis engine for the Django Framework.
 
 Django Ledger supports:
 
@@ -14,15 +14,19 @@ Django Ledger supports:
 Currently this project is under active development and is not recommended for production environments.
 The author is working on incorporating the following functionality:
 
-- Multiple debit/credit operations with transactions.
+## Road Map
+- Entity owners & user integration.
 - Internationalization.
 - Views & template tags.
 
 ## Quick Start
 
-In order to start using Django Ledger you must create a Chart of Accounts (CoA).
-Django Ledger comes with a default CoA ready to use or you could use your own.
+Django ledger currently does not ship with views as its main focus is to provide the
+engine necessary to enable financially driven apps.
 
+In order to start using Django Ledger you must create a Chart of Accounts (CoA).
+Django Ledger comes with a default CoA ready to use or you could use your own. \
+__Please user the following with caution if you are testing on an existing project!!!__
 ```python
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel, make_account_active, get_acc_idx
@@ -143,6 +147,5 @@ def quickstart(reset_db=reset_db):
     ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
     return bs, bs_op, bs_f, ic
 ```
-
 
 __Want to contribute? Don't hesitate to contact me.__
