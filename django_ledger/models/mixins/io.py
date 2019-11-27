@@ -2,8 +2,9 @@ import calendar
 from collections import OrderedDict, namedtuple
 from datetime import datetime
 
-import pandas as pd
+from pandas import DataFrame, to_numeric, merge
 from django.core.exceptions import ValidationError
+from django.db.models.functions import ExtractYear, ExtractMonth
 
 from django_ledger.models.accounts import validate_roles
 from django_ledger.models.coa import get_acc_idx
@@ -11,31 +12,30 @@ from django_ledger.models.journalentry import validate_activity, JournalEntryMod
 from django_ledger.models.transactions import TransactionModel
 
 
-class ModelImporter:
-    EM_IMPORTED = False
-    LM_IMPORTED = False
+class LazyImporter:
+    EM_IMPORTED = None
+    LM_IMPORTED = None
 
     def get_entity_model(self):
-        global EntityModel
         if not self.EM_IMPORTED:
-            print('Entity Not Imported Yet')
             from django_ledger.models.entity import EntityModel
-            self.EM_IMPORTED = True
-        return EntityModel
+            self.EM_IMPORTED = EntityModel
+        return self.EM_IMPORTED
 
     def get_ledger_model(self):
-        global LedgerModel
         if not self.LM_IMPORTED:
             from django_ledger.models.ledger import LedgerModel
-            self.LM_IMPORTED = True
-        return LedgerModel
+            self.LM_IMPORTED = LedgerModel
+        return self.LM_IMPORTED
 
 
-model_importer = ModelImporter()
+lazy_importer = LazyImporter()
 
 FIELD_MAP = OrderedDict({'id': 'je_id',
                          'origin': 'origin',
                          'date': 'date',
+                         'tx_month': 'tx_month',
+                         'tx_year': 'tx_year',
                          'activity': 'activity',
                          'txs__id': 'tx_id',
                          'txs__tx_type': 'tx_type',
@@ -47,25 +47,12 @@ FIELD_MAP = OrderedDict({'id': 'je_id',
                          'txs__amount': 'amount'})
 
 DB_FIELDS = [k for k, _ in FIELD_MAP.items()]
-NEW_FIELDS = [v for _, v in FIELD_MAP.items()]
-NEW_FIELDS.append('je_date')
-DATE_INDEX = NEW_FIELDS.index('date')
+TUPLE_FIELDS = [v for _, v in FIELD_MAP.items()]
 
-
-def get_je_records(queryset):
-    jes_records = queryset.values_list(*DB_FIELDS)
-    jes_list = list()
-    # todo: this can be done from the database using extract.
-    for jer in jes_records:
-        date = jer[DATE_INDEX]
-        je_date = datetime(year=date.year,
-                           month=date.month,
-                           day=calendar.monthrange(date.year, date.month)[-1])
-        jer = jer + (je_date,)
-        jes_list.append(jer)
-    je_tuple = namedtuple('JERecord', ', '.join(NEW_FIELDS))
-    jes_records = [je_tuple(*je) for je in jes_list]
-    return jes_records
+IDX_CODE = TUPLE_FIELDS.index('code')
+IDX_AMOUNT = TUPLE_FIELDS.index('amount')
+IDX_TX_TYPE = TUPLE_FIELDS.index('tx_type')
+IDX_BALANCE_TYPE = TUPLE_FIELDS.index('balance_type')
 
 
 def process_signs(row):
@@ -93,9 +80,9 @@ def tx_type_digest(je):
     :return: JE namedtuple.
     """
     if je['tx_type'] == je['balance_type']:
-        je['amount'] = pd.to_numeric(je['amount'])
+        je['amount'] = to_numeric(je['amount'])
     else:
-        je['amount'] = -pd.to_numeric(je['amount'])
+        je['amount'] = -to_numeric(je['amount'])
     return je
 
 
@@ -132,7 +119,7 @@ class IOMixIn:
         # todo: make this a function without a return.
         je_activity = validate_activity(je_activity)
 
-        if all([isinstance(self, model_importer.get_entity_model()),
+        if all([isinstance(self, lazy_importer.get_entity_model()),
                 not je_ledger]):
             raise ValidationError('Must pass an instance of LedgerModel')
 
@@ -182,9 +169,9 @@ class IOMixIn:
         activity = validate_activity(activity)
         role = validate_roles(role)
 
-        if isinstance(self, model_importer.get_entity_model()):
+        if isinstance(self, lazy_importer.get_entity_model()):
             jes = JournalEntryModel.objects.on_entity(entity=self)
-        elif isinstance(self, model_importer.get_ledger_model()):
+        elif isinstance(self, lazy_importer.get_ledger_model()):
             jes = self.journal_entry.filter(ledger__exact=self)
 
         if as_of:
@@ -202,12 +189,18 @@ class IOMixIn:
             if isinstance(role, str):
                 role = [role]
             jes = jes.filter(txs__account__role__in=role)
+        jes = jes.annotate(tx_year=ExtractYear('date'),
+                           tx_month=ExtractMonth('date'))
+        jes = jes.values_list(*DB_FIELDS)
+        return jes
 
-        jes_records = get_je_records(queryset=jes)
-        return jes_records
-
-    def get_jes(self, as_of: str = None, as_dataframe: bool = False, method: str = 'bs', activity: str = None,
-                role: str = None, account: str = None):
+    def get_jes(self,
+                as_of: str = None,
+                as_dataframe: bool = False,
+                method: str = 'bs',
+                activity: str = None,
+                role: str = None,
+                account: str = None):
 
         if method != 'bs':
             role = ['in', 'ex']
@@ -223,18 +216,18 @@ class IOMixIn:
                                  role=role,
                                  account=account)
 
-        df = pd.DataFrame([(je.code,
-                            je.amount,
-                            je.tx_type,
-                            je.balance_type) for je in je_txs],
-                          columns=['code', 'amount', 'tx_type', 'balance_type'])
+        df = DataFrame([(je[IDX_CODE],
+                         je[IDX_AMOUNT],
+                         je[IDX_TX_TYPE],
+                         je[IDX_BALANCE_TYPE]) for je in je_txs],
+                       columns=['code', 'amount', 'tx_type', 'balance_type'])
         df = df.apply(tx_type_digest,
                       axis=1).loc[:, ['code', 'amount']].set_index('code')
         df = df.groupby('code').sum()
         df.rename(columns={
             'amount': 'balance'
         }, inplace=True)
-        df = pd.merge(
+        df = merge(
             left=get_acc_idx(coa_model=self.get_coa(),
                              as_dataframe=True),
             right=df,
