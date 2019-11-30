@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel, AccountModel, CoAAccountAssignments,
-                                  JournalEntryModel, TransactionModel)
+                                  JournalEntryModel, TransactionModel, EntityManagementModel)
 
 
 class TransactionModelInLine(admin.TabularInline):
@@ -20,9 +20,13 @@ class JournalEntryModelAdmin(admin.ModelAdmin):
         model = JournalEntryModel
 
 
+class EntityManagementInLine(admin.TabularInline):
+    model = EntityManagementModel
+
+
 class EntityModelAdmin(admin.ModelAdmin):
-    readonly_fields = [
-        'coa'
+    inlines = [
+        EntityManagementInLine
     ]
     class Meta:
         model = EntityModel

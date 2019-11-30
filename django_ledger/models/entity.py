@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.urls import reverse
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.mixins import io
@@ -23,6 +24,12 @@ class EntityModel(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
         return '{x1} ({x2})'.format(x1=self.name,
                                     x2=self.slug)
 
+    def get_absolute_url(self):
+        return reverse('django_ledger:entity-detail',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
     def get_accounts(self):
         return AccountModel.on_coa.available(coa=self.coa)
 
@@ -36,11 +43,11 @@ class EntityManagementModel(CreateUpdateMixIn):
 
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
-                               verbose_name='Managers',
+                               verbose_name='Entity',
                                related_name='entity_permissions')
     user = models.ForeignKey(UserModel,
                              on_delete=models.CASCADE,
-                             verbose_name='Managed Entities',
+                             verbose_name='Manager',
                              related_name='entity_permissions')
 
     permission_level = models.CharField(max_length=10, default='read', choices=PERMISSIONS)
