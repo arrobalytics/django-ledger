@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.db.models import Value, CharField
 from django.views.generic import ListView, DetailView
 
-from django_ledger.models.entity import EntityModel
+from django_ledger.models import EntityModel, ChartOfAccountModel
 
 
 class EntityModelListView(ListView):
@@ -26,9 +26,9 @@ class EntityModelListView(ListView):
 
 
 class EntityModelDetailVew(DetailView):
-    template_name = 'django_ledger/entity_detail.html'
-    slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
+    slug_url_kwarg = 'entity_slug'
+    template_name = 'django_ledger/entity_detail.html'
 
     def get_queryset(self):
         """
@@ -40,3 +40,15 @@ class EntityModelDetailVew(DetailView):
             Q(admin=self.request.user) |
             Q(entity_permissions__user=self.request.user)
         )
+
+
+class ChartOfAccountsDetailView(DetailView):
+    context_object_name = 'coa'
+    slug_url_kwarg = 'coa_slug'
+    template_name = 'django_ledger/coa_detail.html'
+
+    def get_queryset(self):
+        return ChartOfAccountModel.objects.filter(
+            Q(user=self.request.user) |
+            Q(entitymodel__entity_permissions__user=self.request.user)
+        ).distinct().prefetch_related('acc_assignments__account')

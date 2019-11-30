@@ -1,9 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.urls import reverse
 from pandas import DataFrame
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
+
+UserModel = get_user_model()
 
 
 def get_coa_account(coa_model, code):
@@ -65,7 +69,8 @@ def make_account_active(coa_model, account_codes: str or list):
 
 class ChartOfAccountModelAbstract(SlugNameMixIn,
                                   CreateUpdateMixIn):
-    desc = models.TextField(verbose_name='CoA Description', null=True, blank=True)
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    description = models.TextField(verbose_name='CoA Description', null=True, blank=True)
     accounts = models.ManyToManyField('django_ledger.AccountModel',
                                       related_name='coas',
                                       through='CoAAccountAssignments')
@@ -75,6 +80,13 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
 
     def __str__(self):
         return f'{self.slug}: {self.name}'
+
+    def get_absolute_url(self):
+        return reverse('django_ledger:coa-detail',
+                       kwargs={
+                           'coa_slug': self .slug
+                       })
+
 
     def get_coa_account(self, code):
         try:
