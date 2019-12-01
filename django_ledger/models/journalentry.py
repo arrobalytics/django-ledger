@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Sum
 from django.db.models.signals import pre_save
+from django.urls import reverse
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 
@@ -48,7 +49,7 @@ class JournalEntryModelManager(models.Manager):
         return self.get_queryset().filter(ledger__entity=entity)
 
 
-class JournalEntryModelAbstract(CreateUpdateMixIn):
+class JournalEntryModel(CreateUpdateMixIn):
     date = models.DateField()
     description = models.CharField(max_length=70, blank=True, null=True)
     activity = models.CharField(choices=ACTIVITIES, max_length=5)
@@ -56,7 +57,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
-                               related_name="children",
+                               related_name='children',
                                on_delete=models.CASCADE)
     ledger = models.ForeignKey('django_ledger.LedgerModel',
                                related_name='journal_entry',
@@ -65,12 +66,19 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     objects = JournalEntryModelManager()
 
     class Meta:
-        abstract = True
         verbose_name = 'Journal Entry'
         verbose_name_plural = 'Journal Entries'
 
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
+
+    def get_absolute_url(self):
+        return reverse('django_ledger:journal-entry-detail',
+                       kwargs={
+                           'je_pk': self.id,
+                           'entity_slug': self.ledger.entity.slug
+                       })
+
 
     def get_balances(self):
         txs = self.txs.only('tx_type', 'amount')
@@ -90,12 +98,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         check1 = 'Debits and credits do not balance'
         if not self.je_is_valid():
             raise ValidationError(check1)
-
-
-class JournalEntryModel(JournalEntryModelAbstract):
-    """
-    Final JournalEntryModel from Abstracts
-    """
 
 
 ### JournalEntryModel Signals --------

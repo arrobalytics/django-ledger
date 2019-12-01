@@ -2,6 +2,7 @@ from random import randint
 
 from django.db import models
 from django.db.models.signals import pre_save
+from django.urls import reverse
 from django.utils.text import slugify
 
 from django_ledger.models.accounts import AccountModel
@@ -33,6 +34,14 @@ class LedgerModelAbstract(SlugNameMixIn,
     def __str__(self):
         return '{slug}: {name}'.format(name=self.name,
                                        slug=self.slug)
+
+    def get_absolute_url(self):
+        return reverse('django_ledger:ledger-detail',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ledger_pk': self.id
+                       })
+
 
     def get_coa(self):
         return self.entity.coa
