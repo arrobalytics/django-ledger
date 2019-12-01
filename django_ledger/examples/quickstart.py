@@ -1,23 +1,35 @@
+from django.utils.text import slugify
+
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel, make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
+from django.contrib.auth import get_user_model
+
+UserModel = get_user_model()
 
 
-def quickstart(reset_db=False):
-    coa = None
+def quickstart(quickstart_user: str, reset_db=False, coa=None):
+    user_model = UserModel.objects.get(username=quickstart_user)
+    if not coa:
+        coa_name = f'{user_model.username} - CoA QuickStart'
+        coa_slug = slugify(coa_name)
+        coa, created = ChartOfAccountModel.objects.get_or_create(name=f'{user_model.username} - CoA QuickStart'.upper(),
+                                                                 slug=coa_slug,
+                                                                 user=user_model)
+
     if reset_db:
-        EntityModel.objects.filter(slug='my-co-inc').delete()
-        ChartOfAccountModel.objects.filter(name='CoA QuickStart').delete()
+        EntityModel.objects.filter(slug='my-co-inc', admin=user_model).delete()
+        ChartOfAccountModel.objects.filter(name='CoA QuickStart', user=user_model).delete()
         AccountModel.objects.all().delete()
         coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS,
+                                   coa_user=user_model,
                                    coa_name='CoA QuickStart',
                                    coa_desc='Django Ledger Default CoA')
-    if not coa:
-        coa, created = ChartOfAccountModel.objects.get_or_create(name='CoA QuickStart')
     make_account_active(coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
     company, created = EntityModel.objects.get_or_create(slug='my-co-inc',
+                                                         admin=user_model,
                                                          coa=coa,
                                                          name='MyCo Inc')
     ledger_id = 'my-co-ledger'  # auto generated if not provided
@@ -116,4 +128,4 @@ def quickstart(reset_db=False):
     return bs, bs_op, bs_f, ic
 
 
-# bs, bs_op, bs_f, ic = quickstart(reset_db=True)
+bs, bs_op, bs_f, ic = quickstart(quickstart_user='pedro_navaja', reset_db=True)

@@ -3,10 +3,15 @@ from django.utils.text import slugify
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
+from django.contrib.auth import get_user_model
+
+UserModel = get_user_model()
 
 
-def create_coa_structure(coa_data: dict, coa_name: str, coa_desc: str = None, coa_slug: str = None):
+def create_coa_structure(coa_data: dict, coa_user: str or UserModel, coa_name: str, coa_desc: str = None,
+                         coa_slug: str = None):
     """
+    :param coa_user:
     :param coa_data: New CoA Data.
     :param coa_name: Name of the new Chart of Accounts Model.
     :param coa_desc: Optional Description of the new Chart of Accounts Model.
@@ -14,7 +19,10 @@ def create_coa_structure(coa_data: dict, coa_name: str, coa_desc: str = None, co
     """
     if not coa_slug:
         coa_slug = slugify(coa_name)
-    coa, created = ChartOfAccountModel.objects.get_or_create(slug=coa_slug)
+
+    if isinstance(coa_user, str):
+        coa_user = UserModel.objects.get(username=coa_user)
+    coa, created = ChartOfAccountModel.objects.get_or_create(slug=coa_slug, user=coa_user)
     if not created:
         raise ValidationError(message=f'Chart of Account slug exists {coa_slug}, provide custom value.')
 

@@ -30,6 +30,12 @@ class EntityModel(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
                            'entity_slug': self.slug
                        })
 
+    def get_balance_sheet_url(self):
+        return reverse('django_ledger:entity-balance-sheet',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
     def get_accounts(self):
         return AccountModel.on_coa.available(coa=self.coa)
 

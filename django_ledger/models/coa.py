@@ -67,8 +67,8 @@ def make_account_active(coa_model, account_codes: str or list):
     account_assignment.update(active=True)
 
 
-class ChartOfAccountModelAbstract(SlugNameMixIn,
-                                  CreateUpdateMixIn):
+class ChartOfAccountModel(SlugNameMixIn,
+                          CreateUpdateMixIn):
     user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
     description = models.TextField(verbose_name='CoA Description', null=True, blank=True)
     accounts = models.ManyToManyField('django_ledger.AccountModel',
@@ -76,7 +76,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
                                       through='CoAAccountAssignments')
 
     class Meta:
-        abstract = True
+        verbose_name = 'Chart of Account'
 
     def __str__(self):
         return f'{self.slug}: {self.name}'
@@ -84,9 +84,8 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     def get_absolute_url(self):
         return reverse('django_ledger:coa-detail',
                        kwargs={
-                           'coa_slug': self .slug
+                           'coa_slug': self.slug
                        })
-
 
     def get_coa_account(self, code):
         try:
@@ -103,15 +102,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     def get_accounts_index(self, as_dataframe=False):
         idx = get_acc_idx(self, as_dataframe=as_dataframe)
         return idx
-
-
-class ChartOfAccountModel(ChartOfAccountModelAbstract):
-    """
-    Final ChartOfAccountsModel from Abstracts
-    """
-
-    class Meta:
-        verbose_name = 'Chart of Account'
 
 
 class AccountAssignmentsManager(models.Manager):

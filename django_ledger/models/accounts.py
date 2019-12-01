@@ -4,6 +4,7 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from mptt.models import MPTTModel, TreeForeignKey
+from django.urls import reverse
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 from django_ledger.settings import DJANGO_LEDGER_SETTINGS
@@ -59,7 +60,7 @@ class AccountModelManager(models.Manager):
         )
 
 
-class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
+class AccountModel(MPTTModel, CreateUpdateMixIn):
     BALANCE_TYPE = [
         ('credit', 'Credit'),
         ('debit', 'Debit')
@@ -84,7 +85,6 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     on_coa = AccountModelManager()
 
     class Meta:
-        abstract = True
         verbose_name = 'Account'
 
     class MPTTMeta:
@@ -96,6 +96,12 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
                                                       x3=self.role.upper(),
                                                       x4=self.balance_type,
                                                       x5=self.code)
+
+    def get_absolute_url(self):
+        return reverse('django_ledger:account-detail',
+                       kwargs={
+                           'account_pk': self.id
+                       })
 
     def get_bs_role(self):
         if self.role:
@@ -133,12 +139,6 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
             return credits - debits
         elif self.balance_type == 'debit':
             return debits - credits
-
-
-class AccountModel(AccountModelAbstract):
-    """
-    Final AccountModel from Abstracts
-    """
 
 
 # AccountModel Signals ----------------
