@@ -1,0 +1,56 @@
+{% load humanize %}
+
+<table>
+    <tr>
+        <th>Account Number</th>
+        <th>Description</th>
+        <th>Balance Type</th>
+        <th>Balance</th>
+    </tr>
+    <tr>
+        <td>Income</td>
+    </tr>
+    {% for acc in income %}
+        <tr>
+            <td>{{ acc.code }}</td>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.balance_type }}</td>
+            <td>${{ acc.balance | intcomma }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total Income</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_income | intcomma }}</td>
+    </tr>
+
+
+    <tr>
+        <td>Expenses</td>
+    </tr>
+    {% for acc in expenses %}
+        <tr>
+            <td>{{ acc.code }}</td>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.balance_type }}</td>
+            <td>${{ acc.balance | intcomma }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total Expenses</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_expenses | intcomma }}</td>
+    </tr>
+
+
+    <tr>
+        <td>Total Income (Loss)</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_income_loss | intcomma }}</td>
+    </tr>
+
+
+</table>

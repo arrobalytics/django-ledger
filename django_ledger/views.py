@@ -59,6 +59,23 @@ class EntityBalanceSheetView(DetailView):
         )
 
 
+class EntityIncomeStatementView(DetailView):
+    context_object_name = 'entity'
+    slug_url_kwarg = 'entity_slug'
+    template_name = 'django_ledger/income_statement.html'
+
+    def get_queryset(self):
+        """
+        Returns a queryset of all Entities owned or Managed by the User.
+        Queryset is annotated with user_role parameter (owned/managed).
+        :return: The view queryset.
+        """
+        return EntityModel.objects.filter(
+            Q(admin=self.request.user) |
+            Q(entity_permissions__user=self.request.user)
+        )
+
+
 class ChartOfAccountsDetailView(DetailView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
