@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ entity.name }}</title>
+    <title>Account Detail</title>
     <title>DJ Ledger - Entities</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
     <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
@@ -12,10 +12,10 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            {{ entity.name }}
+            {{ account }}
         </h1>
         <p class="subtitle">
-            My first website with <strong>Bulma</strong>!
+            {{ coa.description }}
         </p>
     </div>
 </section>
@@ -24,14 +24,13 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">Chart of Accounts</h1>
-                <h2 class="is-size-5">{{ entity.coa.name }}</h2>
-                <a class="button is-light" href="{{ entity.coa.get_absolute_url }}">View CoA</a>
-
-            </div>
-            <div class="column">
-                <h1 class="is-size-3">Managed Entities</h1>
-                <a class="button is-light" href="{{ entity.get_balance_sheet_url }}">Balance Sheet</a>
+                <h1 class="is-size-3">Accounts</h1>
+                <ul>
+                    {% for acc in coa.acc_assignments.all %}
+                        <li>{{ acc.account }} <a class="button is-small is-light"
+                                                 href="{{ acc.account.get_absolute_url }}">Edit</a></li>
+                    {% endfor %}
+                </ul>
 
             </div>
         </div>

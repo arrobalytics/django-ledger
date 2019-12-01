@@ -27,7 +27,8 @@
                 <h1 class="is-size-3">Accounts</h1>
                 <ul>
                     {% for acc in coa.acc_assignments.all %}
-                        <li>{{ acc.account }}</li>
+                        <li>{{ acc.account }} <a class="button is-small is-light"
+                                                 href="{{ acc.account.get_absolute_url }}">Edit</a></li>
                     {% endfor %}
                 </ul>
 

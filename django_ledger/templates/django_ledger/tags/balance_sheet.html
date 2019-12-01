@@ -1,0 +1,91 @@
+{% load humanize %}
+
+<table>
+    <tr>
+        <th>Account Number</th>
+        <th>Description</th>
+        <th>Balance Type</th>
+        <th>Balance</th>
+    </tr>
+    <tr>
+        <td>Assets</td>
+    </tr>
+    {% for acc in assets %}
+        <tr>
+            <td>{{ acc.code }}</td>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.balance_type }}</td>
+            <td>${{ acc.balance | intcomma }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total Assets</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_assets | intcomma }}</td>
+    </tr>
+
+
+
+    <tr>
+        <td>Liabilities</td>
+    </tr>
+    {% for acc in liabilities %}
+        <tr>
+            <td>{{ acc.code }}</td>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.balance_type }}</td>
+            <td>${{ acc.balance | intcomma }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total Liabilities</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_liabilities | intcomma }}</td>
+    </tr>
+
+
+    <tr>
+        <td>Capital</td>
+    </tr>
+    {% for acc in capital %}
+        <tr>
+            <td>{{ acc.code }}</td>
+            <td>{{ acc.name }}</td>
+            <td>{{ acc.balance_type }}</td>
+            <td>${{ acc.balance | intcomma }}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total Capital</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_capital | intcomma }}</td>
+    </tr>
+
+
+
+    <tr>
+        <td>Retained Earnings</td>
+        <td></td>
+        <td></td>
+        <td>${{ retained_earnings | intcomma }}</td>
+    </tr>
+
+    <tr>
+        <td>Total Equity</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_equity | intcomma }}</td>
+    </tr>
+
+    <tr>
+        <td>Total Equity + Liabilities</td>
+        <td></td>
+        <td></td>
+        <td>${{ total_liabilities_equity | intcomma }}</td>
+    </tr>
+
+
+</table>
