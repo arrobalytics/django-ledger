@@ -36,6 +36,12 @@ class EntityModel(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
                            'entity_slug': self.slug
                        })
 
+    def get_income_statement_url(self):
+        return reverse('django_ledger:entity-income-statement',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
     def get_accounts(self):
         return AccountModel.on_coa.available(coa=self.coa)
 
