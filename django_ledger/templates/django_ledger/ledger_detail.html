@@ -3,18 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Account Detail</title>
+    <title>Ledger Detail View</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
 </head>
 <body>
 <section class="section">
     <div class="container">
-        <h1 class="title">
-            {{ object }} Hello
-        </h1>
-        <p class="subtitle">
-            {{ coa.description }}
-        </p>
+        <h1 class="title">Ledger Detail View</h1>
+        <p class="subtitle">{{ ledger.name }}</p>
     </div>
 </section>
 <section class="section">
@@ -22,9 +18,13 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">Account</h1>
-                <form action=""></form>
-                {{ form.as_p }}
+                <h1 class="is-size-3">Ledger Journal Entries</h1>
+                <ul>
+                    {% for je in ledger.journal_entry.all %}
+                        <li>{{ je }} <a class="button is-small is-dark"
+                                        href="{{ je.get_absolute_url }}">View</a></li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
 

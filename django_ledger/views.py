@@ -1,8 +1,9 @@
 from django.db.models import Q
 from django.db.models import Value, CharField
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, UpdateView
 
-from django_ledger.models import EntityModel, ChartOfAccountModel, AccountModel
+from django_ledger.forms import AccountModelForm
+from django_ledger.models import EntityModel, ChartOfAccountModel, AccountModel, LedgerModel, JournalEntryModel
 
 
 class EntityModelListView(ListView):
@@ -88,10 +89,11 @@ class ChartOfAccountsDetailView(DetailView):
         ).distinct().prefetch_related('acc_assignments__account')
 
 
-class AccountModelDetailView(DetailView):
+class AccountModelDetailView(UpdateView):
     context_object_name = 'account'
     pk_url_kwarg = 'account_pk'
     template_name = 'django_ledger/account_detail.html'
+    form_class = AccountModelForm
 
     def get_queryset(self):
         return AccountModel.objects.filter(
@@ -99,3 +101,44 @@ class AccountModelDetailView(DetailView):
             Q(coa_assignments__coa__entitymodel__admin=self.request.user) |
             Q(coa_assignments__coa__entitymodel__managers__entity_permissions__user=self.request.user)
         ).distinct()
+
+
+class LedgerModelListView(ListView):
+    context_object_name = 'ledgers'
+    template_name = 'django_ledger/ledger.html'
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return LedgerModel.objects.filter(
+            Q(entity__slug=entity_slug) &
+            Q(entity__admin=self.request.user) |
+            Q(entity__managers__entity_permissions__user=self.request.user)
+        )
+
+
+class LedgerModelDetailView(DetailView):
+    template_name = 'django_ledger/ledger-detail.html'
+    context_object_name = 'ledger'
+    pk_url_kwarg = 'ledger_pk'
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return LedgerModel.objects.filter(
+            Q(entity__slug=entity_slug) &
+            Q(entity__admin=self.request.user) |
+            Q(entity__managers__entity_permissions__user=self.request.user)
+        ).prefetch_related('journal_entry', 'entity')
+
+
+class JournalEntryDetail(DetailView):
+    pk_url_kwarg = 'je_pk'
+    context_object_name = 'journal_entry'
+    template_name = 'django_ledger/journal_entry_detail.html'
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return JournalEntryModel.objects.filter(
+            Q(ledger__entity__slug=entity_slug) &
+            Q(ledger__entity__admin=self.request.user) |
+            Q(ledger__entity__managers__entity_permissions__user=self.request.user)
+        ).prefetch_related('txs')
