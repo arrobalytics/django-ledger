@@ -117,7 +117,7 @@ class LedgerModelListView(ListView):
 
 
 class LedgerModelDetailView(DetailView):
-    template_name = 'django_ledger/ledger-detail.html'
+    template_name = 'django_ledger/ledger_detail.html'
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
 
@@ -141,4 +141,4 @@ class JournalEntryDetail(DetailView):
             Q(ledger__entity__slug=entity_slug) &
             Q(ledger__entity__admin=self.request.user) |
             Q(ledger__entity__managers__entity_permissions__user=self.request.user)
-        ).prefetch_related('txs')
+        ).prefetch_related('txs', 'txs__account')

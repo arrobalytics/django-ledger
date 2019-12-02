@@ -1,0 +1,24 @@
+{% load humanize %}
+
+<table>
+    <tr>
+        <th>Account</th>
+        <th>Account Name</th>
+        <th>Credit</th>
+        <th>Debit</th>
+    </tr>
+    {% for tx in txs %}
+        <tr>
+            <td>{{ tx.account.code }}</td>
+            <td>{{ tx.account.name }}</td>
+            <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | intcomma }}{% endif %}</td>
+            <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | intcomma }}{% endif %}</td>
+        </tr>
+    {% endfor %}
+    <tr>
+        <td>Total</td>
+        <td></td>
+        <td>${{ total_credits | intcomma }}</td>
+        <td>${{ total_debits | intcomma }}</td>
+    </tr>
+</table>

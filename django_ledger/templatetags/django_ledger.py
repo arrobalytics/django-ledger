@@ -61,3 +61,15 @@ def income_statement(entity):
         'total_expenses': total_expenses,
         'total_income_loss': total_income - total_expenses
     }
+
+
+@register.inclusion_tag('django_ledger/tags/transactions.html')
+def je_txs(journal_entry):
+    txs = journal_entry.txs.all()
+    total_credits = sum([tx.amount for tx in txs if tx.tx_type == 'credit'])
+    total_debits = sum([tx.amount for tx in txs if tx.tx_type == 'debit'])
+    return {
+        'txs': txs,
+        'total_debits': total_debits,
+        'total_credits': total_credits
+    }
