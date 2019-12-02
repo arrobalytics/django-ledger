@@ -1,3 +1,6 @@
+{% load humanize %}
+{% load django_ledger %}
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,12 +21,25 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">Transactions</h1>
-                <ul>
-                    {% for tx in journal_entry.txs.all %}
-                        <li>{{ tx }}</li>
-                    {% endfor %}
-                </ul>
+                <h1 class="is-size-3">Journal Entry Transactions</h1>
+                {% je_txs journal_entry %}
+{#                <table>#}
+{#                    <tr>#}
+{#                        <th>Account</th>#}
+{#                        <th>Account Name</th>#}
+{#                        <th>Credit</th>#}
+{#                        <th>Debit</th>#}
+{#                    </tr>#}
+{#                    {% for tx in journal_entry.txs.all %}#}
+{#                        <tr>#}
+{#                        <td>{{ tx.account.code }}</td>#}
+{#                        <td>{{ tx.account.name }}</td>#}
+{#                        <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | intcomma }}{% endif %}</td>#}
+{#                        <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | intcomma }}{% endif %}</td>#}
+{#                        </tr>#}
+{#                    {% endfor %}#}
+{#                </table>#}
+
 
             </div>
         </div>
