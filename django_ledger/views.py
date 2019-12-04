@@ -3,7 +3,8 @@ from django.db.models import Value, CharField
 from django.views.generic import ListView, DetailView, UpdateView
 
 from django_ledger.forms import AccountModelForm
-from django_ledger.models import EntityModel, ChartOfAccountModel, AccountModel, LedgerModel, JournalEntryModel
+from django_ledger.models import (EntityModel, ChartOfAccountModel, CoAAccountAssignments,
+                                  AccountModel, LedgerModel, JournalEntryModel)
 
 
 class EntityModelListView(ListView):
@@ -77,6 +78,17 @@ class EntityIncomeStatementView(DetailView):
         )
 
 
+class ChartOfAccountsListView(ListView):
+    template_name = 'django_ledger/coa_list.html'
+    context_object_name = 'coas'
+
+    def get_queryset(self):
+        return ChartOfAccountModel.objects.filter(
+            Q(user=self.request.user) |
+            Q(entitymodel__entity_permissions__user=self.request.user)
+        ).distinct()
+
+
 class ChartOfAccountsDetailView(DetailView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
@@ -87,6 +99,19 @@ class ChartOfAccountsDetailView(DetailView):
             Q(user=self.request.user) |
             Q(entitymodel__entity_permissions__user=self.request.user)
         ).distinct().prefetch_related('acc_assignments__account')
+
+
+class ChartOfAccountAssignmentsView(ListView):
+    context_object_name = 'assignments'
+    template_name = 'django_ledger/coa_assignments.html'
+
+    def get_queryset(self):
+        coa_slug = self.kwargs['coa_slug']
+        return CoAAccountAssignments.objects.filter(
+            coa__user=self.request.user,
+            coa__entitymodel__managers__entity_permissions__user=self.request.user,
+            coa__slug__iexact=coa_slug
+        )
 
 
 class AccountModelDetailView(UpdateView):

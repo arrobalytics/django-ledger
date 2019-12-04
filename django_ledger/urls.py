@@ -36,7 +36,16 @@ urlpatterns = [
          views.EntityIncomeStatementView.as_view(),
          name='entity-income-statement'),
 
-    path('coa/<slug:coa_slug>/', views.ChartOfAccountsDetailView.as_view(), name='coa-detail'),
+    path('coa/',
+         views.ChartOfAccountsListView.as_view(),
+         name='coa-list'),
+    path('coa/<slug:coa_slug>/',
+         views.ChartOfAccountsDetailView.as_view(),
+         name='coa-detail'),
+    path('coa/<slug:coa_slug>/assignments/',
+         views.ChartOfAccountAssignmentsView.as_view(),
+         name='coa-assignments'),
+
     path('account/<int:account_pk>/', views.AccountModelDetailView.as_view(), name='account-detail'),
 
 ]

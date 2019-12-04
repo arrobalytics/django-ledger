@@ -3,8 +3,8 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
-from mptt.models import MPTTModel, TreeForeignKey
 from django.urls import reverse
+from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 from django_ledger.settings import DJANGO_LEDGER_SETTINGS
@@ -73,7 +73,6 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name='Account Role')
     role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name='Account Balance Type')
-    locked = models.BooleanField(default=False)
 
     parent = TreeForeignKey('self',
                             null=True,

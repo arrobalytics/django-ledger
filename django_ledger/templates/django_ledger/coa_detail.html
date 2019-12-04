@@ -25,6 +25,7 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Accounts</h1>
+                <a class="button is-dark" href="{{ coa.get_assignments_url }}">Assignments</a>
                 <ul>
                     {% for acc in coa.acc_assignments.all %}
                         <li>{{ acc.account }} <a class="button is-small is-light"
