@@ -24,7 +24,7 @@ def balance_sheet(entity):
         [acc['balance'] for acc in earnings if acc['balance_type'] == 'credit'] +
         [-acc['balance'] for acc in earnings if acc['balance_type'] == 'debit'])
     total_equity = total_capital + retained_earnings - total_liabilities
-    total_liabilities_equity = total_liabilities + total_equity
+    total_liabilities_equity = total_liabilities + total_capital + retained_earnings
     return {
         'bs_data': bs_data,
         'assets': assets,

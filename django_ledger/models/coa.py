@@ -87,6 +87,12 @@ class ChartOfAccountModel(SlugNameMixIn,
                            'coa_slug': self.slug
                        })
 
+    def get_assignments_url(self):
+        return reverse('django_ledger:coa-assignments',
+                       kwargs={
+                           'coa_slug': self.slug
+                       })
+
     def get_coa_account(self, code):
         try:
             qs = self.acc_assignments.available()

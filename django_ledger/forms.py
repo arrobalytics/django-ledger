@@ -1,6 +1,7 @@
 from django import forms
 
 from django_ledger.models import AccountModel
+from django_ledger.models import CoAAccountAssignments
 
 
 class AccountModelForm(forms.ModelForm):
@@ -11,5 +12,10 @@ class AccountModelForm(forms.ModelForm):
             'name',
             'role',
             'balance_type',
-            'locked'
         ]
+
+
+class CoAAssignmentsForm(forms.ModelForm):
+    class Meta:
+        model = CoAAccountAssignments
+        fields = '__all__'
