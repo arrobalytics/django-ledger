@@ -149,6 +149,12 @@ class CoAAccountAssignments(models.Model):
                                      acc=self.account.__str__()
                                      )
 
+    def get_absolute_url(self):
+        return reverse('django_ledger:coa-assignments',
+                       kwargs={
+                           'coa_slug': self.coa.slug
+                       })
+
     class Meta:
         verbose_name = 'Chart of Account Assignment'
         unique_together = [

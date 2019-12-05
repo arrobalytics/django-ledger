@@ -18,12 +18,19 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">CoA Assignments</h1>
-                <ul>
-                    {% for a in assignments %}
-                        <li>{{ a }}</li>
-                    {% endfor %}
-                </ul>
+                <h1 class="is-size-3">{{ assignments.first.coa.name }}</h1>
+                <form action="{{ assignments.get_absolute_url }}" method="post">
+                    {% csrf_token %}
+                    <table>
+                        {{ formset.as_table }}
+                    </table>
+                    <button type="submit" class="button is-light">Save</button>
+                </form>
+                {#                <ul>#}
+                {#                    {% for a in assignments %}#}
+                {#                        <li>{{ a }}</li>#}
+                {#                    {% endfor %}#}
+                {#                </ul>#}
             </div>
             {#            <div class="column">#}
             {#                <h1 class="is-size-3">Managed Entities</h1>#}
