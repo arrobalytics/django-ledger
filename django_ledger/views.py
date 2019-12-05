@@ -1,8 +1,8 @@
 from django.db.models import Q
 from django.db.models import Value, CharField
-from django.views.generic import ListView, DetailView, UpdateView
+from django.views.generic import ListView, DetailView, UpdateView, TemplateView
 
-from django_ledger.forms import AccountModelForm
+from django_ledger.forms import AccountModelForm, CoAAssignmentFormSet
 from django_ledger.models import (EntityModel, ChartOfAccountModel, CoAAccountAssignments,
                                   AccountModel, LedgerModel, JournalEntryModel)
 
@@ -101,17 +101,28 @@ class ChartOfAccountsDetailView(DetailView):
         ).distinct().prefetch_related('acc_assignments__account')
 
 
-class ChartOfAccountAssignmentsView(ListView):
+class ChartOfAccountAssignmentsView(TemplateView):
     context_object_name = 'assignments'
     template_name = 'django_ledger/coa_assignments.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['formset'] = CoAAssignmentFormSet(queryset=self.get_queryset())
+        return context
+
+    def post(self, *args, **kwargs):
+        formset = CoAAssignmentFormSet(self.request.POST)
+        if formset.is_valid():
+            formset.save()
+        return self.render_to_response(context=self.get_context_data())
 
     def get_queryset(self):
         coa_slug = self.kwargs['coa_slug']
         return CoAAccountAssignments.objects.filter(
-            coa__user=self.request.user,
-            coa__entitymodel__managers__entity_permissions__user=self.request.user,
-            coa__slug__iexact=coa_slug
-        )
+            Q(coa__user=self.request.user) |
+            Q(coa__entitymodel__managers__entity_permissions__user=self.request.user) &
+            Q(coa__slug__iexact=coa_slug)
+        ).select_related('coa', 'account')
 
 
 class AccountModelDetailView(UpdateView):

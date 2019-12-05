@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 
 from django_ledger.models.accounts import AccountModel
@@ -5,7 +6,6 @@ from django_ledger.models.coa import ChartOfAccountModel, make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
-from django.contrib.auth import get_user_model
 
 UserModel = get_user_model()
 
@@ -128,4 +128,4 @@ def quickstart(quickstart_user: str, reset_db=False, coa=None):
     return bs, bs_op, bs_f, ic
 
 
-bs, bs_op, bs_f, ic = quickstart(quickstart_user='pedro_navaja', reset_db=True)
+# bs, bs_op, bs_f, ic = quickstart(quickstart_user='pedronavaja', reset_db=True)
