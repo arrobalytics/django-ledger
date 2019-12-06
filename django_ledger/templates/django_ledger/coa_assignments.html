@@ -18,13 +18,12 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">{{ assignments.first.coa.name }}</h1>
                 <form action="{{ assignments.get_absolute_url }}" method="post">
+                    <button type="submit" class="button is-light">Save</button>
                     {% csrf_token %}
                     <table>
                         {{ formset.as_table }}
                     </table>
-                    <button type="submit" class="button is-light">Save</button>
                 </form>
                 {#                <ul>#}
                 {#                    {% for a in assignments %}#}

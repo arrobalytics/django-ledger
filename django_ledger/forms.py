@@ -1,11 +1,10 @@
-from django import forms
-from django.forms import modelformset_factory
+from django.forms import modelformset_factory, ModelForm, HiddenInput
 
 from django_ledger.models import AccountModel
 from django_ledger.models import CoAAccountAssignments
 
 
-class AccountModelForm(forms.ModelForm):
+class AccountModelForm(ModelForm):
     class Meta:
         model = AccountModel
         fields = [
@@ -16,15 +15,19 @@ class AccountModelForm(forms.ModelForm):
         ]
 
 
-class CoAAssignmentsForm(forms.ModelForm):
+class CoAAssignmentsForm(ModelForm):
     class Meta:
         model = CoAAccountAssignments
         fields = '__all__'
 
 
 CoAAssignmentFormSet = modelformset_factory(CoAAccountAssignments,
-                                            extra=2,
+                                            extra=0,
+                                            widgets={
+                                                'coa': HiddenInput()
+                                            },
                                             fields=(
+                                                'coa',
                                                 'account',
                                                 'locked',
                                                 'active'
