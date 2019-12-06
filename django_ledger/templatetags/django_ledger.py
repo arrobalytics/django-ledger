@@ -2,6 +2,10 @@ from django import template
 
 register = template.Library()
 
+@register.inclusion_tag('django_ledger/tags/coa_assignments.html')
+def coa_assignments(coa_assignments):
+    pass
+
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html')
 def balance_sheet(entity):
