@@ -29,7 +29,7 @@ Django Ledger comes with a default CoA ready to use or you could use your own. \
 __Please user the following with caution if you are testing on an existing project!!!__
 ```python
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.coa import ChartOfAccountModel, make_account_active, get_acc_idx
+from django_ledger.models.coa import ChartOfAccountModel, make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure

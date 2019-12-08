@@ -3,29 +3,19 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.signals import pre_save
 from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 ACTIVITIES = (
-    ('op', 'Operating'),
-    ('fin', 'Financing'),
-    ('inv', 'Investing'),
-    ('other', 'Other'),
+    ('op', _('Operating')),
+    ('fin', _('Financing')),
+    ('inv', _('Investing')),
+    ('other', _('Other')),
 )
 
 ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
-
-FREQUENCY = (
-    ('nr', 'Non-Recurring'),
-    ('d', 'Daily'),
-    ('m', 'Monthly'),
-    ('q', 'Quarterly'),
-    ('y', 'Yearly'),
-    ('sm', 'Monthly Series'),
-    ('sy', 'Yearly Series'),
-)
-
-FREQUENCY_ALLOWS = [f[0] for f in FREQUENCY]
 
 
 def validate_activity(act):
@@ -36,13 +26,6 @@ def validate_activity(act):
     return act
 
 
-def validate_freq(freq):
-    valid_freq = freq in FREQUENCY_ALLOWS
-    if not valid_freq:
-        raise ValidationError(f'{freq} is invalid. Choices are {FREQUENCY_ALLOWS}.')
-    return freq
-
-
 class JournalEntryModelManager(models.Manager):
 
     def on_entity(self, entity):
@@ -50,35 +33,36 @@ class JournalEntryModelManager(models.Manager):
 
 
 class JournalEntryModel(CreateUpdateMixIn):
-    date = models.DateField()
-    description = models.CharField(max_length=70, blank=True, null=True)
-    activity = models.CharField(choices=ACTIVITIES, max_length=5)
-    origin = models.CharField(max_length=30, blank=True, null=True)
+    date = models.DateField(verbose_name=_l('Date'))
+    description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_l('Description'))
+    activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_l('Activity'))
+    origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_l('Origin'))
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
+                               verbose_name=_l('Parent'),
                                related_name='children',
                                on_delete=models.CASCADE)
     ledger = models.ForeignKey('django_ledger.LedgerModel',
+                               verbose_name=_l('Ledger'),
                                related_name='journal_entry',
                                on_delete=models.CASCADE)
-
     objects = JournalEntryModelManager()
 
     class Meta:
-        verbose_name = 'Journal Entry'
-        verbose_name_plural = 'Journal Entries'
+        verbose_name = _l('Journal Entry')
+        verbose_name_plural = _l('Journal Entries')
 
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
 
     def get_absolute_url(self):
-        return reverse('django_ledger:journal-entry-detail',
+        return reverse('django_ledger:je-detail',
                        kwargs={
                            'je_pk': self.id,
+                           'ledger_pk': self.ledger_id,
                            'entity_slug': self.ledger.entity.slug
                        })
-
 
     def get_balances(self):
         txs = self.txs.only('tx_type', 'amount')
@@ -95,7 +79,7 @@ class JournalEntryModel(CreateUpdateMixIn):
         return balances['credits'] == balances['debits']
 
     def clean(self):
-        check1 = 'Debits and credits do not balance'
+        check1 = 'Debits and credits do not match.'
         if not self.je_is_valid():
             raise ValidationError(check1)
 
@@ -107,7 +91,7 @@ def je_presave(sender, instance, *args, **kwargs):
         instance.clean()
     except ValidationError:
         instance.txs.all().delete()
-        raise ValidationError('Something went wrong cleaning journal entry ID:{x1}'.format(x1=instance.id))
+        raise ValidationError('Something went wrong cleaning journal entry ID: {x1}'.format(x1=instance.id))
 
 
 pre_save.connect(je_presave, sender=JournalEntryModel)

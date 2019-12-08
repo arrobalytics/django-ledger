@@ -1,10 +1,19 @@
 from django import template
+from django.urls import reverse
 
 register = template.Library()
 
-@register.inclusion_tag('django_ledger/tags/coa_assignments.html')
-def coa_assignments(coa_assignments):
-    pass
+
+@register.inclusion_tag('django_ledger/tags/txs_table.html', takes_context=True)
+def txs_table(context):
+    kwargs = context['view'].kwargs
+    txs_form_url = reverse('django_ledger:txs', kwargs={
+        'entity_slug': kwargs['entity_slug'],
+        'ledger_pk': kwargs['ledger_pk'],
+        'je_pk': kwargs['je_pk'],
+    })
+    context['txs_form_url'] = txs_form_url
+    return context
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html')

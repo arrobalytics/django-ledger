@@ -23,23 +23,9 @@
             <div class="column">
                 <h1 class="is-size-3">Journal Entry Transactions</h1>
                 {% je_txs journal_entry %}
-{#                <table>#}
-{#                    <tr>#}
-{#                        <th>Account</th>#}
-{#                        <th>Account Name</th>#}
-{#                        <th>Credit</th>#}
-{#                        <th>Debit</th>#}
-{#                    </tr>#}
-{#                    {% for tx in journal_entry.txs.all %}#}
-{#                        <tr>#}
-{#                        <td>{{ tx.account.code }}</td>#}
-{#                        <td>{{ tx.account.name }}</td>#}
-{#                        <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | intcomma }}{% endif %}</td>#}
-{#                        <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | intcomma }}{% endif %}</td>#}
-{#                        </tr>#}
-{#                    {% endfor %}#}
-{#                </table>#}
-
+                <a class="button is-dark"
+                   href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=journal_entry.ledger_id je_pk=journal_entry.id %}">Edit
+                    Txs</a>
 
             </div>
         </div>

@@ -1,18 +1,15 @@
-{% load django_ledger %}
-
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ entity.name }} | Balance Sheet</title>
+    <title>Account Create</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
 </head>
 <body>
 <section class="section">
     <div class="container">
-        <h1 class="title">{{ entity.name }}</h1>
-        <p class="subtitle">Balance Sheet</p>
+        <h1 class="title">Create CoA Account</h1>
     </div>
 </section>
 <section class="section">
@@ -20,7 +17,16 @@
 
         <div class="columns">
             <div class="column">
-                {% balance_sheet entity %}
+                <h1 class="is-size-3">Account</h1>
+                {% for err in form.errors %}
+                    {{ err.code }}
+                {% endfor %}
+
+                <form action="{% url 'django_ledger:account-create' %}" method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="button">Submit</button>
+                </form>
             </div>
         </div>
 

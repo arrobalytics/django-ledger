@@ -1,24 +1,31 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.mixins import io
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins.io import IOMixIn
 
 UserModel = get_user_model()
 
 
-class EntityModel(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
-    admin = models.ForeignKey(UserModel, on_delete=models.PROTECT, related_name='entities_admin')
-    managers = models.ManyToManyField(UserModel, through='EntityManagementModel', related_name='entities_managed')
-    coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
-                            on_delete=models.DO_NOTHING,
-                            verbose_name='Chart of Accounts')
+class EntityModel(SlugNameMixIn,
+                  CreateUpdateMixIn,
+                  IOMixIn):
+    admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
+                              related_name='admin_of', verbose_name=_l('Admin'))
+    managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
+                                      related_name='managed_by', verbose_name=_l('Managers'))
+    coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
+                               on_delete=models.CASCADE,
+                               related_name='entity',
+                               verbose_name=_l('Chart of Accounts'))
 
     class Meta:
-        verbose_name = 'Entity'
-        verbose_name_plural = 'Entities'
+        verbose_name = _l('Entity')
+        verbose_name_plural = _l('Entities')  # idea: can use th django plural function...
 
     def __str__(self):
         return '{x1} ({x2})'.format(x1=self.name,
@@ -54,18 +61,20 @@ class EntityModel(SlugNameMixIn, CreateUpdateMixIn, io.IOMixIn):
 
 class EntityManagementModel(CreateUpdateMixIn):
     PERMISSIONS = [
-        ('read', 'Read Permissions'),
-        ('write', 'Read/Write Permissions'),
-        ('suspended', 'No Permissions')
+        ('read', _('Read Permissions')),
+        ('write', _('Read/Write Permissions')),
+        ('suspended', _('No Permissions'))
     ]
 
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
-                               verbose_name='Entity',
+                               verbose_name=_l('Entity'),
                                related_name='entity_permissions')
     user = models.ForeignKey(UserModel,
                              on_delete=models.CASCADE,
-                             verbose_name='Manager',
+                             verbose_name=_l('Manager'),
                              related_name='entity_permissions')
-
-    permission_level = models.CharField(max_length=10, default='read', choices=PERMISSIONS)
+    permission_level = models.CharField(max_length=10,
+                                        default='read',
+                                        choices=PERMISSIONS,
+                                        verbose_name=_l('Permission Level'))

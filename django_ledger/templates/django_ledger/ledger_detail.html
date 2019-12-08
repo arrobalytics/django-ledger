@@ -19,10 +19,19 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Ledger Journal Entries</h1>
+                <a class="button is-dark is-small"
+                   href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">New
+                    JE</a>
                 <ul>
                     {% for je in ledger.journal_entry.all %}
-                        <li>{{ je }} <a class="button is-small is-dark"
-                                        href="{{ je.get_absolute_url }}">View</a></li>
+                        <li>{{ je }}
+                            <a class="button is-small is-dark"
+                               href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
+                            <a class="button is-small is-dark"
+                               href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
+                            <a class="button is-small is-dark"
+                               href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>

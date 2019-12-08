@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import get_coa_account
@@ -17,19 +18,20 @@ class LedgerModelManager(models.Manager):
         return self.get_queryset().filter(posted=True)
 
 
-class LedgerModelAbstract(SlugNameMixIn,
-                          CreateUpdateMixIn,
-                          IOMixIn):
-    posted = models.BooleanField(default=False)
-    locked = models.BooleanField(default=False)
+class LedgerModel(SlugNameMixIn,
+                  CreateUpdateMixIn,
+                  IOMixIn):
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
+                               verbose_name=_l('Entity'),
                                related_name='ledgers')
+    posted = models.BooleanField(default=False, verbose_name=_l('Posted'))
+    locked = models.BooleanField(default=False, verbose_name=_l('Locked'))
 
     objects = LedgerModelManager()
 
     class Meta:
-        abstract = True
+        verbose_name = _l('Ledger')  # todo: plural function???...
 
     def __str__(self):
         return '{slug}: {name}'.format(name=self.name,
@@ -42,6 +44,12 @@ class LedgerModelAbstract(SlugNameMixIn,
                            'ledger_pk': self.id
                        })
 
+    def get_update_url(self):
+        return reverse('django_ledger:ledger-update',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ledger_pk': self.id
+                       })
 
     def get_coa(self):
         return self.entity.coa
@@ -60,12 +68,6 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_account_balance(self, account_code: str, as_of: str = None):
         return self.get_jes(account=account_code, as_of=as_of)
-
-
-class LedgerModel(LedgerModelAbstract):
-    """
-    Final LedgerModel from Abstracts
-    """
 
 
 def ledgermodel_presave(sender, instance, **kwargs):

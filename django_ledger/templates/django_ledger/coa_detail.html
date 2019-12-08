@@ -6,13 +6,12 @@
     <title>{{ coa.name }}</title>
     <title>DJ Ledger - Entities</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-    <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
 </head>
 <body>
 <section class="section">
     <div class="container">
         <h1 class="title">
-            {{ coa.name }}
+            {{ coa.name }} Hello
         </h1>
         <p class="subtitle">
             {{ coa.description }}
@@ -25,11 +24,12 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Accounts</h1>
-                <a class="button is-dark" href="{{ coa.get_assignments_url }}">Assignments</a>
+                <a class="button is-light" href="{% url 'django_ledger:account-create' %}">Add Account</a>
+                {{ accounts_formset.as_p }}
                 <ul>
-                    {% for acc in coa.acc_assignments.all %}
-                        <li>{{ acc.account }} <a class="button is-small is-light"
-                                                 href="{{ acc.account.get_absolute_url }}">Edit</a></li>
+                    {% for acc in coa.accounts.all %}
+                        <li>{{ acc }} <a class="button is-small is-light"
+                                         href="{{ acc.get_absolute_url }}">Edit</a></li>
                     {% endfor %}
                 </ul>
 
