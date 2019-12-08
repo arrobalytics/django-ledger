@@ -1,3 +1,5 @@
+{% load django_ledger %}
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -18,12 +20,16 @@
 
         <div class="columns">
             <div class="column">
+{#                {% coa_assignments assignments %}#}
                 <form action="{{ assignments.get_absolute_url }}" method="post">
                     <button type="submit" class="button is-light">Save</button>
                     {% csrf_token %}
-                    <table>
+{#                    <table>#}
+                    <div>
                         {{ formset.as_table }}
-                    </table>
+                    </div>
+
+{#                    </table>.#}
                 </form>
                 {#                <ul>#}
                 {#                    {% for a in assignments %}#}

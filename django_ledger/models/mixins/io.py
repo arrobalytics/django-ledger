@@ -3,6 +3,7 @@ from collections import OrderedDict
 from django.core.exceptions import ValidationError
 from pandas import DataFrame
 
+from django_ledger.models.accounts import BS_ROLES
 from django_ledger.models.accounts import validate_roles
 from django_ledger.models.journalentry import validate_activity, JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
@@ -35,7 +36,7 @@ FIELD_MAP = OrderedDict({'id': 'je_id',
                          'txs__account__code': 'code',
                          'txs__account__name': 'name',
                          'txs__account__role': 'role',
-                         'txs__account__role_bs': 'role_bs',
+                         # 'txs__account__role_bs': 'role_bs',
                          'txs__account__balance_type': 'balance_type',
                          'txs__amount': 'amount'})
 
@@ -63,7 +64,7 @@ def process_signs(record):
     return record
 
 
-def validate_tx_data(tx_data: dict) -> dict:
+def validate_tx_data(tx_data: list):
     credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
     debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
     if not credits == debits:
@@ -84,7 +85,7 @@ class IOMixIn:
 
     def create_je(self,
                   je_date: str,
-                  je_txs: dict,
+                  je_txs: list,
                   je_activity: str,
                   je_ledger=None,
                   je_desc=None,
@@ -196,11 +197,14 @@ class IOMixIn:
             if tx['txs__account__balance_type'] != tx['txs__tx_type']:
                 tx['txs__amount'] = -tx['txs__amount']
 
-        account_idx = sorted(set([(acc['txs__account__role_bs'],
-                                   acc['txs__account__role'],
-                                   acc['txs__account__code'],
-                                   acc['txs__account__name'],
-                                   acc['txs__account__balance_type']) for acc in je_txs]))
+        account_idx = sorted(set([(
+            BS_ROLES.get(acc['txs__account__role']),
+            acc['txs__account__role'],
+            acc['txs__account__code'],
+            acc['txs__account__name'],
+            acc['txs__account__balance_type']
+        ) for acc in je_txs]))
+
         acc_agg = [
             {
                 'role_bs': acc[0],
@@ -212,7 +216,6 @@ class IOMixIn:
                                                 for je in je_txs if je['txs__account__code'] == acc[2]]]),
             } for acc in account_idx
         ]
-
         if as_dataframe:
             return DataFrame(acc_agg)
         return acc_agg

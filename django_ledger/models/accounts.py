@@ -4,6 +4,8 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
@@ -11,32 +13,34 @@ from django_ledger.settings import DJANGO_LEDGER_SETTINGS
 
 ACCOUNT_ROLES = [
     ('Assets', (
-        ('ca', 'Current Asset'),
-        ('lti', 'Long Term Investments'),
-        ('ppe', 'Property Plant & Equipment'),
-        ('ia', 'Intangible Assets'),
-        ('aadj', 'Asset Adjustments'),
+        ('ca', _('Current Asset')),
+        ('lti', _('Long Term Investments')),
+        ('ppe', _('Property Plant & Equipment')),
+        ('ia', _('Intangible Assets')),
+        ('aadj', _('Asset Adjustments')),
     )
      ),
     ('Liabilities', (
-        ('cl', 'Current Liabilities'),
-        ('ltl', 'Long Term Liabilities'),
+        ('cl', _('Current Liabilities')),
+        ('ltl', _('Long Term Liabilities')),
     )
      ),
-    ("Equity", (
-        ('cap', 'Capital'),
-        ('cadj', 'Capital Adjustments'),
-        ('in', 'Income'),
-        ('ex', 'Expense'),
+    ('Equity', (
+        ('cap', _('Capital')),
+        ('cadj', _('Capital Adjustments')),
+        ('in', _('Income')),
+        ('ex', _('Expense')),
     )
      ),
-    ("Other", (
-        ('excl', 'Excluded'),
+    ('Other', (
+        ('excl', _('Excluded')),
     )
      )
 ]
 
-BS_ROLES = sum([[s[0] for s in r[1]] for r in ACCOUNT_ROLES], list())
+ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLES], list())
+VALID_ROLES = [r[1] for r in ROLE_TUPLES]
+BS_ROLES = dict([(r[1], r[0]) for r in ROLE_TUPLES])
 
 
 def validate_roles(roles):
@@ -44,9 +48,9 @@ def validate_roles(roles):
         if isinstance(roles, str):
             roles = [roles]
         for r in roles:
-            if r not in BS_ROLES:
-                raise ValidationError('{roles} is invalid. Choices are {ch}'.format(ch=', '.join(BS_ROLES),
-                                                                                    roles=r))
+            if r not in VALID_ROLES:
+                raise ValidationError('{roles}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES),
+                                                                                     roles=r))
     return roles
 
 
@@ -54,37 +58,44 @@ class AccountModelManager(models.Manager):
 
     def available(self, coa):
         return self.get_queryset().filter(
-            coa_assignments__active=True,
-            coa_assignments__locked=False,
-            coa_assignments__coa=coa
+            active=True,
+            locked=False,
+            coa=coa
         )
 
 
 class AccountModel(MPTTModel, CreateUpdateMixIn):
     BALANCE_TYPE = [
-        ('credit', 'Credit'),
-        ('debit', 'Debit')
+        ('credit', _('Credit')),
+        ('debit', _('Debit'))
     ]
 
-    # todo: address uniqueness of the code field...?
     code = models.CharField(max_length=DJANGO_LEDGER_SETTINGS.get('ACCOUNT_MAX_LENGTH'),
-                            unique=True, verbose_name='Account Code')
-    name = models.CharField(max_length=100, verbose_name='Account Name')
-    role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name='Account Role')
-    role_bs = models.CharField(max_length=20, null=True, verbose_name='Balance Sheet Role')
-    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name='Account Balance Type')
-
+                            unique=True, verbose_name=_l('Account Code'))
+    name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
+    role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
+    # role_bs = models.CharField(max_length=20, null=True, verbose_name=_l('Balance Sheet Role'))
+    balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
                             related_name='children',
+                            verbose_name=_l('Parent'),
                             db_index=True,
                             on_delete=models.CASCADE)
-
+    locked = models.BooleanField(default=False, verbose_name=_l('Locked'))
+    active = models.BooleanField(default=False, verbose_name=_l('Active'))
+    coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
+                            on_delete=models.CASCADE,
+                            verbose_name=_l('Chart of Accounts'),
+                            related_name='accounts')
     on_coa = AccountModelManager()
 
     class Meta:
-        verbose_name = 'Account'
+        verbose_name = _l('Account')
+        unique_together = [
+            ('coa', 'code')
+        ]
 
     class MPTTMeta:
         order_insertion_by = ['name']
@@ -96,33 +107,15 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
                                                       x4=self.balance_type,
                                                       x5=self.code)
 
+    @property
+    def role_bs(self):
+        return BS_ROLES.get(self.role)
+
     def get_absolute_url(self):
         return reverse('django_ledger:account-detail',
                        kwargs={
                            'account_pk': self.id
                        })
-
-    def get_bs_role(self):
-        if self.role:
-            for role, value in dict(ACCOUNT_ROLES).items():
-                if self.role in [x[0] for x in value]:
-                    return role.lower()
-
-    def set_bs_role(self):
-        """
-        Account Balance Sheet Role is automatically checked during save and Model's clean() operation.
-
-        """
-        if not self.role_bs:
-            self.role_bs = self.get_bs_role()
-
-    def check_bs_role(self):
-        return self.role_bs == self.get_bs_role()
-
-    def clean(self):
-
-        if not self.check_bs_role():
-            self.set_bs_role()
 
     def get_balance(self):
 
@@ -138,15 +131,6 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
             return credits - debits
         elif self.balance_type == 'debit':
             return debits - credits
-
-
-# AccountModel Signals ----------------
-# def accountmodel_postinit(sender, instance, *args, **kwargs):
-#     print('Hello Account {x1}-{x2} Post Init'.format(x1=instance.code,
-#                                                      x2=instance.name))
-#
-#
-# post_init.connect(accountmodel_postinit, sender=AccountModel)
 
 
 def accountmodel_presave(sender, instance, *args, **kwargs):

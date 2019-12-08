@@ -3,14 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Company Ledgers</title>
+    <title>Journal Entry Transactions View</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
 </head>
 <body>
 <section class="section">
     <div class="container">
-        <h1 class="title">Ledger List View</h1>
-        <p class="subtitle">Ledgers</p>
+        <h1 class="title">Journal Entry TXS IO</h1>
     </div>
 </section>
 <section class="section">
@@ -18,15 +17,12 @@
 
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-3">Ledger Journal Entries</h1>
-                <ul>
-                    {% for ledger in ledgers %}
-                        <li>{{ ledger.name }} <a class="button is-light is-small"
-                                             href="{{ ledger.get_absolute_url }}">Edit</a></li>
-                    {% endfor %}
-
-                </ul>
-
+                <h1 class="is-size-1">TXS IO Goes Here</h1>
+                <form action="{{ txs_action_url }}">
+                    <table>
+                            {{ txs_formset }}
+                    </table>
+                </form>
             </div>
         </div>
 
