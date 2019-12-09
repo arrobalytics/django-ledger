@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _l
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 
-class TransactionModelAbstract(CreateUpdateMixIn):
+class TransactionModel(CreateUpdateMixIn):
     TX_TYPE = [
         ('credit', _('Credit')),
         ('debit', _('Debit'))
@@ -30,8 +30,8 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     description = models.CharField(max_length=100, null=True, blank=True, verbose_name=_l('Tx Description'))
 
     class Meta:
-        abstract = True
         verbose_name = _l('Transaction')
+        verbose_name_plural = _l('Transactions')
 
     def __str__(self):
         return '{x1}-{x2}/{x5}: {x3}/{x4}'.format(x1=self.account.code,
@@ -39,9 +39,3 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                                   x3=self.amount,
                                                   x4=self.tx_type,
                                                   x5=self.account.balance_type)
-
-
-class TransactionModel(TransactionModelAbstract):
-    """
-    Final TransactionModel from Abstracts
-    """

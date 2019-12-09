@@ -75,6 +75,7 @@ class ChartOfAccountModel(SlugNameMixIn,
 
     class Meta:
         verbose_name = _l('Chart of Account')
+        verbose_name_plural = _l('Chart of Accounts')
 
     def __str__(self):
         return f'{self.slug}: {self.name}'
