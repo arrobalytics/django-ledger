@@ -1,6 +1,10 @@
+from random import randint
+
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models.signals import pre_save
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
@@ -57,6 +61,17 @@ class EntityModel(SlugNameMixIn,
 
     def get_accounts(self):
         return AccountModel.on_coa.available(coa=self.coa)
+
+
+def entity_presave(sender, instance, **kwargs):
+    if not instance.slug:
+        slug = slugify(instance.name)
+        ri = randint(100000, 999999)
+        entity_slug = f'{slug}-{ri}'
+        instance.slug = entity_slug
+
+
+pre_save.connect(entity_presave, EntityModel)
 
 
 class EntityManagementModel(CreateUpdateMixIn):

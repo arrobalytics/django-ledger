@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, TemplateView
 
 from django_ledger.forms import (AccountModelForm, AccountModelCreateForm, LedgerModelCreateForm, LedgerModelUpdateForm,
-                                 JournalEntryModelForm, TransactionModelFormSet)
+                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
 
@@ -44,6 +44,21 @@ class EntityModelDetailVew(DetailView):
             Q(admin=self.request.user) |
             Q(entity_permissions__user=self.request.user)
         ).select_related('coa')
+
+
+class EntityModelCreateView(CreateView):
+    template_name = 'django_ledger/entity_create.html'
+    form_class = EntityModelForm
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-list')
+
+    def form_valid(self, form):
+        user = self.request.user
+        if user.is_authenticated:
+            form.instance.admin = user
+            self.object = form.save()
+        return super().form_valid(form)
 
 
 class EntityBalanceSheetView(DetailView):

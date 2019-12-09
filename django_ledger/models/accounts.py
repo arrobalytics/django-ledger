@@ -74,7 +74,6 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
                             unique=True, verbose_name=_l('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
-    # role_bs = models.CharField(max_length=20, null=True, verbose_name=_l('Balance Sheet Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     parent = TreeForeignKey('self',
                             null=True,
@@ -137,7 +136,7 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
 def accountmodel_presave(sender, instance, *args, **kwargs):
     print('Account {x1}-{x2} Pre Save'.format(x1=instance.code,
                                               x2=instance.name))
-    instance.set_bs_role()
+    # instance.set_bs_role()
 
 
 pre_save.connect(accountmodel_presave, sender=AccountModel)

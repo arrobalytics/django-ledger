@@ -1,7 +1,17 @@
 from django.forms import ModelForm, Textarea, modelformset_factory, BaseModelFormSet
 
-from django_ledger.models import AccountModel, LedgerModel, JournalEntryModel, TransactionModel
+from django_ledger.models import AccountModel, LedgerModel, JournalEntryModel, TransactionModel, EntityModel
 from django_ledger.models.mixins.io import validate_tx_data
+
+
+class EntityModelForm(ModelForm):
+    class Meta:
+        model = EntityModel
+        fields = [
+            'name',
+            'coa'
+        ]
+
 
 
 class AccountModelForm(ModelForm):
