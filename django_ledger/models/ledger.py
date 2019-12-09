@@ -31,7 +31,8 @@ class LedgerModel(SlugNameMixIn,
     objects = LedgerModelManager()
 
     class Meta:
-        verbose_name = _l('Ledger')  # todo: plural function???...
+        verbose_name = _l('Ledger')
+        verbose_name_plural = _l('Ledgers')
 
     def __str__(self):
         return '{slug}: {name}'.format(name=self.name,

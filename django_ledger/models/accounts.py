@@ -93,6 +93,7 @@ class AccountModel(MPTTModel, CreateUpdateMixIn):
 
     class Meta:
         verbose_name = _l('Account')
+        verbose_name_plural = _l('Accounts')
         unique_together = [
             ('coa', 'code')
         ]
