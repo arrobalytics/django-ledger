@@ -43,7 +43,6 @@ class EntityModel(MPTTModel,
                             on_delete=models.CASCADE)
 
     incorporation_date = models.DateField(null=True, blank=True)
-    common_shares = models.BigIntegerField(null=True, blank=True)
     taxation = models.CharField(max_length=10, choices=__TAXATION_CHOICES)
     fiscal_year_end = models.DateField(null=True, blank=True)
 
