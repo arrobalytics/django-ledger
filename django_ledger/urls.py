@@ -68,4 +68,6 @@ urlpatterns = [
          views.EntityIncomeStatementView.as_view(),
          name='entity-income-statement'),
 
+    path('', views.RootUrlView.as_view(), name='root-url')
+
 ]

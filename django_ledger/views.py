@@ -1,7 +1,6 @@
 from django.db.models import Q
-from django.db.models import Value, CharField
-from django.urls import reverse
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, TemplateView
+from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView
 
 from django_ledger.forms import (AccountModelForm, AccountModelCreateForm, LedgerModelCreateForm, LedgerModelUpdateForm,
                                  JournalEntryModelForm, TransactionModelFormSet, EntityModelForm)
@@ -9,8 +8,12 @@ from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionM
                                   AccountModel, LedgerModel, JournalEntryModel)
 
 
+class RootUrlView(RedirectView):
+    url = reverse_lazy('django_ledger:entity-list')
+
+
 class EntityModelListView(ListView):
-    template_name = 'django_ledger/entities.html'
+    template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
 
     def get_queryset(self):
@@ -19,14 +22,10 @@ class EntityModelListView(ListView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        owned = EntityModel.objects.filter(
-            admin=self.request.user).annotate(
-            user_role=Value('owned', output_field=CharField())
+        return EntityModel.objects.filter(
+            Q(admin=self.request.user) |
+            Q(managers__exact=self.request.user)
         )
-        managed = EntityModel.objects.filter(entity_permissions__user=self.request.user).annotate(
-            user_role=Value('managed', output_field=CharField())
-        )
-        return owned.union(managed).distinct()
 
 
 class EntityModelDetailVew(DetailView):
@@ -102,8 +101,8 @@ class ChartOfAccountsDetailView(DetailView):
 
     def get_queryset(self):
         return ChartOfAccountModel.objects.filter(
-            Q(user=self.request.user) |
-            Q(entitymodel__entity_permissions__user=self.request.user)
+            Q(entity__admin=self.request.user) |
+            Q(entity__managers__in=[self.request.user])
         ).distinct().prefetch_related('accounts')
 
 

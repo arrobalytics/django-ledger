@@ -53,6 +53,9 @@ class JournalEntryModel(CreateUpdateMixIn):
         verbose_name = _l('Journal Entry')
         verbose_name_plural = _l('Journal Entries')
 
+    class MPTTMeta:
+        order_insertion_by = ['name']
+
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
 
