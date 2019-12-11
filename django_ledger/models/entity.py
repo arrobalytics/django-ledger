@@ -21,11 +21,6 @@ class EntityModel(MPTTModel,
                   SlugNameMixIn,
                   CreateUpdateMixIn,
                   IOMixIn):
-    __TAXATION_CHOICES = [
-        ('c-corp', 'C Corp'),
-        ('s-corp', 'S Corp'),
-        ('p', 'Partnership'),
-    ]
     admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
                               related_name='admin_of', verbose_name=_l('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
@@ -41,10 +36,6 @@ class EntityModel(MPTTModel,
                             verbose_name=_l('Parent'),
                             db_index=True,
                             on_delete=models.CASCADE)
-
-    incorporation_date = models.DateField(null=True, blank=True)
-    taxation = models.CharField(max_length=10, choices=__TAXATION_CHOICES)
-    fiscal_year_end = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = _l('Entity')
@@ -63,13 +54,19 @@ class EntityModel(MPTTModel,
                            'entity_slug': self.slug
                        })
 
-    def get_balance_sheet_url(self):
+    def get_update_url(self):
+        return reverse('django_ledger:entity-update',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_bs_url(self):
         return reverse('django_ledger:entity-balance-sheet',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_income_statement_url(self):
+    def get_ic_url(self):
         return reverse('django_ledger:entity-income-statement',
                        kwargs={
                            'entity_slug': self.slug

@@ -41,7 +41,7 @@ class EntityModelDetailVew(DetailView):
         """
         return EntityModel.objects.filter(
             Q(admin=self.request.user) |
-            Q(entity_permissions__user=self.request.user)
+            Q(managers__exact=self.request.user)
         ).select_related('coa')
 
 
@@ -58,6 +58,22 @@ class EntityModelCreateView(CreateView):
             form.instance.admin = user
             self.object = form.save()
         return super().form_valid(form)
+
+
+class EntityModelUpdateView(UpdateView):
+    context_object_name = 'entity'
+    template_name = 'django_ledger/entity_update.html'
+    form_class = EntityModelForm
+    slug_url_kwarg = 'entity_slug'
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-list')
+
+    def get_queryset(self):
+        return EntityModel.objects.filter(
+            Q(admin=self.request.user) |
+            Q(managers__exact=self.request.user)
+        )
 
 
 class EntityBalanceSheetView(DetailView):
