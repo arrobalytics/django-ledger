@@ -1,8 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.utils.text import slugify
 
-from django_ledger.models.accounts import AccountModel
-from django_ledger.models.coa import ChartOfAccountModel, make_account_active
+from django_ledger.models.coa import make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import create_coa_structure
@@ -10,30 +8,19 @@ from django_ledger.models.utils import create_coa_structure
 UserModel = get_user_model()
 
 
-def quickstart(quickstart_user: str, reset_db=False, coa=None):
+def quickstart(quickstart_user: str, reset_entity=False):
     user_model = UserModel.objects.get(username=quickstart_user)
-    if not coa:
-        coa_name = f'{user_model.username} - CoA QuickStart'
-        coa_slug = slugify(coa_name)
-        coa, created = ChartOfAccountModel.objects.get_or_create(name=f'{user_model.username} - CoA QuickStart'.upper(),
-                                                                 slug=coa_slug,
-                                                                 user=user_model)
+    quickstart_entity = 'my-quickstart-inc'
 
-    if reset_db:
-        EntityModel.objects.filter(slug='my-co-inc', admin=user_model).delete()
-        ChartOfAccountModel.objects.filter(name='CoA QuickStart', user=user_model).delete()
-        AccountModel.objects.all().delete()
-        coa = create_coa_structure(coa_data=CHART_OF_ACCOUNTS,
-                                   coa_user=user_model,
-                                   coa_name='CoA QuickStart',
-                                   coa_desc='Django Ledger Default CoA')
-    make_account_active(coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
-    company, created = EntityModel.objects.get_or_create(slug='my-co-inc',
-                                                         admin=user_model,
-                                                         coa=coa,
-                                                         name='MyCo Inc')
-    ledger_id = 'my-co-ledger'  # auto generated if not provided
-    myco_ledger, created = company.ledgers.get_or_create(slug=ledger_id, name='My Debug Ledger')
+    if reset_entity:
+        EntityModel.objects.filter(slug=quickstart_entity, admin=user_model).delete()
+        company = create_coa_structure(coa_data=CHART_OF_ACCOUNTS,
+                                       admin=user_model,
+                                       entity='my-quickstart-inc')
+    else:
+        company = EntityModel.objects.get(slug=quickstart_entity)
+    make_account_active(company.coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
+    myco_ledger, created = company.ledgers.get_or_create(name='My Debug Ledger')
     myco_ledger.journal_entry.all().delete()
     txs_data = [
         {
@@ -128,4 +115,4 @@ def quickstart(quickstart_user: str, reset_db=False, coa=None):
     return bs, bs_op, bs_f, ic
 
 
-# bs, bs_op, bs_f, ic = quickstart(quickstart_user='pedronavaja', reset_db=True)
+# bs, bs_op, bs_f, ic = quickstart(quickstart_user='elarroba', reset_entity=True)

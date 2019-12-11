@@ -16,6 +16,17 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/',
          views.EntityModelDetailVew.as_view(),
          name='entity-detail'),
+    path('entity/<slug:entity_slug>/update/',
+         views.EntityModelUpdateView.as_view(),
+         name='entity-update'),
+
+    # Financial Statements ---
+    path('entity/<slug:entity_slug>/balance-sheet/',
+         views.EntityBalanceSheetView.as_view(),
+         name='entity-balance-sheet'),
+    path('entity/<slug:entity_slug>/income-statement/',
+         views.EntityIncomeStatementView.as_view(),
+         name='entity-income-statement'),
 
     # Entity Chart of Accounts -----
     path('coa/<slug:coa_slug>/',
@@ -59,14 +70,6 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/ledger-detail/<slug:ledger_pk>/je-detail/<int:je_pk>/txs/',
          views.TXSIOView.as_view(),
          name='txs'),
-
-    # Financial Statements ---
-    path('entity/<slug:entity_slug>/balance-sheet/',
-         views.EntityBalanceSheetView.as_view(),
-         name='entity-balance-sheet'),
-    path('entity/<slug:entity_slug>/income-statement/',
-         views.EntityIncomeStatementView.as_view(),
-         name='entity-income-statement'),
 
     path('', views.RootUrlView.as_view(), name='root-url')
 
