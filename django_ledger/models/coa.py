@@ -70,7 +70,7 @@ def make_account_active(coa_model, account_codes: str or list):
 
 class ChartOfAccountModel(SlugNameMixIn,
                           CreateUpdateMixIn):
-    user = models.ForeignKey(UserModel, on_delete=models.CASCADE, verbose_name=_l('User'))
+    # user = models.ForeignKey(UserModel, on_delete=models.CASCADE, verbose_name=_l('User'))
     description = models.TextField(verbose_name=_l('CoA Description'), null=True, blank=True)
 
     class Meta:

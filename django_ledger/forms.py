@@ -9,9 +9,7 @@ class EntityModelForm(ModelForm):
         model = EntityModel
         fields = [
             'name',
-            'coa'
         ]
-
 
 
 class AccountModelForm(ModelForm):

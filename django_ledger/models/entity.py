@@ -7,17 +7,25 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
+from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.mixins.io import IOMixIn
 
 UserModel = get_user_model()
 
 
-class EntityModel(SlugNameMixIn,
+class EntityModel(MPTTModel,
+                  SlugNameMixIn,
                   CreateUpdateMixIn,
                   IOMixIn):
+    __TAXATION_CHOICES = [
+        ('c-corp', 'C Corp'),
+        ('s-corp', 'S Corp'),
+        ('p', 'Partnership'),
+    ]
     admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
                               related_name='admin_of', verbose_name=_l('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
@@ -26,10 +34,25 @@ class EntityModel(SlugNameMixIn,
                                on_delete=models.CASCADE,
                                related_name='entity',
                                verbose_name=_l('Chart of Accounts'))
+    parent = TreeForeignKey('self',
+                            null=True,
+                            blank=True,
+                            related_name='children',
+                            verbose_name=_l('Parent'),
+                            db_index=True,
+                            on_delete=models.CASCADE)
+
+    incorporation_date = models.DateField(null=True, blank=True)
+    common_shares = models.BigIntegerField(null=True, blank=True)
+    taxation = models.CharField(max_length=10, choices=__TAXATION_CHOICES)
+    fiscal_year_end = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = _l('Entity')
         verbose_name_plural = _l('Entities')  # idea: can use th django plural function...
+
+    class MPTTMeta:
+        order_insertion_by = ['name']
 
     def __str__(self):
         return '{x1} ({x2})'.format(x1=self.name,
@@ -69,6 +92,13 @@ def entity_presave(sender, instance, **kwargs):
         ri = randint(100000, 999999)
         entity_slug = f'{slug}-{ri}'
         instance.slug = entity_slug
+
+    if not getattr(instance, 'coa', None):
+        new_coa = ChartOfAccountModel.objects.create(
+            slug=instance.slug + '-coa',
+            name=instance.name + ' CoA'
+        )
+        instance.coa = new_coa
 
 
 pre_save.connect(entity_presave, EntityModel)
