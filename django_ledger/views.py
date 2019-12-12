@@ -136,9 +136,8 @@ class AccountModelDetailView(UpdateView):
 
     def get_queryset(self):
         return AccountModel.objects.filter(
-            Q(coa__user=self.request.user) |
-            Q(coa__entitymodel__admin=self.request.user) |
-            Q(coa__entitymodel__managers__in=[self.request.user])
+            Q(coa__entity__admin=self.request.user) |
+            Q(coa__entity__managers__exact=self.request.user)
         ).select_related('coa').distinct()
 
 
@@ -147,10 +146,7 @@ class AccountCreateView(CreateView):
     form_class = AccountModelCreateForm
 
     def get_success_url(self):
-        return reverse('django_ledger:coa-list')
-
-    def form_valid(self, form):
-        form.save()
+        return reverse('django_ledger:entity-detail')
 
 
 class LedgerModelListView(ListView):
