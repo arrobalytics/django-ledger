@@ -42,35 +42,34 @@ urlpatterns = [
          name='account-create'),
 
     # Ledger Views ----
-    path('entity/<slug:entity_slug>/ledger-list/',
+    path('ledger/<slug:entity_slug>/',
          views.LedgerModelListView.as_view(),
          name='ledger-list'),
-    path('entity/<slug:entity_slug>/ledger-create/',
-         views.LedgerModelCreateView.as_view(),
-         name='ledger-create'),
-    path('entity/<slug:entity_slug>/ledger-update/<int:ledger_pk>/',
-         views.LedgerModelUpdateView.as_view(),
-         name='ledger-update'),
-    path('entity/<slug:entity_slug>/ledger-detail/<int:ledger_pk>/',
+    path('ledger/<slug:entity_slug>/<int:ledger_pk>/',
          views.LedgerModelDetailView.as_view(),
          name='ledger-detail'),
+    path('ledger/<slug:entity_slug>/create/',
+         views.LedgerModelCreateView.as_view(),
+         name='ledger-create'),
+    path('ledger/<slug:entity_slug>/<int:ledger_pk>/update/',
+         views.LedgerModelUpdateView.as_view(),
+         name='ledger-update'),
 
     # Journal Entry Views ----
-    path('entity/<slug:entity_slug>/ledger-detail/<slug:ledger_pk>/je-create/',
+    path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/create/',
          views.JournalEntryCreateView.as_view(),
          name='je-create'),
-    path('entity/<slug:entity_slug>/ledger-detail/<slug:ledger_pk>/je-update/<int:je_pk>/',
-         views.JournalEntryUpdateView.as_view(),
-         name='je-update'),
-    path('entity/<slug:entity_slug>/ledger-detail/<slug:ledger_pk>/je-detail/<int:je_pk>/',
+    path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/',
          views.JournalEntryDetailView.as_view(),
          name='je-detail'),
+    path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/update/',
+         views.JournalEntryUpdateView.as_view(),
+         name='je-update'),
 
     # TXS ----
-    path('entity/<slug:entity_slug>/ledger-detail/<slug:ledger_pk>/je-detail/<int:je_pk>/txs/',
+    path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs/',
          views.TXSIOView.as_view(),
          name='txs'),
 
     path('', views.RootUrlView.as_view(), name='root-url')
-
 ]
