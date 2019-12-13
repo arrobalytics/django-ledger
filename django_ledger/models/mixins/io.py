@@ -37,7 +37,6 @@ FIELD_MAP = OrderedDict({'id': 'je_id',
                          'txs__account__code': 'code',
                          'txs__account__name': 'name',
                          'txs__account__role': 'role',
-                         # 'txs__account__role_bs': 'role_bs',
                          'txs__account__balance_type': 'balance_type',
                          'txs__amount': 'amount'})
 

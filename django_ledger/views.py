@@ -3,7 +3,8 @@ from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView
 
 from django_ledger.forms import (AccountModelForm, AccountModelCreateForm, LedgerModelCreateForm, LedgerModelUpdateForm,
-                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm)
+                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm,
+                                 ChartOfAccountsModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
 
@@ -120,6 +121,26 @@ class ChartOfAccountsDetailView(DetailView):
             Q(entity__admin=self.request.user) |
             Q(entity__managers__in=[self.request.user])
         ).distinct().prefetch_related('accounts')
+
+
+class ChartOfAccountsUpdateView(UpdateView):
+    context_object_name = 'coa'
+    slug_url_kwarg = 'coa_slug'
+    template_name = 'django_ledger/coa_update.html'
+    form_class = ChartOfAccountsModelForm
+
+    def get_success_url(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return reverse('django_ledger:entity-detail',
+                       kwargs={
+                           'entity_slug': entity_slug
+                       })
+
+    def get_queryset(self):
+        return ChartOfAccountModel.objects.filter(
+            Q(entity__admin=self.request.user) |
+            Q(entity__managers__in=[self.request.user])
+        ).distinct()
 
 
 class AccountModelDetailView(UpdateView):

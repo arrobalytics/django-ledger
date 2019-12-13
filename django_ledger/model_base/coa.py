@@ -83,5 +83,13 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     def get_absolute_url(self):
         return reverse('django_ledger:coa-detail',
                        kwargs={
-                           'coa_slug': self.slug
+                           'coa_slug': self.slug,
+                           'entity_slug': self.entity.slug
+                       })
+
+    def get_update_url(self):
+        return reverse('django_ledger:coa-update',
+                       kwargs={
+                           'coa_slug': self.slug,
+                           'entity_slug': self.entity.slug
                        })

@@ -19,17 +19,20 @@
     <div class="container">
 
         <div class="columns">
+
             <div class="column">
                 <h1 class="is-size-3">Chart of Accounts</h1>
                 <a class="button is-light" href="{{ entity.coa.get_absolute_url }}">View CoA</a>
-
+                <a class="button is-light" href="{{ entity.coa.get_update_url }}">Edit CoA</a>
             </div>
+
             <div class="column">
                 <h1 class="is-size-3">Managed Entities</h1>
                 <a class="button is-light" href="{{ entity.get_bs_url }}">Balance Sheet</a>
                 <a class="button is-light" href="{{ entity.get_ic_url }}">Income Statement</a>
                 <a class="button is-light" href="{{ entity.get_ledgers_url }}">Ledgers</a>
             </div>
+
         </div>
 
     </div>
