@@ -3,11 +3,11 @@ from collections import OrderedDict
 from django.core.exceptions import ValidationError
 from pandas import DataFrame
 
-from django_ledger.model_base.accounts import BS_ROLES
-from django_ledger.model_base.accounts import validate_roles
-from django_ledger.model_base.journal_entry import validate_activity
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
+from django_ledger.models_abstracts.accounts import BS_ROLES
+from django_ledger.models_abstracts.accounts import validate_roles
+from django_ledger.models_abstracts.journal_entry import validate_activity
 
 
 class LazyImporter:

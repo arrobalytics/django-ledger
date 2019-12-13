@@ -1,10 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db.models.signals import pre_save
 
-from django_ledger.model_base import load_model_abstract
-from django_ledger.settings import DJANGO_LEDGER_SETTINGS
-
-JournalEntryModelAbstract = load_model_abstract(DJANGO_LEDGER_SETTINGS.get('JOURNAL_ENTRY_MODEL_ABSTRACT'))
+from django_ledger.models_abstracts.journal_entry import JournalEntryModelAbstract
 
 
 class JournalEntryModel(JournalEntryModelAbstract):
