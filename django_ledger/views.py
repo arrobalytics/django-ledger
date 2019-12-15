@@ -25,10 +25,7 @@ class EntityModelListView(ListView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.filter(
-            Q(admin=self.request.user) |
-            Q(managers__exact=self.request.user)
-        )
+        return EntityModel.objects.for_user(user=self.request.user)
 
 
 class EntityModelDetailVew(DetailView):
@@ -40,12 +37,10 @@ class EntityModelDetailVew(DetailView):
         """
         Returns a queryset of all Entities owned or Managed by the User.
         Queryset is annotated with user_role parameter (owned/managed).
-        :return: The view queryset.
+        :return: The View queryset.
         """
-        return EntityModel.objects.filter(
-            Q(admin=self.request.user) |
-            Q(managers__exact=self.request.user)
-        ).select_related('coa')
+        return EntityModel.objects.for_user(
+            user=self.request.user).select_related('coa')
 
 
 class EntityModelCreateView(CreateView):
@@ -73,10 +68,12 @@ class EntityModelUpdateView(UpdateView):
         return reverse('django_ledger:entity-list')
 
     def get_queryset(self):
-        return EntityModel.objects.filter(
-            Q(admin=self.request.user) |
-            Q(managers__exact=self.request.user)
-        )
+        """
+        Returns a queryset of all Entities owned or Managed by the User.
+        Queryset is annotated with user_role parameter (owned/managed).
+        :return: The View queryset.
+        """
+        return EntityModel.objects.for_user(user=self.request.user)
 
 
 class EntityBalanceSheetView(DetailView):
@@ -88,12 +85,9 @@ class EntityBalanceSheetView(DetailView):
         """
         Returns a queryset of all Entities owned or Managed by the User.
         Queryset is annotated with user_role parameter (owned/managed).
-        :return: The view queryset.
+        :return: The View queryset.
         """
-        return EntityModel.objects.filter(
-            Q(admin=self.request.user) |
-            Q(managers__exact=self.request.user)
-        )
+        return EntityModel.objects.for_user(user=self.request.user)
 
 
 class EntityIncomeStatementView(DetailView):
@@ -105,12 +99,9 @@ class EntityIncomeStatementView(DetailView):
         """
         Returns a queryset of all Entities owned or Managed by the User.
         Queryset is annotated with user_role parameter (owned/managed).
-        :return: The view queryset.
+        :return: The View queryset.
         """
-        return EntityModel.objects.filter(
-            Q(admin=self.request.user) |
-            Q(entity_permissions__user=self.request.user)
-        )
+        return EntityModel.objects.for_user(user=self.request.user)
 
 
 # CoA Views ---
@@ -120,9 +111,8 @@ class ChartOfAccountsDetailView(DetailView):
     template_name = 'django_ledger/coa_detail.html'
 
     def get_queryset(self):
-        return ChartOfAccountModel.objects.filter(
-            Q(entity__admin=self.request.user) |
-            Q(entity__managers__in=[self.request.user])
+        return ChartOfAccountModel.objects.for_user(
+            user=self.request.user
         ).distinct().prefetch_related('accounts')
 
 
@@ -140,9 +130,8 @@ class ChartOfAccountsUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        return ChartOfAccountModel.objects.filter(
-            Q(entity__admin=self.request.user) |
-            Q(entity__managers__in=[self.request.user])
+        return ChartOfAccountModel.objects.for_user(
+            user=self.request.user
         ).distinct()
 
 
@@ -161,9 +150,8 @@ class AccountModelUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        return AccountModel.objects.filter(
-            Q(coa__entity__admin=self.request.user) |
-            Q(coa__entity__managers__exact=self.request.user)
+        return AccountModel.objects.for_user(
+            user=self.request.user
         ).select_related('coa').distinct()
 
 
@@ -186,10 +174,8 @@ class LedgerModelListView(ListView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.filter(
-            Q(entity__slug=entity_slug) &
-            Q(entity__admin=self.request.user) |
-            Q(entity__managers__in=[self.request.user])
+        return LedgerModel.objects.for_user(user=self.request.user).filter(
+            entity__slug=entity_slug
         )
 
 
@@ -200,10 +186,8 @@ class LedgerModelDetailView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.filter(
-            Q(entity__slug=entity_slug) &
-            Q(entity__admin=self.request.user) |
-            Q(entity__managers__in=[self.request.user])
+        return LedgerModel.objects.for_user(user=self.request.user).filter(
+            entity__slug=entity_slug
         ).prefetch_related('journal_entry', 'entity')
 
 
@@ -232,10 +216,8 @@ class LedgerModelUpdateView(UpdateView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.filter(
-            Q(entity__slug=entity_slug) &
-            Q(entity__admin=self.request.user) |
-            Q(entity__managers__in=[self.request.user])
+        return LedgerModel.objects.for_user(user=self.request.user).filter(
+            entity__slug=entity_slug
         )
 
     def get_success_url(self):
@@ -252,12 +234,8 @@ class LedgerBalanceSheetView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.filter(
-            Q(entity__slug=entity_slug) &
-            (
-                    Q(entity__admin=self.request.user) |
-                    Q(entity__managers__exact=self.request.user)
-            )
+        return LedgerModel.objects.for_user(user=self.request.user).filter(
+            entity__slug=entity_slug
         )
 
 
@@ -268,12 +246,8 @@ class LedgerIncomeStatementView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.filter(
-            Q(entity__slug=entity_slug) &
-            (
-                    Q(entity__admin=self.request.user) |
-                    Q(entity__managers__exact=self.request.user)
-            )
+        return LedgerModel.objects.for_user(user=self.request.user).filter(
+            entity__slug=entity_slug
         )
 
 
@@ -285,11 +259,9 @@ class JournalEntryDetailView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.objects.filter(
-            Q(ledger__entity__slug=entity_slug) &
-            Q(ledger__entity__admin=self.request.user) |
-            Q(ledger__entity__managers__in=[self.request.user])
-        ).prefetch_related('txs', 'txs__account')
+        return JournalEntryModel.objects.for_user(
+            user=self.request.user).filter(
+            ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryUpdateView(UpdateView):
@@ -300,11 +272,9 @@ class JournalEntryUpdateView(UpdateView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.objects.filter(
-            Q(ledger__entity__slug=entity_slug) &
-            Q(ledger__entity__admin=self.request.user) |
-            Q(ledger__entity__managers__in=[self.request.user])
-        ).prefetch_related('txs', 'txs__account')
+        return JournalEntryModel.objects.for_user(
+            user=self.request.user).filter(
+            ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryCreateView(CreateView):
