@@ -1,8 +1,9 @@
 from django.db.models import Q
 from django.urls import reverse, reverse_lazy
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView
+from django.views.generic import (ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView)
 
-from django_ledger.forms import (AccountModelForm, AccountModelCreateForm, LedgerModelCreateForm, LedgerModelUpdateForm,
+from django_ledger.forms import (AccountModelDetailForm, AccountModelCreateForm, LedgerModelCreateForm,
+                                 LedgerModelUpdateForm,
                                  JournalEntryModelForm, TransactionModelFormSet, EntityModelForm,
                                  ChartOfAccountsModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
@@ -13,6 +14,7 @@ class RootUrlView(RedirectView):
     url = reverse_lazy('django_ledger:entity-list')
 
 
+# Entity Views ----
 class EntityModelListView(ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
@@ -90,7 +92,7 @@ class EntityBalanceSheetView(DetailView):
         """
         return EntityModel.objects.filter(
             Q(admin=self.request.user) |
-            Q(entity_permissions__user=self.request.user)
+            Q(managers__exact=self.request.user)
         )
 
 
@@ -111,6 +113,7 @@ class EntityIncomeStatementView(DetailView):
         )
 
 
+# CoA Views ---
 class ChartOfAccountsDetailView(DetailView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
@@ -143,16 +146,18 @@ class ChartOfAccountsUpdateView(UpdateView):
         ).distinct()
 
 
-class AccountModelDetailView(UpdateView):
+# Account Views ----
+class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
     pk_url_kwarg = 'account_pk'
-    template_name = 'django_ledger/account_detail.html'
-    form_class = AccountModelForm
+    template_name = 'django_ledger/account_update.html'
+    form_class = AccountModelDetailForm
 
     def get_success_url(self):
         return reverse('django_ledger:coa-detail',
                        kwargs={
-                           'coa_slug': self.object.coa.slug
+                           'coa_slug': self.object.coa.slug,
+                           'entity_slug': self.object.coa.entity.slug
                        })
 
     def get_queryset(self):
@@ -162,14 +167,19 @@ class AccountModelDetailView(UpdateView):
         ).select_related('coa').distinct()
 
 
-class AccountCreateView(CreateView):
+class AccountModelCreateView(CreateView):
     template_name = 'django_ledger/account_create.html'
     form_class = AccountModelCreateForm
 
     def get_success_url(self):
-        return reverse('django_ledger:entity-detail')
+        return reverse('django_ledger:coa-detail',
+                       kwargs={
+                           'coa_slug': self.object.coa.slug,
+                           'entity_slug': self.object.coa.entity.slug
+                       })
 
 
+# Ledger Views ----
 class LedgerModelListView(ListView):
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger_list.html'
@@ -235,6 +245,39 @@ class LedgerModelUpdateView(UpdateView):
                        })
 
 
+class LedgerBalanceSheetView(DetailView):
+    context_object_name = 'entity'
+    pk_url_kwarg = 'ledger_pk'
+    template_name = 'django_ledger/balance_sheet.html'
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return LedgerModel.objects.filter(
+            Q(entity__slug=entity_slug) &
+            (
+                    Q(entity__admin=self.request.user) |
+                    Q(entity__managers__exact=self.request.user)
+            )
+        )
+
+
+class LedgerIncomeStatementView(DetailView):
+    context_object_name = 'entity'
+    pk_url_kwarg = 'ledger_pk'
+    template_name = 'django_ledger/income_statement.html'
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        return LedgerModel.objects.filter(
+            Q(entity__slug=entity_slug) &
+            (
+                    Q(entity__admin=self.request.user) |
+                    Q(entity__managers__exact=self.request.user)
+            )
+        )
+
+
+# JE Views ---
 class JournalEntryDetailView(DetailView):
     pk_url_kwarg = 'je_pk'
     context_object_name = 'journal_entry'
@@ -282,34 +325,87 @@ class JournalEntryCreateView(CreateView):
                        })
 
 
-class TXSIOView(TemplateView):
+# TXS View ---
+class TXSView(TemplateView):
     template_name = 'django_ledger/txs.html'
+
+    def get_queryset(self):
+        kwargs = self.kwargs
+        return TransactionModel.objects.filter(
+            Q(journal_entry_id=kwargs.get('je_pk')) &
+            Q(journal_entry__ledger__entity__slug=kwargs.get('entity_slug')) &
+            (
+                    Q(journal_entry__ledger__entity__admin=self.request.user) |
+                    Q(journal_entry__ledger__entity__managers__exact=self.request.user)
+            )
+        ).order_by('account__code')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        txs_action_url = reverse('django_ledger:txs', kwargs={
-            'entity_slug': kwargs['entity_slug'],
-            'ledger_pk': kwargs['ledger_pk'],
-            'je_pk': kwargs['je_pk'],
-        })
-        context['txs_action_url'] = txs_action_url
+        # txs_api_url = reverse('django_ledger:txs-api',
+        #                       kwargs={
+        #                           'entity_slug': kwargs['entity_slug'],
+        #                           'ledger_pk': kwargs['ledger_pk'],
+        #                           'je_pk': kwargs['je_pk'],
+        #                       })
+        txs_formset_url = reverse('django_ledger:txs',
+                                  kwargs={
+                                      'entity_slug': kwargs['entity_slug'],
+                                      'ledger_pk': kwargs['ledger_pk'],
+                                      'je_pk': kwargs['je_pk'],
+                                  })
+        # context['txs_api_url'] = txs_api_url
+        context['txs_formset_url'] = txs_formset_url
         return context
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-        je_pk = kwargs.get('je_pk')
-        txs_qs = TransactionModel.objects.filter(
-            journal_entry_id=je_pk
-        ).select_for_update().prefetch_related('journal_entry')
-        txs_formset = TransactionModelFormSet(queryset=txs_qs)
+        txs_formset = TransactionModelFormSet(queryset=self.get_queryset())
         context['txs_formset'] = txs_formset
-        context['txs_qs'] = txs_qs
         return self.render_to_response(context)
 
     def post(self, request, **kwargs):
         context = self.get_context_data(**kwargs)
-        txs_formset = TransactionModelFormSet(self.request.POST)
-        if txs_formset.is_valid():
+        txs_formset = TransactionModelFormSet(request.POST)
+        je_model = JournalEntryModel.objects.filter(
+            Q(id=context['je_pk']) &
+            Q(ledger__entity__slug=context['entity_slug']) &
+            (
+                    Q(ledger__entity__admin__exact=self.request.user) |
+                    Q(ledger__entity__managers__exact=self.request.user)
+            )
+        ).exists()
+        if txs_formset.is_valid() and je_model:
+            for f in txs_formset:
+                f.instance.journal_entry_id = context['je_pk']
             txs_formset.save()
-        context['txs_formset'] = txs_formset
+            txs_formset = TransactionModelFormSet(queryset=self.get_queryset())
+            context['txs_formset'] = txs_formset
+        else:
+            context['txs_formset'] = txs_formset
         return self.render_to_response(context)
+
+# class TXSAPIView(ListView):
+#
+#     def get_queryset(self):
+#         kwargs = self.kwargs
+#         return TransactionModel.objects.filter(
+#             Q(journal_entry_id=kwargs.get('je_pk')) &
+#             Q(journal_entry__ledger__entity__slug=kwargs.get('entity_slug')) &
+#             (
+#                     Q(journal_entry__ledger__entity__admin=self.request.user) |
+#                     Q(journal_entry__ledger__entity__managers__exact=self.request.user)
+#             )
+#         ).select_related('account', 'journal_entry')
+#
+#     def get(self, request, *args, **kwargs):
+#         data = list(self.get_queryset().values(
+#             'id',
+#             'account',
+#             'account__name',
+#             'account__code',
+#             'tx_type',
+#             'amount',
+#             'description'
+#         ))
+#         return JsonResponse(data={'data': data})

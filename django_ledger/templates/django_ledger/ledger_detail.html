@@ -20,8 +20,13 @@
             <div class="column">
                 <h1 class="is-size-3">Ledger Journal Entries</h1>
                 <a class="button is-dark is-small"
-                   href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">New
+                   href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">New
                     JE</a>
+                <a class="button is-small is-dark"
+                   href="{% url 'django_ledger:je-bs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">BS</a>
+                <a class="button is-small is-dark"
+                   href="{% url 'django_ledger:je-ic' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">IC</a>
+
                 <ul>
                     {% for je in ledger.journal_entry.all %}
                         <li>{{ je }}
