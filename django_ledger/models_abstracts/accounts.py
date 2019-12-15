@@ -111,8 +111,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     def role_bs(self):
         return BS_ROLES.get(self.role)
 
-    def get_absolute_url(self):
-        return reverse('django_ledger:account-detail',
+    def get_update_url(self):
+        return reverse('django_ledger:account-update',
                        kwargs={
                            'account_pk': self.id
                        })

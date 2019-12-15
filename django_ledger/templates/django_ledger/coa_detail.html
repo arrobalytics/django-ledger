@@ -29,7 +29,7 @@
                 <ul>
                     {% for acc in coa.accounts.all %}
                         <li>{{ acc }} <a class="button is-small is-light"
-                                         href="{{ acc.get_absolute_url }}">Edit</a></li>
+                                         href="{{ acc.get_update_url }}">Update</a></li>
                     {% endfor %}
                 </ul>
 

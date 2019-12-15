@@ -36,12 +36,12 @@ urlpatterns = [
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),
 
-    # Accounts ---
-    path('account/<int:account_pk>/',
-         views.AccountModelDetailView.as_view(),
-         name='account-detail'),
+
+    path('account/<int:account_pk>/update/',
+         views.AccountModelUpdateView.as_view(),
+         name='account-update'),
     path('account/create/',
-         views.AccountCreateView.as_view(),
+         views.AccountModelCreateView.as_view(),
          name='account-create'),
 
     # Ledger Views ----
@@ -57,6 +57,12 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/<int:ledger_pk>/update/',
          views.LedgerModelUpdateView.as_view(),
          name='ledger-update'),
+    path('ledger/<slug:entity_slug>/<slug:ledger_pk>/balance-sheet/',
+         views.LedgerBalanceSheetView.as_view(),
+         name='je-bs'),
+    path('ledger/<slug:entity_slug>/<slug:ledger_pk>/income-statement/',
+         views.LedgerIncomeStatementView.as_view(),
+         name='je-ic'),
 
     # Journal Entry Views ----
     path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/create/',
@@ -69,10 +75,14 @@ urlpatterns = [
          views.JournalEntryUpdateView.as_view(),
          name='je-update'),
 
+
     # TXS ----
     path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs/',
-         views.TXSIOView.as_view(),
+         views.TXSView.as_view(),
          name='txs'),
+    # path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs-api/',
+    #      views.TXSAPIView.as_view(),
+    #      name='txs-api'),
 
     path('', views.RootUrlView.as_view(), name='root-url')
 ]
