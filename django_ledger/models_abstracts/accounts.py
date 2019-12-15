@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -54,6 +54,13 @@ def validate_roles(roles):
 
 
 class AccountModelManager(models.Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(coa__entity__admin=user) |
+            Q(coa__entity__managers__exact=user)
+        )
 
     def available(self, coa):
         return self.get_queryset().filter(

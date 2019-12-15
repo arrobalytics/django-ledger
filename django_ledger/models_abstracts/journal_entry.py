@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
@@ -26,6 +26,13 @@ def validate_activity(act):
 
 
 class JournalEntryModelManager(models.Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(ledger__entity__admin=user) |
+            Q(ledger__entity__managers__exact=user)
+        )
 
     def on_entity(self, entity):
         return self.get_queryset().filter(ledger__entity=entity)
@@ -85,4 +92,3 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         check1 = 'Debits and credits do not match.'
         if not self.je_is_valid():
             raise ValidationError(check1)
-

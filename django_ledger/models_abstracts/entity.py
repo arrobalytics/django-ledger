@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
@@ -10,6 +11,16 @@ from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.mixins.io import IOMixIn
 
 UserModel = get_user_model()
+
+
+class EntityModelManager(Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(admin=user) |
+            Q(managers__exact=user)
+        )
 
 
 class EntityModelAbstract(MPTTModel,
@@ -31,6 +42,8 @@ class EntityModelAbstract(MPTTModel,
                             verbose_name=_l('Parent'),
                             db_index=True,
                             on_delete=models.CASCADE)
+
+    objects = EntityModelManager()
 
     class Meta:
         abstract = True

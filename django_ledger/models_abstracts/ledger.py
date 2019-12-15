@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
@@ -9,6 +10,13 @@ from django_ledger.models_abstracts.coa import get_coa_account
 
 
 class LedgerModelManager(models.Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(entity__admin=user) |
+            Q(entity__managers__exact=user)
+        )
 
     def posted(self):
         return self.get_queryset().filter(posted=True)
@@ -66,5 +74,3 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_account_balance(self, account_code: str, as_of: str = None):
         return self.get_jes(account=account_code, as_of=as_of)
-
-

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 from pandas import DataFrame
@@ -68,9 +69,19 @@ def make_account_active(coa_model, account_codes: str or list):
     acc.update(active=True)
 
 
+class ChartOfAccountModelManager(Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(entity__admin=user) |
+            Q(entity__managers__exact=user)
+        )
+
 class ChartOfAccountModelAbstract(SlugNameMixIn,
                                   CreateUpdateMixIn):
     description = models.TextField(verbose_name=_l('CoA Description'), null=True, blank=True)
+    objects = ChartOfAccountModelManager()
 
     class Meta:
         abstract = True
