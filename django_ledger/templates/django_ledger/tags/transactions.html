@@ -6,6 +6,7 @@
         <th>Account Name</th>
         <th>Credit</th>
         <th>Debit</th>
+        <th>Description</th>
     </tr>
     {% for tx in txs %}
         <tr>
@@ -13,6 +14,7 @@
             <td>{{ tx.account.name }}</td>
             <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | intcomma }}{% endif %}</td>
             <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | intcomma }}{% endif %}</td>
+            <td>{{ tx.description }}</td>
         </tr>
     {% endfor %}
     <tr>

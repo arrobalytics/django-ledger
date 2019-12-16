@@ -37,10 +37,10 @@ urlpatterns = [
          name='coa-update'),
 
 
-    path('account/<int:account_pk>/update/',
+    path('account/<slug:entity_slug>/<slug:coa_slug>/<int:account_pk>/update/',
          views.AccountModelUpdateView.as_view(),
          name='account-update'),
-    path('account/create/',
+    path('account/<slug:entity_slug>/<slug:coa_slug>/create/',
          views.AccountModelCreateView.as_view(),
          name='account-create'),
 

@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView)
 
-from django_ledger.forms import (AccountModelDetailForm, AccountModelCreateForm, LedgerModelCreateForm,
+from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
                                  LedgerModelUpdateForm,
                                  JournalEntryModelForm, TransactionModelFormSet, EntityModelForm,
                                  ChartOfAccountsModelForm)
@@ -140,24 +140,54 @@ class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
     pk_url_kwarg = 'account_pk'
     template_name = 'django_ledger/account_update.html'
-    form_class = AccountModelDetailForm
+    form_class = AccountModelUpdateForm
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(coa_slug=self.kwargs['coa_slug'],
+                          entity_slug=self.kwargs['entity_slug'],
+                          **self.get_form_kwargs())
 
     def get_success_url(self):
         return reverse('django_ledger:coa-detail',
                        kwargs={
-                           'coa_slug': self.object.coa.slug,
-                           'entity_slug': self.object.coa.entity.slug
+                           'coa_slug': self.kwargs['coa_slug'],
+                           'entity_slug': self.kwargs['entity_slug']
                        })
 
     def get_queryset(self):
-        return AccountModel.objects.for_user(
+        return AccountModel.on_coa.for_user(
             user=self.request.user
-        ).select_related('coa').distinct()
+        )
 
 
 class AccountModelCreateView(CreateView):
     template_name = 'django_ledger/account_create.html'
     form_class = AccountModelCreateForm
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        return form_class(coa_slug=self.kwargs['coa_slug'],
+                          entity_slug=self.kwargs['entity_slug'],
+                          **self.get_form_kwargs())
+
+    def form_valid(self, form):
+        coa_model = ChartOfAccountModel.objects.for_user(
+            user=self.request.user
+        ).filter(entity__slug=self.kwargs['entity_slug']).get(
+            slug=self.kwargs['coa_slug'])
+
+        form.instance.coa = coa_model
+        self.object = form.save()
+        return super().form_valid(form)
+
+    def get_queryset(self):
+        return AccountModel.on_coa.for_user(
+            user=self.request.user
+        )
 
     def get_success_url(self):
         return reverse('django_ledger:coa-detail',

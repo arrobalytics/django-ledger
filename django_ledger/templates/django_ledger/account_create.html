@@ -18,15 +18,13 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Account</h1>
-                {% for err in form.errors %}
-                    {{ err.code }}
-                {% endfor %}
-
-                <form action="{% url 'django_ledger:account-create' %}" method="post">
+                <form action="{% url "django_ledger:account-create" entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}" method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
                     <button type="submit" class="button">Submit</button>
                 </form>
+
+
             </div>
         </div>
 

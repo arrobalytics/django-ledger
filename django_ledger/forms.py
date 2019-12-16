@@ -19,7 +19,19 @@ class ChartOfAccountsModelForm(ModelForm):
         fields = '__all__'
 
 
-class AccountModelDetailForm(ModelForm):
+class AccountModelBaseForm(ModelForm):
+    """"""
+
+    def __init__(self, coa_slug, entity_slug, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.COA_SLUG = coa_slug
+        self.ENTITY_SLUG = entity_slug
+        self.fields['parent'].queryset = self.fields['parent'].queryset.filter(
+            coa__slug__exact=self.COA_SLUG,
+        ).order_by('code')
+
+
+class AccountModelCreateForm(AccountModelBaseForm):
     class Meta:
         model = AccountModel
         fields = [
@@ -31,26 +43,22 @@ class AccountModelDetailForm(ModelForm):
         ]
 
 
-class AccountModelCreateForm(ModelForm):
+class AccountModelUpdateForm(AccountModelBaseForm):
+
+    def __init__(self, coa_slug, entity_slug, *args, **kwargs):
+        super().__init__(coa_slug=coa_slug, entity_slug=entity_slug, *args, **kwargs)
+        self.fields['parent'].queryset = self.fields['parent'].queryset.exclude(
+            id=self.instance.id
+        )
+
     class Meta:
         model = AccountModel
         fields = [
             'parent',
             'code',
             'name',
-            'role',
-            'balance_type',
-        ]
-
-
-class AccountModelUpdateForm(ModelForm):
-    class Meta:
-        model = AccountModel
-        fields = [
-            'parent',
-            'code',
-            'name',
-
+            'locked',
+            'active'
         ]
 
 
@@ -91,7 +99,6 @@ class TransactionModelForm(ModelForm):
         model = TransactionModel
         fields = [
             'id',
-            # 'journal_entry',
             'account',
             'tx_type',
             'amount',

@@ -10,7 +10,7 @@
 <section class="section">
     <div class="container">
         <h1 class="title">
-            {{ object }} Hello
+            {{ account }} Hello
         </h1>
         <p class="subtitle">
             {{ coa.description }}
@@ -23,7 +23,7 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Account</h1>
-                <form action="{{ object.get_absolute_url }}" method="post">
+                <form action="{{ account.get_update_url }}" method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
                     <button class="button">Submit</button>
