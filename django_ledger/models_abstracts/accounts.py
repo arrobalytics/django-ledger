@@ -118,9 +118,27 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     def role_bs(self):
         return BS_ROLES.get(self.role)
 
-    def get_update_url(self):
+    def get_update_url(self, entity_slug=None, coa_slug=None):
+        if not entity_slug:
+            entity_slug = self.coa.entity.slug
+        if not coa_slug:
+            coa_slug = self.coa.slug
         return reverse('django_ledger:account-update',
                        kwargs={
+                           'entity_slug': entity_slug,
+                           'coa_slug': coa_slug,
+                           'account_pk': self.id
+                       })
+
+    def get_create_url(self, entity_slug=None, coa_slug=None):
+        if not entity_slug:
+            entity_slug = self.coa.entity.slug
+        if not coa_slug:
+            coa_slug = self.coa.slug
+        return reverse('django_ledger:account-create',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'coa_slug': coa_slug,
                            'account_pk': self.id
                        })
 
@@ -138,3 +156,7 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
             return credits - debits
         elif self.balance_type == 'debit':
             return debits - credits
+
+    def clean(self):
+        if ' ' in self.code:
+            raise ValidationError(_l('Account code must not contain spaces'))

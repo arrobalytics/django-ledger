@@ -1,8 +1,8 @@
-# Django Ledger
+![alt text](https://storage.googleapis.com/djetler/logo/v1/djetler-logo%402x.png)
 
-### A bookkeeping & financial analysis engine for the Django Framework.
+### A bookeeping & financial analysis engine for the Django Framework.
 
-Django Ledger supports:
+Djetler supports:
 
 - Chart of Accounts.
 - Financial Statements (Income Statement & Balance Sheets)
@@ -15,8 +15,6 @@ Currently this project is under active development and is not recommended for pr
 The author is working on incorporating the following functionality:
 
 ## Road Map
-- Entity owners & user integration.
-- Internationalization.
 - Views & template tags.
 
 ## Quick Start
@@ -27,6 +25,7 @@ engine necessary to enable financially driven apps.
 In order to start using Django Ledger you must create a Chart of Accounts (CoA).
 Django Ledger comes with a default CoA ready to use or you could use your own. \
 __Please user the following with caution if you are testing on an existing project!!!__
+
 ```python
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel, make_account_active

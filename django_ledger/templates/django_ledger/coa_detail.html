@@ -24,7 +24,9 @@
         <div class="columns">
             <div class="column">
                 <h1 class="is-size-3">Accounts</h1>
-                <a class="button is-light" href="{% url 'django_ledger:account-create' %}">Add Account</a>
+                <a class="button is-light"
+                   href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}">Add
+                    Account</a>
                 {{ accounts_formset.as_p }}
                 <ul>
                     {% for acc in coa.accounts.all %}
