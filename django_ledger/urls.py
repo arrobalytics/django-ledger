@@ -36,7 +36,6 @@ urlpatterns = [
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),
 
-
     path('account/<slug:entity_slug>/<slug:coa_slug>/<int:account_pk>/update/',
          views.AccountModelUpdateView.as_view(),
          name='account-update'),
@@ -75,14 +74,11 @@ urlpatterns = [
          views.JournalEntryUpdateView.as_view(),
          name='je-update'),
 
-
     # TXS ----
     path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs/',
          views.TXSView.as_view(),
          name='txs'),
-    # path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs-api/',
-    #      views.TXSAPIView.as_view(),
-    #      name='txs-api'),
 
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('', views.RootUrlView.as_view(), name='root-url')
 ]

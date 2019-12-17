@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django.urls import reverse, reverse_lazy
+from django.utils.translation import gettext as _
 from django.views.generic import (ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView)
 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
@@ -12,6 +13,20 @@ from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionM
 
 class RootUrlView(RedirectView):
     url = reverse_lazy('django_ledger:entity-list')
+
+
+class DashboardView(TemplateView):
+    template_name = 'django_ledger/home.html'
+    extra_context = {
+        'djetler_page_title': _('dashboard')
+    }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['entities'] = EntityModel.objects.for_user(
+            user=self.request.user
+        )
+        return context
 
 
 # Entity Views ----

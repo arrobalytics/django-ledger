@@ -1,0 +1,49 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
+
+{% block content %}
+    <section class="hero is-light">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <figure class="image">
+                            <img src="{% static 'django_ledger/logo/djetler-logo.png' %}"
+                                 alt="">
+                        </figure>
+                    </div>
+                </div>
+                <div class="columns is-centered">
+                    <div class="column is-4 has-text-centered">
+                        <h1 class="title is-size-1 has-text-weight-light">{{ djetler_page_title | capfirst }}</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column is-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-header-title">{% trans 'My Entities' %}</div>
+                        </div>
+                        <div class="card-content content">
+                            <ul>
+                                {% for entity in entities %}
+                                    <li>{{ entity.name }} <a href="" class="button is-small">View</a></li>
+                                {% endfor %}
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+{% endblock %}
