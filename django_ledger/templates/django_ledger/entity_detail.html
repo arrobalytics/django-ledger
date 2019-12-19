@@ -1,41 +1,28 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ entity.name }}</title>
-    <title>DJ Ledger - Entities</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">
-            {{ entity.name }}
-        </h1>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
 
-        <div class="columns">
+{% block content %}
 
-            <div class="column">
-                <h1 class="is-size-3">Chart of Accounts</h1>
-                <a class="button is-light" href="{{ entity.coa.get_absolute_url }}">View CoA</a>
-                <a class="button is-light" href="{{ entity.coa.get_update_url }}">Edit CoA</a>
-            </div>
+    <section class="section">
+        <div class="container">
 
-            <div class="column">
-                <h1 class="is-size-3">Managed Entities</h1>
-                <a class="button is-light" href="{{ entity.get_bs_url }}">Balance Sheet</a>
-                <a class="button is-light" href="{{ entity.get_ic_url }}">Income Statement</a>
-                <a class="button is-light" href="{{ entity.get_ledgers_url }}">Ledgers</a>
+            <div class="columns">
+                <div class="column">
+                    <h1 class="is-size-3">Chart of Accounts</h1>
+                    <a class="button is-light" href="{{ entity.coa.get_absolute_url }}">View CoA</a>
+                    <a class="button is-light" href="{{ entity.coa.get_update_url }}">Edit CoA</a>
+                </div>
+                <div class="column">
+                    <h1 class="is-size-3">Reports</h1>
+                    <a class="button is-light" href="{{ entity.get_bs_url }}">Balance Sheet</a>
+                    <a class="button is-light" href="{{ entity.get_ic_url }}">Income Statement</a>
+                    <a class="button is-light" href="{{ entity.get_ledgers_url }}">Ledgers</a>
+                </div>
             </div>
 
         </div>
+    </section>
 
-    </div>
-</section>
-</body>
-</html>
+{% endblock %}
+

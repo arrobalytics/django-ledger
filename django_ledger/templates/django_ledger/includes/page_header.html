@@ -1,0 +1,20 @@
+{% load staticfiles %}
+
+<section class="hero is-light">
+    <div class="hero-body">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-4">
+                    <figure class="image">
+                        <img src="{% static 'django_ledger/logo/djetler-logo.png' %}" alt="">
+                    </figure>
+                </div>
+            </div>
+            <div class="columns is-centered">
+                <div class="column is-12 has-text-centered">
+                    <h1 class="title is-size-1 has-text-weight-light">{{ header_title | title }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

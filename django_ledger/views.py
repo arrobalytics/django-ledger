@@ -1,6 +1,7 @@
 from django.db.models import Q
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _l
 from django.views.generic import (ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView)
 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
@@ -16,9 +17,10 @@ class RootUrlView(RedirectView):
 
 
 class DashboardView(TemplateView):
-    template_name = 'django_ledger/home.html'
+    template_name = 'django_ledger/dashboard.html'
     extra_context = {
-        'djetler_page_title': _('dashboard')
+        'page_title': _('dashboard'),
+        'header_title': _('dashboard')
     }
 
     def get_context_data(self, **kwargs):
@@ -48,6 +50,12 @@ class EntityModelDetailVew(DetailView):
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity_detail.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _l('entity') + ': ' + self.object.name
+        return context
+
     def get_queryset(self):
         """
         Returns a queryset of all Entities owned or Managed by the User.
@@ -61,6 +69,9 @@ class EntityModelDetailVew(DetailView):
 class EntityModelCreateView(CreateView):
     template_name = 'django_ledger/entity_create.html'
     form_class = EntityModelForm
+    extra_context = {
+        'header_title': _('create entity')
+    }
 
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
@@ -128,7 +139,7 @@ class ChartOfAccountsDetailView(DetailView):
     def get_queryset(self):
         return ChartOfAccountModel.objects.for_user(
             user=self.request.user
-        ).distinct().prefetch_related('accounts')
+        ).prefetch_related('accounts')
 
 
 class ChartOfAccountsUpdateView(UpdateView):
@@ -136,6 +147,12 @@ class ChartOfAccountsUpdateView(UpdateView):
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/coa_update.html'
     form_class = ChartOfAccountsModelForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _l('CoA') + ': ' + self.object.name
+        return context
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
