@@ -1,8 +1,13 @@
-from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, HiddenInput
+from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet,
+                          HiddenInput, TextInput, Textarea)
+from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
                                   ChartOfAccountModel, EntityModel)
 from django_ledger.models.mixins.io import validate_tx_data
+
+# todo: move this to settings...
+DJETLER_FORM_INPUT_CLASS = 'input'
 
 
 class EntityModelForm(ModelForm):
@@ -11,12 +16,43 @@ class EntityModelForm(ModelForm):
         fields = [
             'name',
         ]
+        labels = {
+            'name': _l('Entity Name')
+        }
+        widgets = {
+            'name': TextInput(
+                attrs={
+                    'class': DJETLER_FORM_INPUT_CLASS,
+                    'placeholder': _l('Entity name...')
+                }
+            )
+        }
 
 
 class ChartOfAccountsModelForm(ModelForm):
     class Meta:
         model = ChartOfAccountModel
-        fields = '__all__'
+        fields = [
+            'slug',
+            'name',
+            'description'
+        ]
+        labels = {
+            'slug': _l('CoA ID'),
+            'name': _l('Name'),
+            'description': _l('Description'),
+        }
+        widgets = {
+            'slug': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'name': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'description': Textarea(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+        }
 
 
 class AccountModelBaseForm(ModelForm):
