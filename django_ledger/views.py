@@ -13,7 +13,7 @@ from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionM
 
 
 class RootUrlView(RedirectView):
-    url = reverse_lazy('django_ledger:entity-list')
+    url = reverse_lazy('django_ledger:dashboard')
 
 
 class DashboardView(TemplateView):

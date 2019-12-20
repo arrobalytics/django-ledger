@@ -6,7 +6,75 @@
 
     <section class="section">
         <div class="container">
+            <div class="tile is-ancestor">
+                <div class="tile is-parent is-4">
+                    <div class="box djetler-box-green">
+                        <div class="container">
+                            <div class="columns is-multiline has-text-white content">
+                                <div class="column is-12"><h2
+                                        class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$123,456.56</h1>
+                                </div>
+                                <div class="column is-12"><h2
+                                        class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$75,900.09</h1></div>
+                                <div class="column is-12"><h2
+                                        class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$47.556.47</h1></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile is-parent is-4">
+                    <div class="box djetler-box-yellow">
+                        <div class="container">
+                            <div class="columns is-multiline has-text-white content">
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'Income' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$23,567.87</h1>
+                                </div>
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$15,735.75</h1></div>
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$7,832.12</h1></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile is-parent is-4">
+                    <div class="box djetler-box-blue">
+                        <div class="container">
+                            <div class="columns is-multiline has-text-white content">
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'TBD' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$23,567.87</h1>
+                                </div>
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$15,735.75</h1></div>
+                                <div class="column is-12">
+                                    <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings' %}</h2>
+                                </div>
+                                <div class="column is-12 has-text-centered is-paddingless"><h1>$7,832.12</h1></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
+
+        </div>
+        <div class="container">
             <div class="columns">
                 <div class="column">
                     <h1 class="is-size-3">Chart of Accounts</h1>
@@ -20,8 +88,9 @@
                     <a class="button is-light" href="{{ entity.get_ledgers_url }}">Ledgers</a>
                 </div>
             </div>
-
         </div>
+
+
     </section>
 
 {% endblock %}
