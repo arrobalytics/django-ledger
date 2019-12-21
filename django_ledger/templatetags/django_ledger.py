@@ -1,19 +1,11 @@
 from django import template
-from django.urls import reverse
 
 register = template.Library()
 
 
-@register.inclusion_tag('django_ledger/tags/txs_table.html', takes_context=True)
-def txs_table(context):
-    kwargs = context['view'].kwargs
-    txs_form_url = reverse('django_ledger:txs', kwargs={
-        'entity_slug': kwargs['entity_slug'],
-        'ledger_pk': kwargs['ledger_pk'],
-        'je_pk': kwargs['je_pk'],
-    })
-    context['txs_form_url'] = txs_form_url
-    return context
+@register.filter(name='cs_thousands')
+def cs_thousands(value):
+    return '{:,}'.format(value)
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html')

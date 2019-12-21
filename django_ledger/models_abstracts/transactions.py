@@ -1,9 +1,20 @@
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
+
+
+class TransactionModelAdmin(models.Manager):
+
+    def for_user(self, user):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(journal_entry__ledger__entity__admin=user) |
+            Q(journal_entry__ledger__entity__managers__exact=user)
+        )
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):
@@ -27,6 +38,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                  verbose_name=_l('Amount'),
                                  validators=[MinValueValidator(0)])
     description = models.CharField(max_length=100, null=True, blank=True, verbose_name=_l('Tx Description'))
+    objects = TransactionModelAdmin()
 
     class Meta:
         abstract = True
@@ -39,3 +51,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                                   x3=self.amount,
                                                   x4=self.tx_type,
                                                   x5=self.account.balance_type)
+
+    def reverse_sign(self):
+        return

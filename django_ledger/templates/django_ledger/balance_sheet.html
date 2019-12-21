@@ -1,30 +1,18 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
 {% load django_ledger %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ entity.name }} | Balance Sheet</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">{{ entity.name }}</h1>
-        <p class="subtitle">Balance Sheet</p>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
-
-        <div class="columns">
-            <div class="column">
-                {% balance_sheet entity %}
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-8">
+                    {% balance_sheet entity %}
+                    <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                       href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+                </div>
             </div>
         </div>
-
-    </div>
-</section>
-</body>
-</html>
+    </section>
+{% endblock %}
