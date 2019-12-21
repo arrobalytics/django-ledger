@@ -10,6 +10,25 @@ from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm,
                                  ChartOfAccountsModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
+from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
+
+
+def txs_bs_digest(tx: dict) -> dict:
+    tx['role_bs'] = BS_ROLES.get(tx['account__role'])
+    if tx['account__balance_type'] != tx['tx_type']:
+        tx['amount'] = -tx['amount']
+    if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
+        tx['amount'] = -tx['amount']
+    return tx
+
+
+def txs_ic_digest(tx: dict) -> dict:
+    tx['role_bs'] = BS_ROLES.get(tx['account__role'])
+    if tx['account__balance_type'] != tx['tx_type']:
+        tx['amount'] = -tx['amount']
+    if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
+        tx['amount'] = -tx['amount']
+    return tx
 
 
 class RootUrlView(RedirectView):
@@ -54,6 +73,31 @@ class EntityModelDetailVew(DetailView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.name
         context['header_title'] = _l('entity') + ': ' + self.object.name
+
+        txs_qs = TransactionModel.objects.for_user(
+            user=self.request.user)
+        txs_qs = txs_qs.filter(
+            journal_entry__ledger__entity__slug__exact=self.kwargs['entity_slug']
+        ).select_related('account').values('account__role',
+                                           'tx_type',
+                                           'account__balance_type',
+                                           'amount')
+
+        txs_qs = [txs_bs_digest(txs) for txs in txs_qs]
+
+        assets = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'assets']
+        liabilities = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'liabilities']
+        equity = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'equity']
+        income = [tx['amount'] for tx in txs_qs if tx['account__role'] == 'in']
+        expenses = [-tx['amount'] for tx in txs_qs if tx['account__role'] == 'ex']
+
+        context['asset_amount'] = sum(assets)
+        context['liability_amount'] = sum(liabilities)
+        context['equity_amount'] = sum(equity)
+        context['income_amount'] = sum(income)
+        context['expenses_amount'] = sum(expenses)
+        context['earnings_amount'] = context['income_amount'] - context['expenses_amount']
+
         return context
 
     def get_queryset(self):
@@ -107,6 +151,12 @@ class EntityBalanceSheetView(DetailView):
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/balance_sheet.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _l('balance sheet') + ': ' + self.object.name
+        return context
+
     def get_queryset(self):
         """
         Returns a queryset of all Entities owned or Managed by the User.
@@ -120,6 +170,12 @@ class EntityIncomeStatementView(DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/income_statement.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _l('income statement') + ': ' + self.object.name
+        return context
 
     def get_queryset(self):
         """
@@ -135,6 +191,12 @@ class ChartOfAccountsDetailView(DetailView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/coa_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _l('CoA') + ': ' + self.object.name
+        return context
 
     def get_queryset(self):
         return ChartOfAccountModel.objects.for_user(
@@ -233,6 +295,10 @@ class AccountModelCreateView(CreateView):
 class LedgerModelListView(ListView):
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger_list.html'
+    extra_context = {
+        'page_title': _('ledgers'),
+        'header_title': _('entity ledgers')
+    }
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')

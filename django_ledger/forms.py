@@ -6,7 +6,7 @@ from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, 
                                   ChartOfAccountModel, EntityModel)
 from django_ledger.models.mixins.io import validate_tx_data
 
-# todo: move this to settings...
+# todo: move this to settings & make it a list...
 DJETLER_FORM_INPUT_CLASS = 'input'
 
 
