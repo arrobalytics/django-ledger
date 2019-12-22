@@ -77,6 +77,27 @@ class ChartOfAccountsModelForm(ModelForm):
         }
 
 
+class ChartOfAccountsModelUpdateForm(ModelForm):
+    class Meta:
+        model = ChartOfAccountModel
+        fields = [
+            'name',
+            'description'
+        ]
+        labels = {
+            'name': _l('Name'),
+            'description': _l('Description'),
+        }
+        widgets = {
+            'name': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'description': Textarea(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+        }
+
+
 class AccountModelBaseForm(ModelForm):
     """"""
 
@@ -119,32 +140,53 @@ class AccountModelCreateForm(AccountModelBaseForm):
         }
 
 
-class AccountModelUpdateForm(AccountModelBaseForm):
+class AccountModelUpdateForm(ModelForm):
 
-    def __init__(self, coa_slug, entity_slug, *args, **kwargs):
-        super().__init__(coa_slug=coa_slug, entity_slug=entity_slug, *args, **kwargs)
-        self.fields['parent'].queryset = self.fields['parent'].queryset.exclude(
-            id=self.instance.id
-        )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     class Meta:
         model = AccountModel
         fields = [
-            'parent',
             'code',
             'name',
             'locked',
             'active'
         ]
+        widgets = {
+            'code': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'name': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            # 'locked': CheckboxInput(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS
+            # }),
+            # 'active': CheckboxInput(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS
+            # }),
+        }
 
 
 class LedgerModelCreateForm(ModelForm):
     class Meta:
         model = LedgerModel
         fields = [
-            'entity',
             'name',
         ]
+        # widgets = {
+        #     'entity': TextInput(
+        #         attrs={
+        #             'class': DJETLER_FORM_INPUT_CLASS
+        #         }
+        #     ),
+        #     'name': TextInput(
+        #         attrs={
+        #             'class': DJETLER_FORM_INPUT_CLASS
+        #         }
+        #     ),
+        # }
 
 
 class LedgerModelUpdateForm(ModelForm):
