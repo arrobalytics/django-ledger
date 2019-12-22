@@ -12,26 +12,28 @@
                     <div class="box">
                         <form action="{{ coa.get_update_url }}" method="post">
                             {% csrf_token %}
-                            <div class="field">
-                                <label for="{{ form.slug.id_for_label }}"
-                                       class="label">{{ form.slug.label }}</label>
-                                <div class="control">{{ form.slug }}</div>
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.name.id_for_label }}"
-                                       class="label">{{ form.name.label }}</label>
-                                <div class="control">{{ form.name }}</div>
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.description.id_for_label }}"
-                                       class="label">{{ form.description.label }}</label>
-                                <div class="control">{{ form.description }}</div>
-                            </div>
-                            <button class="button is-small is-info is-normal is-fullwidth"
+                            {{ form.as_p }}
+{#                            <div class="field">#}
+{#                                <label for="{{ form.slug.id_for_label }}"#}
+{#                                       class="label">{{ form.slug.label }}</label>#}
+{#                                <div class="control">{{ form.slug }}</div>#}
+{#                            </div>#}
+{#                            <div class="field">#}
+{#                                <label for="{{ form.name.id_for_label }}"#}
+{#                                       class="label">{{ form.name.label }}</label>#}
+{#                                <div class="control">{{ form.name }}</div>#}
+{#                            </div>#}
+{#                            <div class="field">#}
+{#                                <label for="{{ form.description.id_for_label }}"#}
+{#                                       class="label">{{ form.description.label }}</label>#}
+{#                                <div class="control">{{ form.description }}</div>#}
+{#                            </div>#}
+                            <button class="button is-small is-info is-normal is-fullwidth djetler_my_1"
                                     type="submit">Update</button>
-                            <a class="button is-small is-dark is-fullwidth is-outlined djetler_my_1"
+                            <a class="button is-small is-dark is-fullwidth is-outlined"
                                href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}"
-                               type="submit">Back</a>                        </form>
+                               type="submit">Back</a>
+                        </form>
                     </div>
                 </div>
             </div>

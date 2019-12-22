@@ -6,7 +6,8 @@ from django.views.generic import (ListView, DetailView, UpdateView, CreateView, 
 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
                                  LedgerModelUpdateForm,
-                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm, EntityModelCreateForm,
+                                 JournalEntryModelCreateForm, TransactionModelFormSet, EntityModelForm,
+                                 EntityModelCreateForm,
                                  ChartOfAccountsModelUpdateForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
@@ -38,13 +39,11 @@ class RootUrlView(RedirectView):
 
 class DashboardView(TemplateView):
     template_name = 'django_ledger/dashboard.html'
-    extra_context = {
-        'page_title': _('dashboard'),
-        'header_title': _('dashboard')
-    }
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['page_title'] = _('dashboard')
+        context['header_title'] = _('dashboard')
         context['entities'] = EntityModel.objects.for_user(
             user=self.request.user
         )
@@ -55,6 +54,12 @@ class DashboardView(TemplateView):
 class EntityModelListView(ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('my entities')
+        context['header_title'] = _('my entities')
+        return context
 
     def get_queryset(self):
         """
@@ -189,24 +194,6 @@ class EntityIncomeStatementView(DetailView):
         :return: The View queryset.
         """
         return EntityModel.objects.for_user(user=self.request.user)
-
-
-# CoA Views ---
-# class ChartOfAccountsDetailView(DetailView):
-#     context_object_name = 'coa'
-#     slug_url_kwarg = 'coa_slug'
-#     template_name = 'django_ledger/coa_detail.html'
-#
-#     def get_context_data(self, **kwargs):
-#         context = super().get_context_data(**kwargs)
-#         context['page_title'] = self.object.name
-#         context['header_title'] = _l('CoA') + ': ' + self.object.name
-#         return context
-#
-#     def get_queryset(self):
-#         return ChartOfAccountModel.objects.for_user(
-#             user=self.request.user
-#         ).prefetch_related('accounts')
 
 
 class ChartOfAccountsUpdateView(UpdateView):
@@ -434,7 +421,7 @@ class JournalEntryUpdateView(UpdateView):
     pk_url_kwarg = 'je_pk'
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
-    form_class = JournalEntryModelForm
+    form_class = JournalEntryModelCreateForm
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -442,10 +429,24 @@ class JournalEntryUpdateView(UpdateView):
             user=self.request.user).filter(
             ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
 
-
 class JournalEntryCreateView(CreateView):
-    form_class = JournalEntryModelForm
+    form_class = JournalEntryModelCreateForm
     template_name = 'django_ledger/je_create.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('create journal entry')
+        context['header_title'] = _('create journal entry')
+        return context
+
+
+    def form_valid(self, form):
+        ledger_model = LedgerModel.objects.for_user(
+            user=self.request.user
+        ).get(id=self.kwargs['ledger_pk'])
+        form.instance.ledger = ledger_model
+        self.object = form.save()
+        return super().form_valid(form)
 
     def get_initial(self):
         ledger_pk = self.kwargs.get('ledger_pk')

@@ -18,7 +18,9 @@
                               method="post">
                             {% csrf_token %}
                             {{ form.as_p }}
-                            <button type="submit" class="button is-light">Create</button>
+                            <button type="submit"
+                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Create</button>
+                            <a type="submit" class="button is-small is-dark is-fullwidth">Back</a>
                         </form>
                     </div>
                 </div>

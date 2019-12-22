@@ -1,5 +1,5 @@
 from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet,
-                          HiddenInput, TextInput, Textarea, BooleanField, Select)
+                          HiddenInput, TextInput, Textarea, BooleanField, Select, DateInput)
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
@@ -175,18 +175,13 @@ class LedgerModelCreateForm(ModelForm):
         fields = [
             'name',
         ]
-        # widgets = {
-        #     'entity': TextInput(
-        #         attrs={
-        #             'class': DJETLER_FORM_INPUT_CLASS
-        #         }
-        #     ),
-        #     'name': TextInput(
-        #         attrs={
-        #             'class': DJETLER_FORM_INPUT_CLASS
-        #         }
-        #     ),
-        # }
+        widgets = {
+            'name': TextInput(
+                attrs={
+                    'class': DJETLER_FORM_INPUT_CLASS
+                }
+            ),
+        }
 
 
 class LedgerModelUpdateForm(ModelForm):
@@ -204,12 +199,36 @@ class JournalEntryModelForm(ModelForm):
     class Meta:
         model = JournalEntryModel
         fields = [
-            'ledger',
             'parent',
             'activity',
             'date',
             'description'
         ]
+
+
+class JournalEntryModelCreateForm(ModelForm):
+    class Meta:
+        model = JournalEntryModel
+        fields = [
+            'parent',
+            'activity',
+            'date',
+            'description'
+        ]
+        widgets = {
+            'parent': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'activity': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'date': DateInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'description': Textarea(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            })
+        }
 
 
 class TransactionModelForm(ModelForm):
