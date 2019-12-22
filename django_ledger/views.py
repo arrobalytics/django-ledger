@@ -10,6 +10,7 @@ from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm,
                                  ChartOfAccountsModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
+from django_ledger.models.utils import populate_default_coa
 from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
 
 
@@ -126,6 +127,9 @@ class EntityModelCreateView(CreateView):
         if user.is_authenticated:
             form.instance.admin = user
             self.object = form.save()
+            create_coa = form.cleaned_data.get('populate_default_coa')
+            if create_coa:
+                populate_default_coa(entity=self.object)
         return super().form_valid(form)
 
 
@@ -231,6 +235,21 @@ class ChartOfAccountsUpdateView(UpdateView):
 
 
 # Account Views ----
+class AccountModelListView(ListView):
+    template_name = 'django_ledger/account_list.html'
+    context_object_name = 'accounts'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Entity Accounts')
+        context['header_title'] = _('Entity Accounts')
+        return context
+
+    def get_queryset(self):
+        qs = AccountModel.on_coa.for_user(user=self.request.user)
+        return qs.filter(coa__entity__slug=self.kwargs['entity_slug']).order_by('code')
+
+
 class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
     pk_url_kwarg = 'account_pk'
@@ -262,12 +281,16 @@ class AccountModelCreateView(CreateView):
     template_name = 'django_ledger/account_create.html'
     form_class = AccountModelCreateForm
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Add Account')
+        context['header_title'] = _('Add Account')
+        return context
+
     def get_form(self, form_class=None):
-        if form_class is None:
-            form_class = self.get_form_class()
-        return form_class(coa_slug=self.kwargs['coa_slug'],
-                          entity_slug=self.kwargs['entity_slug'],
-                          **self.get_form_kwargs())
+        return AccountModelCreateForm(coa_slug=self.kwargs['coa_slug'],
+                                      entity_slug=self.kwargs['entity_slug'],
+                                      **self.get_form_kwargs())
 
     def form_valid(self, form):
         coa_model = ChartOfAccountModel.objects.for_user(

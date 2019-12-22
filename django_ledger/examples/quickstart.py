@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django_ledger.models.coa import make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.utils import create_coa_structure
+from django_ledger.models.utils import populate_default_coa
 
 UserModel = get_user_model()
 
@@ -14,7 +14,7 @@ def quickstart(quickstart_user: str, reset_entity=False):
 
     if reset_entity:
         EntityModel.objects.filter(slug=quickstart_entity, admin=user_model).delete()
-        company = create_coa_structure(coa_data=CHART_OF_ACCOUNTS,
+        company = populate_default_coa(coa_data=CHART_OF_ACCOUNTS,
                                        admin=user_model,
                                        entity='my-quickstart-inc')
     else:

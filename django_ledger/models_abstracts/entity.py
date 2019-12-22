@@ -43,6 +43,7 @@ class EntityModelAbstract(MPTTModel,
                             db_index=True,
                             on_delete=models.CASCADE)
 
+    hidden = models.BooleanField(default=False)
     objects = EntityModelManager()
 
     class Meta:
