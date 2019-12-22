@@ -1,5 +1,5 @@
 from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet,
-                          HiddenInput, TextInput, Textarea)
+                          HiddenInput, TextInput, Textarea, BooleanField)
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
@@ -15,6 +15,28 @@ class EntityModelForm(ModelForm):
         model = EntityModel
         fields = [
             'name',
+        ]
+        labels = {
+            'name': _l('Entity Name')
+        }
+        widgets = {
+            'name': TextInput(
+                attrs={
+                    'class': DJETLER_FORM_INPUT_CLASS,
+                    'placeholder': _l('Entity name...')
+                }
+            )
+        }
+
+
+class EntityModelCreateForm(ModelForm):
+    populate_default_coa = BooleanField()
+
+    class Meta:
+        model = EntityModel
+        fields = [
+            'name',
+            'populate_default_coa'
         ]
         labels = {
             'name': _l('Entity Name')
