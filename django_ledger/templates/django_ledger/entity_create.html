@@ -11,7 +11,8 @@
                     <div class="box">
                         <form method="post" action="{% url 'django_ledger:entity-create' %}">
                             {% csrf_token %}
-                            <label for="{{ form.name.id_for_label }}" class="label">{{ form.name.label }}</label>
+                            <label for="{{ form.name.id_for_label }}"
+                                   class="label">{{ form.name.label | title }}</label>
                             <div class="field">
                                 <div class="control">{{ form.name }}</div>
                             </div>

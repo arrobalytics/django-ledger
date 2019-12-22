@@ -36,12 +36,15 @@ urlpatterns = [
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),
 
-    path('account/<slug:entity_slug>/<slug:coa_slug>/<int:account_pk>/update/',
-         views.AccountModelUpdateView.as_view(),
-         name='account-update'),
+    path('account/<slug:entity_slug>/<slug:coa_slug>/',
+         views.AccountModelListView.as_view(),
+         name='account-list'),
     path('account/<slug:entity_slug>/<slug:coa_slug>/create/',
          views.AccountModelCreateView.as_view(),
          name='account-create'),
+    path('account/<slug:entity_slug>/<slug:coa_slug>/<int:account_pk>/update/',
+         views.AccountModelUpdateView.as_view(),
+         name='account-update'),
 
     # Ledger Views ----
     path('ledger/<slug:entity_slug>/',

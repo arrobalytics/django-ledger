@@ -23,13 +23,12 @@ def populate_default_coa(entity):
     }
     for acc in acc_objs:
         acc.clean()
-    AccountModel.objects.bulk_create(acc_objs)
+        acc.save()
 
     for acc_p, acc_c in children.items():
         p_obj = AccountModel.objects.get(code=acc_p)
         c_qs = AccountModel.objects.filter(code__in=acc_c)
         p_obj.children.set(c_qs)
-
     return entity
 
 

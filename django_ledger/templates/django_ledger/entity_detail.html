@@ -41,7 +41,7 @@
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Chart of Accounts' %}</h2>
 
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{{ entity.coa.get_absolute_url }}">ViewCoA</a>
+                           href="{% url 'django_ledger:account-list' entity_slug=entity.slug coa_slug=entity.coa.slug %}">View CoA Accounts</a>
                         <a class="button is-primary is-outlined is-fullwidth"
                            href="{{ entity.coa.get_update_url }}">Edit CoA</a>
 

@@ -1,0 +1,25 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load django_ledger %}
+
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column">
+                    <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}"
+                       class="button is-dark">Create Account</a>
+                    <ul>
+                        {% for acc in accounts %}
+                            <li>{{ acc }} <a class="button is-small is-light"
+                                             href="{{ acc.get_update_url }}">Update</a></li>
+                        {% endfor %}
+                    </ul>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+{% endblock %}

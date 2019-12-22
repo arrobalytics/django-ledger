@@ -1,5 +1,5 @@
 from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet,
-                          HiddenInput, TextInput, Textarea, BooleanField)
+                          HiddenInput, TextInput, Textarea, BooleanField, Select)
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
@@ -99,6 +99,24 @@ class AccountModelCreateForm(AccountModelBaseForm):
             'role',
             'balance_type',
         ]
+        widgets = {
+            'parent': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'code': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'name': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'role': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'balance_type': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+
+        }
 
 
 class AccountModelUpdateForm(AccountModelBaseForm):
