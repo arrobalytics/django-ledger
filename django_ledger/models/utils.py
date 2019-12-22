@@ -1,9 +1,36 @@
 from django.contrib.auth import get_user_model
 
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 
 UserModel = get_user_model()
+
+
+def populate_default_coa(entity):
+    coa = entity.coa
+    acc_objs = [AccountModel(
+        code=a['code'],
+        name=a['name'],
+        role=a['role'],
+        balance_type=a['balance_type'],
+        coa=coa,
+    ) for a in CHART_OF_ACCOUNTS]
+    parents = set([a.get('parent') for a in CHART_OF_ACCOUNTS])
+    children = {
+        p: [c['code']
+            for c in CHART_OF_ACCOUNTS if c['parent'] == p and c['code'] != p] for p in parents
+    }
+    for acc in acc_objs:
+        acc.clean()
+    AccountModel.objects.bulk_create(acc_objs)
+
+    for acc_p, acc_c in children.items():
+        p_obj = AccountModel.objects.get(code=acc_p)
+        c_qs = AccountModel.objects.filter(code__in=acc_c)
+        p_obj.children.set(c_qs)
+
+    return entity
 
 
 def create_coa_structure(coa_data: dict,

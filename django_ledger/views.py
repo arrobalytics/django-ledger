@@ -6,7 +6,7 @@ from django.views.generic import (ListView, DetailView, UpdateView, CreateView, 
 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
                                  LedgerModelUpdateForm,
-                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm,
+                                 JournalEntryModelForm, TransactionModelFormSet, EntityModelForm, EntityModelCreateForm,
                                  ChartOfAccountsModelForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
@@ -112,9 +112,10 @@ class EntityModelDetailVew(DetailView):
 
 class EntityModelCreateView(CreateView):
     template_name = 'django_ledger/entity_create.html'
-    form_class = EntityModelForm
+    form_class = EntityModelCreateForm
     extra_context = {
-        'header_title': _('create entity')
+        'header_title': _('create entity'),
+        'page_title': _('create entity')
     }
 
     def get_success_url(self):

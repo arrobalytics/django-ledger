@@ -17,4 +17,5 @@ def load_model_abstract(model_path):
         _class = getattr(import_module(module_name), class_name)
         return _class
     except (ImportError, AttributeError):
+        print(ImportError)
         raise ImproperlyConfigured('%s cannot be imported' % model_path)

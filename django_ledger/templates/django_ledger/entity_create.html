@@ -15,8 +15,14 @@
                             <div class="field">
                                 <div class="control">{{ form.name }}</div>
                             </div>
+                            <div class="field">
+                                <label for="{{ form.name.populate_default_coa }}"
+                                       class="label">{{ form.populate_default_coa.label | title }}</label>
+                                <div class="control">{{ form.populate_default_coa }}</div>
+                            </div>
                             <button class="button is-small is-info is-normal is-fullwidth djetler_my_1"
-                                    type="submit">Create</button>
+                                    type="submit">Create
+                            </button>
                             <a class="button is-small is-dark is-fullwidth is-outlined"
                                href="{% url 'django_ledger:dashboard' %}"
                                type="submit">Back</a>
