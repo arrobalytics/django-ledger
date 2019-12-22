@@ -39,18 +39,21 @@
                 <div class="tile is-parent">
                     <article class="tile is-child box content">
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Chart of Accounts' %}</h2>
-                        <a class="button is-light is-fullwidth djetler_my_1" href="{{ entity.coa.get_absolute_url }}">View
-                            CoA</a>
 
-                        <a class="button is-light is-fullwidth" href="{{ entity.coa.get_update_url }}">Edit CoA</a>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="{{ entity.coa.get_absolute_url }}">ViewCoA</a>
+                        <a class="button is-primary is-outlined is-fullwidth"
+                           href="{{ entity.coa.get_update_url }}">Edit CoA</a>
+
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Ledgers' %}</h2>
-                        <a class="button is-light is-fullwidth" href="{{ entity.get_ledgers_url }}">Ledgers</a>
+                        <a class="button is-primary is-outlined is-fullwidth"
+                           href="{{ entity.get_ledgers_url }}">Ledgers</a>
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Reports' %}</h2>
-                        <a class="button is-light is-fullwidth djetler_my_1" href="{{ entity.get_bs_url }}">Balance
-                            Sheet</a>
-                        <a class="button is-light is-fullwidth djetler_my_1" href="{{ entity.get_ic_url }}">Income
-                            Statement</a>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="{{ entity.get_bs_url }}">Balance Sheet</a>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="{{ entity.get_ic_url }}">Income Statement</a>
                     </article>
                 </div>
             </div>
