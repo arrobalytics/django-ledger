@@ -29,9 +29,9 @@ urlpatterns = [
          name='entity-income-statement'),
 
     # Entity Chart of Accounts -----
-    path('coa/<slug:entity_slug>/<slug:coa_slug>/',
-         views.ChartOfAccountsDetailView.as_view(),
-         name='coa-detail'),
+    # path('coa/<slug:entity_slug>/<slug:coa_slug>/',
+    #      views.ChartOfAccountsDetailView.as_view(),
+    #      name='coa-detail'),
     path('coa/<slug:entity_slug>/<slug:coa_slug>/update/',
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),

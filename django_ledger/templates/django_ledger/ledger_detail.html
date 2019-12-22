@@ -1,48 +1,43 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ledger Detail View</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">Ledger Detail View</h1>
-        <p class="subtitle">{{ ledger.name }}</p>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load django_ledger %}
 
-        <div class="columns">
-            <div class="column">
-                <h1 class="is-size-3">Ledger Journal Entries</h1>
-                <a class="button is-dark is-small"
-                   href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">New
-                    JE</a>
-                <a class="button is-small is-dark"
-                   href="{% url 'django_ledger:je-bs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">BS</a>
-                <a class="button is-small is-dark"
-                   href="{% url 'django_ledger:je-ic' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">IC</a>
 
-                <ul>
-                    {% for je in ledger.journal_entry.all %}
-                        <li>{{ je }}
-                            <a class="button is-small is-dark"
-                               href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
-                            <a class="button is-small is-dark"
-                               href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
-                            <a class="button is-small is-dark"
-                               href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
-                        </li>
-                    {% endfor %}
-                </ul>
+
+
+{% block content %}
+
+    <section class="section">
+        <div class="container">
+
+            <div class="columns is-centered">
+                <div class="column is-8-tablet is-6-desktop">
+                    <h1 class="is-size-3">Ledger Journal Entries</h1>
+                    <a class="button is-dark is-small"
+                       href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">New
+                        JE</a>
+                    <a class="button is-small is-dark"
+                       href="{% url 'django_ledger:je-bs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">BS</a>
+                    <a class="button is-small is-dark"
+                       href="{% url 'django_ledger:je-ic' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">IC</a>
+
+                    <ul>
+                        {% for je in ledger.journal_entry.all %}
+                            <li>{{ je }}
+                                <a class="button is-small is-dark"
+                                   href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
+                                <a class="button is-small is-dark"
+                                   href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
+                                <a class="button is-small is-dark"
+                                   href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
-        </div>
 
-    </div>
-</section>
-</body>
-</html>
+        </div>
+    </section>
+
+{% endblock %}

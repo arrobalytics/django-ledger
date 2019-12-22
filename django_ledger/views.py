@@ -7,7 +7,7 @@ from django.views.generic import (ListView, DetailView, UpdateView, CreateView, 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
                                  LedgerModelUpdateForm,
                                  JournalEntryModelForm, TransactionModelFormSet, EntityModelForm, EntityModelCreateForm,
-                                 ChartOfAccountsModelForm)
+                                 ChartOfAccountsModelUpdateForm)
 from django_ledger.models import (EntityModel, ChartOfAccountModel, TransactionModel,
                                   AccountModel, LedgerModel, JournalEntryModel)
 from django_ledger.models.utils import populate_default_coa
@@ -192,28 +192,28 @@ class EntityIncomeStatementView(DetailView):
 
 
 # CoA Views ---
-class ChartOfAccountsDetailView(DetailView):
-    context_object_name = 'coa'
-    slug_url_kwarg = 'coa_slug'
-    template_name = 'django_ledger/coa_detail.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _l('CoA') + ': ' + self.object.name
-        return context
-
-    def get_queryset(self):
-        return ChartOfAccountModel.objects.for_user(
-            user=self.request.user
-        ).prefetch_related('accounts')
+# class ChartOfAccountsDetailView(DetailView):
+#     context_object_name = 'coa'
+#     slug_url_kwarg = 'coa_slug'
+#     template_name = 'django_ledger/coa_detail.html'
+#
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['page_title'] = self.object.name
+#         context['header_title'] = _l('CoA') + ': ' + self.object.name
+#         return context
+#
+#     def get_queryset(self):
+#         return ChartOfAccountModel.objects.for_user(
+#             user=self.request.user
+#         ).prefetch_related('accounts')
 
 
 class ChartOfAccountsUpdateView(UpdateView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/coa_update.html'
-    form_class = ChartOfAccountsModelForm
+    form_class = ChartOfAccountsModelUpdateForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -256,16 +256,14 @@ class AccountModelUpdateView(UpdateView):
     template_name = 'django_ledger/account_update.html'
     form_class = AccountModelUpdateForm
 
-    def get_form(self, form_class=None):
-        """Return an instance of the form to be used in this view."""
-        if form_class is None:
-            form_class = self.get_form_class()
-        return form_class(coa_slug=self.kwargs['coa_slug'],
-                          entity_slug=self.kwargs['entity_slug'],
-                          **self.get_form_kwargs())
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Update Account')
+        context['header_title'] = _(f'Update Account: {self.object.code} - {self.object.name}')
+        return context
 
     def get_success_url(self):
-        return reverse('django_ledger:coa-detail',
+        return reverse('django_ledger:account-list',
                        kwargs={
                            'coa_slug': self.kwargs['coa_slug'],
                            'entity_slug': self.kwargs['entity_slug']
@@ -274,6 +272,9 @@ class AccountModelUpdateView(UpdateView):
     def get_queryset(self):
         return AccountModel.on_coa.for_user(
             user=self.request.user
+        ).filter(
+            Q(coa__slug__exact=self.kwargs['coa_slug']) &
+            Q(coa__entity__slug__exact=self.kwargs['entity_slug'])
         )
 
 
@@ -283,8 +284,8 @@ class AccountModelCreateView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Add Account')
-        context['header_title'] = _('Add Account')
+        context['page_title'] = _('Create Account')
+        context['header_title'] = _('Create Account')
         return context
 
     def get_form(self, form_class=None):
@@ -346,6 +347,19 @@ class LedgerModelDetailView(DetailView):
 class LedgerModelCreateView(CreateView):
     template_name = 'django_ledger/ledger_create.html'
     form_class = LedgerModelCreateForm
+
+    def form_valid(self, form):
+        entity_qs = EntityModel.objects.for_user(user=self.request.user)
+        entity = entity_qs.get(slug__exact=self.kwargs['entity_slug'])
+        form.instance.entity = entity
+        self.object = form.save()
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _l('create ledger')
+        context['header_title'] = _l('create ledger')
+        return context
 
     def get_initial(self):
         slug = self.kwargs.get('entity_slug')
