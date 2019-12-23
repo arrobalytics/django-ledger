@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import (ListView, DetailView, UpdateView, CreateView, TemplateView, RedirectView)
 
 from django_ledger.forms import (AccountModelUpdateForm, AccountModelCreateForm, LedgerModelCreateForm,
-                                 LedgerModelUpdateForm,
+                                 LedgerModelUpdateForm, JournalEntryModelUpdateForm,
                                  JournalEntryModelCreateForm, TransactionModelFormSet, EntityModelForm,
                                  EntityModelCreateForm,
                                  ChartOfAccountsModelUpdateForm)
@@ -124,6 +124,12 @@ class EntityModelCreateView(CreateView):
         'page_title': _('create entity')
     }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _l('create entity')
+        context['header_title'] = _l('create entity')
+        return context
+
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
 
@@ -144,6 +150,12 @@ class EntityModelUpdateView(UpdateView):
     form_class = EntityModelForm
     slug_url_kwarg = 'entity_slug'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _l('update entity: ') + self.object.name
+        context['header_title'] = _l('update entity: ') + self.object.name
+        return context
+
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
 
@@ -163,8 +175,8 @@ class EntityBalanceSheetView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _l('balance sheet') + ': ' + self.object.name
+        context['page_title'] = _('balance sheet') + ': ' + self.object.name
+        context['header_title'] = _('balance sheet') + ': ' + self.object.name
         return context
 
     def get_queryset(self):
@@ -183,8 +195,8 @@ class EntityIncomeStatementView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _l('income statement') + ': ' + self.object.name
+        context['page_title'] = _('income statement: ') + self.object.name
+        context['header_title'] = _('income statement: ') + self.object.name
         return context
 
     def get_queryset(self):
@@ -204,8 +216,8 @@ class ChartOfAccountsUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _l('CoA') + ': ' + self.object.name
+        context['page_title'] = _l('CoA: ') + self.object.name
+        context['header_title'] = _l('CoA: ') + self.object.name
         return context
 
     def get_success_url(self):
@@ -312,23 +324,17 @@ class LedgerModelListView(ListView):
         'header_title': _('entity ledgers')
     }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('entity ledgers')
+        context['header_title'] = _('entity ledgers')
+        return context
+
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return LedgerModel.objects.for_user(user=self.request.user).filter(
             entity__slug=entity_slug
         )
-
-
-class LedgerModelDetailView(DetailView):
-    template_name = 'django_ledger/ledger_detail.html'
-    context_object_name = 'ledger'
-    pk_url_kwarg = 'ledger_pk'
-
-    def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_user(user=self.request.user).filter(
-            entity__slug=entity_slug
-        ).prefetch_related('journal_entry', 'entity')
 
 
 class LedgerModelCreateView(CreateView):
@@ -369,7 +375,7 @@ class LedgerModelUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
+        context['page_title'] = _('update ledger: ') + self.object.name
         context['header_title'] = _('update ledger: ') + self.object.name
         return context
 
@@ -391,6 +397,12 @@ class LedgerBalanceSheetView(DetailView):
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/balance_sheet.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Ledger BS: ') + self.object.name
+        context['header_title'] = _('Ledger BS: ') + self.object.name
+        return context
+
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return LedgerModel.objects.for_user(user=self.request.user).filter(
@@ -402,6 +414,12 @@ class LedgerIncomeStatementView(DetailView):
     context_object_name = 'entity'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/income_statement.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Ledger IC: ') + self.object.name
+        context['header_title'] = _('Ledger IC: ') + self.object.name
+        return context
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -436,6 +454,12 @@ class JournalEntryDetailView(DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_detail.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('journal entry detail')
+        context['header_title'] = _('journal entry detail')
+        return context
+
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.objects.for_user(
@@ -447,7 +471,13 @@ class JournalEntryUpdateView(UpdateView):
     pk_url_kwarg = 'je_pk'
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
-    form_class = JournalEntryModelCreateForm
+
+    def get_form(self, form_class=None):
+        return JournalEntryModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_pk=self.kwargs['ledger_pk'],
+            **self.get_form_kwargs()
+        )
 
     def get_success_url(self):
         return reverse('django_ledger:je-list', kwargs={
@@ -469,8 +499,14 @@ class JournalEntryUpdateView(UpdateView):
 
 
 class JournalEntryCreateView(CreateView):
-    form_class = JournalEntryModelCreateForm
     template_name = 'django_ledger/je_create.html'
+
+    def get_form(self, form_class=None):
+        return JournalEntryModelCreateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_pk=self.kwargs['ledger_pk'],
+            **self.get_form_kwargs()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -552,28 +588,3 @@ class TXSView(TemplateView):
         else:
             context['txs_formset'] = txs_formset
         return self.render_to_response(context)
-
-# class TXSAPIView(ListView):
-#
-#     def get_queryset(self):
-#         kwargs = self.kwargs
-#         return TransactionModel.objects.filter(
-#             Q(journal_entry_id=kwargs.get('je_pk')) &
-#             Q(journal_entry__ledger__entity__slug=kwargs.get('entity_slug')) &
-#             (
-#                     Q(journal_entry__ledger__entity__admin=self.request.user) |
-#                     Q(journal_entry__ledger__entity__managers__exact=self.request.user)
-#             )
-#         ).select_related('account', 'journal_entry')
-#
-#     def get(self, request, *args, **kwargs):
-#         data = list(self.get_queryset().values(
-#             'id',
-#             'account',
-#             'account__name',
-#             'account__code',
-#             'tx_type',
-#             'amount',
-#             'description'
-#         ))
-#         return JsonResponse(data={'data': data})

@@ -29,9 +29,6 @@ urlpatterns = [
          name='entity-income-statement'),
 
     # Entity Chart of Accounts -----
-    # path('coa/<slug:entity_slug>/<slug:coa_slug>/',
-    #      views.ChartOfAccountsDetailView.as_view(),
-    #      name='coa-detail'),
     path('coa/<slug:entity_slug>/<slug:coa_slug>/update/',
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),
@@ -50,9 +47,6 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/',
          views.LedgerModelListView.as_view(),
          name='ledger-list'),
-    # path('ledger/<slug:entity_slug>/<int:ledger_pk>/',
-    #      views.LedgerModelDetailView.as_view(),
-    #      name='ledger-detail'),
     path('ledger/<slug:entity_slug>/create/',
          views.LedgerModelCreateView.as_view(),
          name='ledger-create'),
