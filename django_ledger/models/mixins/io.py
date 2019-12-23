@@ -203,7 +203,7 @@ class IOMixIn:
             acc['txs__account__code'],
             acc['txs__account__name'],
             acc['txs__account__balance_type']
-        ) for acc in je_txs]))
+        ) for acc in je_txs if acc['txs__amount']]))
 
         acc_agg = [
             {
@@ -216,6 +216,7 @@ class IOMixIn:
                                                 for je in je_txs if je['txs__account__code'] == acc[2]]]),
             } for acc in account_idx
         ]
+
         if as_dataframe:
             return DataFrame(acc_agg)
         return acc_agg

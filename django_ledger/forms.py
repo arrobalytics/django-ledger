@@ -1,5 +1,5 @@
-from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet,
-                          HiddenInput, TextInput, Textarea, BooleanField, Select, DateInput)
+from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, HiddenInput, TextInput, Textarea,
+                          BooleanField, Select, DateInput)
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
@@ -99,7 +99,6 @@ class ChartOfAccountsModelUpdateForm(ModelForm):
 
 
 class AccountModelBaseForm(ModelForm):
-    """"""
 
     def __init__(self, coa_slug, entity_slug, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,10 +140,6 @@ class AccountModelCreateForm(AccountModelBaseForm):
 
 
 class AccountModelUpdateForm(ModelForm):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     class Meta:
         model = AccountModel
         fields = [
@@ -188,11 +183,15 @@ class LedgerModelUpdateForm(ModelForm):
     class Meta:
         model = LedgerModel
         fields = [
-            'entity',
             'name',
             'posted',
             'locked',
         ]
+        widgets = {
+            'name': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+        }
 
 
 class JournalEntryModelForm(ModelForm):
@@ -232,10 +231,14 @@ class JournalEntryModelCreateForm(ModelForm):
 
 
 class TransactionModelForm(ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['account'].queryset = self.fields['account'].queryset.order_by('code')
+
     class Meta:
         model = TransactionModel
         fields = [
-            'id',
             'account',
             'tx_type',
             'amount',
@@ -243,7 +246,19 @@ class TransactionModelForm(ModelForm):
         ]
         widgets = {
             'id': HiddenInput(),
-            'journal_entry': HiddenInput()
+            'journal_entry': HiddenInput(),
+            # 'account': Select(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
+            # }),
+            # 'tx_type': Select(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
+            # }),
+            # 'amount': TextInput(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
+            # }),
+            # 'description': TextInput(attrs={
+            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
+            # }),
         }
 
 

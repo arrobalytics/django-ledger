@@ -16,6 +16,19 @@ each(@margins, {
   }
 })
 
+each(@margins, {
+  .@{pf}_mx_@{value} {
+    margin-left: (@value * 1rem);
+    margin-right: (@value * 1rem);
+  }
+  .@{pf}_ml_@{value} {
+    margin-left: (@value * 1rem);
+  }
+  .@{pf}_mr_@{value} {
+    margin-right: (@value * 1rem);
+  }
+})
+
 each(@sectionMinHeights, {
   .@{pf}-section-min@{value} {
     min-height: (@value * 1px);

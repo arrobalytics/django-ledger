@@ -8,7 +8,6 @@
 
             <div class="columns">
                 <div class="column">
-                    <h1 class="is-size-3">Ledger Journal Entries</h1>
                     <a class="button is-dark"
                        href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
                     <ul>
@@ -17,7 +16,7 @@
                                 <a class="button is-light is-small"
                                    href="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Edit</a>
                                 <a class="button is-light is-small"
-                                   href="{{ ledger.get_absolute_url }}">Journal Entries</a>
+                                   href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Journal Entries</a>
                             </li>
                         {% endfor %}
 
