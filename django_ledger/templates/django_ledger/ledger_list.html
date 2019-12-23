@@ -8,23 +8,23 @@
 
             <div class="columns">
                 <div class="column">
-                    <a class="button is-dark"
-                       href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
-                    <ul>
-                        {% for ledger in ledgers %}
-                            <li>{{ ledger.name }}
-                                <a class="button is-light is-small"
-                                   href="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Edit</a>
-                                <a class="button is-light is-small"
-                                   href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Journal Entries</a>
-                            </li>
-                        {% endfor %}
-
-                    </ul>
-
+                    <div class="box">
+                        <a class="button is-dark"
+                           href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
+                        <ul>
+                            {% for ledger in ledgers %}
+                                <li>{{ ledger.name }}
+                                    <a class="button is-light is-small"
+                                       href="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Edit</a>
+                                    <a class="button is-light is-small"
+                                       href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Journal
+                                        Entries</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
             </div>
-
         </div>
     </section>
 {% endblock %}

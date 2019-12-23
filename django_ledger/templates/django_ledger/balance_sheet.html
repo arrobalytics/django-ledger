@@ -8,9 +8,13 @@
         <div class="container">
             <div class="columns is-centered">
                 <div class="column is-8">
-                    {% balance_sheet entity %}
-                    <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                       href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+                    <div class="box">
+                        {% balance_sheet entity %}
+                        <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go
+                            Back</a>
+                    </div>
+
                 </div>
             </div>
         </div>

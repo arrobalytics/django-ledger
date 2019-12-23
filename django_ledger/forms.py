@@ -194,7 +194,16 @@ class LedgerModelUpdateForm(ModelForm):
         }
 
 
-class JournalEntryModelForm(ModelForm):
+class JournalEntryModelCreateForm(ModelForm):
+    def __init__(self, entity_slug, ledger_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_SLUG = entity_slug
+        self.LEDGER_PK = ledger_pk
+        self.fields['parent'].queryset = self.fields['parent'].queryset.filter(
+            ledger_id=self.LEDGER_PK,
+            ledger__entity__slug=self.ENTITY_SLUG
+        )
+
     class Meta:
         model = JournalEntryModel
         fields = [
@@ -203,9 +212,23 @@ class JournalEntryModelForm(ModelForm):
             'date',
             'description'
         ]
+        widgets = {
+            'parent': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'activity': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'date': DateInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'description': Textarea(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            })
+        }
 
 
-class JournalEntryModelCreateForm(ModelForm):
+class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
     class Meta:
         model = JournalEntryModel
         fields = [
