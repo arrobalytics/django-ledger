@@ -1,39 +1,27 @@
-{% load humanize %}
-{% load django_ledger %}
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Update Journal Entry</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">Update Journal Entry</h1>
-        <p class="subtitle">{{ je.txs.count }} Transactions</p>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
+{% block content %}
 
-        <div class="columns">
-            <div class="column">
-                <h1 class="is-size-3">Journal Entry Transactions</h1>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-6">
+                    <div class="box">
+                        <form method="post"
+                              action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.id %}">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button class="button is-fullwidth is-primary is-outlined djetler_my_1" type="submit">Update</button>
+                            <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}"
+                               class="button is-small is-dark is-fullwidth">Back</a>
+                        </form>
+                    </div>
 
-                <form method="post"
-                      action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.id %}">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button class="button is-small is-dark" type="submit">Update</button>
-                </form>
-
+                </div>
             </div>
         </div>
 
-    </div>
-</section>
-</body>
-</html>
+    </section>
+{% endblock %}

@@ -1,33 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ledger Detail View</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">Ledger Update View</h1>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load django_ledger %}
 
-        <div class="columns">
-            <div class="column">
-                <form action="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}"
-                      method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="button is-light">Update</button>
-                </form>
 
+
+
+{% block content %}
+
+    <section class="section">
+        <div class="container">
+
+            <div class="columns is-centered">
+                <div class="column is-4">
+                    <div class="box">
+                        <form action="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}"
+                              method="post">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button type="submit"
+                                    class="button is-primary is-fullwidth is-outlined djetler_my_1">Update</button>
+                            <a class="button is-dark is-small is-fullwidth"
+                               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-    </div>
-</section>
-</body>
-</html>
+{% endblock %}
+
+
+
+{#<!DOCTYPE html>#}
+{#<html>#}
+{#<head>#}
+{#    <meta charset="utf-8">#}
+{#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
+{#    <title>Ledger Detail View</title>#}
+{#    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">#}
+{#</head>#}
+{#<body>#}
+{#<section class="section">#}
+{#    <div class="container">#}
+{#        <h1 class="title">Ledger Update View</h1>#}
+{#    </div>#}
+{#</section>#}
+{#<section class="section">#}
+{#    <div class="container">#}
+{##}
+{##}
+{##}
+{#    </div>#}
+{#</section>#}
+{#</body>#}
+{#</html>#}

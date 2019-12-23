@@ -367,6 +367,12 @@ class LedgerModelUpdateView(UpdateView):
     pk_url_kwarg = 'ledger_pk'
     context_object_name = 'ledger'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = self.object.name
+        context['header_title'] = _('update ledger: ') + self.object.name
+        return context
+
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return LedgerModel.objects.for_user(user=self.request.user).filter(
@@ -405,6 +411,26 @@ class LedgerIncomeStatementView(DetailView):
 
 
 # JE Views ---
+class JournalEntryListView(ListView):
+    context_object_name = 'jes'
+    template_name = 'django_ledger/je_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('journal entries')
+        context['header_title'] = _('journal entries')
+        return context
+
+    def get_queryset(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        ledger_pk = self.kwargs.get('ledger_pk')
+        return JournalEntryModel.objects.for_user(
+            user=self.request.user).filter(
+            Q(ledger__entity__slug=entity_slug) &
+            Q(ledger_id=ledger_pk)
+        )
+
+
 class JournalEntryDetailView(DetailView):
     pk_url_kwarg = 'je_pk'
     context_object_name = 'journal_entry'
@@ -423,11 +449,24 @@ class JournalEntryUpdateView(UpdateView):
     template_name = 'django_ledger/je_update.html'
     form_class = JournalEntryModelCreateForm
 
+    def get_success_url(self):
+        return reverse('django_ledger:je-list', kwargs={
+            'entity_slug': self.kwargs['entity_slug'],
+            'ledger_pk': self.kwargs['ledger_pk']
+        })
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('update journal entry')
+        context['header_title'] = _('update journal entry')
+        return context
+
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.objects.for_user(
             user=self.request.user).filter(
             ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
+
 
 class JournalEntryCreateView(CreateView):
     form_class = JournalEntryModelCreateForm
@@ -438,7 +477,6 @@ class JournalEntryCreateView(CreateView):
         context['page_title'] = _('create journal entry')
         context['header_title'] = _('create journal entry')
         return context
-
 
     def form_valid(self, form):
         ledger_model = LedgerModel.objects.for_user(
@@ -455,7 +493,7 @@ class JournalEntryCreateView(CreateView):
         }
 
     def get_success_url(self):
-        return reverse('django_ledger:ledger-detail',
+        return reverse('django_ledger:je-list',
                        kwargs={
                            'entity_slug': self.kwargs.get('entity_slug'),
                            'ledger_pk': self.kwargs.get('ledger_pk')
@@ -479,19 +517,12 @@ class TXSView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # txs_api_url = reverse('django_ledger:txs-api',
-        #                       kwargs={
-        #                           'entity_slug': kwargs['entity_slug'],
-        #                           'ledger_pk': kwargs['ledger_pk'],
-        #                           'je_pk': kwargs['je_pk'],
-        #                       })
         txs_formset_url = reverse('django_ledger:txs',
                                   kwargs={
                                       'entity_slug': kwargs['entity_slug'],
                                       'ledger_pk': kwargs['ledger_pk'],
                                       'je_pk': kwargs['je_pk'],
                                   })
-        # context['txs_api_url'] = txs_api_url
         context['txs_formset_url'] = txs_formset_url
         return context
 

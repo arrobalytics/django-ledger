@@ -50,9 +50,9 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/',
          views.LedgerModelListView.as_view(),
          name='ledger-list'),
-    path('ledger/<slug:entity_slug>/<int:ledger_pk>/',
-         views.LedgerModelDetailView.as_view(),
-         name='ledger-detail'),
+    # path('ledger/<slug:entity_slug>/<int:ledger_pk>/',
+    #      views.LedgerModelDetailView.as_view(),
+    #      name='ledger-detail'),
     path('ledger/<slug:entity_slug>/create/',
          views.LedgerModelCreateView.as_view(),
          name='ledger-create'),
@@ -67,6 +67,9 @@ urlpatterns = [
          name='je-ic'),
 
     # Journal Entry Views ----
+    path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/',
+         views.JournalEntryListView.as_view(),
+         name='je-list'),
     path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/create/',
          views.JournalEntryCreateView.as_view(),
          name='je-create'),

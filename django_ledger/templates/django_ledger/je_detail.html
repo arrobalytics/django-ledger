@@ -1,36 +1,22 @@
-{% load humanize %}
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
 {% load django_ledger %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Journal Entry Detail</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-</head>
-<body>
-<section class="section">
-    <div class="container">
-        <h1 class="title">{{ journal_entry.description }}</h1>
-        <p class="subtitle">{{ journal_entry.txs.count }} Transactions</p>
-    </div>
-</section>
-<section class="section">
-    <div class="container">
+{% block content %}
 
-        <div class="columns">
-            <div class="column">
-                <h1 class="is-size-3">Journal Entry Transactions</h1>
-                {% je_txs journal_entry %}
-                <a class="button is-dark"
-                   href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=journal_entry.ledger_id je_pk=journal_entry.id %}">Edit
-                    Txs</a>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column">
 
+                    {% je_txs journal_entry %}
+                    <a class="button is-dark"
+                       href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=journal_entry.ledger_id je_pk=journal_entry.id %}">Edit
+                        Txs</a>
+                </div>
             </div>
         </div>
 
-    </div>
-</section>
-</body>
-</html>
+    </section>
+{% endblock %}
