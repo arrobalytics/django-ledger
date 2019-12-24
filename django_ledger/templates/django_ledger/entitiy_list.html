@@ -18,7 +18,7 @@
                                     <li>{{ entity.name }}
                                         <a href="{{ entity.get_absolute_url }}"
                                            class="button is-small is-primary is-outlined">View</a>
-                                        <a href="{{ entity.get_absolute_url }}"
+                                        <a href="{% url 'django_ledger:entity-update' entity_slug=entity.slug %}"
                                            class="button is-small is-dark">Settings</a>
                                     </li>
                                 {% endfor %}
