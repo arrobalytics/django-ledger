@@ -11,18 +11,36 @@
                     <div class="box">
                         <a class="button is-dark"
                            href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Add</a>
-                        <ul>
+                        <table class="table is-fullwidth">
+                            <thead>
+                            <tr>
+                                <th>Actions</th>
+                                <th>Description</th>
+                                <th>Posted</th>
+                                <th>Locked</th>
+                                <th>Created</th>
+                            </tr>
+                            </thead>
+                            <tbody>
                             {% for je in jes %}
-                                <li>{{ je }}
-                                    <a class="button is-small is-dark"
-                                       href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
-                                    <a class="button is-small is-dark"
-                                       href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
-                                    <a class="button is-small is-dark"
-                                       href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
-                                </li>
+                                <tr>
+                                    <td>
+                                        <a class="button is-small is-warning is-outlined"
+                                           href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
+                                        <a class="button is-small is-primary is-outlined"
+                                           href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
+                                        <a class="button is-small is-dark is-outlined"
+                                           href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
+                                    </td>
+                                    <td>{{ je.description }}</td>
+                                    <td>{{ je.posted }}</td>
+                                    <td>{{ je.locked }}</td>
+                                    <td>{{ je.created | timesince }}</td>
+                                </tr>
                             {% endfor %}
-                        </ul>
+                            </tbody>
+                        </table>
+
                     </div>
                 </div>
             </div>

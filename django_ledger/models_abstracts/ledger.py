@@ -36,7 +36,7 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     class Meta:
         abstract = True
-        ordering = ['slug']
+        ordering = ['-created']
         verbose_name = _l('Ledger')
         verbose_name_plural = _l('Ledgers')
 

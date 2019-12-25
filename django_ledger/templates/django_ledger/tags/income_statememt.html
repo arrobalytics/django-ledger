@@ -1,6 +1,6 @@
-{% load humanize %}
+{% load django_ledger %}
 
-<table>
+<table class="table is-fullwidth">
     <tr>
         <th>Account Number</th>
         <th>Description</th>
@@ -15,14 +15,14 @@
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | intcomma }}</td>
+            <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Income</td>
         <td></td>
         <td></td>
-        <td>${{ total_income | intcomma }}</td>
+        <td>${{ total_income | cs_thousands }}</td>
     </tr>
 
 
@@ -34,22 +34,22 @@
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | intcomma }}</td>
+            <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Expenses</td>
         <td></td>
         <td></td>
-        <td>${{ total_expenses | intcomma }}</td>
+        <td>${{ total_expenses | cs_thousands }}</td>
     </tr>
 
 
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Income (Loss)</td>
         <td></td>
         <td></td>
-        <td>${{ total_income_loss | intcomma }}</td>
+        <td>${{ total_income_loss | cs_thousands }}</td>
     </tr>
 
 

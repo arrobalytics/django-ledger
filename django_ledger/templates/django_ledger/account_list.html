@@ -9,13 +9,14 @@
             <div class="columns">
                 <div class="column">
                     <div class="box">
+
                         <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}"
                            class="button is-primary is-outlined">Create Account</a>
                         <a href="{% url 'django_ledger:dashboard' %}"
                            class="button is-dark">Back</a>
 
                         <h1 class="is-size-2">Asset Accounts</h1>
-                        <table class="table">
+                        <table class="table is-fullwidth">
                             <thead>
                             <tr>
                                 <th>BS Role</th>
@@ -24,7 +25,6 @@
                                 <th>Account Name</th>
                                 <th>Balance Type</th>
                                 <th>Actions</th>
-                                <th>Root Node</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -40,14 +40,14 @@
                                             <a class="button is-small is-dark"
                                                href="{{ account.get_update_url }}">Edit</a>
                                         </td>
-                                    <td>{{ account.is_root_node }}</td>
                                     </tr>
                                 {% endif %}
                             {% endfor %}
                             </tbody>
                         </table>
+
                         <h1 class="is-size-2">Liability Accounts</h1>
-                        <table class="table">
+                        <table class="table is-fullwidth">
                             <thead>
                             <tr>
                                 <th>BS Role</th>
@@ -75,8 +75,9 @@
                             {% endfor %}
                             </tbody>
                         </table>
+
                         <h1 class="is-size-2">Equity Accounts</h1>
-                        <table class="table">
+                        <table class="table is-fullwidth">
                             <thead>
                             <tr>
                                 <th>BS Role</th>
@@ -104,6 +105,7 @@
                             {% endfor %}
                             </tbody>
                         </table>
+
 
                     </div>
 

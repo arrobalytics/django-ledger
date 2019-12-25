@@ -1,6 +1,6 @@
 {% load django_ledger %}
 
-<table class="table">
+<table class="table is-fullwidth">
     <tr>
         <th>Account</th>
         <th>Account Name</th>
@@ -17,7 +17,7 @@
             <td>{{ tx.description }}</td>
         </tr>
     {% endfor %}
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total</td>
         <td></td>
         <td>${{ total_credits | cs_thousands }}</td>
