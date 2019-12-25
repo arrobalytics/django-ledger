@@ -23,42 +23,6 @@ def get_coa_account(coa_model, code):
             ))
 
 
-# def get_acc_idx(coa_model, as_dataframe=False):
-#     qs_acc = AccountModel.objects.filter(coa_assignments__coa=coa_model)
-#     accounts = qs_acc.values('id',
-#                              'code',
-#                              'name',
-#                              'parent_id',
-#                              'role',
-#                              'role_bs',
-#                              'balance_type')
-#     parents = [acc for acc in accounts if not acc.get('parent_id')]
-#     children = [acc for acc in accounts if acc.get('parent_id')]
-#     acc_idx = [accounts_index(acc, parents) for acc in children]
-#     if as_dataframe:
-#         acc_idx = DataFrame(acc_idx).set_index(
-#             keys=['role_bs', 'parent_code', 'parent_name', 'role', 'code', 'name', 'balance_type'])
-#     return acc_idx
-
-
-# def find_parent(acc, par):
-#     return next(iter([p for p in par if acc.get('parent_id') == p.get('id')]))
-
-
-# def accounts_index(account_values, parents):
-#     parent_acc = find_parent(account_values, parents)
-#     if parent_acc:
-#         mapped_acc = dict()
-#         mapped_acc['role_bs'] = account_values.get('role_bs').upper()
-#         mapped_acc['parent_code'] = parent_acc.get('code')
-#         mapped_acc['parent_name'] = parent_acc.get('name').upper()
-#         mapped_acc['code'] = account_values.get('code')
-#         mapped_acc['role'] = account_values.get('role').upper()
-#         mapped_acc['name'] = account_values.get('name')
-#         mapped_acc['balance_type'] = account_values.get('balance_type')
-#         return mapped_acc
-
-
 def make_account_active(coa_model, account_codes: str or list):
     if isinstance(account_codes, str):
         account_codes = [account_codes]
@@ -84,6 +48,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
 
     class Meta:
         abstract = True
+        ordering = ['slug']
         verbose_name = _l('Chart of Account')
         verbose_name_plural = _l('Chart of Accounts')
 

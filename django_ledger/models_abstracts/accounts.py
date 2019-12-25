@@ -105,8 +105,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     on_coa = AccountModelManager()
 
     class Meta:
-        # todo: add ordering to all models
         abstract = True
+        ordering = ['code']
         verbose_name = _l('Account')
         verbose_name_plural = _l('Accounts')
         unique_together = [

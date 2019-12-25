@@ -1,6 +1,6 @@
-{% load humanize %}
+{% load django_ledger %}
 
-<table>
+<table class="table">
     <tr>
         <th>Account</th>
         <th>Account Name</th>
@@ -12,15 +12,15 @@
         <tr>
             <td>{{ tx.account.code }}</td>
             <td>{{ tx.account.name }}</td>
-            <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | intcomma }}{% endif %}</td>
-            <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | intcomma }}{% endif %}</td>
+            <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
+            <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
             <td>{{ tx.description }}</td>
         </tr>
     {% endfor %}
     <tr>
         <td>Total</td>
         <td></td>
-        <td>${{ total_credits | intcomma }}</td>
-        <td>${{ total_debits | intcomma }}</td>
+        <td>${{ total_credits | cs_thousands }}</td>
+        <td>${{ total_debits | cs_thousands }}</td>
     </tr>
 </table>

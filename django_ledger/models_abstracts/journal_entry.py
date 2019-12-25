@@ -22,8 +22,6 @@ def validate_activity(act):
         valid = act in ACTIVITY_ALLOWS
         if not valid:
             raise ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
-    return act
-
 
 class JournalEntryModelManager(models.Manager):
 
