@@ -48,7 +48,7 @@ class EntityModelAbstract(MPTTModel,
 
     class Meta:
         abstract = True
-        ordering = ['slug']
+        ordering = ['-created']
         verbose_name = _l('Entity')
         verbose_name_plural = _l('Entities')  # idea: can use th django plural function...
 

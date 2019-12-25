@@ -106,7 +106,7 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
 
     class Meta:
         abstract = True
-        ordering = ['code']
+        ordering = ['-created']
         verbose_name = _l('Account')
         verbose_name_plural = _l('Accounts')
         unique_together = [

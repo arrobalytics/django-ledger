@@ -23,6 +23,7 @@ def validate_activity(act):
         if not valid:
             raise ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
 
+
 class JournalEntryModelManager(models.Manager):
 
     def for_user(self, user):
@@ -41,6 +42,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_l('Description'))
     activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_l('Activity'))
     origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_l('Origin'))
+    posted = models.BooleanField(default=False, verbose_name=_l('Posted'))
+    locked = models.BooleanField(default=False, verbose_name=_l('Locked'))
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
@@ -55,6 +58,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     class Meta:
         abstract = True
+        ordering = ['-created']
         verbose_name = _l('Journal Entry')
         verbose_name_plural = _l('Journal Entries')
 

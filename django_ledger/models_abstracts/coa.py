@@ -48,7 +48,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
 
     class Meta:
         abstract = True
-        ordering = ['slug']
+        ordering = ['-created']
         verbose_name = _l('Chart of Account')
         verbose_name_plural = _l('Chart of Accounts')
 
