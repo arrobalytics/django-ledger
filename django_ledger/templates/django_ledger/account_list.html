@@ -8,14 +8,105 @@
         <div class="container">
             <div class="columns">
                 <div class="column">
-                    <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}"
-                       class="button is-dark">Create Account</a>
-                    <ul>
-                        {% for acc in accounts %}
-                            <li>{{ acc }} <a class="button is-small is-light"
-                                             href="{{ acc.get_update_url }}">Update</a></li>
-                        {% endfor %}
-                    </ul>
+                    <div class="box">
+                        <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug coa_slug=view.kwargs.coa_slug %}"
+                           class="button is-primary is-outlined">Create Account</a>
+                        <a href="{% url 'django_ledger:dashboard' %}"
+                           class="button is-dark">Back</a>
+
+                        <h1 class="is-size-2">Asset Accounts</h1>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>BS Role</th>
+                                <th>Role</th>
+                                <th>Account Code</th>
+                                <th>Account Name</th>
+                                <th>Balance Type</th>
+                                <th>Actions</th>
+                                <th>Root Node</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for account in accounts %}
+                                {% if account.role_bs == 'assets' %}
+                                    <tr>
+                                        <td>{{ account.role_bs | upper }}</td>
+                                        <td>{{ account.get_role_display }}</td>
+                                        <td>{{ account.code }}</td>
+                                        <td>{{ account.name }}</td>
+                                        <td>{{ account.balance_type }}</td>
+                                        <td>
+                                            <a class="button is-small is-dark"
+                                               href="{{ account.get_update_url }}">Edit</a>
+                                        </td>
+                                    <td>{{ account.is_root_node }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <h1 class="is-size-2">Liability Accounts</h1>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>BS Role</th>
+                                <th>Role</th>
+                                <th>Account Code</th>
+                                <th>Account Name</th>
+                                <th>Balance Type</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for account in accounts %}
+                                {% if account.role_bs == 'liabilities' %}
+                                    <tr>
+                                        <td>{{ account.role_bs | upper }}</td>
+                                        <td>{{ account.get_role_display }}</td>
+                                        <td>{{ account.code }}</td>
+                                        <td>{{ account.name }}</td>
+                                        <td>{{ account.balance_type }}</td>
+                                        <td><a class="button is-small is-dark"
+                                               href="{{ account.get_update_url }}">Edit</a>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <h1 class="is-size-2">Equity Accounts</h1>
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>BS Role</th>
+                                <th>Role</th>
+                                <th>Account Code</th>
+                                <th>Account Name</th>
+                                <th>Balance Type</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for account in accounts %}
+                                {% if account.role_bs == 'equity' %}
+                                    <tr>
+                                        <td>{{ account.role_bs | upper }}</td>
+                                        <td>{{ account.get_role_display }}</td>
+                                        <td>{{ account.code }}</td>
+                                        <td>{{ account.name }}</td>
+                                        <td>{{ account.balance_type }}</td>
+                                        <td><a class="button is-small is-dark"
+                                               href="{{ account.get_update_url }}">Edit</a>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+
 
                 </div>
             </div>
