@@ -33,6 +33,7 @@ urlpatterns = [
          views.ChartOfAccountsUpdateView.as_view(),
          name='coa-update'),
 
+    # Accounts ---
     path('account/<slug:entity_slug>/<slug:coa_slug>/',
          views.AccountModelListView.as_view(),
          name='account-list'),
