@@ -14,7 +14,7 @@
                         {{ txs_formset.non_form_errors }}
                         {{ txs_formset.management_form }}
                         <div class="column">
-                            <table>
+                            <table class="table">
                                 <tr>
                                     <th>Account</th>
                                     <th>TX Type</th>
@@ -48,7 +48,7 @@
 
                             </table>
                         </div>
-                        <button class="button is-primary is-outlined">Submit</button>
+                        <button class="button is-primary is-outlined">Save</button>
                         <a class="button is-dark"
                            href="{% url "django_ledger:je-list" entity_slug=entity_slug ledger_pk=ledger_pk %}">Done</a>
                     </form>

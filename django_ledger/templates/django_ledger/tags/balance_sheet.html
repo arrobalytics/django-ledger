@@ -1,6 +1,6 @@
-{% load humanize %}
+{% load django_ledger %}
 
-<table>
+<table class="table">
     <tr>
         <th>Account Number</th>
         <th>Description</th>
@@ -15,16 +15,15 @@
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | intcomma }}</td>
+            <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
     <tr>
         <td>Total Assets</td>
         <td></td>
         <td></td>
-        <td>${{ total_assets | intcomma }}</td>
+        <td>${{ total_assets | cs_thousands }}</td>
     </tr>
-
 
 
     <tr>
@@ -35,14 +34,14 @@
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | intcomma }}</td>
+            <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
     <tr>
         <td>Total Liabilities</td>
         <td></td>
         <td></td>
-        <td>${{ total_liabilities | intcomma }}</td>
+        <td>${{ total_liabilities | cs_thousands }}</td>
     </tr>
 
 
@@ -54,37 +53,36 @@
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | intcomma }}</td>
+            <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
     <tr>
         <td>Total Capital</td>
         <td></td>
         <td></td>
-        <td>${{ total_capital | intcomma }}</td>
+        <td>${{ total_capital | cs_thousands }}</td>
     </tr>
-
 
 
     <tr>
         <td>Retained Earnings</td>
         <td></td>
         <td></td>
-        <td>${{ retained_earnings | intcomma }}</td>
+        <td>${{ retained_earnings | cs_thousands }}</td>
     </tr>
 
     <tr>
         <td>Total Equity</td>
         <td></td>
         <td></td>
-        <td>${{ total_equity | intcomma }}</td>
+        <td>${{ total_equity | cs_thousands }}</td>
     </tr>
 
     <tr>
         <td>Total Equity + Liabilities</td>
         <td></td>
         <td></td>
-        <td>${{ total_liabilities_equity | intcomma }}</td>
+        <td>${{ total_liabilities_equity | cs_thousands }}</td>
     </tr>
 
 

@@ -42,6 +42,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
 
     class Meta:
         abstract = True
+        ordering = ['-created']
         verbose_name = _l('Transaction')
         verbose_name_plural = _l('Transactions')
 

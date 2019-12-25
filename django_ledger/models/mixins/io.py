@@ -79,7 +79,6 @@ class IOMixIn:
     DEFAULT_ASSET_ACCOUNT = 1010
     DEFAULT_LIABILITY_ACCOUNT = None
     DEFAULT_CAPITAL_ACCOUNT = 3010
-
     DEFAULT_INCOME_ACCOUNT = 4020
     DEFAULT_EXPENSE_ACCOUNT = None
 
@@ -93,9 +92,7 @@ class IOMixIn:
                   je_parent=None):
 
         validate_tx_data(je_txs)
-
-        # todo: make this a function without a return.
-        je_activity = validate_activity(je_activity)
+        validate_activity(je_activity)
 
         if all([isinstance(self, lazy_importer.get_entity_model()),
                 not je_ledger]):
@@ -114,8 +111,8 @@ class IOMixIn:
             date=je_date,
             origin=je_origin,
             activity=je_activity,
-            parent=je_parent
-        )
+            parent=je_parent)
+
         txs_list = [
             TransactionModel(
                 account=avail_accounts.get(code__iexact=tx['code']),
