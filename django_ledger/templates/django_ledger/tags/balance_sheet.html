@@ -1,14 +1,21 @@
 {% load django_ledger %}
 
 <table class="table is-fullwidth">
+    <thead>
     <tr>
         <th>Account Number</th>
         <th>Description</th>
         <th>Balance Type</th>
         <th>Balance</th>
     </tr>
+    </thead>
+
+    <tbody>
     <tr>
-        <td>Assets</td>
+        <td><h2 class="is-size-3">Assets</h2></td>
+        <td></td>
+        <td></td>
+        <td></td>
     </tr>
     {% for acc in assets %}
         <tr>
@@ -18,16 +25,18 @@
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Assets</td>
         <td></td>
         <td></td>
         <td>${{ total_assets | cs_thousands }}</td>
     </tr>
 
-
     <tr>
-        <td>Liabilities</td>
+        <td><h2 class="is-size-3">Liabilities</h2></td>
+        <td></td>
+        <td></td>
+        <td></td>
     </tr>
     {% for acc in liabilities %}
         <tr>
@@ -37,7 +46,7 @@
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Liabilities</td>
         <td></td>
         <td></td>
@@ -45,9 +54,14 @@
     </tr>
 
 
-    <tr>
-        <td>Capital</td>
+    <tr class="is-primary">
+        <td><h2 class="is-size-3">Capital</h2></td>
+        <td></td>
+        <td></td>
+        <td></td>
     </tr>
+
+
     {% for acc in capital %}
         <tr>
             <td>{{ acc.code }}</td>
@@ -56,7 +70,8 @@
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
-    <tr>
+
+    <tr class="has-text-weight-bold">
         <td>Total Capital</td>
         <td></td>
         <td></td>
@@ -64,26 +79,26 @@
     </tr>
 
 
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Retained Earnings</td>
         <td></td>
         <td></td>
         <td>${{ retained_earnings | cs_thousands }}</td>
     </tr>
 
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Equity</td>
         <td></td>
         <td></td>
         <td>${{ total_equity | cs_thousands }}</td>
     </tr>
 
-    <tr>
+    <tr class="has-text-weight-bold">
         <td>Total Equity + Liabilities</td>
         <td></td>
         <td></td>
         <td>${{ total_liabilities_equity | cs_thousands }}</td>
     </tr>
-
+    </tbody>
 
 </table>

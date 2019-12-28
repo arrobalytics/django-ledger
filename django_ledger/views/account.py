@@ -16,6 +16,7 @@ class AccountModelListView(ListView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Entity Accounts')
         context['header_title'] = _('Entity Accounts')
+
         return context
 
     def get_queryset(self):

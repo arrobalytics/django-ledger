@@ -10,7 +10,7 @@
             <div class="columns is-centered">
                 <div class="column">
                     <div class="box">
-                        {% je_txs journal_entry %}
+                        {% txs_table journal_entry %}
                         <a class="button is-primary is-outlined"
                            href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=journal_entry.ledger_id je_pk=journal_entry.id %}">Edit
                             Txs</a>

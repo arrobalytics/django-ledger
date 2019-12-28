@@ -1,0 +1,82 @@
+<h1 class="is-size-2">Asset Accounts</h1>
+<table class="table is-fullwidth is-striped">
+    <thead>
+    <tr>
+        <th>Role</th>
+        <th>Account Code</th>
+        <th>Account Name</th>
+        <th>Balance Type</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for account in accounts %}
+        {% if account.role_bs == 'assets' %}
+            <tr>
+                <td>{{ account.get_role_display }}</td>
+                <td>{{ account.code }}</td>
+                <td>{{ account.name }}</td>
+                <td>{{ account.balance_type }}</td>
+                <td>
+                    <a class="button is-small is-dark"
+                       href="{{ account.get_update_url }}">Edit</a>
+                </td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+<h1 class="is-size-2">Liability Accounts</h1>
+<table class="table is-fullwidth">
+    <thead>
+    <tr>
+        <th>Role</th>
+        <th>Account Code</th>
+        <th>Account Name</th>
+        <th>Balance Type</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for account in accounts %}
+        {% if account.role_bs == 'liabilities' %}
+            <tr>
+                <td>{{ account.get_role_display }}</td>
+                <td>{{ account.code }}</td>
+                <td>{{ account.name }}</td>
+                <td>{{ account.balance_type }}</td>
+                <td><a class="button is-small is-dark"
+                       href="{{ account.get_update_url }}">Edit</a>
+                </td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+<h1 class="is-size-2">Equity Accounts</h1>
+<table class="table is-fullwidth">
+    <thead>
+    <tr>
+        <th>Role</th>
+        <th>Account Code</th>
+        <th>Account Name</th>
+        <th>Balance Type</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for account in accounts %}
+        {% if account.role_bs == 'equity' %}
+            <tr>
+                <td>{{ account.get_role_display }}</td>
+                <td>{{ account.code }}</td>
+                <td>{{ account.name }}</td>
+                <td>{{ account.balance_type }}</td>
+                <td><a class="button is-small is-dark"
+                       href="{{ account.get_update_url }}">Edit</a>
+                </td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>

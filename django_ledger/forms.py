@@ -82,7 +82,7 @@ class ChartOfAccountsModelUpdateForm(ModelForm):
         model = ChartOfAccountModel
         fields = [
             'name',
-            'description'
+            'locked'
         ]
         labels = {
             'name': _l('Name'),
@@ -235,7 +235,9 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
             'parent',
             'activity',
             'date',
-            'description'
+            'description',
+            'locked',
+            'posted'
         ]
         widgets = {
             'parent': Select(attrs={
@@ -270,18 +272,18 @@ class TransactionModelForm(ModelForm):
         widgets = {
             'id': HiddenInput(),
             'journal_entry': HiddenInput(),
-            # 'account': Select(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
-            # }),
-            # 'tx_type': Select(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
-            # }),
-            # 'amount': TextInput(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
-            # }),
-            # 'description': TextInput(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler_mb_1 djetler_mr_1'
-            # }),
+            'account': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'tx_type': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'amount': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
+            'description': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
         }
 
 

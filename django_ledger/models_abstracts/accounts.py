@@ -41,7 +41,6 @@ ACCOUNT_TERRITORY = {
     'liabilities': 'credit',
     'equity': 'credit'
 }
-
 ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLES], list())
 ROLE_DICT = {
     t[0].lower(): [r[0] for r in t[1]] for t in ACCOUNT_ROLES
@@ -85,7 +84,7 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     ]
 
     code = models.CharField(max_length=DJANGO_LEDGER_ACCOUNT_MAX_LENGTH,
-                            unique=True, verbose_name=_l('Account Code'))
+                            verbose_name=_l('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))

@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
 from django.views.generic import TemplateView
@@ -30,6 +31,8 @@ class TXSView(TemplateView):
                                       'je_pk': kwargs['je_pk'],
                                   })
         context['txs_formset_url'] = txs_formset_url
+        context['page_title'] = 'Edit Transactions'
+        context['header_title'] = 'Edit Transactions'
         return context
 
     def get(self, request, *args, **kwargs):
@@ -55,6 +58,11 @@ class TXSView(TemplateView):
             txs_formset.save()
             txs_formset = TransactionModelFormSet(queryset=self.get_queryset())
             context['txs_formset'] = txs_formset
+            messages.add_message(request, messages.SUCCESS, 'Successfully saved transactions.', extra_tags='is-success')
         else:
             context['txs_formset'] = txs_formset
+            messages.add_message(request,
+                                 messages.ERROR,
+                                 'Hmmm, this doesn\'t add up!. Check your math!',
+                                 extra_tags='is-danger')
         return self.render_to_response(context)

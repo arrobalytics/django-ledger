@@ -9,8 +9,8 @@ def cs_thousands(value):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html')
-def balance_sheet(entity):
-    bs_data = entity.balance_sheet()
+def balance_sheet(entity_model):
+    bs_data = entity_model.balance_sheet()
     assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
     liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']
     equity = [acc for acc in bs_data if acc['role_bs'] == 'equity']
@@ -46,9 +46,9 @@ def balance_sheet(entity):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/income_statememt.html')
-def income_statement(entity):
-    ic_data = entity.income_statement()
+@register.inclusion_tag('django_ledger/tags/income_statement.html')
+def income_statement(entity_model):
+    ic_data = entity_model.income_statement()
     income = [acc for acc in ic_data if acc['role'] in ['in']]
     expenses = [acc for acc in ic_data if acc['role'] in ['ex']]
     total_income = sum(
@@ -68,13 +68,36 @@ def income_statement(entity):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/transactions.html')
-def je_txs(journal_entry):
-    txs = journal_entry.txs.all()
-    total_credits = sum([tx.amount for tx in txs if tx.tx_type == 'credit'])
-    total_debits = sum([tx.amount for tx in txs if tx.tx_type == 'debit'])
+@register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)
+def jes_table(context, je_queryset):
     return {
-        'txs': txs,
+        'jes': je_queryset,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/txs_table.html')
+def txs_table(je_model):
+    txs_queryset = je_model.txs.all()
+    total_credits = sum([tx.amount for tx in txs_queryset if tx.tx_type == 'credit'])
+    total_debits = sum([tx.amount for tx in txs_queryset if tx.tx_type == 'debit'])
+    return {
+        'txs': txs_queryset,
         'total_debits': total_debits,
         'total_credits': total_credits
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/ledgers_table.html', takes_context=True)
+def ledgers_table(context, ledgers_queryset):
+    return {
+        'ledgers': ledgers_queryset,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/accounts_table.html')
+def accounts_table(accounts_queryset):
+    return {
+        'accounts': accounts_queryset
     }

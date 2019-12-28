@@ -1,0 +1,38 @@
+<table class="table is-fullwidth">
+    <thead>
+    <tr>
+        <th>Edit</th>
+        <th>Name</th>
+        <th>Detail</th>
+        <th>Balance Sheet</th>
+        <th>Income Statement</th>
+        <th>Posted</th>
+        <th>Locked</th>
+        <th>Created</th>
+        <th>Last Updated</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for ledger in ledgers %}
+        <tr>
+            <td><a class="button is-warning is-small"
+                   href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.id %}">Edit</a>
+            </td>
+            <td>{{ ledger.name }}</td>
+            <td><a class="button is-info is-small is-outlined"
+                   href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.id %}">Journal
+                Entries</a></td>
+            <td><a class="button is-info is-small is-outlined"
+                   href="{% url 'django_ledger:je-bs' entity_slug=entity_slug ledger_pk=ledger.id %}">Balance
+                Sheet</a></td>
+            <td><a class="button is-info is-small is-outlined"
+                   href="{% url 'django_ledger:je-ic' entity_slug=entity_slug ledger_pk=ledger.id %}">Income
+                Statement</a></td>
+            <td>{% if ledger.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
+            <td>{% if ledger.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+            <td>{{ ledger.created | timesince }}</td>
+            <td>{{ ledger.updated | timesince }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

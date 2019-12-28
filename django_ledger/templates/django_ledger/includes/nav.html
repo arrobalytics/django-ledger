@@ -18,6 +18,9 @@
         <div id="navbarBasicExample" class="navbar-menu">
             <div class="navbar-start">
                 <a class="navbar-item" href="{% url 'django_ledger:dashboard' %}">Home</a>
+                {% if user.is_staff or user.is_superuser %}
+                    <a class="navbar-item" href="/admin">Admin</a>
+                {% endif %}
 
 {#                <a class="navbar-item">#}
 {#                    Documentation#}

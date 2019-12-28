@@ -6,7 +6,6 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
-from django_ledger.models.accounts import AccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.models.mixins.io import IOMixIn
 
@@ -31,10 +30,6 @@ class EntityModelAbstract(MPTTModel,
                               related_name='admin_of', verbose_name=_l('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
                                       related_name='managed_by', verbose_name=_l('Managers'))
-    coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
-                               on_delete=models.CASCADE,
-                               related_name='entity',
-                               verbose_name=_l('Chart of Accounts'))
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
@@ -88,9 +83,6 @@ class EntityModelAbstract(MPTTModel,
                        kwargs={
                            'entity_slug': self.slug
                        })
-
-    def get_accounts(self):
-        return AccountModel.on_coa.available(coa=self.coa)
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):
