@@ -28,13 +28,17 @@ class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
     pk_url_kwarg = 'account_pk'
     template_name = 'django_ledger/account_update.html'
-    form_class = AccountModelUpdateForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Update Account')
         context['header_title'] = _(f'Update Account: {self.object.code} - {self.object.name}')
         return context
+
+    def get_form(self, form_class=None):
+        return AccountModelUpdateForm(coa_slug=self.kwargs['coa_slug'],
+                                      entity_slug=self.kwargs['entity_slug'],
+                                      **self.get_form_kwargs())
 
     def get_success_url(self):
         return reverse('django_ledger:account-list',
@@ -88,4 +92,3 @@ class AccountModelCreateView(CreateView):
                            'coa_slug': self.object.coa.slug,
                            'entity_slug': self.object.coa.entity.slug
                        })
-
