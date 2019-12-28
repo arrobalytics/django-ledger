@@ -37,13 +37,17 @@ class TXSView(TemplateView):
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-        txs_formset = TransactionModelFormSet(queryset=self.get_queryset())
+        txs_formset = TransactionModelFormSet(user=self.request.user,
+                                              entity_slug=kwargs['entity_slug'],
+                                              queryset=self.get_queryset())
         context['txs_formset'] = txs_formset
         return self.render_to_response(context)
 
     def post(self, request, **kwargs):
         context = self.get_context_data(**kwargs)
-        txs_formset = TransactionModelFormSet(request.POST)
+        txs_formset = TransactionModelFormSet(request.POST,
+                                              user=self.request.user,
+                                              entity_slug=kwargs['entity_slug'])
         je_model = JournalEntryModel.objects.filter(
             Q(id=context['je_pk']) &
             Q(ledger__entity__slug=context['entity_slug']) &
@@ -56,7 +60,6 @@ class TXSView(TemplateView):
             for f in txs_formset:
                 f.instance.journal_entry_id = context['je_pk']
             txs_formset.save()
-            txs_formset = TransactionModelFormSet(queryset=self.get_queryset())
             context['txs_formset'] = txs_formset
             messages.add_message(request, messages.SUCCESS, 'Successfully saved transactions.', extra_tags='is-success')
         else:

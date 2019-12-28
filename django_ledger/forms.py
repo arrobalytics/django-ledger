@@ -254,10 +254,9 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
 
 
 class TransactionModelForm(ModelForm):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['account'].queryset = self.fields['account'].queryset.order_by('code')
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.fields['account'].queryset = self.fields['account'].queryset.order_by('code')
 
     class Meta:
         model = TransactionModel
@@ -271,7 +270,7 @@ class TransactionModelForm(ModelForm):
             'id': HiddenInput(),
             'journal_entry': HiddenInput(),
             'account': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJETLER_FORM_INPUT_CLASS,
             }),
             'tx_type': Select(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS
@@ -286,6 +285,15 @@ class TransactionModelForm(ModelForm):
 
 
 class BaseTransactionModelFormSet(BaseModelFormSet):
+
+    def __init__(self, *args, entity_slug, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+        self.entity_slug = entity_slug
+        for f in self.forms:
+            f.fields['account'].queryset = AccountModel.on_coa.for_user(
+                user=self.user
+            ).filter(coa__entity__slug__exact=self.entity_slug).order_by('code')
 
     def clean(self):
         if any(self.errors):
