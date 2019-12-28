@@ -1,6 +1,7 @@
 {% extends 'django_ledger/base.html' %}
 {% load i18n %}
 {% load staticfiles %}
+{% load django_ledger %}
 
 {% block content %}
     <section class="section">
@@ -9,37 +10,12 @@
             <div class="columns">
                 <div class="column">
                     <div class="box">
-                        <a class="button is-dark"
+                        <a class="button is-primary is-outlined"
                            href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Add</a>
-                        <table class="table is-fullwidth">
-                            <thead>
-                            <tr>
-                                <th>Actions</th>
-                                <th>Description</th>
-                                <th>Posted</th>
-                                <th>Locked</th>
-                                <th>Created</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for je in jes %}
-                                <tr>
-                                    <td>
-                                        <a class="button is-small is-warning is-outlined"
-                                           href="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
-                                        <a class="button is-small is-primary is-outlined"
-                                           href="{% url 'django_ledger:je-detail' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
-                                        <a class="button is-small is-dark is-outlined"
-                                           href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
-                                    </td>
-                                    <td>{{ je.description }}</td>
-                                    <td>{{ je.posted }}</td>
-                                    <td>{{ je.locked }}</td>
-                                    <td>{{ je.created | timesince }}</td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                        <a class="button is-dark"
+                           href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
+
+                        {% jes_table jes %}
 
                     </div>
                 </div>

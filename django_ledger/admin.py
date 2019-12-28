@@ -33,49 +33,21 @@ class EntityModelAdmin(admin.ModelAdmin):
         model = EntityModel
 
 
-# class CoAAssignmentsInLine(admin.TabularInline):
-#     model = CoAAccountAssignments
-#
-#
-
-
 class AccountModelAdmin(admin.ModelAdmin):
     actions_on_top = True
     actions_on_bottom = True
     sortable_by = [
-        'role_bs',
         'code'
-    ]
-
-    readonly_fields = [
-        'role_bs',
-        'role_bs_upper',
     ]
     list_display = [
         '__str__',
-        'role_bs',
         'code',
         'parent'
     ]
     list_filter = [
-        'role_bs',
         'role',
         'balance_type',
     ]
-    fieldsets = (
-        ('Balance Sheet', {
-            'fields': (
-                'role_bs_upper',
-            )
-        }),
-        ('Account', {
-            'fields': (
-                ('code', 'name'),
-                'parent',
-                ('role', 'balance_type')
-            )
-        }),
-    )
 
     class Meta:
         model = AccountModel
@@ -83,10 +55,7 @@ class AccountModelAdmin(admin.ModelAdmin):
     def role_bs(self, acc):
         return acc.role_bs.upper()
 
-    def role_bs_upper(self, acc):
-        return acc.role_bs.upper()
-
-    role_bs_upper.short_description = 'Balance Sheet Role'
+    role_bs.short_description = 'Balance Sheet Role'
 
 
 class AccountsModelInLine(admin.TabularInline):
@@ -116,4 +85,4 @@ admin.site.register(EntityModel, EntityModelAdmin)
 admin.site.register(JournalEntryModel, JournalEntryModelAdmin)
 admin.site.register(LedgerModel, LedgerModelAdmin)
 admin.site.register(ChartOfAccountModel, ChartOfAccountsModelAdmin)
-# admin.site.register(AccountModel, AccountModelAdmin)
+admin.site.register(AccountModel, AccountModelAdmin)

@@ -1,6 +1,6 @@
 {% extends 'django_ledger/base.html' %}
-{% load i18n %}
 {% load staticfiles %}
+{% load django_ledger %}
 
 {% block content %}
     <section class="section">
@@ -14,44 +14,8 @@
                         <a class="button is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
 
-                        <table class="table is-fullwidth">
-                            <thead>
-                            <tr>
-                                <th>Edit</th>
-                                <th>Name</th>
-                                <th>Detail</th>
-                                <th>Balance Sheet</th>
-                                <th>Income Statement</th>
-                                <th>Posted</th>
-                                <th>Locked</th>
-                                <th>Created</th>
-                                <th>Last Updated</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for ledger in ledgers %}
-                                <tr>
-                                    <td><a class="button is-warning is-small"
-                                           href="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Edit</a>
-                                    </td>
-                                    <td>{{ ledger.name }}</td>
-                                    <td><a class="button is-info is-small is-outlined"
-                                           href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Journal
-                                        Entries</a></td>
-                                    <td><a class="button is-info is-small is-outlined"
-                                           href="{% url 'django_ledger:je-bs' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Balance
-                                        Sheet</a></td>
-                                    <td><a class="button is-info is-small is-outlined"
-                                           href="{% url 'django_ledger:je-ic' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}">Income
-                                        Statement</a></td>
-                                    <td>{{ ledger.posted }}</td>
-                                    <td>{{ ledger.locked }}</td>
-                                    <td>{{ ledger.created | timesince }}</td>
-                                    <td>{{ ledger.updated | timesince }}</td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                        {% ledgers_table ledgers %}
+
                     </div>
                 </div>
             </div>

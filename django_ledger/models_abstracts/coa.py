@@ -43,6 +43,11 @@ class ChartOfAccountModelManager(Manager):
 
 class ChartOfAccountModelAbstract(SlugNameMixIn,
                                   CreateUpdateMixIn):
+    entity = models.OneToOneField('django_ledger.EntityModel',
+                                  related_name='coa',
+                                  verbose_name=_l('Entity'),
+                                  on_delete=models.CASCADE)
+    locked = models.BooleanField(default=False, verbose_name=_l('Locked'))
     description = models.TextField(verbose_name=_l('CoA Description'), null=True, blank=True)
     objects = ChartOfAccountModelManager()
 

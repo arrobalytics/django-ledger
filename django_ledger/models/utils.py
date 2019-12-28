@@ -21,14 +21,19 @@ def populate_default_coa(entity):
         p: [c['code']
             for c in CHART_OF_ACCOUNTS if c['parent'] == p and c['code'] != p] for p in parents
     }
-    for acc in acc_objs:
-        acc.clean()
-        acc.save()
 
-    for acc_p, acc_c in children.items():
-        p_obj = AccountModel.objects.get(code=acc_p)
-        c_qs = AccountModel.objects.filter(code__in=acc_c)
-        p_obj.children.set(c_qs)
+    acc_children = list()
+    for parent, child_list in children.items():
+        parent_model = next(iter([a for a in acc_objs if a.code == parent]))
+        parent_model.full_clean()
+        parent_model.insert_at(target=None, save=True)
+
+        for child in child_list:
+            child_model = next(iter([acc for acc in acc_objs if acc.code == child]))
+            child_model.full_clean()
+            child_model.insert_at(target=parent_model, save=False)
+            acc_children.append(child_model)
+    AccountModel.objects.bulk_create(acc_children)
     return entity
 
 
