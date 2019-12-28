@@ -30,7 +30,7 @@ class EntityModelForm(ModelForm):
 
 
 class EntityModelCreateForm(ModelForm):
-    populate_default_coa = BooleanField()
+    populate_default_coa = BooleanField(required=False)
 
     class Meta:
         model = EntityModel
@@ -139,28 +139,26 @@ class AccountModelCreateForm(AccountModelBaseForm):
         }
 
 
-class AccountModelUpdateForm(ModelForm):
+class AccountModelUpdateForm(AccountModelBaseForm):
     class Meta:
         model = AccountModel
         fields = [
+            'parent',
             'code',
             'name',
             'locked',
             'active'
         ]
         widgets = {
+            'parent': Select(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS
+            }),
             'code': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS
             }),
             'name': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS
             }),
-            # 'locked': CheckboxInput(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS
-            # }),
-            # 'active': CheckboxInput(attrs={
-            #     'class': DJETLER_FORM_INPUT_CLASS
-            # }),
         }
 
 
