@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
 from django.core.exceptions import ValidationError
-from pandas import DataFrame
 
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
@@ -169,7 +168,6 @@ class IOMixIn:
 
     def get_jes(self,
                 as_of: str = None,
-                as_dataframe: bool = False,
                 method: str = 'bs',
                 activity: str = None,
                 role: str = None,
@@ -214,38 +212,30 @@ class IOMixIn:
             } for acc in account_idx
         ]
 
-        if as_dataframe:
-            return DataFrame(acc_agg)
         return acc_agg
 
     # Financial Statements -----
-    def balance_sheet(self, as_of: str = None, signs: bool = False, as_dataframe: bool = False, activity: str = None):
+    def balance_sheet(self, as_of: str = None, signs: bool = False, activity: str = None):
 
         bs_data = self.get_jes(as_of=as_of,
                                activity=activity,
-                               method='bs',
-                               as_dataframe=False)
+                               method='bs')
 
         if signs:
             bs_data = [process_signs(rec) for rec in bs_data]
 
-        if as_dataframe:
-            return DataFrame(bs_data)
         return bs_data
 
-    def income_statement(self, signs: bool = False, as_dataframe: bool = False, activity: str = None):
+    def income_statement(self, signs: bool = False, activity: str = None):
         method = 'ic'
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_data = self.get_jes(method=method,
-                               as_dataframe=False)
+        ic_data = self.get_jes(method=method)
 
         if signs:
             ic_data = [process_signs(rec) for rec in ic_data]
 
-        if as_dataframe:
-            return DataFrame(ic_data)
         return ic_data
 
     # def income(self, activity: str = None):
