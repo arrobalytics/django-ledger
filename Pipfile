@@ -6,8 +6,6 @@ name = "pypi"
 [packages]
 django = "~=2.2.8"
 django-mptt = "*"
-numpy = "~=1.17"
-pandas = "~=0.25"
 
 [dev-packages]
 
