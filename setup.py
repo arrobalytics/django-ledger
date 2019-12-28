@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+
 import django_ledger
 
 setup(
@@ -12,12 +13,8 @@ setup(
     author_email=django_ledger.__email__,
     description='Financial analysis backend for Django. Balance Sheet, Income Statements, Chart of Accounts, Entities',
     install_requires=[
-        'python-dateutil',
-        'pandas',
-        'django-mptt',
-        'django-pandas',
-        'jsonfield',
         'django'
+        'django-mptt',
     ],
     project_urls={
         # "Bug Tracker": "https://bugs.example.com/HelloWorld/",
