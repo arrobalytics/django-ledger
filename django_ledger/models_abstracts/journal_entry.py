@@ -4,6 +4,7 @@ from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
+from mptt.models import MPTTModel
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 
@@ -48,8 +49,7 @@ class JournalEntryModelManager(models.Manager):
         )
 
 
-
-class JournalEntryModelAbstract(CreateUpdateMixIn):
+class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
     date = models.DateField(verbose_name=_l('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_l('Description'))
     activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_l('Activity'))
@@ -66,7 +66,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                verbose_name=_l('Ledger'),
                                related_name='journal_entries',
                                on_delete=models.CASCADE)
-    objects = JournalEntryModelManager()
+    on_coa = JournalEntryModelManager()
 
     class Meta:
         abstract = True
