@@ -75,12 +75,6 @@ class IOMixIn:
     Controls how transactions are recorded into the ledger.
     """
 
-    DEFAULT_ASSET_ACCOUNT = 1010
-    DEFAULT_LIABILITY_ACCOUNT = None
-    DEFAULT_CAPITAL_ACCOUNT = 3010
-    DEFAULT_INCOME_ACCOUNT = 4020
-    DEFAULT_EXPENSE_ACCOUNT = None
-
     def create_je(self,
                   je_date: str,
                   je_txs: list,
@@ -128,7 +122,7 @@ class IOMixIn:
                    as_of: str = None,
                    activity: str = None,
                    role: str = None,
-                   account: str = None) -> list:
+                   accounts: str = None) -> list:
 
         """
         If account is present all other parameters will be ignored.
@@ -136,42 +130,47 @@ class IOMixIn:
         :param as_dataframe:
         :param activity:
         :param role:
-        :param account:
+        :param accounts:
         :return:
         """
 
         activity = validate_activity(activity)
         role = validate_roles(role)
 
+        # Checks if dealing with EntityModel or LedgerModel.
+        # Filters queryset to posted Journal Entries only.
         if isinstance(self, lazy_importer.get_entity_model()):
-            jes = JournalEntryModel.objects.on_entity(entity=self)
+            jes_queryset = JournalEntryModel.objects.on_entity_posted(entity=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
-            jes = self.journal_entry.filter(ledger__exact=self)
+            jes_queryset = self.journal_entries.posted()
+        else:
+            jes_queryset = JournalEntryModel.objects.none()
 
         if as_of:
-            jes = jes.filter(date__lte=as_of)
+            jes_queryset = jes_queryset.filter(date__lte=as_of)
 
-        if account:
-            if isinstance(account, str) or isinstance(account, int):
-                account = [account]
-            jes = self.journal_entry.filter(txs__account__code__in=account)
+        # todo: rename to 'accounts' since it accepts a list of account codes.
+        if accounts:
+            if isinstance(accounts, str):
+                accounts = [accounts]
+            jes_queryset = self.journal_entries.filter(txs__account__code__in=accounts)
         if activity:
             if isinstance(activity, str):
                 activity = [activity]
-            jes = jes.filter(activity__in=activity)
+            jes_queryset = jes_queryset.filter(activity__in=activity)
         if role:
             if isinstance(role, str):
                 role = [role]
-            jes = jes.filter(txs__account__role__in=role)
-        jes = jes.values(*DB_FIELDS)
-        return jes
+            jes_queryset = jes_queryset.filter(txs__account__role__in=role)
+        jes_queryset = jes_queryset.values(*DB_FIELDS)
+        return jes_queryset
 
     def get_jes(self,
                 as_of: str = None,
                 method: str = 'bs',
                 activity: str = None,
                 role: str = None,
-                account: str = None):
+                accounts: str = None):
 
         if method != 'bs':
             role = ['in', 'ex']
@@ -182,12 +181,12 @@ class IOMixIn:
         elif method == 'ic-fin':
             activity = ['fin']
 
-        # values
         je_txs = self.get_je_txs(as_of=as_of,
                                  activity=activity,
                                  role=role,
-                                 account=account)
+                                 accounts=accounts)
 
+        # reverts the amount sign if the tx_type does not math the account_type.
         for tx in je_txs:
             if tx['txs__account__balance_type'] != tx['txs__tx_type']:
                 tx['txs__amount'] = -tx['txs__amount']
@@ -200,7 +199,7 @@ class IOMixIn:
             acc['txs__account__balance_type']
         ) for acc in je_txs if acc['txs__amount']]))
 
-        acc_agg = [
+        tx_aggregate = [
             {
                 'role_bs': acc[0],
                 'role': acc[1],
@@ -212,7 +211,7 @@ class IOMixIn:
             } for acc in account_idx
         ]
 
-        return acc_agg
+        return tx_aggregate
 
     # Financial Statements -----
     def balance_sheet(self, as_of: str = None, signs: bool = False, activity: str = None):
@@ -221,6 +220,7 @@ class IOMixIn:
                                activity=activity,
                                method='bs')
 
+        # process signs will return negative balances for contra-accounts...
         if signs:
             bs_data = [process_signs(rec) for rec in bs_data]
 
@@ -238,41 +238,42 @@ class IOMixIn:
 
         return ic_data
 
-    # def income(self, activity: str = None):
-    #     inc_df = self.income_statement(signs=True, as_dataframe=True, activity=activity).sum()
-    #     return inc_df
-
-    def get_asset_account(self):
-        """
-        This function programmatically returns the asset account to be used on a journal entry.
-        :return: Account code as a string in order to match field data type.
-        """
-        return str(self.DEFAULT_ASSET_ACCOUNT)
-
-    def get_liability_account(self):
-        """
-        This function programmatically returns the liability account to be used on a journal entry.
-        :return: Account code as a string in order to match field data type.
-        """
-        return self.DEFAULT_LIABILITY_ACCOUNT
-
-    def get_capital_account(self):
-        """
-        This function programmatically returns the capital account to be used on a journal entry.
-        :return: Account code as a string in order to match field data type.
-        """
-        return self.DEFAULT_CAPITAL_ACCOUNT
-
-    def get_income_account(self):
-        """
-        This function programmatically returns the income account to be used on a journal entry.
-        :return: Account code as a string in order to match field data type.
-        """
-        return self.DEFAULT_EXPENSE_ACCOUNT
-
-    def get_expense_account(self):
-        """
-        This function programmatically returns the expense account to be used on a journal entry.
-        :return: Account code as a string in order to match field data type.
-        """
-        return self.DEFAULT_EXPENSE_ACCOUNT
+    def snapshot(self):
+        bs_data = self.balance_sheet()
+        assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
+        liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']
+        equity = [acc for acc in bs_data if acc['role_bs'] == 'equity']
+        capital = [acc for acc in equity if acc['role'] in ['cap', 'capj']]
+        earnings = [acc for acc in equity if acc['role'] in ['ex', 'in']]
+        total_assets = sum(
+            [acc['balance'] for acc in assets if acc['balance_type'] == 'debit'] +
+            [-acc['balance'] for acc in assets if acc['balance_type'] == 'credit'])
+        total_liabilities = sum(
+            [acc['balance'] for acc in liabilities if acc['balance_type'] == 'credit'] +
+            [-acc['balance'] for acc in liabilities if acc['balance_type'] == 'debit'])
+        total_capital = sum(
+            [acc['balance'] for acc in capital if acc['balance_type'] == 'credit'] +
+            [-acc['balance'] for acc in capital if acc['balance_type'] == 'debit'])
+        total_income = sum([acc['balance'] for acc in earnings if acc['role'] == 'in'])
+        total_expenses = sum([acc['balance'] for acc in earnings if acc['role'] == 'ex'])
+        retained_earnings = sum(
+            [acc['balance'] for acc in earnings if acc['balance_type'] == 'credit'] +
+            [-acc['balance'] for acc in earnings if acc['balance_type'] == 'debit'])
+        total_equity = total_capital + retained_earnings - total_liabilities
+        total_liabilities_equity = total_liabilities + total_capital + retained_earnings
+        return {
+            'bs_data': bs_data,
+            'assets': assets,
+            'total_assets': total_assets,
+            'liabilities': liabilities,
+            'total_liabilities': total_liabilities,
+            'equity': equity,
+            'total_equity': total_equity,
+            'capital': capital,
+            'total_capital': total_capital,
+            'earnings': earnings,
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'retained_earnings': retained_earnings,
+            'total_liabilities_equity': total_liabilities_equity
+        }

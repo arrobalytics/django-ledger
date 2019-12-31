@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
 from django_ledger.forms import EntityModelForm, EntityModelCreateForm
-from django_ledger.models import EntityModel, TransactionModel
+from django_ledger.models import EntityModel
 from django_ledger.models.utils import populate_default_coa
 from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
 
@@ -47,31 +47,9 @@ class EntityModelDetailVew(DetailView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.name
         context['header_title'] = _l('entity') + ': ' + self.object.name
-
-        txs_qs = TransactionModel.objects.for_user(
-            user=self.request.user)
-        txs_qs = txs_qs.filter(
-            journal_entry__ledger__entity__slug__exact=self.kwargs['entity_slug']
-        ).select_related('account').values('account__role',
-                                           'tx_type',
-                                           'account__balance_type',
-                                           'amount')
-
-        txs_qs = [txs_digest(txs) for txs in txs_qs]
-
-        assets = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'assets']
-        liabilities = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'liabilities']
-        equity = [tx['amount'] for tx in txs_qs if tx['role_bs'] == 'equity']
-        income = [tx['amount'] for tx in txs_qs if tx['account__role'] == 'in']
-        expenses = [-tx['amount'] for tx in txs_qs if tx['account__role'] == 'ex']
-
-        context['asset_amount'] = sum(assets)
-        context['liability_amount'] = sum(liabilities)
-        context['equity_amount'] = sum(equity)
-        context['income_amount'] = sum(income)
-        context['expenses_amount'] = sum(expenses)
-        context['earnings_amount'] = context['income_amount'] - context['expenses_amount']
-
+        entity = self.object
+        snapshot = entity.snapshot()
+        context.update(snapshot)
         return context
 
     def get_queryset(self):
@@ -80,8 +58,7 @@ class EntityModelDetailVew(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(
-            user=self.request.user).select_related('coa')
+        return EntityModel.objects.for_user(user=self.request.user)
 
 
 class EntityModelCreateView(CreateView):

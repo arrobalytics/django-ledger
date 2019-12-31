@@ -1,7 +1,5 @@
-from random import randint
-
 from django.db.models.signals import pre_save, post_save
-from django.utils.text import slugify
+from django.utils.translation import gettext as _
 
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models_abstracts.entity import EntityModelAbstract, EntityManagementModelAbstract
@@ -14,11 +12,7 @@ class EntityModel(EntityModelAbstract):
 
 
 def entity_presave(sender, instance, **kwargs):
-    if not instance.slug:
-        slug = slugify(instance.name)
-        ri = randint(100000, 999999)
-        entity_slug = f'{slug}-{ri}'
-        instance.slug = entity_slug
+    instance.clean()
 
 
 pre_save.connect(entity_presave, EntityModel)
@@ -31,6 +25,11 @@ def entity_postsave(sender, instance, **kwargs):
             name=instance.name + ' CoA',
             entity=instance
         )
+    if getattr(instance, 'CREATE_GL_FLAG', False):
+        instance.ledgers.create(
+            name=_('General Ledger')
+        )
+        instance.CREATE_GL_FLAG = False
 
 
 post_save.connect(entity_postsave, EntityModel)

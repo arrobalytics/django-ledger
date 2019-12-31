@@ -13,19 +13,19 @@
                         <div class="tile is-parent is-vertical">
                             <article class="tile is-child box content djetler-box-green">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
-                                <h1 class="has-text-centered">${{ asset_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ total_assets | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
-                                <h1 class="has-text-centered">${{ liability_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ total_liabilities | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
-                                <h1 class="has-text-centered">${{ equity_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ total_equity | cs_thousands }}</h1>
                             </article>
                             <article class="tile is-child box content djetler-box-yellow">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Income' %}</h2>
-                                <h1 class="has-text-centered">${{ income_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ total_income | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
-                                <h1 class="has-text-centered">${{ expenses_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ total_expenses | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings' %}</h2>
-                                <h1 class="has-text-centered">${{ earnings_amount | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ retained_earnings | cs_thousands }}</h1>
                             </article>
                         </div>
                         <div class="tile is-parent">
