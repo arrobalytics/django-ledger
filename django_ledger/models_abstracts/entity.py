@@ -1,7 +1,11 @@
+from random import randint
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Manager, Q
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
@@ -82,6 +86,17 @@ class EntityModelAbstract(MPTTModel,
                        kwargs={
                            'entity_slug': self.slug
                        })
+
+    def clean(self):
+        if not self.name:
+            raise ValidationError(message=_('Must provide a name for EntityModel'))
+        if not self.slug:
+            slug = slugify(self.name)
+            ri = randint(100000, 999999)
+            entity_slug = f'{slug}-{ri}'
+            self.slug = entity_slug
+        if not self.id:
+            self.CREATE_GL_FLAG = True
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):

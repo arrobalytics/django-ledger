@@ -1,5 +1,6 @@
-from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, HiddenInput, TextInput, Textarea,
-                          BooleanField, Select, DateInput)
+from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Textarea,
+                          BooleanField, Select, DateInput, ValidationError)
+from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
@@ -30,7 +31,15 @@ class EntityModelForm(ModelForm):
 
 
 class EntityModelCreateForm(ModelForm):
-    populate_default_coa = BooleanField(required=False)
+    populate_default_coa = BooleanField(required=False, label=_l('Populate Default CoA'))
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if not name:
+            raise ValidationError(_('Please provide a valid name for new Entity.'))
+        if len(name) < 3:
+            raise ValidationError(_('Looks like this entity name is too short...'))
+        return name
 
     class Meta:
         model = EntityModel
@@ -39,7 +48,7 @@ class EntityModelCreateForm(ModelForm):
             'populate_default_coa'
         ]
         labels = {
-            'name': _l('Entity Name')
+            'name': _l('Entity Name'),
         }
         widgets = {
             'name': TextInput(
@@ -254,10 +263,6 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
 
 
 class TransactionModelForm(ModelForm):
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.fields['account'].queryset = self.fields['account'].queryset.order_by('code')
-
     class Meta:
         model = TransactionModel
         fields = [
@@ -267,8 +272,6 @@ class TransactionModelForm(ModelForm):
             'description'
         ]
         widgets = {
-            'id': HiddenInput(),
-            'journal_entry': HiddenInput(),
             'account': Select(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS,
             }),
@@ -291,7 +294,7 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
         self.user = user
         self.entity_slug = entity_slug
         for f in self.forms:
-            f.fields['account'].queryset = AccountModel.on_coa.for_user(
+            f.fields['account'].queryset = AccountModel.on_coa.available(
                 user=self.user
             ).filter(coa__entity__slug__exact=self.entity_slug).order_by('code')
 

@@ -11,16 +11,7 @@
                     <div class="box">
                         <form method="post" action="{% url 'django_ledger:entity-create' %}">
                             {% csrf_token %}
-                            <label for="{{ form.name.id_for_label }}"
-                                   class="label">{{ form.name.label | title }}</label>
-                            <div class="field">
-                                <div class="control">{{ form.name }}</div>
-                            </div>
-                            <div class="field">
-                                <label for="{{ form.name.populate_default_coa }}"
-                                       class="label">{{ form.populate_default_coa.label | title }}</label>
-                                <div class="control">{{ form.populate_default_coa }}</div>
-                            </div>
+                            {{ form.as_p }}
                             <button class="button is-small is-info is-normal is-fullwidth djetler_my_1"
                                     type="submit">Create
                             </button>
@@ -29,7 +20,6 @@
                                type="submit">Back</a>
                         </form>
                     </div>
-
                 </div>
             </div>
         </div>

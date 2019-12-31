@@ -69,11 +69,10 @@ class AccountModelManager(models.Manager):
             Q(coa__entity__managers__exact=user)
         )
 
-    def available(self, coa):
-        return self.get_queryset().filter(
-            active=True,
-            locked=False,
-            coa=coa
+    def available(self, user):
+        return self.for_user(user=user).filter(
+            active__exact=True,
+            locked__exact=False
         )
 
 

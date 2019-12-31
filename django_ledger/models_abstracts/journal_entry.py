@@ -22,19 +22,30 @@ def validate_activity(act):
         valid = act in ACTIVITY_ALLOWS
         if not valid:
             raise ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
+    return act
 
 
 class JournalEntryModelManager(models.Manager):
 
     def for_user(self, user):
-        qs = self.get_queryset()
-        return qs.filter(
+        return self.get_queryset().filter(
             Q(ledger__entity__admin=user) |
             Q(ledger__entity__managers__exact=user)
         )
 
+    def posted(self):
+        return self.get_queryset().filter(
+            posted__exact=True
+        )
+
     def on_entity(self, entity):
         return self.get_queryset().filter(ledger__entity=entity)
+
+    def on_entity_posted(self, entity):
+        return self.on_entity(entity=entity).filter(
+            posted=True
+        )
+
 
 
 class JournalEntryModelAbstract(CreateUpdateMixIn):
@@ -52,7 +63,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                on_delete=models.CASCADE)
     ledger = models.ForeignKey('django_ledger.LedgerModel',
                                verbose_name=_l('Ledger'),
-                               related_name='journal_entry',
+                               related_name='journal_entries',
                                on_delete=models.CASCADE)
     objects = JournalEntryModelManager()
 
