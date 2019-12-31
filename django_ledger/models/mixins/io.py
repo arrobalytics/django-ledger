@@ -149,7 +149,6 @@ class IOMixIn:
         if as_of:
             jes_queryset = jes_queryset.filter(date__lte=as_of)
 
-        # todo: rename to 'accounts' since it accepts a list of account codes.
         if accounts:
             if isinstance(accounts, str):
                 accounts = [accounts]
