@@ -1,18 +1,19 @@
 {% load django_ledger %}
+{% load i18n %}
 
 <table class="table is-fullwidth">
     <thead>
     <tr>
-        <th>Account Number</th>
-        <th>Description</th>
-        <th>Balance Type</th>
-        <th>Balance</th>
+        <th>{% trans 'Account Number' %}</th>
+        <th>{% trans 'Description' %}</th>
+        <th>{% trans 'Balance Type' %}</th>
+        <th>{% trans 'Balance' %}</th>
     </tr>
     </thead>
 
     <tbody>
     <tr>
-        <td><h2 class="is-size-3">Assets</h2></td>
+        <td><h2 class="is-size-3">{% trans 'Assets' %}</h2></td>
         <td></td>
         <td></td>
         <td></td>
@@ -26,14 +27,14 @@
         </tr>
     {% endfor %}
     <tr class="has-text-weight-bold">
-        <td>Total Assets</td>
+        <td>{% trans 'Total Assets' %}</td>
         <td></td>
         <td></td>
         <td>${{ total_assets | cs_thousands }}</td>
     </tr>
 
     <tr>
-        <td><h2 class="is-size-3">Liabilities</h2></td>
+        <td><h2 class="is-size-3">{% trans 'Liabilities' %}</h2></td>
         <td></td>
         <td></td>
         <td></td>
@@ -47,7 +48,7 @@
         </tr>
     {% endfor %}
     <tr class="has-text-weight-bold">
-        <td>Total Liabilities</td>
+        <td>{% trans 'Total Liabilities' %}</td>
         <td></td>
         <td></td>
         <td>${{ total_liabilities | cs_thousands }}</td>
@@ -55,7 +56,7 @@
 
 
     <tr class="is-primary">
-        <td><h2 class="is-size-3">Capital</h2></td>
+        <td><h2 class="is-size-3">{% trans 'Equity' %}</h2></td>
         <td></td>
         <td></td>
         <td></td>
@@ -72,7 +73,7 @@
     {% endfor %}
 
     <tr class="has-text-weight-bold">
-        <td>Total Capital</td>
+        <td>{% trans 'Total Capital' %}</td>
         <td></td>
         <td></td>
         <td>${{ total_capital | cs_thousands }}</td>
@@ -80,21 +81,21 @@
 
 
     <tr class="has-text-weight-bold">
-        <td>Retained Earnings</td>
+        <td>{% trans 'Retained Earnings' %}</td>
         <td></td>
         <td></td>
         <td>${{ retained_earnings | cs_thousands }}</td>
     </tr>
 
     <tr class="has-text-weight-bold">
-        <td>Total Equity</td>
+        <td>{% trans 'Total Equity' %}</td>
         <td></td>
         <td></td>
         <td>${{ total_equity | cs_thousands }}</td>
     </tr>
 
     <tr class="has-text-weight-bold">
-        <td>Total Equity + Liabilities</td>
+        <td>{% trans 'Total Equity + Liabilities' %}</td>
         <td></td>
         <td></td>
         <td>${{ total_liabilities_equity | cs_thousands }}</td>
