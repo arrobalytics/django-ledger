@@ -43,7 +43,8 @@ class JournalEntryModelManager(models.Manager):
 
     def on_entity_posted(self, entity):
         return self.on_entity(entity=entity).filter(
-            posted=True
+            posted=True,
+            ledger__posted=True
         )
 
 
