@@ -36,11 +36,21 @@ class JournalEntryModelManager(models.Manager):
 
     def posted(self):
         return self.get_queryset().filter(
-            posted__exact=True
+            posted=True,
+            ledger__posted=True
         )
 
     def on_entity(self, entity):
-        return self.get_queryset().filter(ledger__entity=entity)
+        if isinstance(entity, str):
+            qs = self.get_queryset().filter(ledger__entity__slug__exact=entity)
+        else:
+            qs = self.get_queryset().filter(ledger__entity=entity)
+        return qs
+
+    def jes_posted(self, entity):
+        return self.on_entity(entity=entity).filter(
+            posted=True,
+        )
 
     def on_entity_posted(self, entity):
         return self.on_entity(entity=entity).filter(
