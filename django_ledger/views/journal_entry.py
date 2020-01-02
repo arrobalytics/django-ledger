@@ -21,7 +21,7 @@ class JournalEntryListView(ListView):
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         ledger_pk = self.kwargs.get('ledger_pk')
-        return JournalEntryModel.objects.for_user(
+        return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
             Q(ledger__entity__slug=entity_slug) &
             Q(ledger_id=ledger_pk)
@@ -41,7 +41,7 @@ class JournalEntryDetailView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.objects.for_user(
+        return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
             ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
 
@@ -72,7 +72,7 @@ class JournalEntryUpdateView(UpdateView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.objects.for_user(
+        return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
             ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
 

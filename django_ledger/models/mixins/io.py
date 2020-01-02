@@ -140,11 +140,11 @@ class IOMixIn:
         # Checks if dealing with EntityModel or LedgerModel.
         # Filters queryset to posted Journal Entries only.
         if isinstance(self, lazy_importer.get_entity_model()):
-            jes_queryset = JournalEntryModel.objects.on_entity_posted(entity=self)
+            jes_queryset = JournalEntryModel.on_coa.on_entity_posted(entity=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
             jes_queryset = self.journal_entries.posted()
         else:
-            jes_queryset = JournalEntryModel.objects.none()
+            jes_queryset = JournalEntryModel.on_coa.none()
 
         if as_of:
             jes_queryset = jes_queryset.filter(date__lte=as_of)

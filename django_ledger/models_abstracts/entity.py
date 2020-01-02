@@ -51,7 +51,7 @@ class EntityModelAbstract(MPTTModel,
         verbose_name_plural = _l('Entities')  # idea: can use th django plural function...
 
     class MPTTMeta:
-        order_insertion_by = ['name']
+        order_insertion_by = ['created']
 
     def __str__(self):
         return '{x1} ({x2})'.format(x1=self.name,
