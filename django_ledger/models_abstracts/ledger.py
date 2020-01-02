@@ -74,4 +74,4 @@ class LedgerModelAbstract(SlugNameMixIn,
                                code=code)
 
     def get_account_balance(self, account_code: str, as_of: str = None):
-        return self.get_jes(account=account_code, as_of=as_of)
+        return self.get_jes(accounts=account_code, as_of=as_of)
