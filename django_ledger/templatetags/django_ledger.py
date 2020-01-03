@@ -1,5 +1,7 @@
 from django import template
 
+from django_ledger.forms import EntityModelDefaultForm
+
 register = template.Library()
 
 
@@ -67,4 +69,15 @@ def ledgers_table(context, ledgers_queryset):
 def accounts_table(accounts_queryset):
     return {
         'accounts': accounts_queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/default_entity_form.html', takes_context=True)
+def entity_choice_form(context):
+    user = context['user']
+    default_entity_id = context['request'].session.get('default_entity_id')
+    default_entity_form = EntityModelDefaultForm(user_model=user,
+                                                 default_entity=default_entity_id)
+    return {
+        'default_entity_form': default_entity_form
     }

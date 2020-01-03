@@ -41,6 +41,7 @@ class EntityModelAbstract(MPTTModel,
                             verbose_name=_l('Parent'),
                             db_index=True,
                             on_delete=models.CASCADE)
+
     hidden = models.BooleanField(default=False)
     objects = EntityModelManager()
 
