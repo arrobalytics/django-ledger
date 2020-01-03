@@ -1,0 +1,20 @@
+<form id="djetler-set-entity-form"
+      action="{% url 'django_ledger:set-default-entity' %}"
+      method="post">
+    {% csrf_token %}
+    <div class="field">
+        <div class="control">
+            <div class="select is-inf is-small">
+                {{ default_entity_form.entity_model }}
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function setDefaultEntity() {
+        let defaultEntityForm = document.getElementById("djetler-set-entity-form");
+        defaultEntityForm.submit()
+    }
+
+</script>

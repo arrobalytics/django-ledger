@@ -23,7 +23,7 @@ class LedgerModelListView(ListView):
         return context
 
     def get_queryset(self):
-        # todo: add sorting parameters...
+        # todo: add table sorting parameters...
         entity_slug = self.kwargs.get('entity_slug')
         return LedgerModel.objects.for_user(user=self.request.user).filter(
             entity__slug=entity_slug

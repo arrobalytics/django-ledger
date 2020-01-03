@@ -1,5 +1,5 @@
-from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Textarea,
-                          BooleanField, Select, DateInput, ValidationError)
+from django.forms import (ModelForm, Form, modelformset_factory, BaseModelFormSet, TextInput, Textarea,
+                          BooleanField, Select, DateInput, ValidationError, ModelChoiceField)
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
@@ -11,7 +11,25 @@ from django_ledger.models.mixins.io import validate_tx_data
 DJETLER_FORM_INPUT_CLASS = 'input'
 
 
-class EntityModelForm(ModelForm):
+class EntityModelDefaultForm(Form):
+    entity_model = ModelChoiceField(
+        queryset=EntityModel.objects.none(),
+        widget=Select(attrs={
+            'class': DJETLER_FORM_INPUT_CLASS,
+            'onchange': 'setDefaultEntity()'
+        }))
+
+    def __init__(self, *args, user_model, default_entity=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.USER_MODEL = user_model
+        self.fields['entity_model'].queryset = EntityModel.objects.for_user(user=self.USER_MODEL)
+        if default_entity:
+            self.initial = {
+                'entity_model': default_entity
+            }
+
+
+class EntityModelUpdateForm(ModelForm):
     class Meta:
         model = EntityModel
         fields = [

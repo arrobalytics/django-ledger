@@ -1,9 +1,9 @@
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
-from django.views.generic import ListView, DetailView, UpdateView, CreateView
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
-from django_ledger.forms import EntityModelForm, EntityModelCreateForm
+from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
 from django_ledger.models import EntityModel
 from django_ledger.models.utils import populate_default_coa
 from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
@@ -92,7 +92,7 @@ class EntityModelCreateView(CreateView):
 class EntityModelUpdateView(UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
-    form_class = EntityModelForm
+    form_class = EntityModelUpdateForm
     slug_url_kwarg = 'entity_slug'
 
     def get_context_data(self, **kwargs):
@@ -151,3 +151,18 @@ class EntityIncomeStatementView(DetailView):
         :return: The View queryset.
         """
         return EntityModel.objects.for_user(user=self.request.user)
+
+
+class SetDefaultEntityView(RedirectView):
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        form = EntityModelDefaultForm(request.POST, user_model=request.user)
+        if form.is_valid():
+            entity_model = form.cleaned_data['entity_model']
+            self.url = reverse('django_ledger:entity-detail',
+                               kwargs={
+                                   'entity_slug': entity_model.slug
+                               })
+            self.request.session['default_entity_id'] = entity_model.id
+        return super().post(request, *args, **kwargs)
