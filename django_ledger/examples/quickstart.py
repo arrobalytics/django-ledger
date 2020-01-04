@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-from django_ledger.models.coa import make_account_active
+from django_ledger.models_abstracts.coa import make_account_active
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import populate_default_coa
