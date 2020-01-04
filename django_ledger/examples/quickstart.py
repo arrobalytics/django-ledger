@@ -21,7 +21,7 @@ def quickstart(quickstart_user: str, reset_entity=False):
         company = EntityModel.objects.get(slug=quickstart_entity)
     make_account_active(company.coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
     myco_ledger, created = company.ledgers.get_or_create(name='My Debug Ledger')
-    myco_ledger.journal_entry.all().delete()
+    myco_ledger.journal_entries.all().delete()
     txs_data = [
         {
             'code': '1010',
