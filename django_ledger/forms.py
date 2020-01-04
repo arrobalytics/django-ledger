@@ -224,9 +224,11 @@ class JournalEntryModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.LEDGER_PK = ledger_pk
-        self.fields['parent'].queryset = JournalEntryModel.on_coa.jes_posted(
+
+        # todo: move this method to model manager...
+        self.fields['parent'].queryset = JournalEntryModel.on_coa.on_entity_posted(
             entity=self.ENTITY_SLUG
-        )
+        ).filter(ledger_id=self.LEDGER_PK)
 
     class Meta:
         model = JournalEntryModel

@@ -34,7 +34,7 @@ class JournalEntryModelManager(models.Manager):
             Q(ledger__entity__managers__exact=user)
         )
 
-    def posted(self):
+    def all_posted(self):
         return self.get_queryset().filter(
             posted=True,
             ledger__posted=True
@@ -47,13 +47,20 @@ class JournalEntryModelManager(models.Manager):
             qs = self.get_queryset().filter(ledger__entity=entity)
         return qs
 
-    def jes_posted(self, entity):
-        return self.on_entity(entity=entity).filter(
-            posted=True,
-        )
-
     def on_entity_posted(self, entity):
         return self.on_entity(entity=entity).filter(
+            posted=True,
+            ledger__posted=True
+        )
+
+    def on_ledger(self, ledger):
+        # todo: add functionality for LedgerModel or ledger id.
+        return self.get_queryset().filter(
+            ledger=ledger
+        )
+
+    def on_ledger_posted(self, ledger):
+        return self.on_ledger(ledger=ledger).filter(
             posted=True,
             ledger__posted=True
         )

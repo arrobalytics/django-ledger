@@ -137,12 +137,14 @@ class IOMixIn:
         activity = validate_activity(activity)
         role = validate_roles(role)
 
-        # Checks if dealing with EntityModel or LedgerModel.
+        # Checks if self is EntityModel or LedgerModel.
         # Filters queryset to posted Journal Entries only.
         if isinstance(self, lazy_importer.get_entity_model()):
+            # Is entity model....
             jes_queryset = JournalEntryModel.on_coa.on_entity_posted(entity=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
-            jes_queryset = self.journal_entries.posted()
+            # Is ledger model ...
+            jes_queryset = JournalEntryModel.on_coa.on_ledger_posted(ledger=self)
         else:
             jes_queryset = JournalEntryModel.on_coa.none()
 
