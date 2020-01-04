@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "~=2.2.8"
-django-mptt = "*"
+django = ">=3.0"
+django-mptt = ">~0.10"
 
 [dev-packages]
 
