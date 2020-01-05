@@ -27,7 +27,8 @@ def entity_postsave(sender, instance, **kwargs):
         )
     if getattr(instance, 'CREATE_GL_FLAG', False):
         instance.ledgers.create(
-            name=_('General Ledger')
+            name=_('General Ledger'),
+            posted=True
         )
         instance.CREATE_GL_FLAG = False
 

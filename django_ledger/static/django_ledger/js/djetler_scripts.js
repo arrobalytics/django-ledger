@@ -1,4 +1,3 @@
-
 // Dismiss Notifications
 document.addEventListener('DOMContentLoaded', () => {
     (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
@@ -8,3 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// Change entity from Nav
+function setDefaultEntity() {
+    let defaultEntityForm = document.getElementById("djetler-set-entity-form");
+    defaultEntityForm.submit()
+}

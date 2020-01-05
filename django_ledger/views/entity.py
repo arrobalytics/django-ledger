@@ -3,6 +3,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
+from django_ledger.examples.quickstart import quickstart
 from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
 from django_ledger.models import EntityModel
 from django_ledger.models.utils import populate_default_coa
@@ -83,9 +84,15 @@ class EntityModelCreateView(CreateView):
         if user.is_authenticated:
             form.instance.admin = user
             self.object = form.save()
+
+            use_quickstart = form.cleaned_data.get('quickstart')
+            if use_quickstart:
+                quickstart(user_model=self.request.user,
+                           entity_model=form.instance)
+
             create_coa = form.cleaned_data.get('populate_default_coa')
-            if create_coa:
-                populate_default_coa(entity=self.object)
+            if create_coa and not use_quickstart:
+                populate_default_coa(entity_model=self.object)
         return super().form_valid(form)
 
 

@@ -22,7 +22,7 @@ class EntityModelDefaultForm(Form):
     def __init__(self, *args, user_model, default_entity=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
-        self.fields['entity_model'].queryset = EntityModel.objects.for_user(user=self.USER_MODEL)
+        self.fields['entity_model'].queryset = EntityModel.objects.for_user(user=self.USER_MODEL).only('slug', 'name')
         if default_entity:
             self.initial = {
                 'entity_model': default_entity
@@ -50,6 +50,7 @@ class EntityModelUpdateForm(ModelForm):
 
 class EntityModelCreateForm(ModelForm):
     populate_default_coa = BooleanField(required=False, label=_l('Populate Default CoA'))
+    quickstart = BooleanField(required=False, label=_l('Use QuickStart Data'))
 
     def clean_name(self):
         name = self.cleaned_data.get('name')

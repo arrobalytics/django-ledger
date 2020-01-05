@@ -1,118 +1,131 @@
-from django.contrib.auth import get_user_model
+from random import randint
 
-from django_ledger.models.coa import make_account_active
-from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
+from django.contrib.auth import get_user_model
+from django.utils.text import slugify
+
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.utils import populate_default_coa
+from django_ledger.models.utils import populate_default_coa, make_accounts_active
 
 UserModel = get_user_model()
 
 
-def quickstart(quickstart_user: str, reset_entity=False):
-    user_model = UserModel.objects.get(username=quickstart_user)
-    quickstart_entity = 'my-quickstart-inc'
+def quickstart(user_model: str or UserModel, entity_model: str or EntityModel = None, txs_data: list = None):
+    """
+    Utility function to populate initial data. User must be in database.
+    Creates a new entity every time function is run.
+    :param user_model: A string representing the username or an instance of UserModel.
+    :param user_model: A string representing the name of the entity or an instance of EntityModel.
+    :param txs_data: A list of dictionaries for the new quickstart ledger. Credits and debits will be validated.
 
-    if reset_entity:
-        EntityModel.objects.filter(slug=quickstart_entity, admin=user_model).delete()
-        company = populate_default_coa(coa_data=CHART_OF_ACCOUNTS,
-                                       admin=user_model,
-                                       entity='my-quickstart-inc')
-    else:
-        company = EntityModel.objects.get(slug=quickstart_entity)
-    make_account_active(company.coa, ['1010', '3010', '1610', '1611', '2110', '6253', '6290', '6070', '4020'])
-    myco_ledger, created = company.ledgers.get_or_create(name='My Debug Ledger')
-    myco_ledger.journal_entry.all().delete()
-    txs_data = [
-        {
-            'code': '1010',
-            'amount': 200000,
-            'tx_type': 'debit',
-            'description': 'Company Funding'
-        },
-        {
-            'code': '3010',
-            'amount': 200000,
-            'tx_type': 'credit',
-            'description': 'Capital contribution'
-        },
-        {
-            'code': '1010',
-            'amount': 40000,
-            'tx_type': 'credit',
-            'description': 'Downpayment'
-        },
-        {
-            'code': '2110',
-            'amount': 80000,
-            'tx_type': 'credit',
-            'description': 'Issue debt'
-        },
-        {
-            'code': '1610',
-            'amount': 120000,
-            'tx_type': 'debit',
-            'description': 'Property cost base'
-        },
-        {
-            'code': '4020',
-            'amount': 1500,
-            'tx_type': 'credit',
-            'description': 'Rental Income'
-        },
-        {
-            'code': '1010',
-            'amount': 1500,
-            'tx_type': 'debit',
-            'description': 'Rental Income'
-        },
-        {
-            'code': '1010',
-            'amount': 180.45,
-            'tx_type': 'credit',
-            'description': 'HOA expense'
-        },
-        {
-            'code': '6253',
-            'amount': 180.45,
-            'tx_type': 'debit',
-            'description': 'HOA Exoense'
-        },
-        {
-            'code': '1611',
-            'amount': 465.50,
-            'tx_type': 'credit',
-            'description': 'Accumulated Depreciation'
-        },
-        {
-            'code': '6070',
-            'amount': 465.50,
-            'tx_type': 'debit',
-            'description': 'HOA Expense'
-        },
+    Example:
 
-    ]
+        txs_data = [
+            {
+                'code': '1010',
+                'amount': 200000,
+                'tx_type': 'debit',
+                'description': 'Company Funding'
+            },
+            {
+                'code': '3010',
+                'amount': 200000,
+                'tx_type': 'credit',
+                'description': 'Capital contribution'
+            } ....... ]
+    :return:
+    """
+    if not isinstance(user_model, UserModel):
+        user_model = UserModel.objects.get(username=user_model)
 
-    company.create_je(je_date='2019-04-09',
-                      je_txs=txs_data,
-                      je_origin='quickstart',
-                      je_ledger=myco_ledger,
-                      je_desc='Purchase of property at 123 Main St',
-                      je_activity='inv')
+    if not isinstance(entity_model, EntityModel):
+        rand_int = randint(10000, 99999)
+        entity_name = f'My Quickstart Inc - {rand_int}'
+        entity_slug = slugify(entity_name)
+        entity_model = EntityModel.objects.create(name=entity_name,
+                                                  slug=entity_slug,
+                                                  admin=user_model)
 
-    # Balance Sheet as_of='2019-01-31' ----
-    bs = myco_ledger.balance_sheet(as_dataframe=True,
-                                   signs=True,
-                                   as_of='2019-05-09')
+    populate_default_coa(entity_model=entity_model)
+    if not txs_data:
+        txs_data = [
+            {
+                'code': '1010',
+                'amount': 200000,
+                'tx_type': 'debit',
+                'description': 'Company Funding'
+            },
+            {
+                'code': '3010',
+                'amount': 200000,
+                'tx_type': 'credit',
+                'description': 'Capital contribution'
+            },
+            {
+                'code': '1010',
+                'amount': 40000,
+                'tx_type': 'credit',
+                'description': 'Downpayment'
+            },
+            {
+                'code': '2110',
+                'amount': 80000,
+                'tx_type': 'credit',
+                'description': 'Issue debt'
+            },
+            {
+                'code': '1610',
+                'amount': 120000,
+                'tx_type': 'debit',
+                'description': 'Property cost base'
+            },
+            {
+                'code': '4020',
+                'amount': 1500,
+                'tx_type': 'credit',
+                'description': 'Rental Income'
+            },
+            {
+                'code': '1010',
+                'amount': 1500,
+                'tx_type': 'debit',
+                'description': 'Rental Income'
+            },
+            {
+                'code': '1010',
+                'amount': 180.45,
+                'tx_type': 'credit',
+                'description': 'HOA expense'
+            },
+            {
+                'code': '6253',
+                'amount': 180.45,
+                'tx_type': 'debit',
+                'description': 'HOA Exoense'
+            },
+            {
+                'code': '1611',
+                'amount': 465.50,
+                'tx_type': 'credit',
+                'description': 'Accumulated Depreciation'
+            },
+            {
+                'code': '6070',
+                'amount': 465.50,
+                'tx_type': 'debit',
+                'description': 'HOA Expense'
+            },
 
-    # Balance Sheet Latest / Operational Activities Only
-    bs_op = myco_ledger.balance_sheet(as_dataframe=True, activity='op')
+        ]
+    txs_data_codes = set([txs['code'] for txs in txs_data])
 
-    # Balance Sheet Latest / As list
-    bs_f = myco_ledger.balance_sheet(signs=True)
+    make_accounts_active(entity_model=entity_model, account_code_set=txs_data_codes)
 
-    # Income Statement / Sign adjustment (negative -> expenses / positive -> income)
-    ic = myco_ledger.income_statement(as_dataframe=True, signs=True)
-    return bs, bs_op, bs_f, ic
+    general_ledger = entity_model.ledgers.get(name__exact='General Ledger')
 
-
-# bs, bs_op, bs_f, ic = quickstart(quickstart_user='elarroba', reset_entity=True)
+    entity_model.create_je(je_date='2019-04-09',
+                           je_txs=txs_data,
+                           je_origin='djetler-quickstart',
+                           je_ledger=general_ledger,
+                           je_desc='Purchase of property at 123 Main St',
+                           je_posted=True,
+                           je_activity='inv')

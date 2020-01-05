@@ -79,6 +79,7 @@ class IOMixIn:
                   je_date: str,
                   je_txs: list,
                   je_activity: str,
+                  je_posted: bool = False,
                   je_ledger=None,
                   je_desc=None,
                   je_origin=None,
@@ -95,8 +96,12 @@ class IOMixIn:
             je_ledger = self
 
         tx_axcounts = [acc['code'] for acc in je_txs]
-        account_models = getattr(self, 'get_accounts')
-        avail_accounts = account_models().filter(code__in=tx_axcounts)
+
+        if isinstance(self, lazy_importer.get_entity_model()):
+            account_models = self.coa.accounts.all()
+        elif isinstance(self, lazy_importer.get_ledger_model()):
+            account_models = self.entity.coa.accounts.all()
+        avail_accounts = account_models.filter(code__in=tx_axcounts)
 
         je = JournalEntryModel.objects.create(
             ledger=je_ledger,
@@ -104,6 +109,7 @@ class IOMixIn:
             date=je_date,
             origin=je_origin,
             activity=je_activity,
+            posted=je_posted,
             parent=je_parent)
 
         txs_list = [

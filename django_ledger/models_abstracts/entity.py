@@ -55,8 +55,7 @@ class EntityModelAbstract(MPTTModel,
         order_insertion_by = ['created']
 
     def __str__(self):
-        return '{x1} ({x2})'.format(x1=self.name,
-                                    x2=self.slug)
+        return self.name
 
     def get_absolute_url(self):
         return reverse('django_ledger:entity-detail',
