@@ -18,9 +18,15 @@
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
-                <td>{{ account.balance_type }}</td>
-                <td>{% if account.active %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td>{% if account.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i></span>
+                </td>
+                <td class="has-text-centered">{% if account.active %}
+                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
+                <td class="has-text-centered">{% if account.locked %}
+                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
 
                 <td>
                     <a class="button is-small is-dark"
@@ -51,9 +57,15 @@
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
-                <td>{{ account.balance_type }}</td>
-                <td>{% if account.active %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td>{% if account.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i></span>
+                </td>
+                <td class="has-text-centered">{% if account.active %}
+                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
+                <td class="has-text-centered">{% if account.locked %}
+                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td><a class="button is-small is-dark"
                        href="{{ account.get_update_url }}">Edit</a>
                 </td>
@@ -82,9 +94,15 @@
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
-                <td>{{ account.balance_type }}</td>
-                <td>{% if account.active %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td>{% if account.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i></span>
+                </td>
+                <td class="has-text-centered">{% if account.active %}
+                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
+                <td class="has-text-centered">{% if account.locked %}
+                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td><a class="button is-small is-dark"
                        href="{{ account.get_update_url }}">Edit</a>
                 </td>
