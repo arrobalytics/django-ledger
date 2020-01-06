@@ -9,12 +9,14 @@ from django_ledger.models.utils import populate_default_coa, make_accounts_activ
 UserModel = get_user_model()
 
 
-def quickstart(user_model: str or UserModel, entity_model: str or EntityModel = None, txs_data: list = None):
+def quickstart(user_model: str or UserModel,
+               entity_model: str or EntityModel = None,
+               txs_data: list = None):
     """
     Utility function to populate initial data. User must be in database.
     Creates a new entity every time function is run.
     :param user_model: A string representing the username or an instance of UserModel.
-    :param user_model: A string representing the name of the entity or an instance of EntityModel.
+    :param entity_model: A string representing the name of the entity or an instance of EntityModel.
     :param txs_data: A list of dictionaries for the new quickstart ledger. Credits and debits will be validated.
 
     Example:

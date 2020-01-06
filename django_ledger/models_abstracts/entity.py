@@ -70,13 +70,13 @@ class EntityModelAbstract(MPTTModel,
                        })
 
     def get_bs_url(self):
-        return reverse('django_ledger:entity-balance-sheet',
+        return reverse('django_ledger:entity-bs',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
     def get_ic_url(self):
-        return reverse('django_ledger:entity-income-statement',
+        return reverse('django_ledger:entity-ic',
                        kwargs={
                            'entity_slug': self.slug
                        })

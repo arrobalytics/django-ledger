@@ -1,4 +1,5 @@
 {% load static %}
+{% load django_ledger %}
 
 <!DOCTYPE html>
 <html>
@@ -18,6 +19,10 @@
 
 {% block header %}
     {% include 'django_ledger/includes/page_header.html' with header_title=header_title %}
+{% endblock %}
+
+{% block breadcrumbs %}
+    {% include 'django_ledger/includes/breadcrumbs.html' %}
 {% endblock %}
 
 {% block content %}{% endblock %}

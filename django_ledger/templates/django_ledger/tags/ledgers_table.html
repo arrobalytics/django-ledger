@@ -23,10 +23,10 @@
                    href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.id %}">Journal
                 Entries</a></td>
             <td><a class="button is-info is-small is-outlined"
-                   href="{% url 'django_ledger:je-bs' entity_slug=entity_slug ledger_pk=ledger.id %}">Balance
+                   href="{% url 'django_ledger:ledger-bs' entity_slug=entity_slug ledger_pk=ledger.id %}">Balance
                 Sheet</a></td>
             <td><a class="button is-info is-small is-outlined"
-                   href="{% url 'django_ledger:je-ic' entity_slug=entity_slug ledger_pk=ledger.id %}">Income
+                   href="{% url 'django_ledger:ledger-ic' entity_slug=entity_slug ledger_pk=ledger.id %}">Income
                 Statement</a></td>
             <td>{% if ledger.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
             <td>{% if ledger.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>

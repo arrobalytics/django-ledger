@@ -10,9 +10,17 @@
                 <div class="column is-8">
                     <div class="box">
                         {% balance_sheet entity %}
-                        <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go
-                            Back</a>
+
+                        {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
+                            <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
+                                Back</a>
+                        {% elif request.resolver_match.view_name == 'django_ledger:entity-bs' %}
+                            <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                               href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go
+                                Back</a>
+                        {% endif %}
+
                     </div>
 
                 </div>

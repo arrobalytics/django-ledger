@@ -26,10 +26,10 @@ urlpatterns = [
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',
          views.EntityBalanceSheetView.as_view(),
-         name='entity-balance-sheet'),
+         name='entity-bs'),
     path('entity/<slug:entity_slug>/income-statement/',
          views.EntityIncomeStatementView.as_view(),
-         name='entity-income-statement'),
+         name='entity-ic'),
 
     # Entity Chart of Accounts -----
     path('coa/<slug:entity_slug>/<slug:coa_slug>/update/',
@@ -59,10 +59,10 @@ urlpatterns = [
          name='ledger-update'),
     path('ledger/<slug:entity_slug>/<slug:ledger_pk>/balance-sheet/',
          views.LedgerBalanceSheetView.as_view(),
-         name='je-bs'),
+         name='ledger-bs'),
     path('ledger/<slug:entity_slug>/<slug:ledger_pk>/income-statement/',
          views.LedgerIncomeStatementView.as_view(),
-         name='je-ic'),
+         name='ledger-ic'),
 
     # Journal Entry Views ----
     path('journal-entry/<slug:entity_slug>/<slug:ledger_pk>/',
