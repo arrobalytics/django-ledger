@@ -23,11 +23,13 @@ class LedgerModelListView(ListView):
         return context
 
     def get_queryset(self):
-        # todo: add table sorting parameters...
+        sort = self.request.GET.get('sort')
+        if not sort:
+            sort = '-updated'
         entity_slug = self.kwargs.get('entity_slug')
         return LedgerModel.objects.for_user(user=self.request.user).filter(
             entity__slug=entity_slug
-        ).order_by('-updated')
+        ).order_by(sort)
 
 
 class LedgerModelCreateView(CreateView):

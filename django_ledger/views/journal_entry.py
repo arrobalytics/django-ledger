@@ -19,13 +19,16 @@ class JournalEntryListView(ListView):
         return context
 
     def get_queryset(self):
+        sort = self.request.GET.get('sort')
+        if not sort:
+            sort = '-updated'
         entity_slug = self.kwargs.get('entity_slug')
         ledger_pk = self.kwargs.get('ledger_pk')
         return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
             Q(ledger__entity__slug=entity_slug) &
             Q(ledger_id=ledger_pk)
-        )
+        ).order_by(sort)
 
 
 class JournalEntryDetailView(DetailView):

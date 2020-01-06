@@ -71,8 +71,8 @@ class AccountModelManager(models.Manager):
 
     def available(self, user):
         return self.for_user(user=user).filter(
-            active__exact=True,
-            locked__exact=False
+            active=True,
+            locked=False
         )
 
 
