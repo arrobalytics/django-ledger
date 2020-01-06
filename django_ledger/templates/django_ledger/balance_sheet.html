@@ -9,6 +9,7 @@
             <div class="columns is-centered">
                 <div class="column is-8">
                     <div class="box">
+{#                        {{ activity_form }}#}
                         {% balance_sheet entity %}
 
                         {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
