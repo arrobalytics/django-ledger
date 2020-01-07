@@ -1,4 +1,0 @@
-Subjects
---------
-
-Subjects model documentation.

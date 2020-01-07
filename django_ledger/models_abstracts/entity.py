@@ -100,6 +100,9 @@ class EntityModelAbstract(MPTTModel,
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):
+    """
+    Entity Management Model responsible for manager permissions to read/write.
+    """
     PERMISSIONS = [
         ('read', _('Read Permissions')),
         ('write', _('Read/Write Permissions')),

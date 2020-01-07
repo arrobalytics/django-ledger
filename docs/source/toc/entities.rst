@@ -1,5 +1,0 @@
-Entities
---------
-
-Entities documentation.
-
