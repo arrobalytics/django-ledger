@@ -81,3 +81,17 @@ def entity_choice_form(context):
     return {
         'default_entity_form': default_entity_form
     }
+
+
+@register.inclusion_tag('django_ledger/tags/breadcrumbs.html', takes_context=True)
+def nav_breadcrumbs(context):
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    coa_slug = context['view'].kwargs.get('coa_slug')
+    ledger_pk = context['view'].kwargs.get('entity_slug')
+    account_pk = context['view'].kwargs.get('account_pk')
+    return {
+        'entity_slug': entity_slug,
+        'coa_slug': coa_slug,
+        'ledger_pk': ledger_pk,
+        'account_pk': account_pk
+    }
