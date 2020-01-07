@@ -4,19 +4,22 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.examples.quickstart import quickstart
+from django_ledger.forms import ActivitySelectForm
 from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
 from django_ledger.models import EntityModel
 from django_ledger.models.utils import populate_default_coa
-from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
 
 
-def txs_digest(tx: dict) -> dict:
-    tx['role_bs'] = BS_ROLES.get(tx['account__role'])
-    if tx['account__balance_type'] != tx['tx_type']:
-        tx['amount'] = -tx['amount']
-    if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
-        tx['amount'] = -tx['amount']
-    return tx
+# from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
+
+
+# def txs_digest(tx: dict) -> dict:
+#     tx['role_bs'] = BS_ROLES.get(tx['account__role'])
+#     if tx['account__balance_type'] != tx['tx_type']:
+#         tx['amount'] = -tx['amount']
+#     if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
+#         tx['amount'] = -tx['amount']
+#     return tx
 
 
 # Entity Views ----
@@ -129,6 +132,7 @@ class EntityBalanceSheetView(DetailView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('balance sheet') + ': ' + self.object.name
         context['header_title'] = _('balance sheet') + ': ' + self.object.name
+        context['activity_form'] = ActivitySelectForm()
         return context
 
     def get_queryset(self):

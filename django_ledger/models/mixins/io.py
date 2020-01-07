@@ -68,6 +68,7 @@ def validate_tx_data(tx_data: list):
     debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
     if not credits == debits:
         raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
+    return tx_data
 
 
 class IOMixIn:
@@ -85,8 +86,11 @@ class IOMixIn:
                   je_origin=None,
                   je_parent=None):
 
-        validate_tx_data(je_txs)
-        validate_activity(je_activity)
+        # Validates that credits/debits balance.
+        je_txs = validate_tx_data(je_txs)
+
+        # Validates that the activity is valid.
+        je_activity = validate_activity(je_activity)
 
         if all([isinstance(self, lazy_importer.get_entity_model()),
                 not je_ledger]):
@@ -95,13 +99,13 @@ class IOMixIn:
         if not je_ledger:
             je_ledger = self
 
-        tx_axcounts = [acc['code'] for acc in je_txs]
+        txs_accounts = [acc['code'] for acc in je_txs]
 
         if isinstance(self, lazy_importer.get_entity_model()):
             account_models = self.coa.accounts.all()
         elif isinstance(self, lazy_importer.get_ledger_model()):
             account_models = self.entity.coa.accounts.all()
-        avail_accounts = account_models.filter(code__in=tx_axcounts)
+        avail_accounts = account_models.filter(code__in=txs_accounts)
 
         je = JournalEntryModel.objects.create(
             ledger=je_ledger,

@@ -8,12 +8,12 @@ from mptt.models import MPTTModel
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
 
-ACTIVITIES = (
+ACTIVITIES = [
     ('op', _('Operating')),
     ('fin', _('Financing')),
     ('inv', _('Investing')),
     ('other', _('Other')),
-)
+]
 
 ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
 
