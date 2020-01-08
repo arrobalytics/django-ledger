@@ -77,6 +77,9 @@ class AccountModelManager(models.Manager):
 
 
 class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
+    """
+    Djetler's Base Account Model Abstract
+    """
     BALANCE_TYPE = [
         ('credit', _('Credit')),
         ('debit', _('Debit'))

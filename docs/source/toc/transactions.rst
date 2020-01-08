@@ -1,4 +1,0 @@
-Transactions
-============
-
-Transacions documentation.

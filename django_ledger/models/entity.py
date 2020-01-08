@@ -12,6 +12,10 @@ class EntityModel(EntityModelAbstract):
 
 
 def entity_presave(sender, instance, **kwargs):
+    """
+    EntityModel pre-save hook. Explicitly calls the clean() method to make sure entity_slug is generated
+    on every new EntityModel saved.
+    """
     instance.clean()
 
 

@@ -43,6 +43,9 @@ class ChartOfAccountModelManager(Manager):
 
 class ChartOfAccountModelAbstract(SlugNameMixIn,
                                   CreateUpdateMixIn):
+    """
+    Base Chart of Accounts Model Abstract
+    """
     entity = models.OneToOneField('django_ledger.EntityModel',
                                   related_name='coa',
                                   verbose_name=_l('Entity'),

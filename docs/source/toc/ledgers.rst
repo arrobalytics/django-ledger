@@ -1,4 +1,0 @@
-Ledgers
--------
-
-Ledgers documentation.
