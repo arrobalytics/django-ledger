@@ -21,6 +21,7 @@ sys.path.insert(0, '../../')
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "dj_dev.settings"
 django.setup()
+
 # sys.path.insert(0, os.path.abspath('.'))
 
 

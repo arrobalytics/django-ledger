@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-DJETLER - The Python & Django Book Keeping Engine.
+DJETLER - The Django Book Keeping Engine.
 ==================================================
 
 .. toctree::
@@ -13,7 +13,7 @@ DJETLER - The Python & Django Book Keeping Engine.
    ./installation
    ./quickstart
    ./models
-
+   ./views
 
 
 Indices and tables
