@@ -46,88 +46,118 @@ def quickstart(user_model: str or UserModel,
         entity_model = EntityModel.objects.create(name=entity_name,
                                                   slug=entity_slug,
                                                   admin=user_model)
-
     populate_default_coa(entity_model=entity_model)
+
     if not txs_data:
         txs_data = [
             {
-                'code': '1010',
-                'amount': 200000,
-                'tx_type': 'debit',
-                'description': 'Company Funding'
+                'je_date': '2019-10-01',
+                'je_origin': 'djetler-quickstart',
+                'je_desc': 'Purchase of property at 123 Main St',
+                'je_activity': 'other',
+                'je_posted': True,
+                'je_txs': [
+                    {
+                        'code': '1010',
+                        'amount': 200000,
+                        'tx_type': 'debit',
+                        'description': 'Capital contribution'
+                    },
+                    {
+                        'code': '3010',
+                        'amount': 200000,
+                        'tx_type': 'credit',
+                        'description': 'Capital contribution'
+                    }
+                ]
             },
             {
-                'code': '3010',
-                'amount': 200000,
-                'tx_type': 'credit',
-                'description': 'Capital contribution'
+                'je_date': '2019-10-20',
+                'je_origin': 'djetler-quickstart',
+                'je_desc': 'Purchase of property at 123 Main St',
+                'je_activity': 'inv',
+                'je_posted': True,
+                'je_txs': [
+                    {
+                        'code': '1010',
+                        'amount': 40000,
+                        'tx_type': 'credit',
+                        'description': 'Downpayment'
+                    },
+                    {
+                        'code': '2110',
+                        'amount': 80000,
+                        'tx_type': 'credit',
+                        'description': 'Issue debt'
+                    },
+                    {
+                        'code': '1610',
+                        'amount': 120000,
+                        'tx_type': 'debit',
+                        'description': 'Property cost base'
+                    },
+                ]
             },
             {
-                'code': '1010',
-                'amount': 40000,
-                'tx_type': 'credit',
-                'description': 'Downpayment'
+                'je_date': '2019-10-31',
+                'je_origin': 'djetler-quickstart',
+                'je_desc': 'Purchase of property at 123 Main St',
+                'je_activity': 'inv',
+                'je_posted': True,
+                'je_txs': [
+                    {
+                        'code': '1611',
+                        'amount': 465.50,
+                        'tx_type': 'credit',
+                        'description': 'Accumulated Depreciation'
+                    },
+                    {
+                        'code': '6070',
+                        'amount': 465.50,
+                        'tx_type': 'debit',
+                        'description': 'Accumulated Depreciation'
+                    },
+                ]
             },
             {
-                'code': '2110',
-                'amount': 80000,
-                'tx_type': 'credit',
-                'description': 'Issue debt'
+                'je_date': '2019-11-30',
+                'je_origin': 'djetler-quickstart',
+                'je_desc': 'Purchase of property at 123 Main St',
+                'je_activity': 'op',
+                'je_posted': True,
+                'je_txs': [
+                    {
+                        'code': '1010',
+                        'amount': 1500,
+                        'tx_type': 'debit',
+                        'description': 'Rental Income'
+                    },
+                    {
+                        'code': '4020',
+                        'amount': 1500,
+                        'tx_type': 'credit',
+                        'description': 'Rental Income'
+                    },
+                    {
+                        'code': '1010',
+                        'amount': 180.45,
+                        'tx_type': 'credit',
+                        'description': 'HOA expense'
+                    },                    {
+                        'code': '6253',
+                        'amount': 180.45,
+                        'tx_type': 'debit',
+                        'description': 'HOA expense'
+                    },
+                ]
             },
-            {
-                'code': '1610',
-                'amount': 120000,
-                'tx_type': 'debit',
-                'description': 'Property cost base'
-            },
-            {
-                'code': '4020',
-                'amount': 1500,
-                'tx_type': 'credit',
-                'description': 'Rental Income'
-            },
-            {
-                'code': '1010',
-                'amount': 1500,
-                'tx_type': 'debit',
-                'description': 'Rental Income'
-            },
-            {
-                'code': '1010',
-                'amount': 180.45,
-                'tx_type': 'credit',
-                'description': 'HOA expense'
-            },
-            {
-                'code': '6253',
-                'amount': 180.45,
-                'tx_type': 'debit',
-                'description': 'HOA Exoense'
-            },
-            {
-                'code': '1611',
-                'amount': 465.50,
-                'tx_type': 'credit',
-                'description': 'Accumulated Depreciation'
-            },
-            {
-                'code': '6070',
-                'amount': 465.50,
-                'tx_type': 'debit',
-                'description': 'HOA Expense'
-            },
-
         ]
-    txs_data_codes = set([txs['code'] for txs in txs_data])
 
-    make_accounts_active(entity_model=entity_model, account_code_set=txs_data_codes)
+        txs_data_codes = set(sum([[tx['code'] for tx in je['je_txs']] for je in txs_data], []))
+        make_accounts_active(entity_model=entity_model, account_code_set=txs_data_codes)
 
-    general_ledger = entity_model.ledgers.get(name__exact='General Ledger')
+        general_ledger = entity_model.ledgers.get(name__exact='General Ledger')
 
-    entity_model.create_je(je_date='2019-04-09',
-                           je_txs=txs_data,
-                           je_origin='djetler-quickstart',
-                           je_ledger=general_ledger,
-                           je_desc='Purchase of property at 123 Main St',
-                           je_posted=True,
-                           je_activity='inv')
+        for je in txs_data:
+            je['je_ledger'] = general_ledger
+            entity_model.create_je(**je)

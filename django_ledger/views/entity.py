@@ -10,18 +10,6 @@ from django_ledger.models import EntityModel
 from django_ledger.models.utils import populate_default_coa
 
 
-# from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
-
-
-# def txs_digest(tx: dict) -> dict:
-#     tx['role_bs'] = BS_ROLES.get(tx['account__role'])
-#     if tx['account__balance_type'] != tx['tx_type']:
-#         tx['amount'] = -tx['amount']
-#     if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
-#         tx['amount'] = -tx['amount']
-#     return tx
-
-
 # Entity Views ----
 class EntityModelListView(ListView):
     template_name = 'django_ledger/entitiy_list.html'

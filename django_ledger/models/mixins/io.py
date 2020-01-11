@@ -51,8 +51,8 @@ IDX_BALANCE_TYPE = VALUES_IDX.index('balance_type')
 def process_signs(record):
     """
     Reverse the signs for contra accounts if requested.
-    :param record: DF row.
-    :return: A Df Row.
+    :param record: A transaction record.
+    :return: A modified record.
     """
     if all([record['role_bs'] == 'assets',
             record['balance_type'] == 'credit']):
@@ -105,6 +105,9 @@ class IOMixIn:
             account_models = self.coa.accounts.all()
         elif isinstance(self, lazy_importer.get_ledger_model()):
             account_models = self.entity.coa.accounts.all()
+        else:
+            account_models = self.coa.accounts.none()
+
         avail_accounts = account_models.filter(code__in=txs_accounts)
 
         je = JournalEntryModel.objects.create(
@@ -250,28 +253,24 @@ class IOMixIn:
         return ic_data
 
     def snapshot(self):
-        bs_data = self.balance_sheet()
+        bs_data = self.balance_sheet(signs=True)
+
         assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
         liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']
         equity = [acc for acc in bs_data if acc['role_bs'] == 'equity']
         capital = [acc for acc in equity if acc['role'] in ['cap', 'capj']]
         earnings = [acc for acc in equity if acc['role'] in ['ex', 'in']]
-        total_assets = sum(
-            [acc['balance'] for acc in assets if acc['balance_type'] == 'debit'] +
-            [-acc['balance'] for acc in assets if acc['balance_type'] == 'credit'])
-        total_liabilities = sum(
-            [acc['balance'] for acc in liabilities if acc['balance_type'] == 'credit'] +
-            [-acc['balance'] for acc in liabilities if acc['balance_type'] == 'debit'])
-        total_capital = sum(
-            [acc['balance'] for acc in capital if acc['balance_type'] == 'credit'] +
-            [-acc['balance'] for acc in capital if acc['balance_type'] == 'debit'])
+
+        total_assets = sum([acc['balance'] for acc in assets])
+        total_liabilities = sum([acc['balance'] for acc in liabilities])
+        total_capital = sum([acc['balance'] for acc in capital])
         total_income = sum([acc['balance'] for acc in earnings if acc['role'] == 'in'])
-        total_expenses = sum([acc['balance'] for acc in earnings if acc['role'] == 'ex'])
-        retained_earnings = sum(
-            [acc['balance'] for acc in earnings if acc['balance_type'] == 'credit'] +
-            [-acc['balance'] for acc in earnings if acc['balance_type'] == 'debit'])
+        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] == 'ex'])
+        retained_earnings = sum([acc['balance'] for acc in earnings])
+
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
+
         return {
             'bs_data': bs_data,
             'assets': assets,

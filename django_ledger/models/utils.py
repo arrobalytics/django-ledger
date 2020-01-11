@@ -3,8 +3,18 @@ from django.contrib.auth import get_user_model
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
+from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_TERRITORY
 
 UserModel = get_user_model()
+
+
+def txs_digest(tx: dict) -> dict:
+    tx['role_bs'] = BS_ROLES.get(tx['account__role'])
+    if tx['account__balance_type'] != tx['tx_type']:
+        tx['amount'] = -tx['amount']
+    if tx['account__balance_type'] != ACCOUNT_TERRITORY.get(tx['role_bs']):
+        tx['amount'] = -tx['amount']
+    return tx
 
 
 def populate_default_coa(entity_model: EntityModel):
@@ -38,42 +48,3 @@ def populate_default_coa(entity_model: EntityModel):
 def make_accounts_active(entity_model: EntityModel, account_code_set: set):
     accounts = entity_model.coa.accounts.filter(code__in=account_code_set)
     accounts.update(active=True)
-
-# def create_coa_structure(coa_data: dict,
-#                          admin: UserModel,
-#                          entity: str or EntityModel):
-#     """
-#     :param coa_user: Current User Model.
-#     :param coa_data: New CoA Data.
-#     :param coa_name: Name of the new Chart of Accounts Model.
-#     :param coa_desc: Optional Description of the new Chart of Accounts Model.
-#     :param coa_slug: Optional explicit slug. If not will be created by Django's slugify function based on CoA name.
-#     """
-#     print(coa_data)
-#     if isinstance(entity, str):
-#         entity, created = EntityModel.objects.get_or_create(slug=entity,
-#                                                             admin=admin,
-#                                                             name=entity.upper())
-#     coa = entity.coa
-#     acc_objs = [AccountModel(
-#         code=a['code'],
-#         name=a['name'],
-#         role=a['role'],
-#         balance_type=a['balance_type'],
-#         coa=coa,
-#     ) for a in coa_data]
-#     parents = set([a.get('parent') for a in coa_data])
-#     children = {
-#         p: [c['code']
-#             for c in coa_data if c['parent'] == p and c['code'] != p] for p in parents
-#     }
-#     for acc in acc_objs:
-#         acc.clean()
-#         acc.save()
-#
-#     for acc_p, acc_c in children.items():
-#         p_obj = AccountModel.objects.get(code=acc_p)
-#         c_qs = AccountModel.objects.filter(code__in=acc_c)
-#         p_obj.children.set(c_qs)
-#
-#     return entity

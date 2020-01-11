@@ -17,15 +17,14 @@ def balance_sheet(entity_model):
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html')
 def income_statement(entity_model):
-    ic_data = entity_model.income_statement()
+    ic_data = entity_model.income_statement(signs=True)
     income = [acc for acc in ic_data if acc['role'] in ['in']]
     expenses = [acc for acc in ic_data if acc['role'] in ['ex']]
-    total_income = sum(
-        [acc['balance'] for acc in income if acc['balance_type'] == 'credit'] +
-        [-acc['balance'] for acc in income if acc['balance_type'] == 'debit'])
-    total_expenses = -sum(
-        [acc['balance'] for acc in expenses if acc['balance_type'] == 'credit'] +
-        [-acc['balance'] for acc in expenses if acc['balance_type'] == 'debit'])
+    for ex in expenses:
+        ex['balance'] = -ex['balance']
+    total_income = sum([acc['balance'] for acc in income])
+    total_expenses = sum([acc['balance'] for acc in expenses])
+    total_income_loss = total_income - total_expenses
 
     return {
         'ic_data': ic_data,
@@ -33,7 +32,7 @@ def income_statement(entity_model):
         'total_income': total_income,
         'expenses': expenses,
         'total_expenses': total_expenses,
-        'total_income_loss': total_income - total_expenses
+        'total_income_loss': total_income_loss
     }
 
 

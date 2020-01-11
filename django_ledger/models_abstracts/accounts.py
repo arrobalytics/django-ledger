@@ -85,11 +85,11 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
         ('debit', _('Debit'))
     ]
 
-    code = models.CharField(max_length=DJANGO_LEDGER_ACCOUNT_MAX_LENGTH,
-                            verbose_name=_l('Account Code'))
+    code = models.CharField(max_length=DJANGO_LEDGER_ACCOUNT_MAX_LENGTH, verbose_name=_l('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
     role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
+    cash_account = models.BooleanField(default=False, verbose_name=_('Cash Account'))
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
