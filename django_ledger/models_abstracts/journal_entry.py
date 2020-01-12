@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
+from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
@@ -18,11 +19,14 @@ ACTIVITIES = [
 ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
 
 
-def validate_activity(act):
+def validate_activity(act: str, raise_404: bool = False):
     if act:
         valid = act in ACTIVITY_ALLOWS
         if not valid:
-            raise ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
+            exception = ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
+            if raise_404:
+                raise Http404(exception)
+            raise exception
     return act
 
 

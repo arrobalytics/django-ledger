@@ -1,6 +1,7 @@
 from django import template
 
 from django_ledger.forms import EntityModelDefaultForm
+from models_abstracts.journal_entry import validate_activity
 
 register = template.Library()
 
@@ -10,14 +11,17 @@ def cs_thousands(value):
     return '{:,}'.format(value)
 
 
-@register.inclusion_tag('django_ledger/tags/balance_sheet.html')
-def balance_sheet(entity_model):
-    return entity_model.snapshot()
+@register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
+def balance_sheet(context, entity_model):
+    activity = context['request'].GET.get('activity')
+    activity = validate_activity(activity, raise_404=True)
+    return entity_model.snapshot(activity=activity)
 
 
-@register.inclusion_tag('django_ledger/tags/income_statement.html')
-def income_statement(entity_model):
-    ic_data = entity_model.income_statement(signs=True)
+@register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
+def income_statement(context, entity_model):
+    activity = context['view'].kwargs.get('activity')
+    ic_data = entity_model.income_statement(signs=True, activity=activity)
     income = [acc for acc in ic_data if acc['role'] in ['in']]
     expenses = [acc for acc in ic_data if acc['role'] in ['ex']]
     for ex in expenses:
