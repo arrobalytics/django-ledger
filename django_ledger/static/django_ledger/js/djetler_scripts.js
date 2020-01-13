@@ -13,3 +13,6 @@ function setDefaultEntity() {
     let defaultEntityForm = document.getElementById("djetler-set-entity-form");
     defaultEntityForm.submit()
 }
+
+let djetlerDate = flatpickr('#djetler-date-picker', {});
+console.log(djetlerDate);

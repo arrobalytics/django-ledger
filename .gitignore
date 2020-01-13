@@ -108,3 +108,5 @@ venv.bak/
 .idea/
 dj_dev
 manage.py
+
+node_modules

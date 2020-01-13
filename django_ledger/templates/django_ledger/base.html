@@ -7,9 +7,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Djetler | {{ page_title | title }}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.7.95/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="{% static 'django_ledger/css/bulma.min.css' %}">
+    <link rel="stylesheet" href="{% static 'django_ledger/css/flatpickr.min.css' %}">
     <link rel="stylesheet" href="{% static 'django_ledger/css/djetler_styles.css' %}">
+    <link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.7.95/css/materialdesignicons.min.css">
 </head>
 <body>
 
@@ -28,6 +29,7 @@
 {% block content %}{% endblock %}
 
 {% block script_bottom %}
+    <script src="{% static 'django_ledger/js/flatpickr.min.js' %}"></script>
     <script src="{% static 'django_ledger/js/djetler_scripts.js' %}"></script>
 {% endblock %}
 
