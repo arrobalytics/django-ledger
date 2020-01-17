@@ -1,11 +1,15 @@
 {% load static %}
 {% load django_ledger %}
+{% load cache %}
+{% load i18n %}
 
 <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="container">
         <div class="navbar-brand">
+
             <a class="navbar-item" href="https://djetler.com">
-                <img src="{% static 'django_ledger/logo/djetler-logo-only@0.5x.png' %}" height="28">
+                <img src="{% static 'django_ledger/logo/djetler-logo-only@0.5x.png' %}"
+                     height="28">
             </a>
 
             <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
@@ -14,24 +18,37 @@
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
             </a>
+
         </div>
 
         <div id="navbarBasicExample" class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url 'django_ledger:dashboard' %}">Home</a>
+
+                <a class="navbar-item" href="{% url 'django_ledger:dashboard' %}">{% trans 'Home' %}</a>
                 {% if user.is_staff or user.is_superuser %}
-                    <a class="navbar-item" href="/admin">Admin</a>
+                    <a class="navbar-item" href="/admin">{% trans 'Admin' %}</a>
                 {% endif %}
+
             </div>
             <div class="navbar-end">
-                <div class="navbar-item">
 
+                {% if view.kwargs.entity_slug %}
+
+                    <div class="navbar-item">
+                        <span class="is-italic has-text-weight-semibold">
+                            <small>{% trans 'Date Filter' %}: {% current_entity_date %}</small></span>
+                    </div>
+
+                    <div class="navbar-item flatpickr" id="djetler-date-picker">
+                        {% date_filter_form %}
+                        <i class="icon mdi mdi-calendar mdi-24px" data-toggle></i>
+                    </div>
+
+                {% endif %}
+
+                <div class="navbar-item">
                     {# todo: nice tag to have but find a better way to reduce stress on the DB (qs on every page load) #}
                     {% entity_choice_form %}
-
-                </div>
-                <div class="navbar-item">
-                    <div id="djetler-date-picker"></div>
                 </div>
             </div>
 

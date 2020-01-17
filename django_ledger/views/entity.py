@@ -4,9 +4,10 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms import ActivitySelectForm
+from django_ledger.forms import ActivitySelectForm, AsOfDateForm
 from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
 from django_ledger.models import EntityModel
+from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.models.utils import populate_default_coa
 
 
@@ -40,7 +41,9 @@ class EntityModelDetailVew(DetailView):
         context['page_title'] = self.object.name
         context['header_title'] = _l('entity') + ': ' + self.object.name
         entity = self.object
-        snapshot = entity.snapshot()
+        session_date_filter_key = get_date_filter_session_key(entity.slug)
+        date_filter = self.request.session.get(session_date_filter_key)
+        snapshot = entity.snapshot(as_of=date_filter)
         context.update(snapshot)
         return context
 
@@ -163,5 +166,23 @@ class SetDefaultEntityView(RedirectView):
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
-            self.request.session['default_entity_id'] = entity_model.id
+            session_key = get_default_entity_session_key()
+            self.request.session[session_key] = entity_model.id
+        return super().post(request, *args, **kwargs)
+
+
+class SetDateView(RedirectView):
+    http_method_names = ['post']
+
+    def post(self, request, *args, **kwargs):
+        entity_slug = kwargs['entity_slug']
+        as_of_form = AsOfDateForm(data=request.POST)
+        next_url = request.GET['next']
+
+        if as_of_form.is_valid():
+            session_item = get_date_filter_session_key(entity_slug)
+            new_date_filter = as_of_form.cleaned_data['date'].strftime('%Y-%m-%d')
+            request.session[session_item] = new_date_filter
+
+        self.url = next_url
         return super().post(request, *args, **kwargs)

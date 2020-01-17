@@ -1,0 +1,7 @@
+<form id="djetler-date-filter-form"
+      action="{% url 'django_ledger:entity-set-date' entity_slug=entity_slug %}?next={{ next }}"
+      method="post">
+    {% csrf_token %}
+    {{ date_form.entity_slug }}
+    {{ date_form.date }}
+</form>

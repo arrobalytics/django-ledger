@@ -1,6 +1,7 @@
 from django import template
 
-from django_ledger.forms import EntityModelDefaultForm
+from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm
+from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from models_abstracts.journal_entry import validate_activity
 
 register = template.Library()
@@ -78,7 +79,8 @@ def accounts_table(accounts_queryset):
 @register.inclusion_tag('django_ledger/tags/default_entity_form.html', takes_context=True)
 def entity_choice_form(context):
     user = context['user']
-    default_entity_id = context['request'].session.get('default_entity_id')
+    session_key = get_default_entity_session_key()
+    default_entity_id = context['request'].session.get(session_key)
     default_entity_form = EntityModelDefaultForm(user_model=user,
                                                  default_entity=default_entity_id)
     return {
@@ -98,3 +100,27 @@ def nav_breadcrumbs(context):
         'ledger_pk': ledger_pk,
         'account_pk': account_pk
     }
+
+
+@register.inclusion_tag('django_ledger/tags/date_form.html', takes_context=True)
+def date_filter_form(context):
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    if entity_slug:
+        form = AsOfDateForm(initial={
+            'entity_slug': context['view'].kwargs['entity_slug']
+        })
+        next_url = context['request'].path
+        return {
+            'date_form': form,
+            'entity_slug': entity_slug,
+            'next': next_url
+        }
+
+
+@register.simple_tag(takes_context=True)
+def current_entity_date(context):
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    session_item = get_date_filter_session_key(entity_slug)
+    date_filter = context['request'].session.get(session_item)
+    if date_filter:
+        return date_filter

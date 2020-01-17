@@ -252,8 +252,8 @@ class IOMixIn:
 
         return ic_data
 
-    def snapshot(self, activity: str = None) -> dict:
-        bs_data = self.balance_sheet(signs=True, activity=activity)
+    def snapshot(self, activity: str = None, as_of: str = None) -> dict:
+        bs_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
         liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']

@@ -11,7 +11,9 @@
     <link rel="stylesheet" href="{% static 'django_ledger/css/flatpickr.min.css' %}">
     <link rel="stylesheet" href="{% static 'django_ledger/css/djetler_styles.css' %}">
     <link rel="stylesheet" href="https://cdn.materialdesignicons.com/4.7.95/css/materialdesignicons.min.css">
+
 </head>
+
 <body>
 
 {% block nav %}
@@ -23,12 +25,15 @@
 {% endblock %}
 
 {% block breadcrumbs %}
-{#    {% include 'django_ledger/includes/breadcrumbs.html' %}#}
+    {#    {% include 'django_ledger/includes/breadcrumbs.html' %}#}
 {% endblock %}
 
 {% block content %}{% endblock %}
 
 {% block script_bottom %}
+    <script>
+        let currentDateFilter = "{% current_entity_date %}";
+    </script>
     <script src="{% static 'django_ledger/js/flatpickr.min.js' %}"></script>
     <script src="{% static 'django_ledger/js/djetler_scripts.js' %}"></script>
 {% endblock %}

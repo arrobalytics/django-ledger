@@ -1,5 +1,6 @@
-from django.forms import (ModelForm, Form, modelformset_factory, BaseModelFormSet, TextInput, Textarea,
-                          BooleanField, Select, DateInput, ValidationError, ModelChoiceField, ChoiceField)
+from django.forms import (ModelForm, Form, modelformset_factory, BaseModelFormSet, TextInput, Textarea, DateField,
+                          BooleanField, Select, DateInput, ValidationError, ModelChoiceField, ChoiceField, CharField,
+                          HiddenInput)
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
@@ -352,3 +353,14 @@ class ActivitySelectForm(Form):
                                    'onchange': 'onBSActivitySelect'
                                }
                            ))
+
+
+class AsOfDateForm(Form):
+    entity_slug = CharField(max_length=150, widget=HiddenInput())
+    date = DateField(widget=DateInput(
+        attrs={
+            'class': 'is-hidden',
+            'data-input': True
+        }
+    ))
+
