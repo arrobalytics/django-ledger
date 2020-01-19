@@ -2,7 +2,7 @@ from django import template
 
 from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from models_abstracts.journal_entry import validate_activity
+from django_ledger.models_abstracts.journal_entry import validate_activity
 
 register = template.Library()
 
