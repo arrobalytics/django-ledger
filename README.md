@@ -20,6 +20,7 @@ the following functionality:
 ## High Level Road Map
 - Basic navigational views & template tags.
 - Basic entity insights.
+- Cash flow statement.
 - Invoicing.
 - Inventory.
 - Per activity reports.
@@ -28,12 +29,41 @@ the following functionality:
 - What if scenarios.
 - Account level forecasting/trends.
 - Package documentation.
-- Date filtering.
 - And a lot more stuff...
 
 ## Quick Start
 In order to start using Django Ledger you must be logged in first.
+
 Django Ledger comes with a default CoA ready to use or you could use your own.
 Make sure to select the appropriate option when creating new entities.
 
+* Install Dependencies
+
+
+    pip install django-mptt
+    
+    
+   or if using Pipenv
+    
+    pipenv install
+    
+* Add mptt & django_ledger to INSTALLED_APPS
+
+
+    INSTALLED_APPS = [
+        ...
+        'mptt',
+        'django_ledger',
+        ...
+    ]
+
+* Add URLs to your project:
+
+
+    urlpatterns = [
+        ...
+        path('', include('django_ledger.urls')),
+        ...
+    ]
+    
 __Want to contribute? Don't hesitate to contact me.__
