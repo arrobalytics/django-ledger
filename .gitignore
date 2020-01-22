@@ -110,6 +110,5 @@ dj_dev
 manage.py
 
 node_modules
-package.json
 yarn.lock
 notebooks
