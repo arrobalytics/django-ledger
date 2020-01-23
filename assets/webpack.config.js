@@ -2,23 +2,25 @@ const path = require('path');
 
 module.exports = {
     mode: "development",
-    entry: "./src/djetler.ts",
+    entry: "./src/entry",
     output: {
-        path: path.resolve('./dist'),
-        filename: "djetler.bundle.js"
+        filename: "djetler.bundle.js",
+        path: path.resolve(__dirname, '../django_ledger/static/django_ledger/dist/')
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js"],
-        modules: [
-            "node_modules",
-            // path.resolve(__dirname, "node_modules")
-        ]
+        modules: ["node_modules"],
+        alias: {
+            vue: 'vue/dist/vue.js'
+        },
     },
     module: {
         rules: [
             {
                 test: /\.css$/i,
-                use: ['style-loader', 'css-loader'],
+                use: [
+                    'style-loader', 'css-loader'
+                ],
             },
             {
                 test: /\.s[ac]ss$/i,
@@ -33,9 +35,19 @@ module.exports = {
             },
             {
                 test: /\.tsx?$/,
-                loader: "ts-loader",
-                // exclude: "/node_modules/"
-            }
+                use: [
+                    "ts-loader"
+                ],
+            },
+            // {
+            //     test: require.resolve("djetler"),
+            //     use: [
+            //         {
+            //             loader: "expose-loader",
+            //             options: "djetler"
+            //         }
+            //     ]
+            // }
         ]
     }
 };

@@ -18,7 +18,9 @@ class EntityModelDefaultForm(Form):
         queryset=EntityModel.objects.none(),
         widget=Select(attrs={
             'class': DJETLER_FORM_INPUT_CLASS,
-            'onchange': 'setDefaultEntity()'
+            'id': 'djetler-set-entity-form-input'
+            # 'onchange': 'setDefaultEntity()'
+            # 'onchange': 'djetler.setDefaultEntity()'
         }))
 
     def __init__(self, *args, user_model, default_entity=None, **kwargs):
