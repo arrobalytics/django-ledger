@@ -107,14 +107,19 @@ def nav_breadcrumbs(context):
 @register.inclusion_tag('django_ledger/tags/date_form.html', takes_context=True)
 def date_filter_form(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
+    session_item = get_date_filter_session_key(entity_slug)
+    session = context['request'].session
+    date_filter = session.get(session_item)
     if entity_slug:
         form = AsOfDateForm(initial={
-            'entity_slug': context['view'].kwargs['entity_slug']
+            'entity_slug': context['view'].kwargs['entity_slug'],
+            'date': date_filter
         })
         next_url = context['request'].path
         return {
             'date_form': form,
             'entity_slug': entity_slug,
+            'date_filter': date_filter,
             'next': next_url
         }
 

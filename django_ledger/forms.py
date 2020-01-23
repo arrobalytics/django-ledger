@@ -362,7 +362,7 @@ class AsOfDateForm(Form):
     date = DateField(widget=DateInput(
         attrs={
             'class': 'is-hidden',
-            'data-input': True
+            'data-input': True,
         }
     ))
 
