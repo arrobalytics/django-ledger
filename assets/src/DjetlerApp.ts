@@ -1,7 +1,20 @@
 export class DjetlerApp {
 
-    defaultEntityForm : HTMLElement|void;
-    // fletPickr: FlatpickrFn|void;
+    defaultEntityForm: HTMLElement | void;
+    // flatPickr: FlatpickrFn | void;
+    // djetlerFlatPickrOptions: Object = {
+    //     wrap: true,
+    //     onReady: (selectedDates, dateStr, instance) => {
+    //         instance.setDate(currentDateFilter, false, "Y-m-d");
+    //         // console.log(selectedDates);
+    //         // console.log(dateStr);
+    //         // console.log(instance);
+    //     },
+    //     onChange: (selectedDates, dateStr, instance) => {
+    //         let dateFilterForm = document.getElementById("djetler-date-filter-form");
+    //         dateFilterForm.submit();
+    //     }
+    // };
 
     constructor() {
 
@@ -45,6 +58,8 @@ export class DjetlerApp {
             this.defaultEntityForm = defaultEntityForm;
             this.defaultEntityForm.addEventListener("change", this.setDefaultEntity);
         }
+
+        // this.flatPickr = flatpickr('#djetler-date-picker')
 
     }
 

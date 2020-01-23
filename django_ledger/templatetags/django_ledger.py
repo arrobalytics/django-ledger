@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django import template
 
 from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm
@@ -121,6 +123,9 @@ def date_filter_form(context):
 def current_entity_date(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
-    date_filter = context['request'].session.get(session_item)
-    if date_filter:
-        return date_filter
+    session = context['request'].session
+    date_filter = session.get(session_item)
+    if not date_filter:
+        date_filter = datetime.now().date().strftime('%Y-%m-%d')
+        session[session_item] = date_filter
+    return date_filter

@@ -2,9 +2,12 @@ const path = require('path');
 
 module.exports = {
     mode: "development",
-    entry: "./src/entry",
+    entry: {
+        djetler: "./src/entry",
+        styles: "./src/styles"
+    },
     output: {
-        filename: "djetler.bundle.js",
+        filename: "[name].bundle.js",
         path: path.resolve(__dirname, '../django_ledger/static/django_ledger/dist/')
     },
     resolve: {
@@ -39,15 +42,12 @@ module.exports = {
                     "ts-loader"
                 ],
             },
-            // {
-            //     test: require.resolve("djetler"),
-            //     use: [
-            //         {
-            //             loader: "expose-loader",
-            //             options: "djetler"
-            //         }
-            //     ]
-            // }
+            {
+                test: /\.less$/,
+                use: [
+                    "less-loader"
+                ],
+            },
         ]
     }
 };
