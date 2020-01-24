@@ -48,6 +48,14 @@ module.exports = {
                     "less-loader"
                 ],
             },
+            {
+                test: /\.(ttf|eot|svg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
+                use: 'file-loader'
+            },
+            {
+                test: /\.(png|woff|woff2|eot|ttf|svg)$/,
+                use: ['url-loader?limit=100000']
+            }
         ]
     }
 };
