@@ -40,12 +40,13 @@ class AccountModelUpdateView(UpdateView):
                                       **self.get_form_kwargs())
 
     def get_success_url(self):
+        entity_slug = self.kwargs.get('entity_slug')
+        coa_slug = self.kwargs.get('coa_slug')
         return reverse('django_ledger:account-list',
                        kwargs={
-                           'coa_slug': self.kwargs['coa_slug'],
-                           'entity_slug': self.kwargs['entity_slug']
+                           'entity_slug': entity_slug,
+                           'coa_slug': coa_slug,
                        })
-
     def get_queryset(self):
         return AccountModel.on_coa.for_user(
             user=self.request.user
@@ -86,8 +87,10 @@ class AccountModelCreateView(CreateView):
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:coa-detail',
+        entity_slug = self.kwargs.get('entity_slug')
+        coa_slug = self.kwargs.get('coa_slug')
+        return reverse('django_ledger:account-list',
                        kwargs={
-                           'coa_slug': self.object.coa.slug,
-                           'entity_slug': self.object.coa.entity.slug
+                           'entity_slug': entity_slug,
+                           'coa_slug': coa_slug,
                        })

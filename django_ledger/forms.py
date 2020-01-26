@@ -143,6 +143,28 @@ class AccountModelBaseForm(ModelForm):
 
 
 class AccountModelCreateForm(AccountModelBaseForm):
+
+    def clean(self):
+        parent = self.cleaned_data.get('parent')
+        new_account_role = self.cleaned_data.get('role')
+        cash_account = self.cleaned_data.get('cash_account')
+
+        if parent:
+            if all([
+                parent,
+                parent.role != new_account_role
+            ]):
+                raise ValidationError(_('Parent role must be the same as child account role.'))
+
+
+
+        if all([
+            cash_account,
+            new_account_role != 'ca'
+        ]):
+            raise ValidationError(_('Cash account can ony be used on Current Assets.'))
+
+
     class Meta:
         model = AccountModel
         fields = [
@@ -151,6 +173,7 @@ class AccountModelCreateForm(AccountModelBaseForm):
             'name',
             'role',
             'balance_type',
+            'cash_account'
         ]
         widgets = {
             'parent': Select(attrs={
@@ -365,4 +388,3 @@ class AsOfDateForm(Form):
             'data-input': True,
         }
     ))
-
