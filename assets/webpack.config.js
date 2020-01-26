@@ -8,7 +8,7 @@ module.exports = {
     },
     output: {
         filename: "[name].bundle.js",
-        path: path.resolve(__dirname, '../django_ledger/static/django_ledger/dist/')
+        path: path.resolve(__dirname, '../django_ledger/static/django_ledger/bundle/'),
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js"],
@@ -22,17 +22,15 @@ module.exports = {
             {
                 test: /\.css$/i,
                 use: [
-                    'style-loader', 'css-loader'
+                    'style-loader',
+                    'css-loader',
                 ],
             },
             {
                 test: /\.s[ac]ss$/i,
                 use: [
-                    // Creates `style` nodes from JS strings
                     'style-loader',
-                    // Translates CSS into CommonJS
                     'css-loader',
-                    // Compiles Sass to CSS
                     'sass-loader',
                 ],
             },
@@ -49,12 +47,16 @@ module.exports = {
                 ],
             },
             {
-                test: /\.(ttf|eot|svg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
-                use: 'file-loader'
-            },
-            {
                 test: /\.(png|woff|woff2|eot|ttf|svg)$/,
-                use: ['url-loader?limit=100000']
+                use: {
+                    loader: 'url-loader',
+                    options: {
+                        limit: 1000,
+                        publicPath: '/static/django_ledger/bundle/files/',
+                        outputPath: 'files/'
+                    }
+                },
+
             }
         ]
     }

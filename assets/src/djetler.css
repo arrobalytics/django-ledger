@@ -1,7 +1,6 @@
 @charset "UTF-8";
 /*! bulma.io v0.8.0 | MIT License | github.com/jgthms/bulma */
 @import "../node_modules/flatpickr/dist/flatpickr.min.css";
-@import "djetler_styles.css";
 @keyframes spinAround {
   from {
     transform: rotate(0deg);

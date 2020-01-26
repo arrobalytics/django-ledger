@@ -9,6 +9,6 @@ let djetlerVueTest = new Vue({
     el: "#djetler-vue",
     delimiters: ["[[", "]]"],
     data: {
-        message: "Hello Djetler!!!"
+        message: "Hello Djetler Vue!!!"
     }
 });
