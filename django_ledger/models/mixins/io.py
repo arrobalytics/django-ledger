@@ -256,20 +256,32 @@ class IOMixIn:
         bs_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
+        current_assets = [acc['balance'] for acc in bs_data if acc['role'] == 'ca']
         liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']
+        current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] == 'cl']
         equity = [acc for acc in bs_data if acc['role_bs'] == 'equity']
         capital = [acc for acc in equity if acc['role'] in ['cap', 'capj']]
         earnings = [acc for acc in equity if acc['role'] in ['ex', 'in']]
 
         total_assets = sum([acc['balance'] for acc in assets])
+        total_current_assets = sum(current_assets)
         total_liabilities = sum([acc['balance'] for acc in liabilities])
+        total_current_liabilities = sum(current_liabilities)
         total_capital = sum([acc['balance'] for acc in capital])
         total_income = sum([acc['balance'] for acc in earnings if acc['role'] == 'in'])
         total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] == 'ex'])
+
         retained_earnings = sum([acc['balance'] for acc in earnings])
 
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
+
+        # financial ratios
+
+        if total_current_liabilities == 0:
+            current_ratio = 0
+        else:
+            current_ratio = total_current_assets / total_current_liabilities
 
         return {
             'bs_data': bs_data,
@@ -285,5 +297,7 @@ class IOMixIn:
             'total_income': total_income,
             'total_expenses': total_expenses,
             'retained_earnings': retained_earnings,
-            'total_liabilities_equity': total_liabilities_equity
+            'total_liabilities_equity': total_liabilities_equity,
+
+            'current_ratio': current_ratio
         }
