@@ -20,6 +20,7 @@
     "url-loader": "^3.0.0"
   },
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "watch": "webpack --watch"
   }
 }

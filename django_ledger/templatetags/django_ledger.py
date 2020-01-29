@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from django import template
+from django.core.exceptions import ValidationError
 
-from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm
+from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm, ActivitySelectForm
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.models_abstracts.journal_entry import validate_activity
 
@@ -15,15 +16,20 @@ def cs_thousands(value):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
-def balance_sheet(context, entity_model):
+def balance_sheet(context):
+    entity_model = context['entity']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    return entity_model.snapshot(activity=activity)
+    return entity_model.digest(activity=activity)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement(context, entity_model):
-    activity = context['view'].kwargs.get('activity')
+def income_statement(context, entity_model=None):
+    if not entity_model:
+        entity_model = context.get('entity')
+    if not entity_model:
+        raise ValidationError('No entity model detected.')
+    activity = context['request'].GET.get('activity')
     ic_data = entity_model.income_statement(signs=True, activity=activity)
     income = [acc for acc in ic_data if acc['role'] in ['in']]
     expenses = [acc for acc in ic_data if acc['role'] in ['ex']]
@@ -105,7 +111,7 @@ def nav_breadcrumbs(context):
 
 
 @register.inclusion_tag('django_ledger/tags/date_form.html', takes_context=True)
-def date_filter_form(context):
+def filter_date_form(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session
@@ -124,8 +130,25 @@ def date_filter_form(context):
         }
 
 
+@register.inclusion_tag('django_ledger/tags/activity_form.html', takes_context=True)
+def filter_activity_form(context):
+    request = context['request']
+    activity = request.GET.get('activity')
+    if activity:
+        activity_form = ActivitySelectForm(initial={
+            'activity': activity
+        })
+    else:
+        activity_form = ActivitySelectForm()
+
+    return {
+        'activity_form': activity_form,
+        'form_path': context['request'].path
+    }
+
+
 @register.simple_tag(takes_context=True)
-def current_entity_date(context):
+def display_current_entity_date_filter(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session

@@ -36,11 +36,11 @@
 
                     <div class="navbar-item">
                         <span class="is-italic has-text-weight-semibold">
-                            <small>{% trans 'Date Filter' %}: {% current_entity_date %}</small></span>
+                            <small>{% trans 'Date Filter' %}: {% display_current_entity_date_filter %}</small></span>
                     </div>
 
                     <div class="navbar-item flatpickr" id="djetler-date-picker">
-                        {% date_filter_form %}
+                        {% filter_date_form %}
                         <i class="icon mdi mdi-calendar mdi-24px" data-toggle></i>
                     </div>
 

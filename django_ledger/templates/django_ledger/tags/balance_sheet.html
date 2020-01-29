@@ -18,11 +18,18 @@
         <td></td>
         <td></td>
     </tr>
+
+    {# ASSETS #}
     {% for acc in assets %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
-            <td>{{ acc.balance_type }}</td>
+            <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i>
+                    </span>
+            </td>
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
@@ -39,11 +46,18 @@
         <td></td>
         <td></td>
     </tr>
+
+    {# LIABILITIES #}
     {% for acc in liabilities %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
-            <td>{{ acc.balance_type }}</td>
+            <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i>
+                    </span>
+            </td>
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}
@@ -62,12 +76,17 @@
         <td></td>
     </tr>
 
-
+    {# CAPITAL #}
     {% for acc in capital %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
-            <td>{{ acc.balance_type }}</td>
+            <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i>
+                    </span>
+            </td>
             <td>${{ acc.balance | cs_thousands }}</td>
         </tr>
     {% endfor %}

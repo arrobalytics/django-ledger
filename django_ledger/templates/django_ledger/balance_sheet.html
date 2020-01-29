@@ -9,8 +9,15 @@
             <div class="columns is-centered">
                 <div class="column is-8">
                     <div class="box">
-{#                        {{ activity_form }}#}
-                        {% balance_sheet entity %}
+                        <div class="columns">
+                            <div class="column is-4">
+
+                                    {% filter_activity_form %}
+
+                            </div>
+                        </div>
+
+                        {% balance_sheet %}
 
                         {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
                             <a class="button is-fullwidth is-dark is-small djetler_my_1"

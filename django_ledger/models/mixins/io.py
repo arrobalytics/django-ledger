@@ -9,6 +9,9 @@ from django_ledger.models_abstracts.accounts import validate_roles
 from django_ledger.models_abstracts.journal_entry import validate_activity
 
 
+# from django_ledger.models.mixins.ratios import generate_ratios
+
+
 class LazyImporter:
     """
     This class eliminates the circle dependency between models.
@@ -252,7 +255,9 @@ class IOMixIn:
 
         return ic_data
 
-    def snapshot(self, activity: str = None, as_of: str = None) -> dict:
+    def digest(self,
+               activity: str = None,
+               as_of: str = None) -> dict:
         bs_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
@@ -276,18 +281,13 @@ class IOMixIn:
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
 
-        # financial ratios
-
-        if total_current_liabilities == 0:
-            current_ratio = 0
-        else:
-            current_ratio = total_current_assets / total_current_liabilities
-
-        return {
+        digest_data = {
             'bs_data': bs_data,
             'assets': assets,
+            'total_current_assets': total_current_assets,
             'total_assets': total_assets,
             'liabilities': liabilities,
+            'total_current_liabilities': total_current_liabilities,
             'total_liabilities': total_liabilities,
             'equity': equity,
             'total_equity': total_equity,
@@ -298,6 +298,10 @@ class IOMixIn:
             'total_expenses': total_expenses,
             'retained_earnings': retained_earnings,
             'total_liabilities_equity': total_liabilities_equity,
-
-            'current_ratio': current_ratio
         }
+
+        # if ratios:
+        #     digest_data['ratios'] = dict()
+        #     digest_data = generate_ratios(digest_data)
+
+        return digest_data

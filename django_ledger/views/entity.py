@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms import ActivitySelectForm, AsOfDateForm
+from django_ledger.forms import AsOfDateForm
 from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
 from django_ledger.models import EntityModel
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
@@ -43,7 +43,7 @@ class EntityModelDetailVew(DetailView):
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        snapshot = entity.snapshot(as_of=date_filter)
+        snapshot = entity.digest(as_of=date_filter)
         context.update(snapshot)
         return context
 
@@ -123,7 +123,6 @@ class EntityBalanceSheetView(DetailView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('balance sheet') + ': ' + self.object.name
         context['header_title'] = _('balance sheet') + ': ' + self.object.name
-        context['activity_form'] = ActivitySelectForm()
         return context
 
     def get_queryset(self):
@@ -162,6 +161,7 @@ class SetDefaultEntityView(RedirectView):
         form = EntityModelDefaultForm(request.POST, user_model=request.user)
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
+            # todo: redirect to same origin view on selected entity.
             self.url = reverse('django_ledger:entity-detail',
                                kwargs={
                                    'entity_slug': entity_model.slug

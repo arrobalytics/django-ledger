@@ -19,8 +19,6 @@ class EntityModelDefaultForm(Form):
         widget=Select(attrs={
             'class': DJETLER_FORM_INPUT_CLASS,
             'id': 'djetler-set-entity-form-input'
-            # 'onchange': 'setDefaultEntity()'
-            # 'onchange': 'djetler.setDefaultEntity()'
         }))
 
     def __init__(self, *args, user_model, default_entity=None, **kwargs):
@@ -374,8 +372,8 @@ class ActivitySelectForm(Form):
                            initial='all',
                            widget=Select(
                                attrs={
-                                   'class': DJETLER_FORM_INPUT_CLASS,
-                                   'onchange': 'onBSActivitySelect'
+                                   'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
+                                   'id': 'djetler-activity-select-form-input'
                                }
                            ))
 
