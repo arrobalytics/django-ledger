@@ -1,0 +1,76 @@
+# todo: will develop a roles manager
+
+ROLE_PARENT_ASSET = 'parent_asset'
+ROLE_CASH = 'asset_cash'
+ROLE_SECURITIES = 'asset_sec'
+ROLE_MKT_SECURITIES = 'asset_mkt_sec'
+ROLE_LIQUID = 'asset_liquid'
+ROLE_INVENTORY = 'asset_inv'
+ROLE_RECEIVABLES = 'asset_recv'
+ROLE_UNCOLLECTIBLES = 'asset_uncoll'
+ROLE_PREPAID = 'asset_prepaid'
+ROLE_LTI = 'asset_lti'
+ROLE_PPE = 'asset_ppe'
+ROLE_INTANGIBLE_ASSETS = 'asset_ia'
+ROLE_ASSET_ADJ = 'asset_adj'
+
+ROLE_CL = 'lia_cl'
+ROLE_LTL = 'lia_ltl'
+
+ROLE_CAPITAL = 'cap'
+ROLE_CAPITAL_ADJ = 'cap_adj'
+ROLE_COMMON_STOCK = 'cap_stock_c'
+ROLE_PREFERRED_STOCK = 'cap_stock_p'
+
+ROLE_INCOME_SALES = 'in_sales'
+ROLE_INCOME_PASSIVE = 'in_pass'
+ROLE_INCOME_OTHER = 'in_other'
+
+ROLE_EXPENSES = 'ex'
+ROLE_EXPENSES_OTHER = 'ex_other'
+ROLE_COGS = 'ex_cogs'
+
+ROLE_PARENT_LIABILITIES = 'parent_lia'
+ROLE_PARENT_CAPITAL = 'parent_cap'
+ROLE_PARENT_INCOME = 'parent_in'
+ROLE_PARENT_EXPENSE = 'parent_ex'
+ROLE_PARENT_COGS = 'parent_cogs'
+
+ROLES_CURRENT_LIABILITIES = [
+    ROLE_CL
+]
+
+ROLES_CURRENT_ASSETS = [
+    ROLE_CASH,
+    ROLE_MKT_SECURITIES,
+    ROLE_INVENTORY,
+    ROLE_RECEIVABLES,
+    ROLE_PREPAID,
+    ROLE_LIQUID
+]
+
+ROLES_QUICK_ASSETS = [
+    ROLE_CASH,
+    ROLE_MKT_SECURITIES
+]
+
+ROLES_CAPITAL = [
+    ROLE_CAPITAL,
+    ROLE_CAPITAL_ADJ,
+    ROLE_COMMON_STOCK,
+    ROLE_PREFERRED_STOCK
+]
+
+ROLES_INCOME = [
+    ROLE_INCOME_SALES,
+    ROLE_INCOME_PASSIVE,
+    ROLE_INCOME_OTHER,
+]
+
+ROLES_EXPENSES = [
+    ROLE_EXPENSES,
+    ROLE_EXPENSES_OTHER,
+    ROLE_COGS
+]
+
+ROLES_EARNINGS = ROLES_INCOME + ROLES_EXPENSES
