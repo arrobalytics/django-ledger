@@ -1,3 +1,5 @@
+from django_ledger.models_abstracts import account_roles as roles
+
 """
 	1.	Current ratio
 	2.	Quick ratio
@@ -30,22 +32,31 @@
 """
 
 
-def bs_current_ratio(data):
-    if data.get('total_current_liabilities') == 0:
+def bs_current_ratio(tx_data, digest):
+    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
+    current_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_ASSETS])
+    if current_liabilities == 0:
         current_ratio = '-inf-'
     else:
-        current_ratio = data.get('total_current_assets') / data.get('total_current_liabilities')
-    data['ratios']['bs_current_ratio'] = current_ratio
+        current_ratio = current_assets / current_liabilities
+    digest['ratios']['bs_current_ratio'] = current_ratio
 
 
-def bs_quick_ratio(data):
-    pass
+def bs_quick_ratio(tx_data, digest):
+    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
+    quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
+    if current_liabilities == 0:
+        quick_ratio = '-inf-'
+    else:
+        quick_ratio = quick_assets / current_liabilities
+    digest['ratios']['bs_quick_ratio'] = quick_ratio
 
 
 def bs_cash_ratio(data):
     pass
 
 
-def generate_ratios(data: dict) -> dict:
-    bs_current_ratio(data)
-    return data
+def generate_ratios(digest: dict, data: list) -> dict:
+    bs_current_ratio(data, digest)
+    bs_quick_ratio(data, digest)
+    return digest

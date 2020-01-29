@@ -29,7 +29,7 @@ def validate_activity(act: str, raise_404: bool = False):
         # todo: temporary fix. User should be able to pass a list.
         if isinstance(act, list) and len(act) == 1:
             act = act[0]
-        else:
+        elif isinstance(act, list) and len(act) > 1:
             exception = ValidationError(f'Multiple activities passed {act}')
             if raise_404:
                 raise Http404(exception)

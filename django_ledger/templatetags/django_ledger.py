@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 
 from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm, ActivitySelectForm
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
+from django_ledger.models_abstracts.account_roles import ROLES_INCOME, ROLES_EXPENSES
 from django_ledger.models_abstracts.journal_entry import validate_activity
 
 register = template.Library()
@@ -31,8 +32,8 @@ def income_statement(context, entity_model=None):
         raise ValidationError('No entity model detected.')
     activity = context['request'].GET.get('activity')
     ic_data = entity_model.income_statement(signs=True, activity=activity)
-    income = [acc for acc in ic_data if acc['role'] in ['in']]
-    expenses = [acc for acc in ic_data if acc['role'] in ['ex']]
+    income = [acc for acc in ic_data if acc['role'] in ROLES_INCOME]
+    expenses = [acc for acc in ic_data if acc['role'] in ROLES_EXPENSES]
     for ex in expenses:
         ex['balance'] = -ex['balance']
     total_income = sum([acc['balance'] for acc in income])

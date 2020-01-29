@@ -3,13 +3,12 @@ from collections import OrderedDict
 from django.core.exceptions import ValidationError
 
 from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.mixins.ratios import generate_ratios
 from django_ledger.models.transactions import TransactionModel
+from django_ledger.models_abstracts import account_roles as roles
 from django_ledger.models_abstracts.accounts import BS_ROLES
 from django_ledger.models_abstracts.accounts import validate_roles
 from django_ledger.models_abstracts.journal_entry import validate_activity
-
-
-# from django_ledger.models.mixins.ratios import generate_ratios
 
 
 class LazyImporter:
@@ -190,7 +189,7 @@ class IOMixIn:
                 accounts: str = None):
 
         if method != 'bs':
-            role = ['in', 'ex']
+            role = roles.ROLES_EARNINGS
         if method == 'ic-op':
             activity = ['op']
         elif method == 'ic-inv':
@@ -231,6 +230,7 @@ class IOMixIn:
         return tx_aggregate
 
     # Financial Statements -----
+    # todo: rename this method to something more generic.
     def balance_sheet(self, as_of: str = None, signs: bool = False, activity: str = None):
 
         bs_data = self.get_jes(as_of=as_of,
@@ -240,7 +240,6 @@ class IOMixIn:
         # process signs will return negative balances for contra-accounts...
         if signs:
             bs_data = [process_signs(rec) for rec in bs_data]
-
         return bs_data
 
     def income_statement(self, signs: bool = False, activity: str = None):
@@ -257,24 +256,25 @@ class IOMixIn:
 
     def digest(self,
                activity: str = None,
-               as_of: str = None) -> dict:
-        bs_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
+               as_of: str = None,
+               ratios: bool = False) -> dict:
+        tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
-        assets = [acc for acc in bs_data if acc['role_bs'] == 'assets']
-        current_assets = [acc['balance'] for acc in bs_data if acc['role'] == 'ca']
-        liabilities = [acc for acc in bs_data if acc['role_bs'] == 'liabilities']
-        current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] == 'cl']
-        equity = [acc for acc in bs_data if acc['role_bs'] == 'equity']
-        capital = [acc for acc in equity if acc['role'] in ['cap', 'capj']]
-        earnings = [acc for acc in equity if acc['role'] in ['ex', 'in']]
+        assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
+        # current_assets = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_ASSETS]
+        liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
+        # current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES]
+        equity = [acc for acc in tx_data if acc['role_bs'] == 'equity']
+        capital = [acc for acc in equity if acc['role'] in roles.ROLES_CAPITAL]
+        earnings = [acc for acc in equity if acc['role'] in roles.ROLES_EARNINGS]
 
         total_assets = sum([acc['balance'] for acc in assets])
-        total_current_assets = sum(current_assets)
+        # total_current_assets = sum(current_assets)
         total_liabilities = sum([acc['balance'] for acc in liabilities])
-        total_current_liabilities = sum(current_liabilities)
+        # total_current_liabilities = sum(current_liabilities)
         total_capital = sum([acc['balance'] for acc in capital])
-        total_income = sum([acc['balance'] for acc in earnings if acc['role'] == 'in'])
-        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] == 'ex'])
+        total_income = sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_INCOME])
+        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_EXPENSES])
 
         retained_earnings = sum([acc['balance'] for acc in earnings])
 
@@ -282,12 +282,10 @@ class IOMixIn:
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
 
         digest_data = {
-            'bs_data': bs_data,
+            'bs_data': tx_data,
             'assets': assets,
-            'total_current_assets': total_current_assets,
             'total_assets': total_assets,
             'liabilities': liabilities,
-            'total_current_liabilities': total_current_liabilities,
             'total_liabilities': total_liabilities,
             'equity': equity,
             'total_equity': total_equity,
@@ -300,8 +298,8 @@ class IOMixIn:
             'total_liabilities_equity': total_liabilities_equity,
         }
 
-        # if ratios:
-        #     digest_data['ratios'] = dict()
-        #     digest_data = generate_ratios(digest_data)
+        if ratios:
+            digest_data['ratios'] = dict()
+            digest_data = generate_ratios(digest_data, tx_data)
 
         return digest_data

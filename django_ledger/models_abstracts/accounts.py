@@ -8,31 +8,49 @@ from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.models.mixins.base import CreateUpdateMixIn
-from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_MAX_LENGTH
+from django_ledger.models_abstracts import account_roles as roles
 
 ACCOUNT_ROLES = [
     ('Assets', (
-        ('ca', _('Current Asset')),
-        ('lti', _('Long Term Investments')),
-        ('ppe', _('Property Plant & Equipment')),
-        ('ia', _('Intangible Assets')),
-        ('aadj', _('Asset Adjustments')),
+        (roles.ROLE_PARENT_ASSET, _('Asset Account Parent')),
+        (roles.ROLE_CASH, _('Current Asset')),
+        (roles.ROLE_MKT_SECURITIES, _('Marketable Securities')),
+        (roles.ROLE_LIQUID, _('Other Liquid Assets')),
+        (roles.ROLE_SECURITIES, _('Securities')),
+        (roles.ROLE_RECEIVABLES, _('Receivables')),
+        (roles.ROLE_UNCOLLECTIBLES, _('Uncollectibles')),
+        (roles.ROLE_PREPAID, _('Prepaid')),
+        (roles.ROLE_INVENTORY, _('Inventory')),
+        (roles.ROLE_LTI, _('Long Term Investments')),
+        (roles.ROLE_PPE, _('Property Plant & Equipment')),
+        (roles.ROLE_INTANGIBLE_ASSETS, _('Intangible Assets')),
+        (roles.ROLE_ASSET_ADJ, _('Asset Adjustments')),
     )
      ),
     ('Liabilities', (
-        ('cl', _('Current Liabilities')),
-        ('ltl', _('Long Term Liabilities')),
+        (roles.ROLE_PARENT_LIABILITIES, _('Liability Account Parent')),
+        (roles.ROLE_CL, _('Current Liabilities')),
+        (roles.ROLE_LTL, _('Long Term Liabilities')),
     )
      ),
     ('Equity', (
-        ('cap', _('Capital')),
-        ('cadj', _('Capital Adjustments')),
-        ('in', _('Income')),
-        ('ex', _('Expense')),
-    )
-     ),
-    ('Other', (
-        ('excl', _('Excluded')),
+        (roles.ROLE_PARENT_CAPITAL, _('Capital Account Parent')),
+        (roles.ROLE_CAPITAL, _('Capital')),
+        (roles.ROLE_COMMON_STOCK, _('Common Stock')),
+        (roles.ROLE_PREFERRED_STOCK, _('Preferred Stock')),
+        (roles.ROLE_CAPITAL_ADJ, _('Capital Adjustments')),
+
+        (roles.ROLE_PARENT_INCOME, _('Income Account Parent')),
+        (roles.ROLE_INCOME_SALES, _('Sales Income')),
+        (roles.ROLE_INCOME_PASSIVE, _('Passive Income')),
+        (roles.ROLE_INCOME_OTHER, _('Other Income')),
+
+        (roles.ROLE_PARENT_COGS, _('COGS Account Parent')),
+        (roles.ROLE_COGS, _('Cost of Goods Sold')),
+
+        (roles.ROLE_PARENT_EXPENSE, _('Expense Account Parent')),
+        (roles.ROLE_EXPENSES, _('Expense')),
+        (roles.ROLE_EXPENSES_OTHER, _('Other Expense')),
     )
      )
 ]
@@ -85,9 +103,9 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
         ('debit', _('Debit'))
     ]
 
-    code = models.CharField(max_length=DJANGO_LEDGER_ACCOUNT_MAX_LENGTH, verbose_name=_l('Account Code'))
+    code = models.CharField(max_length=10, verbose_name=_l('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
-    role = models.CharField(max_length=10, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
+    role = models.CharField(max_length=15, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     cash_account = models.BooleanField(default=False, verbose_name=_('Cash Account'))
     parent = TreeForeignKey('self',
