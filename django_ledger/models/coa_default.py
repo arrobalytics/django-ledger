@@ -100,7 +100,7 @@ CHART_OF_ACCOUNTS = [
         {'code': '6040', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Bad Debt', 'parent': '6000'},
         {'code': '6050', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Bank Charges', 'parent': '6000'},
         {'code': '6060', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Commission Expense', 'parent': '6000'},
-        {'code': '6070', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Depreciation Expense', 'parent': '6000'},
+        {'code': '6070', 'role': roles.ROLE_EXPENSES_CAPITAL, 'balance_type': 'debit', 'name': 'Depreciation Expense', 'parent': '6000'},
         {'code': '6080', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Employee Benefits', 'parent': '6000'},
         {'code': '6090', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Freight', 'parent': '6000'},
         {'code': '6110', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Gifts', 'parent': '6000'},

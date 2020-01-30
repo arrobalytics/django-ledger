@@ -261,6 +261,7 @@ class IOMixIn:
         tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
+        cash = [acc for acc in assets if acc['role'] in roles.ROLE_CASH]
         # current_assets = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_ASSETS]
         liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
         # current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES]
@@ -269,6 +270,7 @@ class IOMixIn:
         earnings = [acc for acc in equity if acc['role'] in roles.ROLES_EARNINGS]
 
         total_assets = sum([acc['balance'] for acc in assets])
+        total_cash = sum([acc['balance'] for acc in cash])
         # total_current_assets = sum(current_assets)
         total_liabilities = sum([acc['balance'] for acc in liabilities])
         # total_current_liabilities = sum(current_liabilities)
@@ -285,6 +287,7 @@ class IOMixIn:
             'bs_data': tx_data,
             'assets': assets,
             'total_assets': total_assets,
+            'total_cash': total_cash,
             'liabilities': liabilities,
             'total_liabilities': total_liabilities,
             'equity': equity,
@@ -300,6 +303,7 @@ class IOMixIn:
 
         if ratios:
             digest_data['ratios'] = dict()
-            digest_data = generate_ratios(digest_data, tx_data)
+            digest_data = generate_ratios(digest=digest_data,
+                                          tx_data=tx_data)
 
         return digest_data

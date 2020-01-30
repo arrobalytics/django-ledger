@@ -14,13 +14,15 @@
                             <article class="tile is-child box content djetler-box-green">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
                                 <h1 class="has-text-centered">${{ total_assets | cs_thousands }}</h1>
+                                <h4 class="has-text-centered has-text-weight-light">{% trans 'Cash' %}</h4>
+                                <h3 class="has-text-centered">${{ total_cash | cs_thousands }}</h3>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
                                 <h1 class="has-text-centered">${{ total_liabilities | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
                                 <h1 class="has-text-centered">${{ total_equity | cs_thousands }}</h1>
                             </article>
                             <article class="tile is-child box content djetler-box-yellow">
-                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Income' %}</h2>
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
                                 <h1 class="has-text-centered">${{ total_income | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
                                 <h1 class="has-text-centered">${{ total_expenses | cs_thousands }}</h1>
@@ -37,6 +39,10 @@
                                 <p>Financial Ratios:</p>
                                 <p>Current Ratio: {{ ratios.bs_current_ratio }}</p>
                                 <p>Quick Ratio: {{ ratios.bs_quick_ratio }}</p>
+                                <p>Debt to Equity: {{ ratios.bs_debt_to_equity_ratio }}</p>
+                                <p>ROE: {{ ratios.bs_roe }}</p>
+
+                                <p>IC Net Profit Margin: {{ ratios.ic_net_profit_margin }}</p>
 
                             </article>
                         </div>
