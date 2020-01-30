@@ -34,31 +34,40 @@ from django_ledger.models_abstracts import account_roles as roles
 RATIO_NA = 'NA'
 
 
-def bs_current_ratio(tx_data, digest):
+def bs_current_ratio(tx_data, digest, as_percent=False):
     current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
-    current_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_ASSETS])
     if current_liabilities == 0:
-        digest['ratios']['bs_current_ratio'] = RATIO_NA
+        cr = RATIO_NA
     else:
-        digest['ratios']['bs_current_ratio'] = current_assets / current_liabilities
+        current_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_ASSETS])
+        cr = current_assets / current_liabilities
+        if as_percent:
+            cr = cr * 100
+    digest['ratios']['bs_current_ratio'] = cr
 
 
-def bs_quick_ratio(tx_data, digest):
+def bs_quick_ratio(tx_data, digest, as_percent=False):
     current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
-    quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
     if current_liabilities == 0:
-        digest['ratios']['bs_quick_ratio'] = RATIO_NA
+        qr = RATIO_NA
     else:
-        digest['ratios']['bs_quick_ratio'] = quick_assets / current_liabilities
+        quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
+        qr = quick_assets / current_liabilities
+        if as_percent:
+            qr = qr * 100
+    digest['ratios']['bs_quick_ratio'] = qr
 
 
-def bs_debt_to_equity(tx_data, digest):
-    debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_LIABILITIES])
+def bs_debt_to_equity(tx_data, digest, as_percent=False):
     equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
     if equity == 0:
-        digest['ratios']['bs_debt_to_equity_ratio'] = RATIO_NA
+        dte = RATIO_NA
     else:
-        digest['ratios']['bs_debt_to_equity_ratio'] = debt / equity
+        debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_LIABILITIES])
+        dte = debt / equity
+        if as_percent:
+            dte = dte * 100
+    digest['ratios']['bs_debt_to_equity_ratio'] = dte
 
 
 def bs_roe(tx_data, digest, as_percent=False):
@@ -68,15 +77,15 @@ def bs_roe(tx_data, digest, as_percent=False):
     :param digest:
     :param as_percent:
     """
-    net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
     equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
     if equity == 0:
-        digest['ratios']['bs_roe'] = RATIO_NA
+        roe = RATIO_NA
     else:
+        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
         roe = net_income / equity
         if as_percent:
             roe = roe * 100
-        digest['ratios']['bs_roe'] = roe
+    digest['ratios']['bs_roe'] = roe
 
 
 def bs_roa(tx_data, digest, as_percent=False):
@@ -86,25 +95,39 @@ def bs_roa(tx_data, digest, as_percent=False):
     :param digest:
     :param as_percent:
     """
-    pass
+    assets = sum([acc['balance'] for acc in tx_data if acc['role_bs'] == 'assets'])
+    if assets == 0:
+        roa = RATIO_NA
+    else:
+        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
+        roa = net_income / assets
+        if as_percent:
+            roa = roa * 100
+    digest['ratios']['bs_roa'] = roa
 
 
-def ic_net_profit_margin(tx_data, digest):
-    net_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_PROFIT])
+def is_net_profit_margin(tx_data, digest, as_percent=False):
     net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_SALES])
     if net_sales == 0:
-        digest['ratios']['ic_net_profit_margin'] = RATIO_NA
+        npm = RATIO_NA
     else:
-        digest['ratios']['ic_net_profit_margin'] = net_profit / net_sales
+        net_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_PROFIT])
+        npm = net_profit / net_sales
+        if as_percent:
+            npm = npm * 100
+    digest['ratios']['ic_net_profit_margin'] = npm
 
 
-def ic_gross_profit_margin(tx_data, digest):
+def is_gross_profit_margin(tx_data, digest, as_percent=False):
     gross_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_GROSS_PROFIT])
-    net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_SALES])
     if gross_profit == 0:
-        digest['ratios']['ic_net_profit_margin'] = RATIO_NA
+        gpm = RATIO_NA
     else:
-        digest['ratios']['ic_net_profit_margin'] = gross_profit / net_sales
+        net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_SALES])
+        gpm = gross_profit / net_sales
+        if as_percent:
+            gpm = gpm * 100
+    digest['ratios']['ic_gross_profit_margin'] = gpm
 
 
 def generate_ratios(tx_data: list, digest: dict) -> dict:
@@ -112,8 +135,9 @@ def generate_ratios(tx_data: list, digest: dict) -> dict:
     bs_quick_ratio(tx_data, digest)
     bs_debt_to_equity(tx_data, digest)
     bs_roe(tx_data, digest)
+    bs_roa(tx_data, digest)
 
-    ic_net_profit_margin(tx_data, digest)
-    ic_gross_profit_margin(tx_data, digest)
+    is_net_profit_margin(tx_data, digest)
+    is_gross_profit_margin(tx_data, digest)
 
     return digest
