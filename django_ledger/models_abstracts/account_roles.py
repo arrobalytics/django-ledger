@@ -29,6 +29,8 @@ ROLE_INCOME_OTHER = 'in_other'
 ROLE_EXPENSES = 'ex'
 ROLE_EXPENSES_CAPITAL = 'ex_cap'
 ROLE_EXPENSES_OTHER = 'ex_other'
+ROLE_EXPENSES_TAXES = 'ex_taxes'
+ROLE_EXPENSES_INTEREST = 'ex_interest'
 ROLE_COGS = 'ex_cogs'
 
 ROLE_PARENT_LIABILITIES = 'parent_lia'

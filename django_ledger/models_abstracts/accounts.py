@@ -50,6 +50,8 @@ ACCOUNT_ROLES = [
 
         (roles.ROLE_PARENT_EXPENSE, _('Expense Account Parent')),
         (roles.ROLE_EXPENSES, _('Expense')),
+        (roles.ROLE_EXPENSES_INTEREST, _('Interest Expense')),
+        (roles.ROLE_EXPENSES_TAXES, _('Tax Expense')),
         (roles.ROLE_EXPENSES_CAPITAL, _('Capital Expense')),
         (roles.ROLE_EXPENSES_OTHER, _('Other Expense')),
     )

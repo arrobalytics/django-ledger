@@ -105,7 +105,7 @@ CHART_OF_ACCOUNTS = [
         {'code': '6090', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Freight', 'parent': '6000'},
         {'code': '6110', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Gifts', 'parent': '6000'},
         {'code': '6120', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Insurance', 'parent': '6000'},
-        {'code': '6130', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Interest Expense', 'parent': '6000'},
+        {'code': '6130', 'role': roles.ROLE_EXPENSES_INTEREST, 'balance_type': 'debit', 'name': 'Interest Expense', 'parent': '6000'},
         {'code': '6140', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Professional Fees', 'parent': '6000'},
         {'code': '6150', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'License Expense', 'parent': '6000'},
         {'code': '6170', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Maintenance Expense', 'parent': '6000'},
@@ -125,7 +125,7 @@ CHART_OF_ACCOUNTS = [
     
         {'code': '6260', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Salaries', 'parent': '6000'},
         {'code': '6270', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Supplies', 'parent': '6000'},
-        {'code': '6280', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Taxes', 'parent': '6000'},
+        {'code': '6280', 'role': roles.ROLE_EXPENSES_TAXES, 'balance_type': 'debit', 'name': 'Taxes', 'parent': '6000'},
     
         {'code': '6290', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Utilities', 'parent': '6000'},
         {'code': '6292', 'role': roles.ROLE_EXPENSES, 'balance_type': 'debit', 'name': 'Sewer', 'parent': '6000'},
