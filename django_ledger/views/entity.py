@@ -4,8 +4,8 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms import AsOfDateForm
-from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm, EntityModelDefaultForm
+from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.forms.app_filters import EndDateFilterForm, EntityFilterForm
 from django_ledger.models import EntityModel
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.models.utils import populate_default_coa
@@ -158,7 +158,7 @@ class SetDefaultEntityView(RedirectView):
     http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
-        form = EntityModelDefaultForm(request.POST, user_model=request.user)
+        form = EntityFilterForm(request.POST, user_model=request.user)
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
             # todo: redirect to same origin view on selected entity.
@@ -176,7 +176,7 @@ class SetDateView(RedirectView):
 
     def post(self, request, *args, **kwargs):
         entity_slug = kwargs['entity_slug']
-        as_of_form = AsOfDateForm(data=request.POST)
+        as_of_form = EndDateFilterForm(data=request.POST, form_id=None)
         next_url = request.GET['next']
 
         if as_of_form.is_valid():

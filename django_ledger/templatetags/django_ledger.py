@@ -1,9 +1,10 @@
 from datetime import datetime
+from random import randint
 
 from django import template
 from django.core.exceptions import ValidationError
 
-from django_ledger.forms import EntityModelDefaultForm, AsOfDateForm, ActivitySelectForm
+from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.models_abstracts.account_roles import ROLES_INCOME, ROLES_EXPENSES
 from django_ledger.models_abstracts.journal_entry import validate_activity
@@ -17,7 +18,7 @@ def cs_thousands(value):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
-def balance_sheet(context):
+def balance_sheet_table(context):
     entity_model = context['entity']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
@@ -25,7 +26,7 @@ def balance_sheet(context):
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement(context, entity_model=None):
+def income_statement_table(context, entity_model=None):
     if not entity_model:
         entity_model = context.get('entity')
     if not entity_model:
@@ -85,18 +86,6 @@ def accounts_table(accounts_queryset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/default_entity_form.html', takes_context=True)
-def entity_choice_form(context):
-    user = context['user']
-    session_key = get_default_entity_session_key()
-    default_entity_id = context['request'].session.get(session_key)
-    default_entity_form = EntityModelDefaultForm(user_model=user,
-                                                 default_entity=default_entity_id)
-    return {
-        'default_entity_form': default_entity_form
-    }
-
-
 @register.inclusion_tag('django_ledger/tags/breadcrumbs.html', takes_context=True)
 def nav_breadcrumbs(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
@@ -111,36 +100,53 @@ def nav_breadcrumbs(context):
     }
 
 
+# todo: rename template to entity_filter.
+@register.inclusion_tag('django_ledger/tags/default_entity_form.html', takes_context=True)
+def entity_filter(context):
+    user = context['user']
+    session_key = get_default_entity_session_key()
+    default_entity_id = context['request'].session.get(session_key)
+    default_entity_form = EntityFilterForm(user_model=user,
+                                           default_entity=default_entity_id)
+    return {
+        'default_entity_form': default_entity_form
+    }
+
+
+# todo: rename template to date_form_filter.
 @register.inclusion_tag('django_ledger/tags/date_form.html', takes_context=True)
-def filter_date_form(context):
+def date_end_filter(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session
     date_filter = session.get(session_item)
+    identity = randint(0, 1000000)
     if entity_slug:
-        form = AsOfDateForm(initial={
+        form = EndDateFilterForm(form_id=identity, initial={
             'entity_slug': context['view'].kwargs['entity_slug'],
             'date': date_filter
         })
         next_url = context['request'].path
         return {
             'date_form': form,
+            'form_id': identity,
             'entity_slug': entity_slug,
             'date_filter': date_filter,
-            'next': next_url
+            'next': next_url,
         }
 
 
+# todo: rename template to activity_form_filter.
 @register.inclusion_tag('django_ledger/tags/activity_form.html', takes_context=True)
-def filter_activity_form(context):
+def activity_filter(context):
     request = context['request']
     activity = request.GET.get('activity')
     if activity:
-        activity_form = ActivitySelectForm(initial={
+        activity_form = ActivityFilterForm(initial={
             'activity': activity
         })
     else:
-        activity_form = ActivitySelectForm()
+        activity_form = ActivityFilterForm()
 
     return {
         'activity_form': activity_form,
@@ -149,7 +155,7 @@ def filter_activity_form(context):
 
 
 @register.simple_tag(takes_context=True)
-def display_current_entity_date_filter(context):
+def current_end_date_filter(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session

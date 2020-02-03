@@ -1,34 +1,14 @@
-from django.forms import (ModelForm, Form, modelformset_factory, BaseModelFormSet, TextInput, Textarea, DateField,
-                          BooleanField, Select, DateInput, ValidationError, ModelChoiceField, ChoiceField, CharField,
-                          HiddenInput)
+from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Textarea, BooleanField, Select,
+                          DateInput, ValidationError)
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
                                   ChartOfAccountModel, EntityModel)
 from django_ledger.models.mixins.io import validate_tx_data
-from django_ledger.models_abstracts.journal_entry import ACTIVITIES
 
 # todo: move this to settings & make it a list...
 DJETLER_FORM_INPUT_CLASS = 'input'
-
-
-class EntityModelDefaultForm(Form):
-    entity_model = ModelChoiceField(
-        queryset=EntityModel.objects.none(),
-        widget=Select(attrs={
-            'class': DJETLER_FORM_INPUT_CLASS,
-            'id': 'djetler-set-entity-form-input'
-        }))
-
-    def __init__(self, *args, user_model, default_entity=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.USER_MODEL = user_model
-        self.fields['entity_model'].queryset = EntityModel.objects.for_user(user=self.USER_MODEL).only('slug', 'name')
-        if default_entity:
-            self.initial = {
-                'entity_model': default_entity
-            }
 
 
 class EntityModelUpdateForm(ModelForm):
@@ -154,14 +134,11 @@ class AccountModelCreateForm(AccountModelBaseForm):
             ]):
                 raise ValidationError(_('Parent role must be the same as child account role.'))
 
-
-
         if all([
             cash_account,
             new_account_role != 'ca'
         ]):
             raise ValidationError(_('Cash account can ony be used on Current Assets.'))
-
 
     class Meta:
         model = AccountModel
@@ -365,24 +342,3 @@ TransactionModelFormSet = modelformset_factory(
     extra=5)
 
 
-class ActivitySelectForm(Form):
-    CHOICES = [('all', _l('All'))] + ACTIVITIES
-    activity = ChoiceField(choices=CHOICES,
-                           label=_l('Activity'),
-                           initial='all',
-                           widget=Select(
-                               attrs={
-                                   'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                                   'id': 'djetler-activity-select-form-input'
-                               }
-                           ))
-
-
-class AsOfDateForm(Form):
-    entity_slug = CharField(max_length=150, widget=HiddenInput())
-    date = DateField(widget=DateInput(
-        attrs={
-            'class': 'is-hidden',
-            'data-input': True,
-        }
-    ))

@@ -1,0 +1,11 @@
+{% load django_ledger %}
+
+<div class="card">
+    <header class="card-header">
+        <p class="card-header-title">Filters</p>
+    </header>
+    <div class="card-content">
+        {% activity_filter %}
+        {% date_end_filter %}
+    </div>
+</div>

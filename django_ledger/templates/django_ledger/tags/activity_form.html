@@ -1,26 +1,26 @@
 {% load i18n %}
 
 <form action="{{ form_path }}" method="get">
-    <div class="field is-horizontal has-addons">
+
+    <div class="field is-horizontal">
 
         <div class="field-label is-small">
             <label for="{{ activity_form.activity.id_for_label }}"
-                   class="label">
-                {{ activity_form.activity.label }}
+                   class="label">{{ activity_form.activity.label }}
             </label>
         </div>
 
         <div class="field-body">
             <div class="field has-addons">
-                <div class="control">
-                    <div class="select is-dark">{{ activity_form.activity }}</div>
+                <div class="control is-expanded">
+                    <div class="select is-small is-fullwidth">{{ activity_form.activity }}</div>
                 </div>
                 <div class="control">
-                    <button class="button is-small is-dark is-outlined"
-                            type="submit">{% trans 'Set' %}</button>
+                    <button type="submit" class="button is-primary is-small">Choose</button>
                 </div>
             </div>
         </div>
 
     </div>
+
 </form>

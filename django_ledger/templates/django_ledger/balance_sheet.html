@@ -12,12 +12,12 @@
                         <div class="columns">
                             <div class="column is-4">
 
-                                    {% filter_activity_form %}
+                                    {% activity_filter %}
 
                             </div>
                         </div>
 
-                        {% balance_sheet %}
+                        {% balance_sheet_table %}
 
                         {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
                             <a class="button is-fullwidth is-dark is-small djetler_my_1"

@@ -36,19 +36,16 @@
 
                     <div class="navbar-item">
                         <span class="is-italic has-text-weight-semibold">
-                            <small>{% trans 'Date Filter' %}: {% display_current_entity_date_filter %}</small></span>
+                            <small>{% trans 'Date Filter' %}: {% current_end_date_filter %}</small></span>
                     </div>
 
-                    <div class="navbar-item flatpickr" id="djetler-date-picker">
-                        {% filter_date_form %}
-                        <i class="icon mdi mdi-calendar mdi-24px" data-toggle></i>
-                    </div>
+                    {% date_end_filter %}
 
                 {% endif %}
 
                 <div class="navbar-item">
                     {# todo: nice tag to have but find a better way to reduce stress on the DB (qs on every page load) #}
-                    {% entity_choice_form %}
+                    {% entity_filter %}
                 </div>
             </div>
 

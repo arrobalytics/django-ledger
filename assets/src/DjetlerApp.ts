@@ -1,18 +1,19 @@
+import Vue from 'vue';
 import flatpickr from "flatpickr";
-
 
 export class DjetlerApp {
 
-    defaultEntityForm: HTMLElement | void;
     flatPickr: any;
     datePickerOptions: Object = {
         wrap: true,
         onChange: (selectedDates: any, dateStr: String, instance: any) => {
-            let dateFilterForm = document.getElementById("djetler-date-filter-form");
+            let formId = instance._input.classList[1].split("-")[5];
+            let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-"+formId);
             // @ts-ignore
             dateFilterForm.submit();
         }
     };
+    vueInstance: Vue | null = null;
 
     constructor() {
 
@@ -25,6 +26,7 @@ export class DjetlerApp {
                 });
             });
         });
+
         document.addEventListener('DOMContentLoaded', () => {
 
             // Get all "navbar-burger" elements
@@ -51,19 +53,32 @@ export class DjetlerApp {
             }
         });
 
-        let defaultEntityForm = document.getElementById("djetler-set-entity-form-input");
-        if (defaultEntityForm) {
-            this.defaultEntityForm = defaultEntityForm;
-            this.defaultEntityForm.addEventListener("change", this.setDefaultEntity);
+        document.addEventListener('DOMContentLoaded', () => {
+            (document.querySelectorAll('.djetler-set-entity-form-input') || []).forEach(f => {
+                f.addEventListener('change', this.setEntityFilter);
+            });
+        });
+
+        let endDateIconFilters = document.getElementsByClassName("djetler-end-date-icon-filter");
+        if (endDateIconFilters) {
+            this.flatPickr = flatpickr(endDateIconFilters, this.datePickerOptions);
         }
 
-        this.flatPickr = flatpickr('#djetler-date-picker', this.datePickerOptions)
-
+        let djVue = document.getElementById('djetler-vue');
+        if (djVue) {
+            this.vueInstance = new Vue({
+                el: "#djetler-vue",
+                delimiters: ["[[", "]]"],
+                data: {
+                    message: "Hello Djetler Vue Yey!!!"
+                }
+            });
+        }
     }
 
-    public setDefaultEntity() {
-        let defaultEntityForm = document.getElementById("djetler-set-entity-form");
+    setEntityFilter() {
+        // let defaultEntityForm = document.getElementById("djetler-set-entity-form");
         // @ts-ignore
-        defaultEntityForm.submit();
+        // defaultEntityForm.submit();
     }
 }
