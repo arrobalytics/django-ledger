@@ -148,7 +148,6 @@ class AccountModelCreateForm(AccountModelBaseForm):
             'name',
             'role',
             'balance_type',
-            'cash_account'
         ]
         widgets = {
             'parent': Select(attrs={

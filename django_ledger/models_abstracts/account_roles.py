@@ -1,72 +1,113 @@
 # todo: will develop a roles manager
 
-ROLE_PARENT_ASSET = 'parent_asset'
-ROLE_CASH = 'asset_cash'
-ROLE_SECURITIES = 'asset_sec'
-ROLE_MKT_SECURITIES = 'asset_mkt_sec'
-ROLE_LIQUID = 'asset_liquid'
-ROLE_INVENTORY = 'asset_inv'
-ROLE_RECEIVABLES = 'asset_recv'
-ROLE_UNCOLLECTIBLES = 'asset_uncoll'
-ROLE_PREPAID = 'asset_prepaid'
-ROLE_LTI = 'asset_lti'
+# --- ASSET ROLES ----
+# ROLE_PARENT_ASSET = 'parent_asset'
+
+# Current Assets ---
+ROLE_CA_CASH = 'asset_ca_cash'
+ROLE_CA_MKT_SECURITIES = 'asset_ca_mkt_sec'
+ROLE_CA_RECEIVABLES = 'asset_ca_recv'
+ROLE_CA_INVENTORY = 'asset_ca_inv'
+ROLE_CA_UNCOLLECTIBLES = 'asset_ca_uncoll'
+ROLE_CA_PREPAID = 'asset_ca_prepaid'
+ROLE_CA_OTHER = 'asset_ca_other'
+
+# Long Term Investments ---
+ROLE_LTI_NOTES_RECEIVABLE = 'asset_lti_notes'
+ROLE_LTI_LAND = 'asset_lti_land'
+ROLE_LTI_SECURITIES = 'asset_lti_sec'
+
+# Property, Plat & Equipment ---
 ROLE_PPE = 'asset_ppe'
+
+# Intangible Assets ---
 ROLE_INTANGIBLE_ASSETS = 'asset_ia'
-ROLE_ASSET_ADJ = 'asset_adj'
 
-ROLE_CL = 'lia_cl'
-ROLE_LTL = 'lia_ltl'
+# Other Asset Adjustments ---
+ROLE_ASSET_OTHER = 'asset_other'
 
-ROLE_CAPITAL = 'cap'
-ROLE_CAPITAL_ADJ = 'cap_adj'
-ROLE_COMMON_STOCK = 'cap_stock_c'
-ROLE_PREFERRED_STOCK = 'cap_stock_p'
+# LIABILITIES ----
+
+# Current Liabilities
+ROLE_CL_ACC_PAYABLE = 'lia_cl_acc_pay'
+ROLE_CL_WAGES_PAYABLE = 'lia_cl_wage_pay'
+ROLE_CL_INT_PAYABLE = 'lia_cl_wage_pay'
+ROLE_CL_ST_NOTES_PAYABLE = 'lia_cl_st_notes_payable'
+ROLE_CL_LTD_MATURITIES = 'lia_cl_ltd_mat'
+ROLE_CL_DEFERRED_REVENUE = 'lia_cl_def_rev'
+ROLE_CL_OTHER = 'lia_cl_other'
+
+# Long Term Liabilities ---
+# ROLE_LTL = 'lia_ltl'
+# ROLE_LTL = 'lia_ltl'
+ROLE_LTL_NOTES_PAYABLE = 'lia_ltl_notes'
+ROLE_LTL_BONDS_PAYABLE = 'lia_ltl_bonds'
+ROLE_LTL_MORTAGE_PAYABLE = 'lia_ltl_mortgage'
+
+# ROLE_EQ_CAPITAL_ADJ = 'cap_adj'
+ROLE_EQ_CAPITAL = 'eq_capital'
+ROLE_EQ_ADJ = 'eq_adj'
+ROLE_EQ_COMMON_STOCK = 'eq_stock_c'
+ROLE_EQ_PREFERRED_STOCK = 'eq_stock_p'
 
 ROLE_INCOME_SALES = 'in_sales'
 ROLE_INCOME_PASSIVE = 'in_pass'
 ROLE_INCOME_OTHER = 'in_other'
 
-ROLE_EXPENSES = 'ex'
-ROLE_EXPENSES_CAPITAL = 'ex_cap'
-ROLE_EXPENSES_OTHER = 'ex_other'
-ROLE_EXPENSES_TAXES = 'ex_taxes'
-ROLE_EXPENSES_INTEREST = 'ex_interest'
+# COGS ---
 ROLE_COGS = 'ex_cogs'
 
-ROLE_PARENT_LIABILITIES = 'parent_lia'
-ROLE_PARENT_CAPITAL = 'parent_cap'
-ROLE_PARENT_INCOME = 'parent_in'
-ROLE_PARENT_EXPENSE = 'parent_ex'
-ROLE_PARENT_COGS = 'parent_cogs'
+# ROLE_EXPENSES = 'ex'
+ROLE_EXPENSES_OP = 'ex_op'
+ROLE_EXPENSES_CAPITAL = 'ex_cap'
+ROLE_EXPENSES_TAXES = 'ex_taxes'
+ROLE_EXPENSES_INTEREST = 'ex_interest'
+ROLE_EXPENSES_OTHER = 'ex_other'
 
-ROLES_CURRENT_LIABILITIES = [
-    ROLE_CL
+ROLES_QUICK_ASSETS = [
+    ROLE_CA_CASH,
+    ROLE_CA_MKT_SECURITIES
 ]
 
 ROLES_CURRENT_ASSETS = [
-    ROLE_CASH,
-    ROLE_MKT_SECURITIES,
-    ROLE_INVENTORY,
-    ROLE_RECEIVABLES,
-    ROLE_PREPAID,
-    ROLE_LIQUID
+    ROLE_CA_CASH,
+    ROLE_CA_MKT_SECURITIES,
+    ROLE_CA_INVENTORY,
+    ROLE_CA_RECEIVABLES,
+    ROLE_CA_PREPAID,
+    ROLE_CA_OTHER
 ]
 
-ROLES_QUICK_ASSETS = [
-    ROLE_CASH,
-    ROLE_MKT_SECURITIES
+ROLES_ASSETS = ROLES_CURRENT_ASSETS + [
+    ROLE_LTI_NOTES_RECEIVABLE,
+    ROLE_LTI_LAND,
+    ROLE_LTI_SECURITIES,
+    ROLE_PPE,
+    ROLE_INTANGIBLE_ASSETS,
+    ROLE_ASSET_OTHER
 ]
 
-ROLES_LIABILITIES = [
-    ROLE_CL,
-    ROLE_LTL
+ROLES_CURRENT_LIABILITIES = [
+    ROLE_CL_ACC_PAYABLE,
+    ROLE_CL_DEFERRED_REVENUE,
+    ROLE_CL_INT_PAYABLE,
+    ROLE_CL_LTD_MATURITIES,
+    ROLE_CL_OTHER,
+    ROLE_CL_ST_NOTES_PAYABLE,
+    ROLE_CL_WAGES_PAYABLE
+]
+
+ROLES_LIABILITIES = ROLES_CURRENT_LIABILITIES + [
+    ROLE_LTL_NOTES_PAYABLE,
+    ROLE_LTL_BONDS_PAYABLE,
+    ROLE_LTL_MORTAGE_PAYABLE,
 ]
 
 ROLES_CAPITAL = [
-    ROLE_CAPITAL,
-    ROLE_CAPITAL_ADJ,
-    ROLE_COMMON_STOCK,
-    ROLE_PREFERRED_STOCK
+    ROLE_EQ_CAPITAL,
+    ROLE_EQ_COMMON_STOCK,
+    ROLE_EQ_PREFERRED_STOCK,
+    ROLE_EQ_ADJ
 ]
 
 ROLES_INCOME = [
@@ -77,9 +118,11 @@ ROLES_INCOME = [
 
 ROLES_EXPENSES = [
     ROLE_COGS,
-    ROLE_EXPENSES,
-    ROLE_EXPENSES_OTHER,
-    ROLE_EXPENSES_CAPITAL
+    ROLE_EXPENSES_OP,
+    ROLE_EXPENSES_INTEREST,
+    ROLE_EXPENSES_TAXES,
+    ROLE_EXPENSES_CAPITAL,
+    ROLE_EXPENSES_OTHER
 ]
 
 ROLES_NET_PROFIT = [
@@ -89,9 +132,9 @@ ROLES_NET_PROFIT = [
     ROLE_COGS,
 ]
 
-ROLES_GROSS_PROFIT = ROLES_NET_PROFIT + [
-    ROLE_EXPENSES,
-    ROLE_EXPENSES_OTHER
+ROLES_GROSS_PROFIT = [
+    ROLE_INCOME_SALES,
+    ROLE_COGS
 ]
 
 ROLES_NET_SALES = [

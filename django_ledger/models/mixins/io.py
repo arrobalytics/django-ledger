@@ -261,7 +261,7 @@ class IOMixIn:
         tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
-        cash = [acc for acc in assets if acc['role'] in roles.ROLE_CASH]
+        cash = [acc for acc in assets if acc['role'] in roles.ROLE_CA_CASH]
         # current_assets = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_ASSETS]
         liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
         # current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES]

@@ -12,44 +12,61 @@ from django_ledger.models_abstracts import account_roles as roles
 
 ACCOUNT_ROLES = [
     ('Assets', (
-        (roles.ROLE_PARENT_ASSET, _('Asset Account Parent')),
-        (roles.ROLE_CASH, _('Current Asset')),
-        (roles.ROLE_MKT_SECURITIES, _('Marketable Securities')),
-        (roles.ROLE_LIQUID, _('Other Liquid Assets')),
-        (roles.ROLE_SECURITIES, _('Securities')),
-        (roles.ROLE_RECEIVABLES, _('Receivables')),
-        (roles.ROLE_UNCOLLECTIBLES, _('Uncollectibles')),
-        (roles.ROLE_PREPAID, _('Prepaid')),
-        (roles.ROLE_INVENTORY, _('Inventory')),
-        (roles.ROLE_LTI, _('Long Term Investments')),
+        # (roles.ROLE_PARENT_ASSET, _('Asset Account Parent')),
+
+        (roles.ROLE_CA_CASH, _('Current Asset')),
+        (roles.ROLE_CA_MKT_SECURITIES, _('Marketable Securities')),
+        (roles.ROLE_CA_RECEIVABLES, _('Receivables')),
+        (roles.ROLE_CA_INVENTORY, _('Inventory')),
+        (roles.ROLE_CA_UNCOLLECTIBLES, _('Uncollectibles')),
+        (roles.ROLE_CA_PREPAID, _('Prepaid')),
+        (roles.ROLE_CA_OTHER, _('Other Liquid Assets')),
+
+        (roles.ROLE_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
+        (roles.ROLE_LTI_LAND, _('Land')),
+        (roles.ROLE_LTI_SECURITIES, _('Securities')),
+
+        # (roles.ROLE_LTI, _('Long Term Investments')),
         (roles.ROLE_PPE, _('Property Plant & Equipment')),
         (roles.ROLE_INTANGIBLE_ASSETS, _('Intangible Assets')),
-        (roles.ROLE_ASSET_ADJ, _('Asset Adjustments')),
+        (roles.ROLE_ASSET_OTHER, _('Other Assets')),
     )
      ),
     ('Liabilities', (
-        (roles.ROLE_PARENT_LIABILITIES, _('Liability Account Parent')),
-        (roles.ROLE_CL, _('Current Liabilities')),
-        (roles.ROLE_LTL, _('Long Term Liabilities')),
+        # (roles.ROLE_PARENT_LIABILITIES, _('Liability Account Parent')),
+        (roles.ROLE_CL_ACC_PAYABLE, _('Accounts Payable')),
+        (roles.ROLE_CL_WAGES_PAYABLE, _('Wages Payable')),
+        (roles.ROLE_CL_INT_PAYABLE, _('Interest Payable')),
+        (roles.ROLE_CL_ST_NOTES_PAYABLE, _('Notes Payable')),
+        (roles.ROLE_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
+        (roles.ROLE_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
+        (roles.ROLE_CL_OTHER, _('Other Liabilities')),
+
+        (roles.ROLE_LTL_NOTES_PAYABLE, _('Notes Payable')),
+        (roles.ROLE_LTL_BONDS_PAYABLE, _('Bonds Payable')),
+        (roles.ROLE_LTL_MORTAGE_PAYABLE, _('Mortgage Payable')),
+
     )
      ),
     ('Equity', (
-        (roles.ROLE_PARENT_CAPITAL, _('Capital Account Parent')),
-        (roles.ROLE_CAPITAL, _('Capital')),
-        (roles.ROLE_COMMON_STOCK, _('Common Stock')),
-        (roles.ROLE_PREFERRED_STOCK, _('Preferred Stock')),
-        (roles.ROLE_CAPITAL_ADJ, _('Capital Adjustments')),
+        # (roles.ROLE_PARENT_CAPITAL, _('Capital Account Parent')),
 
-        (roles.ROLE_PARENT_INCOME, _('Income Account Parent')),
+        (roles.ROLE_EQ_CAPITAL, _('Capital')),
+        (roles.ROLE_EQ_COMMON_STOCK, _('Common Stock')),
+        (roles.ROLE_EQ_PREFERRED_STOCK, _('Preferred Stock')),
+        (roles.ROLE_EQ_ADJ, _('Other Equity Adjustments')),
+
+        # (roles.ROLE_PARENT_INCOME, _('Income Account Parent')),
         (roles.ROLE_INCOME_SALES, _('Sales Income')),
         (roles.ROLE_INCOME_PASSIVE, _('Passive Income')),
         (roles.ROLE_INCOME_OTHER, _('Other Income')),
 
-        (roles.ROLE_PARENT_COGS, _('COGS Account Parent')),
+        # (roles.ROLE_PARENT_COGS, _('COGS Account Parent')),
         (roles.ROLE_COGS, _('Cost of Goods Sold')),
 
-        (roles.ROLE_PARENT_EXPENSE, _('Expense Account Parent')),
-        (roles.ROLE_EXPENSES, _('Expense')),
+        # (roles.ROLE_PARENT_EXPENSE, _('Expense Account Parent')),
+        # (roles.ROLE_EXPENSES, _('Expense')),
+        (roles.ROLE_EXPENSES_OP, _('Operational Expense')),
         (roles.ROLE_EXPENSES_INTEREST, _('Interest Expense')),
         (roles.ROLE_EXPENSES_TAXES, _('Tax Expense')),
         (roles.ROLE_EXPENSES_CAPITAL, _('Capital Expense')),
@@ -57,7 +74,7 @@ ACCOUNT_ROLES = [
     )
      )
 ]
-ACCOUNT_TERRITORY = {
+ACCOUNT_CONVENTION = {
     'assets': 'debit',
     'liabilities': 'credit',
     'equity': 'credit'
@@ -108,9 +125,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
 
     code = models.CharField(max_length=10, verbose_name=_l('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_l('Account Name'))
-    role = models.CharField(max_length=15, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
+    role = models.CharField(max_length=25, choices=ACCOUNT_ROLES, verbose_name=_l('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
-    cash_account = models.BooleanField(default=False, verbose_name=_('Cash Account'))
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
