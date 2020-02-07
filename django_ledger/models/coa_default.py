@@ -3,8 +3,7 @@ from django_ledger.models_abstracts import account_roles as roles
 CHART_OF_ACCOUNTS = [
 
     # ---------# ASSETS START #---------#
-    # CURRENT ASSET  ------
-    # {'code': '1000', 'role': roles.ROLE_PARENT_ASSET, 'balance_type': 'debit', 'name': 'CURRENT ASSETS', 'parent': '1000'},
+    # CURRENT ASSETS  ------
     {'code': '1010', 'role': roles.ROLE_CA_CASH, 'balance_type': 'debit', 'name': 'Cash', 'parent': None},
     {'code': '1050', 'role': roles.ROLE_CA_MKT_SECURITIES, 'balance_type': 'debit', 'name': 'Short Term Investments',
      'parent': None},
@@ -17,14 +16,12 @@ CHART_OF_ACCOUNTS = [
      'parent': None},
 
     # LONG TERM IMVESTMENTS ------
-    # {'code': '1500', 'role': roles.ROLE_PARENT_ASSET, 'balance_type': 'debit', 'name': 'LONG TERM INVESTMENTS', 'parent': '1500'},
     {'code': '1510', 'role': roles.ROLE_LTI_NOTES_RECEIVABLE, 'balance_type': 'debit', 'name': 'Notes Receivable',
      'parent': None},
     {'code': '1520', 'role': roles.ROLE_LTI_LAND, 'balance_type': 'debit', 'name': 'Land', 'parent': None},
     {'code': '1530', 'role': roles.ROLE_LTI_SECURITIES, 'balance_type': 'debit', 'name': 'Securities', 'parent': None},
 
     # PPE ------
-    # {'code': '1600', 'role': roles.ROLE_PARENT_ASSET, 'balance_type': 'debit', 'name': 'PPE', 'parent': '1600'},
     {'code': '1610', 'role': roles.ROLE_PPE, 'balance_type': 'debit', 'name': 'Buildings', 'parent': None},
     {'code': '1611', 'role': roles.ROLE_PPE, 'balance_type': 'credit',
      'name': 'Less: Buildings Accumulated Depreciation', 'parent': None},
@@ -43,13 +40,11 @@ CHART_OF_ACCOUNTS = [
      'name': 'Less: Furniture & Fixtures Accumulated Depreciation', 'parent': None},
 
     # INTANGIBLE ASSETS ------
-    # {'code': '1800', 'role': roles.ROLE_PARENT_ASSET, 'balance_type': 'debit', 'name': 'INTANGIBLE ASSETS', 'parent': '1800'},
     {'code': '1810', 'role': roles.ROLE_INTANGIBLE_ASSETS, 'balance_type': 'debit', 'name': 'Goodwill', 'parent': None},
     {'code': '1820', 'role': roles.ROLE_INTANGIBLE_ASSETS, 'balance_type': 'debit', 'name': 'Intellectual Property',
      'parent': None},
 
     # ADJUSTMENTS ------
-    # {'code': '1900', 'role': roles.ROLE_PARENT_ASSET, 'balance_type': 'debit', 'name': 'ADJUSTMENTS', 'parent': '1900'},
     {'code': '1910', 'role': roles.ROLE_ASSET_OTHER, 'balance_type': 'debit',
      'name': 'Securities Unrealized Gains/Losses',
      'parent': None},
@@ -60,7 +55,6 @@ CHART_OF_ACCOUNTS = [
 
     # ---------# LIABILITIES START #---------#
     # CURRENT LIABILITIES ------
-    # {'code': '2000', 'role': roles.ROLE_PARENT_LIABILITIES, 'balance_type': 'credit', 'name': 'CURRENT LIABILITIES', 'parent': '2000'},
     {'code': '2010', 'role': roles.ROLE_CL_ACC_PAYABLE, 'balance_type': 'credit', 'name': 'Accounts Payable',
      'parent': None},
     {'code': '2020', 'role': roles.ROLE_CL_WAGES_PAYABLE, 'balance_type': 'credit', 'name': 'Wages Payable',
@@ -76,7 +70,6 @@ CHART_OF_ACCOUNTS = [
     {'code': '2070', 'role': roles.ROLE_CL_OTHER, 'balance_type': 'credit', 'name': 'Other Payables', 'parent': None},
 
     # LIABILITIES ACCOUNTS ------
-    # {'code': '2100', 'role': roles.ROLE_PARENT_LIABILITIES, 'balance_type': 'credit', 'name': 'LONG TERM LIABILITIES', 'parent': '2100'},
     {'code': '2110', 'role': roles.ROLE_LTL_NOTES_PAYABLE, 'balance_type': 'credit', 'name': 'Long Term Notes Payable',
      'parent': None},
     {'code': '2120', 'role': roles.ROLE_LTL_BONDS_PAYABLE, 'balance_type': 'credit', 'name': 'Bonds Payable',
@@ -88,7 +81,6 @@ CHART_OF_ACCOUNTS = [
 
     # ---------# SHEREHOLDERS EQUITY START #---------#
     # CAPITAL ACCOUNTS ------
-    # {'code': '3000', 'role': roles.ROLE_PARENT_CAPITAL, 'balance_type': 'credit', 'name': 'CAPITAL ACCOUNTS', 'parent': '3000'},
     {'code': '3010', 'role': roles.ROLE_EQ_CAPITAL, 'balance_type': 'credit', 'name': 'Capital Account 1',
      'parent': None},
     {'code': '3020', 'role': roles.ROLE_EQ_CAPITAL, 'balance_type': 'credit', 'name': 'Capital Account 2',
@@ -106,7 +98,6 @@ CHART_OF_ACCOUNTS = [
      'parent': None},
 
     # REVENUE ACCOUNTS ------
-    # {'code': '4000', 'role': roles.ROLE_PARENT_INCOME, 'balance_type': 'credit', 'name': 'REVENUE ACCOUNTS', 'parent': '4000'},
     {'code': '4010', 'role': roles.ROLE_INCOME_SALES, 'balance_type': 'credit', 'name': 'Sales Income', 'parent': None},
     {'code': '4020', 'role': roles.ROLE_INCOME_PASSIVE, 'balance_type': 'credit', 'name': 'Passive Income',
      'parent': None},
@@ -114,11 +105,9 @@ CHART_OF_ACCOUNTS = [
      'parent': None},
 
     # COGS ACCOUNTS ------
-    # {'code': '5000', 'role': roles.ROLE_PARENT_COGS, 'balance_type': 'debit', 'name': 'COGS ACCOUNTS', 'parent': '5000'},
     {'code': '5010', 'role': roles.ROLE_COGS, 'balance_type': 'debit', 'name': 'Cost of Goods Sold', 'parent': None},
 
     # EXPENSE ACCOUNTS ------
-    # {'code': '6000', 'role': roles.ROLE_PARENT_EXPENSE, 'balance_type': 'debit', 'name': 'EXPENSE ACCOUNTS', 'parent': '6000'},
     {'code': '6010', 'role': roles.ROLE_EXPENSES_OP, 'balance_type': 'debit', 'name': 'Advertising', 'parent': None},
     {'code': '6020', 'role': roles.ROLE_EXPENSES_OP, 'balance_type': 'debit', 'name': 'Amortization', 'parent': None},
     {'code': '6030', 'role': roles.ROLE_EXPENSES_OP, 'balance_type': 'debit', 'name': 'Auto Expense', 'parent': None},
@@ -173,12 +162,10 @@ CHART_OF_ACCOUNTS = [
     {'code': '6400', 'role': roles.ROLE_EXPENSES_OP, 'balance_type': 'debit', 'name': 'Vacancy', 'parent': None},
 
     # MISC REVENUE ACCOUNTS ------
-    # {'code': '7000', 'role': roles.ROLE_PARENT_INCOME, 'balance_type': 'credit', 'name': 'MISC. REVENUE ACCOUNTS', 'parent': '7000'},
     {'code': '7010', 'role': roles.ROLE_INCOME_OTHER, 'balance_type': 'credit', 'name': 'Misc. Revenue',
      'parent': None},
 
     # MISC EXPENSE ACCOUNTS ------
-    # {'code': '7500', 'role': roles.ROLE_PARENT_EXPENSE, 'balance_type': 'debit', 'name': 'MISC. EXPENSE ACCOUNTS', 'parent': '7500'},
     {'code': '7510', 'role': roles.ROLE_EXPENSES_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense',
      'parent': None},
 

@@ -3,9 +3,9 @@ from django.forms import (ModelForm, modelformset_factory, BaseModelFormSet, Tex
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
+from django_ledger.io import validate_tx_data
 from django_ledger.models import (AccountModel, LedgerModel, JournalEntryModel, TransactionModel,
                                   ChartOfAccountModel, EntityModel)
-from django_ledger.models.mixins.io import validate_tx_data
 
 # todo: move this to settings & make it a list...
 DJETLER_FORM_INPUT_CLASS = 'input'
@@ -339,5 +339,3 @@ TransactionModelFormSet = modelformset_factory(
     formset=BaseTransactionModelFormSet,
     can_delete=True,
     extra=5)
-
-

@@ -1,38 +1,74 @@
 from django_ledger.models_abstracts import account_roles as roles
 
-"""
-	1.	Current ratio
-	2.	Quick ratio
-	3.	Absolute liquidity ratio
-	4.	Cash ratio
-	5.	Inventory Turnover Ratio
-	6.	Receivables Turnover Ratio
-	7.	Capital Turnover Ratio
-	8.	Asset Turnover Ratio
-	9.	Net Working Capital Ratio
-	10.	Cash Conversion Cycle
-	11.	Earnings Margin
-	12.	Return on Investment
-	13.	Return on Equity
-	14.	Earnings Per Share
-	15.	Operating Leverage
-	16.	Financial leverage
-	17.	Total Leverage
-	18.	Debt-Equity Ratio
-	19.	Interest Coverage Ratio
-	20.	Debt Service Coverage Ratio
-	21.	Fixed Asset Ratio
-	22.	Current Asset to Fixed Asset
-	23.	Proprietary Ratio
-	24.	Fixed Interest Cover
-	25.	Fixed Dividend Cover
-	26.	Capacity Ratio
-	27.	Activity Ratio
-	28.	Efficiency Ratio
-"""
-
 RATIO_NA = 'NA'
 
+
+class FinancialRatioGenerator:
+
+    def __init__(self, tx_data, digest):
+        self.TX_DATA = tx_data
+        self.DIGEST = digest
+        self.RATIO_NA = RATIO_NA
+
+        self.quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
+        self.current_liabilities = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
+        self.current_assets = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_ASSETS])
+        self.equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
+        self.debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_LIABILITIES])
+        self.net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
+        self.assets = sum([acc['balance'] for acc in tx_data if acc['role_bs'] == 'assets'])
+
+    def quick_ratio(self, as_percent=False):
+        if self.current_liabilities == 0:
+            cr = RATIO_NA
+        else:
+            cr = self.quick_assets / self.current_liabilities
+            if as_percent:
+                cr = cr * 100
+        self.DIGEST['ratios']['quick_ratio'] = cr
+
+    def current_ratio(self, as_percent=False):
+        if self.current_liabilities == 0:
+            cr = RATIO_NA
+        else:
+            cr = self.current_assets / self.current_liabilities
+            if as_percent:
+                cr = cr * 100
+        self.DIGEST['ratios']['current_ratio'] = cr
+
+    def debt_to_equity(self, as_percent=False):
+        if self.equity == 0:
+            cr = RATIO_NA
+        else:
+            cr = self.debt / self.equity
+            if as_percent:
+                cr = cr * 100
+        self.DIGEST['ratios']['debt_to_equity'] = cr
+
+    def return_on_equity(self, as_percent=False):
+        if self.equity == 0:
+            cr = RATIO_NA
+        else:
+            cr = self.net_income / self.equity
+            if as_percent:
+                cr = cr * 100
+        self.DIGEST['ratios']['return_on_equity'] = cr
+
+    def return_on_assets(self, as_percent=False):
+        if self.assets == 0:
+            cr = RATIO_NA
+        else:
+            cr = self.net_income / self.assets
+            if as_percent:
+                cr = cr * 100
+        self.DIGEST['ratios']['return_on_assets'] = cr
+
+
+# PROFITABILITY RATIOS
+
+# SOLVENCY RATIOS
+
+# LEVERAGE RATIOS
 
 def bs_current_ratio(tx_data, digest, as_percent=False):
     current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])

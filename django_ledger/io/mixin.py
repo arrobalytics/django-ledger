@@ -2,8 +2,8 @@ from collections import OrderedDict
 
 from django.core.exceptions import ValidationError
 
+from django_ledger.io.ratios import generate_ratios
 from django_ledger.models.journalentry import JournalEntryModel
-from django_ledger.models.mixins.ratios import generate_ratios
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models_abstracts import account_roles as roles
 from django_ledger.models_abstracts.accounts import BS_ROLES
@@ -78,6 +78,9 @@ class IOMixIn:
     Controls how transactions are recorded into the ledger.
     """
 
+    TX_DATA = None
+    TX_DIGEST = None
+
     def create_je(self,
                   je_date: str,
                   je_txs: list,
@@ -142,6 +145,8 @@ class IOMixIn:
         """
         If account is present all other parameters will be ignored.
 
+        :param start_date:
+        :param as_of:
         :param as_dataframe:
         :param activity:
         :param role:
@@ -215,6 +220,7 @@ class IOMixIn:
             acc['txs__account__balance_type']
         ) for acc in je_txs if acc['txs__amount']]))
 
+        # todo: Can this be done at the DB level???
         tx_aggregate = [
             {
                 'role_bs': acc[0],
@@ -230,7 +236,7 @@ class IOMixIn:
         return tx_aggregate
 
     # Financial Statements -----
-    # todo: rename this method to something more generic.
+    # todo: rename this method to something more generic, not just related to BS.
     def balance_sheet(self, as_of: str = None, signs: bool = False, activity: str = None):
 
         bs_data = self.get_jes(as_of=as_of,
