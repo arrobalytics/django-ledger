@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db.models.signals import pre_save
 
-from django_ledger.models_abstracts.journal_entry import JournalEntryModelAbstract
+from django_ledger.abstracts.journal_entry import JournalEntryModelAbstract
 
 
 class JournalEntryModel(JournalEntryModelAbstract):

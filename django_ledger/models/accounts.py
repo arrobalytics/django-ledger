@@ -1,6 +1,6 @@
 from django.db.models.signals import pre_save
 
-from django_ledger.models_abstracts.accounts import AccountModelAbstract
+from django_ledger.abstracts.accounts import AccountModelAbstract
 
 
 class AccountModel(AccountModelAbstract):

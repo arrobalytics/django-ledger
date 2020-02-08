@@ -1,4 +1,4 @@
-from django_ledger.models_abstracts.transactions import TransactionModelAbstract
+from django_ledger.abstracts.transactions import TransactionModelAbstract
 
 
 class TransactionModel(TransactionModelAbstract):

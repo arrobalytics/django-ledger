@@ -1,9 +1,9 @@
 from django.forms import Form, ModelChoiceField, Select, ChoiceField, CharField, HiddenInput, DateField, DateInput
 from django.utils.translation import gettext_lazy as _l
 
+from django_ledger.abstracts.journal_entry import ACTIVITIES
 from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
 from django_ledger.models import EntityModel
-from django_ledger.models_abstracts.journal_entry import ACTIVITIES
 
 
 class EntityFilterForm(Form):

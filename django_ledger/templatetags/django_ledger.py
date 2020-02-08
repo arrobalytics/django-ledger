@@ -4,10 +4,10 @@ from random import randint
 from django import template
 from django.core.exceptions import ValidationError
 
+from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
+from django_ledger.io.roles import ROLES_INCOME, ROLES_EXPENSES
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from django_ledger.models_abstracts.account_roles import ROLES_INCOME, ROLES_EXPENSES
-from django_ledger.models_abstracts.journal_entry import validate_activity
 
 register = template.Library()
 

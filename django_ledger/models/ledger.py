@@ -3,7 +3,7 @@ from random import randint
 from django.db.models.signals import pre_save
 from django.utils.text import slugify
 
-from django_ledger.models_abstracts.ledger import LedgerModelAbstract
+from django_ledger.abstracts.ledger import LedgerModelAbstract
 
 
 class LedgerModel(LedgerModelAbstract):

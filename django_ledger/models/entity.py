@@ -1,8 +1,8 @@
 from django.db.models.signals import pre_save, post_save
 from django.utils.translation import gettext as _
 
+from django_ledger.abstracts.entity import EntityModelAbstract, EntityManagementModelAbstract
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.models_abstracts.entity import EntityModelAbstract, EntityManagementModelAbstract
 
 
 class EntityModel(EntityModelAbstract):

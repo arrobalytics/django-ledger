@@ -2,13 +2,11 @@ from collections import OrderedDict
 
 from django.core.exceptions import ValidationError
 
+from django_ledger.abstracts.journal_entry import validate_activity
+from django_ledger.io import roles as roles
 from django_ledger.io.ratios import generate_ratios
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
-from django_ledger.models_abstracts import account_roles as roles
-from django_ledger.models_abstracts.accounts import BS_ROLES
-from django_ledger.models_abstracts.accounts import validate_roles
-from django_ledger.models_abstracts.journal_entry import validate_activity
 
 
 class LazyImporter:
@@ -155,7 +153,7 @@ class IOMixIn:
         """
 
         activity = validate_activity(activity)
-        role = validate_roles(role)
+        role = roles.validate_roles(role)
 
         # Checks if self is EntityModel or LedgerModel.
         # Filters queryset to posted Journal Entries only.
@@ -213,7 +211,7 @@ class IOMixIn:
                 tx['txs__amount'] = -tx['txs__amount']
 
         account_idx = sorted(set([(
-            BS_ROLES.get(acc['txs__account__role']),
+            roles.BS_ROLES.get(acc['txs__account__role']),
             acc['txs__account__role'],
             acc['txs__account__code'],
             acc['txs__account__name'],
@@ -267,25 +265,31 @@ class IOMixIn:
         tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
-        cash = [acc for acc in assets if acc['role'] in roles.ROLE_CA_CASH]
-        # current_assets = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_ASSETS]
         liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
-        # current_liabilities = [acc['balance'] for acc in bs_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES]
         equity = [acc for acc in tx_data if acc['role_bs'] == 'equity']
+
+        tx_digest = dict()
+        roles_digest = dict()
+
+        for c, l in roles.ROLES_DIRECTORY.items():
+            agg = dict()
+            for r in l:
+                agg[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
+            roles_digest[c] = agg
+        tx_digest['roles'] = roles_digest
+
+        cash = [acc for acc in assets if acc['role'] in roles.ASSET_CA_CASH]
         capital = [acc for acc in equity if acc['role'] in roles.ROLES_CAPITAL]
         earnings = [acc for acc in equity if acc['role'] in roles.ROLES_EARNINGS]
 
         total_assets = sum([acc['balance'] for acc in assets])
         total_cash = sum([acc['balance'] for acc in cash])
-        # total_current_assets = sum(current_assets)
         total_liabilities = sum([acc['balance'] for acc in liabilities])
-        # total_current_liabilities = sum(current_liabilities)
         total_capital = sum([acc['balance'] for acc in capital])
         total_income = sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_INCOME])
         total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_EXPENSES])
 
         retained_earnings = sum([acc['balance'] for acc in earnings])
-
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
 

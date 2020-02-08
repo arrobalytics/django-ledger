@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
 
+from django_ledger.abstracts.accounts import BS_ROLES, ACCOUNT_CONVENTION
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
-from django_ledger.models_abstracts.accounts import BS_ROLES, ACCOUNT_CONVENTION
 
 UserModel = get_user_model()
 

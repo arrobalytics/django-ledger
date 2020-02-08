@@ -3,10 +3,10 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
+from django_ledger.abstracts.coa import get_coa_account
 from django_ledger.io import IOMixIn
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
-from django_ledger.models_abstracts.coa import get_coa_account
 
 
 class LedgerModelManager(models.Manager):

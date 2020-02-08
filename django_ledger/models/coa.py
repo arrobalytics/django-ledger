@@ -1,4 +1,4 @@
-from django_ledger.models_abstracts.coa import ChartOfAccountModelAbstract
+from django_ledger.abstracts.coa import ChartOfAccountModelAbstract
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):

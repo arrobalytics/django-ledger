@@ -7,95 +7,14 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
+from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
 from django_ledger.models.mixins.base import CreateUpdateMixIn
-from django_ledger.models_abstracts import account_roles as roles
 
-ACCOUNT_ROLES = [
-    ('Assets', (
-        # (roles.ROLE_PARENT_ASSET, _('Asset Account Parent')),
-
-        (roles.ROLE_CA_CASH, _('Current Asset')),
-        (roles.ROLE_CA_MKT_SECURITIES, _('Marketable Securities')),
-        (roles.ROLE_CA_RECEIVABLES, _('Receivables')),
-        (roles.ROLE_CA_INVENTORY, _('Inventory')),
-        (roles.ROLE_CA_UNCOLLECTIBLES, _('Uncollectibles')),
-        (roles.ROLE_CA_PREPAID, _('Prepaid')),
-        (roles.ROLE_CA_OTHER, _('Other Liquid Assets')),
-
-        (roles.ROLE_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
-        (roles.ROLE_LTI_LAND, _('Land')),
-        (roles.ROLE_LTI_SECURITIES, _('Securities')),
-
-        # (roles.ROLE_LTI, _('Long Term Investments')),
-        (roles.ROLE_PPE, _('Property Plant & Equipment')),
-        (roles.ROLE_INTANGIBLE_ASSETS, _('Intangible Assets')),
-        (roles.ROLE_ASSET_OTHER, _('Other Assets')),
-    )
-     ),
-    ('Liabilities', (
-        # (roles.ROLE_PARENT_LIABILITIES, _('Liability Account Parent')),
-        (roles.ROLE_CL_ACC_PAYABLE, _('Accounts Payable')),
-        (roles.ROLE_CL_WAGES_PAYABLE, _('Wages Payable')),
-        (roles.ROLE_CL_INT_PAYABLE, _('Interest Payable')),
-        (roles.ROLE_CL_ST_NOTES_PAYABLE, _('Notes Payable')),
-        (roles.ROLE_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
-        (roles.ROLE_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
-        (roles.ROLE_CL_OTHER, _('Other Liabilities')),
-
-        (roles.ROLE_LTL_NOTES_PAYABLE, _('Notes Payable')),
-        (roles.ROLE_LTL_BONDS_PAYABLE, _('Bonds Payable')),
-        (roles.ROLE_LTL_MORTAGE_PAYABLE, _('Mortgage Payable')),
-
-    )
-     ),
-    ('Equity', (
-        # (roles.ROLE_PARENT_CAPITAL, _('Capital Account Parent')),
-
-        (roles.ROLE_EQ_CAPITAL, _('Capital')),
-        (roles.ROLE_EQ_COMMON_STOCK, _('Common Stock')),
-        (roles.ROLE_EQ_PREFERRED_STOCK, _('Preferred Stock')),
-        (roles.ROLE_EQ_ADJ, _('Other Equity Adjustments')),
-
-        # (roles.ROLE_PARENT_INCOME, _('Income Account Parent')),
-        (roles.ROLE_INCOME_SALES, _('Sales Income')),
-        (roles.ROLE_INCOME_PASSIVE, _('Passive Income')),
-        (roles.ROLE_INCOME_OTHER, _('Other Income')),
-
-        # (roles.ROLE_PARENT_COGS, _('COGS Account Parent')),
-        (roles.ROLE_COGS, _('Cost of Goods Sold')),
-
-        # (roles.ROLE_PARENT_EXPENSE, _('Expense Account Parent')),
-        # (roles.ROLE_EXPENSES, _('Expense')),
-        (roles.ROLE_EXPENSES_OP, _('Operational Expense')),
-        (roles.ROLE_EXPENSES_INTEREST, _('Interest Expense')),
-        (roles.ROLE_EXPENSES_TAXES, _('Tax Expense')),
-        (roles.ROLE_EXPENSES_CAPITAL, _('Capital Expense')),
-        (roles.ROLE_EXPENSES_OTHER, _('Other Expense')),
-    )
-     )
-]
 ACCOUNT_CONVENTION = {
     'assets': 'debit',
     'liabilities': 'credit',
     'equity': 'credit'
 }
-ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLES], list())
-ROLE_DICT = {
-    t[0].lower(): [r[0] for r in t[1]] for t in ACCOUNT_ROLES
-}
-VALID_ROLES = [r[1] for r in ROLE_TUPLES]
-BS_ROLES = dict([(r[1], r[0]) for r in ROLE_TUPLES])
-
-
-def validate_roles(roles):
-    if roles:
-        if isinstance(roles, str):
-            roles = [roles]
-        for r in roles:
-            if r not in VALID_ROLES:
-                raise ValidationError('{roles}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES),
-                                                                                     roles=r))
-    return roles
 
 
 class AccountModelManager(models.Manager):

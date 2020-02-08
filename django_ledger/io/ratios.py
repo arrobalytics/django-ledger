@@ -1,4 +1,4 @@
-from django_ledger.models_abstracts import account_roles as roles
+from django_ledger.io import roles as roles
 
 RATIO_NA = 'NA'
 
@@ -10,7 +10,7 @@ class FinancialRatioGenerator:
         self.DIGEST = digest
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
+        self.quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_QUICK_ASSETS])
         self.current_liabilities = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
         self.current_assets = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_ASSETS])
         self.equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
@@ -87,7 +87,7 @@ def bs_quick_ratio(tx_data, digest, as_percent=False):
     if current_liabilities == 0:
         qr = RATIO_NA
     else:
-        quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_QUICK_ASSETS])
+        quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_QUICK_ASSETS])
         qr = quick_assets / current_liabilities
         if as_percent:
             qr = qr * 100
