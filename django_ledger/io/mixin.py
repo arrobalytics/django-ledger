@@ -192,7 +192,7 @@ class IOMixIn:
                 accounts: str = None):
 
         if method != 'bs':
-            role = roles.ROLES_EARNINGS
+            role = roles.GROUP_EARNINGS
         if method == 'ic-op':
             activity = ['op']
         elif method == 'ic-inv':
@@ -262,6 +262,7 @@ class IOMixIn:
                activity: str = None,
                as_of: str = None,
                ratios: bool = False) -> dict:
+
         tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
 
         assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
@@ -270,30 +271,34 @@ class IOMixIn:
 
         tx_digest = dict()
         roles_digest = dict()
+        groups_digest = dict()
 
         for c, l in roles.ROLES_DIRECTORY.items():
-            agg = dict()
             for r in l:
-                agg[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
-            roles_digest[c] = agg
+                roles_digest[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
         tx_digest['roles'] = roles_digest
 
+        for g in roles.ROLE_GROUPS:
+            groups_digest[g] = sum([acc['balance'] for acc in tx_data if acc['role'] in getattr(roles, g)])
+        tx_digest['groups'] = groups_digest
+
         cash = [acc for acc in assets if acc['role'] in roles.ASSET_CA_CASH]
-        capital = [acc for acc in equity if acc['role'] in roles.ROLES_CAPITAL]
-        earnings = [acc for acc in equity if acc['role'] in roles.ROLES_EARNINGS]
+        capital = [acc for acc in equity if acc['role'] in roles.GROUP_EQUITY]
+        earnings = [acc for acc in equity if acc['role'] in roles.GROUP_EARNINGS]
 
         total_assets = sum([acc['balance'] for acc in assets])
         total_cash = sum([acc['balance'] for acc in cash])
         total_liabilities = sum([acc['balance'] for acc in liabilities])
         total_capital = sum([acc['balance'] for acc in capital])
-        total_income = sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_INCOME])
-        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] in roles.ROLES_EXPENSES])
+        total_income = sum([acc['balance'] for acc in earnings if acc['role'] in roles.GROUP_INCOME])
+        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] in roles.GROUP_EXPENSES])
 
         retained_earnings = sum([acc['balance'] for acc in earnings])
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
 
         digest_data = {
+            'tx_digest': tx_digest,
             'bs_data': tx_data,
             'assets': assets,
             'total_assets': total_assets,

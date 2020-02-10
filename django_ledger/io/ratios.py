@@ -11,11 +11,11 @@ class FinancialRatioGenerator:
         self.RATIO_NA = RATIO_NA
 
         self.quick_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_QUICK_ASSETS])
-        self.current_liabilities = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
-        self.current_assets = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.ROLES_CURRENT_ASSETS])
-        self.equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
-        self.debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_LIABILITIES])
-        self.net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
+        self.current_liabilities = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
+        self.current_assets = sum([acc['balance'] for acc in self.TX_DATA if acc['role'] in roles.GROUP_CURRENT_ASSETS])
+        self.equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EQUITY])
+        self.debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_LIABILITIES])
+        self.net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EARNINGS])
         self.assets = sum([acc['balance'] for acc in tx_data if acc['role_bs'] == 'assets'])
 
     def quick_ratio(self, as_percent=False):
@@ -71,11 +71,11 @@ class FinancialRatioGenerator:
 # LEVERAGE RATIOS
 
 def bs_current_ratio(tx_data, digest, as_percent=False):
-    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
+    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
     if current_liabilities == 0:
         cr = RATIO_NA
     else:
-        current_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_ASSETS])
+        current_assets = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_CURRENT_ASSETS])
         cr = current_assets / current_liabilities
         if as_percent:
             cr = cr * 100
@@ -83,7 +83,7 @@ def bs_current_ratio(tx_data, digest, as_percent=False):
 
 
 def bs_quick_ratio(tx_data, digest, as_percent=False):
-    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CURRENT_LIABILITIES])
+    current_liabilities = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
     if current_liabilities == 0:
         qr = RATIO_NA
     else:
@@ -95,11 +95,11 @@ def bs_quick_ratio(tx_data, digest, as_percent=False):
 
 
 def bs_debt_to_equity(tx_data, digest, as_percent=False):
-    equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
+    equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EQUITY])
     if equity == 0:
         dte = RATIO_NA
     else:
-        debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_LIABILITIES])
+        debt = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_LIABILITIES])
         dte = debt / equity
         if as_percent:
             dte = dte * 100
@@ -113,11 +113,11 @@ def bs_roe(tx_data, digest, as_percent=False):
     :param digest:
     :param as_percent:
     """
-    equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_CAPITAL])
+    equity = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EQUITY])
     if equity == 0:
         roe = RATIO_NA
     else:
-        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
+        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EARNINGS])
         roe = net_income / equity
         if as_percent:
             roe = roe * 100
@@ -135,7 +135,7 @@ def bs_roa(tx_data, digest, as_percent=False):
     if assets == 0:
         roa = RATIO_NA
     else:
-        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_EARNINGS])
+        net_income = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_EARNINGS])
         roa = net_income / assets
         if as_percent:
             roa = roa * 100
@@ -143,11 +143,11 @@ def bs_roa(tx_data, digest, as_percent=False):
 
 
 def is_net_profit_margin(tx_data, digest, as_percent=False):
-    net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_SALES])
+    net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_NET_SALES])
     if net_sales == 0:
         npm = RATIO_NA
     else:
-        net_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_PROFIT])
+        net_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_NET_PROFIT])
         npm = net_profit / net_sales
         if as_percent:
             npm = npm * 100
@@ -155,11 +155,11 @@ def is_net_profit_margin(tx_data, digest, as_percent=False):
 
 
 def is_gross_profit_margin(tx_data, digest, as_percent=False):
-    gross_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_GROSS_PROFIT])
+    gross_profit = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_GROSS_PROFIT])
     if gross_profit == 0:
         gpm = RATIO_NA
     else:
-        net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.ROLES_NET_SALES])
+        net_sales = sum([acc['balance'] for acc in tx_data if acc['role'] in roles.GROUP_NET_SALES])
         gpm = gross_profit / net_sales
         if as_percent:
             gpm = gpm * 100
