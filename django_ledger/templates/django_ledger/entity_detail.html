@@ -25,7 +25,7 @@
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
-                                <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EXPENSES | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</h1>
                             </article>

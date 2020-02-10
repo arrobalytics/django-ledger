@@ -13,8 +13,13 @@ register = template.Library()
 
 
 @register.filter(name='cs_thousands')
-def cs_thousands(value):
+def cs_thousands(value: float):
     return '{:,}'.format(value)
+
+
+@register.filter(name='reverse_sing')
+def reverse_sign(value: float):
+    return -value
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
