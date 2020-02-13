@@ -43,8 +43,8 @@ class EntityModelDetailVew(DetailView):
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        snapshot = entity.digest(as_of=date_filter, ratios=True)
-        context.update(snapshot)
+        digest = entity.digest(as_of=date_filter, ratios=True)
+        context.update(digest)
         return context
 
     def get_queryset(self):

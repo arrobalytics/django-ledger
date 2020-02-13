@@ -37,14 +37,14 @@
                                 <div id="djetler-vue">[[message]]</div>
 
                                 <p>Financial Ratios:</p>
-                                <p>Current Ratio: {{ ratios.bs_current_ratio }}</p>
-                                <p>Quick Ratio: {{ ratios.bs_quick_ratio }}</p>
-                                <p>Debt to Equity: {{ ratios.bs_debt_to_equity_ratio }}</p>
-                                <p>ROE: {{ ratios.bs_roe }}</p>
-                                <p>ROA: {{ ratios.bs_roa }}</p>
+                                <p>Current Ratio: {{ tx_digest.ratios.current_ratio }}</p>
+                                <p>Quick Ratio: {{ tx_digest.ratios.quick_ratio }}</p>
+                                <p>Debt to Equity: {{ tx_digest.ratios.debt_to_equity }}</p>
+                                <p>ROE: {{ tx_digest.ratios.return_on_equity }}</p>
+                                <p>ROA: {{ tx_digest.ratios.return_on_assets }}</p>
 
-                                <p>IS Net Profit Margin: {{ ratios.ic_net_profit_margin }}</p>
-                                <p>IS Gross Profit Margin: {{ ratios.ic_gross_profit_margin }}</p>
+                                <p>IS Net Profit Margin: {{ tx_digest.ratios.net_profit_margin }}</p>
+                                <p>IS Gross Profit Margin: {{ tx_digest.ratios.gross_profit_margin }}</p>
 
                             </article>
                         </div>

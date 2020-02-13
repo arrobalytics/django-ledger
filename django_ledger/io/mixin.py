@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.io import roles as roles
-from django_ledger.io.ratios import generate_ratios
+from django_ledger.io.ratios import FinancialRatioGenerator
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 
@@ -269,19 +269,6 @@ class IOMixIn:
         liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
         equity = [acc for acc in tx_data if acc['role_bs'] == 'equity']
 
-        tx_digest = dict()
-        roles_digest = dict()
-        groups_digest = dict()
-
-        for c, l in roles.ROLES_DIRECTORY.items():
-            for r in l:
-                roles_digest[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
-        tx_digest['roles'] = roles_digest
-
-        for g in roles.ROLE_GROUPS:
-            groups_digest[g] = sum([acc['balance'] for acc in tx_data if acc['role'] in getattr(roles, g)])
-        tx_digest['groups'] = groups_digest
-
         cash = [acc for acc in assets if acc['role'] in roles.ASSET_CA_CASH]
         capital = [acc for acc in equity if acc['role'] in roles.GROUP_EQUITY]
         earnings = [acc for acc in equity if acc['role'] in roles.GROUP_EARNINGS]
@@ -297,9 +284,23 @@ class IOMixIn:
         total_equity = total_capital + retained_earnings - total_liabilities
         total_liabilities_equity = total_liabilities + total_capital + retained_earnings
 
+        tx_digest = dict()
+        roles_digest = dict()
+        groups_digest = dict()
+
+        for c, l in roles.ROLES_DIRECTORY.items():
+            for r in l:
+                roles_digest[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
+        tx_digest['roles'] = roles_digest
+
+        for g in roles.ROLE_GROUPS:
+            groups_digest[g] = sum([acc['balance'] for acc in tx_data if acc['role'] in getattr(roles, g)])
+        tx_digest['groups'] = groups_digest
+
         digest_data = {
-            'tx_digest': tx_digest,
-            'bs_data': tx_data,
+            # future object tx_digest ...
+            'tx_digest': tx_digest,  # txs digest
+            'tx_data': tx_data,  # all txs
             'assets': assets,
             'total_assets': total_assets,
             'total_cash': total_cash,
@@ -317,8 +318,7 @@ class IOMixIn:
         }
 
         if ratios:
-            digest_data['ratios'] = dict()
-            digest_data = generate_ratios(digest=digest_data,
-                                          tx_data=tx_data)
+            ratio_gen = FinancialRatioGenerator(tx_digest=tx_digest, tx_data=tx_data)
+            ratio_gen.generate()
 
         return digest_data
