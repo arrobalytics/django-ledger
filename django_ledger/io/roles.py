@@ -1,5 +1,9 @@
+import sys
+
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
+
+mod = sys.modules[__name__]
 
 # --- ASSET ROLES ----
 # Current Assets ---
@@ -99,12 +103,13 @@ GROUP_LIABILITIES = GROUP_CURRENT_LIABILITIES + [
     LIABILITY_LTL_MORTAGE_PAYABLE,
 ]
 
-GROUP_EQUITY = [
+GROUP_CAPITAL = [
     EQUITY_CAPITAL,
     EQUITY_COMMON_STOCK,
     EQUITY_PREFERRED_STOCK,
     EQUITY_ADJUSTMENT
 ]
+
 
 GROUP_INCOME = [
     INCOME_SALES,
@@ -139,7 +144,8 @@ GROUP_NET_SALES = [
 ]
 
 GROUP_EARNINGS = GROUP_INCOME + GROUP_EXPENSES
-GROUP_TOTAL_EQUITY = GROUP_EQUITY + GROUP_EARNINGS
+GROUP_EQUITY = GROUP_CAPITAL + GROUP_EARNINGS
+GROUP_LIABILITIES_EQUITY = GROUP_LIABILITIES + GROUP_EQUITY
 
 ACCOUNT_ROLES = [
     ('Assets', (
@@ -228,4 +234,43 @@ ROLES_DIRECTORY = dict()
 ROLES_CATEGORIES = ['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'COGS', 'EXPENSE']
 for cat in ROLES_CATEGORIES:
     ROLES_DIRECTORY[cat] = [c for c in ROLES_VARS if c.split('_')[0] == cat]
-ROLE_GROUPS = [g for g in ROLES_VARS if g.split('_')[0] == 'GROUP']
+ROLES_GROUPS = [g for g in ROLES_VARS if g.split('_')[0] == 'GROUP']
+
+
+class RolesManager:
+
+    def __init__(self, tx_digest: dict, roles: bool = False, groups: bool = False):
+
+        self.PROCESS_ROLES = roles
+        self.PROCESS_GROUPS = groups
+
+        self.DIGEST = tx_digest
+        self.BALANCES = tx_digest['balances']
+
+        self.ROLES = dict()
+        self.GROUPS = dict()
+
+    def generate(self):
+
+        self.DIGEST['roles'] = None
+        if self.PROCESS_ROLES:
+            self.process_roles()
+            self.DIGEST['roles'] = self.ROLES
+
+        self.DIGEST['groups'] = None
+        if self.PROCESS_GROUPS:
+            self.process_groups()
+            self.DIGEST['groups'] = self.GROUPS
+
+        return self.DIGEST
+
+    def process_roles(self):
+        for c, l in ROLES_DIRECTORY.items():
+            for r in l:
+                self.ROLES[r] = sum([acc['balance'] for acc in self.BALANCES if acc['role'] == getattr(mod, r)])
+        self.DIGEST['roles'] = self.ROLES
+
+    def process_groups(self):
+        for g in ROLES_GROUPS:
+            self.GROUPS[g] = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in getattr(mod, g)])
+        self.DIGEST['groups'] = self.GROUPS

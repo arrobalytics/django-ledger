@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.io import roles as roles
 from django_ledger.io.ratios import FinancialRatioGenerator
+from django_ledger.io.roles import RolesManager, GROUP_CAPITAL, GROUP_LIABILITIES, GROUP_ASSETS
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 
@@ -235,7 +236,7 @@ class IOMixIn:
 
     # Financial Statements -----
     # todo: rename this method to something more generic, not just related to BS.
-    def balance_sheet(self, as_of: str = None, signs: bool = False, activity: str = None):
+    def get_account_balances(self, as_of: str = None, signs: bool = False, activity: str = None):
 
         bs_data = self.get_jes(as_of=as_of,
                                activity=activity,
@@ -246,6 +247,7 @@ class IOMixIn:
             bs_data = [process_signs(rec) for rec in bs_data]
         return bs_data
 
+    # todo: Can eliminate this method???...
     def income_statement(self, signs: bool = False, activity: str = None):
         method = 'ic'
         if isinstance(activity, str):
@@ -261,64 +263,30 @@ class IOMixIn:
     def digest(self,
                activity: str = None,
                as_of: str = None,
+               roles: bool = True,
+               groups: bool = False,
                ratios: bool = False) -> dict:
 
-        tx_data = self.balance_sheet(signs=True, activity=activity, as_of=as_of)
+        balances = self.get_account_balances(signs=True, activity=activity, as_of=as_of)
 
-        assets = [acc for acc in tx_data if acc['role_bs'] == 'assets']
-        liabilities = [acc for acc in tx_data if acc['role_bs'] == 'liabilities']
-        equity = [acc for acc in tx_data if acc['role_bs'] == 'equity']
+        assets = [acc for acc in balances if acc['role'] in GROUP_ASSETS]
+        liabilities = [acc for acc in balances if acc['role'] in GROUP_LIABILITIES]
+        capital = [acc for acc in balances if acc['role'] in GROUP_CAPITAL]
 
-        cash = [acc for acc in assets if acc['role'] in roles.ASSET_CA_CASH]
-        capital = [acc for acc in equity if acc['role'] in roles.GROUP_EQUITY]
-        earnings = [acc for acc in equity if acc['role'] in roles.GROUP_EARNINGS]
+        digest = dict(
+            balances=balances
+        )
 
-        total_assets = sum([acc['balance'] for acc in assets])
-        total_cash = sum([acc['balance'] for acc in cash])
-        total_liabilities = sum([acc['balance'] for acc in liabilities])
-        total_capital = sum([acc['balance'] for acc in capital])
-        total_income = sum([acc['balance'] for acc in earnings if acc['role'] in roles.GROUP_INCOME])
-        total_expenses = -sum([acc['balance'] for acc in earnings if acc['role'] in roles.GROUP_EXPENSES])
-
-        retained_earnings = sum([acc['balance'] for acc in earnings])
-        total_equity = total_capital + retained_earnings - total_liabilities
-        total_liabilities_equity = total_liabilities + total_capital + retained_earnings
-
-        tx_digest = dict()
-        roles_digest = dict()
-        groups_digest = dict()
-
-        for c, l in roles.ROLES_DIRECTORY.items():
-            for r in l:
-                roles_digest[r] = sum([acc['balance'] for acc in tx_data if acc['role'] == getattr(roles, r)])
-        tx_digest['roles'] = roles_digest
-
-        for g in roles.ROLE_GROUPS:
-            groups_digest[g] = sum([acc['balance'] for acc in tx_data if acc['role'] in getattr(roles, g)])
-        tx_digest['groups'] = groups_digest
-
-        digest_data = {
-            # future object tx_digest ...
-            'tx_digest': tx_digest,  # txs digest
-            'tx_data': tx_data,  # all txs
-            'assets': assets,
-            'total_assets': total_assets,
-            'total_cash': total_cash,
-            'liabilities': liabilities,
-            'total_liabilities': total_liabilities,
-            'equity': equity,
-            'total_equity': total_equity,
-            'capital': capital,
-            'total_capital': total_capital,
-            'earnings': earnings,
-            'total_income': total_income,
-            'total_expenses': total_expenses,
-            'retained_earnings': retained_earnings,
-            'total_liabilities_equity': total_liabilities_equity,
-        }
+        roles_mgr = RolesManager(tx_digest=digest, roles=roles, groups=groups)
+        digest = roles_mgr.generate()
 
         if ratios:
-            ratio_gen = FinancialRatioGenerator(tx_digest=tx_digest, tx_data=tx_data)
-            ratio_gen.generate()
+            ratio_gen = FinancialRatioGenerator(tx_digest=digest)
+            digest = ratio_gen.generate()
 
-        return digest_data
+        return {
+            'tx_digest': digest,
+            'assets': assets,
+            'liabilities': liabilities,
+            'capital': capital
+        }

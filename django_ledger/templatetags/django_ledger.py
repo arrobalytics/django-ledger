@@ -13,8 +13,10 @@ register = template.Library()
 
 
 @register.filter(name='cs_thousands')
-def cs_thousands(value: float):
-    return '{:,}'.format(value)
+def cs_thousands(value):
+    if value != '':
+        return '{:,}'.format(value)
+    return value
 
 
 @register.filter(name='reverse_sing')
@@ -27,7 +29,7 @@ def balance_sheet_table(context):
     entity_model = context['entity']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    return entity_model.digest(activity=activity)
+    return entity_model.digest(activity=activity, groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)

@@ -37,7 +37,7 @@
         <td>{% trans 'Total Assets' %}</td>
         <td></td>
         <td></td>
-        <td>${{ total_assets | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</td>
     </tr>
 
     <tr>
@@ -65,7 +65,7 @@
         <td>{% trans 'Total Liabilities' %}</td>
         <td></td>
         <td></td>
-        <td>${{ total_liabilities | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</td>
     </tr>
 
 
@@ -95,7 +95,7 @@
         <td>{% trans 'Total Capital' %}</td>
         <td></td>
         <td></td>
-        <td>${{ total_capital | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_CAPITAL | cs_thousands }}</td>
     </tr>
 
 
@@ -103,21 +103,21 @@
         <td>{% trans 'Retained Earnings' %}</td>
         <td></td>
         <td></td>
-        <td>${{ retained_earnings | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
     </tr>
 
     <tr class="has-text-weight-bold">
         <td>{% trans 'Total Equity' %}</td>
         <td></td>
         <td></td>
-        <td>${{ total_equity | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</td>
     </tr>
 
     <tr class="has-text-weight-bold">
         <td>{% trans 'Total Equity + Liabilities' %}</td>
         <td></td>
         <td></td>
-        <td>${{ total_liabilities_equity | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
     </tr>
     </tbody>
 

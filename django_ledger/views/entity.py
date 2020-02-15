@@ -43,7 +43,7 @@ class EntityModelDetailVew(DetailView):
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        digest = entity.digest(as_of=date_filter, ratios=True)
+        digest = entity.digest(as_of=date_filter, ratios=True, roles=True, groups=True)
         context.update(digest)
         return context
 
