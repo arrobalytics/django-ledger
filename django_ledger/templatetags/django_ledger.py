@@ -39,9 +39,10 @@ def income_statement_table(context, entity_model=None):
     if not entity_model:
         raise ValidationError('No entity model detected.')
     activity = context['request'].GET.get('activity')
-    ic_data = entity_model.income_statement(signs=True, activity=activity)
-    income = [acc for acc in ic_data if acc['role'] in GROUP_INCOME]
-    expenses = [acc for acc in ic_data if acc['role'] in GROUP_EXPENSES]
+    ic_data = entity_model.digest(activity=activity, method='ic', groups=True)
+    balances = ic_data['tx_digest']['balances']
+    income = [acc for acc in balances if acc['role'] in GROUP_INCOME]
+    expenses = [acc for acc in balances if acc['role'] in GROUP_EXPENSES]
     for ex in expenses:
         ex['balance'] = -ex['balance']
     total_income = sum([acc['balance'] for acc in income])
@@ -50,7 +51,7 @@ def income_statement_table(context, entity_model=None):
 
     return {
         'ic_data': ic_data,
-        'income': income,
+        'income': ic_data['tx_digest']['groups']['GROUP_INCOME'],
         'total_income': total_income,
         'expenses': expenses,
         'total_expenses': total_expenses,

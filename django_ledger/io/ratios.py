@@ -7,22 +7,22 @@ class FinancialRatioGenerator:
 
     def __init__(self, tx_digest):
         self.DIGEST = tx_digest
-        self.BALANCES = tx_digest['balances']
+        self.ACCOUNTS = tx_digest['accounts']
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_QUICK_ASSETS])
+        self.quick_assets = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_QUICK_ASSETS])
         self.current_liabilities = sum(
-            [acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
+            [acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
         self.current_assets = sum(
-            [acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_CURRENT_ASSETS])
-        self.equity = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_CAPITAL])
-        self.debt = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_LIABILITIES])
+            [acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CURRENT_ASSETS])
+        self.equity = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CAPITAL])
+        self.debt = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_LIABILITIES])
 
-        self.net_income = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_EARNINGS])
-        self.net_sales = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_NET_SALES])
-        self.net_profit = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_NET_PROFIT])
-        self.gross_profit = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in roles.GROUP_GROSS_PROFIT])
-        self.assets = sum([acc['balance'] for acc in self.BALANCES if acc['role_bs'] == 'assets'])
+        self.net_income = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_EARNINGS])
+        self.net_sales = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_NET_SALES])
+        self.net_profit = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_NET_PROFIT])
+        self.gross_profit = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_GROSS_PROFIT])
+        self.assets = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role_bs'] == 'assets'])
 
         self.RATIOS = dict()
 

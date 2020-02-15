@@ -245,7 +245,7 @@ class RolesManager:
         self.PROCESS_GROUPS = groups
 
         self.DIGEST = tx_digest
-        self.BALANCES = tx_digest['balances']
+        self.ACCOUNTS = tx_digest['accounts']
 
         self.ROLES = dict()
         self.GROUPS = dict()
@@ -267,10 +267,10 @@ class RolesManager:
     def process_roles(self):
         for c, l in ROLES_DIRECTORY.items():
             for r in l:
-                self.ROLES[r] = sum([acc['balance'] for acc in self.BALANCES if acc['role'] == getattr(mod, r)])
+                self.ROLES[r] = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r)])
         self.DIGEST['roles'] = self.ROLES
 
     def process_groups(self):
         for g in ROLES_GROUPS:
-            self.GROUPS[g] = sum([acc['balance'] for acc in self.BALANCES if acc['role'] in getattr(mod, g)])
+            self.GROUPS[g] = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g)])
         self.DIGEST['groups'] = self.GROUPS

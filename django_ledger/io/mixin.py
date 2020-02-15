@@ -187,19 +187,13 @@ class IOMixIn:
 
     def get_jes(self,
                 as_of: str = None,
-                method: str = 'bs',
+                method: str = None,
                 activity: str = None,
                 role: str = None,
                 accounts: str = None):
 
-        if method != 'bs':
+        if method == 'ic':
             role = roles.GROUP_EARNINGS
-        if method == 'ic-op':
-            activity = ['op']
-        elif method == 'ic-inv':
-            activity = ['inv']
-        elif method == 'ic-fin':
-            activity = ['fin']
 
         je_txs = self.get_je_txs(as_of=as_of,
                                  activity=activity,
@@ -220,7 +214,7 @@ class IOMixIn:
         ) for acc in je_txs if acc['txs__amount']]))
 
         # todo: Can this be done at the DB level???
-        tx_aggregate = [
+        acc_balances = [
             {
                 'role_bs': acc[0],
                 'role': acc[1],
@@ -232,20 +226,18 @@ class IOMixIn:
             } for acc in account_idx
         ]
 
-        return tx_aggregate
+        return acc_balances
 
-    # Financial Statements -----
-    # todo: rename this method to something more generic, not just related to BS.
-    def get_account_balances(self, as_of: str = None, signs: bool = False, activity: str = None):
+    def get_account_balances(self, as_of: str = None, signs: bool = False, activity: str = None, method: str = None):
 
-        bs_data = self.get_jes(as_of=as_of,
-                               activity=activity,
-                               method='bs')
+        jes = self.get_jes(as_of=as_of,
+                           activity=activity,
+                           method=method)
 
         # process signs will return negative balances for contra-accounts...
         if signs:
-            bs_data = [process_signs(rec) for rec in bs_data]
-        return bs_data
+            jes = [process_signs(rec) for rec in jes]
+        return jes
 
     # todo: Can eliminate this method???...
     def income_statement(self, signs: bool = False, activity: str = None):
@@ -265,16 +257,17 @@ class IOMixIn:
                as_of: str = None,
                roles: bool = True,
                groups: bool = False,
-               ratios: bool = False) -> dict:
+               ratios: bool = False,
+               method: str = None) -> dict:
 
-        balances = self.get_account_balances(signs=True, activity=activity, as_of=as_of)
+        accounts = self.get_account_balances(signs=True, activity=activity, as_of=as_of, method=method)
 
-        assets = [acc for acc in balances if acc['role'] in GROUP_ASSETS]
-        liabilities = [acc for acc in balances if acc['role'] in GROUP_LIABILITIES]
-        capital = [acc for acc in balances if acc['role'] in GROUP_CAPITAL]
+        assets = [acc for acc in accounts if acc['role'] in GROUP_ASSETS]
+        liabilities = [acc for acc in accounts if acc['role'] in GROUP_LIABILITIES]
+        capital = [acc for acc in accounts if acc['role'] in GROUP_CAPITAL]
 
         digest = dict(
-            balances=balances
+            accounts=accounts
         )
 
         roles_mgr = RolesManager(tx_digest=digest, roles=roles, groups=groups)
