@@ -28,12 +28,12 @@ def balance_sheet_table(context):
     entity_model = context['entity']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
+    # todo: incorporate digest in context.
     return entity_model.digest(activity=activity, groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, entity_model=None):
-
     if not entity_model:
         entity_model = context.get('entity')
     if not entity_model:
@@ -41,8 +41,8 @@ def income_statement_table(context, entity_model=None):
 
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    ic_digest = entity_model.digest(activity=activity, equity_only=True, groups=True)
-    return ic_digest
+    # todo: incorporate digest in context.
+    return entity_model.digest(activity=activity, equity_only=True, groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)

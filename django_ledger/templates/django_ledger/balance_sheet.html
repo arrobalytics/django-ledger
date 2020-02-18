@@ -6,19 +6,10 @@
 {% block content %}
     <section class="section">
         <div class="container">
-            <div class="columns is-centered">
+            <div class="columns">
                 <div class="column is-8">
                     <div class="box">
-                        <div class="columns">
-                            <div class="column is-4">
-
-                                    {% activity_filter %}
-
-                            </div>
-                        </div>
-
                         {% balance_sheet_table %}
-
                         {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
                             <a class="button is-fullwidth is-dark is-small djetler_my_1"
                                href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
@@ -28,9 +19,10 @@
                                href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go
                                 Back</a>
                         {% endif %}
-
                     </div>
-
+                </div>
+                <div class="column is-4">
+                    {% include 'django_ledger/tags/filters.html' %}
                 </div>
             </div>
         </div>
