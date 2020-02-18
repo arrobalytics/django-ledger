@@ -4,9 +4,8 @@ from django.core.exceptions import ValidationError
 
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.io import roles as roles
-from django_ledger.io.ratios import FinancialRatioGenerator
-from django_ledger.io.roles import (RolesManager, GROUP_CAPITAL, GROUP_LIABILITIES, GROUP_ASSETS, GROUP_INCOME,
-                                    GROUP_EXPENSES)
+from django_ledger.io.ratios import FinancialRatioManager
+from django_ledger.io.roles import RolesManager
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 
@@ -270,15 +269,6 @@ class IOMixIn:
                                              as_of=as_of,
                                              equity_only=equity_only)
 
-        assets = [acc for acc in accounts if acc['role'] in GROUP_ASSETS]
-        liabilities = [acc for acc in accounts if acc['role'] in GROUP_LIABILITIES]
-        capital = [acc for acc in accounts if acc['role'] in GROUP_CAPITAL]
-        income = [acc for acc in accounts if acc['role'] in GROUP_INCOME]
-        expenses = [acc for acc in accounts if acc['role'] in GROUP_EXPENSES]
-
-        total_income = sum([acc['balance'] for acc in income])
-        total_expenses = sum([acc['balance'] for acc in expenses])
-
         digest = dict(
             accounts=accounts
         )
@@ -287,17 +277,9 @@ class IOMixIn:
         digest = roles_mgr.generate()
 
         if ratios:
-            ratio_gen = FinancialRatioGenerator(tx_digest=digest)
+            ratio_gen = FinancialRatioManager(tx_digest=digest)
             digest = ratio_gen.generate()
 
         return {
             'tx_digest': digest,
-            'assets': assets,
-            'liabilities': liabilities,
-            'capital': capital,
-            'income': income,
-            'expenses': expenses,
-            'total_income': total_income,
-            'total_expenses': total_expenses,
-            'total_income_loss': total_income + total_expenses
         }

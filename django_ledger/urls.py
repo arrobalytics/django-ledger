@@ -28,10 +28,10 @@ urlpatterns = [
 
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',
-         views.EntityBalanceSheetView.as_view(),
+         views.EntityModelBalanceSheetView.as_view(),
          name='entity-bs'),
     path('entity/<slug:entity_slug>/income-statement/',
-         views.EntityIncomeStatementView.as_view(),
+         views.EntityModelIncomeStatementView.as_view(),
          name='entity-ic'),
 
     # Entity Chart of Accounts -----

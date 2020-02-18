@@ -114,7 +114,7 @@ class EntityModelUpdateView(UpdateView):
         return EntityModel.objects.for_user(user=self.request.user)
 
 
-class EntityBalanceSheetView(DetailView):
+class EntityModelBalanceSheetView(DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/balance_sheet.html'
@@ -134,7 +134,7 @@ class EntityBalanceSheetView(DetailView):
         return EntityModel.objects.for_user(user=self.request.user)
 
 
-class EntityIncomeStatementView(DetailView):
+class EntityModelIncomeStatementView(DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/income_statement.html'

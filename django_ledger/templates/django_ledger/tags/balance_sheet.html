@@ -20,7 +20,7 @@
     </tr>
 
     {# ASSETS #}
-    {% for acc in assets %}
+    {% for acc in tx_digest.groups_accounts.GROUP_ASSETS %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
@@ -48,7 +48,7 @@
     </tr>
 
     {# LIABILITIES #}
-    {% for acc in liabilities %}
+    {% for acc in tx_digest.groups_accounts.GROUP_LIABILITIES %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
@@ -77,7 +77,7 @@
     </tr>
 
     {# CAPITAL #}
-    {% for acc in capital %}
+    {% for acc in tx_digest.groups_accounts.GROUP_CAPITAL %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>

@@ -13,7 +13,7 @@
         <td></td>
         <td></td>
     </tr>
-    {% for acc in ic_digest.income %}
+    {% for acc in tx_digest.groups_accounts.GROUP_INCOME %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
@@ -25,7 +25,7 @@
         <td>Total Income</td>
         <td></td>
         <td></td>
-        <td>${{ ic_digest.total_income | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</td>
     </tr>
 
 
@@ -35,7 +35,7 @@
         <td></td>
         <td></td>
     </tr>
-    {% for acc in ic_digest.expenses %}
+    {% for acc in tx_digest.groups_accounts.GROUP_EXPENSES %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
@@ -47,7 +47,7 @@
         <td>Total Expenses</td>
         <td></td>
         <td></td>
-        <td>${{ ic_digest.total_expenses | reverse_sing | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</td>
     </tr>
 
 
@@ -55,7 +55,7 @@
         <td>Total Income (Loss)</td>
         <td></td>
         <td></td>
-        <td>${{ ic_digest.total_income_loss | cs_thousands }}</td>
+        <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
     </tr>
 
 

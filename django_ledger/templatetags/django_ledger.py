@@ -40,11 +40,9 @@ def income_statement_table(context, entity_model=None):
         raise ValidationError('No entity model detected.')
 
     activity = context['request'].GET.get('activity')
+    activity = validate_activity(activity, raise_404=True)
     ic_digest = entity_model.digest(activity=activity, equity_only=True, groups=True)
-
-    return {
-        'ic_digest': ic_digest,
-    }
+    return ic_digest
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)

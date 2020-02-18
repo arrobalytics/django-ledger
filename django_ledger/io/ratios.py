@@ -3,7 +3,7 @@ from django_ledger.io import roles as roles
 RATIO_NA = 'NA'
 
 
-class FinancialRatioGenerator:
+class FinancialRatioManager:
 
     def __init__(self, tx_digest):
         self.DIGEST = tx_digest

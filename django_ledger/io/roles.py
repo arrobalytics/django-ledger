@@ -110,7 +110,6 @@ GROUP_CAPITAL = [
     EQUITY_ADJUSTMENT
 ]
 
-
 GROUP_INCOME = [
     INCOME_SALES,
     INCOME_PASSIVE,
@@ -234,7 +233,12 @@ ROLES_DIRECTORY = dict()
 ROLES_CATEGORIES = ['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'COGS', 'EXPENSE']
 for cat in ROLES_CATEGORIES:
     ROLES_DIRECTORY[cat] = [c for c in ROLES_VARS if c.split('_')[0] == cat]
+
 ROLES_GROUPS = [g for g in ROLES_VARS if g.split('_')[0] == 'GROUP']
+
+GROUPS_DIRECTORY = dict()
+for group in ROLES_GROUPS:
+    GROUPS_DIRECTORY[group] = getattr(mod, group)
 
 
 class RolesManager:
@@ -247,30 +251,40 @@ class RolesManager:
         self.DIGEST = tx_digest
         self.ACCOUNTS = tx_digest['accounts']
 
-        self.ROLES = dict()
-        self.GROUPS = dict()
+        self.ROLES_BALANCES = dict()
+        self.ROLES_ACCOUNTS = dict()
+
+        self.GROUPS_BALANCES = dict()
+        self.GROUPS_ACCOUNTS = dict()
 
     def generate(self):
 
+        self.DIGEST['roles_accounts'] = None
         self.DIGEST['roles'] = None
         if self.PROCESS_ROLES:
             self.process_roles()
-            self.DIGEST['roles'] = self.ROLES
+            self.DIGEST['roles'] = self.ROLES_BALANCES
 
         self.DIGEST['groups'] = None
         if self.PROCESS_GROUPS:
             self.process_groups()
-            self.DIGEST['groups'] = self.GROUPS
+            self.DIGEST['groups'] = self.GROUPS_BALANCES
 
         return self.DIGEST
 
     def process_roles(self):
         for c, l in ROLES_DIRECTORY.items():
             for r in l:
-                self.ROLES[r] = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r)])
-        self.DIGEST['roles'] = self.ROLES
+                acc_list = [acc for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r)]
+                self.ROLES_ACCOUNTS[r] = acc_list
+                self.ROLES_BALANCES[r] = sum([acc['balance'] for acc in acc_list])
+        self.DIGEST['roles_accounts'] = self.ROLES_ACCOUNTS
+        self.DIGEST['roles'] = self.ROLES_BALANCES
 
     def process_groups(self):
         for g in ROLES_GROUPS:
-            self.GROUPS[g] = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g)])
-        self.DIGEST['groups'] = self.GROUPS
+            acc_list = [acc for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g)]
+            self.GROUPS_ACCOUNTS[g] = acc_list
+            self.GROUPS_BALANCES[g] = sum([acc['balance'] for acc in acc_list])
+        self.DIGEST['groups_accounts'] = self.GROUPS_ACCOUNTS
+        self.DIGEST['groups'] = self.GROUPS_BALANCES
