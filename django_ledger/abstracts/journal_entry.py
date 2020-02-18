@@ -36,7 +36,7 @@ def validate_activity(act: str, raise_404: bool = False):
             raise exception
 
         valid = act in ACTIVITY_ALLOWS
-        if not valid:
+        if act and not valid:
             exception = ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
             if raise_404:
                 raise Http404(exception)
