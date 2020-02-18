@@ -1,5 +1,3 @@
-from django_ledger.io import roles as roles
-
 RATIO_NA = 'NA'
 
 
@@ -10,20 +8,16 @@ class FinancialRatioManager:
         self.ACCOUNTS = tx_digest['accounts']
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_QUICK_ASSETS])
-        self.current_liabilities = sum(
-            [acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CURRENT_LIABILITIES])
-        self.current_assets = sum(
-            [acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CURRENT_ASSETS])
-        self.equity = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_CAPITAL])
-        self.debt = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_LIABILITIES])
-
-        self.net_income = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_EARNINGS])
-        self.net_sales = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_NET_SALES])
-        self.net_profit = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_NET_PROFIT])
-        self.gross_profit = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role'] in roles.GROUP_GROSS_PROFIT])
-        self.assets = sum([acc['balance'] for acc in self.ACCOUNTS if acc['role_bs'] == 'assets'])
-
+        self.quick_assets = tx_digest['groups']['GROUP_QUICK_ASSETS']
+        self.assets = tx_digest['groups']['GROUP_ASSETS']
+        self.current_liabilities = tx_digest['groups']['GROUP_CURRENT_LIABILITIES']
+        self.current_assets = tx_digest['groups']['GROUP_CURRENT_ASSETS']
+        self.equity = tx_digest['groups']['GROUP_CAPITAL']
+        self.liabilities = tx_digest['groups']['GROUP_LIABILITIES']
+        self.net_income = tx_digest['groups']['GROUP_EARNINGS']
+        self.net_sales = tx_digest['groups']['GROUP_NET_SALES']
+        self.net_profit = tx_digest['groups']['GROUP_NET_PROFIT']
+        self.gross_profit = tx_digest['groups']['GROUP_GROSS_PROFIT']
         self.RATIOS = dict()
 
     def generate(self):
@@ -37,6 +31,7 @@ class FinancialRatioManager:
         self.DIGEST['ratios'] = self.RATIOS
         return self.DIGEST
 
+    # ------> SOLVENCY RATIOS <------
     def quick_ratio(self, as_percent=False):
         if self.current_liabilities == 0:
             cr = self.RATIO_NA
@@ -55,15 +50,17 @@ class FinancialRatioManager:
                 cr = cr * 100
         self.RATIOS['current_ratio'] = cr
 
+    # ------> LEVERAGE RATIOS <------
     def debt_to_equity(self, as_percent=False):
         if self.equity == 0:
             cr = RATIO_NA
         else:
-            cr = self.debt / self.equity
+            cr = self.liabilities / self.equity
             if as_percent:
                 cr = cr * 100
         self.RATIOS['debt_to_equity'] = cr
 
+    # ------> PROFITABILITY RATIOS <------
     def return_on_equity(self, as_percent=False):
         if self.equity == 0:
             cr = RATIO_NA
@@ -99,9 +96,3 @@ class FinancialRatioManager:
             if as_percent:
                 gpm = gpm * 100
         self.RATIOS['gross_profit_margin'] = gpm
-
-# PROFITABILITY RATIOS
-
-# SOLVENCY RATIOS
-
-# LEVERAGE RATIOS
