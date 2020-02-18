@@ -13,7 +13,7 @@
         <td></td>
         <td></td>
     </tr>
-    {% for acc in income %}
+    {% for acc in ic_digest.income %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
@@ -25,7 +25,7 @@
         <td>Total Income</td>
         <td></td>
         <td></td>
-        <td>${{ total_income | cs_thousands }}</td>
+        <td>${{ ic_digest.total_income | cs_thousands }}</td>
     </tr>
 
 
@@ -35,19 +35,19 @@
         <td></td>
         <td></td>
     </tr>
-    {% for acc in expenses %}
+    {% for acc in ic_digest.expenses %}
         <tr>
             <td>{{ acc.code }}</td>
             <td>{{ acc.name }}</td>
             <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | cs_thousands }}</td>
+            <td>${{ acc.balance | reverse_sing | cs_thousands }}</td>
         </tr>
     {% endfor %}
     <tr class="has-text-weight-bold">
         <td>Total Expenses</td>
         <td></td>
         <td></td>
-        <td>${{ total_expenses | cs_thousands }}</td>
+        <td>${{ ic_digest.total_expenses | reverse_sing | cs_thousands }}</td>
     </tr>
 
 
@@ -55,7 +55,7 @@
         <td>Total Income (Loss)</td>
         <td></td>
         <td></td>
-        <td>${{ total_income_loss | cs_thousands }}</td>
+        <td>${{ ic_digest.total_income_loss | cs_thousands }}</td>
     </tr>
 
 

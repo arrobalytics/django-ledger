@@ -5,7 +5,8 @@ from django.core.exceptions import ValidationError
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.io import roles as roles
 from django_ledger.io.ratios import FinancialRatioGenerator
-from django_ledger.io.roles import RolesManager, GROUP_CAPITAL, GROUP_LIABILITIES, GROUP_ASSETS
+from django_ledger.io.roles import (RolesManager, GROUP_CAPITAL, GROUP_LIABILITIES, GROUP_ASSETS, GROUP_INCOME,
+                                    GROUP_EXPENSES)
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 
@@ -187,12 +188,12 @@ class IOMixIn:
 
     def get_jes(self,
                 as_of: str = None,
-                method: str = None,
+                equity_only: bool = False,
                 activity: str = None,
                 role: str = None,
                 accounts: str = None):
 
-        if method == 'ic':
+        if equity_only:
             role = roles.GROUP_EARNINGS
 
         je_txs = self.get_je_txs(as_of=as_of,
@@ -228,11 +229,15 @@ class IOMixIn:
 
         return acc_balances
 
-    def get_account_balances(self, as_of: str = None, signs: bool = False, activity: str = None, method: str = None):
+    def get_account_balances(self,
+                             as_of: str = None,
+                             signs: bool = False,
+                             activity: str = None,
+                             equity_only: bool = False):
 
         jes = self.get_jes(as_of=as_of,
                            activity=activity,
-                           method=method)
+                           equity_only=equity_only)
 
         # process signs will return negative balances for contra-accounts...
         if signs:
@@ -245,7 +250,7 @@ class IOMixIn:
         if isinstance(activity, str):
             method += '-{x1}'.format(x1=activity)
 
-        ic_data = self.get_jes(method=method)
+        ic_data = self.get_jes(equity_only=True)
 
         if signs:
             ic_data = [process_signs(rec) for rec in ic_data]
@@ -258,13 +263,21 @@ class IOMixIn:
                roles: bool = True,
                groups: bool = False,
                ratios: bool = False,
-               method: str = None) -> dict:
+               equity_only: bool = False) -> dict:
 
-        accounts = self.get_account_balances(signs=True, activity=activity, as_of=as_of, method=method)
+        accounts = self.get_account_balances(signs=True,
+                                             activity=activity,
+                                             as_of=as_of,
+                                             equity_only=equity_only)
 
         assets = [acc for acc in accounts if acc['role'] in GROUP_ASSETS]
         liabilities = [acc for acc in accounts if acc['role'] in GROUP_LIABILITIES]
         capital = [acc for acc in accounts if acc['role'] in GROUP_CAPITAL]
+        income = [acc for acc in accounts if acc['role'] in GROUP_INCOME]
+        expenses = [acc for acc in accounts if acc['role'] in GROUP_EXPENSES]
+
+        total_income = sum([acc['balance'] for acc in income])
+        total_expenses = sum([acc['balance'] for acc in expenses])
 
         digest = dict(
             accounts=accounts
@@ -281,5 +294,10 @@ class IOMixIn:
             'tx_digest': digest,
             'assets': assets,
             'liabilities': liabilities,
-            'capital': capital
+            'capital': capital,
+            'income': income,
+            'expenses': expenses,
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'total_income_loss': total_income + total_expenses
         }

@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
-from django_ledger.io.roles import GROUP_INCOME, GROUP_EXPENSES
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 
 register = template.Library()
@@ -34,28 +33,17 @@ def balance_sheet_table(context):
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, entity_model=None):
+
     if not entity_model:
         entity_model = context.get('entity')
     if not entity_model:
         raise ValidationError('No entity model detected.')
+
     activity = context['request'].GET.get('activity')
-    ic_data = entity_model.digest(activity=activity, method='ic', groups=True)
-    balances = ic_data['tx_digest']['balances']
-    income = [acc for acc in balances if acc['role'] in GROUP_INCOME]
-    expenses = [acc for acc in balances if acc['role'] in GROUP_EXPENSES]
-    for ex in expenses:
-        ex['balance'] = -ex['balance']
-    total_income = sum([acc['balance'] for acc in income])
-    total_expenses = sum([acc['balance'] for acc in expenses])
-    total_income_loss = total_income - total_expenses
+    ic_digest = entity_model.digest(activity=activity, equity_only=True, groups=True)
 
     return {
-        'ic_data': ic_data,
-        'income': ic_data['tx_digest']['groups']['GROUP_INCOME'],
-        'total_income': total_income,
-        'expenses': expenses,
-        'total_expenses': total_expenses,
-        'total_income_loss': total_income_loss
+        'ic_digest': ic_digest,
     }
 
 
