@@ -1,62 +1,74 @@
 {% load django_ledger %}
 
-<table class="table is-fullwidth">
-    <tr>
-        <th>Account Number</th>
-        <th>Description</th>
-        <th>Balance Type</th>
-        <th>Balance</th>
-    </tr>
-    <tr>
-        <td><h2 class="is-size-3">Income</h2></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-    {% for acc in tx_digest.groups_accounts.GROUP_INCOME %}
+<div class="table-container">
+    <table class="table is-fullwidth">
         <tr>
-            <td>{{ acc.code }}</td>
-            <td>{{ acc.name }}</td>
-            <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | cs_thousands }}</td>
+            <th>Account Number</th>
+            <th>Description</th>
+            <th>Balance Type</th>
+            <th>Balance</th>
         </tr>
-    {% endfor %}
-    <tr class="has-text-weight-bold">
-        <td>Total Income</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</td>
-    </tr>
-
-
-    <tr>
-        <td><h2 class="is-size-3">Expenses</h2></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-    {% for acc in tx_digest.groups_accounts.GROUP_EXPENSES %}
         <tr>
-            <td>{{ acc.code }}</td>
-            <td>{{ acc.name }}</td>
-            <td>{{ acc.balance_type }}</td>
-            <td>${{ acc.balance | reverse_sing | cs_thousands }}</td>
+            <td><h2 class="is-size-3">Income</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
-    {% endfor %}
-    <tr class="has-text-weight-bold">
-        <td>Total Expenses</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</td>
-    </tr>
+        {% for acc in tx_digest.groups_accounts.GROUP_INCOME %}
+            <tr>
+                <td>{{ acc.code }}</td>
+                <td>{{ acc.name }}</td>
+                <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i>
+                    </span>
+                </td>
+                <td>${{ acc.balance | cs_thousands }}</td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td>Total Income</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</td>
+        </tr>
 
 
-    <tr class="has-text-weight-bold">
-        <td>Total Income (Loss)</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
-    </tr>
+        <tr>
+            <td><h2 class="is-size-3">Expenses</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% for acc in tx_digest.groups_accounts.GROUP_EXPENSES %}
+            <tr>
+                <td>{{ acc.code }}</td>
+                <td>{{ acc.name }}</td>
+                <td class="has-text-centered">
+                    <span class="icon"><i
+                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                    ></i>
+                    </span>
+                </td>
+                <td>${{ acc.balance | reverse_sing | cs_thousands }}</td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td>Total Expenses</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</td>
+        </tr>
 
 
-</table>
+        <tr class="has-text-weight-bold">
+            <td>Total Income (Loss)</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
+        </tr>
+
+
+    </table>
+</div>
