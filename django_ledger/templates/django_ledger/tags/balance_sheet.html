@@ -1,124 +1,126 @@
 {% load django_ledger %}
 {% load i18n %}
 
-<table class="table is-fullwidth">
-    <thead>
-    <tr>
-        <th>{% trans 'Account Number' %}</th>
-        <th>{% trans 'Description' %}</th>
-        <th>{% trans 'Balance Type' %}</th>
-        <th>{% trans 'Balance' %}</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    <tr>
-        <td><h2 class="is-size-3">{% trans 'Assets' %}</h2></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-
-    {# ASSETS #}
-    {% for acc in tx_digest.groups_accounts.GROUP_ASSETS %}
+<div class="table-container">
+    <table class="table is-fullwidth">
+        <thead>
         <tr>
-            <td>{{ acc.code }}</td>
-            <td>{{ acc.name }}</td>
-            <td class="has-text-centered">
+            <th>{% trans 'Account Number' %}</th>
+            <th>{% trans 'Description' %}</th>
+            <th>{% trans 'Balance Type' %}</th>
+            <th>{% trans 'Balance' %}</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+            <td><h2 class="is-size-3">{% trans 'Assets' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        {# ASSETS #}
+        {% for acc in tx_digest.groups_accounts.GROUP_ASSETS %}
+            <tr>
+                <td>{{ acc.code }}</td>
+                <td>{{ acc.name }}</td>
+                <td class="has-text-centered">
                     <span class="icon"><i
                             class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
                     ></i>
                     </span>
-            </td>
-            <td>${{ acc.balance | cs_thousands }}</td>
+                </td>
+                <td>${{ acc.balance | cs_thousands }}</td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Total Assets' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</td>
         </tr>
-    {% endfor %}
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Total Assets' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</td>
-    </tr>
 
-    <tr>
-        <td><h2 class="is-size-3">{% trans 'Liabilities' %}</h2></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
-
-    {# LIABILITIES #}
-    {% for acc in tx_digest.groups_accounts.GROUP_LIABILITIES %}
         <tr>
-            <td>{{ acc.code }}</td>
-            <td>{{ acc.name }}</td>
-            <td class="has-text-centered">
+            <td><h2 class="is-size-3">{% trans 'Liabilities' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+
+        {# LIABILITIES #}
+        {% for acc in tx_digest.groups_accounts.GROUP_LIABILITIES %}
+            <tr>
+                <td>{{ acc.code }}</td>
+                <td>{{ acc.name }}</td>
+                <td class="has-text-centered">
                     <span class="icon"><i
                             class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
                     ></i>
                     </span>
-            </td>
-            <td>${{ acc.balance | cs_thousands }}</td>
+                </td>
+                <td>${{ acc.balance | cs_thousands }}</td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Total Liabilities' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</td>
         </tr>
-    {% endfor %}
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Total Liabilities' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</td>
-    </tr>
 
 
-    <tr class="is-primary">
-        <td><h2 class="is-size-3">{% trans 'Equity' %}</h2></td>
-        <td></td>
-        <td></td>
-        <td></td>
-    </tr>
+        <tr class="is-primary">
+            <td><h2 class="is-size-3">{% trans 'Equity' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
 
-    {# CAPITAL #}
-    {% for acc in tx_digest.groups_accounts.GROUP_CAPITAL %}
-        <tr>
-            <td>{{ acc.code }}</td>
-            <td>{{ acc.name }}</td>
-            <td class="has-text-centered">
+        {# CAPITAL #}
+        {% for acc in tx_digest.groups_accounts.GROUP_CAPITAL %}
+            <tr>
+                <td>{{ acc.code }}</td>
+                <td>{{ acc.name }}</td>
+                <td class="has-text-centered">
                     <span class="icon"><i
                             class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
                     ></i>
                     </span>
-            </td>
-            <td>${{ acc.balance | cs_thousands }}</td>
+                </td>
+                <td>${{ acc.balance | cs_thousands }}</td>
+            </tr>
+        {% endfor %}
+
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Total Capital' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_CAPITAL | cs_thousands }}</td>
         </tr>
-    {% endfor %}
-
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Total Capital' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_CAPITAL | cs_thousands }}</td>
-    </tr>
 
 
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Retained Earnings' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
-    </tr>
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Retained Earnings' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
+        </tr>
 
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Total Equity' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</td>
-    </tr>
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Total Equity' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</td>
+        </tr>
 
-    <tr class="has-text-weight-bold">
-        <td>{% trans 'Total Equity + Liabilities' %}</td>
-        <td></td>
-        <td></td>
-        <td>${{ tx_digest.groups.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
-    </tr>
-    </tbody>
+        <tr class="has-text-weight-bold">
+            <td>{% trans 'Total Equity + Liabilities' %}</td>
+            <td></td>
+            <td></td>
+            <td>${{ tx_digest.groups.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
+        </tr>
+        </tbody>
 
-</table>
+    </table>
+</div>

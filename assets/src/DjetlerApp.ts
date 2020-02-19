@@ -67,16 +67,29 @@ export class DjetlerApp {
     }
 
     getFlatPickrOptions(inline: boolean = false) {
-        return {
-            wrap: !inline,
-            inline: inline,
-            onChange: (selectedDates: any, dateStr: String, instance: any) => {
-                let formId = instance._input.classList[1].split("-")[5];
-                let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-" + formId);
-                // @ts-ignore
-                dateFilterForm.submit();
-            }
-        };
+        if (!inline) {
+            return {
+                wrap: !inline,
+                inline: inline,
+                onChange: (selectedDates: any, dateStr: String, instance: any) => {
+                    let formId = instance._input.classList[1].split("-")[5];
+                    let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-" + formId);
+                    // @ts-ignore
+                    dateFilterForm.submit();
+                }
+            };
+        } else {
+            return {
+                wrap: !inline,
+                inline: inline,
+                onChange: (selectedDates: any, dateStr: String, instance: any) => {
+                    let formId = instance._input.classList[1].split("-")[5];
+                    let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-" + formId);
+                    // @ts-ignore
+                    dateFilterForm.submit();
+                }
+            };
+        }
     }
 
     setEntityFilter() {

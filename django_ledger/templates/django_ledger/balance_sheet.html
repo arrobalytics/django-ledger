@@ -6,8 +6,8 @@
 {% block content %}
     <section class="section">
         <div class="container">
-            <div class="columns">
-                <div class="column is-8">
+            <div class="columns is-multiline">
+                <div class="column is-8-desktop is-12-mobile">
                     <div class="box">
                         {% balance_sheet_table %}
                         {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
@@ -21,7 +21,7 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="column is-4">
+                <div class="column is-4-desktop is-12-mobile">
                     {% include 'django_ledger/tags/filters.html' %}
                 </div>
             </div>
