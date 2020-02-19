@@ -18,7 +18,6 @@ def txs_digest(tx: dict) -> dict:
 
 
 def populate_default_coa(entity_model: EntityModel):
-
     acc_objs = [AccountModel(
         code=a['code'],
         name=a['name'],
@@ -30,27 +29,6 @@ def populate_default_coa(entity_model: EntityModel):
     for acc in acc_objs:
         acc.full_clean()
         acc.save()
-
-    # AccountModel.objects.bulk_create(acc_objs)
-    # parents = set([a.get('parent') for a in CHART_OF_ACCOUNTS if a.get('parent')])
-    # if len(parents) > 0:
-    #     children = {
-    #         p: [c['code']
-    #             for c in CHART_OF_ACCOUNTS if c['parent'] == p and c['code'] != p] for p in parents
-    #     }
-    #
-    #     acc_list = list()
-    #     for parent, child_list in children.items():
-    #         parent_model = next(iter([a for a in acc_objs if a.code == parent]))
-    #         parent_model.full_clean()
-    #         parent_model.insert_at(target=None, save=True)
-    #
-    #         for child in child_list:
-    #             child_model = next(iter([acc for acc in acc_objs if acc.code == child]))
-    #             child_model.full_clean()
-    #             child_model.insert_at(target=parent_model, save=False)
-    #             acc_list.append(child_model)
-
 
 
 def make_accounts_active(entity_model: EntityModel, account_code_set: set):

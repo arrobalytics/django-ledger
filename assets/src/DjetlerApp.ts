@@ -3,16 +3,8 @@ import flatpickr from "flatpickr";
 
 export class DjetlerApp {
 
-    flatPickr: any;
-    datePickerOptions: Object = {
-        wrap: true,
-        onChange: (selectedDates: any, dateStr: String, instance: any) => {
-            let formId = instance._input.classList[1].split("-")[5];
-            let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-"+formId);
-            // @ts-ignore
-            dateFilterForm.submit();
-        }
-    };
+    dateFilters: any | null = null;
+    endDateFilters: any | null = null;
     vueInstance: Vue | null = null;
 
     constructor() {
@@ -59,10 +51,8 @@ export class DjetlerApp {
             });
         });
 
-        let endDateIconFilters = document.getElementsByClassName("djetler-end-date-icon-filter");
-        if (endDateIconFilters) {
-            this.flatPickr = flatpickr(endDateIconFilters, this.datePickerOptions);
-        }
+        this.endDateFilters = flatpickr(".djetler-end-date-icon-filter", this.getFlatPickrOptions(false));
+        this.dateFilters = flatpickr(".djetler-date-filter", this.getFlatPickrOptions(true));
 
         let djVue = document.getElementById('djetler-vue');
         if (djVue) {
@@ -74,6 +64,19 @@ export class DjetlerApp {
                 }
             });
         }
+    }
+
+    getFlatPickrOptions(inline: boolean = false) {
+        return {
+            wrap: !inline,
+            inline: inline,
+            onChange: (selectedDates: any, dateStr: String, instance: any) => {
+                let formId = instance._input.classList[1].split("-")[5];
+                let dateFilterForm = document.getElementById("djetler-end-date-icon-filter-form-" + formId);
+                // @ts-ignore
+                dateFilterForm.submit();
+            }
+        };
     }
 
     setEntityFilter() {

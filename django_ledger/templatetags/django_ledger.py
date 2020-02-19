@@ -28,8 +28,13 @@ def balance_sheet_table(context):
     entity_model = context['entity']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
+    end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
+    end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context.
-    return entity_model.digest(activity=activity, groups=True)
+    return entity_model.digest(activity=activity,
+                               equity_only=False,
+                               as_of=end_date_filter,
+                               groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
@@ -41,8 +46,13 @@ def income_statement_table(context, entity_model=None):
 
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
+    end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
+    end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context.
-    return entity_model.digest(activity=activity, equity_only=True, groups=True)
+    return entity_model.digest(activity=activity,
+                               as_of=end_date_filter,
+                               equity_only=True,
+                               groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)
@@ -108,8 +118,8 @@ def entity_filter(context):
 
 
 # todo: rename template to date_form_filter.
-@register.inclusion_tag('django_ledger/tags/date_form.html', takes_context=True)
-def date_end_filter(context):
+@register.inclusion_tag('django_ledger/tags/date_filter.html', takes_context=True)
+def date_filter(context, inline=False):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session
@@ -127,6 +137,7 @@ def date_end_filter(context):
             'entity_slug': entity_slug,
             'date_filter': date_filter,
             'next': next_url,
+            'inline': inline
         }
 
 
