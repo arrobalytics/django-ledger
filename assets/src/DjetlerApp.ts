@@ -92,8 +92,18 @@ export class DjetlerApp {
         }
     }
 
-    setEntityFilter() {
-        // let defaultEntityForm = document.getElementById("djetler-set-entity-form");
+    setEntityFilter(event: Event) {
+
+        let target: EventTarget | null = event.target;
+        if (target) {
+            // @ts-ignore
+            let klass: string = target['classList'][2];
+            let formId = klass.split("-")[4];
+            let defaultEntityForm = document.getElementById("djetler-set-entity-form-"+formId);
+            // @ts-ignore
+            defaultEntityForm.submit();
+            // console.log(defaultEntityForm);
+        }
         // @ts-ignore
         // defaultEntityForm.submit();
     }

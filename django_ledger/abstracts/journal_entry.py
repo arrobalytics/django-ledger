@@ -73,10 +73,11 @@ class JournalEntryModelManager(models.Manager):
         )
 
     def on_ledger(self, ledger):
-        # todo: add functionality for LedgerModel or ledger id.
-        return self.get_queryset().filter(
-            ledger=ledger
-        )
+        if isinstance(ledger, str):
+            qs = self.get_queryset().filter(ledger__slug__exact=ledger)
+        else:
+            qs = self.get_queryset().filter(ledger=ledger)
+        return qs
 
     def on_ledger_posted(self, ledger):
         return self.on_ledger(ledger=ledger).filter(

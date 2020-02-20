@@ -111,11 +111,14 @@ def default_entity(context):
     session_key = get_default_entity_session_key()
     default_entity_id = context['request'].session.get(session_key)
     identity = randint(0, 1000000)
+    next_url = context['request'].path
     default_entity_form = EntityFilterForm(user_model=user,
                                            form_id=identity,
                                            default_entity=default_entity_id)
     return {
-        'default_entity_form': default_entity_form
+        'default_entity_form': default_entity_form,
+        'form_id': identity,
+        'next': next_url
     }
 
 
