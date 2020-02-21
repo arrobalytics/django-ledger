@@ -159,6 +159,7 @@ class SetDefaultEntityView(RedirectView):
 
     def post(self, request, *args, **kwargs):
         form = EntityFilterForm(request.POST, user_model=request.user)
+        session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
             # todo: redirect to same origin view on selected entity.
@@ -166,8 +167,10 @@ class SetDefaultEntityView(RedirectView):
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
-            session_key = get_default_entity_session_key()
             self.request.session[session_key] = entity_model.id
+        else:
+            del self.request.session[session_key]
+            self.url = reverse('django_ledger:entity-list')
         return super().post(request, *args, **kwargs)
 
 

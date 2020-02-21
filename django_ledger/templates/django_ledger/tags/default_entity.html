@@ -1,5 +1,5 @@
 <form id="djetler-set-entity-form-{{ form_id }}"
-      action="{% url 'django_ledger:entity-set-default' %}?next={{ next }}"
+      action="{% url 'django_ledger:entity-set-default' %}"
       method="post">
     {% csrf_token %}
     <div class="field">
