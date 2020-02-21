@@ -11,48 +11,63 @@
                 <div class="tile is-vertical is-8">
                     <div class="tile">
                         <div class="tile is-parent is-vertical">
-                            <article class="tile is-child box content djetler-box-green">
+                            <div class="tile is-child box content djetler-box-green">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</h1>
                                 <h4 class="has-text-centered has-text-weight-light">{% trans 'Cash' %}</h4>
                                 <h3 class="has-text-centered">${{ tx_digest.roles.ASSET_CA_CASH | cs_thousands }}</h3>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
-                                <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</h1>
-                            </article>
-                            <article class="tile is-child box content djetler-box-yellow">
+                            </div>
+                            <div class="tile is-child box content djetler-box-yellow">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
-                                <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
                                 <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</h1>
-                            </article>
+                            </div>
                         </div>
-                        <div class="tile is-parent">
-                            <article class="tile is-child box content">
+                        <div class="tile is-parent is-vertical">
+                            <div class="tile is-child box content">
                                 <h2 class="has-text-centered has-text-weight-light">{% trans 'Insights' %}</h2>
                                 <p>Future place for cool stuff.</p>
                                 <div id="djetler-vue">[[message]]</div>
+                            </div>
+                            <div class="tile is-child box content">
+                                <h3 class="has-text-weight-light has-text-centered">Financial Analysis</h3>
 
-                                <p>Financial Ratios:</p>
-                                <p>Current Ratio: {{ tx_digest.ratios.current_ratio }}</p>
-                                <p>Quick Ratio: {{ tx_digest.ratios.quick_ratio }}</p>
-                                <p>Debt to Equity: {{ tx_digest.ratios.debt_to_equity }}</p>
-                                <p>ROE: {{ tx_digest.ratios.return_on_equity }}</p>
-                                <p>ROA: {{ tx_digest.ratios.return_on_assets }}</p>
+                                <h4>Solvency:</h4>
+                                <ul>
+                                    <li>Current Ratio: {{ tx_digest.ratios.current_ratio }}</li>
+                                    <li>Quick Ratio: {{ tx_digest.ratios.quick_ratio }}</li>
+                                </ul>
 
-                                <p>IS Net Profit Margin: {{ tx_digest.ratios.net_profit_margin }}</p>
-                                <p>IS Gross Profit Margin: {{ tx_digest.ratios.gross_profit_margin }}</p>
+                                <h4>Leverage:</h4>
+                                <ul>
+                                    <li>Debt to Equity: {{ tx_digest.ratios.debt_to_equity }}</li>
+                                </ul>
 
-                            </article>
+                                <h4>Profitability:</h4>
+                                <ul>
+                                    <li>ROE: {{ tx_digest.ratios.return_on_equity }}</li>
+                                    <li>ROA: {{ tx_digest.ratios.return_on_assets }}</li>
+                                    <li>Net Profit Margin: {{ tx_digest.ratios.net_profit_margin }}</li>
+                                    <li>Gross Profit Margin: {{ tx_digest.ratios.gross_profit_margin }}</li>
+                                </ul>
+
+
+                            </div>
                         </div>
                     </div>
 
                 </div>
                 <div class="tile is-parent">
-                    <article class="tile is-child box content">
+                    <div class="tile is-child box content">
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Chart of Accounts' %}</h2>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:account-list' entity_slug=entity.slug coa_slug=entity.coa.slug %}">Accounts</a>
@@ -64,6 +79,14 @@
                            href="{{ entity.get_ledgers_url }}">Ledgers</a>
 
 
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Actions' %}</h2>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="">Invoices</a>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="">Bills</a>
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                           href="">Purchase Orders</a>
+
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Reports' %}</h2>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="{{ entity.get_bs_url }}">Balance Sheet</a>
@@ -74,7 +97,7 @@
                         <a class="button is-primary is-outlined is-fullwidth"
                            href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a>
 
-                    </article>
+                    </div>
                 </div>
             </div>
         </div>
