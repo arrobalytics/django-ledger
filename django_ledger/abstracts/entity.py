@@ -42,6 +42,12 @@ class EntityModelAbstract(MPTTModel,
                             db_index=True,
                             on_delete=models.CASCADE)
 
+    address_1 = models.CharField(max_length=70, null=True, blank=True, verbose_name=_l('Company Address 1'))
+    address_2 = models.CharField(max_length=70, null=True, blank=True, verbose_name=_l('Company Address 2'))
+    email = models.EmailField(null=True, blank=True, verbose_name=_l('Email'))
+    website = models.URLField(null=True, blank=True, verbose_name=_l('Website'))
+    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_l('Phone Number'))
+
     hidden = models.BooleanField(default=False)
     objects = EntityModelManager()
 

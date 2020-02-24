@@ -81,7 +81,7 @@
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Actions' %}</h2>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="">Invoices</a>
+                           href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="">Bills</a>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"

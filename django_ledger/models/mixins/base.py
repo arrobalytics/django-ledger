@@ -1,4 +1,6 @@
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _l
 
 
 class SlugNameMixIn(models.Model):
@@ -18,3 +20,14 @@ class CreateUpdateMixIn(models.Model):
 
     class Meta:
         abstract = True
+
+
+class ProgressibleMixIn(models.Model):
+    progressible = models.BooleanField(default=False, verbose_name=_l('Progressible Item'))
+    progress = models.DecimalField(null=True, blank=True, verbose_name=_l('Progress Amount'),
+                                   decimal_places=2,
+                                   max_digits=3,
+                                   validators=[
+                                       MinValueValidator(limit_value=0),
+                                       MaxValueValidator(limit_value=1)
+                                   ])

@@ -1,0 +1,35 @@
+{% load django_ledger %}
+
+<div class="table-container">
+    <table class="table is-fullwidth">
+        <thead>
+        <tr>
+            <th>Edit</th>
+            <th>Invoice Number</th>
+            <th>Bill To</th>
+            <th>Amount</th>
+            <th>Payments</th>
+            <th>Due Date</th>
+            <th>Created</th>
+            <th>Last Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for invoice in invoices %}
+            <tr>
+                <td><a class="button is-warning is-small"
+                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_slug=invoice.invoice_number %}">Edit</a>
+                </td>
+                <td>{{ invoice.invoice_number }}</td>
+                <td>{{ invoice.bill_to }}</td>
+                <td>${{ invoice.amount_due | cs_thousands }}</td>
+                <td>${{ invoice.payment_amount | cs_thousands }}</td>
+                <td>{{ invoice.due_date }}</td>
+                <td>{{ invoice.created }}</td>
+                <td>{{ invoice.updated }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

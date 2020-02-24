@@ -57,7 +57,7 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/create/',
          views.LedgerModelCreateView.as_view(),
          name='ledger-create'),
-    path('ledger/<slug:entity_slug>/<int:ledger_pk>/update/',
+    path('ledger/<slug:entity_slug>/<slug:ledger_pk>/update/',
          views.LedgerModelUpdateView.as_view(),
          name='ledger-update'),
     path('ledger/<slug:entity_slug>/<slug:ledger_pk>/balance-sheet/',
@@ -86,6 +86,14 @@ urlpatterns = [
          views.TXSView.as_view(),
          name='txs'),
 
+    # INVOICES ----
+    path('invoice/<slug:entity_slug>/',
+         views.InvoiceModelListView.as_view(),
+         name='invoice-list'),
+    path('invoice/<slug:entity_slug>/<slug:invoice_slug>/update/',
+         views.InvoiceModelUpdateView.as_view(),
+         name='invoice-update'),
+\
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('', views.RootUrlView.as_view(), name='root-url')
 ]

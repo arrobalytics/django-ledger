@@ -27,7 +27,7 @@ class JournalEntryListView(ListView):
         return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
             Q(ledger__entity__slug=entity_slug) &
-            Q(ledger_id=ledger_pk)
+            Q(ledger__slug__iexact=ledger_pk)
         ).order_by(sort)
 
 
@@ -46,7 +46,7 @@ class JournalEntryDetailView(DetailView):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
-            ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
+            ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryUpdateView(UpdateView):
@@ -77,7 +77,7 @@ class JournalEntryUpdateView(UpdateView):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.on_coa.for_user(
             user=self.request.user).filter(
-            ledger__entity__slug=entity_slug).prefetch_related('txs', 'txs__account')
+            ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryCreateView(CreateView):

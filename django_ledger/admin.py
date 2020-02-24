@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel, AccountModel,
-                                  JournalEntryModel, TransactionModel, EntityManagementModel)
+                                  JournalEntryModel, TransactionModel, EntityManagementModel, InvoiceModel)
 
 
 class TransactionModelInLine(admin.TabularInline):
@@ -81,8 +81,14 @@ class LedgerModelAdmin(admin.ModelAdmin):
         model = LedgerModel
 
 
+class InvoiceModelAdmin(admin.ModelAdmin):
+    class Meta:
+        model = InvoiceModel
+
+
 admin.site.register(EntityModel, EntityModelAdmin)
 admin.site.register(JournalEntryModel, JournalEntryModelAdmin)
 admin.site.register(LedgerModel, LedgerModelAdmin)
 admin.site.register(ChartOfAccountModel, ChartOfAccountsModelAdmin)
 admin.site.register(AccountModel, AccountModelAdmin)
+admin.site.register(InvoiceModel, InvoiceModelAdmin)

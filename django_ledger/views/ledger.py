@@ -65,7 +65,7 @@ class LedgerModelCreateView(CreateView):
 class LedgerModelUpdateView(UpdateView):
     template_name = 'django_ledger/ledger_update.html'
     form_class = LedgerModelUpdateForm
-    pk_url_kwarg = 'ledger_pk'
+    slug_url_kwarg = 'ledger_pk'
     context_object_name = 'ledger'
 
     def get_context_data(self, **kwargs):
@@ -89,7 +89,7 @@ class LedgerModelUpdateView(UpdateView):
 
 class LedgerBalanceSheetView(DetailView):
     context_object_name = 'entity'
-    pk_url_kwarg = 'ledger_pk'
+    slug_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/balance_sheet.html'
 
     def get_context_data(self, **kwargs):
@@ -107,7 +107,7 @@ class LedgerBalanceSheetView(DetailView):
 
 class LedgerIncomeStatementView(DetailView):
     context_object_name = 'entity'
-    pk_url_kwarg = 'ledger_pk'
+    slug_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/income_statement.html'
 
     def get_context_data(self, **kwargs):

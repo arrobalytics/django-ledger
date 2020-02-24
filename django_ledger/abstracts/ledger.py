@@ -48,14 +48,14 @@ class LedgerModelAbstract(SlugNameMixIn,
         return reverse('django_ledger:ledger-detail',
                        kwargs={
                            'entity_slug': self.entity.slug,
-                           'ledger_pk': self.id
+                           'ledger_pk': self.slug
                        })
 
     def get_update_url(self):
         return reverse('django_ledger:ledger-update',
                        kwargs={
                            'entity_slug': self.entity.slug,
-                           'ledger_pk': self.id
+                           'ledger_pk': self.slug
                        })
 
     def get_coa(self):
