@@ -4,6 +4,7 @@ from string import ascii_uppercase, digits
 
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
@@ -20,11 +21,17 @@ def generate_invoice_number(length=10):
 
 class InvoiceModelManager(models.Manager):
 
+    def for_user(self, user_model):
+        return self.get_queryset().filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
+
     def on_entity(self, entity):
         if isinstance(entity, EntityModel):
             return self.get_queryset().filter(ledger__entity=entity)
         elif isinstance(entity, str):
-            return self.get_queryset().filter(ledger__entity__slug__iexact=entity)
+            return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
 class InvoiceModelAbstract(CreateUpdateMixIn,
@@ -36,13 +43,13 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
         ('net_90', 'Due in 90 Days'),
     ]
 
-    invoice_number = models.SlugField(max_length=20, verbose_name=_l('Bill Number'))
-    date = models.DateField(verbose_name=_l('Bill Date'))
+    invoice_number = models.SlugField(max_length=20, verbose_name=_l('Invoice Number'))
+    date = models.DateField(verbose_name=_l('Invoice Date'))
     due_date = models.DateField(verbose_name=_l('Due Date'))
     terms = models.CharField(max_length=10, default='on_receipt',
-                             choices=INVOICE_TERMS, verbose_name=_l('Bill Terms'))
+                             choices=INVOICE_TERMS, verbose_name=_l('Invoice Terms'))
     amount_due = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_l('Amount Due'))
-    payment_amount = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_l('Payments'))
+    amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_l('Amount Paid'))
     paid = models.BooleanField(default=False, verbose_name=_l('Invoice Paid'))
     paid_date = models.DateField(null=True, blank=True, verbose_name=_l('Paid Date'))
 
@@ -61,7 +68,7 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
                                      verbose_name=_l('Invoice Cash Account'),
                                      related_name='invoices_cash',
                                      limit_choices_to={
-                                         'role': ASSET_CA_CASH
+                                         'role': ASSET_CA_CASH,
                                      })
     receivable_account = models.ForeignKey('django_ledger.AccountModel',
                                            on_delete=models.PROTECT,
@@ -110,11 +117,11 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
 
     def clean(self):
 
-        if not self.date:
-            raise ValidationError('Must provide invoice date')
-
         if not self.invoice_number:
             self.invoice_number = generate_invoice_number()
+
+        if not self.date:
+            self.date = datetime.now().date()
 
         if self.progressible:
             if not self.progress:
@@ -127,7 +134,7 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
 
         if self.paid:
             self.progress = 1.0
-            self.payment_amount = self.amount_due
+            self.amount_paid = self.amount_due
 
             today = datetime.now().date()
             if not self.paid_date:
@@ -145,10 +152,10 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
             amount_due = self.amount_due or 0
             return self.progress * amount_due
         else:
-            return self.payment_amount or 0
+            return self.amount_paid or 0
 
     def receivable(self):
-        payments = self.payment_amount or 0
+        payments = self.amount_paid or 0
         if self.earnings() >= payments:
             return self.earnings() - payments
         else:
@@ -156,7 +163,7 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
 
     def unearned_receivable(self):
         if self.progressible:
-            payments = self.payment_amount or 0
+            payments = self.amount_paid or 0
             if self.earnings() <= payments:
                 return payments - self.earnings()
             else:
@@ -170,5 +177,5 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
             return amount_due - self.earnings()
         else:
             amount_due = self.amount_due or 0
-            payments = self.payment_amount or 0
+            payments = self.amount_paid or 0
             return amount_due - payments

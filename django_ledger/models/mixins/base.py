@@ -23,7 +23,7 @@ class CreateUpdateMixIn(models.Model):
 
 
 class ProgressibleMixIn(models.Model):
-    progressible = models.BooleanField(default=False, verbose_name=_l('Progressible Item'))
+    progressible = models.BooleanField(default=False, verbose_name=_l('Progressible'))
     progress = models.DecimalField(null=True, blank=True, verbose_name=_l('Progress Amount'),
                                    decimal_places=2,
                                    max_digits=3,
@@ -31,3 +31,6 @@ class ProgressibleMixIn(models.Model):
                                        MinValueValidator(limit_value=0),
                                        MaxValueValidator(limit_value=1)
                                    ])
+
+    class Meta:
+        abstract = True

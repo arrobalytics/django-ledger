@@ -10,8 +10,8 @@
             <div class="columns">
                 <div class="column">
                     <div class="box">
-{#                        <a class="button is-primary is-outlined"#}
-{#                           href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Add</a>#}
+                        <a class="button is-primary is-outlined"
+                           href="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}">Create</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
 

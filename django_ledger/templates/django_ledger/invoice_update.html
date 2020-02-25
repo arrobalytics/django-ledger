@@ -7,23 +7,22 @@
     <section class="section">
         <div class="container">
 
-            <div class="columns">
-                <div class="column">
+            <div class="columns is-centered">
+                <div class="column is-10-tablet">
                     <div class="box">
-                        {#                        <a class="button is-primary is-outlined"#}
-                        {#                           href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Add</a>#}
-                        <a class="button is-dark"
-                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
-
-                        <form method="post"
-                              action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_slug=invoice.invoice_number %}">
+                        <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_slug=invoice.invoice_number %}"
+                              method="post">
                             {% csrf_token %}
                             {{ form.as_p }}
-                            <button class="button" type="submit">Submit</button>
+                            <button type="submit"
+                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
+                            </button>
+                            <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                               class="button is-small is-dark is-fullwidth">Back</a>
                         </form>
 
                         <div class="media-content">
-                            <p>ASSET - Cash: ${{ invoice.payment_amount | cs_thousands }}</p>
+                            <p>ASSET - Cash: ${{ invoice.amount_paid | cs_thousands }}</p>
                             <p>ASSET - Open Amount: ${{ invoice.open | cs_thousands }}</p>
                             <p>ASSET - Earned Receivable: ${{ invoice.receivable | cs_thousands }}</p>
                             <p>LIABILITY - Unearned Receivable: ${{ invoice.unearned_receivable | cs_thousands }}</p>

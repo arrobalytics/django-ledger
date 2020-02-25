@@ -15,7 +15,7 @@ class LedgerModelManager(models.Manager):
         qs = self.get_queryset()
         return qs.filter(
             Q(entity__admin=user) |
-            Q(entity__managers__exact=user)
+            Q(entity__managers__in=[user])
         )
 
     def posted(self):

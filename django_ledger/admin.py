@@ -82,6 +82,11 @@ class LedgerModelAdmin(admin.ModelAdmin):
 
 
 class InvoiceModelAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'invoice_number',
+        'due_date',
+        'ledger'
+    ]
     class Meta:
         model = InvoiceModel
 
