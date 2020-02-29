@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from datetime import datetime
 
 from django.core.exceptions import ValidationError
 
@@ -80,8 +81,52 @@ class IOMixIn:
     TX_DATA = None
     TX_DIGEST = None
 
+    def create_je_acc_id(self,
+                         je_date: str or datetime,
+                         je_txs: list,
+                         je_activity: str,
+                         je_posted: bool = False,
+                         je_ledger=None,
+                         je_desc=None,
+                         je_origin=None,
+                         je_parent=None):
+
+        # Validates that credits/debits balance.
+        je_txs = validate_tx_data(je_txs)
+
+        # Validates that the activity is valid.
+        je_activity = validate_activity(je_activity)
+
+        if all([isinstance(self, lazy_importer.get_entity_model()),
+                not je_ledger]):
+            raise ValidationError('Must pass an instance of LedgerModel')
+
+        if not je_ledger:
+            je_ledger = self
+
+        je = JournalEntryModel.objects.create(
+            ledger=je_ledger,
+            description=je_desc,
+            date=je_date,
+            origin=je_origin,
+            activity=je_activity,
+            posted=je_posted,
+            parent=je_parent)
+
+        txs_list = [
+            TransactionModel(
+                account_id=tx['account_id'],
+                tx_type=tx['tx_type'],
+                amount=tx['amount'],
+                description=tx['description'],
+                journal_entry=je
+            ) for tx in je_txs
+        ]
+        txs = TransactionModel.objects.bulk_create(txs_list)
+        return txs
+
     def create_je(self,
-                  je_date: str,
+                  je_date: str or datetime,
                   je_txs: list,
                   je_activity: str,
                   je_posted: bool = False,

@@ -1,12 +1,22 @@
+from random import choice
+from string import ascii_lowercase, digits
+
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.abstracts.coa import get_coa_account
 from django_ledger.io import IOMixIn
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
+
+LEDGER_ID_CHARS = ascii_lowercase + digits
+
+
+def generate_ledger_id(length=10):
+    return ''.join(choice(LEDGER_ID_CHARS) for _ in range(length))
 
 
 class LedgerModelManager(models.Manager):
@@ -75,3 +85,13 @@ class LedgerModelAbstract(SlugNameMixIn,
 
     def get_account_balance(self, account_code: str, as_of: str = None):
         return self.get_jes(accounts=account_code, as_of=as_of)
+
+    def clean(self):
+        if not self.slug:
+            r_id = generate_ledger_id()
+            slug = slugify(self.name)
+            self.slug = f'{slug}-{r_id}'
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

@@ -143,3 +143,12 @@ class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
         check1 = 'Debits and credits do not match.'
         if not self.je_is_valid():
             raise ValidationError(check1)
+
+    def save(self, *args, **kwargs):
+        try:
+            self.clean_fields()
+            self.clean()
+        except ValidationError:
+            self.txs.all().delete()
+            raise ValidationError('Something went wrong cleaning journal entry ID: {x1}'.format(x1=instance.id))
+        super().save(*args, **kwargs)

@@ -19,6 +19,18 @@ ACCOUNT_CONVENTION = {
 
 class AccountModelManager(models.Manager):
 
+    def for_entity_available(self, user_model, entity_slug):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(coa__entity__slug__exact=entity_slug) &
+            Q(active=True) &
+            Q(locked=False) &
+            (
+                    Q(coa__entity__admin=user_model) |
+                    Q(coa__entity__managers__in=[user_model])
+            )
+        )
+
     def for_user(self, user):
         qs = self.get_queryset()
         return qs.filter(

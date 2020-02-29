@@ -22,11 +22,10 @@
                         </form>
 
                         <div class="media-content">
-                            <p>ASSET - Cash: ${{ invoice.amount_paid | cs_thousands }}</p>
-                            <p>ASSET - Open Amount: ${{ invoice.open | cs_thousands }}</p>
-                            <p>ASSET - Earned Receivable: ${{ invoice.receivable | cs_thousands }}</p>
-                            <p>LIABILITY - Unearned Receivable: ${{ invoice.unearned_receivable | cs_thousands }}</p>
-                            <p>EQUITY - Earnings: ${{ invoice.earnings | cs_thousands }}</p>
+                            <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
+                            <p>{{ invoice.receivable_account }}: ${{ invoice.amount_receivable | cs_thousands }}</p>
+                            <p>{{ invoice.payable_account }}: ${{ invoice.amount_unearned | cs_thousands }}</p>
+                            <p>{{ invoice.income_account }}: ${{ invoice.amount_earned | cs_thousands }}</p>
                         </div>
 
                     </div>

@@ -1,11 +1,39 @@
+from django.db.models import Q
 from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, URLInput
 from django.forms import ValidationError
 
 from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
 from django_ledger.models import InvoiceModel
 
 
 class InvoiceModelCreateForm(ModelForm):
+
+    def __init__(self, *args, entity_slug, user_model, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+        self.fields['cash_account'].queryset = self.filter_accounts(qs=self.fields['cash_account'].queryset,
+                                                                    group_or_role=ASSET_CA_CASH)
+        self.fields['receivable_account'].queryset = self.filter_accounts(qs=self.fields['receivable_account'].queryset,
+                                                                          group_or_role=ASSET_CA_RECEIVABLES)
+        self.fields['payable_account'].queryset = self.filter_accounts(qs=self.fields['payable_account'].queryset,
+                                                                       group_or_role=LIABILITY_CL_ACC_PAYABLE)
+        self.fields['income_account'].queryset = self.filter_accounts(qs=self.fields['income_account'].queryset,
+                                                                      group_or_role=GROUP_INCOME)
+
+    def filter_accounts(self, qs, group_or_role):
+        if isinstance(group_or_role, str):
+            group_or_role = [group_or_role]
+        return qs.filter(
+            Q(coa__entity__slug__exact=self.ENTITY_SLUG) &
+            Q(role__in=group_or_role) &
+            (
+                    Q(coa__entity__admin=self.USER_MODEL) |
+                    Q(coa__entity__managers__in=[self.USER_MODEL])
+            )
+        )
+
     class Meta:
         model = InvoiceModel
         fields = [

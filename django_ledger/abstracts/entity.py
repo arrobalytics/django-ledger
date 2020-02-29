@@ -11,6 +11,7 @@ from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.io import IOMixIn
+from django_ledger.models import ChartOfAccountModel
 from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 UserModel = get_user_model()
@@ -103,6 +104,20 @@ class EntityModelAbstract(MPTTModel,
             self.slug = entity_slug
         if not self.id:
             self.CREATE_GL_FLAG = True
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+        if not getattr(self, 'coa', None):
+            ChartOfAccountModel.objects.create(
+                slug=self.slug + '-coa',
+                name=self.name + ' CoA',
+                entity=self
+            )
+            self.ledgers.create(
+                name=_('General Ledger'),
+                posted=True
+            )
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):

@@ -22,7 +22,6 @@ class InvoiceModelListView(ListView):
 
 
 class InvoiceModelCreateView(CreateView):
-    form_class = InvoiceModelCreateForm
     template_name = 'django_ledger/invoice_create.html'
 
     def get_context_data(self, **kwargs):
@@ -31,18 +30,31 @@ class InvoiceModelCreateView(CreateView):
         context['header_title'] = 'Create Invoice'
         return context
 
+    def get_form(self, form_class=None):
+        entity_slug = self.kwargs['entity_slug']
+        form = InvoiceModelCreateForm(entity_slug=entity_slug,
+                                      user_model=self.request.user,
+                                      **self.get_form_kwargs())
+        return form
+
     def form_valid(self, form):
         invoice = form.instance
         invoice.invoice_number = generate_invoice_number()
         entity_slug = self.kwargs.get('entity_slug')
+        # todo: can move this to save() method???...
         entity_model = EntityModel.objects.for_user(user=self.request.user).get(slug__exact=entity_slug)
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
+            posted=True,
             name=f'Invoice {invoice.invoice_number}'
         )
         ledger_model.clean()
         invoice.ledger = ledger_model
         return super().form_valid(form=form)
+
+    def form_invalid(self, form):
+        """If the form is invalid, render the invalid form."""
+        return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
