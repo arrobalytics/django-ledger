@@ -1,10 +1,9 @@
-from django.db.models import Q
 from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, URLInput
 from django.forms import ValidationError
 
 from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
-from django_ledger.models import InvoiceModel
+from django_ledger.models import InvoiceModel, AccountModel
 
 
 class InvoiceModelCreateForm(ModelForm):
@@ -13,26 +12,13 @@ class InvoiceModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        self.fields['cash_account'].queryset = self.filter_accounts(qs=self.fields['cash_account'].queryset,
-                                                                    group_or_role=ASSET_CA_CASH)
-        self.fields['receivable_account'].queryset = self.filter_accounts(qs=self.fields['receivable_account'].queryset,
-                                                                          group_or_role=ASSET_CA_RECEIVABLES)
-        self.fields['payable_account'].queryset = self.filter_accounts(qs=self.fields['payable_account'].queryset,
-                                                                       group_or_role=LIABILITY_CL_ACC_PAYABLE)
-        self.fields['income_account'].queryset = self.filter_accounts(qs=self.fields['income_account'].queryset,
-                                                                      group_or_role=GROUP_INCOME)
+        account_qs = AccountModel.on_coa.for_entity(user_model=self.USER_MODEL,
+                                                    entity_slug=self.ENTITY_SLUG)
 
-    def filter_accounts(self, qs, group_or_role):
-        if isinstance(group_or_role, str):
-            group_or_role = [group_or_role]
-        return qs.filter(
-            Q(coa__entity__slug__exact=self.ENTITY_SLUG) &
-            Q(role__in=group_or_role) &
-            (
-                    Q(coa__entity__admin=self.USER_MODEL) |
-                    Q(coa__entity__managers__in=[self.USER_MODEL])
-            )
-        )
+        self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
+        self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
+        self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
+        self.fields['income_account'].queryset = account_qs.filter(role__in=GROUP_INCOME)
 
     class Meta:
         model = InvoiceModel

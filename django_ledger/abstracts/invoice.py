@@ -185,32 +185,41 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
         if not all([
             bool(amount) for k, amount in diff.items()
         ]):
-            je_txs = [
-                {
-                    'account_id': self.cash_account_id,
-                    'tx_type': 'debit' if diff['amount_paid'] >= 0 else 'credit',
-                    'amount': diff['amount_paid'],
-                    'description': f'Invoice {self.invoice_number} cash account adjustment.'
-                },
-                {
-                    'account_id': self.receivable_account_id,
-                    'tx_type': 'debit' if diff['amount_receivable'] >= 0 else 'credit',
-                    'amount': diff['amount_receivable'],
-                    'description': f'Invoice {self.invoice_number} receivable account adjustment.'
-                },
-                {
-                    'account_id': self.payable_account_id,
-                    'tx_type': 'credit' if diff['amount_unearned'] >= 0 else 'debit',
-                    'amount': diff['amount_unearned'],
-                    'description': f'Invoice {self.invoice_number} payable account adjustment'
-                },
-                {
-                    'account_id': self.income_account_id,
-                    'tx_type': 'credit' if diff['amount_earned'] >= 0 else 'debit',
-                    'amount': diff['amount_earned'],
-                    'description': f'Invoice {self.invoice_number} earnings account adjustment'
-                },
-            ]
+            cash_entry = {
+                'account_id': self.cash_account_id,
+                'tx_type': 'debit' if diff['amount_paid'] >= 0 else 'credit',
+                'amount': abs(diff['amount_paid']),
+                'description': f'Invoice {self.invoice_number} cash account adjustment.'
+            }
+            receivable_entry = {
+                'account_id': self.receivable_account_id,
+                'tx_type': 'debit' if diff['amount_receivable'] >= 0 else 'credit',
+                'amount': abs(diff['amount_receivable']),
+                'description': f'Invoice {self.invoice_number} receivable account adjustment.'
+            }
+            payable_entry = {
+                'account_id': self.payable_account_id,
+                'tx_type': 'credit' if diff['amount_unearned'] >= 0 else 'debit',
+                'amount': abs(diff['amount_unearned']),
+                'description': f'Invoice {self.invoice_number} payable account adjustment'
+            }
+            earnings_entry = {
+                'account_id': self.income_account_id,
+                'tx_type': 'credit' if diff['amount_earned'] >= 0 else 'debit',
+                'amount': abs(diff['amount_earned']),
+                'description': f'Invoice {self.invoice_number} earnings account adjustment'
+            }
+
+            je_txs = list()
+            if cash_entry['amount'] != 0:
+                je_txs.append(cash_entry)
+            if receivable_entry['amount'] != 0:
+                je_txs.append(receivable_entry)
+            if payable_entry['amount'] != 0:
+                je_txs.append(payable_entry)
+            if earnings_entry['amount'] != 0:
+                je_txs.append(earnings_entry)
+
             self.ledger.create_je_acc_id(
                 je_date=datetime.now().date(),
                 je_txs=je_txs,
@@ -219,8 +228,6 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
                 je_desc=f'Invoice {self.invoice_number} IO migration '
 
             )
-        else:
-            print(f'Invoice {self.invoice_number} has no entries... {diff}')
 
     def clean(self):
 
@@ -230,9 +237,8 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
         if not self.date:
             self.date = datetime.now().date()
 
-        if self.progressible:
-            if not self.progress:
-                self.progress = 0
+        if self.progressible and self.progress is None:
+            self.progress = 0
 
         if self.terms != 'on_receipt':
             self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
@@ -240,7 +246,7 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
             self.due_date = self.date
 
         if self.paid:
-            self.progress = 1.0
+            self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
 
             today = datetime.now().date()
@@ -250,7 +256,6 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
                 raise ValidationError('Cannot pay invoice in the future.')
             if self.paid_date < self.date:
                 raise ValidationError('Cannot pay invoice before invoice date.')
-
         else:
             self.paid_date = None
 

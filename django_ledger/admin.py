@@ -34,6 +34,12 @@ class EntityModelAdmin(admin.ModelAdmin):
 
 
 class AccountModelAdmin(admin.ModelAdmin):
+    actions = [
+        'activate',
+        'inactivate',
+        'lock',
+        'unlock'
+    ]
     actions_on_top = True
     actions_on_bottom = True
     sortable_by = [
@@ -41,8 +47,8 @@ class AccountModelAdmin(admin.ModelAdmin):
     ]
     list_display = [
         '__str__',
-        'code',
-        'parent'
+        'active',
+        'locked'
     ]
     list_filter = [
         'role',
@@ -52,10 +58,22 @@ class AccountModelAdmin(admin.ModelAdmin):
     class Meta:
         model = AccountModel
 
-    def role_bs(self, acc):
-        return acc.role_bs.upper()
+    def activate(self, request, queryset):
+        queryset.update(active=True)
 
-    role_bs.short_description = 'Balance Sheet Role'
+    def inactivate(self, request, queryset):
+        queryset.update(active=False)
+
+    def lock(self, request, queryset):
+        queryset.update(lock=True)
+
+    def unlock(self, request, queryset):
+        queryset.update(unlock=False)
+
+    # def role_bs(self, acc):
+    #     return acc.role_bs.upper()
+
+    # role_bs.short_description = 'Balance Sheet Role'
 
 
 class AccountsModelInLine(admin.TabularInline):
@@ -87,6 +105,7 @@ class InvoiceModelAdmin(admin.ModelAdmin):
         'due_date',
         'ledger'
     ]
+
     class Meta:
         model = InvoiceModel
 

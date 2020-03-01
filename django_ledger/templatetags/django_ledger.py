@@ -84,9 +84,9 @@ def ledgers_table(context, ledgers_queryset):
 
 
 @register.inclusion_tag('django_ledger/tags/invoice_table.html', takes_context=True)
-def invoice_table(context, invoice_queryset):
+def invoice_table(context):
     return {
-        'invoices': invoice_queryset,
+        'invoices': context['invoices'],
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 

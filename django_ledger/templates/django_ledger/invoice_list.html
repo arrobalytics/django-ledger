@@ -14,9 +14,7 @@
                            href="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}">Create</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
-
-                        {% invoice_table invoices %}
-
+                        {% invoice_table %}
                     </div>
                 </div>
             </div>

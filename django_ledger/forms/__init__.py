@@ -315,10 +315,11 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
         super().__init__(*args, **kwargs)
         self.user = user
         self.entity_slug = entity_slug
-        for f in self.forms:
-            f.fields['account'].queryset = AccountModel.on_coa.available(
-                user=self.user
-            ).filter(coa__entity__slug__exact=self.entity_slug).order_by('code')
+        for form in self.forms:
+            form.fields['account'].queryset = AccountModel.on_coa.for_entity(
+                user_model=self.user,
+                entity_slug=self.entity_slug
+            )
 
     def clean(self):
         if any(self.errors):
@@ -338,4 +339,4 @@ TransactionModelFormSet = modelformset_factory(
     form=TransactionModelForm,
     formset=BaseTransactionModelFormSet,
     can_delete=True,
-    extra=5)
+    extra=6)

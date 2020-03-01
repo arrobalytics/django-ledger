@@ -23,7 +23,7 @@
                 <td>{{ invoice.invoice_number }}</td>
                 <td>{{ invoice.bill_to }}</td>
                 <td>${{ invoice.amount_due | cs_thousands }}</td>
-                <td>${{ invoice.payment_amount | cs_thousands }}</td>
+                <td>${{ invoice.amount_paid | cs_thousands }}</td>
                 <td>{{ invoice.due_date }}</td>
                 <td>{{ invoice.created }}</td>
                 <td>{{ invoice.updated }}</td>
