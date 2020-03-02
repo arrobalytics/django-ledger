@@ -7,8 +7,8 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
-from django_ledger.models.mixins.base import CreateUpdateMixIn
 
 ACCOUNT_CONVENTION = {
     'assets': 'debit',

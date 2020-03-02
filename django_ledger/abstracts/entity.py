@@ -10,9 +10,9 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
 
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.io import IOMixIn
 from django_ledger.models import ChartOfAccountModel
-from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 UserModel = get_user_model()
 

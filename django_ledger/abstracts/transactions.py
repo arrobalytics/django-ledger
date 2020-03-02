@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.models.mixins.base import CreateUpdateMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
 
 
 class TransactionModelAdmin(models.Manager):

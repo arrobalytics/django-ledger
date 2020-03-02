@@ -8,9 +8,9 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.abstracts.coa import get_coa_account
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.io import IOMixIn
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 

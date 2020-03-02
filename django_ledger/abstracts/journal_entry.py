@@ -7,7 +7,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel
 
-from django_ledger.models.mixins.base import CreateUpdateMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
 
 ACTIVITIES = [
     ('op', _('Operating')),

@@ -9,15 +9,15 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_RECEIVABLES, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
+from django_ledger.abstracts.mixins.base import LedgerBranchMixIn
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins.base import CreateUpdateMixIn, ProgressibleMixIn
 
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
 
 def generate_invoice_number(length=10):
-    return ''.join(choice(INVOICE_NUMBER_CHARS) for _ in range(length))
+    return 'I-' + ''.join(choice(INVOICE_NUMBER_CHARS) for _ in range(length))
 
 
 class InvoiceModelManager(models.Manager):
@@ -35,8 +35,8 @@ class InvoiceModelManager(models.Manager):
             return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
-class InvoiceModelAbstract(CreateUpdateMixIn,
-                           ProgressibleMixIn):
+class InvoiceModelAbstract(LedgerBranchMixIn,
+                           CreateUpdateMixIn):
     INVOICE_TERMS = [
         ('on_receipt', 'Due On Receipt'),
         ('net_30', 'Due in 30 Days'),
@@ -67,38 +67,6 @@ class InvoiceModelAbstract(CreateUpdateMixIn,
     email = models.EmailField(null=True, blank=True, verbose_name=_l('Email'))
     website = models.URLField(null=True, blank=True, verbose_name=_l('Website'))
     phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_l('Phone Number'))
-
-    ledger = models.OneToOneField('django_ledger.LedgerModel',
-                                  verbose_name=_l('Invoice Ledger'),
-                                  on_delete=models.CASCADE)
-    cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.CASCADE,
-                                     verbose_name=_l('Invoice Cash Account'),
-                                     related_name='invoices_cash',
-                                     limit_choices_to={
-                                         'role': ASSET_CA_CASH,
-                                     })
-    receivable_account = models.ForeignKey('django_ledger.AccountModel',
-                                           on_delete=models.CASCADE,
-                                           verbose_name=_l('Invoice Receivable Account'),
-                                           related_name='invoices_ar',
-                                           limit_choices_to={
-                                               'role': ASSET_CA_RECEIVABLES
-                                           })
-    payable_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.CASCADE,
-                                        verbose_name=_l('Invoice Liability Account'),
-                                        related_name='invoices_ap',
-                                        limit_choices_to={
-                                            'role': LIABILITY_CL_ACC_PAYABLE
-                                        })
-    income_account = models.ForeignKey('django_ledger.AccountModel',
-                                       on_delete=models.CASCADE,
-                                       verbose_name=_l('Invoice Income Account'),
-                                       related_name='invoices_in',
-                                       limit_choices_to={
-                                           'role__in': GROUP_INCOME
-                                       })
 
     objects = InvoiceModelManager()
 

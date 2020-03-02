@@ -5,7 +5,7 @@ from django.db.models import Manager, Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.models.mixins.base import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, SlugNameMixIn
 
 UserModel = get_user_model()
 
