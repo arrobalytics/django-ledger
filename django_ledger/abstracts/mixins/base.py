@@ -36,26 +36,26 @@ class ProgressibleMixIn(models.Model):
         abstract = True
 
 
-class LedgerBranchMixIn(ProgressibleMixIn):
+class LedgerExtensionMixIn(ProgressibleMixIn):
     ledger = models.OneToOneField('django_ledger.LedgerModel',
                                   verbose_name=_l('Invoice Ledger'),
                                   on_delete=models.CASCADE)
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.CASCADE,
-                                     verbose_name=_l('Invoice Cash Account'),
-                                     related_name='invoices_cash')
+                                     verbose_name=_l('Cash Account'),
+                                     related_name='cash_account')
     receivable_account = models.ForeignKey('django_ledger.AccountModel',
                                            on_delete=models.CASCADE,
-                                           verbose_name=_l('Invoice Receivable Account'),
-                                           related_name='invoices_ar')
+                                           verbose_name=_l('Receivable Account'),
+                                           related_name='receivable_account')
     payable_account = models.ForeignKey('django_ledger.AccountModel',
                                         on_delete=models.CASCADE,
-                                        verbose_name=_l('Invoice Liability Account'),
-                                        related_name='invoices_ap')
+                                        verbose_name=_l('Liability Account'),
+                                        related_name='payable_account')
     income_account = models.ForeignKey('django_ledger.AccountModel',
                                        on_delete=models.CASCADE,
-                                       verbose_name=_l('Invoice Income Account'),
-                                       related_name='invoices_in')
+                                       verbose_name=_l('Income Account'),
+                                       related_name='income_account')
 
     class Meta:
         abstract = True

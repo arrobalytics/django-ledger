@@ -10,7 +10,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
-from django_ledger.abstracts.mixins.base import LedgerBranchMixIn
+from django_ledger.abstracts.mixins.base import LedgerExtensionMixIn
+from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, ASSET_CA_RECEIVABLES
 from django_ledger.models import EntityModel
 
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
@@ -35,7 +36,7 @@ class InvoiceModelManager(models.Manager):
             return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
-class InvoiceModelAbstract(LedgerBranchMixIn,
+class InvoiceModelAbstract(LedgerExtensionMixIn,
                            CreateUpdateMixIn):
     INVOICE_TERMS = [
         ('on_receipt', 'Due On Receipt'),
@@ -204,6 +205,15 @@ class InvoiceModelAbstract(LedgerBranchMixIn,
 
         if not self.date:
             self.date = datetime.now().date()
+
+        if self.cash_account.role != ASSET_CA_CASH:
+            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
+        if self.receivable_account.role != ASSET_CA_RECEIVABLES:
+            raise ValidationError(f'Receivable account must be of role {ASSET_CA_RECEIVABLES}')
+        if self.payable_account.role != LIABILITY_CL_ACC_PAYABLE:
+            raise ValidationError(f'Payable account must be of role {LIABILITY_CL_ACC_PAYABLE}')
+        if self.income_account.role not in GROUP_INCOME:
+            raise ValidationError(f'Income account must be of role {GROUP_INCOME}')
 
         if self.progressible and self.progress is None:
             self.progress = 0
