@@ -2,8 +2,6 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_RECEIVABLES, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE
-
 
 class SlugNameMixIn(models.Model):
     slug = models.SlugField(max_length=50, unique=True)
@@ -45,31 +43,19 @@ class LedgerBranchMixIn(ProgressibleMixIn):
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_l('Invoice Cash Account'),
-                                     related_name='invoices_cash',
-                                     limit_choices_to={
-                                         'role': ASSET_CA_CASH,
-                                     })
+                                     related_name='invoices_cash')
     receivable_account = models.ForeignKey('django_ledger.AccountModel',
                                            on_delete=models.CASCADE,
                                            verbose_name=_l('Invoice Receivable Account'),
-                                           related_name='invoices_ar',
-                                           limit_choices_to={
-                                               'role': ASSET_CA_RECEIVABLES
-                                           })
+                                           related_name='invoices_ar')
     payable_account = models.ForeignKey('django_ledger.AccountModel',
                                         on_delete=models.CASCADE,
                                         verbose_name=_l('Invoice Liability Account'),
-                                        related_name='invoices_ap',
-                                        limit_choices_to={
-                                            'role': LIABILITY_CL_ACC_PAYABLE
-                                        })
+                                        related_name='invoices_ap')
     income_account = models.ForeignKey('django_ledger.AccountModel',
                                        on_delete=models.CASCADE,
                                        verbose_name=_l('Invoice Income Account'),
-                                       related_name='invoices_in',
-                                       limit_choices_to={
-                                           'role__in': GROUP_INCOME
-                                       })
+                                       related_name='invoices_in')
 
     class Meta:
         abstract = True
