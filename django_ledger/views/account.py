@@ -19,7 +19,10 @@ class AccountModelListView(ListView):
         return context
 
     def get_queryset(self):
-        qs = AccountModel.on_coa.for_user(user=self.request.user)
+        entity_slug = self.kwargs.get('entity_slug')
+        qs = AccountModel.on_coa.for_entity(
+            entity_slug=entity_slug,
+            user_model=self.request.user)
         return qs.filter(coa__entity__slug=self.kwargs['entity_slug']).order_by('code')
 
 
@@ -47,9 +50,10 @@ class AccountModelUpdateView(UpdateView):
                            'entity_slug': entity_slug,
                            'coa_slug': coa_slug,
                        })
+
     def get_queryset(self):
         return AccountModel.on_coa.for_user(
-            user=self.request.user
+            user_model=self.request.user
         ).filter(
             Q(coa__slug__exact=self.kwargs['coa_slug']) &
             Q(coa__entity__slug__exact=self.kwargs['entity_slug'])
@@ -73,7 +77,7 @@ class AccountModelCreateView(CreateView):
 
     def form_valid(self, form):
         coa_model = ChartOfAccountModel.objects.for_user(
-            user=self.request.user
+            user_model=self.request.user
         ).filter(entity__slug=self.kwargs['entity_slug']).get(
             slug=self.kwargs['coa_slug'])
 
@@ -83,7 +87,7 @@ class AccountModelCreateView(CreateView):
 
     def get_queryset(self):
         return AccountModel.on_coa.for_user(
-            user=self.request.user
+            user_model=self.request.user
         )
 
     def get_success_url(self):

@@ -1,68 +1,50 @@
-from collections import OrderedDict
+from collections import namedtuple
 from datetime import datetime
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
 
 from django_ledger.abstracts.journal_entry import validate_activity
-from django_ledger.io import roles as roles
+from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RolesManager
 from django_ledger.models.journalentry import JournalEntryModel
-from django_ledger.models.transactions import TransactionModel
+
+UserModel = get_user_model()
 
 
 class LazyImporter:
     """
     This class eliminates the circle dependency between models.
     """
-    EM_IMPORTED = None
-    LM_IMPORTED = None
+    ENTITY_MODEL = None
+    LEDGER_MODEL = None
+    TXS_MODEL = None
 
     def get_entity_model(self):
-        if not self.EM_IMPORTED:
+        if not self.ENTITY_MODEL:
             from django_ledger.models.entity import EntityModel
-            self.EM_IMPORTED = EntityModel
-        return self.EM_IMPORTED
+            self.ENTITY_MODEL = EntityModel
+        return self.ENTITY_MODEL
+
+    def get_txs_model(self):
+        if not self.TXS_MODEL:
+            from django_ledger.models.transactions import TransactionModel
+            self.TXS_MODEL = TransactionModel
+        return self.TXS_MODEL
 
     def get_ledger_model(self):
-        if not self.LM_IMPORTED:
+        if not self.LEDGER_MODEL:
             from django_ledger.models.ledger import LedgerModel
-            self.LM_IMPORTED = LedgerModel
-        return self.LM_IMPORTED
+            self.LEDGER_MODEL = LedgerModel
+        return self.LEDGER_MODEL
 
 
 lazy_importer = LazyImporter()
 
-FIELD_MAP = OrderedDict({'id': 'je_id',
-                         'txs__tx_type': 'tx_type',
-                         'txs__account__code': 'code',
-                         'txs__account__name': 'name',
-                         'txs__account__role': 'role',
-                         'txs__account__balance_type': 'balance_type',
-                         'txs__amount': 'amount'})
-
-DB_FIELDS = [k for k, _ in FIELD_MAP.items()]
-VALUES_IDX = [v for _, v in FIELD_MAP.items()]
-
-IDX_CODE = VALUES_IDX.index('code')
-IDX_BALANCE = VALUES_IDX.index('amount')
-IDX_TX_TYPE = VALUES_IDX.index('tx_type')
-IDX_BALANCE_TYPE = VALUES_IDX.index('balance_type')
-
-
-def process_signs(record):
-    """
-    Reverse the signs for contra accounts if requested.
-    :param record: A transaction record.
-    :return: A modified record.
-    """
-    if all([record['role_bs'] == 'assets',
-            record['balance_type'] == 'credit']):
-        record['balance'] = -record['balance']
-    if all([record['role_bs'] in ('liabilities', 'equity', 'other'),
-            record['balance_type'] == 'debit']):
-        record['balance'] = -record['balance']
-    return record
+AccountIndexTuple = namedtuple('AccountIndexTuple',
+                               field_names='role_bs, role, code, name, balance_type, balance')
 
 
 def validate_tx_data(tx_data: list):
@@ -111,10 +93,12 @@ class IOMixIn:
             origin=je_origin,
             activity=je_activity,
             posted=je_posted,
-            parent=je_parent)
+            parent=je_parent
+        )
 
+        TxsModel = lazy_importer.get_txs_model()
         txs_list = [
-            TransactionModel(
+            TxsModel(
                 account_id=tx['account_id'],
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
@@ -122,7 +106,7 @@ class IOMixIn:
                 journal_entry=je
             ) for tx in je_txs
         ]
-        txs = TransactionModel.objects.bulk_create(txs_list)
+        txs = TxsModel.objects.bulk_create(txs_list)
         return txs
 
     def create_je(self,
@@ -168,8 +152,9 @@ class IOMixIn:
             posted=je_posted,
             parent=je_parent)
 
+        TxsModel = lazy_importer.get_txs_model()
         txs_list = [
-            TransactionModel(
+            TxsModel(
                 account=avail_accounts.get(code__iexact=tx['code']),
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
@@ -177,151 +162,130 @@ class IOMixIn:
                 journal_entry=je
             ) for tx in je_txs
         ]
-        txs = TransactionModel.objects.bulk_create(txs_list)
+        txs = TxsModel.objects.bulk_create(txs_list)
         return txs
 
     def get_je_txs(self,
+                   user_model: UserModel,
                    as_of: str = None,
                    activity: str = None,
                    role: str = None,
-                   accounts: str = None) -> list:
-
-        """
-        If account is present all other parameters will be ignored.
-
-        :param start_date:
-        :param as_of:
-        :param as_dataframe:
-        :param activity:
-        :param role:
-        :param accounts:
-        :return:
-        """
+                   accounts: str = None,
+                   posted: bool = True):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
 
-        # Checks if self is EntityModel or LedgerModel.
-        # Filters queryset to posted Journal Entries only.
+        TxsModel = lazy_importer.get_txs_model()
         if isinstance(self, lazy_importer.get_entity_model()):
             # Is entity model....
-            jes_queryset = JournalEntryModel.on_coa.on_entity_posted(entity=self)
+            txs = TxsModel.objects.for_entity(entity_slug=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
             # Is ledger model ...
-            jes_queryset = JournalEntryModel.on_coa.on_ledger_posted(ledger=self)
+            txs = TxsModel.objects.for_ledger(ledger_model=self)
         else:
-            jes_queryset = JournalEntryModel.on_coa.none()
+            txs = TxsModel.objects.none()
+
+        txs = txs.for_user(user_model=user_model)
+
+        if posted:
+            txs = txs.posted()
 
         if as_of:
-            jes_queryset = jes_queryset.filter(date__lte=as_of)
+            txs = txs.as_of(as_of_date=as_of)
 
         if accounts:
-            if isinstance(accounts, str):
+            if not isinstance(accounts, str):
                 accounts = [accounts]
-            jes_queryset = self.journal_entries.filter(txs__account__code__in=accounts)
+            txs = txs.for_accounts(account_list=accounts)
+
         if activity:
             if isinstance(activity, str):
                 activity = [activity]
-            jes_queryset = jes_queryset.filter(activity__in=activity)
+            txs = txs.for_activity(activity_list=activity)
         if role:
-            if isinstance(role, str):
+            if not isinstance(role, str):
                 role = [role]
-            jes_queryset = jes_queryset.filter(txs__account__role__in=role)
-        jes_queryset = jes_queryset.values(*DB_FIELDS)
-        return jes_queryset
+            txs = txs.for_roles(role_list=role)
+
+        txs = txs.values(
+            'account__balance_type',
+            'tx_type',
+            'account__code',
+            'account__name',
+            'account__role',
+        ).annotate(balance=Sum('amount')).order_by('-account')
+        return txs
 
     def get_jes(self,
+                user: UserModel,
                 as_of: str = None,
                 equity_only: bool = False,
                 activity: str = None,
                 role: str = None,
-                accounts: str = None):
+                accounts: str = None,
+                signs: bool = False):
 
         if equity_only:
             role = roles.GROUP_EARNINGS
 
-        je_txs = self.get_je_txs(as_of=as_of,
-                                 activity=activity,
-                                 role=role,
-                                 accounts=accounts)
+        je_txs = self.get_je_txs(
+            user_model=user,
+            as_of=as_of,
+            activity=activity,
+            role=role,
+            accounts=accounts)
 
         # reverts the amount sign if the tx_type does not math the account_type.
         for tx in je_txs:
-            if tx['txs__account__balance_type'] != tx['txs__tx_type']:
-                tx['txs__amount'] = -tx['txs__amount']
+            if tx['account__balance_type'] != tx['tx_type']:
+                tx['balance'] = -tx['balance']
 
-        account_idx = sorted(set([(
-            roles.BS_ROLES.get(acc['txs__account__role']),
-            acc['txs__account__role'],
-            acc['txs__account__code'],
-            acc['txs__account__name'],
-            acc['txs__account__balance_type']
-        ) for acc in je_txs if acc['txs__amount']]))
+        acc_balances = set(AccountIndexTuple(
+            role_bs=roles.BS_ROLES.get(je['account__role']),
+            role=je['account__role'],
+            code=je['account__code'],
+            name=je['account__name'],
+            balance_type=je['account__balance_type'],
+            balance=sum(r['balance'] for r in je_txs if r['account__code'] == je['account__code'])
+        ) for je in je_txs)
+        acc_balances = [acc_idx._asdict() for acc_idx in acc_balances]
 
-        # todo: Can this be done at the DB level???
-        acc_balances = [
-            {
-                'role_bs': acc[0],
-                'role': acc[1],
-                'code': acc[2],
-                'name': acc[3],
-                'balance_type': acc[4],
-                'balance': sum([amt for amt in [je['txs__amount']
-                                                for je in je_txs if je['txs__account__code'] == acc[2]]]),
-            } for acc in account_idx
-        ]
+        if signs:
+            for acc in acc_balances:
+                if any([
+                    all([acc['role_bs'] == 'assets',
+                         acc['balance_type'] == 'credit']),
+                    all([acc['role_bs'] in ('liabilities', 'equity', 'other'),
+                         acc['balance_type'] == 'debit'])
+                ]):
+                    acc['balance'] = -acc['balance']
 
         return acc_balances
 
-    def get_account_balances(self,
-                             as_of: str = None,
-                             signs: bool = False,
-                             activity: str = None,
-                             equity_only: bool = False):
-
-        jes = self.get_jes(as_of=as_of,
-                           activity=activity,
-                           equity_only=equity_only)
-
-        # process signs will return negative balances for contra-accounts...
-        if signs:
-            jes = [process_signs(rec) for rec in jes]
-        return jes
-
-    # todo: Can eliminate this method???...
-    def income_statement(self, signs: bool = False, activity: str = None):
-        method = 'ic'
-        if isinstance(activity, str):
-            method += '-{x1}'.format(x1=activity)
-
-        ic_data = self.get_jes(equity_only=True)
-
-        if signs:
-            ic_data = [process_signs(rec) for rec in ic_data]
-
-        return ic_data
-
     def digest(self,
+               user_model: UserModel,
                activity: str = None,
                as_of: str = None,
-               roles: bool = True,
-               groups: bool = False,
-               ratios: bool = False,
+               process_roles: bool = True,
+               process_groups: bool = False,
+               process_ratios: bool = False,
                equity_only: bool = False) -> dict:
 
-        accounts = self.get_account_balances(signs=True,
-                                             activity=activity,
-                                             as_of=as_of,
-                                             equity_only=equity_only)
+        accounts = self.get_jes(signs=True,
+                                user=user_model,
+                                activity=activity,
+                                as_of=as_of,
+                                equity_only=equity_only)
 
         digest = dict(
             accounts=accounts
         )
 
-        roles_mgr = RolesManager(tx_digest=digest, roles=roles, groups=groups)
+        roles_mgr = RolesManager(tx_digest=digest, roles=process_roles, groups=process_groups)
         digest = roles_mgr.generate()
 
-        if ratios:
+        if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=digest)
             digest = ratio_gen.generate()
 

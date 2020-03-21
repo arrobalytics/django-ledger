@@ -27,5 +27,5 @@ class ChartOfAccountsUpdateView(UpdateView):
 
     def get_queryset(self):
         return ChartOfAccountModel.objects.for_user(
-            user=self.request.user
+            user_model=self.request.user
         ).distinct()

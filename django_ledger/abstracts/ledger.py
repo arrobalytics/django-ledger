@@ -21,11 +21,11 @@ def generate_ledger_id(length=10):
 
 class LedgerModelManager(models.Manager):
 
-    def for_user(self, user):
+    def for_user(self, user_model):
         qs = self.get_queryset()
         return qs.filter(
-            Q(entity__admin=user) |
-            Q(entity__managers__in=[user])
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
         )
 
     def posted(self):

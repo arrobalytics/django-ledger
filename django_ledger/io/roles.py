@@ -214,7 +214,7 @@ ACCOUNT_ROLES = [
 ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLES], list())
 ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
-BS_ROLES = dict([(r[1], r[0]) for r in ROLE_TUPLES])
+BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
 
 
 def validate_roles(roles):

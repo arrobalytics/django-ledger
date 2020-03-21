@@ -17,6 +17,6 @@ class DashboardView(TemplateView):
         context['page_title'] = _('dashboard')
         context['header_title'] = _('dashboard')
         context['entities'] = EntityModel.objects.for_user(
-            user=self.request.user
+            user_model=self.request.user
         )
         return context

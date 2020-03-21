@@ -14,7 +14,7 @@ register = template.Library()
 @register.filter(name='cs_thousands')
 def cs_thousands(value):
     if value != '':
-        return '{:,}'.format(value)
+        return '{0:,.2f}'.format(value)
     return value
 
 
@@ -26,33 +26,33 @@ def reverse_sign(value: float):
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
 def balance_sheet_table(context):
     entity_model = context['entity']
+    user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
     end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context.
     return entity_model.digest(activity=activity,
+                               user_model=user_model,
                                equity_only=False,
                                as_of=end_date_filter,
-                               groups=True)
+                               process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement_table(context, entity_model=None):
-    if not entity_model:
-        entity_model = context.get('entity')
-    if not entity_model:
-        raise ValidationError('No entity model detected.')
-
+def income_statement_table(context):
+    entity_model = context.get('entity')
+    user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
     end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context.
     return entity_model.digest(activity=activity,
+                               user_model=user_model,
                                as_of=end_date_filter,
                                equity_only=True,
-                               groups=True)
+                               process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)

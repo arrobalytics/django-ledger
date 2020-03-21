@@ -19,11 +19,11 @@ UserModel = get_user_model()
 
 class EntityModelManager(Manager):
 
-    def for_user(self, user):
+    def for_user(self, user_model):
         qs = self.get_queryset()
         return qs.filter(
-            Q(admin=user) |
-            Q(managers__exact=user)
+            Q(admin=user_model) |
+            Q(managers__exact=user_model)
         )
 
 

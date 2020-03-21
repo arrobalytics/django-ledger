@@ -27,7 +27,7 @@ class LedgerModelListView(ListView):
         if not sort:
             sort = '-updated'
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_user(user=self.request.user).filter(
+        return LedgerModel.objects.for_user(user_model=self.request.user).filter(
             entity__slug=entity_slug
         ).order_by(sort)
 
@@ -37,7 +37,7 @@ class LedgerModelCreateView(CreateView):
     form_class = LedgerModelCreateForm
 
     def form_valid(self, form):
-        entity_qs = EntityModel.objects.for_user(user=self.request.user)
+        entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
         entity = entity_qs.get(slug__exact=self.kwargs['entity_slug'])
         form.instance.entity = entity
         self.object = form.save()
@@ -76,7 +76,7 @@ class LedgerModelUpdateView(UpdateView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_user(user=self.request.user).filter(
+        return LedgerModel.objects.for_user(user_model=self.request.user).filter(
             entity__slug=entity_slug
         )
 
@@ -100,7 +100,7 @@ class LedgerBalanceSheetView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_user(user=self.request.user).filter(
+        return LedgerModel.objects.for_user(user_model=self.request.user).filter(
             entity__slug=entity_slug
         )
 
@@ -118,6 +118,6 @@ class LedgerIncomeStatementView(DetailView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_user(user=self.request.user).filter(
+        return LedgerModel.objects.for_user(user_model=self.request.user).filter(
             entity__slug=entity_slug
         )

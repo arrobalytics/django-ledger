@@ -28,7 +28,7 @@ class EntityModelListView(ListView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user=self.request.user)
+        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class EntityModelDetailVew(DetailView):
@@ -43,7 +43,15 @@ class EntityModelDetailVew(DetailView):
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        digest = entity.digest(as_of=date_filter, ratios=True, roles=True, groups=True)
+
+        # entity_slug = self.kwargs.get('entity_slug')
+        user = self.request.user
+
+        digest = entity.digest(user_model=user,
+                               as_of=date_filter,
+                               process_ratios=True,
+                               process_roles=True,
+                               process_groups=True)
         context.update(digest)
         return context
 
@@ -53,7 +61,7 @@ class EntityModelDetailVew(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user=self.request.user)
+        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class EntityModelCreateView(CreateView):
@@ -111,7 +119,7 @@ class EntityModelUpdateView(UpdateView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user=self.request.user)
+        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class EntityModelBalanceSheetView(DetailView):
@@ -131,7 +139,7 @@ class EntityModelBalanceSheetView(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user=self.request.user)
+        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class EntityModelIncomeStatementView(DetailView):
@@ -151,7 +159,7 @@ class EntityModelIncomeStatementView(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user=self.request.user)
+        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class SetDefaultEntityView(RedirectView):
@@ -162,15 +170,16 @@ class SetDefaultEntityView(RedirectView):
         session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
-            # todo: redirect to same origin view on selected entity.
             self.url = reverse('django_ledger:entity-detail',
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
             self.request.session[session_key] = entity_model.id
         else:
-            del self.request.session[session_key]
-            self.url = reverse('django_ledger:entity-list')
+            try:
+                del self.request.session[session_key]
+            finally:
+                self.url = reverse('django_ledger:entity-list')
         return super().post(request, *args, **kwargs)
 
 

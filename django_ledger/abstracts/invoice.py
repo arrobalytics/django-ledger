@@ -14,6 +14,20 @@ from django_ledger.abstracts.mixins.base import LedgerExtensionMixIn
 from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, ASSET_CA_RECEIVABLES
 from django_ledger.models import EntityModel
 
+
+class TxsLazyLoader:
+    txs_model_class = None
+
+    def get_txs_model(self):
+        if not self.txs_model_class:
+            from django_ledger.models.transactions import TransactionModel
+            self.txs_model_class = TransactionModel
+        return self.txs_model_class
+
+
+txs_lazy_loader = TxsLazyLoader()
+# TransactionModel = txs_lazy_loader.get_txs_model()
+
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
 
@@ -143,6 +157,14 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
         self.amount_earned = state['amount_earned']
 
     def migrate_state(self):
+
+        # txs_qs = TransactionModel.objects.order_by('-account').filter(
+        #     journal_entry__ledger=self.ledger).values(
+        #     'account', 'tx_type').annotate(
+        #     total_balance=models.Sum('amount'),
+        #     account_balance_type=models.F('account__balance_type')
+        # )
+
         current = self.db_state()
         new = self.new_state(commit=True)
         diff = {

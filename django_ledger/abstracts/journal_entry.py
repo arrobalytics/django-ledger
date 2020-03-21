@@ -20,37 +20,37 @@ ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
 ACTIVITY_IGNORE = ['all']
 
 
-def validate_activity(act: str, raise_404: bool = False):
-    if act:
+def validate_activity(activity: str, raise_404: bool = False):
+    if activity:
 
-        if act in ACTIVITY_IGNORE:
-            act = None
+        if activity in ACTIVITY_IGNORE:
+            activity = None
 
         # todo: temporary fix. User should be able to pass a list.
-        if isinstance(act, list) and len(act) == 1:
-            act = act[0]
-        elif isinstance(act, list) and len(act) > 1:
-            exception = ValidationError(f'Multiple activities passed {act}')
+        if isinstance(activity, list) and len(activity) == 1:
+            activity = activity[0]
+        elif isinstance(activity, list) and len(activity) > 1:
+            exception = ValidationError(f'Multiple activities passed {activity}')
             if raise_404:
                 raise Http404(exception)
             raise exception
 
-        valid = act in ACTIVITY_ALLOWS
-        if act and not valid:
-            exception = ValidationError(f'{act} is invalid. Choices are {ACTIVITY_ALLOWS}.')
+        valid = activity in ACTIVITY_ALLOWS
+        if activity and not valid:
+            exception = ValidationError(f'{activity} is invalid. Choices are {ACTIVITY_ALLOWS}.')
             if raise_404:
                 raise Http404(exception)
             raise exception
 
-    return act
+    return activity
 
 
 class JournalEntryModelManager(models.Manager):
 
-    def for_user(self, user):
+    def for_user(self, user_model):
         return self.get_queryset().filter(
-            Q(ledger__entity__admin=user) |
-            Q(ledger__entity__managers__exact=user)
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__exact=user_model)
         )
 
     def all_posted(self):

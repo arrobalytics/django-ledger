@@ -25,7 +25,7 @@ class JournalEntryListView(ListView):
         entity_slug = self.kwargs.get('entity_slug')
         ledger_pk = self.kwargs.get('ledger_pk')
         return JournalEntryModel.on_coa.for_user(
-            user=self.request.user).filter(
+            user_model=self.request.user).filter(
             Q(ledger__entity__slug=entity_slug) &
             Q(ledger__slug__iexact=ledger_pk)
         ).order_by(sort)
@@ -45,7 +45,7 @@ class JournalEntryDetailView(DetailView):
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.on_coa.for_user(
-            user=self.request.user).filter(
+            user_model=self.request.user).filter(
             ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
 
 
@@ -76,7 +76,7 @@ class JournalEntryUpdateView(UpdateView):
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
         return JournalEntryModel.on_coa.for_user(
-            user=self.request.user).filter(
+            user_model=self.request.user).filter(
             ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
 
 
@@ -98,7 +98,7 @@ class JournalEntryCreateView(CreateView):
 
     def form_valid(self, form):
         ledger_model = LedgerModel.objects.for_user(
-            user=self.request.user
+            user_model=self.request.user
         ).get(id=self.kwargs['ledger_pk'])
         form.instance.ledger = ledger_model
         self.object = form.save()

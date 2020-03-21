@@ -13,11 +13,12 @@ class EntityFilterForm(Form):
             'class': DJETLER_FORM_INPUT_CLASS + ' djetler-set-entity-form-input',
         }))
 
-    def __init__(self,  *args, user_model, default_entity=None, form_id=None, **kwargs):
+    def __init__(self, *args, user_model, default_entity=None, form_id=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.form_id = form_id
-        self.fields['entity_model'].queryset = EntityModel.objects.for_user(user=self.USER_MODEL).only('slug', 'name')
+        self.fields['entity_model'].queryset = EntityModel.objects.for_user(
+            user_model=self.USER_MODEL).only('slug', 'name')
         if form_id:
             self.fields['entity_model'].widget.attrs['class'] += f' djetler-default-entity-input-{self.form_id}'
         if default_entity:
