@@ -44,7 +44,7 @@ class LazyImporter:
 lazy_importer = LazyImporter()
 
 AccountIndexTuple = namedtuple('AccountIndexTuple',
-                               field_names='role_bs, role, code, name, balance_type, balance')
+                               field_names='account_id, role_bs, role, code, name, balance_type, balance')
 
 
 def validate_tx_data(tx_data: list):
@@ -187,6 +187,7 @@ class IOMixIn:
             txs = TxsModel.objects.none()
 
         txs = txs.for_user(user_model=user_model)
+        txs = txs.filter(amount__gt=0)
 
         if posted:
             txs = txs.posted()
@@ -209,6 +210,7 @@ class IOMixIn:
             txs = txs.for_roles(role_list=role)
 
         txs = txs.values(
+            'account__id',
             'account__balance_type',
             'tx_type',
             'account__code',
@@ -242,6 +244,7 @@ class IOMixIn:
                 tx['balance'] = -tx['balance']
 
         acc_balances = set(AccountIndexTuple(
+            account_id=je['account__id'],
             role_bs=roles.BS_ROLES.get(je['account__role']),
             role=je['account__role'],
             code=je['account__code'],

@@ -2,7 +2,6 @@ from datetime import datetime
 from random import randint
 
 from django import template
-from django.core.exceptions import ValidationError
 
 from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
