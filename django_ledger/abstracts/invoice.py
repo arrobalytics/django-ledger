@@ -86,6 +86,7 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
 
     class Meta:
         abstract = True
+        ordering = ['-updated']
         verbose_name = _l('Invoice')
         verbose_name_plural = _l('Invoices')
 
