@@ -9,8 +9,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
-from django_ledger.abstracts.mixins.base import LedgerExtensionMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, LedgerPlugInMixIn, ProgressibleMixIn
 from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, ASSET_CA_RECEIVABLES
 from django_ledger.models import EntityModel
 
@@ -49,7 +48,8 @@ class InvoiceModelManager(models.Manager):
             return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
-class InvoiceModelAbstract(LedgerExtensionMixIn,
+class InvoiceModelAbstract(LedgerPlugInMixIn,
+                           ProgressibleMixIn,
                            CreateUpdateMixIn):
     INVOICE_TERMS = [
         ('on_receipt', 'Due On Receipt'),
@@ -58,11 +58,14 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
         ('net_90', 'Due in 90 Days'),
     ]
 
-    invoice_number = models.SlugField(max_length=20, verbose_name=_l('Invoice Number'))
+    invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_l('Invoice Number'))
     date = models.DateField(verbose_name=_l('Invoice Date'))
     due_date = models.DateField(verbose_name=_l('Due Date'))
-    terms = models.CharField(max_length=10, default='on_receipt',
-                             choices=INVOICE_TERMS, verbose_name=_l('Invoice Terms'))
+
+    terms = models.CharField(max_length=10,
+                             default='on_receipt',
+                             choices=INVOICE_TERMS,
+                             verbose_name=_l('Invoice Terms'))
 
     amount_due = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_l('Amount Due'))
     amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_l('Amount Paid'))
@@ -135,9 +138,6 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
             payments = self.amount_paid or 0
             return amount_due - payments
 
-    def db_state(self):
-        return getattr(self, 'DB_STATE')
-
     def new_state(self, commit: bool = False):
         new_state = {
             'amount_paid': self.amount_paid,
@@ -155,80 +155,6 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
-
-    def migrate_state(self, user_model):
-
-        txs_digest = self.ledger.digest(user_model=user_model,
-                                        process_groups=False,
-                                        process_roles=False,
-                                        process_ratios=False)
-        account_data = txs_digest['tx_digest']['accounts']
-
-        db_amount_paid = next(
-            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.cash_account_id), Decimal(0)
-        )
-        db_amount_receivable = next(
-            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.receivable_account_id), Decimal(0)
-        )
-        db_amount_unearned = next(
-            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.payable_account_id), Decimal(0)
-        )
-        db_amount_earned = next(
-            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.income_account_id), Decimal(0)
-        )
-
-        new = self.new_state(commit=True)
-
-        diff = {
-            'amount_paid': new['amount_paid'] - db_amount_paid,
-            'amount_receivable': new['amount_receivable'] - db_amount_receivable,
-            'amount_unearned': new['amount_unearned'] - db_amount_unearned,
-            'amount_earned': new['amount_earned'] - db_amount_earned
-        }
-
-        cash_entry = {
-            'account_id': self.cash_account_id,
-            'tx_type': 'debit' if diff['amount_paid'] >= 0 else 'credit',
-            'amount': abs(diff['amount_paid']),
-            'description': f'Invoice {self.invoice_number} cash account adjustment.'
-        }
-        receivable_entry = {
-            'account_id': self.receivable_account_id,
-            'tx_type': 'debit' if diff['amount_receivable'] >= 0 else 'credit',
-            'amount': abs(diff['amount_receivable']),
-            'description': f'Invoice {self.invoice_number} receivable account adjustment.'
-        }
-        payable_entry = {
-            'account_id': self.payable_account_id,
-            'tx_type': 'credit' if diff['amount_unearned'] >= 0 else 'debit',
-            'amount': abs(diff['amount_unearned']),
-            'description': f'Invoice {self.invoice_number} payable account adjustment'
-        }
-        earnings_entry = {
-            'account_id': self.income_account_id,
-            'tx_type': 'credit' if diff['amount_earned'] >= 0 else 'debit',
-            'amount': abs(diff['amount_earned']),
-            'description': f'Invoice {self.invoice_number} earnings account adjustment'
-        }
-
-        je_txs = list()
-        if cash_entry['amount'] != 0:
-            je_txs.append(cash_entry)
-        if receivable_entry['amount'] != 0:
-            je_txs.append(receivable_entry)
-        if payable_entry['amount'] != 0:
-            je_txs.append(payable_entry)
-        if earnings_entry['amount'] != 0:
-            je_txs.append(earnings_entry)
-
-        self.ledger.create_je_acc_id(
-            je_date=datetime.now().date(),
-            je_txs=je_txs,
-            je_activity='op',
-            je_posted=True,
-            je_desc=f'Invoice {self.invoice_number} IO migration '
-
-        )
 
     def clean(self):
 
@@ -265,7 +191,3 @@ class InvoiceModelAbstract(LedgerExtensionMixIn,
                 raise ValidationError('Cannot pay invoice before invoice date.')
         else:
             self.paid_date = None
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)

@@ -1,3 +1,6 @@
+from datetime import datetime
+from decimal import Decimal
+
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _l
@@ -36,7 +39,7 @@ class ProgressibleMixIn(models.Model):
         abstract = True
 
 
-class LedgerExtensionMixIn(ProgressibleMixIn):
+class LedgerPlugInMixIn(models.Model):
     ledger = models.OneToOneField('django_ledger.LedgerModel',
                                   verbose_name=_l('Invoice Ledger'),
                                   on_delete=models.CASCADE)
@@ -59,3 +62,77 @@ class LedgerExtensionMixIn(ProgressibleMixIn):
 
     class Meta:
         abstract = True
+
+    def migrate_state(self, user_model):
+
+        txs_digest = self.ledger.digest(user_model=user_model,
+                                        process_groups=False,
+                                        process_roles=False,
+                                        process_ratios=False)
+        account_data = txs_digest['tx_digest']['accounts']
+
+        db_amount_paid = next(
+            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.cash_account_id), Decimal(0)
+        )
+        db_amount_receivable = next(
+            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.receivable_account_id), Decimal(0)
+        )
+        db_amount_unearned = next(
+            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.payable_account_id), Decimal(0)
+        )
+        db_amount_earned = next(
+            iter(acc['balance'] for acc in account_data if acc['account_id'] == self.income_account_id), Decimal(0)
+        )
+
+        new = self.new_state(commit=True)
+
+        diff = {
+            'amount_paid': new['amount_paid'] - db_amount_paid,
+            'amount_receivable': new['amount_receivable'] - db_amount_receivable,
+            'amount_unearned': new['amount_unearned'] - db_amount_unearned,
+            'amount_earned': new['amount_earned'] - db_amount_earned
+        }
+
+        cash_entry = {
+            'account_id': self.cash_account_id,
+            'tx_type': 'debit' if diff['amount_paid'] >= 0 else 'credit',
+            'amount': abs(diff['amount_paid']),
+            'description': f'Invoice {self.invoice_number} cash account adjustment.'
+        }
+        receivable_entry = {
+            'account_id': self.receivable_account_id,
+            'tx_type': 'debit' if diff['amount_receivable'] >= 0 else 'credit',
+            'amount': abs(diff['amount_receivable']),
+            'description': f'Invoice {self.invoice_number} receivable account adjustment.'
+        }
+        payable_entry = {
+            'account_id': self.payable_account_id,
+            'tx_type': 'credit' if diff['amount_unearned'] >= 0 else 'debit',
+            'amount': abs(diff['amount_unearned']),
+            'description': f'Invoice {self.invoice_number} payable account adjustment'
+        }
+        earnings_entry = {
+            'account_id': self.income_account_id,
+            'tx_type': 'credit' if diff['amount_earned'] >= 0 else 'debit',
+            'amount': abs(diff['amount_earned']),
+            'description': f'Invoice {self.invoice_number} earnings account adjustment'
+        }
+
+        je_txs = list()
+        if cash_entry['amount'] != 0:
+            je_txs.append(cash_entry)
+        if receivable_entry['amount'] != 0:
+            je_txs.append(receivable_entry)
+        if payable_entry['amount'] != 0:
+            je_txs.append(payable_entry)
+        if earnings_entry['amount'] != 0:
+            je_txs.append(earnings_entry)
+
+        self.ledger.create_je_acc_id(
+            je_date=datetime.now().date(),
+            je_txs=je_txs,
+            je_activity='op',
+            je_posted=True,
+            je_desc=f'Invoice {self.invoice_number} IO migration '
+
+        )
