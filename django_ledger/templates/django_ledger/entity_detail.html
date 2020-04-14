@@ -83,7 +83,7 @@
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="">Bills</a>
+                           href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bills</a>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="">Purchase Orders</a>
 

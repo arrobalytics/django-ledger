@@ -1,1 +1,1 @@
-from .base import CreateUpdateMixIn, SlugNameMixIn, ProgressibleMixIn
+from .base import CreateUpdateMixIn, SlugNameMixIn, LedgerPlugInMixIn, NameAddressMixIn

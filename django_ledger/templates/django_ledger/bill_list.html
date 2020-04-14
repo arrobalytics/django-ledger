@@ -1,0 +1,23 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column">
+                    <div class="box">
+                        <a class="button is-primary is-outlined"
+                           href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">Create</a>
+                        <a class="button is-dark"
+                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                        {% bill_table %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+{% endblock %}

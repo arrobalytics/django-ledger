@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 
-from django_ledger.abstracts.accounts import BS_ROLES, ACCOUNT_CONVENTION
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
@@ -8,13 +7,13 @@ from django_ledger.models.entity import EntityModel
 UserModel = get_user_model()
 
 
-def txs_digest(tx: dict) -> dict:
-    tx['role_bs'] = BS_ROLES.get(tx['account__role'])
-    if tx['account__balance_type'] != tx['tx_type']:
-        tx['amount'] = -tx['amount']
-    if tx['account__balance_type'] != ACCOUNT_CONVENTION.get(tx['role_bs']):
-        tx['amount'] = -tx['amount']
-    return tx
+# def txs_digest(tx: dict) -> dict:
+#     tx['role_bs'] = BS_ROLES.get(tx['account__role'])
+#     if tx['account__balance_type'] != tx['tx_type']:
+#         tx['amount'] = -tx['amount']
+#     if tx['account__balance_type'] != ACCOUNT_CONVENTION.get(tx['role_bs']):
+#         tx['amount'] = -tx['amount']
+#     return tx
 
 
 def populate_default_coa(entity_model: EntityModel):

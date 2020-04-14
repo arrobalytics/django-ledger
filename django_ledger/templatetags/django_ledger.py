@@ -90,6 +90,14 @@ def invoice_table(context):
     }
 
 
+@register.inclusion_tag('django_ledger/tags/bill_table.html', takes_context=True)
+def bill_table(context):
+    return {
+        'bills': context['bills'],
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
 @register.inclusion_tag('django_ledger/tags/accounts_table.html')
 def accounts_table(accounts_queryset):
     return {

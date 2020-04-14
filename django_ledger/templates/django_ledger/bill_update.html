@@ -10,32 +10,32 @@
             <div class="columns is-centered">
                 <div class="column is-10-tablet">
                     <div class="box">
-                        <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_slug=invoice.invoice_number %}"
+                        <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=bill.bill_number %}"
                               method="post">
                             {% csrf_token %}
                             {{ form.as_p }}
                             <button type="submit"
                                     class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
                             </button>
-                            <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                            <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
                                class="button is-small is-dark is-fullwidth">Back</a>
                         </form>
 
                         <div class="columns is-multiline">
                             <div class="column is-12">
                                 <h3 class="is-size-3">DB</h3>
-                                <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
-                                <p>{{ invoice.receivable_account }}: ${{ invoice.amount_receivable | cs_thousands }}</p>
-                                <p>{{ invoice.payable_account }}: ${{ invoice.amount_unearned | cs_thousands }}</p>
-                                <p>{{ invoice.income_account }}: ${{ invoice.amount_earned | cs_thousands }}</p>
+                                <p>{{ bill.cash_account }}: ${{ bill.amount_paid | cs_thousands }}</p>
+                                <p>{{ bill.receivable_account }}: ${{ bill.amount_receivable | cs_thousands }}</p>
+                                <p>{{ bill.payable_account }}: ${{ bill.amount_unearned | cs_thousands }}</p>
+                                <p>{{ bill.income_account }}: ${{ bill.amount_earned | cs_thousands }}</p>
                             </div>
                             <div class="column is-12">
                                 <h3 class="is-size-3">State</h3>
-                                <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
-                                <p>{{ invoice.receivable_account }}:
-                                    ${{ invoice.get_amount_receivable | cs_thousands }}</p>
-                                <p>{{ invoice.payable_account }}: ${{ invoice.get_amount_payable | cs_thousands }}</p>
-                                <p>{{ invoice.income_account }}: ${{ invoice.get_amount_earned | cs_thousands }}</p>
+                                <p>{{ bill.cash_account }}: ${{ bill.amount_paid | cs_thousands }}</p>
+                                <p>{{ bill.receivable_account }}:
+                                    ${{ bill.get_amount_receivable | cs_thousands }}</p>
+                                <p>{{ bill.payable_account }}: ${{ bill.get_amount_payable | cs_thousands }}</p>
+                                <p>{{ bill.income_account }}: ${{ bill.get_amount_earned | cs_thousands }}</p>
                             </div>
                         </div>
                     </div>

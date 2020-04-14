@@ -1,0 +1,37 @@
+{% load django_ledger %}
+
+<div class="table-container">
+    <table class="table is-fullwidth">
+        <thead>
+        <tr>
+            <th>Edit</th>
+            <th>Bill Number</th>
+            <th>Bill XRef</th>
+            <th>From</th>
+            <th>Amount</th>
+            <th>Payments</th>
+            <th>Due Date</th>
+            <th>Created</th>
+            <th>Last Updated</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for bill in bills %}
+            <tr>
+                <td><a class="button is-warning is-small"
+                       href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_slug=bill.bill_number %}">Edit</a>
+                </td>
+                <td>{{ bill.bill_number }}</td>
+                <td>{{ bill.xref }}</td>
+                <td>{{ bill.bill_to }}</td>
+                <td>${{ bill.amount_due | cs_thousands }}</td>
+                <td>${{ bill.amount_paid | cs_thousands }}</td>
+                <td>{{ bill.due_date }}</td>
+                <td>{{ bill.created }}</td>
+                <td>{{ bill.updated }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

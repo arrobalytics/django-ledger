@@ -96,7 +96,18 @@ urlpatterns = [
     path('invoice/<slug:entity_slug>/<slug:invoice_slug>/update/',
          views.InvoiceModelUpdateView.as_view(),
          name='invoice-update'),
-\
+
+    # Bills ----
+    path('bill/<slug:entity_slug>/',
+         views.BillModelListView.as_view(),
+         name='bill-list'),
+    path('bill/<slug:entity_slug>/create/',
+         views.BillModelCreateView.as_view(),
+         name='bill-create'),
+    path('bill/<slug:entity_slug>/<slug:bill_slug>/update/',
+         views.BillModelUpdateView.as_view(),
+         name='bill-update'),
+
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('', views.RootUrlView.as_view(), name='root-url')
 ]
