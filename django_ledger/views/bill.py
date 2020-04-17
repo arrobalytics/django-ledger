@@ -80,23 +80,25 @@ class BillModelUpdateView(UpdateView):
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
-        invoice_slug = self.kwargs['invoice_slug']
-        return reverse('django_ledger:invoice-update',
+        bill_slug = self.kwargs['bill_slug']
+        return reverse('django_ledger:bill-update',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'invoice_slug': invoice_slug
+                           'bill_slug': bill_slug
                        })
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        qs = BillModel.objects.for_user(user_model=self.request.user).filter(
+        qs = BillModel.objects.for_user(
+            user_model=self.request.user).filter(
             ledger__entity__slug__exact=entity_slug
         )
         return qs
 
     def form_valid(self, form):
-        """If the form is valid, save the associated model."""
         invoice = form.save()
-        invoice.migrate_state(user_model=self.request.user)
+        entity_slug = self.kwargs['entity_slug']
+        invoice.migrate_state(user_model=self.request.user,
+                              entity_slug=entity_slug)
         self.object = invoice
         return super().form_valid(form)

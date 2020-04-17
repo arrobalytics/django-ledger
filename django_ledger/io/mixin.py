@@ -96,9 +96,9 @@ class IOMixIn:
             parent=je_parent
         )
 
-        TxsModel = lazy_importer.get_txs_model()
+        TransactionModel = lazy_importer.get_txs_model()
         txs_list = [
-            TxsModel(
+            TransactionModel(
                 account_id=tx['account_id'],
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
@@ -106,7 +106,7 @@ class IOMixIn:
                 journal_entry=je
             ) for tx in je_txs
         ]
-        txs = TxsModel.objects.bulk_create(txs_list)
+        txs = TransactionModel.objects.bulk_create(txs_list)
         return txs
 
     def create_je(self,
@@ -152,9 +152,9 @@ class IOMixIn:
             posted=je_posted,
             parent=je_parent)
 
-        TxsModel = lazy_importer.get_txs_model()
+        TransactionModel = lazy_importer.get_txs_model()
         txs_list = [
-            TxsModel(
+            TransactionModel(
                 account=avail_accounts.get(code__iexact=tx['code']),
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
@@ -162,7 +162,7 @@ class IOMixIn:
                 journal_entry=je
             ) for tx in je_txs
         ]
-        txs = TxsModel.objects.bulk_create(txs_list)
+        txs = TransactionModel.objects.bulk_create(txs_list)
         return txs
 
     def get_je_txs(self,
@@ -171,23 +171,26 @@ class IOMixIn:
                    activity: str = None,
                    role: str = None,
                    accounts: str = None,
-                   posted: bool = True):
+                   posted: bool = True,
+                   exclude_zero_bal: bool = True):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
 
-        TxsModel = lazy_importer.get_txs_model()
+        TransactionModel = lazy_importer.get_txs_model()
         if isinstance(self, lazy_importer.get_entity_model()):
             # Is entity model....
-            txs = TxsModel.objects.for_entity(entity_slug=self)
+            txs = TransactionModel.objects.for_entity(entity_slug=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
             # Is ledger model ...
-            txs = TxsModel.objects.for_ledger(ledger_model=self)
+            txs = TransactionModel.objects.for_ledger(ledger_model=self)
         else:
-            txs = TxsModel.objects.none()
+            txs = TransactionModel.objects.none()
 
         txs = txs.for_user(user_model=user_model)
-        txs = txs.filter(amount__gt=0)
+
+        if exclude_zero_bal:
+            txs = txs.filter(amount__gt=0)
 
         if posted:
             txs = txs.posted()
@@ -225,7 +228,7 @@ class IOMixIn:
                 equity_only: bool = False,
                 activity: str = None,
                 role: str = None,
-                accounts: str = None,
+                accounts: set = None,
                 signs: bool = False):
 
         if equity_only:
@@ -268,6 +271,7 @@ class IOMixIn:
 
     def digest(self,
                user_model: UserModel,
+               accounts: set = None,
                activity: str = None,
                as_of: str = None,
                process_roles: bool = True,
@@ -277,6 +281,7 @@ class IOMixIn:
 
         accounts = self.get_jes(signs=True,
                                 user=user_model,
+                                accounts=accounts,
                                 activity=activity,
                                 as_of=as_of,
                                 equity_only=equity_only)

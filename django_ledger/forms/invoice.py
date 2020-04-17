@@ -18,7 +18,7 @@ class InvoiceModelCreateForm(ModelForm):
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
         self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
-        self.fields['income_account'].queryset = account_qs.filter(role__in=GROUP_INCOME)
+        self.fields['earnings_account'].queryset = account_qs.filter(role__in=GROUP_INCOME)
 
     class Meta:
         model = InvoiceModel
@@ -35,7 +35,7 @@ class InvoiceModelCreateForm(ModelForm):
             'cash_account',
             'receivable_account',
             'payable_account',
-            'income_account'
+            'earnings_account'
         ]
         widgets = {
             'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
@@ -50,7 +50,7 @@ class InvoiceModelCreateForm(ModelForm):
             'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'income_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
         }
 
 
@@ -101,5 +101,5 @@ class InvoiceModelUpdateForm(ModelForm):
             'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'income_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
         }

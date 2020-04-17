@@ -2,7 +2,7 @@ from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, UR
 from django.forms import ValidationError
 
 from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
 from django_ledger.models import BillModel, AccountModel
 
 
@@ -18,7 +18,7 @@ class BillModelCreateForm(ModelForm):
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
         self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
-        self.fields['income_account'].queryset = account_qs.filter(role__in=GROUP_INCOME)
+        self.fields['earnings_account'].queryset = account_qs.filter(role__in=GROUP_EXPENSES)
 
     class Meta:
         model = BillModel
@@ -36,7 +36,7 @@ class BillModelCreateForm(ModelForm):
             'cash_account',
             'receivable_account',
             'payable_account',
-            'income_account'
+            'earnings_account'
         ]
         widgets = {
             'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
@@ -52,7 +52,7 @@ class BillModelCreateForm(ModelForm):
             'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'income_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
         }
 
 
@@ -105,5 +105,5 @@ class BillModelUpdateForm(ModelForm):
             'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'income_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
         }

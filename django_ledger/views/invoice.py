@@ -96,8 +96,9 @@ class InvoiceModelUpdateView(UpdateView):
         return qs
 
     def form_valid(self, form):
-        """If the form is valid, save the associated model."""
         invoice = form.save()
-        invoice.migrate_state(user_model=self.request.user)
+        entity_slug = self.kwargs['entity_slug']
+        invoice.migrate_state(user_model=self.request.user,
+                              entity_slug=entity_slug)
         self.object = invoice
         return super().form_valid(form)

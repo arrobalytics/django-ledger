@@ -27,15 +27,15 @@
                                 <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
                                 <p>{{ invoice.receivable_account }}: ${{ invoice.amount_receivable | cs_thousands }}</p>
                                 <p>{{ invoice.payable_account }}: ${{ invoice.amount_unearned | cs_thousands }}</p>
-                                <p>{{ invoice.income_account }}: ${{ invoice.amount_earned | cs_thousands }}</p>
+                                <p>{{ invoice.earnings_account }}: ${{ invoice.amount_earned | cs_thousands }}</p>
                             </div>
                             <div class="column is-12">
                                 <h3 class="is-size-3">State</h3>
-                                <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
+                                <p>{{ invoice.cash_account }}: ${{ invoice.get_amount_cash | cs_thousands }}</p>
                                 <p>{{ invoice.receivable_account }}:
                                     ${{ invoice.get_amount_receivable | cs_thousands }}</p>
                                 <p>{{ invoice.payable_account }}: ${{ invoice.get_amount_payable | cs_thousands }}</p>
-                                <p>{{ invoice.income_account }}: ${{ invoice.get_amount_earned | cs_thousands }}</p>
+                                <p>{{ invoice.earnings_account }}: ${{ invoice.get_amount_earned | cs_thousands }}</p>
                             </div>
                         </div>
                     </div>

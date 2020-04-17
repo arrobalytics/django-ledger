@@ -7,7 +7,8 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel
 
-from django_ledger.abstracts.mixins import CreateUpdateMixIn
+# todo: this is creating a circular reference need to resolve.
+# from django_ledger.abstracts.mixins import CreateUpdateMixIn
 
 ACTIVITIES = [
     ('op', _('Operating')),
@@ -86,7 +87,7 @@ class JournalEntryModelManager(models.Manager):
         )
 
 
-class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
+class JournalEntryModelAbstract(MPTTModel):
     date = models.DateField(verbose_name=_l('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_l('Description'))
     activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_l('Activity'))
@@ -103,6 +104,11 @@ class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
                                verbose_name=_l('Ledger'),
                                related_name='journal_entries',
                                on_delete=models.CASCADE)
+
+    # todo: must come from create/update mixin. Resolve circular reference.
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+
     on_coa = JournalEntryModelManager()
 
     class Meta:
@@ -150,5 +156,5 @@ class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
             self.clean()
         except ValidationError:
             self.txs.all().delete()
-            raise ValidationError('Something went wrong cleaning journal entry ID: {x1}'.format(x1=instance.id))
+            raise ValidationError('Something went wrong cleaning journal entry ID: {x1}'.format(x1=self.id))
         super().save(*args, **kwargs)
