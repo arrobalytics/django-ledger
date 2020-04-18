@@ -72,6 +72,8 @@ class LedgerPlugInMixIn(models.Model):
     paid_date = models.DateField(null=True, blank=True, verbose_name=_l('Paid Date'))
     date = models.DateField(verbose_name=_l('Date'))
     due_date = models.DateField(verbose_name=_l('Due Date'))
+    void = models.BooleanField(default=False, verbose_name=_l('Void'))
+    void_date = models.DateField(null=True, blank=True, verbose_name=_l('Void Date'))
 
     progressible = models.BooleanField(default=False, verbose_name=_l('Progressible'))
     progress = models.DecimalField(default=0,
