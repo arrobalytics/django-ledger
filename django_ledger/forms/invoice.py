@@ -26,7 +26,7 @@ class InvoiceModelCreateForm(ModelForm):
             'date',
             'amount_due',
             'terms',
-            'bill_to',
+            'subject_name',
             'address_1',
             'address_2',
             'phone',
@@ -41,7 +41,7 @@ class InvoiceModelCreateForm(ModelForm):
             'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'amount_due': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'terms': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'bill_to': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'subject_name': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_1': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_2': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'phone': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
@@ -55,19 +55,10 @@ class InvoiceModelCreateForm(ModelForm):
 
 
 class InvoiceModelUpdateForm(ModelForm):
-
-    def clean(self):
-        amount_paid = self.cleaned_data.get('amount_paid')
-        amount_due = self.cleaned_data.get('amount_due')
-        if amount_paid > amount_due:
-            raise ValidationError(
-                'Amount paid cannot exceed invoice amount due'
-            )
-
     class Meta:
         model = InvoiceModel
         fields = [
-            'bill_to',
+            'subject_name',
             'address_1',
             'address_2',
             'phone',
@@ -83,7 +74,7 @@ class InvoiceModelUpdateForm(ModelForm):
             'progressible'
         ]
         widgets = {
-            'bill_to': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'subject_name': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_1': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_2': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'phone': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),

@@ -23,7 +23,10 @@
 
                         <div class="columns is-multiline">
                             <div class="column is-12">
-                                <h3 class="is-size-3">DB</h3>
+                                <h3 class="is-size-3">Allow Migrate: {{ bill.ALLOW_MIGRATE }}</h3>
+                            </div>
+                            <div class="column is-12">
+                                <h3 class="is-size-3">DJ Model</h3>
                                 <p>{{ bill.cash_account }}: ${{ bill.amount_paid | cs_thousands }}</p>
                                 <p>{{ bill.receivable_account }}: ${{ bill.amount_receivable | cs_thousands }}</p>
                                 <p>{{ bill.payable_account }}: ${{ bill.amount_unearned | cs_thousands }}</p>

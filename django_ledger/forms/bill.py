@@ -27,7 +27,7 @@ class BillModelCreateForm(ModelForm):
             'date',
             'amount_due',
             'terms',
-            'bill_to',
+            'subject_name',
             'address_1',
             'address_2',
             'phone',
@@ -43,7 +43,7 @@ class BillModelCreateForm(ModelForm):
             'xref': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'amount_due': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'terms': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'bill_to': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'subject_name': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_1': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_2': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'phone': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
@@ -57,20 +57,11 @@ class BillModelCreateForm(ModelForm):
 
 
 class BillModelUpdateForm(ModelForm):
-
-    def clean(self):
-        amount_paid = self.cleaned_data.get('amount_paid')
-        amount_due = self.cleaned_data.get('amount_due')
-        if amount_paid > amount_due:
-            raise ValidationError(
-                'Amount paid cannot exceed bill amount due'
-            )
-
     class Meta:
         model = BillModel
         fields = [
             'xref',
-            'bill_to',
+            'subject_name',
             'address_1',
             'address_2',
             'phone',
@@ -87,7 +78,7 @@ class BillModelUpdateForm(ModelForm):
         ]
         widgets = {
             'xref': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'bill_to': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'subject_name': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_1': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'address_2': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'phone': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),

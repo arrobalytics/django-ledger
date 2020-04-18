@@ -107,10 +107,7 @@ class LedgerPlugInMixIn(models.Model):
         abstract = True
 
     def get_progress(self):
-        if self.IS_DEBIT_BALANCE:
-            return self.progress
-        elif not self.IS_DEBIT_BALANCE:
-            return 1 - self.progress
+        return self.progress
 
     def get_amount_cash(self):
         if self.IS_DEBIT_BALANCE:
@@ -203,8 +200,8 @@ class LedgerPlugInMixIn(models.Model):
             return tx_types[acc_bal_type + d_or_i]
         return 'debit'
 
-    def migrate_state(self, user_model, entity_slug: str):
-        if self.migrate_allowed():
+    def migrate_state(self, user_model, entity_slug: str, force_migrate: bool = False):
+        if self.migrate_allowed() or force_migrate:
             txs_digest = self.ledger.digest(user_model=user_model,
                                             process_groups=False,
                                             process_roles=False,
@@ -217,7 +214,7 @@ class LedgerPlugInMixIn(models.Model):
             rcv_acc_db = next(
                 iter(acc for acc in account_data if acc['account_id'] == self.receivable_account_id), None
             )
-            payable_acc_db = next(
+            pay_acc_db = next(
                 iter(acc for acc in account_data if acc['account_id'] == self.payable_account_id), None
             )
             earn_acc_db = next(
@@ -229,8 +226,9 @@ class LedgerPlugInMixIn(models.Model):
             diff = {
                 'amount_paid': new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0),
                 'amount_receivable': new_state['amount_receivable'] - (rcv_acc_db['balance'] if rcv_acc_db else 0),
-                'amount_payable': new_state['amount_unearned'] - (payable_acc_db['balance'] if payable_acc_db else 0),
-                'amount_earned': new_state['amount_earned'] - (earn_acc_db['balance'] if earn_acc_db else 0)
+                'amount_payable': new_state['amount_unearned'] - (pay_acc_db['balance'] if pay_acc_db else 0),
+                # todo: chunk this down and figure out a cleaner way to deal with the earnings account.
+                'amount_earned': new_state['amount_earned'] - abs(earn_acc_db['balance'] if earn_acc_db else 0)
             }
 
             je_txs = list()
@@ -268,8 +266,8 @@ class LedgerPlugInMixIn(models.Model):
                 je_txs.append(receivable_tx)
 
             if diff['amount_payable'] != 0:
-                if not payable_acc_db:
-                    payable_acc_db = self.get_account_bt(
+                if not pay_acc_db:
+                    pay_acc_db = self.get_account_bt(
                         account_id=self.payable_account_id,
                         entity_slug=entity_slug,
                         user_model=user_model
@@ -277,7 +275,7 @@ class LedgerPlugInMixIn(models.Model):
 
                 payable_tx = {
                     'account_id': self.payable_account_id,
-                    'tx_type': self.get_tx_type(acc_digest=payable_acc_db, adjustment_amount=diff['amount_payable']),
+                    'tx_type': self.get_tx_type(acc_digest=pay_acc_db, adjustment_amount=diff['amount_payable']),
                     'amount': abs(diff['amount_payable']),
                     'description': self.get_migrate_state_desc()
                 }
@@ -359,6 +357,11 @@ class LedgerPlugInMixIn(models.Model):
         else:
             self.due_date = self.date
 
+        if self.amount_paid == self.amount_due:
+            self.paid = True
+        elif self.amount_paid > self.amount_due:
+            raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
+
         if self.paid:
             self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
@@ -378,8 +381,7 @@ class LedgerPlugInMixIn(models.Model):
 
 
 class ContactInfoMixIn(models.Model):
-    # todo: change the name of bill_to to name.
-    bill_to = models.CharField(max_length=50, verbose_name=_l('Bill To Name'))
+    subject_name = models.CharField(max_length=50, verbose_name=_l('Subject Name'))
     address_1 = models.CharField(max_length=70, verbose_name=_l('Address Line 1'))
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_l('Address Line 2'))
     email = models.EmailField(null=True, blank=True, verbose_name=_l('Email'))
