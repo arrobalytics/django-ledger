@@ -1,4 +1,4 @@
-![alt text](https://storage.googleapis.com/djetler/logo/v1/djetler-logo%402x.png)
+![alt text](https://storage.googleapis.com/django_ledger/logo/v1/djetler-logo%404x.png)
 
 ### A bookkeeping & financial analysis engine for the Django Framework.
 
