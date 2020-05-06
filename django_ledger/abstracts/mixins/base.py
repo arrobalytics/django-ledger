@@ -189,7 +189,7 @@ class LedgerPlugInMixIn(models.Model):
                     adjustment_amount: Decimal):
 
         if adjustment_amount:
-            # todo: implement as a constant.
+            # todo: implement this as a standalone function???
             tx_types = {
                 'ci': 'credit',
                 'dd': 'credit',
@@ -230,6 +230,7 @@ class LedgerPlugInMixIn(models.Model):
                 'amount_receivable': new_state['amount_receivable'] - (rcv_acc_db['balance'] if rcv_acc_db else 0),
                 'amount_payable': new_state['amount_unearned'] - (pay_acc_db['balance'] if pay_acc_db else 0),
                 # todo: chunk this down and figure out a cleaner way to deal with the earnings account.
+                # todo: absolute is used here because amount earned can come from an income account or expense account.
                 'amount_earned': new_state['amount_earned'] - abs(earn_acc_db['balance'] if earn_acc_db else 0)
             }
 
@@ -314,7 +315,7 @@ class LedgerPlugInMixIn(models.Model):
         new_state = {
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_receivable(),
-            # todo: rename this to amount_payable...
+            # todo: rename this to amount_payable for consistency with model field.
             'amount_unearned': self.get_amount_payable(),
             'amount_earned': self.get_amount_earned()
         }

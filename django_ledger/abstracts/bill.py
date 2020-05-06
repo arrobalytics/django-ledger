@@ -63,5 +63,5 @@ class BillModelAbstract(LedgerPlugInMixIn,
         if not self.bill_number:
             self.bill_number = generate_bill_number()
 
-        # todo: this is not executing the mixin clean() method...
+        # todo: this is not executing the mixin clean() method...???
         super().clean()

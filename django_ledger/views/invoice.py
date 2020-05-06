@@ -41,7 +41,7 @@ class InvoiceModelCreateView(CreateView):
         invoice = form.instance
         invoice.invoice_number = generate_invoice_number()
         entity_slug = self.kwargs.get('entity_slug')
-        # todo: can move this to save() method???...
+        # todo: is it necessary to get the EntityModel???...
         entity_model = EntityModel.objects.for_user(user_model=self.request.user).get(slug__exact=entity_slug)
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
