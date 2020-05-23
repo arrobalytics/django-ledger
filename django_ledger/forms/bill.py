@@ -1,5 +1,4 @@
 from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, URLInput
-from django.forms import ValidationError
 
 from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
@@ -12,9 +11,8 @@ class BillModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        account_qs = AccountModel.on_coa.for_entity(user_model=self.USER_MODEL,
-                                                    entity_slug=self.ENTITY_SLUG)
-
+        account_qs = AccountModel.on_coa.for_entity_available(user_model=self.USER_MODEL,
+                                                              entity_slug=self.ENTITY_SLUG)
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
         self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
@@ -57,6 +55,20 @@ class BillModelCreateForm(ModelForm):
 
 
 class BillModelUpdateForm(ModelForm):
+
+    def __init__(self, *args, entity_slug, user_model, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+
+    def save(self, commit=True):
+        super().save(commit=commit)
+        if commit:
+            self.instance.migrate_state(
+                user_model=self.USER_MODEL,
+                entity_slug=self.ENTITY_SLUG
+            )
+
     class Meta:
         model = BillModel
         fields = [
@@ -93,8 +105,9 @@ class BillModelUpdateForm(ModelForm):
 
             'progress': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
 
-            'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            # todo: it may be possible to allow changing accounts in the future...
+            # 'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            # 'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            # 'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            # 'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
         }

@@ -1,7 +1,7 @@
 from datetime import timedelta, datetime
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _l
@@ -163,10 +163,14 @@ class LedgerPlugInMixIn(models.Model):
         :return:
         """
         AccountModel = lazy_loader.get_account_model()
-        account = AccountModel.on_coa.for_entity_available(
-            user_model=user_model,
-            entity_slug=entity_slug
-        ).get(id=account_id)
+
+        try:
+            account = AccountModel.on_coa.for_entity_available(
+                user_model=user_model,
+                entity_slug=entity_slug
+            ).get(id=account_id)
+        except ObjectDoesNotExist:
+            raise ValidationError(f'Account ID: {account_id} may be locked or unavailable...')
         return {
             'balance_type': account.balance_type
         }
@@ -202,14 +206,14 @@ class LedgerPlugInMixIn(models.Model):
             return tx_types[acc_bal_type + d_or_i]
         return 'debit'
 
-    def migrate_state(self, user_model, entity_slug: str, force_migrate: bool = False):
+    def migrate_state(self, user_model, entity_slug: str, force_migrate: bool = False, commit: bool = True):
         if self.migrate_allowed() or force_migrate:
             txs_digest = self.ledger.digest(user_model=user_model,
                                             process_groups=False,
                                             process_roles=False,
                                             process_ratios=False)
-            account_data = txs_digest['tx_digest']['accounts']
 
+            account_data = txs_digest['tx_digest']['accounts']
             cash_acc_db = next(
                 iter(acc for acc in account_data if acc['account_id'] == self.cash_account_id), None
             )

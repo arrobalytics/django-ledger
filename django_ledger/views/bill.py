@@ -41,9 +41,8 @@ class BillModelCreateView(CreateView):
         bill = form.instance
         bill.bill_number = generate_bill_number()
         entity_slug = self.kwargs.get('entity_slug')
-
-        # todo: is it necessary to get the EntityModel???...
-        entity_model = EntityModel.objects.for_user(user_model=self.request.user).get(slug__exact=entity_slug)
+        entity_model = EntityModel.objects.for_user(
+            user_model=self.request.user).get(slug__exact=entity_slug)
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
             posted=True,
@@ -52,9 +51,6 @@ class BillModelCreateView(CreateView):
         ledger_model.clean()
         bill.ledger = ledger_model
         return super().form_valid(form=form)
-
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form))
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -70,6 +66,13 @@ class BillModelUpdateView(UpdateView):
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_update.html'
     form_class = BillModelUpdateForm
+
+    def get_form(self, form_class=None):
+        return BillModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -95,11 +98,3 @@ class BillModelUpdateView(UpdateView):
             ledger__entity__slug__exact=entity_slug
         )
         return qs
-
-    def form_valid(self, form):
-        invoice = form.save()
-        entity_slug = self.kwargs['entity_slug']
-        invoice.migrate_state(user_model=self.request.user,
-                              entity_slug=entity_slug)
-        self.object = invoice
-        return super().form_valid(form)

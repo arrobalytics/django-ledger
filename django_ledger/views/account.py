@@ -52,11 +52,11 @@ class AccountModelUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        return AccountModel.on_coa.for_user(
-            user_model=self.request.user
+        return AccountModel.on_coa.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
         ).filter(
-            Q(coa__slug__exact=self.kwargs['coa_slug']) &
-            Q(coa__entity__slug__exact=self.kwargs['entity_slug'])
+            Q(coa__slug__exact=self.kwargs['coa_slug'])
         )
 
 

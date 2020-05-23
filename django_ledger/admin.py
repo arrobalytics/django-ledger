@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel, AccountModel,
-                                  JournalEntryModel, TransactionModel, EntityManagementModel, InvoiceModel)
+                                  JournalEntryModel, TransactionModel, EntityManagementModel, InvoiceModel,
+                                  BillModel)
 
 
 class TransactionModelInLine(admin.TabularInline):
@@ -110,9 +111,21 @@ class InvoiceModelAdmin(admin.ModelAdmin):
         model = InvoiceModel
 
 
+class BillModelAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'bill_number',
+        'due_date',
+        'ledger'
+    ]
+
+    class Meta:
+        model = BillModel
+
+
 admin.site.register(EntityModel, EntityModelAdmin)
 admin.site.register(JournalEntryModel, JournalEntryModelAdmin)
 admin.site.register(LedgerModel, LedgerModelAdmin)
 admin.site.register(ChartOfAccountModel, ChartOfAccountsModelAdmin)
 admin.site.register(AccountModel, AccountModelAdmin)
 admin.site.register(InvoiceModel, InvoiceModelAdmin)
+admin.site.register(BillModel, BillModelAdmin)

@@ -12,8 +12,8 @@ class InvoiceModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        account_qs = AccountModel.on_coa.for_entity(user_model=self.USER_MODEL,
-                                                    entity_slug=self.ENTITY_SLUG)
+        account_qs = AccountModel.on_coa.for_entity_available(user_model=self.USER_MODEL,
+                                                              entity_slug=self.ENTITY_SLUG)
 
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
