@@ -14,7 +14,7 @@
             <div class="columns is-centered">
                 <div class="column is-4">
                     <div class="box">
-                        <form action="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.id %}"
+                        <form action="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=ledger.slug %}"
                               method="post">
                             {% csrf_token %}
                             {{ form.as_p }}

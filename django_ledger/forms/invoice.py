@@ -55,6 +55,20 @@ class InvoiceModelCreateForm(ModelForm):
 
 
 class InvoiceModelUpdateForm(ModelForm):
+
+    def __init__(self, *args, entity_slug, user_model, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+
+    def save(self, commit=True):
+        super().save(commit=commit)
+        if commit:
+            self.instance.migrate_state(
+                user_model=self.USER_MODEL,
+                entity_slug=self.ENTITY_SLUG
+            )
+
     class Meta:
         model = InvoiceModel
         fields = [

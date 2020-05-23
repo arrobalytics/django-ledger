@@ -53,6 +53,5 @@ class EndDateFilterForm(Form):
         attrs={
             'class': 'is-hidden',
             'data-input': True,
-
         }
     ))

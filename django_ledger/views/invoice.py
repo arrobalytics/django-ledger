@@ -71,6 +71,13 @@ class InvoiceModelUpdateView(UpdateView):
     template_name = 'django_ledger/invoice_update.html'
     form_class = InvoiceModelUpdateForm
 
+    def get_form(self, form_class=None):
+        return InvoiceModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
         invoice = self.object.invoice_number
@@ -95,10 +102,10 @@ class InvoiceModelUpdateView(UpdateView):
         )
         return qs
 
-    def form_valid(self, form):
-        invoice = form.save()
-        entity_slug = self.kwargs['entity_slug']
-        invoice.migrate_state(user_model=self.request.user,
-                              entity_slug=entity_slug)
-        self.object = invoice
-        return super().form_valid(form)
+    # def form_valid(self, form):
+    #     invoice = form.save()
+    #     entity_slug = self.kwargs['entity_slug']
+    #     invoice.migrate_state(user_model=self.request.user,
+    #                           entity_slug=entity_slug)
+    #     self.object = invoice
+    #     return super().form_valid(form)

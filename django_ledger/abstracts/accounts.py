@@ -10,12 +10,6 @@ from mptt.models import MPTTModel, TreeForeignKey
 from django_ledger.abstracts.mixins import CreateUpdateMixIn
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
 
-ACCOUNT_CONVENTION = {
-    'assets': 'debit',
-    'liabilities': 'credit',
-    'equity': 'credit'
-}
-
 
 class AccountModelManager(models.Manager):
 

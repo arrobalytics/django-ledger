@@ -16,7 +16,13 @@ from django_ledger.models.ledger import LedgerModel
 
 class TransactionQuerySet(models.QuerySet):
     def posted(self):
-        return self.filter(journal_entry__posted=True)
+        return self.filter(
+            Q(journal_entry__posted=True) &
+            Q(journal_entry__ledger__posted=True)
+        )
+
+    def for_ledger(self, ledger_model: LedgerModel):
+        return self.filter(journal_entry__ledger=ledger_model)
 
     def for_journal_entry(self, journal_entry_model: JournalEntryModel):
         return self.filter(journal_entry=journal_entry_model)
@@ -38,14 +44,14 @@ class TransactionQuerySet(models.QuerySet):
         else:
             return self.filter(account__in=account_list)
 
-    def as_of(self, as_of_date: str or datetime):
-        return self.filter(journal_entry__date__lte=as_of_date)
-
     def for_roles(self, role_list: List[str]):
         return self.filter(account__role__in=role_list)
 
     def for_activity(self, activity_list: List[str]):
         return self.filter(journal_entry__activity__in=activity_list)
+
+    def as_of(self, as_of_date: str or datetime):
+        return self.filter(journal_entry__date__lte=as_of_date)
 
 
 class TransactionModelAdmin(models.Manager):
@@ -55,7 +61,10 @@ class TransactionModelAdmin(models.Manager):
 
     def posted(self):
         qs = self.get_queryset()
-        return qs.filter(journal_entry__posted=True)
+        return qs.filter(
+            Q(journal_entry__posted=True) &
+            Q(journal_entry__ledger__posted=True)
+        )
 
     def for_ledger(self, ledger_model: LedgerModel):
         qs = self.get_queryset()

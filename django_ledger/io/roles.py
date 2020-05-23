@@ -162,7 +162,10 @@ ACCOUNT_ROLES = [
         (ASSET_LTI_LAND, _('Land')),
         (ASSET_LTI_SECURITIES, _('Securities')),
 
+        # PPE ...
         (ASSET_PPE, _('Property Plant & Equipment')),
+
+        # Other Assets ...
         (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
         (ASSET_ADJUSTMENTS, _('Other Assets')),
     )

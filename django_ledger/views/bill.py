@@ -65,7 +65,6 @@ class BillModelUpdateView(UpdateView):
     slug_field = 'bill_number'
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_update.html'
-    form_class = BillModelUpdateForm
 
     def get_form(self, form_class=None):
         return BillModelUpdateForm(
