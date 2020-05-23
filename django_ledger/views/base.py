@@ -6,7 +6,11 @@ from django_ledger.models import EntityModel
 
 
 class RootUrlView(RedirectView):
-    url = reverse_lazy('django_ledger:dashboard')
+
+    def get_redirect_url(self, *args, **kwargs):
+        if not self.request.user.is_authenticated:
+            return '/admin'
+        return reverse('django_ledger:dashboard')
 
 
 class DashboardView(TemplateView):
