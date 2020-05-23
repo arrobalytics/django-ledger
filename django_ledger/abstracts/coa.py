@@ -33,11 +33,11 @@ def make_account_active(coa_model, account_codes: str or list):
 
 class ChartOfAccountModelManager(Manager):
 
-    def for_user(self, user):
+    def for_user(self, user_model):
         qs = self.get_queryset()
         return qs.filter(
-            Q(entity__admin=user) |
-            Q(entity__managers__exact=user)
+            Q(entity__admin=user_model) |
+            Q(entity__managers__exact=user_model)
         )
 
 
