@@ -16,11 +16,11 @@
         <tr>
             <td>
                 <a class="button is-small is-warning is-outlined"
-                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Edit</a>
+                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_slug je_pk=je.id %}">Edit</a>
                 <a class="button is-small is-primary is-outlined"
-                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">View</a>
+                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_slug je_pk=je.id %}">View</a>
                 <a class="button is-small is-dark is-outlined"
-                   href="{% url 'django_ledger:txs' entity_slug=entity_slug ledger_pk=je.ledger_id je_pk=je.id %}">Txs</a>
+                   href="{% url 'django_ledger:txs' entity_slug=entity_slug ledger_pk=ledger_slug je_pk=je.id %}">Txs</a>
             </td>
             <td>{{ je.id }}</td>
             <td>{{ je.description }}</td>

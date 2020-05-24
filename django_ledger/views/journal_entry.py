@@ -1,9 +1,8 @@
-from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
-from django_ledger.forms import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
+from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
 from django_ledger.models import LedgerModel, JournalEntryModel
 
 
@@ -22,12 +21,10 @@ class JournalEntryListView(ListView):
         sort = self.request.GET.get('sort')
         if not sort:
             sort = '-updated'
-        entity_slug = self.kwargs.get('entity_slug')
-        ledger_pk = self.kwargs.get('ledger_pk')
-        return JournalEntryModel.on_coa.for_user(
-            user_model=self.request.user).filter(
-            Q(ledger__entity__slug=entity_slug) &
-            Q(ledger__slug__iexact=ledger_pk)
+        return JournalEntryModel.on_coa.for_ledger(
+            ledger_slug=self.kwargs['ledger_pk'],
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         ).order_by(sort)
 
 
@@ -43,10 +40,11 @@ class JournalEntryDetailView(DetailView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.on_coa.for_user(
-            user_model=self.request.user).filter(
-            ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
+        return JournalEntryModel.on_coa.for_ledger(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_slug=self.kwargs['ledger_pk'],
+            user_model=self.request.user
+        ).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryUpdateView(UpdateView):
@@ -58,6 +56,7 @@ class JournalEntryUpdateView(UpdateView):
         return JournalEntryModelUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
+            user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
@@ -74,10 +73,11 @@ class JournalEntryUpdateView(UpdateView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        return JournalEntryModel.on_coa.for_user(
-            user_model=self.request.user).filter(
-            ledger__entity__slug__iexact=entity_slug).prefetch_related('txs', 'txs__account')
+        return JournalEntryModel.on_coa.for_ledger(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_slug=self.kwargs['ledger_pk'],
+            user_model=self.request.user
+        ).prefetch_related('txs', 'txs__account')
 
 
 class JournalEntryCreateView(CreateView):
@@ -87,6 +87,7 @@ class JournalEntryCreateView(CreateView):
         return JournalEntryModelCreateForm(
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
+            user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
@@ -97,17 +98,20 @@ class JournalEntryCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        ledger_model = LedgerModel.objects.for_user(
-            user_model=self.request.user
-        ).get(id=self.kwargs['ledger_pk'])
+        ledger_model = LedgerModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+        ).get(slug__iexact=self.kwargs['ledger_pk'])
         form.instance.ledger = ledger_model
         self.object = form.save()
         return super().form_valid(form)
 
     def get_initial(self):
-        ledger_pk = self.kwargs.get('ledger_pk')
         return {
-            'ledger': LedgerModel.objects.get(pk=ledger_pk)
+            'ledger': LedgerModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).get(slug__iexact=self.kwargs['ledger_pk'])
         }
 
     def get_success_url(self):

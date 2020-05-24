@@ -23,7 +23,7 @@ class EntityModelManager(Manager):
         qs = self.get_queryset()
         return qs.filter(
             Q(admin=user_model) |
-            Q(managers__exact=user_model)
+            Q(managers__in=[user_model])
         )
 
 
@@ -43,6 +43,7 @@ class EntityModelAbstract(MPTTModel,
                             db_index=True,
                             on_delete=models.CASCADE)
 
+    # todo: can use the mixin???...
     address_1 = models.CharField(max_length=70, null=True, blank=True, verbose_name=_l('Company Address 1'))
     address_2 = models.CharField(max_length=70, null=True, blank=True, verbose_name=_l('Company Address 2'))
     email = models.EmailField(null=True, blank=True, verbose_name=_l('Email'))

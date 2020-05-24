@@ -26,6 +26,8 @@ class ChartOfAccountsUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        return ChartOfAccountModel.objects.for_user(
-            user_model=self.request.user
-        ).distinct()
+        return ChartOfAccountModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            coa_slug=self.kwargs['coa_slug']
+        )

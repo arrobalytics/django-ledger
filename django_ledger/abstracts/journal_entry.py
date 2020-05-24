@@ -48,43 +48,28 @@ def validate_activity(activity: str, raise_404: bool = False):
 
 class JournalEntryModelManager(models.Manager):
 
-    def for_user(self, user_model):
-        return self.get_queryset().filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__exact=user_model)
-        )
+    def for_ledger(self, ledger_slug: str, entity_slug: str, user_model):
+        # if isinstance(ledger, str):
+        #     qs = self.get_queryset().filter(ledger__slug__iexact=ledger)
+        # else:
+        #     qs = self.get_queryset().filter(ledger=ledger)
 
-    def all_posted(self):
-        return self.get_queryset().filter(
-            posted=True,
-            ledger__posted=True
-        )
+        qs = self.get_queryset().filter(
+            Q(ledger__slug__iexact=ledger_slug) &
+            Q(ledger__entity__slug__iexact=entity_slug) &
+            (
+                    Q(ledger__entity__admin=user_model) |
+                    Q(ledger__entity__managers__in=[user_model])
+            )
 
-    def on_entity(self, entity):
-        if isinstance(entity, str):
-            qs = self.get_queryset().filter(ledger__entity__slug__exact=entity)
-        else:
-            qs = self.get_queryset().filter(ledger__entity=entity)
+        )
         return qs
 
-    def on_entity_posted(self, entity):
-        return self.on_entity(entity=entity).filter(
-            posted=True,
-            ledger__posted=True
-        )
-
-    def on_ledger(self, ledger):
-        if isinstance(ledger, str):
-            qs = self.get_queryset().filter(ledger__slug__exact=ledger)
-        else:
-            qs = self.get_queryset().filter(ledger=ledger)
-        return qs
-
-    def on_ledger_posted(self, ledger):
-        return self.on_ledger(ledger=ledger).filter(
-            posted=True,
-            ledger__posted=True
-        )
+    # def on_ledger_posted(self, ledger):
+    #     return self.on_ledger(ledger=ledger).filter(
+    #         posted=True,
+    #         ledger__posted=True
+    #     )
 
 
 class JournalEntryModelAbstract(MPTTModel):

@@ -70,9 +70,21 @@ class TransactionModelAdmin(models.Manager):
         qs = self.get_queryset()
         return qs.filter(journal_entry__ledger=ledger_model)
 
-    def for_journal_entry(self, journal_entry_model: JournalEntryModel):
+    def for_journal_entry(self,
+                          entity_slug: str,
+                          ledger_slug: str,
+                          user_model,
+                          je_pk: str):
         qs = self.get_queryset()
-        return qs.filter(journal_entry=journal_entry_model)
+        return qs.filter(
+            Q(journal_entry__ledger__entity__slug__iexact=entity_slug) &
+            Q(journal_entry__ledger__slug__iexact=ledger_slug) &
+            Q(journal_entry_id=je_pk) &
+            (
+                    Q(journal_entry__ledger__entity__admin=user_model) |
+                    Q(journal_entry__ledger__entity__managers__in=[user_model])
+            )
+        )
 
     def for_entity(self, entity_slug: EntityModel or str):
         if isinstance(entity_slug, EntityModel):

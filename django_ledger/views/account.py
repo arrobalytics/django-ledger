@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView
 
-from django_ledger.forms import AccountModelUpdateForm, AccountModelCreateForm
+from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models import ChartOfAccountModel, AccountModel
 
 
@@ -19,11 +19,11 @@ class AccountModelListView(ListView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        qs = AccountModel.on_coa.for_entity(
-            entity_slug=entity_slug,
-            user_model=self.request.user)
-        return qs.filter(coa__entity__slug=self.kwargs['entity_slug']).order_by('code')
+        return AccountModel.on_coa.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            coa_slug=self.kwargs['coa_slug']
+        ).order_by('code')
 
 
 class AccountModelUpdateView(UpdateView):
@@ -40,6 +40,7 @@ class AccountModelUpdateView(UpdateView):
     def get_form(self, form_class=None):
         return AccountModelUpdateForm(coa_slug=self.kwargs['coa_slug'],
                                       entity_slug=self.kwargs['entity_slug'],
+                                      user_model=self.request.user,
                                       **self.get_form_kwargs())
 
     def get_success_url(self):
@@ -54,15 +55,13 @@ class AccountModelUpdateView(UpdateView):
     def get_queryset(self):
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).filter(
-            Q(coa__slug__exact=self.kwargs['coa_slug'])
+            entity_slug=self.kwargs['entity_slug'],
+            coa_slug=self.kwargs['coa_slug']
         )
 
 
 class AccountModelCreateView(CreateView):
     template_name = 'django_ledger/account_create.html'
-    form_class = AccountModelCreateForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -71,16 +70,19 @@ class AccountModelCreateView(CreateView):
         return context
 
     def get_form(self, form_class=None):
-        return AccountModelCreateForm(coa_slug=self.kwargs['coa_slug'],
-                                      entity_slug=self.kwargs['entity_slug'],
-                                      **self.get_form_kwargs())
+        return AccountModelCreateForm(
+            coa_slug=self.kwargs['coa_slug'],
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+            **self.get_form_kwargs()
+        )
 
     def form_valid(self, form):
-        coa_model = ChartOfAccountModel.objects.for_user(
-            user_model=self.request.user
-        ).filter(entity__slug=self.kwargs['entity_slug']).get(
-            slug=self.kwargs['coa_slug'])
-
+        coa_model = ChartOfAccountModel.objects.for_entity(
+            user_model=self.request.user,
+            coa_slug=self.kwargs['coa_slug'],
+            entity_slug=self.kwargs['entity_slug']
+        ).get(slug__iexact=self.kwargs['coa_slug'])
         form.instance.coa = coa_model
         self.object = form.save()
         return super().form_valid(form)

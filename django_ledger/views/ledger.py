@@ -3,7 +3,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
-from django_ledger.forms import LedgerModelCreateForm, LedgerModelUpdateForm
+from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models import EntityModel, LedgerModel
 
 
@@ -39,7 +39,7 @@ class LedgerModelCreateView(CreateView):
 
     def form_valid(self, form):
         entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
-        entity = entity_qs.get(slug__exact=self.kwargs['entity_slug'])
+        entity = entity_qs.get(slug__iexact=self.kwargs['entity_slug'])
         form.instance.entity = entity
         self.object = form.save()
         return super().form_valid(form)
@@ -76,7 +76,7 @@ class LedgerModelUpdateView(UpdateView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
         return LedgerModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=entity_slug
@@ -101,7 +101,7 @@ class LedgerBalanceSheetView(DetailView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
         return LedgerModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=entity_slug)
@@ -119,7 +119,7 @@ class LedgerIncomeStatementView(DetailView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
         return LedgerModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=entity_slug)

@@ -13,18 +13,26 @@ from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
 
 class AccountModelManager(models.Manager):
 
-    def for_entity(self, user_model, entity_slug):
+    def for_entity(self, user_model, entity_slug: str, coa_slug: str = None):
         qs = self.get_queryset()
-        return qs.filter(
+        qs = qs.filter(
             Q(coa__entity__slug__exact=entity_slug) &
             (
                     Q(coa__entity__admin=user_model) |
                     Q(coa__entity__managers__in=[user_model])
             )
         ).order_by('code')
+        # todo: I don't like this... coa_slug is optional but necessary for any account operations. not for txs..?
+        # it's highly unlikely that an entity will have multiple CoA's give the one-to-one relationship between them...
+        if coa_slug:
+            qs = qs.filter(coa__slug__iexact=coa_slug)
+        return qs
 
-    def for_entity_available(self, user_model, entity_slug):
-        qs = self.for_entity(user_model, entity_slug)
+    def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
+        qs = self.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug,
+            coa_slug=coa_slug)
         return qs.filter(
             active=True,
             locked=False

@@ -58,7 +58,8 @@ def income_statement_table(context):
 def jes_table(context, je_queryset):
     return {
         'jes': je_queryset,
-        'entity_slug': context['view'].kwargs['entity_slug']
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'ledger_slug': context['view'].kwargs['ledger_pk']
     }
 
 
@@ -78,7 +79,7 @@ def txs_table(je_model):
 def ledgers_table(context, ledgers_queryset):
     return {
         'ledgers': ledgers_queryset,
-        'entity_slug': context['view'].kwargs['entity_slug']
+        'entity_slug': context['view'].kwargs['entity_slug'],
     }
 
 
