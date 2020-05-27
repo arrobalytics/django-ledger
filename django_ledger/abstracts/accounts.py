@@ -23,7 +23,7 @@ class AccountModelManager(models.Manager):
             )
         ).order_by('code')
         # todo: I don't like this... coa_slug is optional but necessary for any account operations. not for txs..?
-        # it's highly unlikely that an entity will have multiple CoA's give the one-to-one relationship between them...
+        # it's highly unlikely that an entity will have multiple CoA's given the one-to-one relationship between them...
         if coa_slug:
             qs = qs.filter(coa__slug__iexact=coa_slug)
         return qs

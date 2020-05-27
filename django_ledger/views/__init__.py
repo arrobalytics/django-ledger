@@ -1,4 +1,5 @@
 from django_ledger.views.account import *
+from django_ledger.views.auth import *
 from django_ledger.views.base import *
 from django_ledger.views.bill import *
 from django_ledger.views.coa import *

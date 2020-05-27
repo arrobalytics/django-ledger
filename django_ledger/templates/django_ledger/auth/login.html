@@ -17,13 +17,24 @@
                                 </div>
                             </div>
 
-                            <h1 class="title">
-                                Hero title
-                            </h1>
-                            <h2 class="subtitle">
-                                Hero subtitle
-                            </h2>
-                            {{ form }}
+{#                            <h1 class="title">#}
+{#                                Hero title#}
+{#                            </h1>#}
+{#                            <h2 class="subtitle">#}
+{#                                Hero subtitle#}
+{#                            </h2>#}
+
+                            <form action="{% url 'django_ledger:login' %}" method="post">
+                                {% csrf_token %}
+                                <div class="columns is-multiline">
+                                    <div class="column is-12">
+                                        {{ form }}
+                                    </div>
+                                    <div class="column is-12">
+                                        <button type="submit" class="button is-primary is-fullwidth">Login</button>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
 

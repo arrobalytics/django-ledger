@@ -25,7 +25,7 @@
             <div class="navbar-start">
 
                 <a class="navbar-item" href="{% url 'django_ledger:dashboard' %}">{% trans 'Home' %}</a>
-                {% if user.is_staff or user.is_superuser %}
+                {% if user.is_superuser and user.is_authenticated %}
                     <a class="navbar-item" href="/admin">{% trans 'Admin' %}</a>
                 {% endif %}
 
@@ -46,6 +46,9 @@
                 <div class="navbar-item">
                     {# todo: nice tag to have but find a better way to reduce stress on the DB (qs on every page load) #}
                     {% default_entity %}
+                </div>
+                <div class="navbar-item">
+                    <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">Logout</a>
                 </div>
             </div>
 

@@ -66,10 +66,10 @@ class AccountModelAdmin(admin.ModelAdmin):
         queryset.update(active=False)
 
     def lock(self, request, queryset):
-        queryset.update(lock=True)
+        queryset.update(locked=True)
 
     def unlock(self, request, queryset):
-        queryset.update(unlock=False)
+        queryset.update(locked=False)
 
     # def role_bs(self, acc):
     #     return acc.role_bs.upper()
