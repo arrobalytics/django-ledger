@@ -1,4 +1,6 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
+from django_ledger.forms.auth import LogInForm
 
 from . import views
 
@@ -109,5 +111,13 @@ urlpatterns = [
          name='bill-update'),
 
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+
+    # Auth Views ---
+    path('accounts/login/',
+         auth_views.LoginView.as_view(
+             template_name='django_ledger/auth/login.html',
+             form_class=LogInForm),
+         name='login'),
+
     path('', views.RootUrlView.as_view(), name='root-url')
 ]

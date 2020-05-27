@@ -47,12 +47,11 @@ Make sure to select the appropriate option when creating new entities.
     
     pipenv install
     
-* Add mptt & django_ledger to INSTALLED_APPS
+* Add django_ledger to INSTALLED_APPS
 
 
     INSTALLED_APPS = [
         ...
-        'mptt',
         'django_ledger',
         ...
     ]

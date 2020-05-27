@@ -1,0 +1,35 @@
+{% extends 'django_ledger/base.html' %}
+{% load static %}
+
+{% block nav %}{% endblock %}
+{% block header %}{% endblock %}
+{% block content %}
+    <section class="hero is-fullheight"
+             style="background-image: url({% static 'django_ledger/img/daniel-weiss-aj2Os9mYgJU-unsplash.jpg' %})">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-4-desktop">
+                        <div class="box">
+                            <div class="container" style="padding: 20px;">
+                                <div class="figure">
+                                    <img src="{% static 'django_ledger/logo/django-ledger-logo.png' %}" alt="">
+                                </div>
+                            </div>
+
+                            <h1 class="title">
+                                Hero title
+                            </h1>
+                            <h2 class="subtitle">
+                                Hero subtitle
+                            </h2>
+                            {{ form }}
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+{% endblock %}
