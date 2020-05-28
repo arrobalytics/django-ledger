@@ -9,7 +9,7 @@ class RootUrlView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         if not self.request.user.is_authenticated:
-            return '/admin'
+            return reverse('django_ledger:login')
         return reverse('django_ledger:dashboard')
 
 

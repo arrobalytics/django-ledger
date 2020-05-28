@@ -1,5 +1,6 @@
 from collections import namedtuple
 from datetime import datetime
+from typing import List, Set
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -125,6 +126,7 @@ class IOMixIn:
         # Validates that the activity is valid.
         je_activity = validate_activity(je_activity)
 
+        # todo: revisit & remove unused TxS Model Querysets.
         if all([isinstance(self, lazy_importer.get_entity_model()),
                 not je_ledger]):
             raise ValidationError('Must pass an instance of LedgerModel')
@@ -167,10 +169,10 @@ class IOMixIn:
 
     def get_je_txs(self,
                    user_model: UserModel,
-                   as_of: str = None,
+                   as_of: str or datetime = None,
                    activity: str = None,
                    role: str = None,
-                   accounts: str = None,
+                   accounts: str or List[str] or Set[str] = None,
                    posted: bool = True,
                    exclude_zero_bal: bool = True):
 
@@ -187,6 +189,7 @@ class IOMixIn:
         else:
             txs = TransactionModel.objects.none()
 
+        # Make sure transa
         txs = txs.for_user(user_model=user_model)
 
         if exclude_zero_bal:
