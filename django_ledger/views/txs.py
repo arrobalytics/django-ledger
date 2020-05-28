@@ -7,6 +7,7 @@ from django_ledger.models import TransactionModel
 
 
 # TXS View ---
+# todo: rename to JE Transactions
 class TXSView(TemplateView):
     template_name = 'django_ledger/txs.html'
 
@@ -62,3 +63,5 @@ class TXSView(TemplateView):
                                  'Hmmm, this doesn\'t add up!. Check your math!',
                                  extra_tags='is-danger')
         return self.render_to_response(context)
+
+# todo: add transactions by account view...
