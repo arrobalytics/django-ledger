@@ -8,34 +8,23 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.abstracts.mixins.base import CreateUpdateMixIn
-from django_ledger.models.accounts import AccountModel
+from django_ledger.models import AccountModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 
 
 class TransactionQuerySet(models.QuerySet):
+
     def posted(self):
         return self.filter(
             Q(journal_entry__posted=True) &
             Q(journal_entry__ledger__posted=True)
         )
 
-    def for_ledger(self, ledger_model: LedgerModel):
-        return self.filter(journal_entry__ledger=ledger_model)
-
-    def for_journal_entry(self, journal_entry_model: JournalEntryModel):
-        return self.filter(journal_entry=journal_entry_model)
-
-    def for_entity(self, entity_slug: EntityModel or str):
-        if isinstance(entity_slug, EntityModel):
-            entity_slug = entity_slug.slug
-        return self.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
-
     def for_user(self, user_model):
         return self.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
-            Q(journal_entry__ledger__entity__managers__exact=user_model)
+            Q(journal_entry__ledger__entity__managers__in=[user_model])
         )
 
     def for_accounts(self, account_list: List[str or AccountModel]):
@@ -59,64 +48,43 @@ class TransactionModelAdmin(models.Manager):
     def get_queryset(self):
         return TransactionQuerySet(self.model, using=self._db)
 
-    def posted(self):
+    def for_entity(self, entity_model: EntityModel = None, entity_slug: str = None):
+        if not entity_model and not entity_slug:
+            raise ValueError(f'None entity_model or entity_slug were provided.')
+        elif entity_model and entity_slug:
+            raise ValueError(f'Must pass either entity_model or entity_slug, not both.')
         qs = self.get_queryset()
-        return qs.filter(
-            Q(journal_entry__posted=True) &
-            Q(journal_entry__ledger__posted=True)
-        )
+        if entity_model:
+            return qs.filter(journal_entry__ledger__entity=entity_model)
+        elif entity_slug:
+            return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
-    def for_ledger(self, ledger_model: LedgerModel):
+    def for_ledger(self, ledger_model: LedgerModel = None, ledger_slug: str = None):
+        if not ledger_model and not ledger_slug:
+            raise ValueError(f'None leger_model or ledger_slug were provided.')
+        elif ledger_model and ledger_slug:
+            raise ValueError(f'Must pass either ledger_model or ledger_slug, not both.')
         qs = self.get_queryset()
-        return qs.filter(journal_entry__ledger=ledger_model)
+        if ledger_model:
+            return qs.filter(journal_entry__ledger=ledger_model)
+        elif ledger_slug:
+            return qs.filter(journal_entry__ledger__slug__exact=ledger_slug)
 
     def for_journal_entry(self,
+                          user_model,
                           entity_slug: str,
                           ledger_slug: str,
-                          user_model,
                           je_pk: str):
         qs = self.get_queryset()
         return qs.filter(
-            Q(journal_entry__ledger__entity__slug__iexact=entity_slug) &
-            Q(journal_entry__ledger__slug__iexact=ledger_slug) &
+            Q(journal_entry__ledger__entity__slug__exact=entity_slug) &
+            Q(journal_entry__ledger__slug__exact=ledger_slug) &
             Q(journal_entry_id=je_pk) &
             (
                     Q(journal_entry__ledger__entity__admin=user_model) |
                     Q(journal_entry__ledger__entity__managers__in=[user_model])
             )
         )
-
-    def for_entity(self, entity_slug: EntityModel or str):
-        if isinstance(entity_slug, EntityModel):
-            entity_slug = entity_slug.slug
-        qs = self.get_queryset()
-        return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
-
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(journal_entry__ledger__entity__admin=user_model) |
-            Q(journal_entry__ledger__entity__managers__exact=user_model)
-        )
-
-    def for_accounts(self, account_list: List[str or AccountModel]):
-        qs = self.get_queryset()
-        if len(account_list) > 0 and isinstance(account_list[0], str):
-            return qs.filter(account__code__in=account_list)
-        else:
-            return qs.filter(account__in=account_list)
-
-    def for_roles(self, role_list: List[str]):
-        qs = self.get_queryset()
-        return qs.filter(account__role__in=role_list)
-
-    def for_activity(self, activity_list: List[str]):
-        qs = self.get_queryset()
-        return qs.filter(journal_entry__activity__in=activity_list)
-
-    def as_of(self, as_of_date: str or datetime):
-        qs = self.get_queryset()
-        return qs.filter(journal_entry__date__lte=as_of_date)
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):

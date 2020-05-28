@@ -61,9 +61,6 @@ class IOMixIn:
     Controls how transactions are recorded into the ledger.
     """
 
-    TX_DATA = None
-    TX_DIGEST = None
-
     def create_je_acc_id(self,
                          je_date: str or datetime,
                          je_txs: list,
@@ -169,6 +166,8 @@ class IOMixIn:
 
     def get_je_txs(self,
                    user_model: UserModel,
+                   # todo: add entity_slug ...
+                   entity_slug: str = None,
                    as_of: str or datetime = None,
                    activity: str = None,
                    role: str = None,
@@ -182,14 +181,13 @@ class IOMixIn:
         TransactionModel = lazy_importer.get_txs_model()
         if isinstance(self, lazy_importer.get_entity_model()):
             # Is entity model....
-            txs = TransactionModel.objects.for_entity(entity_slug=self)
+            txs = TransactionModel.objects.for_entity(entity_model=self)
         elif isinstance(self, lazy_importer.get_ledger_model()):
             # Is ledger model ...
             txs = TransactionModel.objects.for_ledger(ledger_model=self)
         else:
             txs = TransactionModel.objects.none()
 
-        # Make sure transa
         txs = txs.for_user(user_model=user_model)
 
         if exclude_zero_bal:
