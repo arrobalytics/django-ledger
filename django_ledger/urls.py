@@ -82,9 +82,12 @@ urlpatterns = [
          name='je-update'),
 
     # TXS ----
-    path('txs/<slug:entity_slug>/<slug:ledger_pk>/<int:je_pk>/txs/',
-         views.TXSView.as_view(),
+    path('txs/<slug:entity_slug>/<slug:ledger_pk>/journal-entry/<int:je_pk>/',
+         views.TXSJournalEntryView.as_view(),
          name='txs'),
+    path('txs/<slug:entity_slug>/<slug:coa_slug>/account/<int:account_pk>/',
+         views.TXSAccountView.as_view(),
+         name='txs-account'),
 
     # INVOICES ----
     path('invoice/<slug:entity_slug>/',

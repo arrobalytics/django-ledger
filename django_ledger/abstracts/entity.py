@@ -31,6 +31,7 @@ class EntityModelAbstract(MPTTModel,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           IOMixIn):
+    # todo: add company logo field....?
     admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
                               related_name='admin_of', verbose_name=_l('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',

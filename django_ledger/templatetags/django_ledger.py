@@ -30,7 +30,7 @@ def balance_sheet_table(context):
     activity = validate_activity(activity, raise_404=True)
     end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
     end_date_filter = context['request'].session.get(end_date_session_key)
-    # todo: incorporate digest in context.
+    # todo: incorporate digest in context???
     return entity_model.digest(activity=activity,
                                user_model=user_model,
                                equity_only=False,
@@ -46,7 +46,7 @@ def income_statement_table(context):
     activity = validate_activity(activity, raise_404=True)
     end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
     end_date_filter = context['request'].session.get(end_date_session_key)
-    # todo: incorporate digest in context.
+    # todo: incorporate digest in context???
     return entity_model.digest(activity=activity,
                                user_model=user_model,
                                as_of=end_date_filter,
@@ -99,10 +99,12 @@ def bill_table(context):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/accounts_table.html')
-def accounts_table(accounts_queryset):
+@register.inclusion_tag('django_ledger/tags/accounts_table.html', takes_context=True)
+def accounts_table(context, accounts_queryset):
     return {
-        'accounts': accounts_queryset
+        'accounts': accounts_queryset,
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'coa_slug': context['view'].kwargs['coa_slug'],
     }
 
 
@@ -120,7 +122,6 @@ def nav_breadcrumbs(context):
     }
 
 
-# todo: rename template to entity_filter.
 @register.inclusion_tag('django_ledger/tags/default_entity.html', takes_context=True)
 def default_entity(context):
     user = context['user']

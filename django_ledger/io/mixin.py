@@ -60,7 +60,7 @@ class IOMixIn:
     """
     Controls how transactions are recorded into the ledger.
     """
-
+    # used in migrate_states...
     def create_je_acc_id(self,
                          je_date: str or datetime,
                          je_txs: list,
@@ -107,6 +107,8 @@ class IOMixIn:
         txs = TransactionModel.objects.bulk_create(txs_list)
         return txs
 
+    # used in quickstart only...
+    # todo: can eliminate????....
     def create_je(self,
                   je_date: str or datetime,
                   je_txs: list,
@@ -131,8 +133,6 @@ class IOMixIn:
         if not je_ledger:
             je_ledger = self
 
-        txs_accounts = [acc['code'] for acc in je_txs]
-
         if isinstance(self, lazy_importer.get_entity_model()):
             account_models = self.coa.accounts.all()
         elif isinstance(self, lazy_importer.get_ledger_model()):
@@ -140,6 +140,7 @@ class IOMixIn:
         else:
             account_models = self.coa.accounts.none()
 
+        txs_accounts = [acc['code'] for acc in je_txs]
         avail_accounts = account_models.filter(code__in=txs_accounts)
 
         je = JournalEntryModel.objects.create(
@@ -225,6 +226,7 @@ class IOMixIn:
 
     def get_jes(self,
                 user: UserModel,
+                entity_slug: str = None,
                 as_of: str = None,
                 equity_only: bool = False,
                 activity: str = None,
@@ -237,6 +239,7 @@ class IOMixIn:
 
         je_txs = self.get_je_txs(
             user_model=user,
+            entity_slug=entity_slug,
             as_of=as_of,
             activity=activity,
             role=role,
@@ -272,6 +275,7 @@ class IOMixIn:
 
     def digest(self,
                user_model: UserModel,
+               entity_slug: str = None,
                accounts: set = None,
                activity: str = None,
                as_of: str = None,
@@ -282,6 +286,7 @@ class IOMixIn:
 
         accounts = self.get_jes(signs=True,
                                 user=user_model,
+                                entity_slug=entity_slug,
                                 accounts=accounts,
                                 activity=activity,
                                 as_of=as_of,

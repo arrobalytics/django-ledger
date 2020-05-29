@@ -2,7 +2,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
-from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
 from mptt.models import MPTTModel, TreeForeignKey
@@ -89,30 +88,6 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     @property
     def role_bs(self):
         return BS_ROLES.get(self.role)
-
-    def get_update_url(self, entity_slug=None, coa_slug=None):
-        if not entity_slug:
-            entity_slug = self.coa.entity.slug
-        if not coa_slug:
-            coa_slug = self.coa.slug
-        return reverse('django_ledger:account-update',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'coa_slug': coa_slug,
-                           'account_pk': self.id
-                       })
-
-    def get_create_url(self, entity_slug=None, coa_slug=None):
-        if not entity_slug:
-            entity_slug = self.coa.entity.slug
-        if not coa_slug:
-            coa_slug = self.coa.slug
-        return reverse('django_ledger:account-create',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'coa_slug': coa_slug,
-                           'account_pk': self.id
-                       })
 
     def get_balance(self):
 
