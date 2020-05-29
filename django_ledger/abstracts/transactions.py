@@ -48,29 +48,35 @@ class TransactionModelAdmin(models.Manager):
     def get_queryset(self):
         return TransactionQuerySet(self.model, using=self._db)
 
+    def for_user(self, user_model):
+        return self.filter(
+            Q(journal_entry__ledger__entity__admin=user_model) |
+            Q(journal_entry__ledger__entity__managers__in=[user_model])
+        )
+
     # todo: include user_model param in for_entity
-    def for_entity(self, entity_model: EntityModel = None, entity_slug: str = None):
+    def for_entity(self, user_model, entity_model: EntityModel = None, entity_slug: str = None):
 
         if not entity_model and not entity_slug:
             raise ValueError(f'None entity_model or entity_slug were provided.')
         elif entity_model and entity_slug:
             raise ValueError(f'Must pass either entity_model or entity_slug, not both.')
 
-        qs = self.get_queryset()
+        qs = self.for_user(user_model=user_model)
         if entity_model and isinstance(entity_model, EntityModel):
             return qs.filter(journal_entry__ledger__entity=entity_model)
         elif entity_slug and isinstance(entity_slug, str):
             return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
     # todo: include user_model param in for_ledger
-    def for_ledger(self, ledger_model: LedgerModel = None, ledger_slug: str = None):
+    def for_ledger(self, user_model, ledger_model: LedgerModel = None, ledger_slug: str = None):
 
         if not ledger_model and not ledger_slug:
             raise ValueError(f'None leger_model or ledger_slug were provided.')
         elif ledger_model and ledger_slug:
             raise ValueError(f'Must pass either ledger_model or ledger_slug, not both.')
 
-        qs = self.get_queryset()
+        qs = self.for_user(user_model=user_model)
         if ledger_model and isinstance(ledger_model, LedgerModel):
             return qs.filter(journal_entry__ledger=ledger_model)
         elif ledger_slug and isinstance(ledger_slug, str):

@@ -60,6 +60,7 @@ class IOMixIn:
     """
     Controls how transactions are recorded into the ledger.
     """
+
     # used in migrate_states...
     def create_je_acc_id(self,
                          je_date: str or datetime,
@@ -180,41 +181,47 @@ class IOMixIn:
         role = roles.validate_roles(role)
 
         TransactionModel = lazy_importer.get_txs_model()
-        if isinstance(self, lazy_importer.get_entity_model()):
-            # Is entity model....
-            txs = TransactionModel.objects.for_entity(entity_model=self)
-        elif isinstance(self, lazy_importer.get_ledger_model()):
-            # Is ledger model ...
-            txs = TransactionModel.objects.for_ledger(ledger_model=self)
-        else:
-            txs = TransactionModel.objects.none()
 
-        txs = txs.for_user(user_model=user_model)
+        # If IO is on entity model....
+        if isinstance(self, lazy_importer.get_entity_model()):
+            txs_qs = TransactionModel.objects.for_entity(
+                user_model=user_model,
+                entity_model=self
+            )
+
+        # If IO is on ledger model....
+        elif isinstance(self, lazy_importer.get_ledger_model()):
+            txs_qs = TransactionModel.objects.for_ledger(
+                user_model=user_model,
+                ledger_model=self
+            )
+        else:
+            txs_qs = TransactionModel.objects.none()
 
         if exclude_zero_bal:
-            txs = txs.filter(amount__gt=0)
+            txs_qs = txs_qs.filter(amount__gt=0)
 
         if posted:
-            txs = txs.posted()
+            txs_qs = txs_qs.posted()
 
         if as_of:
-            txs = txs.as_of(as_of_date=as_of)
+            txs_qs = txs_qs.as_of(as_of_date=as_of)
 
         if accounts:
             if not isinstance(accounts, str):
                 accounts = [accounts]
-            txs = txs.for_accounts(account_list=accounts)
+            txs_qs = txs_qs.for_accounts(account_list=accounts)
 
         if activity:
             if isinstance(activity, str):
                 activity = [activity]
-            txs = txs.for_activity(activity_list=activity)
+            txs_qs = txs_qs.for_activity(activity_list=activity)
         if role:
             if isinstance(role, str):
                 role = [role]
-            txs = txs.for_roles(role_list=role)
+            txs_qs = txs_qs.for_roles(role_list=role)
 
-        txs = txs.values(
+        txs_qs = txs_qs.values(
             'account__id',
             'account__balance_type',
             'tx_type',
@@ -222,7 +229,7 @@ class IOMixIn:
             'account__name',
             'account__role',
         ).annotate(balance=Sum('amount')).order_by('account__code')
-        return txs
+        return txs_qs
 
     def get_jes(self,
                 user: UserModel,
