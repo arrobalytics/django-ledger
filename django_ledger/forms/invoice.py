@@ -32,6 +32,7 @@ class InvoiceModelCreateForm(ModelForm):
             'phone',
             'email',
             'website',
+
             'cash_account',
             'receivable_account',
             'payable_account',

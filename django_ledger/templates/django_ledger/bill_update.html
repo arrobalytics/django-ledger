@@ -6,45 +6,183 @@
 {% block content %}
     <section class="section">
         <div class="container">
+            <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=view.kwargs.bill_slug %}"
+                  method="post">
 
-            <div class="columns is-centered">
-                <div class="column is-10-tablet">
-                    <div class="box">
-                        <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=bill.bill_number %}"
-                              method="post">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button type="submit"
-                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
-                            </button>
-                            <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
-                               class="button is-small is-dark is-fullwidth">Back</a>
-                        </form>
+                {% if form.errors %}
+                    {{ form.errors }}
+                {% endif %}
 
-                        <div class="columns is-multiline">
-                            <div class="column is-12">
-                                <h3 class="is-size-3">Allow Migrate: {{ bill.ALLOW_MIGRATE }}</h3>
+                {% csrf_token %}
+                <div class="columns is-multiline">
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">{% trans 'Customer Information' %}</p>
                             </div>
-                            <div class="column is-12">
-                                <h3 class="is-size-3">DJ Model</h3>
-                                <p>{{ bill.cash_account }}: ${{ bill.amount_paid | cs_thousands }}</p>
-                                <p>{{ bill.receivable_account }}: ${{ bill.amount_receivable | cs_thousands }}</p>
-                                <p>{{ bill.payable_account }}: ${{ bill.amount_unearned | cs_thousands }}</p>
-                                <p>{{ bill.earnings_account }}: ${{ bill.amount_earned | cs_thousands }}</p>
-                            </div>
-                            <div class="column is-12">
-                                <h3 class="is-size-3">State</h3>
-                                <p>{{ bill.cash_account }}: ${{ bill.get_amount_cash | cs_thousands }}</p>
-                                <p>{{ bill.receivable_account }}:
-                                    ${{ bill.get_amount_receivable | cs_thousands }}</p>
-                                <p>{{ bill.payable_account }}: ${{ bill.get_amount_payable | cs_thousands }}</p>
-                                <p>{{ bill.earnings_account }}: ${{ bill.get_amount_earned | cs_thousands }}</p>
+                            <div class="card-content">
+                                <div class="content">
+                                    <h1 class="has-text-weight-light">{{ object.subject_name }}</h1>
+                                    <p>
+                                        {{ object.address_1 }}<br>
+                                        {{ object.address_2 }}<br>
+                                        {{ object.phone }}<br>
+                                        {{ object.email }}<br>
+                                        {{ object.website }}<br>
+                                    </p>
+                                </div>
+
                             </div>
                         </div>
                     </div>
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">{% trans 'Bill Amount & Terms' %}</p>
+                            </div>
+                            <div class="card-content">
+                                <div class="content">
+                                    <h3 class="has-text-weight-light">Bill Amount:
+                                        <strong>${{ object.amount_due | cs_thousands }}</strong>
+                                        <br>
+                                        <button type="button"
+                                                onclick="document.getElementById('django-ledger-bill-amount-field').classList.remove('is-hidden')"
+                                                class="button is-small is-info is-outlined">{% trans 'Change' %}</button>
+                                    </h3>
+
+                                    <div class="field is-hidden"
+                                         id="django-ledger-bill-amount-field">
+                                        <div class="control">
+                                            {{ form.amount_due }}
+                                        </div>
+                                    </div>
+
+                                    <h4 class="has-text-weight-light">Bill Date: {{ object.date }}</h4>
+                                    <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">{% trans 'Bill State' %}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=bill.bill_number %}"
+                                          method="post">
+                                        {% csrf_token %}
+
+                                        <div class="field">
+                                            <label for="{{ form.paid.id_for_amount_paid }}"
+                                                   class="label is-small">{{ form.amount_paid.label }}</label>
+                                            <div class="control">
+                                                {{ form.amount_paid }}
+                                            </div>
+                                        </div>
+
+                                        <div class="field">
+                                            <label for="{{ form.paid.id_for_label }}"
+                                                   class="label is-small">
+                                                {{ form.paid }}
+                                                {{ form.paid.label }}</label>
+                                        </div>
+
+                                        <div class="field">
+                                            <label class="label is-small"
+                                                   for="{{ form.paid_date.id_for_label }}">{{ form.paid_date.label }}</label>
+                                            <div class="control">
+                                                {{ form.paid_date }}
+                                            </div>
+                                        </div>
+
+
+                                        <div class="field">
+                                            <label for="{{ form.paid.id_for_progressible }}"
+                                                   class="label is-small">
+                                                {{ form.progressible }}
+                                                {{ form.progressible.label }}</label>
+
+                                        </div>
+
+                                        <div class="field">
+                                            <label class="label is-small"
+                                                   for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
+                                            <div class="control">
+                                                {{ form.progress }}
+                                            </div>
+                                        </div>
+
+
+                                        <button type="submit"
+                                                class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
+                                        </button>
+                                        <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
+                                           class="button is-small is-dark is-fullwidth">Back</a>
+                                    </form>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">{% trans 'Bill State' %}</p>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-content">
+                                    <div class="columns is-multiline">
+                                        <div class="column is-12">
+                                            <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
+                                            <p>{{ bill.cash_account }}:
+                                                ${{ bill.get_amount_cash | cs_thousands }}</p>
+                                            <p>{{ bill.receivable_account }}:
+                                                ${{ bill.get_amount_receivable | cs_thousands }}</p>
+                                            <p>{{ bill.payable_account }}:
+                                                ${{ bill.get_amount_payable | cs_thousands }}</p>
+                                            <p>{{ bill.earnings_account }}:
+                                                ${{ bill.get_amount_earned | cs_thousands }}</p>
+                                        </div>
+                                        <div class="column is-12">
+                                            <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
+                                            <p>{{ bill.cash_account }}: ${{ bill.amount_paid | cs_thousands }}</p>
+                                            <p>{{ bill.receivable_account }}:
+                                                ${{ bill.amount_receivable | cs_thousands }}</p>
+                                            <p>{{ bill.payable_account }}:
+                                                ${{ bill.amount_unearned | cs_thousands }}</p>
+                                            <p>{{ bill.earnings_account }}:
+                                                ${{ bill.amount_earned | cs_thousands }}</p>
+                                        </div>
+                                        <div class="column is-6">
+                                            {#   todo: prefect this info #}
+                                            <a class="button is-outlined is-small is-primary is-fullwidth"
+                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=bill.ledger.slug entity_slug=view.kwargs.entity_slug %}">Balance
+                                                Sheet</a>
+                                        </div>
+                                        <div class="column is-6">
+                                            <a class="button is-outlined is-small is-info is-fullwidth"
+                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=bill.ledger.slug entity_slug=view.kwargs.entity_slug %}">Income
+                                                Statement</a>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-            </div>
+
+
+            </form>
 
         </div>
+
     </section>
 {% endblock %}

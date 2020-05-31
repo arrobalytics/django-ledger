@@ -95,5 +95,5 @@ class BillModelUpdateView(UpdateView):
         qs = BillModel.objects.for_user(
             user_model=self.request.user).filter(
             ledger__entity__slug__exact=entity_slug
-        )
+        ).select_related('ledger')
         return qs
