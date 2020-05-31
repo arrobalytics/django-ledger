@@ -94,7 +94,8 @@ class InvoiceModelUpdateView(UpdateView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        qs = InvoiceModel.objects.for_user(user_model=self.request.user).filter(
+        qs = InvoiceModel.objects.for_user(
+            user_model=self.request.user).filter(
             ledger__entity__slug__exact=entity_slug
-        )
+        ).select_related('ledger')
         return qs
