@@ -13,7 +13,7 @@
 
             <form action="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}"
                   method="post">
-                <div class="columns is-multiline">
+                <div class="columns is-multiline is-centered">
                     {% csrf_token %}
 
                     <div class="column is-6">
@@ -126,12 +126,13 @@
                             </div>
                         </div>
                     </div>
-
-                    <button type="submit"
-                            class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
-                    </button>
-                    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                       class="button is-small is-dark is-fullwidth">Back</a>
+                    <div class="column is-4">
+                        <button type="submit"
+                                class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+                        </button>
+                        <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                           class="button is-small is-dark is-fullwidth">Back</a>
+                    </div>
 
                 </div>
             </form>

@@ -41,8 +41,13 @@ class InvoiceModelCreateForm(ModelForm):
             'terms': _l('Invoice Terms')
         }
         widgets = {
-            'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'amount_due': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'date': DateInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS,
+                'placeholder': _l('Date (MM-DD-YYYY)...')
+            }),
+            'amount_due': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS,
+                'placeholder': '$$$'}),
             'terms': Select(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small'
             }),

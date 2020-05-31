@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 import django_ledger
 
 setup(
     name='django-ledger',
     version=django_ledger.__version__,
-    packages=find_packages(),
+    packages=['django_ledger'],
     url=django_ledger.__url__,
     license=django_ledger.__license__,
     keywords='django, finance, accounting, balance sheet, income statement, general ledger, money, engine',
@@ -20,5 +20,15 @@ setup(
         # 'Bug Tracker': 'https://bugs.example.com/HelloWorld/',
         # 'Documentation': 'https://docs.example.com/HelloWorld/',
         'Source Code': 'https://github.com/arrobalytics/django-ledger',
-    }
+    },
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Topic :: Office/Business :: Financial :: Accounting',
+        'Development Status :: 1 - Planning'
+        'Framework :: Django :: 3.0',
+        'Intended Audience :: Financial and Insurance Industry',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    ]
 )
