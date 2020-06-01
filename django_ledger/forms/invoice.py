@@ -44,7 +44,7 @@ class InvoiceModelCreateForm(ModelForm):
         widgets = {
             'date': DateInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS,
-                'placeholder': _l('Date (YYYY-MM-DD)...')
+                'placeholder': _l('Invoice Date (YYYY-MM-DD)...')
             }),
             'amount_due': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS,
@@ -62,7 +62,7 @@ class InvoiceModelCreateForm(ModelForm):
             }),
             'address_2': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Address line 2...')
+                'placeholder': _l('City, State, ZIP...')
             }),
             'phone': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
@@ -102,7 +102,6 @@ class InvoiceModelUpdateForm(ModelForm):
     class Meta:
         model = InvoiceModel
         fields = [
-
             'amount_due',
             'amount_paid',
             'paid',
@@ -121,7 +120,7 @@ class InvoiceModelUpdateForm(ModelForm):
             'paid_date': DateInput(
                 attrs={
                     'class': DJETLER_FORM_INPUT_CLASS,
-                    'placeholder': _l('Date (YYYY-MM-DD)...')}
+                    'placeholder': _l('Paid Date (YYYY-MM-DD)...')}
             ),
             'amount_paid': TextInput(
                 attrs={
