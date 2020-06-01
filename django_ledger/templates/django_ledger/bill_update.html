@@ -44,21 +44,32 @@
                                 <div class="content">
                                     <h3 class="has-text-weight-light">Bill Amount:
                                         <strong>${{ object.amount_due | cs_thousands }}</strong>
-                                        <br>
                                         <button type="button"
                                                 onclick="document.getElementById('django-ledger-bill-amount-field').classList.remove('is-hidden')"
-                                                class="button is-small is-info is-outlined">{% trans 'Change' %}</button>
+                                                class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
                                     </h3>
-
                                     <div class="field is-hidden"
                                          id="django-ledger-bill-amount-field">
                                         <div class="control">
                                             {{ form.amount_due }}
                                         </div>
                                     </div>
-
                                     <h4 class="has-text-weight-light">Bill Date: {{ object.date }}</h4>
                                     <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
+                                    <h4 class="has-text-weight-light">External Reference: {{ bill.xref }}
+                                        <button type="button"
+                                                onclick="document.getElementById('django-ledger-bill-xref-field').classList.remove('is-hidden')"
+                                                class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
+                                    </h4>
+
+
+                                    <div class="field is-hidden"
+                                         id="django-ledger-bill-xref-field">
+                                        <div class="control">
+                                            {{ form.xref }}
+                                        </div>
+                                    </div>
+
                                 </div>
 
                             </div>

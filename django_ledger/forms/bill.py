@@ -43,11 +43,14 @@ class BillModelCreateForm(ModelForm):
         widgets = {
             'date': DateInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS,
-                'placeholder': _l('Date (YYYY-MM-DD)...')
+                'placeholder': _l('Bill Date (YYYY-MM-DD)...')
             }),
             'amount_due': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS,
                 'placeholder': '$$$'}),
+            'xref': TextInput(attrs={
+                'class': DJETLER_FORM_INPUT_CLASS + ' is-large',
+                'placeholder': 'External Reference Number...'}),
             'terms': Select(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small'
             }),
@@ -61,7 +64,7 @@ class BillModelCreateForm(ModelForm):
             }),
             'address_2': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Address line 2...')
+                'placeholder': _l('City, State, ZIP...')
             }),
             'phone': TextInput(attrs={
                 'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
@@ -102,6 +105,7 @@ class BillModelUpdateForm(ModelForm):
     class Meta:
         model = BillModel
         fields = [
+            'xref',
             'amount_due',
             'amount_paid',
             'paid',
@@ -110,6 +114,8 @@ class BillModelUpdateForm(ModelForm):
             'progressible'
         ]
         widgets = {
+            'xref': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS,
+                                     'placeholder': 'External Reference...'}),
             'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
             'amount_due': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
