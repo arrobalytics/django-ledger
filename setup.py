@@ -25,7 +25,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: Implementation :: CPython',
         'Topic :: Office/Business :: Financial :: Accounting',
-        'Development Status :: 1 - Planning'
+        'Development Status :: 1 - Planning',
         'Framework :: Django :: 3.0',
         'Intended Audience :: Financial and Insurance Industry',
         'Intended Audience :: End Users/Desktop',

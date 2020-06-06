@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, LedgerPlugInMixIn, ContactInfoMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, ProgressibleMixIn, ContactInfoMixIn
 from django_ledger.models import EntityModel
 
 
@@ -44,7 +44,7 @@ class InvoiceModelManager(models.Manager):
             return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
-class InvoiceModelAbstract(LedgerPlugInMixIn,
+class InvoiceModelAbstract(ProgressibleMixIn,
                            ContactInfoMixIn,
                            CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
