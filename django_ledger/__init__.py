@@ -2,7 +2,7 @@ default_app_config = 'django_ledger.apps.DjangoLedgerConfig'
 
 
 """Django Ledger"""
-__version__ = '0.2.6'
+__version__ = '0.2.7'
 __license__ = 'GPLv3 License'
 
 __author__ = 'Miguel Sanda'
