@@ -53,6 +53,12 @@ class LedgerModelAbstract(SlugNameMixIn,
         verbose_name = _l('Ledger')
         verbose_name_plural = _l('Ledgers')
 
+        indexes = [
+            models.Index(fields=['entity']),
+            models.Index(fields=['entity', 'posted']),
+            models.Index(fields=['entity', 'locked']),
+        ]
+
     def __str__(self):
         return '{slug}: {name}'.format(name=self.name,
                                        slug=self.slug)

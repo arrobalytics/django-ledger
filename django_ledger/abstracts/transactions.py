@@ -146,6 +146,11 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         ordering = ['-created']
         verbose_name = _l('Transaction')
         verbose_name_plural = _l('Transactions')
+        indexes = [
+            models.Index(fields=['tx_type']),
+            models.Index(fields=['account']),
+            models.Index(fields=['journal_entry']),
+        ]
 
     def __str__(self):
         return '{x1}-{x2}/{x5}: {x3}/{x4}'.format(x1=self.account.code,

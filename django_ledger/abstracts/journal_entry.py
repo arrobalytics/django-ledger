@@ -101,6 +101,12 @@ class JournalEntryModelAbstract(MPTTModel):
         ordering = ['-created']
         verbose_name = _l('Journal Entry')
         verbose_name_plural = _l('Journal Entries')
+        indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['activity']),
+            models.Index(fields=['ledger']),
+            models.Index(fields=['date', 'ledger', 'activity', 'posted']),
+        ]
 
     class MPTTMeta:
         order_insertion_by = ['created']

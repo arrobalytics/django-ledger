@@ -74,6 +74,12 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
         unique_together = [
             ('coa', 'code')
         ]
+        indexes = [
+            models.Index(fields=['role']),
+            models.Index(fields=['balance_type']),
+            models.Index(fields=['active']),
+            models.Index(fields=['role', 'balance_type', 'active']),
+        ]
 
     class MPTTMeta:
         order_insertion_by = ['name']

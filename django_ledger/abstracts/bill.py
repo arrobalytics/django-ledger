@@ -5,7 +5,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.abstracts.invoice import InvoiceModelManager
-from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, LedgerPlugInMixIn, ContactInfoMixIn
+from django_ledger.abstracts.mixins.base import CreateUpdateMixIn, ProgressibleMixIn, ContactInfoMixIn
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -14,7 +14,7 @@ def generate_bill_number(length=10):
     return 'B-' + ''.join(choice(BILL_NUMBER_CHARS) for _ in range(length))
 
 
-class BillModelAbstract(LedgerPlugInMixIn,
+class BillModelAbstract(ProgressibleMixIn,
                         ContactInfoMixIn,
                         CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'

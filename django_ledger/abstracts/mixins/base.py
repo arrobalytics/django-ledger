@@ -42,7 +42,7 @@ class CreateUpdateMixIn(models.Model):
         abstract = True
 
 
-class LedgerPlugInMixIn(models.Model):
+class ProgressibleMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -336,6 +336,7 @@ class LedgerPlugInMixIn(models.Model):
 
     def clean(self):
 
+        # todo: add validation based on income or expense scope...
         if not self.date:
             self.date = datetime.now().date()
         if self.cash_account.role != ASSET_CA_CASH:
