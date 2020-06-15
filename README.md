@@ -36,16 +36,11 @@ In order to start using Django Ledger you must be logged in first.
 
 Django Ledger comes with a default CoA ready to use or you could use your own.
 Make sure to select the appropriate option when creating new entities.
-
-* Install Dependencies
-
-
-    pip install django-mptt
     
-    
-   or if using Pipenv
-    
-    pipenv install
+* Install Django Ledger
+
+
+    pip install django_ledger
     
 * Add django_ledger to INSTALLED_APPS
 
@@ -61,7 +56,7 @@ Make sure to select the appropriate option when creating new entities.
 
     urlpatterns = [
         ...
-        path('', include('django_ledger.urls')),
+        path('djl/', include('django_ledger.urls', namespace='django_ledger')),
         ...
     ]
     
