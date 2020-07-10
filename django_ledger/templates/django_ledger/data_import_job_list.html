@@ -1,0 +1,27 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block content %}
+    <div class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column">
+                    <div class="box">
+                        <a class="button is-primary is-outlined"
+                           href="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Create Data Import Job' %}</a>
+                        <a class="button is-dark"
+                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Back' %}
+                        </a>
+                        {% data_import_job_table %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

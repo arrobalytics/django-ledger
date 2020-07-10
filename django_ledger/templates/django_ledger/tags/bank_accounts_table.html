@@ -1,0 +1,38 @@
+{% load django_ledger %}
+
+<div class="table-container">
+    <table class="table is-fullwidth">
+        <thead>
+        <tr>
+            <th>Status</th>
+            <th>Description</th>
+            <th>Created</th>
+            <th>Routing</th>
+            <th>Balance</th>
+            <th>Account</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for bank_acc in bank_accounts %}
+            <tr>
+                <td><a class="button is-warning is-small"
+                       href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_slug=bank_acc.slug %}">Edit</a>
+                </td>
+                <td>{{ bank_acc.name }}</td>
+                <td>{{ bank_acc.account_number }}</td>
+                <td>{{ bank_acc.routing_number }}</td>
+                <td>{{ bank_acc.aba_number }}</td>
+                <td>{{ bank_acc.cash_account }}</td>
+                <td>
+                    <a class="button is-small is-warning is-outlined"
+                       href="">Edit</a>
+                    <a class="button is-small is-info is-outlined"
+                       href="">Txs</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

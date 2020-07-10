@@ -1,1 +1,1 @@
-from .base import CreateUpdateMixIn, SlugNameMixIn, ProgressibleMixIn, ContactInfoMixIn
+# from .base import CreateUpdateMixIn, SlugNameMixIn, ProgressibleMixIn, ContactInfoMixIn

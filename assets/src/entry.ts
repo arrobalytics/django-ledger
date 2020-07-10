@@ -1,6 +1,6 @@
 import {DjetlerApp} from "./DjetlerApp";
 
 
-new DjetlerApp();
+let app = new DjetlerApp();
 
 

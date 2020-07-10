@@ -3,9 +3,6 @@
 {% load static %}
 {% load django_ledger %}
 
-
-
-
 {% block content %}
 
     <section class="section">
@@ -24,7 +21,7 @@
 
                                 <div class="field">
                                     <div class="control">
-                                        {{ form.subject_name }}
+                                        {{ form.invoice_to }}
                                     </div>
                                 </div>
                                 <div class="field">
@@ -136,23 +133,6 @@
                 </div>
             </form>
 
-            {#            <div class="columns is-centered">#}
-            {#                <div class="column is-10-tablet">#}
-            {#                    <div class="box">#}
-            {#                        <form action="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}"#}
-            {#                              method="post">#}
-            {#                            {% csrf_token %}#}
-            {#                            {{ form.as_p }}#}
-            {#                            <button type="submit"#}
-            {#                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Create#}
-            {#                            </button>#}
-            {#                            <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"#}
-            {#                               class="button is-small is-dark is-fullwidth">Back</a>#}
-            {#                        </form>#}
-            {#                    </div>#}
-            {#                </div>#}
-            {#            </div>#}
-            {##}
         </div>
     </section>
 

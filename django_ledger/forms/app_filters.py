@@ -1,16 +1,16 @@
 from django.forms import Form, ModelChoiceField, Select, ChoiceField, CharField, HiddenInput, DateField, DateInput
 from django.utils.translation import gettext_lazy as _l
 
-from django_ledger.abstracts.journal_entry import ACTIVITIES
-from django_ledger.forms import DJETLER_FORM_INPUT_CLASS
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.journalentry import ACTIVITIES
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class EntityFilterForm(Form):
     entity_model = ModelChoiceField(
         queryset=EntityModel.objects.none(),
         widget=Select(attrs={
-            'class': DJETLER_FORM_INPUT_CLASS + ' djetler-set-entity-form-input',
+            'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' djetler-set-entity-form-input',
         }))
 
     def __init__(self, *args, user_model, default_entity=None, form_id=None, **kwargs):
@@ -34,7 +34,7 @@ class ActivityFilterForm(Form):
                            initial='all',
                            widget=Select(
                                attrs={
-                                   'class': DJETLER_FORM_INPUT_CLASS + ' is-small djetler-activity-select-form-input',
+                                   'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small djetler-activity-select-form-input',
                                }
                            ))
 

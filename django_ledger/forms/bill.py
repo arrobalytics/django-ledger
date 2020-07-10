@@ -1,10 +1,10 @@
 from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, URLInput, CheckboxInput
-from django.utils.translation import gettext_lazy as _l
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
-from django_ledger.models import BillModel, AccountModel
-
-DJETLER_FORM_INPUT_CLASS = 'input'
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.bill import BillModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class BillModelCreateForm(ModelForm):
@@ -27,7 +27,7 @@ class BillModelCreateForm(ModelForm):
             'date',
             'amount_due',
             'terms',
-            'subject_name',
+            'bill_to',
             'address_1',
             'address_2',
             'phone',
@@ -42,47 +42,47 @@ class BillModelCreateForm(ModelForm):
         ]
         widgets = {
             'date': DateInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS,
-                'placeholder': _l('Bill Date (YYYY-MM-DD)...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('Bill Date (YYYY-MM-DD)...')
             }),
             'amount_due': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': '$$$'}),
             'xref': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-large',
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
                 'placeholder': 'External Reference Number...'}),
             'terms': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
             }),
-            'subject_name': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Customer name...')
+            'bill_to': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('Bill To...')
             }),
             'address_1': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Address line 1...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('Address line 1...')
             }),
             'address_2': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('City, State, ZIP...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('City, State, ZIP...')
             }),
             'phone': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Phone number...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('Phone number...')
             }),
             'email': EmailInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Customer email...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('Customer email...')
             }),
             'website': URLInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS + ' is-small',
-                'placeholder': _l('Customer website...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'placeholder': _('Customer website...')
             }),
 
-            'cash_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'receivable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'payable_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'earnings_account': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'receivable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'payable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'earnings_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
         }
 
 
@@ -114,23 +114,21 @@ class BillModelUpdateForm(ModelForm):
             'progressible'
         ]
         widgets = {
-            'xref': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS,
+            'xref': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                                      'placeholder': 'External Reference...'}),
-            'date': DateInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
-            'amount_due': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS, 'placeholder': '$$$'}),
-            'terms': Select(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
+            'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={
-                    'class': DJETLER_FORM_INPUT_CLASS,
-                    'placeholder': _l('Date (YYYY-MM-DD)...')}
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Date (YYYY-MM-DD)...')}
             ),
             'amount_paid': TextInput(
                 attrs={
-                    'class': DJETLER_FORM_INPUT_CLASS,
-                    'type': 'number',
-                    'step': '100'
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 }),
-            'progress': TextInput(attrs={'class': DJETLER_FORM_INPUT_CLASS}),
+            'progress': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'progressible': CheckboxInput(attrs={'type': 'checkbox'}),
             'paid': CheckboxInput(attrs={'type': 'checkbox'}),
         }

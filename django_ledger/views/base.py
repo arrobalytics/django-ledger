@@ -1,8 +1,8 @@
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView, RedirectView
 
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 
 
 class RootUrlView(RedirectView):

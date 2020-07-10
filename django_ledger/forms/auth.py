@@ -1,6 +1,6 @@
 from django.contrib.auth.forms import AuthenticationForm, UsernameField
 from django.forms import TextInput, CharField, PasswordInput
-from django.utils.translation import gettext, gettext_lazy as _l
+from django.utils.translation import gettext_lazy as _
 
 
 class LogInForm(AuthenticationForm):
@@ -11,7 +11,7 @@ class LogInForm(AuthenticationForm):
                 'class': 'input'
             }))
     password = CharField(
-        label=_l("Password"),
+        label=_("Password"),
         strip=False,
         widget=PasswordInput(
             attrs={

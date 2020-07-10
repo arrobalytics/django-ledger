@@ -1,12 +1,11 @@
 from django.urls import reverse
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy as _l
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.forms.app_filters import EndDateFilterForm, EntityFilterForm
-from django_ledger.models import EntityModel
+from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.models.utils import populate_default_coa
 
@@ -39,7 +38,7 @@ class EntityModelDetailVew(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.name
-        context['header_title'] = _l('entity') + ': ' + self.object.name
+        context['header_title'] = _('entity') + ': ' + self.object.name
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
@@ -74,8 +73,8 @@ class EntityModelCreateView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _l('create entity')
-        context['header_title'] = _l('create entity')
+        context['page_title'] = _('create entity')
+        context['header_title'] = _('create entity')
         return context
 
     def get_success_url(self):
@@ -106,8 +105,8 @@ class EntityModelUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _l('update entity: ') + self.object.name
-        context['header_title'] = _l('update entity: ') + self.object.name
+        context['page_title'] = _('update entity: ') + self.object.name
+        context['header_title'] = _('update entity: ') + self.object.name
         return context
 
     def get_success_url(self):

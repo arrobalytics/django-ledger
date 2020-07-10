@@ -1,4 +1,4 @@
-![alt text](https://storage.googleapis.com/django_ledger/logo/v2/django-ledger-logo%404x.png)
+![alt text](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
 ### A bookkeeping & financial analysis engine for the Django Framework.
 

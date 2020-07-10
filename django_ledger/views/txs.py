@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 
 from django_ledger.forms.transactions import TransactionModelFormSet
-from django_ledger.models import TransactionModel
+from django_ledger.models.transactions import TransactionModel
 
 
 # TXS View ---

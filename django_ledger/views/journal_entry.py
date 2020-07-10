@@ -3,7 +3,8 @@ from django.utils.translation import gettext as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
-from django_ledger.models import LedgerModel, JournalEntryModel
+from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.ledger import LedgerModel
 
 
 # JE Views ---

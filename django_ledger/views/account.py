@@ -1,22 +1,20 @@
-from django.db.models import Q
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
-from django_ledger.models import ChartOfAccountModel, AccountModel
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.coa import ChartOfAccountModel
 
 
 # Account Views ----
 class AccountModelListView(ListView):
     template_name = 'django_ledger/account_list.html'
     context_object_name = 'accounts'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Entity Accounts')
-        context['header_title'] = _('Entity Accounts')
-        return context
+    extra_context = {
+        'page_title': _('Entity Accounts'),
+        'header_title': _('Entity Accounts')
+    }
 
     def get_queryset(self):
         return AccountModel.on_coa.for_entity(

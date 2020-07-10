@@ -1,8 +1,14 @@
 from django.contrib import admin
 
-from django_ledger.models import (LedgerModel, EntityModel, ChartOfAccountModel, AccountModel,
-                                  JournalEntryModel, TransactionModel, EntityManagementModel, InvoiceModel,
-                                  BillModel)
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.models.entity import EntityModel, EntityManagementModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.models.bank_account import BankAccountModel
 
 
 class TransactionModelInLine(admin.TabularInline):
@@ -122,6 +128,11 @@ class BillModelAdmin(admin.ModelAdmin):
         model = BillModel
 
 
+class BankAccountModelAdmin(admin.ModelAdmin):
+    class Meta:
+        model = BankAccountModel
+
+
 admin.site.register(EntityModel, EntityModelAdmin)
 admin.site.register(JournalEntryModel, JournalEntryModelAdmin)
 admin.site.register(LedgerModel, LedgerModelAdmin)
@@ -129,3 +140,4 @@ admin.site.register(ChartOfAccountModel, ChartOfAccountsModelAdmin)
 admin.site.register(AccountModel, AccountModelAdmin)
 admin.site.register(InvoiceModel, InvoiceModelAdmin)
 admin.site.register(BillModel, BillModelAdmin)
+admin.site.register(BankAccountModel, BankAccountModelAdmin)

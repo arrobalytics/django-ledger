@@ -1,20 +1,20 @@
 from django.urls import reverse
 from django.views.generic import ListView, UpdateView, CreateView
+from django.utils.translation import gettext_lazy as _
 
-from django_ledger.abstracts.bill import generate_bill_number
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
-from django_ledger.models import BillModel, LedgerModel, EntityModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.utils import new_bill_protocol
 
 
 class BillModelListView(ListView):
     template_name = 'django_ledger/bill_list.html'
     context_object_name = 'bills'
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        context['page_title'] = 'Bill List'
-        context['header_title'] = 'Bill List'
-        return context
+    PAGE_TITLE = _('Bill List')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -23,12 +23,11 @@ class BillModelListView(ListView):
 
 class BillModelCreateView(CreateView):
     template_name = 'django_ledger/bill_create.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Create Bill'
-        context['header_title'] = 'Create Bill'
-        return context
+    PAGE_TITLE = _('Create Bill')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
@@ -38,18 +37,9 @@ class BillModelCreateView(CreateView):
         return form
 
     def form_valid(self, form):
-        bill = form.instance
-        bill.bill_number = generate_bill_number()
-        entity_slug = self.kwargs.get('entity_slug')
-        entity_model = EntityModel.objects.for_user(
-            user_model=self.request.user).get(slug__exact=entity_slug)
-        ledger_model = LedgerModel.objects.create(
-            entity=entity_model,
-            posted=True,
-            name=f'Bill {bill.bill_number}'
-        )
-        ledger_model.clean()
-        bill.ledger = ledger_model
+        form.instance = new_bill_protocol(bill_model=form.instance,
+                                          entity_slug=self.kwargs['entity_slug'],
+                                          user_model=self.request.user)
         return super().form_valid(form=form)
 
     def get_success_url(self):

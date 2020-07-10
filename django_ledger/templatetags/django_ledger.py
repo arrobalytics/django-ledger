@@ -3,8 +3,8 @@ from random import randint
 
 from django import template
 
-from django_ledger.abstracts.journal_entry import validate_activity
 from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
+from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 
 register = template.Library()
@@ -52,6 +52,16 @@ def income_statement_table(context):
                                as_of=end_date_filter,
                                equity_only=True,
                                process_groups=True)
+
+
+@register.inclusion_tag('django_ledger/tags/bank_accounts_table.html', takes_context=True)
+def bank_account_table(context):
+    return context
+
+
+@register.inclusion_tag('django_ledger/tags/data_import_job_table.html', takes_context=True)
+def data_import_job_table(context):
+    return context
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)

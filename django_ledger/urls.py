@@ -111,6 +111,23 @@ urlpatterns = [
          views.BillModelUpdateView.as_view(),
          name='bill-update'),
 
+    # Bank Accounts ---
+    path('bank-accounts/<slug:entity_slug>/',
+         views.BankAccountModelListView.as_view(),
+         name='bank-account-list'),
+    path('bank-accounts/<slug:entity_slug>/create/',
+         views.BankAccountModelCreateView.as_view(),
+         name='bank-account-create'),
+    path('bank-accounts/<slug:entity_slug>/<slug:bank_account_slug>/update/',
+         views.BankAccountModelUpdateView.as_view(),
+         name='bank-account-update'),
+
+    # Import Data ---
+    path('data-import/<slug:entity_slug>/jobs/',
+         views.DataImportJobsView.as_view(),
+         name='data-import-jobs-list'),
+
+    # Dashboard ----
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 
     # Auth Views ---

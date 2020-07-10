@@ -1,8 +1,7 @@
 from django.forms import ModelForm, TextInput
 
-from django_ledger.models import LedgerModel
-
-DJETLER_FORM_INPUT_CLASS = 'input'
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class LedgerModelCreateForm(ModelForm):
@@ -14,7 +13,7 @@ class LedgerModelCreateForm(ModelForm):
         widgets = {
             'name': TextInput(
                 attrs={
-                    'class': DJETLER_FORM_INPUT_CLASS
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                 }
             ),
         }
@@ -30,6 +29,6 @@ class LedgerModelUpdateForm(ModelForm):
         ]
         widgets = {
             'name': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }

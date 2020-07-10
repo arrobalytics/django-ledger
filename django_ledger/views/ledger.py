@@ -4,7 +4,8 @@ from django.utils.translation import gettext_lazy as _l
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
-from django_ledger.models import EntityModel, LedgerModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.ledger import LedgerModel
 
 
 # Ledger Views ----

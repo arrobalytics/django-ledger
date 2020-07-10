@@ -106,7 +106,7 @@ venv.bak/
 .mypy_cache/
 
 .idea/
-djltest
+djltest/
 manage.py
 
 node_modules

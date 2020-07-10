@@ -1,9 +1,9 @@
 from django.urls import reverse
-from django.utils.translation import gettext_lazy as _l
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import UpdateView
 
-from django_ledger.forms import ChartOfAccountsModelUpdateForm
-from django_ledger.models import ChartOfAccountModel
+from django_ledger.forms.coa import ChartOfAccountsModelUpdateForm
+from django_ledger.models.coa import ChartOfAccountModel
 
 
 class ChartOfAccountsUpdateView(UpdateView):
@@ -14,8 +14,8 @@ class ChartOfAccountsUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _l('CoA: ') + self.object.name
-        context['header_title'] = _l('CoA: ') + self.object.name
+        context['page_title'] = _('CoA: ') + self.object.name
+        context['header_title'] = _('CoA: ') + self.object.name
         return context
 
     def get_success_url(self):

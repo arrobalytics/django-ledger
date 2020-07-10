@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 
-from django_ledger.abstracts.journal_entry import validate_activity
+from django_ledger.models.journalentry import validate_activity
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RolesManager

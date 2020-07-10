@@ -18,7 +18,6 @@ export class DjetlerApp {
                 });
             });
         });
-
         document.addEventListener('DOMContentLoaded', () => {
 
             // Get all "navbar-burger" elements
@@ -44,13 +43,11 @@ export class DjetlerApp {
                 });
             }
         });
-
         document.addEventListener('DOMContentLoaded', () => {
             (document.querySelectorAll('.djetler-set-entity-form-input') || []).forEach(f => {
                 f.addEventListener('change', this.setEntityFilter);
             });
         });
-
         this.endDateFilters = flatpickr(".djetler-end-date-icon-filter", this.getFlatPickrOptions(false));
         this.dateFilters = flatpickr(".djetler-date-filter", this.getFlatPickrOptions(true));
 
@@ -64,6 +61,8 @@ export class DjetlerApp {
                 }
             });
         }
+
+
     }
 
     getFlatPickrOptions(inline: boolean = false) {
@@ -99,7 +98,7 @@ export class DjetlerApp {
             // @ts-ignore
             let klass: string = target['classList'][2];
             let formId = klass.split("-")[4];
-            let defaultEntityForm = document.getElementById("djetler-set-entity-form-"+formId);
+            let defaultEntityForm = document.getElementById("djetler-set-entity-form-" + formId);
             // @ts-ignore
             defaultEntityForm.submit();
             // console.log(defaultEntityForm);
@@ -107,4 +106,6 @@ export class DjetlerApp {
         // @ts-ignore
         // defaultEntityForm.submit();
     }
+
+
 }

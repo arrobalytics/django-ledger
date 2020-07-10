@@ -1,9 +1,9 @@
 from django.urls import reverse
 from django.views.generic import ListView, UpdateView, CreateView
 
-from django_ledger.abstracts.invoice import generate_invoice_number
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
-from django_ledger.models import InvoiceModel, LedgerModel, EntityModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.utils import new_invoice_protocol
 
 
 class InvoiceModelListView(ListView):
@@ -17,7 +17,7 @@ class InvoiceModelListView(ListView):
         return context
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
         return InvoiceModel.objects.on_entity(entity=entity_slug)
 
 
@@ -38,19 +38,11 @@ class InvoiceModelCreateView(CreateView):
         return form
 
     def form_valid(self, form):
-        invoice = form.instance
-        invoice.invoice_number = generate_invoice_number()
-        entity_slug = self.kwargs['entity_slug']
-        entity_model = EntityModel.objects.for_user(
-            user_model=self.request.user).get(
-            slug__exact=entity_slug)
-        ledger_model = LedgerModel.objects.create(
-            entity=entity_model,
-            posted=True,
-            name=f'Invoice {invoice.invoice_number}'
+        form.instance = new_invoice_protocol(
+            invoice_model=form.instance,
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         )
-        ledger_model.clean()
-        invoice.ledger = ledger_model
         return super().form_valid(form=form)
 
     def get_success_url(self):

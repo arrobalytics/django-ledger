@@ -1,8 +1,7 @@
 from django.forms import ModelForm, TextInput, Select
 
-from django_ledger.models import AccountModel
-
-DJETLER_FORM_INPUT_CLASS = 'input'
+from django_ledger.models.accounts import AccountModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class AccountModelBaseForm(ModelForm):
@@ -32,19 +31,19 @@ class AccountModelCreateForm(AccountModelBaseForm):
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'code': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'name': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'role': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'balance_type': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
 
         }
@@ -62,12 +61,12 @@ class AccountModelUpdateForm(AccountModelBaseForm):
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'code': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'name': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }

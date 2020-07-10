@@ -67,8 +67,11 @@
                     <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
                 <td class="has-text-centered">{% if account.locked %}
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
-                <td><a class="button is-small is-dark"
-                       href="{{ account.get_update_url }}">Edit</a>
+                <td>
+                    <a class="button is-small is-warning is-outlined"
+                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.id %}">Edit</a>
+                    <a class="button is-small is-info is-outlined"
+                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.id %}">Txs</a>
                 </td>
             </tr>
         {% endif %}
@@ -104,8 +107,11 @@
                     <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
                 <td class="has-text-centered">{% if account.locked %}
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
-                <td><a class="button is-small is-dark"
-                       href="{{ account.get_update_url }}">Edit</a>
+                <td>
+                    <a class="button is-small is-warning is-outlined"
+                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.id %}">Edit</a>
+                    <a class="button is-small is-info is-outlined"
+                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.id %}">Txs</a>
                 </td>
             </tr>
         {% endif %}

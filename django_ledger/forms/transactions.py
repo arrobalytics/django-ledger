@@ -1,9 +1,9 @@
 from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select
 
 from django_ledger.io import validate_tx_data
-from django_ledger.models import AccountModel, TransactionModel
-
-DJETLER_FORM_INPUT_CLASS = 'input'
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class TransactionModelForm(ModelForm):
@@ -17,16 +17,16 @@ class TransactionModelForm(ModelForm):
         ]
         widgets = {
             'account': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
             }),
             'tx_type': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'amount': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': TextInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
 

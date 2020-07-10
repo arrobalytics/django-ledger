@@ -1,8 +1,7 @@
 from django.forms import ModelForm, Textarea, Select, DateInput
 
-from django_ledger.models import (JournalEntryModel)
-
-DJETLER_FORM_INPUT_CLASS = 'input'
+from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class JournalEntryModelCreateForm(ModelForm):
@@ -28,16 +27,16 @@ class JournalEntryModelCreateForm(ModelForm):
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'activity': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'date': DateInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }
 
@@ -55,15 +54,15 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'activity': Select(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'date': DateInput(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={
-                'class': DJETLER_FORM_INPUT_CLASS
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }

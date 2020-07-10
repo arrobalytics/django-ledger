@@ -80,12 +80,10 @@
 
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Actions' %}</h2>
-                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
-                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
+                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bills</a>
-{#                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"#}
-{#                           href="">Purchase Orders</a>#}
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Reports' %}</h2>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
@@ -94,7 +92,12 @@
                            href="{{ entity.get_ic_url }}">Income Statement</a>
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Entity' %}</h2>
-                        <a class="button is-primary is-outlined is-fullwidth"
+                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
+                           href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">Bank
+                            Accounts</a>
+                        <a class="button is-danger is-outlined is-fullwidth djetler_my_1"
+                           href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">Import</a>
+                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a>
 
                     </div>
