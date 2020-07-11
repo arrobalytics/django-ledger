@@ -111,4 +111,5 @@ manage.py
 
 node_modules
 yarn.lock
-notebooks
+notebooks/
+data/

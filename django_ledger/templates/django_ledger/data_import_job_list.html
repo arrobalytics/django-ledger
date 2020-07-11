@@ -10,8 +10,8 @@
                 <div class="column">
                     <div class="box">
                         <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'Create Data Import Job' %}</a>
+                           href="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Import OFX File' %}</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">
                             {% trans 'Back' %}

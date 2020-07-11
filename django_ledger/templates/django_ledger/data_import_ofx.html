@@ -1,0 +1,27 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block content %}
+    <div class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column">
+                    <div class="box">
+                        <form action="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}"
+                              enctype="multipart/form-data"
+                              method="post">
+                            {% csrf_token %}
+                            {{ form.as_p }}
+                            <button class="button is-primary"
+                                    type="submit">{% trans 'Upload' %}</button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

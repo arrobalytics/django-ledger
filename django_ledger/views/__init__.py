@@ -4,8 +4,8 @@ from django_ledger.views.bank_account import *
 from django_ledger.views.base import *
 from django_ledger.views.bill import *
 from django_ledger.views.coa import *
+from django_ledger.views.data_import import *
 from django_ledger.views.entity import *
-from django_ledger.views.data_import_jobs import *
 from django_ledger.views.invoice import *
 from django_ledger.views.journal_entry import *
 from django_ledger.views.ledger import *

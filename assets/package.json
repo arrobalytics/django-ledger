@@ -2,7 +2,7 @@
   "dependencies": {
     "@mdi/font": "^4.8.95",
     "@types/lodash": "^4.14.149",
-    "bulma": "^0.8.0",
+    "bulma": "^0.9.0",
     "flatpickr": "^4.6.3",
     "lodash": "^4.17.15",
     "vue": "^2.6.11"
@@ -12,11 +12,11 @@
     "file-loader": "^5.1.0",
     "less": "^3.10.3",
     "less-loader": "^5.0.0",
-    "node-sass": "^4.13.1",
+    "node-sass": "^4.14.1",
     "sass-loader": "^8.0.2",
     "style-loader": "^1.1.4",
     "ts-loader": "^6.2.2",
-    "typescript": "^3.8.3",
+    "typescript": "^3.9.6",
     "url-loader": "^3.0.0",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.11"

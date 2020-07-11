@@ -126,6 +126,9 @@ urlpatterns = [
     path('data-import/<slug:entity_slug>/jobs/',
          views.DataImportJobsView.as_view(),
          name='data-import-jobs-list'),
+    path('data-import/<slug:entity_slug>/import-ofx/',
+         views.OFXFileImportView.as_view(),
+         name='data-import-ofx'),
 
     # Dashboard ----
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
