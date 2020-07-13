@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -11,7 +11,7 @@ class ImportJobModelManager(models.Manager):
 
 
 class ImportJobModelAbstract(CreateUpdateMixIn):
-    uuid = models.UUIDField(default=uuid.uuid4, primary_key=True, verbose_name=_('UUID'))
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     description = models.CharField(max_length=200, verbose_name=_('Description'))
     entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Entity'))
     ledger = models.ForeignKey('django_ledger.LedgerModel', on_delete=models.CASCADE, verbose_name=_('Ledger'))
@@ -36,6 +36,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                                          null=True,
                                          blank=True)
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     fitid = models.CharField(max_length=100)
     amount = models.DecimalField(decimal_places=2, max_digits=15)
     date_posted = models.DateField()

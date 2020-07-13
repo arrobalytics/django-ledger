@@ -1,4 +1,5 @@
 from random import randint
+from uuid import uuid4
 
 from django.core.validators import int_list_validator
 from django.db import models
@@ -30,6 +31,7 @@ class BackAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         ('money_mkt', _('Money Market')),
     ]
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     account_number = models.CharField(max_length=30, null=True, blank=True, validators=[
         int_list_validator(sep='', message=_('Only digits allowed'))
     ])

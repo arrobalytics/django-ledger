@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _l
@@ -67,8 +68,11 @@ class LedgerModelCreateView(CreateView):
 class LedgerModelUpdateView(UpdateView):
     template_name = 'django_ledger/ledger_update.html'
     form_class = LedgerModelUpdateForm
-    slug_url_kwarg = 'ledger_pk'
     context_object_name = 'ledger'
+    slug_url_kwarg = 'ledger_pk'
+
+    def get_slug_field(self):
+        return 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -86,14 +90,17 @@ class LedgerModelUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('django_ledger:ledger-list',
                        kwargs={
-                           'entity_slug': self.kwargs.get('entity_slug')
+                           'entity_slug': self.kwargs['entity_slug']
                        })
 
 
 class LedgerBalanceSheetView(DetailView):
-    context_object_name = 'entity'
-    slug_url_kwarg = 'ledger_pk'
+    context_object_name = 'ledger'
     template_name = 'django_ledger/balance_sheet.html'
+    slug_url_kwarg = 'ledger_pk'
+
+    def get_slug_field(self):
+        return 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -109,9 +116,12 @@ class LedgerBalanceSheetView(DetailView):
 
 
 class LedgerIncomeStatementView(DetailView):
-    context_object_name = 'entity'
-    slug_url_kwarg = 'ledger_pk'
+    context_object_name = 'ledger'
     template_name = 'django_ledger/income_statement.html'
+    slug_url_kwarg = 'ledger_pk'
+
+    def get_slug_field(self):
+        return 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

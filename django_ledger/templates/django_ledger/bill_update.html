@@ -6,7 +6,7 @@
 {% block content %}
     <section class="section">
         <div class="container">
-            <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=view.kwargs.bill_slug %}"
+            <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
                   method="post">
 
                 {% if form.errors %}
@@ -82,7 +82,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="card-content">
-                                    <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_slug=bill.bill_number %}"
+                                    <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
                                           method="post">
                                         {% csrf_token %}
 
@@ -172,12 +172,12 @@
                                         <div class="column is-6">
                                             {#   todo: prefect this info #}
                                             <a class="button is-outlined is-small is-primary is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=bill.ledger.slug entity_slug=view.kwargs.entity_slug %}">Balance
+                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Balance
                                                 Sheet</a>
                                         </div>
                                         <div class="column is-6">
                                             <a class="button is-outlined is-small is-info is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=bill.ledger.slug entity_slug=view.kwargs.entity_slug %}">Income
+                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Income
                                                 Statement</a>
                                         </div>
                                     </div>

@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -51,6 +53,8 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     """
     Base Chart of Accounts Model Abstract
     """
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.OneToOneField('django_ledger.EntityModel',
                                   related_name='coa',
                                   verbose_name=_('Entity'),

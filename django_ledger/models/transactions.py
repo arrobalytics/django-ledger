@@ -1,6 +1,6 @@
-import uuid
 from datetime import datetime
 from typing import List
+from uuid import uuid4
 
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -69,29 +69,29 @@ class TransactionModelAdmin(models.Manager):
             return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
     # todo: include user_model param in for_ledger
-    def for_ledger(self, user_model, ledger_model: LedgerModel = None, ledger_slug: str = None):
+    def for_ledger(self, user_model, ledger_model: LedgerModel = None, ledger_pk: str = None):
 
-        if not ledger_model and not ledger_slug:
+        if not ledger_model and not ledger_pk:
             raise ValueError(f'None leger_model or ledger_slug were provided.')
-        elif ledger_model and ledger_slug:
+        elif ledger_model and ledger_pk:
             raise ValueError(f'Must pass either ledger_model or ledger_slug, not both.')
 
         qs = self.for_user(user_model=user_model)
         if ledger_model and isinstance(ledger_model, LedgerModel):
             return qs.filter(journal_entry__ledger=ledger_model)
-        elif ledger_slug and isinstance(ledger_slug, str):
-            return qs.filter(journal_entry__ledger__slug__exact=ledger_slug)
+        elif ledger_pk and isinstance(ledger_pk, str):
+            return qs.filter(journal_entry__ledger__uuid__exact=ledger_pk)
 
     def for_journal_entry(self,
                           user_model,
                           entity_slug: str,
-                          ledger_slug: str,
+                          ledger_pk: str,
                           je_pk: str):
         qs = self.get_queryset()
         return qs.filter(
             Q(journal_entry__ledger__entity__slug__exact=entity_slug) &
-            Q(journal_entry__ledger__slug__exact=ledger_slug) &
-            Q(journal_entry_id=je_pk) &
+            Q(journal_entry__ledger__uuid__exact=ledger_pk) &
+            Q(journal_entry__uuid__exact=je_pk) &
             (
                     Q(journal_entry__ledger__entity__admin=user_model) |
                     Q(journal_entry__ledger__entity__managers__in=[user_model])
@@ -123,7 +123,8 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         (CREDIT, _('Credit')),
         (DEBIT, _('Debit'))
     ]
-    tx_id = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     tx_type = models.CharField(max_length=10, choices=TX_TYPE, verbose_name=_('Tx Type'))
     journal_entry = models.ForeignKey('django_ledger.JournalEntryModel',
                                       related_name='txs',

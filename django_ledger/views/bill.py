@@ -51,8 +51,8 @@ class BillModelCreateView(CreateView):
 
 
 class BillModelUpdateView(UpdateView):
-    slug_url_kwarg = 'bill_slug'
-    slug_field = 'bill_number'
+    slug_url_kwarg = 'bill_pk'
+    slug_field = 'uuid'
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_update.html'
 
@@ -73,11 +73,11 @@ class BillModelUpdateView(UpdateView):
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
-        bill_slug = self.kwargs['bill_slug']
+        bill_pk = self.kwargs['bill_pk']
         return reverse('django_ledger:bill-update',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'bill_slug': bill_slug
+                           'bill_pk': bill_pk
                        })
 
     def get_queryset(self):

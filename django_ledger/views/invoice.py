@@ -54,8 +54,8 @@ class InvoiceModelCreateView(CreateView):
 
 
 class InvoiceModelUpdateView(UpdateView):
-    slug_url_kwarg = 'invoice_slug'
-    slug_field = 'invoice_number'
+    slug_url_kwarg = 'invoice_pk'
+    slug_field = 'uuid'
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_update.html'
     form_class = InvoiceModelUpdateForm
@@ -77,11 +77,11 @@ class InvoiceModelUpdateView(UpdateView):
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
-        invoice_slug = self.kwargs['invoice_slug']
+        invoice_pk = self.kwargs['invoice_pk']
         return reverse('django_ledger:invoice-update',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'invoice_slug': invoice_slug
+                           'invoice_pk': invoice_pk
                        })
 
     def get_queryset(self):

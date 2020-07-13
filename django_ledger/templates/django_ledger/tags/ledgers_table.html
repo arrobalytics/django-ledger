@@ -16,17 +16,17 @@
     {% for ledger in ledgers %}
         <tr>
             <td><a class="button is-warning is-small"
-                   href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.slug %}">Edit</a>
+                   href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Edit</a>
             </td>
             <td>{{ ledger.name }}</td>
             <td><a class="button is-info is-small is-outlined"
-                   href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.slug %}">Journal
+                   href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Journal
                 Entries</a></td>
             <td><a class="button is-info is-small is-outlined"
-                   href="{% url 'django_ledger:ledger-bs' entity_slug=entity_slug ledger_pk=ledger.slug %}">Balance
+                   href="{% url 'django_ledger:ledger-bs' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Balance
                 Sheet</a></td>
             <td><a class="button is-info is-small is-outlined"
-                   href="{% url 'django_ledger:ledger-ic' entity_slug=entity_slug ledger_pk=ledger.slug %}">Income
+                   href="{% url 'django_ledger:ledger-ic' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Income
                 Statement</a></td>
             <td>{% if ledger.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
             <td>{% if ledger.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>

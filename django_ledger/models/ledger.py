@@ -1,16 +1,16 @@
 from random import choice
 from string import ascii_lowercase, digits
+from uuid import uuid4
 
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import get_coa_account
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
@@ -24,7 +24,7 @@ class LedgerModelManager(models.Manager):
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
         return qs.filter(
-            Q(entity__slug__iexact=entity_slug) &
+            Q(entity__slug__exact=entity_slug) &
             (
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
@@ -35,9 +35,11 @@ class LedgerModelManager(models.Manager):
         return self.get_queryset().filter(posted=True)
 
 
-class LedgerModelAbstract(SlugNameMixIn,
-                          CreateUpdateMixIn,
+class LedgerModelAbstract(CreateUpdateMixIn,
                           IOMixIn):
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    name = models.CharField(max_length=150, null=True, blank=True)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity'),
@@ -94,15 +96,15 @@ class LedgerModelAbstract(SlugNameMixIn,
     def get_account_balance(self, account_code: str, as_of: str = None):
         return self.get_jes(accounts=account_code, as_of=as_of)
 
-    def clean(self):
-        if not self.slug:
-            r_id = generate_ledger_id()
-            slug = slugify(self.name)
-            self.slug = f'{slug}-{r_id}'
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+    # def clean(self):
+    #     if not self.slug:
+    #         r_id = generate_ledger_id()
+    #         slug = slugify(self.name)
+    #         self.slug = f'{slug}-{r_id}'
+    #
+    # def save(self, *args, **kwargs):
+    #     self.clean()
+    #     super().save(*args, **kwargs)
 
 
 class LedgerModel(LedgerModelAbstract):

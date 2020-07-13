@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
@@ -5,8 +7,8 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 
-from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
+from django_ledger.models.mixins import CreateUpdateMixIn
 
 
 class AccountModelManager(models.Manager):
@@ -46,6 +48,7 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
         ('debit', _('Debit'))
     ]
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     code = models.CharField(max_length=10, verbose_name=_('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_('Account Name'))
     role = models.CharField(max_length=25, choices=ACCOUNT_ROLES, verbose_name=_('Account Role'))

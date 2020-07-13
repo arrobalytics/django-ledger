@@ -41,7 +41,7 @@ class OFXFileImportView(FormView):
         accs = ofx.get_accounts_info()
         for acc in accs:
             bank_acc_model, created = BankAccountModel.objects.exists(
-                account_number__exact=acc['account_number'],
+                account_number=acc['account_number'],
                 ledger__entity__slug__exact=self.kwargs['entity_slug']
             )
         return super().form_valid(form=form)

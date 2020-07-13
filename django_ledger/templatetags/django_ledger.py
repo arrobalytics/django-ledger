@@ -24,34 +24,34 @@ def reverse_sign(value: float):
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
 def balance_sheet_table(context):
-    entity_model = context['entity']
+    ledger_or_entity = context['object']
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
+    end_date_session_key = get_date_filter_session_key(entity_slug=ledger_or_entity.uuid)
     end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context???
-    return entity_model.digest(activity=activity,
-                               user_model=user_model,
-                               equity_only=False,
-                               as_of=end_date_filter,
-                               process_groups=True)
+    return ledger_or_entity.digest(activity=activity,
+                                   user_model=user_model,
+                                   equity_only=False,
+                                   as_of=end_date_filter,
+                                   process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
 def income_statement_table(context):
-    entity_model = context.get('entity')
+    ledger_or_entity = context['object']
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    end_date_session_key = get_date_filter_session_key(entity_slug=entity_model.slug)
+    end_date_session_key = get_date_filter_session_key(entity_slug=ledger_or_entity.uuid)
     end_date_filter = context['request'].session.get(end_date_session_key)
     # todo: incorporate digest in context???
-    return entity_model.digest(activity=activity,
-                               user_model=user_model,
-                               as_of=end_date_filter,
-                               equity_only=True,
-                               process_groups=True)
+    return ledger_or_entity.digest(activity=activity,
+                                   user_model=user_model,
+                                   as_of=end_date_filter,
+                                   equity_only=True,
+                                   process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/bank_accounts_table.html', takes_context=True)
@@ -69,7 +69,7 @@ def jes_table(context, je_queryset):
     return {
         'jes': je_queryset,
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'ledger_slug': context['view'].kwargs['ledger_pk']
+        'ledger_pk': context['view'].kwargs['ledger_pk']
     }
 
 
@@ -86,9 +86,9 @@ def txs_table(je_model):
 
 
 @register.inclusion_tag('django_ledger/tags/ledgers_table.html', takes_context=True)
-def ledgers_table(context, ledgers_queryset):
+def ledgers_table(context):
     return {
-        'ledgers': ledgers_queryset,
+        'ledgers': context['ledgers'],
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 

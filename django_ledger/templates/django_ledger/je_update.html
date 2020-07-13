@@ -10,7 +10,7 @@
                 <div class="column is-6">
                     <div class="box">
                         <form method="post"
-                              action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.id %}">
+                              action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
                             {% csrf_token %}
                             {{ form.as_p }}
                             <button class="button is-fullwidth is-primary is-outlined djetler_my_1" type="submit">Update</button>

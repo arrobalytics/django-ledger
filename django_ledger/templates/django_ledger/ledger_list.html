@@ -13,9 +13,7 @@
                            href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
-
-                        {% ledgers_table ledgers %}
-
+                        {% ledgers_table %}
                     </div>
                 </div>
             </div>

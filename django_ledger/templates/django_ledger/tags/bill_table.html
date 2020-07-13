@@ -19,7 +19,7 @@
         {% for bill in bills %}
             <tr>
                 <td><a class="button is-warning is-small"
-                       href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_slug=bill.bill_number %}">Edit</a>
+                       href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}">Edit</a>
                 </td>
                 <td>{{ bill.bill_number }}</td>
                 <td>{{ bill.xref }}</td>

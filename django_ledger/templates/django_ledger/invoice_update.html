@@ -6,7 +6,7 @@
 {% block content %}
     <section class="section">
         <div class="container">
-            <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_slug=view.kwargs.invoice_slug %}"
+            <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
                   method="post">
 
                 {% if form.errors %}
@@ -22,7 +22,7 @@
                             </div>
                             <div class="card-content">
                                 <div class="content">
-                                    <h1 class="has-text-weight-light">{{ object.subject_name }}</h1>
+                                    <h1 class="has-text-weight-light">{{ object.invoice_to }}</h1>
                                     <p>
                                         {{ object.address_1 }}<br>
                                         {{ object.address_2 }}<br>
@@ -71,7 +71,7 @@
                             </div>
                             <div class="card-body">
                                 <div class="card-content">
-                                    <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_slug=invoice.invoice_number %}"
+                                    <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
                                           method="post">
                                         {% csrf_token %}
 
@@ -158,15 +158,15 @@
                                             <p>{{ invoice.earnings_account }}:
                                                 ${{ invoice.amount_earned | cs_thousands }}</p>
                                         </div>
+                                        {# todo: make sure the select_related queryset in view is working so we dont hit the database for the ledger uuid #}
                                         <div class="column is-6">
-                                            {#   todo: prefect this info #}
                                             <a class="button is-outlined is-small is-primary is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.slug entity_slug=view.kwargs.entity_slug %}">Balance
+                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Balance
                                                 Sheet</a>
                                         </div>
                                         <div class="column is-6">
                                             <a class="button is-outlined is-small is-info is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.slug entity_slug=view.kwargs.entity_slug %}">Income
+                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Income
                                                 Statement</a>
                                         </div>
                                     </div>

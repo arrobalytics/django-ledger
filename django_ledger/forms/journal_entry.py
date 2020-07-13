@@ -14,7 +14,7 @@ class JournalEntryModelCreateForm(ModelForm):
         self.fields['parent'].queryset = JournalEntryModel.on_coa.for_ledger(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL,
-            ledger_slug=self.LEDGER_PK
+            ledger_pk=self.LEDGER_PK
         )
 
     class Meta:

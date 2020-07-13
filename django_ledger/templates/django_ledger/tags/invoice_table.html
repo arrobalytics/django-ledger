@@ -18,7 +18,7 @@
         {% for invoice in invoices %}
             <tr>
                 <td><a class="button is-warning is-small"
-                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_slug=invoice.invoice_number %}">Edit</a>
+                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}">Edit</a>
                 </td>
                 <td>{{ invoice.invoice_number }}</td>
                 <td>{{ invoice.bill_to }}</td>

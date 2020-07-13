@@ -1,5 +1,6 @@
 from random import choice
 from string import ascii_uppercase, digits
+from uuid import uuid4
 
 from django.db import models
 from django.db.models.signals import post_delete
@@ -22,6 +23,7 @@ class BillModelAbstract(ProgressibleMixIn,
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     # todo: can add help text here....?
     bill_to = models.CharField(max_length=100, verbose_name=_('Bill To'))
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))

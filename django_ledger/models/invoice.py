@@ -1,5 +1,6 @@
 from random import choice
 from string import ascii_uppercase, digits
+from uuid import uuid4
 
 from django.db import models
 from django.db.models import Q
@@ -51,6 +52,7 @@ class InvoiceModelAbstract(ProgressibleMixIn,
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     # todo: can add help text here....?
     invoice_to = models.CharField(max_length=100, verbose_name=_('Invoice To'))
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))

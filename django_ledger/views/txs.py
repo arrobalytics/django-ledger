@@ -16,12 +16,12 @@ class TXSJournalEntryView(TemplateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             je_pk=self.kwargs['je_pk'],
-            ledger_slug=self.kwargs['ledger_pk']
+            ledger_pk=self.kwargs['ledger_pk']
         ).order_by('account__code')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        txs_formset_url = reverse('django_ledger:txs',
+        txs_formset_url = reverse('django_ledger:txs-journal-entry',
                                   kwargs={
                                       'entity_slug': kwargs['entity_slug'],
                                       'ledger_pk': kwargs['ledger_pk'],
@@ -69,7 +69,7 @@ class TXSAccountView(ListView):
     template_name = 'django_ledger/txs_account.html'
 
     def get_queryset(self):
-        # todo: prefect account details?...
+        # todo: prefetch account details?...
         return TransactionModel.objects.for_account(
             account_pk=self.kwargs['account_pk'],
             coa_slug=self.kwargs['coa_slug'],

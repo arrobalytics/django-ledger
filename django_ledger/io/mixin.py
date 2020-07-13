@@ -220,7 +220,7 @@ class IOMixIn:
             txs_qs = txs_qs.for_roles(role_list=role)
 
         txs_qs = txs_qs.values(
-            'account__id',
+            'account__uuid',
             'account__balance_type',
             'tx_type',
             'account__code',
@@ -254,7 +254,7 @@ class IOMixIn:
                 tx['balance'] = -tx['balance']
 
         acc_balances = set(AccountIndexTuple(
-            account_id=je['account__id'],
+            account_id=je['account__uuid'],
             role_bs=roles.BS_ROLES.get(je['account__role']),
             role=je['account__role'],
             code=je['account__code'],

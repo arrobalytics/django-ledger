@@ -125,9 +125,7 @@ class InvoiceModelUpdateForm(ModelForm):
             ),
             'amount_paid': TextInput(
                 attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'type': 'number',
-                    'step': '100'
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                 }),
             'progress': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'progressible': CheckboxInput(attrs={'type': 'checkbox'}),

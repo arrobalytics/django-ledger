@@ -100,8 +100,10 @@ def make_accounts_active(entity_model: EntityModel, account_code_set: set):
 
 
 def get_date_filter_session_key(entity_slug: str):
-    return f'djetler_entity_{entity_slug}_date_filter'.replace('-', '_')
+    # todo: rename this key...
+    return f'dj_ledger_entity_{entity_slug}_date_filter'.replace('-', '_')
 
 
 def get_default_entity_session_key():
-    return 'djetler_default_entity_id'
+    # todo: rename this key...
+    return 'dj_ledger_default_entity_id'

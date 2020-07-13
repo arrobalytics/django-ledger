@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
@@ -47,9 +49,9 @@ def validate_activity(activity: str, raise_404: bool = False):
 
 class JournalEntryModelManager(models.Manager):
 
-    def for_ledger(self, ledger_slug: str, entity_slug: str, user_model):
+    def for_ledger(self, ledger_pk: str, entity_slug: str, user_model):
         qs = self.get_queryset().filter(
-            Q(ledger__slug__iexact=ledger_slug) &
+            Q(ledger__uuid__exact=ledger_pk) &
             Q(ledger__entity__slug__iexact=entity_slug) &
             (
                     Q(ledger__entity__admin=user_model) |
@@ -68,6 +70,7 @@ class JournalEntryModelAbstract(MPTTModel):
                                related_name='children',
                                on_delete=models.CASCADE)
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     date = models.DateField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_('Activity'))

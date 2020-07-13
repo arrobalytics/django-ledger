@@ -1,4 +1,5 @@
 from random import randint
+from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -39,6 +40,7 @@ class EntityModelAbstract(MPTTModel,
                             db_index=True,
                             on_delete=models.CASCADE)
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'), null=True, blank=True)
     admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
                               related_name='admin_of', verbose_name=_('Admin'))
@@ -55,7 +57,6 @@ class EntityModelAbstract(MPTTModel,
         verbose_name_plural = _('Entities')  # idea: can use th django plural function...
         indexes = [
             models.Index(fields=['admin']),
-            models.Index(fields=['parent']),
         ]
 
     class MPTTMeta:
@@ -102,10 +103,9 @@ class EntityModelAbstract(MPTTModel,
             ri = randint(100000, 999999)
             entity_slug = f'{slug}-{ri}'
             self.slug = entity_slug
-        if not self.id:
-            self.CREATE_GL_FLAG = True
 
     def save(self, *args, **kwargs):
+        # todo: should this be par of pre-save signal?...
         self.clean()
         super().save(*args, **kwargs)
         if not getattr(self, 'coa', None):
@@ -115,7 +115,7 @@ class EntityModelAbstract(MPTTModel,
                 entity=self
             )
             self.ledgers.create(
-                name=_('General Ledger'),
+                name=_(f'{self.name} General Ledger'),
                 posted=True
             )
 
@@ -130,6 +130,7 @@ class EntityManagementModelAbstract(CreateUpdateMixIn):
         ('suspended', _('No Permissions'))
     ]
 
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity'),

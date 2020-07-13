@@ -26,8 +26,11 @@ class AccountModelListView(ListView):
 
 class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
-    pk_url_kwarg = 'account_pk'
     template_name = 'django_ledger/account_update.html'
+    slug_url_kwarg = 'account_pk'
+
+    def get_slug_field(self):
+        return 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
