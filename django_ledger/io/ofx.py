@@ -23,7 +23,7 @@ class OFXFileManager:
         self.statements = self.ofx_data.statements
         self.NUMBER_OF_STATEMENTS = len(self.statements)
 
-    def get_accounts_info(self):
+    def get_accounts(self):
         return [
             {
                 'bank': self.ofx_data.org,
@@ -33,3 +33,6 @@ class OFXFileManager:
                 'routing_number': acc.bankid,
             } for acc in self.statements
         ]
+
+    def get_account_txs(self, account: str):
+        pass

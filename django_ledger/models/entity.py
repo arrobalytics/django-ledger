@@ -1,4 +1,5 @@
-from random import randint
+from random import choices
+from string import ascii_lowercase, digits
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -15,6 +16,8 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
 
 UserModel = get_user_model()
+
+ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
 class EntityModelManager(Manager):
@@ -37,7 +40,6 @@ class EntityModelAbstract(MPTTModel,
                             blank=True,
                             related_name='children',
                             verbose_name=_('Parent Entity'),
-                            db_index=True,
                             on_delete=models.CASCADE)
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -57,6 +59,7 @@ class EntityModelAbstract(MPTTModel,
         verbose_name_plural = _('Entities')  # idea: can use th django plural function...
         indexes = [
             models.Index(fields=['admin']),
+            models.Index(fields=['parent']),
         ]
 
     class MPTTMeta:
@@ -71,37 +74,13 @@ class EntityModelAbstract(MPTTModel,
                            'entity_slug': self.slug
                        })
 
-    def get_update_url(self):
-        return reverse('django_ledger:entity-update',
-                       kwargs={
-                           'entity_slug': self.slug
-                       })
-
-    def get_bs_url(self):
-        return reverse('django_ledger:entity-bs',
-                       kwargs={
-                           'entity_slug': self.slug
-                       })
-
-    def get_ic_url(self):
-        return reverse('django_ledger:entity-ic',
-                       kwargs={
-                           'entity_slug': self.slug
-                       })
-
-    def get_ledgers_url(self):
-        return reverse('django_ledger:ledger-list',
-                       kwargs={
-                           'entity_slug': self.slug
-                       })
-
     def clean(self):
         if not self.name:
             raise ValidationError(message=_('Must provide a name for EntityModel'))
         if not self.slug:
             slug = slugify(self.name)
-            ri = randint(100000, 999999)
-            entity_slug = f'{slug}-{ri}'
+            suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6))
+            entity_slug = f'{slug}-{suffix}'
             self.slug = entity_slug
 
     def save(self, *args, **kwargs):

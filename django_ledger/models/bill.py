@@ -1,19 +1,35 @@
-from random import choice
+from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
 from django.db import models
+from django.db.models import Q
 from django.db.models.signals import post_delete
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.invoice import InvoiceModelManager
+from django_ledger.models import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ContactInfoMixIn
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
 
-def generate_bill_number(length=10):
-    return 'B-' + ''.join(choice(BILL_NUMBER_CHARS) for _ in range(length))
+def generate_bill_number(length: int = 10):
+    return 'B-' + ''.join(choices(BILL_NUMBER_CHARS, k=length))
+
+
+class BillModelManager(models.Manager):
+
+    def for_user(self, user_model):
+        return self.get_queryset().filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
+
+    def on_entity(self, entity):
+        if isinstance(entity, EntityModel):
+            return self.get_queryset().filter(ledger__entity=entity)
+        elif isinstance(entity, str):
+            return self.get_queryset().filter(ledger__entity__slug__exact=entity)
 
 
 class BillModelAbstract(ProgressibleMixIn,
@@ -24,7 +40,6 @@ class BillModelAbstract(ProgressibleMixIn,
     ALLOW_MIGRATE = True
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    # todo: can add help text here....?
     bill_to = models.CharField(max_length=100, verbose_name=_('Bill To'))
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
@@ -46,7 +61,7 @@ class BillModelAbstract(ProgressibleMixIn,
                                          verbose_name=_('Earnings Account'),
                                          related_name=f'{REL_NAME_PREFIX}_earnings_account')
 
-    objects = InvoiceModelManager()
+    objects = BillModelManager()
 
     class Meta:
         abstract = True

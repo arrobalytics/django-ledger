@@ -8,27 +8,21 @@
             <th>Description</th>
             <th>Ledger</th>
             <th>Created</th>
+            <th>Actions</th>
         </tr>
         </thead>
         <tbody>
 
         {% for job in import_jobs %}
             <tr>
-                <td><a class="button is-warning is-small"
-                       href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_slug=job.slug %}">Edit</a>
-                </td>
                 <td>{{ job.status }}</td>
                 <td>{{ job.description }}</td>
                 <td>{{ job.ledger }}</td>
                 <td>{{ job.created }}</td>
-{#                <td>{{ job.aba_number }}</td>#}
-{#                <td>{{ job.cash_account }}</td>#}
-{#                <td>#}
-{#                    <a class="button is-small is-warning is-outlined"#}
-{#                       href="">Edit</a>#}
-{#                    <a class="button is-small is-info is-outlined"#}
-{#                       href="">Txs</a>#}
-{#                </td>#}
+                <td>
+                    <a class="button is-small is-info is-outlined"
+                       href="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}">Txs</a>
+                </td>
             </tr>
         {% endfor %}
 

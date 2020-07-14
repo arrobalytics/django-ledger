@@ -118,17 +118,20 @@ urlpatterns = [
     path('bank-accounts/<slug:entity_slug>/create/',
          views.BankAccountModelCreateView.as_view(),
          name='bank-account-create'),
-    path('bank-accounts/<slug:entity_slug>/<slug:bank_account_slug>/update/',
+    path('bank-accounts/<slug:entity_slug>/<uuid:bank_account_pk>/update/',
          views.BankAccountModelUpdateView.as_view(),
          name='bank-account-update'),
 
     # Import Data ---
     path('data-import/<slug:entity_slug>/jobs/',
-         views.DataImportJobsView.as_view(),
+         views.DataImportJobsListView.as_view(),
          name='data-import-jobs-list'),
     path('data-import/<slug:entity_slug>/import-ofx/',
-         views.OFXFileImportView.as_view(),
+         views.DataImportOFXFileView.as_view(),
          name='data-import-ofx'),
+    path('data-import/<slug:entity_slug>/jobs/<uuid:job_pk>/txs/',
+         views.DataImportJobStagedTxsListView.as_view(),
+         name='data-import-job-txs'),
 
     # Dashboard ----
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),

@@ -22,6 +22,13 @@ def reverse_sign(value: float):
     return -value
 
 
+@register.filter(name='last_four')
+def last_four(value: str):
+    if value:
+        return '*' + value[-4:]
+    return ''
+
+
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
 def balance_sheet_table(context):
     ledger_or_entity = context['object']

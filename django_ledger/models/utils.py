@@ -60,7 +60,8 @@ def new_invoice_protocol(invoice_model: InvoiceModel,
 
 def new_bankaccount_protocol(bank_account_model: BankAccountModel,
                              entity_slug: str or EntityModel,
-                             user_model: UserModel) -> BankAccountModel:
+                             user_model: UserModel,
+                             posted_ledger: bool = True) -> BankAccountModel:
     if isinstance(entity_slug, str):
         entity_model = EntityModel.objects.for_user(
             user_model=user_model).get(
@@ -72,7 +73,7 @@ def new_bankaccount_protocol(bank_account_model: BankAccountModel,
 
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
-        posted=True,
+        posted=posted_ledger,
         name=f'Bank Account {"***" + bank_account_model.account_number[-4:]}'
     )
     ledger_model.clean()

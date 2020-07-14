@@ -95,6 +95,7 @@ class JournalEntryModelAbstract(MPTTModel):
         verbose_name_plural = _('Journal Entries')
         indexes = [
             models.Index(fields=['date']),
+            models.Index(fields=['parent']),
             models.Index(fields=['ledger', 'parent']),
             models.Index(fields=['ledger', 'activity']),
             models.Index(fields=['ledger', 'posted', 'locked']),

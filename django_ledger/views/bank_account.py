@@ -1,6 +1,6 @@
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView
-from django.urls import reverse
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models.bank_account import BankAccountModel
@@ -56,7 +56,7 @@ class BankAccountModelCreateView(CreateView):
 
 class BankAccountModelUpdateView(UpdateView):
     template_name = 'django_ledger/bank_account_update.html'
-    slug_url_kwarg = 'bank_account_slug'
+    pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -67,7 +67,7 @@ class BankAccountModelUpdateView(UpdateView):
         return BankAccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('cash_account')
+        ).select_related('ledger')
 
     def get_form(self, form_class=None):
         return BankAccountUpdateForm(

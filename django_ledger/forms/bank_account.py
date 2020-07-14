@@ -68,6 +68,10 @@ class BankAccountUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
+        account_qs = AccountModel.on_coa.for_entity_available(user_model=self.USER_MODEL,
+                                                              entity_slug=self.ENTITY_SLUG)
+        self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
+
     class Meta:
         model = BankAccountModel
         fields = [
@@ -76,6 +80,7 @@ class BankAccountUpdateForm(ModelForm):
             'account_number',
             'routing_number',
             'aba_number',
+            'cash_account'
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -97,6 +102,9 @@ class BankAccountUpdateForm(ModelForm):
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'cash_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            })
         }
         labels = {
             'name': _('Account Name'),

@@ -61,21 +61,20 @@ class LedgerModelAbstract(CreateUpdateMixIn,
         ]
 
     def __str__(self):
-        return '{slug}: {name}'.format(name=self.name,
-                                       slug=self.slug)
+        return self.name
 
     def get_absolute_url(self):
         return reverse('django_ledger:ledger-detail',
                        kwargs={
                            'entity_slug': self.entity.slug,
-                           'ledger_pk': self.slug
+                           'ledger_pk': self.uuid
                        })
 
     def get_update_url(self):
         return reverse('django_ledger:ledger-update',
                        kwargs={
                            'entity_slug': self.entity.slug,
-                           'ledger_pk': self.slug
+                           'ledger_pk': self.uuid
                        })
 
     def get_coa(self):

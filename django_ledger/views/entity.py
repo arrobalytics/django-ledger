@@ -173,7 +173,7 @@ class SetDefaultEntityView(RedirectView):
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
-            self.request.session[session_key] = entity_model.id
+            self.request.session[session_key] = str(entity_model.uuid)
         else:
             try:
                 del self.request.session[session_key]
