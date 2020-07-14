@@ -1,0 +1,33 @@
+{% load django_ledger %}
+
+<div class="table-container">
+    <table class="table is-fullwidth">
+        <thead>
+        <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Amount</th>
+            <th>Import To</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        {% for tx in txs %}
+            <tr>
+                <td>{{ tx.date_posted | date }}</td>
+                <td>{{ tx.name }}</td>
+                <td>${{ tx.amount | cs_thousands }}</td>
+                <td>{{ tx.earnings_account }}</td>
+
+                <td>
+                    <a class="button is-small is-info is-outlined"
+                       href="">Txs</a>
+                </td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+
+</div>

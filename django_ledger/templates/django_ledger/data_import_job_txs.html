@@ -9,14 +9,13 @@
             <div class="columns">
                 <div class="column">
                     <div class="box">
-                        <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'Import OFX File' %}</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">
                             {% trans 'Back' %}
                         </a>
-{#                        {% data_import_job_table %}#}
+
+                        {% data_import_job_txs_table %}
+
                     </div>
                 </div>
 

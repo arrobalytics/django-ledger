@@ -5,7 +5,7 @@ from django.views.generic import ListView, FormView
 from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.models.data_import_jobs import ImportJobModel, StagedTransactionModel
+from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import new_bankaccount_protocol
 
@@ -96,6 +96,20 @@ class DataImportOFXFileView(FormView):
             import_job = ba.ledger.importjobmodel_set.create(
                 description='OFX Import for Account *' + ba.account_number[-4:]
             )
+            txs = ofx.get_account_txs(account=ba.account_number)
+            txs_models = [
+                StagedTransactionModel(
+                    date_posted=tx.dtposted,
+                    fitid=tx.fitid,
+                    amount=tx.trnamt,
+                    import_job=import_job,
+                    name=tx.name,
+                    memo=tx.memo
+                ) for tx in txs
+            ]
+            for tx in txs_models:
+                tx.clean()
+            txs_models = StagedTransactionModel.objects.bulk_create(txs_models)
 
         return super().form_valid(form=form)
 
@@ -103,6 +117,7 @@ class DataImportOFXFileView(FormView):
 class DataImportJobStagedTxsListView(ListView):
     template_name = 'django_ledger/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
+    context_object_name = 'txs'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE

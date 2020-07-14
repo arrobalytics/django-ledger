@@ -35,4 +35,7 @@ class OFXFileManager:
         ]
 
     def get_account_txs(self, account: str):
-        pass
+        acc_statement = next(iter(
+            st for st in self.ofx_data.statements if st.account.acctid == account
+        ))
+        return acc_statement.banktranlist

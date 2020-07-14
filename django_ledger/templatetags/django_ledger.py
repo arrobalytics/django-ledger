@@ -71,6 +71,11 @@ def data_import_job_table(context):
     return context
 
 
+@register.inclusion_tag('django_ledger/tags/data_import_job_txs_table.html', takes_context=True)
+def data_import_job_txs_table(context):
+    return context
+
+
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)
 def jes_table(context, je_queryset):
     return {
