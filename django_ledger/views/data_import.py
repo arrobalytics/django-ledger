@@ -1,8 +1,10 @@
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, FormView
+from django.views.generic import ListView, FormView, TemplateView
+from django.contrib import messages
 
 from django_ledger.forms.data_import import OFXFileImportForm
+from django_ledger.forms.data_import import StagedTransactionModelFormSet
 from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
@@ -114,7 +116,7 @@ class DataImportOFXFileView(FormView):
         return super().form_valid(form=form)
 
 
-class DataImportJobStagedTxsListView(ListView):
+class DataImportJobStagedTxsListView(TemplateView):
     template_name = 'django_ledger/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'txs'
@@ -123,9 +125,30 @@ class DataImportJobStagedTxsListView(ListView):
         'header_title': PAGE_TITLE
     }
 
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+
+        txs_formset = StagedTransactionModelFormSet(
+            user_model=self.request.user,
+            entity_slug=kwargs['entity_slug'],
+            job_pk=kwargs['job_pk'],
+            queryset=self.get_queryset()
+        )
+
+        context['staged_txs_formset'] = txs_formset
+
+        # messages.add_message(
+        #     self.request,
+        #     messages.ERROR,
+        #     'This is so cool!',
+        #     extra_tags='is-danger'
+        # )
+
+        return self.render_to_response(context)
+
     def get_queryset(self):
         return StagedTransactionModel.objects.for_job(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             job_pk=self.kwargs['job_pk']
-        )
+        ).order_by('-date_posted')

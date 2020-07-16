@@ -7,7 +7,7 @@ from django_ledger.models.transactions import TransactionModel
 
 
 # TXS View ---
-# todo: rename to JE Transactions
+# todo: rename to JE Transactions???...
 class TXSJournalEntryView(TemplateView):
     template_name = 'django_ledger/txs.html'
 

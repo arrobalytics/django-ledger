@@ -25,6 +25,7 @@ class BillModelManager(models.Manager):
             Q(ledger__entity__managers__in=[user_model])
         )
 
+    # todo: rename to for_entity & add user_model...
     def on_entity(self, entity):
         if isinstance(entity, EntityModel):
             return self.get_queryset().filter(ledger__entity=entity)
