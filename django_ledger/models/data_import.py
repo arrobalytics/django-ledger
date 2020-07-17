@@ -63,6 +63,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                                          on_delete=models.CASCADE,
                                          null=True,
                                          blank=True)
+
     fitid = models.CharField(max_length=100)
     amount = models.DecimalField(decimal_places=2, max_digits=15)
     date_posted = models.DateField()

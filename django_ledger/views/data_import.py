@@ -1,7 +1,7 @@
+from django.contrib import messages
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, FormView, TemplateView
-from django.contrib import messages
 
 from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
@@ -22,7 +22,10 @@ class DataImportJobsListView(ListView):
     template_name = 'django_ledger/data_import_job_list.html'
 
     def get_queryset(self):
-        return ImportJobModel.objects.all()
+        return ImportJobModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
 
 
 class DataImportOFXFileView(FormView):
@@ -160,7 +163,32 @@ class DataImportJobStagedTxsListView(TemplateView):
                                                     queryset=self.get_queryset())
 
         if txs_formset.is_valid():
+
             txs_formset.save()
+
+            # txs_formset.save(commit=False)
+            # txs_to_import = [
+            #     tx for tx in txs_formset.queryset if tx.earnings_account and not tx.tx
+            # ]
+
+            # if len(txs_to_import) > 0:
+            #
+            #     txs_balances = [{
+            #         'tx_type': tx.cleaned_data.get('tx_type'),
+            #         'amount': tx.cleaned_data.get('amount')
+            #     } for tx in self.forms if not self._should_delete_form(tx)]
+            #     validate_tx_data(txs_balances)
+            #
+            #     import_job_model = ImportJobModel.objects.for_entity(
+            #         entity_slug=kwargs['entity_slug'],
+            #         user_model=request.user
+            #     ).prefetch_related('ledger').get(uuid__exact=kwargs['job_pk'])
+            #
+            #     ledger_model = import_job_model.ledger
+            #     je = ledger_model.journal_entry.create(
+            #
+            #     )
+
             context['staged_txs_formset'] = txs_formset
             messages.add_message(request, messages.SUCCESS,
                                  'Successfully saved transactions.',
