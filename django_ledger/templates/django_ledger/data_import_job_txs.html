@@ -30,13 +30,15 @@
                                     {% trans 'Back' %}
                                 </a>
                             </div>
-                            <div class="column is-12">
-                                {{ txs_formset.non_form_errors }}
-                                {{ txs_formset.management_form }}
-                            </div>
-                            <div class="column is-12">
-                                <form action="{{ view.request.path }}">
+                            <form action="{{ view.request.path }}" method="post">
 
+                                <div class="column is-12">
+                                    {{ staged_txs_formset.non_form_errors }}
+                                    {{ staged_txs_formset.management_form }}
+                                </div>
+
+                                <div class="column is-12">
+                                    {% csrf_token %}
                                     <div class="table-container">
                                         <table class="table is-fullwidth">
                                             <thead>
@@ -54,10 +56,15 @@
 
                                             {% for txf in staged_txs_formset %}
                                                 <tr>
+
+                                                    {% for hidden_field in txf.hidden_fields %}
+                                                        {{ hidden_field }}
+                                                    {% endfor %}
+
                                                     <td>{{ txf.date_posted.value }}</td>
                                                     <td>{{ txf.name.value }}</td>
                                                     <td class="{% if txf.amount.value < 0 %}has-text-danger{% endif %}">
-                                                        ${{ txf.amount.value | cs_thousands }}</td>
+                                                        ${{ txf.amount.value }}</td>
                                                     <td>{{ txf.earnings_account }}</td>
                                                     <td>{{ txf.tx }}</td>
                                                     <td>{{ txf.import_tx }}</td>
@@ -73,13 +80,14 @@
 
                                     </div>
 
-                                </form>
-                            </div>
-                            <div class="column is-12 has-text-centered">
-                                <button class="button is-primary is-outlined">Save</button>
-                                <a class="button is-dark"
-                                   href="{% url "django_ledger:data-import-jobs-list" entity_slug=entity_slug %}">Done</a>
-                            </div>
+                                </div>
+                                <div class="column is-12 has-text-centered">
+                                    <button class="button is-primary is-outlined">Save</button>
+                                    <a class="button is-dark"
+                                       href="{% url "django_ledger:data-import-jobs-list" entity_slug=entity_slug %}">Done</a>
+                                </div>
+
+                            </form>
 
                         </div>
 

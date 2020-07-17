@@ -8,7 +8,16 @@ from django_ledger.models.mixins import CreateUpdateMixIn
 
 
 class ImportJobModelManager(models.Manager):
-    pass
+
+    def for_entity(self, entity_slug: str, user_model):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(ledger__entity__slug__exact=entity_slug) &
+            (
+                    Q(ledger__entity__admin=user_model) |
+                    Q(ledger__entity__managers__in=[user_model])
+            )
+        )
 
 
 class ImportJobModelAbstract(CreateUpdateMixIn):

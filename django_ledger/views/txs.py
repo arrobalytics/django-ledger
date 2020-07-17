@@ -21,38 +21,30 @@ class TXSJournalEntryView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        txs_formset_url = reverse('django_ledger:txs-journal-entry',
-                                  kwargs={
-                                      'entity_slug': kwargs['entity_slug'],
-                                      'ledger_pk': kwargs['ledger_pk'],
-                                      'je_pk': kwargs['je_pk'],
-                                  })
-        context['txs_formset_url'] = txs_formset_url
         context['page_title'] = 'Edit Transactions'
         context['header_title'] = 'Edit Transactions'
         return context
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-
-        txs_formset = TransactionModelFormSet(
+        context['txs_formset'] = TransactionModelFormSet(
             user_model=self.request.user,
+            je_pk=kwargs['je_pk'],
+            ledger_pk=kwargs['ledger_pk'],
             entity_slug=kwargs['entity_slug'],
             queryset=self.get_queryset()
         )
-
-        context['txs_formset'] = txs_formset
         return self.render_to_response(context)
 
     def post(self, request, **kwargs):
         context = self.get_context_data(**kwargs)
         txs_formset = TransactionModelFormSet(request.POST,
                                               user_model=self.request.user,
-                                              entity_slug=kwargs['entity_slug']
-                                              )
+                                              ledger_pk=kwargs['ledger_pk'],
+                                              entity_slug=kwargs['entity_slug'],
+                                              je_pk=kwargs['je_pk'])
+
         if txs_formset.is_valid():
-            for f in txs_formset:
-                f.instance.journal_entry_id = context['je_pk']
             txs_formset.save()
             context['txs_formset'] = txs_formset
             messages.add_message(request, messages.SUCCESS, 'Successfully saved transactions.', extra_tags='is-success')

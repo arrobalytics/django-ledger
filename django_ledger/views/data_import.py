@@ -131,8 +131,7 @@ class DataImportJobStagedTxsListView(TemplateView):
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
             entity_slug=kwargs['entity_slug'],
-            job_pk=kwargs['job_pk'],
-            queryset=self.get_queryset()
+            queryset=self.get_queryset(),
         )
 
         context['staged_txs_formset'] = txs_formset
@@ -152,3 +151,24 @@ class DataImportJobStagedTxsListView(TemplateView):
             user_model=self.request.user,
             job_pk=self.kwargs['job_pk']
         ).order_by('-date_posted')
+
+    def post(self, request, **kwargs):
+        context = self.get_context_data(**kwargs)
+        txs_formset = StagedTransactionModelFormSet(request.POST,
+                                                    user_model=self.request.user,
+                                                    entity_slug=kwargs['entity_slug'],
+                                                    queryset=self.get_queryset())
+
+        if txs_formset.is_valid():
+            txs_formset.save()
+            context['staged_txs_formset'] = txs_formset
+            messages.add_message(request, messages.SUCCESS,
+                                 'Successfully saved transactions.',
+                                 extra_tags='is-success')
+        else:
+            context['staged_txs_formset'] = txs_formset
+            messages.add_message(request,
+                                 messages.ERROR,
+                                 'Hmmm, this doesn\'t add up!. Check your math!',
+                                 extra_tags='is-danger')
+        return self.render_to_response(context)
