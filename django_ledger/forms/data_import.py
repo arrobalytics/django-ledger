@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, HiddenInput
+from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, HiddenInput, TextInput
 
 from django_ledger.models import StagedTransactionModel, AccountModel, ImportJobModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -12,19 +12,36 @@ class OFXFileImportForm(forms.Form):
 
 
 class StagedTransactionModelForm(ModelForm):
-    import_tx = forms.BooleanField(initial=False, required=False)
+    tx_import = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        if instance:
+            if instance.earnings_account and instance.tx:
+                self.fields['earnings_account'].widget.attrs['disabled'] = True
+                self.fields['tx_import'].widget.attrs['disabled'] = True
+                self.fields['tx_import'].widget.attrs['value'] = True
+            elif not instance.earnings_account:
+                self.fields['tx_import'].widget.attrs['disabled'] = True
+            elif instance.earnings_account and not instance.tx:
+                self.fields['tx_import'].widget.attrs['disabled'] = False
 
     class Meta:
         model = StagedTransactionModel
         fields = [
+            'tx_import',
             'date_posted',
             'name',
             'amount',
             'earnings_account',
-            'import_tx',
-            'import_job'
+            'import_job',
+            'tx'
         ]
         widgets = {
+            'tx': HiddenInput(attrs={
+                'readonly': True
+            }),
             'date_posted': HiddenInput(attrs={
                 'readonly': True
             }),

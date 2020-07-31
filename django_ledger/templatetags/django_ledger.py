@@ -66,8 +66,8 @@ def bank_account_table(context):
     return context
 
 
-@register.inclusion_tag('django_ledger/tags/data_import_job_table.html', takes_context=True)
-def data_import_job_table(context):
+@register.inclusion_tag('django_ledger/tags/data_import_job_list_table.html', takes_context=True)
+def data_import_job_list_table(context):
     return context
 
 
@@ -122,9 +122,9 @@ def bill_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/accounts_table.html', takes_context=True)
-def accounts_table(context, accounts_queryset):
+def accounts_table(context):
     return {
-        'accounts': accounts_queryset,
+        'accounts': context['accounts'],
         'entity_slug': context['view'].kwargs['entity_slug'],
         'coa_slug': context['view'].kwargs['coa_slug'],
     }

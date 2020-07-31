@@ -51,9 +51,10 @@ AccountIndexTuple = namedtuple('AccountIndexTuple',
 def validate_tx_data(tx_data: list):
     credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
     debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
-    if not credits == debits:
+    is_valid = credits == debits
+    if not is_valid:
         raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
-    return tx_data
+    return is_valid
 
 
 class IOMixIn:
@@ -71,9 +72,29 @@ class IOMixIn:
                          je_desc=None,
                          je_origin=None,
                          je_parent=None):
+        """
+        Creates JE from TXS list using provided account_id.
 
+        TXS = List[{
+            'account_id': Account Database UUID
+            'tx_type': credit/debit,
+            'amount': Decimal/Float/Integer,
+            'description': string,
+            'staged_tx_model': StagedTransactionModel or None
+        }]
+
+        :param je_date:
+        :param je_txs:
+        :param je_activity:
+        :param je_posted:
+        :param je_ledger:
+        :param je_desc:
+        :param je_origin:
+        :param je_parent:
+        :return:
+        """
         # Validates that credits/debits balance.
-        je_txs = validate_tx_data(je_txs)
+        validate_tx_data(je_txs)
 
         # Validates that the activity is valid.
         je_activity = validate_activity(je_activity)
@@ -85,7 +106,7 @@ class IOMixIn:
         if not je_ledger:
             je_ledger = self
 
-        je = JournalEntryModel.objects.create(
+        je_model = JournalEntryModel.objects.create(
             ledger=je_ledger,
             description=je_desc,
             date=je_date,
@@ -96,17 +117,18 @@ class IOMixIn:
         )
 
         TransactionModel = lazy_importer.get_txs_model()
-        txs_list = [
+        txs_models = [
             TransactionModel(
                 account_id=tx['account_id'],
                 tx_type=tx['tx_type'],
                 amount=tx['amount'],
                 description=tx['description'],
-                journal_entry=je
+                journal_entry=je_model,
+                stagedtransactionmodel=tx.get('staged_tx_model')
             ) for tx in je_txs
         ]
-        txs = TransactionModel.objects.bulk_create(txs_list)
-        return txs
+        txs_models = TransactionModel.objects.bulk_create(txs_models)
+        return je_model, txs_models
 
     # used in quickstart only...
     # todo: can eliminate????....
@@ -121,7 +143,7 @@ class IOMixIn:
                   je_parent=None):
 
         # Validates that credits/debits balance.
-        je_txs = validate_tx_data(je_txs)
+        validate_tx_data(je_txs)
 
         # Validates that the activity is valid.
         je_activity = validate_activity(je_activity)

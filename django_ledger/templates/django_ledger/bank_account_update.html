@@ -10,7 +10,7 @@
 
     <section class="section">
         <div class="container">
-            <form action="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}"
+            <form action="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=view.kwargs.bank_account_pk %}"
                   method="post">
                 <div class="columns is-multiline is-centered">
                     {% csrf_token %}
@@ -19,7 +19,7 @@
                             {{ form.errors }}
                             {{ form.as_p }}
                             <button type="submit"
-                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+                                    class="button is-primary is-outlined is-fullwidth djetler_my_1">Update
                             </button>
                             <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}"
                                class="button is-small is-dark is-fullwidth">Back</a>

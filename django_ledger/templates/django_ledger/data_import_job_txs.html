@@ -29,29 +29,30 @@
                                    href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">
                                     {% trans 'Back' %}
                                 </a>
-                            </div>
-                            <form action="{{ view.request.path }}" method="post">
 
-                                <div class="column is-12">
+
+
+                                <form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
+                                      method="post">
+
                                     {{ staged_txs_formset.non_form_errors }}
                                     {{ staged_txs_formset.management_form }}
-                                </div>
-
-                                <div class="column is-12">
                                     {% csrf_token %}
+
                                     <div class="table-container">
-                                        <table class="table is-fullwidth">
+                                        <table class="table is-narrow is-fullwidth">
                                             <thead>
-                                            <tr class="has-text-centered">
+                                            <tr class="has-text-centered is-error">
                                                 <th>Dated Posted</th>
                                                 <th>Description</th>
                                                 <th>Amount</th>
-                                                <th>Account</th>
-                                                <th>Tx</th>
-                                                <th>Import</th>
-                                                <th>Actions</th>
+                                                <th>Map To</th>
+                                                <th>Commit TX</th>
+                                                <th>TX</th>
                                             </tr>
                                             </thead>
+
+
                                             <tbody>
 
                                             {% for txf in staged_txs_formset %}
@@ -66,37 +67,38 @@
                                                     <td class="{% if txf.amount.value < 0 %}has-text-danger{% endif %}">
                                                         ${{ txf.amount.value }}</td>
                                                     <td>{{ txf.earnings_account }}</td>
-                                                    <td>{{ txf.tx }}</td>
-                                                    <td>{{ txf.import_tx }}</td>
+                                                    <td>{{ txf.tx_import }}</td>
                                                     <td>
-                                                        <a class="button is-small is-danger is-outlined"
-                                                           href="">Revert</a>
+                                                        <span class="icon"><i
+                                                                class="{% if txf.instance.tx %}mdi mdi-check{% endif %}"
+                                                        ></i></span>
                                                     </td>
                                                 </tr>
                                             {% endfor %}
 
                                             </tbody>
                                         </table>
-
                                     </div>
 
-                                </div>
-                                <div class="column is-12 has-text-centered">
-                                    <button class="button is-primary is-outlined">Save</button>
-                                    <a class="button is-dark"
-                                       href="{% url "django_ledger:data-import-jobs-list" entity_slug=entity_slug %}">Done</a>
-                                </div>
+                                    <div class="column is-12 has-text-centered">
+                                        <button class="button is-primary is-outlined">Save</button>
+                                        <a class="button is-info"
+                                           href="{% url "django_ledger:data-import-jobs-list" entity_slug=entity_slug %}">Import</a>
+                                        <a class="button is-dark"
+                                           href="{% url "django_ledger:data-import-jobs-list" entity_slug=entity_slug %}">Done</a>
+                                    </div>
 
-                            </form>
+
+                                </form>
+
+                            </div>
+
 
                         </div>
-
-
                     </div>
+
                 </div>
 
             </div>
-
-        </div>
     </section>
 {% endblock %}

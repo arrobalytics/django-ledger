@@ -63,6 +63,12 @@ class BankAccountModelUpdateView(UpdateView):
         'header_title': PAGE_TITLE
     }
 
+    def get_success_url(self):
+        return reverse('django_ledger:bank-account-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
     def get_queryset(self):
         return BankAccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],

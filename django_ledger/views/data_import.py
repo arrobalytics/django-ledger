@@ -1,15 +1,40 @@
+from itertools import chain
+
 from django.contrib import messages
 from django.urls import reverse
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, FormView, TemplateView
 
 from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
 from django_ledger.io.ofx import OFXFileManager
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import new_bankaccount_protocol
+
+
+def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
+    tx_amt = cleaned_staged_tx['amount']
+    reverse_tx = tx_amt < 0
+    return [
+        {
+            'account_id': cash_account.uuid,
+            'amount': abs(tx_amt),
+            'tx_type': 'debit' if not reverse_tx else 'credit',
+            'description': cleaned_staged_tx['name'],
+            'staged_tx_model': cleaned_staged_tx['uuid']
+        },
+        {
+            'account_id': cleaned_staged_tx['earnings_account'].uuid,
+            'amount': abs(tx_amt),
+            'tx_type': 'credit' if not reverse_tx else 'debit',
+            'description': cleaned_staged_tx['name'],
+            'staged_tx_model': cleaned_staged_tx['uuid']
+        }
+    ]
 
 
 class DataImportJobsListView(ListView):
@@ -45,20 +70,25 @@ class DataImportOFXFileView(FormView):
 
     def form_valid(self, form):
         ofx = OFXFileManager(ofx_file_or_path=form.files['ofx_file'])
-        accs = ofx.get_accounts()
 
+        # Pulls accounts from OFX file...
+        accs = ofx.get_accounts()
+        acc_numbers = [
+            a['account_number'] for a in accs
+        ]
+
+        # Gets bank account models if in DB...
         bank_accounts = BankAccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).filter(account_number__in=[
-            a['account_number'] for a in accs
-        ]).select_related('ledger')
+        ).filter(account_number__in=acc_numbers).select_related('ledger')
 
         ba_values = bank_accounts.values()
         existing_accounts_list = [
             a['account_number'] for a in ba_values
         ]
 
+        # determines if Bank Account models need to be created...
         to_create = [
             a for a in accs if a['account_number'] not in existing_accounts_list
         ]
@@ -93,9 +123,7 @@ class DataImportOFXFileView(FormView):
             bank_accounts = BankAccountModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
-            ).filter(account_number__in=[
-                a['account_number'] for a in accs
-            ]).select_related('ledger')
+            ).filter(account_number__in=acc_numbers).select_related('ledger')
 
         for ba in bank_accounts:
             import_job = ba.ledger.importjobmodel_set.create(
@@ -128,71 +156,79 @@ class DataImportJobStagedTxsListView(TemplateView):
         'header_title': PAGE_TITLE
     }
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-
-        txs_formset = StagedTransactionModelFormSet(
-            user_model=self.request.user,
-            entity_slug=kwargs['entity_slug'],
-            queryset=self.get_queryset(),
-        )
-
-        context['staged_txs_formset'] = txs_formset
-
-        # messages.add_message(
-        #     self.request,
-        #     messages.ERROR,
-        #     'This is so cool!',
-        #     extra_tags='is-danger'
-        # )
-
-        return self.render_to_response(context)
-
     def get_queryset(self):
         return StagedTransactionModel.objects.for_job(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             job_pk=self.kwargs['job_pk']
-        ).order_by('-date_posted')
+        ).select_related(
+            'import_job', 'import_job__ledger', 'tx__account'
+        ).order_by('-date_posted', '-amount')
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data(**kwargs)
+        txs_formset = StagedTransactionModelFormSet(
+            user_model=self.request.user,
+            entity_slug=kwargs['entity_slug'],
+            queryset=self.get_queryset(),
+        )
+        context['staged_txs_formset'] = txs_formset
+        return self.render_to_response(context)
 
     def post(self, request, **kwargs):
         context = self.get_context_data(**kwargs)
+
+        qs = self.get_queryset()
+
         txs_formset = StagedTransactionModelFormSet(request.POST,
                                                     user_model=self.request.user,
                                                     entity_slug=kwargs['entity_slug'],
-                                                    queryset=self.get_queryset())
-
+                                                    queryset=qs)
         if txs_formset.is_valid():
-
             txs_formset.save()
+            staged_to_import = [
+                tx for tx in txs_formset.cleaned_data if all([
+                    tx['earnings_account'],
+                    tx['tx_import'],
+                    not tx['tx']
+                ])
+            ]
 
-            # txs_formset.save(commit=False)
-            # txs_to_import = [
-            #     tx for tx in txs_formset.queryset if tx.earnings_account and not tx.tx
-            # ]
+            if len(staged_to_import) > 0:
+                job_model = ImportJobModel.objects.for_entity(
+                    entity_slug=self.kwargs['entity_slug'],
+                    user_model=self.request.user
+                ).select_related(
+                    'ledger',
+                    'ledger__bankaccountmodel',
+                    'ledger__bankaccountmodel__cash_account'
+                ).get(uuid__exact=self.kwargs['job_pk'])
 
-            # if len(txs_to_import) > 0:
-            #
-            #     txs_balances = [{
-            #         'tx_type': tx.cleaned_data.get('tx_type'),
-            #         'amount': tx.cleaned_data.get('amount')
-            #     } for tx in self.forms if not self._should_delete_form(tx)]
-            #     validate_tx_data(txs_balances)
-            #
-            #     import_job_model = ImportJobModel.objects.for_entity(
-            #         entity_slug=kwargs['entity_slug'],
-            #         user_model=request.user
-            #     ).prefetch_related('ledger').get(uuid__exact=kwargs['job_pk'])
-            #
-            #     ledger_model = import_job_model.ledger
-            #     je = ledger_model.journal_entry.create(
-            #
-            #     )
+                ledger_model = job_model.ledger
+                cash_account = job_model.ledger.bankaccountmodel.cash_account
+
+                txs_digest = list(chain.from_iterable(
+                    digest_staged_txs(cleaned_staged_tx=tx,
+                                      cash_account=cash_account) for tx in staged_to_import
+                ))
+
+                je_model, txs_models = ledger_model.create_je_acc_id(
+                    je_posted=True,
+                    je_date=now().date(),
+                    je_txs=txs_digest,
+                    je_desc='OFX Import JE',
+                    je_activity='op'
+                )
+
+                staged_tx_models = [stx['uuid'] for stx in staged_to_import]
+                staged_tx_models = StagedTransactionModel.objects.bulk_update(staged_tx_models, fields=['tx'])
 
             context['staged_txs_formset'] = txs_formset
-            messages.add_message(request, messages.SUCCESS,
+            messages.add_message(request,
+                                 messages.SUCCESS,
                                  'Successfully saved transactions.',
                                  extra_tags='is-success')
+            return self.get(request, **kwargs)
         else:
             context['staged_txs_formset'] = txs_formset
             messages.add_message(request,
