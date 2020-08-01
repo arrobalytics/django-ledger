@@ -5,7 +5,7 @@ name = "pypi"
 
 [packages]
 django = ">=3.0.8"
-django-mptt = "~=0.9.1"
+django-mptt = "~=0.11.0"
 ofxtools = "~=0.8.21"
 
 [dev-packages]

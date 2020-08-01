@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f5264b9a5966d55b93698734bab861eada2a99e83985cb32446294f9b250c59d"
+            "sha256": "c05da71120ff471ac6b766d50a7a11239bbf7c2b03161f8cb4309635658c1961"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -40,11 +40,11 @@
         },
         "django-mptt": {
             "hashes": [
-                "sha256:18a41d1b56ca7c02a5b04d246e33ee2d18f6ee5459c02ed1d945f5abdef23a2e",
-                "sha256:689a04cce0981671d6061a9928c33a16b47abb0d4cd43cf7dec31ae284fdae9d"
+                "sha256:90eb236eb4f1a92124bd7c37852bbe09c0d21158477cc237556d59842a91c509",
+                "sha256:dfdb3af75ad27cdd4458b0544ec8574174f2b90f99bc2cafab6a15b4bc1895a8"
             ],
             "index": "pypi",
-            "version": "==0.9.1"
+            "version": "==0.11.0"
         },
         "ofxtools": {
             "hashes": [
