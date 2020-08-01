@@ -1,16 +1,24 @@
 ![alt text](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-### A bookkeeping & financial analysis engine for the Django Framework.
+### A Book Keeping & Financial Analysis Engine for the Django Framework.
 
-Djetler supports:
+Django Ledger supports:
 
 - Chart of Accounts.
-- Financial Statements (Income Statement & Balance Sheets)
-- Entities (LLC, Corps, etc.)
-- General/Individual Ledgers.
+- Financial Statements (Income Statement & Balance Sheets).
+- Automatic financial ratio calculations.
+- Multiple Entities.
+- Self-contained Ledgers.
 - Journal Entries & Transactions.
-- Financial Activities Support (Operational/Financial/Investing).
-- Entity/Account/Journal Entries 
+- Financial Activities Support (operational/financial/investing).
+- Basic OFX & QFX file import.
+- Bills & Invoices with progressible functionality.
+- Basic templates.
+- Entity administrators & entity manager support.
+- Multi-tenancy.
+- Bank Accounts.
+- Extensible API & Object Oriented Accounting.
+
 
 Currently this project is under active development and is not recommended for production environments.
 Breaking changes may occur in future releases.
@@ -21,19 +29,13 @@ the following functionality:
 - Basic navigational views & template tags.
 - Basic entity insights.
 - Cash flow statement.
-- Invoicing.
 - Inventory.
 - Per activity reports.
-- Financial analysis ratios.
 - Tax line mapping.
-- What if scenarios.
-- Account level forecasting/trends.
 - Package documentation.
 - And a lot more stuff...
 
 ## Quick Start
-In order to start using Django Ledger you must be logged in first.
-
 Django Ledger comes with a default CoA ready to use or you could use your own.
 Make sure to select the appropriate option when creating new entities.
     
@@ -59,5 +61,7 @@ Make sure to select the appropriate option when creating new entities.
         path('djl/', include('django_ledger.urls', namespace='django_ledger')),
         ...
     ]
-    
-__Want to contribute? Don't hesitate to contact me.__
+  
+__This project is actively looking for contributors. Any financial and/or
+accounting experience is a big plus.__ \
+Want to contribute? Don't hesitate to contact me.
