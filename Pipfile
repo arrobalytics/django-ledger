@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=3.0"
-django-mptt = "*"
-
+django = ">=3.0.8"
+django-mptt = "~=0.9.1"
+ofxtools = "~=0.8.21"
 
 [dev-packages]
 sphinx = "*"
