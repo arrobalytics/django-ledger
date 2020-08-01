@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, HiddenInput, TextInput
+from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, HiddenInput, ValidationError
 
 from django_ledger.models import StagedTransactionModel, AccountModel, ImportJobModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -20,6 +20,7 @@ class StagedTransactionModelForm(ModelForm):
         if instance:
             if instance.earnings_account and instance.tx:
                 self.fields['earnings_account'].widget.attrs['disabled'] = True
+                self.fields['earnings_account'].widget.attrs['value'] = instance.earnings_account
                 self.fields['tx_import'].widget.attrs['disabled'] = True
                 self.fields['tx_import'].widget.attrs['value'] = True
             elif not instance.earnings_account:
@@ -56,9 +57,15 @@ class StagedTransactionModelForm(ModelForm):
             }),
             'earnings_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'readonly': True
             })
         }
+
+    def clean(self):
+        earnings_account = self.cleaned_data['earnings_account']
+        tx = self.cleaned_data['tx']
+
+        if tx and not earnings_account:
+            raise ValidationError('If tx, ea must be present.')
 
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):

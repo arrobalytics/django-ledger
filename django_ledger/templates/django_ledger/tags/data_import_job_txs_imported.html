@@ -1,0 +1,35 @@
+<div class="table-container">
+    <table class="table is-narrow is-fullwidth is-bordered">
+        <thead>
+        <tr class="has-text-centered is-error">
+            <th>Dated Posted</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Map To</th>
+            <th>TX</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+
+
+        <tbody>
+
+        {% for imported_tx in imported_txs %}
+            <tr>
+                <td>{{ imported_tx.date_posted }}</td>
+                <td>{{ imported_tx.name }}</td>
+                <td class="{% if imported_tx.amount < 0 %}has-text-danger{% endif %} has-text-centered">
+                    ${{ imported_tx.amount }}</td>
+                <td>{{ imported_tx.earnings_account }}</td>
+                <td>{{ imported_tx.tx }}</td>
+                <td class="has-text-centered">
+                    <a href="" class="button is-small is-primary">View</a>
+                </td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+
+

@@ -1,21 +1,27 @@
-<div class="table-container">
-    <form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
-          method="post">
-        {{ staged_txs_formset.non_form_errors }}
-        {{ staged_txs_formset.management_form }}
-        {% csrf_token %}
-        <table class="table is-narrow is-fullwidth">
+<form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
+      method="post">
+
+    {{ staged_txs_formset.non_form_errors }}
+    {% if staged_txs_formset.errors %}
+        {{ staged_txs_formset.errors }}
+    {% endif %}
+    {{ staged_txs_formset.management_form }}
+    {% csrf_token %}
+
+    <div class="table-container">
+        <table class="table is-narrow is-fullwidth is-bordered is-striped">
             <thead>
             <tr class="has-text-centered is-error">
                 <th>Dated Posted</th>
                 <th>Description</th>
                 <th>Amount</th>
                 <th>Map To</th>
-                {#                                                <th>Tx</th>#}
-                <th>Ready</th>
-                <th>Imported</th>
+                <th>Commit TX</th>
+                {#                <th>TX</th>#}
             </tr>
             </thead>
+
+
             <tbody>
 
             {% for txf in staged_txs_formset %}
@@ -24,31 +30,35 @@
                     {% for hidden_field in txf.hidden_fields %}
                         {{ hidden_field }}
                     {% endfor %}
+
                     <td>{{ txf.date_posted.value }}</td>
                     <td>{{ txf.name.value }}</td>
                     <td class="{% if txf.amount.value < 0 %}has-text-danger{% endif %}">
                         ${{ txf.amount.value }}</td>
                     <td>{{ txf.earnings_account }}</td>
-                    <td>
-                        <span class="icon"><i
-                                class="{% if txf.earnings_account.value %}mdi mdi-check{% endif %}"
-                        ></i></span>
-                    </td>
-                    <td>
-                        <span class="icon"><i
-                                class="{% if txf.tx %}mdi mdi-check{% endif %}"
-                        ></i></span>
-                    </td>
-                    {#                                                    xs<td>{{ txf.tx.value }}</td>#}
-                    {#                                                    <td>{{ txf.import_tx }}</td>#}
-                    {#                                                    <td>#}
-                    {#                                                        <a class="button is-small is-danger is-outlined"#}
-                    {#                                                           href="">Revert</a>#}
-                    {#                                                    </td>#}
+                    <td>{{ txf.tx_import }}</td>
+                    {#                    <td>#}
+                    {#                                                        <span class="icon"><i#}
+                    {#                                                                class="{% if txf.instance.tx %}mdi mdi-check{% endif %}"#}
+                    {#                                                        ></i></span>#}
+                    {#                    </td>#}
                 </tr>
             {% endfor %}
 
             </tbody>
+
+
         </table>
-    </form>
-</div>
+
+
+    </div>
+
+    <div class="columns is-centered">
+        <div class="column is-4 has-text-centered">
+            <button class="button is-primary is-outlined is-fullwidth">Save/Import</button>
+        </div>
+    </div>
+
+
+</form>
+

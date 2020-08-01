@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.urls import reverse
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, FormView, TemplateView
+from django.views.generic import ListView, FormView, DetailView
 
 from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
@@ -147,43 +147,59 @@ class DataImportOFXFileView(FormView):
         return super().form_valid(form=form)
 
 
-class DataImportJobStagedTxsListView(TemplateView):
+class DataImportJobDetailView(DetailView):
     template_name = 'django_ledger/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
-    context_object_name = 'txs'
+    context_object_name = 'import_job'
+    pk_url_kwarg = 'job_pk'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
 
     def get_queryset(self):
-        return StagedTransactionModel.objects.for_job(
+        return ImportJobModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            job_pk=self.kwargs['job_pk']
-        ).select_related(
-            'import_job', 'import_job__ledger', 'tx__account'
-        ).order_by('-date_posted', '-amount')
+        ).select_related('ledger__bankaccountmodel__cash_account')
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        job_model: ImportJobModel = self.object
+        context['header_title'] = job_model.ledger.bankaccountmodel
+        stx_qs = job_model.stagedtransactionmodel_set.all()
+        stx_qs = stx_qs.select_related('tx__account').order_by('-date_posted', '-amount')
+
+        # forcing queryset evaluation
+        len(stx_qs)
+
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
-            entity_slug=kwargs['entity_slug'],
-            queryset=self.get_queryset(),
+            entity_slug=self.kwargs['entity_slug'],
+            queryset=stx_qs.filter(tx__isnull=True),
         )
+
         context['staged_txs_formset'] = txs_formset
-        return self.render_to_response(context)
+        context['imported_txs'] = stx_qs.filter(tx__isnull=False)
+        return context
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        job_model = self.object
+        if not job_model.ledger.bankaccountmodel.cash_account:
+            messages.add_message(request,
+                                 messages.ERROR,
+                                 f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}.'
+                                 f'Importing has been disabled until Cash Account is assigned.'
+                                 , extra_tags='is-danger')
+        return response
 
     def post(self, request, **kwargs):
-        context = self.get_context_data(**kwargs)
-
-        qs = self.get_queryset()
-
+        job_model = self.get_object()
+        self.object = job_model
         txs_formset = StagedTransactionModelFormSet(request.POST,
                                                     user_model=self.request.user,
-                                                    entity_slug=kwargs['entity_slug'],
-                                                    queryset=qs)
+                                                    entity_slug=kwargs['entity_slug'])
         if txs_formset.is_valid():
             txs_formset.save()
             staged_to_import = [
@@ -199,8 +215,6 @@ class DataImportJobStagedTxsListView(TemplateView):
                     entity_slug=self.kwargs['entity_slug'],
                     user_model=self.request.user
                 ).select_related(
-                    'ledger',
-                    'ledger__bankaccountmodel',
                     'ledger__bankaccountmodel__cash_account'
                 ).get(uuid__exact=self.kwargs['job_pk'])
 
@@ -221,18 +235,19 @@ class DataImportJobStagedTxsListView(TemplateView):
                 )
 
                 staged_tx_models = [stx['uuid'] for stx in staged_to_import]
-                staged_tx_models = StagedTransactionModel.objects.bulk_update(staged_tx_models, fields=['tx'])
+                StagedTransactionModel.objects.bulk_update(staged_tx_models, fields=['tx'])
 
-            context['staged_txs_formset'] = txs_formset
+            # txs_formset.save()
             messages.add_message(request,
                                  messages.SUCCESS,
                                  'Successfully saved transactions.',
                                  extra_tags='is-success')
             return self.get(request, **kwargs)
         else:
+            context = self.get_context_data(**kwargs)
             context['staged_txs_formset'] = txs_formset
             messages.add_message(request,
                                  messages.ERROR,
                                  'Hmmm, this doesn\'t add up!. Check your math!',
                                  extra_tags='is-danger')
-        return self.render_to_response(context)
+            return self.render_to_response(context)

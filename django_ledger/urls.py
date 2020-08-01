@@ -130,7 +130,7 @@ urlpatterns = [
          views.DataImportOFXFileView.as_view(),
          name='data-import-ofx'),
     path('data-import/<slug:entity_slug>/jobs/<uuid:job_pk>/txs/',
-         views.DataImportJobStagedTxsListView.as_view(),
+         views.DataImportJobDetailView.as_view(),
          name='data-import-job-txs'),
 
     # Dashboard ----

@@ -72,7 +72,12 @@ def data_import_job_list_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/data_import_job_txs_table.html', takes_context=True)
-def data_import_job_txs_table(context):
+def data_import_job_txs_pending(context):
+    return context
+
+
+@register.inclusion_tag('django_ledger/tags/data_import_job_txs_imported.html', takes_context=True)
+def data_import_job_txs_imported(context):
     return context
 
 
