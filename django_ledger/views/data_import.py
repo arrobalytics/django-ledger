@@ -175,8 +175,8 @@ class DataImportJobDetailView(DetailView):
             messages.add_message(self.request,
                                  messages.ERROR,
                                  f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}.'
-                                 f'Importing has been disabled until Cash Account is assigned.'
-                                 , extra_tags='is-danger')
+                                 f'Importing has been disabled until Cash Account is assigned.',
+                                 extra_tags='is-danger')
 
         stx_qs = job_model.stagedtransactionmodel_set.all()
         stx_qs = stx_qs.select_related('tx__account').order_by('-date_posted', '-amount')
@@ -187,7 +187,7 @@ class DataImportJobDetailView(DetailView):
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-            cash_account=cash_account_model,
+            exclude_accounts=[cash_account_model],
             queryset=stx_qs.filter(tx__isnull=True),
         )
 
