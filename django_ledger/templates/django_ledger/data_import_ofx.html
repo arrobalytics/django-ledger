@@ -6,17 +6,48 @@
 {% block content %}
     <div class="section">
         <div class="container">
-            <div class="columns">
-                <div class="column">
+            <div class="columns is-centered">
+                <div class="column is-8-tablet">
                     <div class="box">
-                        <form action="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}"
-                              enctype="multipart/form-data"
-                              method="post">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button class="button is-primary"
-                                    type="submit">{% trans 'Upload' %}</button>
-                        </form>
+                        <div class="columns is-centered">
+                            <div class="column is-8-tablet ">
+                                <form action="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}"
+                                      enctype="multipart/form-data"
+                                      method="post">
+                                    {% csrf_token %}
+
+                                    <div class="field">
+                                        <div class="control">
+                                            <div id="file-js-django-ledger" class="file has-name">
+                                                <label class="file-label">
+                                                    {{ form.ofx_file }}
+                                                    <span class="file-cta">
+                                                        <span class="file-icon">
+                                                            <i class="mdi mdi-upload"></i>
+                                                          </span>
+                                                          <span class="file-label">
+                                                            {{ form.ofx_file.label }}
+                                                          </span>
+                                                        </span>
+                                                    <span class="file-name">No file uploaded</span>
+                                            </div>
+                                        </div>
+
+
+                                        </label>
+                                    </div>
+
+                                    <div class="field">
+                                        <div class="control">
+                                            <button class="button is-dark is-fullwidth is-outlined"
+                                                    type="submit">{% trans 'Upload' %}</button>
+
+                                        </div>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -24,4 +55,16 @@
         </div>
     </div>
 
+{% endblock %}
+
+{% block script_bottom %}
+    <script>
+        const fileInput = document.querySelector('#file-js-django-ledger input[type=file]');
+        fileInput.onchange = () => {
+            if (fileInput.files.length > 0) {
+                const fileName = document.querySelector('#file-js-django-ledger .file-name');
+                fileName.textContent = fileInput.files[0].name;
+            }
+        }
+    </script>
 {% endblock %}

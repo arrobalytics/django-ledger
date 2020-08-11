@@ -167,6 +167,17 @@ class DataImportJobDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         job_model: ImportJobModel = self.object
         context['header_title'] = job_model.ledger.bankaccountmodel
+
+        job_model = self.object
+        bank_account_model = job_model.ledger.bankaccountmodel
+        cash_account_model = job_model.ledger.bankaccountmodel.cash_account
+        if not cash_account_model:
+            messages.add_message(self.request,
+                                 messages.ERROR,
+                                 f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}.'
+                                 f'Importing has been disabled until Cash Account is assigned.'
+                                 , extra_tags='is-danger')
+
         stx_qs = job_model.stagedtransactionmodel_set.all()
         stx_qs = stx_qs.select_related('tx__account').order_by('-date_posted', '-amount')
 
@@ -176,23 +187,15 @@ class DataImportJobDetailView(DetailView):
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
+            cash_account=cash_account_model,
             queryset=stx_qs.filter(tx__isnull=True),
         )
 
         context['staged_txs_formset'] = txs_formset
         context['imported_txs'] = stx_qs.filter(tx__isnull=False)
+        context['cash_account_model'] = cash_account_model
+        context['bank_account_model'] = bank_account_model
         return context
-
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        job_model = self.object
-        if not job_model.ledger.bankaccountmodel.cash_account:
-            messages.add_message(request,
-                                 messages.ERROR,
-                                 f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}.'
-                                 f'Importing has been disabled until Cash Account is assigned.'
-                                 , extra_tags='is-danger')
-        return response
 
     def post(self, request, **kwargs):
         job_model = self.get_object()
