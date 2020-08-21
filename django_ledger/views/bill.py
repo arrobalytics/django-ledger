@@ -40,9 +40,11 @@ class BillModelCreateView(CreateView):
         return form
 
     def form_valid(self, form):
-        form.instance = new_bill_protocol(bill_model=form.instance,
-                                          entity_slug=self.kwargs['entity_slug'],
-                                          user_model=self.request.user)
+        form.instance = new_bill_protocol(
+            bill_model=form.instance,
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
         return super().form_valid(form=form)
 
     def get_success_url(self):

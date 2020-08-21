@@ -72,20 +72,18 @@ class StagedTransactionModelForm(ModelForm):
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, exclude_accounts=None, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, exclude_account, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        self.IMPORT_DISABLED = not exclude_accounts
-        self.CASH_ACCOUNT = exclude_accounts
+        self.IMPORT_DISABLED = not exclude_account
+        self.CASH_ACCOUNT = exclude_account
 
         accounts_qs = AccountModel.on_coa.for_entity_available(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
         )
-
-        if exclude_accounts:
-            accounts_qs = accounts_qs.exclude(uuid__in=[m.uuid for m in exclude_accounts])
+        accounts_qs = accounts_qs.exclude(uuid__exact=exclude_account.uuid)
 
         import_job_qs = ImportJobModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,

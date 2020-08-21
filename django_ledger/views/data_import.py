@@ -187,7 +187,7 @@ class DataImportJobDetailView(DetailView):
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-            exclude_accounts=[cash_account_model],
+            exclude_account=cash_account_model,
             queryset=stx_qs.filter(tx__isnull=True),
         )
 

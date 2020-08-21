@@ -33,17 +33,15 @@ def generate_invoice_number(length=10):
 
 class InvoiceModelManager(models.Manager):
 
-    def for_user(self, user_model):
-        return self.get_queryset().filter(
+    def for_entity(self, entity_slug, user_model):
+        qs = self.get_queryset().filter(
             Q(ledger__entity__admin=user_model) |
             Q(ledger__entity__managers__in=[user_model])
         )
-
-    def on_entity(self, entity):
-        if isinstance(entity, EntityModel):
-            return self.get_queryset().filter(ledger__entity=entity)
-        elif isinstance(entity, str):
-            return self.get_queryset().filter(ledger__entity__slug__exact=entity)
+        if isinstance(entity_slug, EntityModel):
+            return qs.filter(ledger__entity=entity_slug)
+        elif isinstance(entity_slug, str):
+            return qs.filter(ledger__entity__slug__exact=entity_slug)
 
 
 class InvoiceModelAbstract(ProgressibleMixIn,

@@ -64,4 +64,5 @@ Make sure to select the appropriate option when creating new entities.
   
 __This project is actively looking for contributors. Any financial and/or
 accounting experience is a big plus.__ \
-Want to contribute? Don't hesitate to contact me.
+If you have prior accounting experience and want to contribute, 
+don't hesitate to contact me.

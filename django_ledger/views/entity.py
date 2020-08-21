@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
@@ -14,20 +15,15 @@ from django_ledger.models.utils import populate_default_coa
 class EntityModelListView(ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('my entities')
-        context['header_title'] = _('my entities')
-        return context
+    PAGE_TITLE = _('My Entities')
+    extra_context = {
+        'header_title': PAGE_TITLE,
+        'page_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
-        return EntityModel.objects.for_user(user_model=self.request.user)
+        return EntityModel.objects.for_user(
+            user_model=self.request.user)
 
 
 class EntityModelDetailVew(DetailView):
@@ -38,7 +34,7 @@ class EntityModelDetailVew(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = self.object.name
-        context['header_title'] = _('entity') + ': ' + self.object.name
+        context['header_title'] = _('Entity') + ': ' + self.object.name
         entity = self.object
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
@@ -66,16 +62,11 @@ class EntityModelDetailVew(DetailView):
 class EntityModelCreateView(CreateView):
     template_name = 'django_ledger/entity_create.html'
     form_class = EntityModelCreateForm
+    PAGE_TITLE = _('Create Entity')
     extra_context = {
-        'header_title': _('create entity'),
-        'page_title': _('create entity')
+        'header_title': PAGE_TITLE,
+        'page_title': PAGE_TITLE
     }
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('create entity')
-        context['header_title'] = _('create entity')
-        return context
 
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
@@ -192,7 +183,8 @@ class SetDateView(RedirectView):
 
         if as_of_form.is_valid():
             session_item = get_date_filter_session_key(entity_slug)
-            new_date_filter = as_of_form.cleaned_data['date'].strftime('%Y-%m-%d')
+            new_aware_date = make_aware(as_of_form.cleaned_data['date'])
+            new_date_filter = new_aware_date.strftime('%Y-%m-%d')
             request.session[session_item] = new_date_filter
 
         self.url = next_url

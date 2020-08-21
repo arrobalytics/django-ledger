@@ -1,10 +1,9 @@
 {% load django_ledger %}
 
 <div class="table-container">
-    <table class="table is-fullwidth">
+    <table class="table is-fullwidth is-narrow is-striped">
         <thead>
         <tr>
-            <th>Edit</th>
             <th>Invoice Number</th>
             <th>Bill To</th>
             <th>Amount</th>
@@ -12,21 +11,26 @@
             <th>Due Date</th>
             <th>Created</th>
             <th>Last Updated</th>
+            <th>Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for invoice in invoices %}
             <tr>
-                <td><a class="button is-warning is-small"
-                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}">Edit</a>
-                </td>
                 <td>{{ invoice.invoice_number }}</td>
-                <td>{{ invoice.bill_to }}</td>
+                <td>{{ invoice.invoice_to }}</td>
                 <td>${{ invoice.amount_due | cs_thousands }}</td>
                 <td>${{ invoice.amount_paid | cs_thousands }}</td>
                 <td>{{ invoice.due_date }}</td>
                 <td>{{ invoice.created }}</td>
                 <td>{{ invoice.updated }}</td>
+                <td>
+                    {# todo: Develop an Invoice Detail View... #}
+                    <a class="button is-dark is-small"
+                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}">View</a>
+                    <a class="button is-warning is-small"
+                       href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}">Edit</a>
+                </td>
             </tr>
         {% endfor %}
         </tbody>

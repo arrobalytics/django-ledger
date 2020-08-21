@@ -1,7 +1,5 @@
-from django.http import Http404
 from django.urls import reverse
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy as _l
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm

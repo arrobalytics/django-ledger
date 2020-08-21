@@ -1,6 +1,6 @@
 from django.contrib import messages
-from django.urls import reverse
 from django.views.generic import TemplateView, ListView
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.transactions import TransactionModelFormSet
 from django_ledger.models.transactions import TransactionModel
@@ -10,6 +10,11 @@ from django_ledger.models.transactions import TransactionModel
 # todo: rename to JE Transactions???...
 class TXSJournalEntryView(TemplateView):
     template_name = 'django_ledger/txs.html'
+    PAGE_TITLE = _('Edit Transactions')
+    extra_context = {
+        'header_title': PAGE_TITLE,
+        'page_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
         return TransactionModel.objects.for_journal_entry(
@@ -18,12 +23,6 @@ class TXSJournalEntryView(TemplateView):
             je_pk=self.kwargs['je_pk'],
             ledger_pk=self.kwargs['ledger_pk']
         ).order_by('account__code')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Edit Transactions'
-        context['header_title'] = 'Edit Transactions'
-        return context
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
