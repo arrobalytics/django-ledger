@@ -18,7 +18,7 @@ class InvoiceModelListView(ListView):
 
     def get_queryset(self):
         entity_slug = self.kwargs['entity_slug']
-        return InvoiceModel.objects.on_entity(entity=entity_slug)
+        return InvoiceModel.objects.for_entity(entity_slug=entity_slug)
 
 
 class InvoiceModelCreateView(CreateView):

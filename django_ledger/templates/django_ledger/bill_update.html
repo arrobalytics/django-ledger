@@ -61,7 +61,8 @@
                                                 onclick="document.getElementById('django-ledger-bill-xref-field').classList.remove('is-hidden')"
                                                 class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
                                     </h4>
-
+                                    <h4 class="has-text-weight-light">Make Bill
+                                        Progressible: {{ form.progressible }}</h4>
 
                                     <div class="field is-hidden"
                                          id="django-ledger-bill-xref-field">
@@ -111,14 +112,6 @@
 
 
                                         <div class="field">
-                                            <label for="{{ form.paid.id_for_progressible }}"
-                                                   class="label is-small">
-                                                {{ form.progressible }}
-                                                {{ form.progressible.label }}</label>
-
-                                        </div>
-
-                                        <div class="field">
                                             <label class="label is-small"
                                                    for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
                                             <div class="control">
@@ -128,10 +121,11 @@
 
 
                                         <button type="submit"
-                                                class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
+                                                class="button is-primary is-outlined is-fullwidth djetler_my_1">
+                                            {% trans 'Save' %}
                                         </button>
                                         <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
-                                           class="button is-small is-dark is-fullwidth">Back</a>
+                                           class="button is-small is-dark is-fullwidth">{% trans 'Done' %}</a>
                                     </form>
 
                                 </div>

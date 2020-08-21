@@ -6,7 +6,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Django Ledger | {{ page_title | title }}</title>
+    {# todo: pull entity name from session if available... #}
+    <title>Django Ledger | {{ page_title }}</title>
     <script src="{% static 'django_ledger/bundle/styles.bundle.js' %}"></script>
 </head>
 

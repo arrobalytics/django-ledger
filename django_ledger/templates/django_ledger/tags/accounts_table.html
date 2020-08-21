@@ -1,120 +1,120 @@
-<h1 class="is-size-2">Asset Accounts</h1>
-<table class="table is-fullwidth is-striped">
-    <thead>
-    <tr>
-        <th>Role</th>
-        <th>Account Code</th>
-        <th>Account Name</th>
-        <th>Balance Type</th>
-        <th>Active</th>
-        <th>Locked</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for account in accounts %}
-        {% if account.role_bs == 'assets' %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-striped is-narrow">
+        <tbody>
+        <tr>
+            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Asset Accounts' %}</h2></td>
+        </tr>
+        <tr>
+            <th>Role</th>
+            <th>Account Code</th>
+            <th>Account Name</th>
+            <th>Balance Type</th>
+            <th>Active</th>
+            <th>Locked</th>
+            {# todo: make actions a drop down???... #}
+            <th>Actions</th>
+        </tr>
+
+
+        {% for account in accounts_by_role_bs.assets %}
             <tr>
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i></span>
+                        <span class="icon"><i
+                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                        ></i></span>
                 </td>
                 <td class="has-text-centered">{% if account.active %}
                     <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
                 <td class="has-text-centered">{% if account.locked %}
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
-                    <a class="button is-small is-warning is-outlined"
+                    <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info is-outlined"
+                    <a class="button is-small is-info"
                        href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
-        {% endif %}
-    {% endfor %}
-    </tbody>
-</table>
-<h1 class="is-size-2">Liability Accounts</h1>
-<table class="table is-fullwidth">
-    <thead>
-    <tr>
-        <th>Role</th>
-        <th>Account Code</th>
-        <th>Account Name</th>
-        <th>Balance Type</th>
-        <th>Active</th>
-        <th>Locked</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for account in accounts %}
-        {% if account.role_bs == 'liabilities' %}
+        {% endfor %}
+
+        <tr>
+            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Liability Accounts' %}</h2></td>
+        </tr>
+        <tr>
+            <th>Role</th>
+            <th>Account Code</th>
+            <th>Account Name</th>
+            <th>Balance Type</th>
+            <th>Active</th>
+            <th>Locked</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for account in accounts_by_role_bs.liabilities %}
             <tr>
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i></span>
+                        <span class="icon"><i
+                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                        ></i></span>
                 </td>
                 <td class="has-text-centered">{% if account.active %}
                     <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
                 <td class="has-text-centered">{% if account.locked %}
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
-                    <a class="button is-small is-warning is-outlined"
+                    <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info is-outlined"
+                    <a class="button is-small is-info"
                        href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
-        {% endif %}
-    {% endfor %}
-    </tbody>
-</table>
-<h1 class="is-size-2">Equity Accounts</h1>
-<table class="table is-fullwidth">
-    <thead>
-    <tr>
-        <th>Role</th>
-        <th>Account Code</th>
-        <th>Account Name</th>
-        <th>Balance Type</th>
-        <th>Active</th>
-        <th>Locked</th>
-        <th>Actions</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for account in accounts %}
-        {% if account.role_bs == 'equity' %}
+        {% endfor %}
+
+        <tr>
+            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Equity Accounts' %}</h2></td>
+        </tr>
+        <tr>
+            <th>Role</th>
+            <th>Account Code</th>
+            <th>Account Name</th>
+            <th>Balance Type</th>
+            <th>Active</th>
+            <th>Locked</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for account in accounts_by_role_bs.equity %}
             <tr>
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i></span>
+                        <span class="icon"><i
+                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
+                        ></i></span>
                 </td>
                 <td class="has-text-centered">{% if account.active %}
                     <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
                 <td class="has-text-centered">{% if account.locked %}
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
-                    <a class="button is-small is-warning is-outlined"
+                    <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info is-outlined"
+                    <a class="button is-small is-info"
                        href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
-        {% endif %}
-    {% endfor %}
-    </tbody>
-</table>
+        {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+
+

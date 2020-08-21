@@ -25,12 +25,21 @@ class BillModelManager(models.Manager):
             Q(ledger__entity__managers__in=[user_model])
         )
 
-    # todo: rename to for_entity & add user_model...
-    def on_entity(self, entity):
-        if isinstance(entity, EntityModel):
-            return self.get_queryset().filter(ledger__entity=entity)
-        elif isinstance(entity, str):
-            return self.get_queryset().filter(ledger__entity__slug__exact=entity)
+    def for_entity(self, entity_slug, user_model):
+        if isinstance(entity_slug, EntityModel):
+            return self.get_queryset().filter(
+                Q(ledger__entity=entity_slug) & (
+                        Q(ledger__entity__admin=user_model) |
+                        Q(ledger__entity__managers__in=[user_model])
+                )
+            )
+        elif isinstance(entity_slug, str):
+            return self.get_queryset().filter(
+                Q(ledger__entity__slug__exact=entity_slug) & (
+                        Q(ledger__entity__admin=user_model) |
+                        Q(ledger__entity__managers__in=[user_model])
+                )
+            )
 
 
 class BillModelAbstract(ProgressibleMixIn,

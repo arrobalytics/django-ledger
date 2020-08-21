@@ -18,7 +18,10 @@ class BillModelListView(ListView):
 
     def get_queryset(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return BillModel.objects.on_entity(entity=entity_slug)
+        return BillModel.objects.for_entity(
+            entity_slug=entity_slug,
+            user_model=self.request.user
+        )
 
 
 class BillModelCreateView(CreateView):

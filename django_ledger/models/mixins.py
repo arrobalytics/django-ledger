@@ -169,7 +169,7 @@ class ProgressibleMixIn(models.Model):
             account = AccountModel.on_coa.for_entity_available(
                 user_model=user_model,
                 entity_slug=entity_slug
-            ).get(id=account_id)
+            ).get(uuid__exact=account_id)
         except ObjectDoesNotExist:
             raise ValidationError(f'Account ID: {account_id} may be locked or unavailable...')
         return {

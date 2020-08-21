@@ -1,5 +1,6 @@
 from datetime import datetime
 from random import randint
+from itertools import groupby
 
 from django import template
 
@@ -128,8 +129,10 @@ def bill_table(context):
 
 @register.inclusion_tag('django_ledger/tags/accounts_table.html', takes_context=True)
 def accounts_table(context):
+    accounts_gb = {k: list(gb) for k, gb in groupby(context['accounts'], key=lambda acc: acc.role_bs)}
     return {
         'accounts': context['accounts'],
+        'accounts_by_role_bs': accounts_gb,
         'entity_slug': context['view'].kwargs['entity_slug'],
         'coa_slug': context['view'].kwargs['coa_slug'],
     }
