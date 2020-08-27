@@ -18,7 +18,10 @@ class InvoiceModelListView(ListView):
 
     def get_queryset(self):
         entity_slug = self.kwargs['entity_slug']
-        return InvoiceModel.objects.for_entity(entity_slug=entity_slug)
+        return InvoiceModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=entity_slug
+        )
 
 
 class InvoiceModelCreateView(CreateView):
@@ -32,9 +35,10 @@ class InvoiceModelCreateView(CreateView):
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
-        form = InvoiceModelCreateForm(entity_slug=entity_slug,
-                                      user_model=self.request.user,
-                                      **self.get_form_kwargs())
+        form = InvoiceModelCreateForm(
+            entity_slug=entity_slug,
+            user_model=self.request.user,
+            **self.get_form_kwargs())
         return form
 
     def form_valid(self, form):
@@ -85,9 +89,7 @@ class InvoiceModelUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        qs = InvoiceModel.objects.for_user(
-            user_model=self.request.user).filter(
-            ledger__entity__slug__exact=entity_slug
+        return InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         ).select_related('ledger')
-        return qs

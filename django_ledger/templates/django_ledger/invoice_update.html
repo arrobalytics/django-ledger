@@ -24,11 +24,11 @@
                                 <div class="content">
                                     <h1 class="has-text-weight-light">{{ object.invoice_to }}</h1>
                                     <p>
-                                        {{ object.address_1 }}<br>
-                                        {{ object.address_2 }}<br>
-                                        {{ object.phone }}<br>
-                                        {{ object.email }}<br>
-                                        {{ object.website }}<br>
+                                        {% if invoice.address_1 %}{{ invoice.address_1 }}{% endif %}<br>
+                                        {% if invoice.address_2 %}{{ invoice.address_2 }}{% endif %}<br>
+                                        {% if invoice.phone %}{{ invoice.phone }}{% endif %}<br>
+                                        {% if invoice.email %}{{ invoice.email }}{% endif %}<br>
+                                        {% if invoice.website %}{{ invoice.website }}{% endif %}<br>
                                     </p>
                                 </div>
 
@@ -43,13 +43,11 @@
                             <div class="card-content">
                                 <div class="content">
                                     <h3 class="has-text-weight-light">Invoice Amount:
-                                        <strong>${{ object.amount_due | cs_thousands }}</strong>
-                                        <br>
+                                        <strong>${{ invoice.amount_due | cs_thousands }}</strong>
                                         <button type="button"
                                                 onclick="document.getElementById('django-ledger-invoice-amount-field').classList.remove('is-hidden')"
-                                                class="button is-small is-info is-outlined">{% trans 'Change' %}</button>
+                                                class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
                                     </h3>
-
                                     <div class="field is-hidden"
                                          id="django-ledger-invoice-amount-field">
                                         <div class="control">
@@ -59,6 +57,9 @@
 
                                     <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
                                     <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
+                                    <h4 class="has-text-weight-light">Make Invoice
+                                        Progressible: {{ form.progressible }}</h4>
+
                                 </div>
 
                             </div>
@@ -98,14 +99,6 @@
                                             </div>
                                         </div>
 
-
-                                        <div class="field">
-                                            <label for="{{ form.paid.id_for_progressible }}"
-                                                   class="label is-small">
-                                                {{ form.progressible }}
-                                                {{ form.progressible.label }}</label>
-
-                                        </div>
 
                                         <div class="field">
                                             <label class="label is-small"
