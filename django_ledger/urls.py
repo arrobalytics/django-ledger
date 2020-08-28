@@ -16,15 +16,15 @@ urlpatterns = [
     path('entity/set-default/',
          views.SetDefaultEntityView.as_view(),
          name='entity-set-default'),
-    path('entity/<slug:entity_slug>/',
-         views.EntityModelDetailVew.as_view(),
+    path('entity/<slug:entity_slug>/dashboard/',
+         views.EntityModelDashboardView.as_view(),
          name='entity-detail'),
+    path('entity/<slug:entity_slug>/manage/',
+         views.EntityModelManageView.as_view(),
+         name='entity-manage'),
     path('entity/<slug:entity_slug>/set-date/',
          views.SetDateView.as_view(),
          name='entity-set-date'),
-    path('entity/<slug:entity_slug>/update/',
-         views.EntityModelUpdateView.as_view(),
-         name='entity-update'),
 
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',
@@ -134,11 +134,13 @@ urlpatterns = [
          name='data-import-job-txs'),
 
     # Dashboard ----
-    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('home/', views.HomeView.as_view(), name='home'),
 
     # Auth Views ---
     path('accounts/login/', views.DjangoLedgerLoginView.as_view(), name='login'),
     path('accounts/logout/', views.DjangoLedgerLogoutView.as_view(), name='logout'),
 
-    path('', views.RootUrlView.as_view(), name='root-url')
+    path('', views.RootUrlView.as_view(), name='root-url'),
+
+    path('data/', views.TestJsonData.as_view(), name='test-json')
 ]

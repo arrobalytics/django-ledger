@@ -319,8 +319,12 @@ class IOMixIn:
             accounts=accounts
         )
 
-        roles_mgr = RolesManager(tx_digest=digest, roles=process_roles, groups=process_groups)
-        digest = roles_mgr.generate()
+        if process_roles or process_groups:
+            roles_mgr = RolesManager(
+                tx_digest=digest,
+                roles=process_roles,
+                groups=process_groups)
+            digest = roles_mgr.generate()
 
         if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=digest)

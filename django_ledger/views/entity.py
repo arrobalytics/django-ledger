@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
+from random import randint
+
 from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
-from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms.app_filters import EndDateFilterForm, EntityFilterForm
+from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
@@ -26,23 +28,22 @@ class EntityModelListView(ListView):
             user_model=self.request.user)
 
 
-class EntityModelDetailVew(DetailView):
+class EntityModelDashboardView(DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/entity_detail.html'
+    template_name = 'django_ledger/entity_dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _('Entity') + ': ' + self.object.name
         entity = self.object
+        context['page_title'] = entity.name
+        context['header_title'] = _('Dashboard') + ': ' + entity.name
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-
-        # entity_slug = self.kwargs.get('entity_slug')
-        user = self.request.user
-
-        digest = entity.digest(user_model=user,
+        date_filter = datetime.fromisoformat(date_filter)
+        context['date_filter'] = date_filter - timedelta(days=1)
+        context['profit_chart_id'] = f'djetler-profit-chart-{randint(10000, 99999)}'
+        digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
                                process_ratios=True,
                                process_roles=True,
@@ -69,26 +70,20 @@ class EntityModelCreateView(CreateView):
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:entity-list')
+        return reverse('django_ledger:dashboard')
 
     def form_valid(self, form):
         user = self.request.user
-        if user.is_authenticated:
-            form.instance.admin = user
-            self.object = form.save()
-
-            use_quickstart = form.cleaned_data.get('quickstart')
-            if use_quickstart:
-                quickstart(user_model=self.request.user,
-                           entity_model=form.instance)
-
-            create_coa = form.cleaned_data.get('populate_default_coa')
-            if create_coa and not use_quickstart:
-                populate_default_coa(entity_model=self.object)
+        form.instance.admin = user
+        entity = form.save()
+        default_coa = form.cleaned_data.get('default_coa')
+        if default_coa:
+            populate_default_coa(entity_model=entity)
+        self.object = entity
         return super().form_valid(form)
 
 
-class EntityModelUpdateView(UpdateView):
+class EntityModelManageView(UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -96,8 +91,8 @@ class EntityModelUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('update entity: ') + self.object.name
-        context['header_title'] = _('update entity: ') + self.object.name
+        context['page_title'] = _('Manage Entity: ') + self.object.name
+        # context['header_title'] = _('Manage Entity: ') + self.object.name
         return context
 
     def get_success_url(self):
@@ -178,14 +173,20 @@ class SetDateView(RedirectView):
 
     def post(self, request, *args, **kwargs):
         entity_slug = kwargs['entity_slug']
-        as_of_form = EndDateFilterForm(data=request.POST, form_id=None)
+        as_of_form = AsOfDateFilterForm(data=request.POST, form_id=None)
         next_url = request.GET['next']
 
         if as_of_form.is_valid():
-            session_item = get_date_filter_session_key(entity_slug)
-            new_aware_date = make_aware(as_of_form.cleaned_data['date'])
-            new_date_filter = new_aware_date.strftime('%Y-%m-%d')
-            request.session[session_item] = new_date_filter
-
+            as_of_date = as_of_form.cleaned_data['date']
+            as_of_dttm = datetime(
+                year=as_of_date.year,
+                month=as_of_date.month,
+                day=as_of_date.day,
+                hour=0)
+            as_of_dttm += timedelta(days=1)
+            aware_dttm = make_aware(as_of_dttm)
+            new_dttm_filter = aware_dttm.isoformat()
+            session_key = get_date_filter_session_key(entity_slug)
+            request.session[session_key] = new_dttm_filter
         self.url = next_url
         return super().post(request, *args, **kwargs)

@@ -32,6 +32,9 @@ class EntityManagementInLine(admin.TabularInline):
 
 
 class EntityModelAdmin(admin.ModelAdmin):
+    prepopulated_fields = {
+        'slug': ('name',)
+    }
     inlines = [
         EntityManagementInLine
     ]

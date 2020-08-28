@@ -5,6 +5,66 @@
 
 {% block content %}
 
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">Financial Overview</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+
+                <div class="column is-6-tablet">
+                    <div class="box content djetler-box-green">
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
+                        <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</h1>
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
+                        <h1 class="has-text-centered">
+                            ${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</h1>
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
+                        <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</h1>
+                        <h4 class="has-text-centered has-text-weight-light">{% trans 'Cash' %}</h4>
+                        <h3 class="has-text-centered">${{ tx_digest.roles.ASSET_CA_CASH | cs_thousands }}</h3>
+                    </div>
+                </div>
+
+                <div class="column is-6-tablet">
+                    <div class="box content djetler-box-yellow">
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
+                        <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_INCOME | cs_thousands }}</h1>
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
+                        <h1 class="has-text-centered">
+                            ${{ tx_digest.groups.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
+                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
+                        <h1 class="has-text-centered">${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</h1>
+                        <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
+                        <h3 class="has-text-centered">{{ date_filter | date }}</h3>
+                    </div>
+                </div>
+
+                <div class="column is-12">
+                    {% profit_chart profit_chart_id %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">Payables</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+
+
     <section class="section">
         <div class="container">
             <div class="tile is-ancestor">
@@ -87,9 +147,11 @@
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Reports' %}</h2>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">Balance Sheet</a>
+                           href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">Balance
+                            Sheet</a>
                         <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">Income Statement</a>
+                           href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">Income
+                            Statement</a>
 
                         <h2 class="has-text-centered has-text-weight-light">{% trans 'Entity' %}</h2>
                         <a class="button is-info is-outlined is-fullwidth djetler_my_1"
@@ -98,7 +160,7 @@
                         <a class="button is-danger is-outlined is-fullwidth djetler_my_1"
                            href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">Import</a>
                         <a class="button is-info is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a>
+                           href="{% url 'django_ledger:entity-manage' entity_slug=view.kwargs.entity_slug %}">Manage</a>
 
                     </div>
                 </div>
@@ -109,4 +171,12 @@
     </section>
 
 {% endblock %}
+
+{% block script_bottom %}
+    {{ block.super }}
+    <script>
+        djLedger.renderProfitChart("{{ profit_chart_id }}")
+    </script>
+{% endblock %}
+
 

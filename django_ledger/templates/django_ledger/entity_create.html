@@ -1,28 +1,100 @@
 {% extends 'django_ledger/base.html' %}
 {% load i18n %}
 {% load static %}
+{% load django_ledger %}
 
 {% block content %}
 
     <section class="section">
         <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-8-tablet is-6-desktop">
-                    <div class="box">
-                        <form method="post" action="{% url 'django_ledger:entity-create' %}">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button class="button is-small is-info is-normal is-fullwidth djetler_my_1"
-                                    type="submit">Create
-                            </button>
-                            <a class="button is-small is-dark is-fullwidth is-outlined"
-                               href="{% url 'django_ledger:dashboard' %}"
-                               type="submit">Back</a>
-                        </form>
+            <form action="{% url 'django_ledger:entity-create' %}"
+                  method="post">
+                <div class="columns is-multiline is-centered">
+                    {% csrf_token %}
+
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-header-title"><span class="icon"><i
+                                        class="mdi mdi-office-building"></i></span>
+                                    {% trans 'New Entity Information' %}</h2>
+                            </div>
+                            <div class="card-content">
+
+                                <div class="field">
+                                    <label for="{{ form.name.id_for_label }}" class="label">
+                                        {{ form.name.label }}
+                                    </label>
+                                    <div class="control is-large">
+                                        {{ form.name }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="{{ form.address_1.id_for_label }}" class="label">
+                                        {{ form.address_1.label }}
+                                    </label>
+                                    <div class="control">
+                                        {{ form.address_1 }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="{{ form.address_2.id_for_label }}" class="label">
+                                        {{ form.address_2.label }}
+                                    </label>
+                                    <div class="control">
+                                        {{ form.address_2 }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="{{ form.email.id_for_label }}" class="label">
+                                        {{ form.email.label }}
+                                    </label>
+                                    <div class="control">
+                                        {{ form.email }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="{{ form.phone.id_for_label }}" class="label">
+                                        {{ form.phone.label }}
+                                    </label>
+                                    <div class="control">
+                                        {{ form.phone }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="{{ form.website.id_for_label }}" class="label">
+                                        {{ form.website.label }}
+                                    </label>
+                                    <div class="control">
+                                        {{ form.website }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label" for="{{ form.default_coa.id_for_label }}">
+                                        {{ form.default_coa.label }}
+                                        {{ form.default_coa }}
+                                    </label>
+                                </div>
+                                <button type="submit"
+                                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+                                </button>
+                                <a href="{% url 'django_ledger:dashboard' %}"
+                                   class="button is-small is-dark is-fullwidth">Back</a>
+
+                            </div>
+
+                        </div>
+
                     </div>
+
                 </div>
-            </div>
+            </form>
+
         </div>
     </section>
 
 {% endblock %}
+
+
+
+

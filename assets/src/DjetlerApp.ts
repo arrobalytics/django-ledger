@@ -48,6 +48,7 @@ export class DjetlerApp {
                 f.addEventListener('change', this.setEntityFilter);
             });
         });
+
         this.endDateFilters = flatpickr(".djetler-end-date-icon-filter", this.getFlatPickrOptions(false));
         this.dateFilters = flatpickr(".djetler-date-filter", this.getFlatPickrOptions(true));
 
@@ -61,7 +62,6 @@ export class DjetlerApp {
                 }
             });
         }
-
 
     }
 
@@ -107,5 +107,8 @@ export class DjetlerApp {
         // defaultEntityForm.submit();
     }
 
+    public textLog() {
+        console.log('hello!')
+    }
 
 }

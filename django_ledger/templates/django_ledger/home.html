@@ -1,0 +1,56 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block content %}
+
+    <section class="hero is-small is-success">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title has-text-weight-light">{% trans 'My Entities' %}</h1>
+                <h2 class="subtitle">{{ request.user.get_full_name }}</h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+
+                {% for entity in entities %}
+                    <div class="column is-6-tablet">
+                        <div class="card">
+                            <div class="card-content">
+                                <p class="title has-text-weight-light">
+                                        <span class="icon"><i
+                                                class="mdi mdi-office-building"></i></span>{{ entity.name }}
+                                </p>
+                                <p class="subtitle">{{ entity.address_1 }}</p>
+                                <p>Created: {{ entity.created | timesince }} ago</p>
+                            </div>
+                            <footer class="card-footer">
+                                <a href="{{ entity.get_absolute_url }}" class="card-footer-item">Dashboard</a>
+                                <a href="{{ entity.get_manage_url }}" class="card-footer-item">Manage</a>
+{#                                <a href="#" class="card-footer-item">Manage</a>#}
+                                <a href="#" class="card-footer-item">Delete</a>
+                            </footer>
+                        </div>
+                    </div>
+
+                {% endfor %}
+
+                <div class="column is-6-tablet has-text-centered">
+                    <div class="box">
+                        <a href="{% url 'django_ledger:entity-create' %}">
+                            <span class="icon is-large">
+                                <i class="mdi mdi-48px mdi-plus-circle-outline"
+                                   style="color: #929292;"></i></span></a>
+                        <h2 class="is-size-3">{% trans 'New Entity' %}</h2>
+                    </div>
+
+
+                </div>
+
+    </section>
+
+{% endblock %}

@@ -13,11 +13,13 @@
                     </figure>
                 </div>
             </div>
-            <div class="columns is-centered">
-                <div class="column is-12 has-text-centered">
-                    <h1 class="title is-size-1 has-text-weight-light">{{ header_title }}</h1>
+            {% if header_title %}
+                <div class="columns is-centered">
+                    <div class="column is-12 has-text-centered">
+                        <h1 class="title is-size-1 has-text-weight-light">{{ header_title }}</h1>
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </section>

@@ -1,10 +1,12 @@
 {
   "dependencies": {
     "@mdi/font": "^4.8.95",
+    "@types/chart.js": "^2.9.24",
     "@types/lodash": "^4.14.149",
+    "axios": "^0.20.0",
     "bulma": "^0.9.0",
+    "chart.js": "^2.9.3",
     "flatpickr": "^4.6.3",
-    "lodash": "^4.17.15",
     "vue": "^2.6.11"
   },
   "devDependencies": {
@@ -24,5 +26,6 @@
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch"
-  }
+  },
+  "main": "../django_ledger/static/django_ledger/bundle/djetler.bundle.js"
 }
