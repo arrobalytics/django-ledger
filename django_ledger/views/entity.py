@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.utils.timezone import now
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
@@ -40,8 +41,7 @@ class EntityModelDashboardView(DetailView):
         context['header_title'] = _('Dashboard') + ': ' + entity.name
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        date_filter = datetime.fromisoformat(date_filter)
-        context['date_filter'] = date_filter - timedelta(days=1)
+        date_filter = datetime.fromisoformat(date_filter) if date_filter else now()
         context['profit_chart_id'] = f'djetler-profit-chart-{randint(10000, 99999)}'
         digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
@@ -49,6 +49,7 @@ class EntityModelDashboardView(DetailView):
                                process_roles=True,
                                process_groups=True)
         context.update(digest)
+        context['date_filter'] = date_filter - timedelta(days=1)
         return context
 
     def get_queryset(self):

@@ -305,7 +305,7 @@ class ProgressibleMixIn(models.Model):
                 je_txs.append(earnings_tx)
 
             if len(je_txs) > 0:
-                self.ledger.create_je_acc_id(
+                self.ledger.commit_txs(
                     je_date=datetime.now().date(),
                     je_txs=je_txs,
                     je_activity='op',

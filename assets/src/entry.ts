@@ -1,11 +1,11 @@
 import {DjetlerApp} from "./DjetlerApp";
-import {ProfitChart} from "./AppCharts";
+import {RevenueAndNetIncome} from "./AppCharts";
 
 
 export function startDJLApp() {
     return new DjetlerApp();
 }
 
-export function renderProfitChart(id: string) {
-    return new ProfitChart(id);
+export function renderRnNIChart(id: string) {
+    return new RevenueAndNetIncome(id);
 }

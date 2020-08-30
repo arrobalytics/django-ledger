@@ -108,3 +108,25 @@ def get_date_filter_session_key(entity_slug: str):
 def get_default_entity_session_key():
     # todo: rename this key...
     return 'dj_ledger_default_entity_id'
+
+
+# def generate_fake_data(entity: str or EntityModel, start_dt, end_dt):
+#     """
+#     TXS = List[{
+#             'account_id': Account Database UUID
+#             'tx_type': credit/debit,
+#             'amount': Decimal/Float/Integer,
+#             'description': string,
+#             'staged_tx_model': StagedTransactionModel or None
+#         }]
+#     :param entity:
+#     :return:
+#     """
+#     if not isinstance(entity, EntityModel):
+#         entity = EntityModel.objects.get(slug__exact=entity)
+#     accounts = AccountModel.on_coa.filter(
+#         Q(coa__entity=EntityModel) &
+#         Q(coa__locked=False) &
+#         Q(active=True)
+#     )
+#     accounts_gb_role =

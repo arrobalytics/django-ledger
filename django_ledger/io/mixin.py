@@ -63,15 +63,15 @@ class IOMixIn:
     """
 
     # used in migrate_states...
-    def create_je_acc_id(self,
-                         je_date: str or datetime,
-                         je_txs: list,
-                         je_activity: str,
-                         je_posted: bool = False,
-                         je_ledger=None,
-                         je_desc=None,
-                         je_origin=None,
-                         je_parent=None):
+    def commit_txs(self,
+                   je_date: str or datetime,
+                   je_txs: list,
+                   je_activity: str,
+                   je_posted: bool = False,
+                   je_ledger=None,
+                   je_desc=None,
+                   je_origin=None,
+                   je_parent=None):
         """
         Creates JE from TXS list using provided account_id.
 
@@ -129,64 +129,6 @@ class IOMixIn:
         ]
         txs_models = TransactionModel.objects.bulk_create(txs_models)
         return je_model, txs_models
-
-    # used in quickstart only...
-    # todo: can eliminate????....
-    def create_je(self,
-                  je_date: str or datetime,
-                  je_txs: list,
-                  je_activity: str,
-                  je_posted: bool = False,
-                  je_ledger=None,
-                  je_desc=None,
-                  je_origin=None,
-                  je_parent=None):
-
-        # Validates that credits/debits balance.
-        validate_tx_data(je_txs)
-
-        # Validates that the activity is valid.
-        je_activity = validate_activity(je_activity)
-
-        # todo: revisit & remove unused TxS Model Querysets.
-        if all([isinstance(self, lazy_importer.get_entity_model()),
-                not je_ledger]):
-            raise ValidationError('Must pass an instance of LedgerModel')
-
-        if not je_ledger:
-            je_ledger = self
-
-        if isinstance(self, lazy_importer.get_entity_model()):
-            account_models = self.coa.accounts.all()
-        elif isinstance(self, lazy_importer.get_ledger_model()):
-            account_models = self.entity.coa.accounts.all()
-        else:
-            account_models = self.coa.accounts.none()
-
-        txs_accounts = [acc['code'] for acc in je_txs]
-        avail_accounts = account_models.filter(code__in=txs_accounts)
-
-        je = JournalEntryModel.objects.create(
-            ledger=je_ledger,
-            description=je_desc,
-            date=je_date,
-            origin=je_origin,
-            activity=je_activity,
-            posted=je_posted,
-            parent=je_parent)
-
-        TransactionModel = lazy_importer.get_txs_model()
-        txs_list = [
-            TransactionModel(
-                account=avail_accounts.get(code__iexact=tx['code']),
-                tx_type=tx['tx_type'],
-                amount=tx['amount'],
-                description=tx['description'],
-                journal_entry=je
-            ) for tx in je_txs
-        ]
-        txs = TransactionModel.objects.bulk_create(txs_list)
-        return txs
 
     def get_je_txs(self,
                    user_model: UserModel,
