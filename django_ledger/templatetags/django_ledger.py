@@ -14,14 +14,15 @@ register = template.Library()
 
 @register.filter(name='cs_thousands')
 def cs_thousands(value):
-    if value != '':
+    if value:
         return '{0:,.2f}'.format(value)
     return value
 
 
 @register.filter(name='reverse_sing')
 def reverse_sign(value: float):
-    return -value
+    if value:
+        return -value
 
 
 @register.filter(name='last_four')

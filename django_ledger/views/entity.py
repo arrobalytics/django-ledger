@@ -3,15 +3,15 @@ from random import randint
 
 from django.urls import reverse
 from django.utils.timezone import make_aware
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
-from django.utils.timezone import now
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from django_ledger.models.utils import populate_default_coa
+from django_ledger.models.utils import populate_default_coa, generate_sample_data
 
 
 # Entity Views ----
@@ -43,8 +43,10 @@ class EntityModelDashboardView(DetailView):
         date_filter = self.request.session.get(session_date_filter_key)
         date_filter = datetime.fromisoformat(date_filter) if date_filter else now()
         context['profit_chart_id'] = f'djetler-profit-chart-{randint(10000, 99999)}'
+        by_period = self.request.GET.get('by_period')
         digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
+                               by_period=True if by_period else False,
                                process_ratios=True,
                                process_roles=True,
                                process_groups=True)
@@ -115,8 +117,8 @@ class EntityModelBalanceSheetView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('balance sheet') + ': ' + self.object.name
-        context['header_title'] = _('balance sheet') + ': ' + self.object.name
+        context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
+        context['header_title'] = context['page_title']
         return context
 
     def get_queryset(self):
@@ -191,3 +193,22 @@ class SetDateView(RedirectView):
             request.session[session_key] = new_dttm_filter
         self.url = next_url
         return super().post(request, *args, **kwargs)
+
+
+class GenerateSampleData(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:entity-detail',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            generate_sample_data(
+                entity=self.kwargs['entity_slug'],
+                start_dt=datetime(2020, 2, 1),
+                user_model=self.request.user,
+                days_fw=30 * 6
+            )
+        return super().get(request, *args, **kwargs)

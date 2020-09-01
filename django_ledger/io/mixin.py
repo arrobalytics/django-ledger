@@ -1,16 +1,17 @@
-from collections import namedtuple
 from datetime import datetime
+from itertools import groupby
 from typing import List, Set
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
+from django.db.models.functions import TruncMonth
 
-from django_ledger.models.journalentry import validate_activity
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RolesManager
 from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.journalentry import validate_activity
 
 UserModel = get_user_model()
 
@@ -44,8 +45,10 @@ class LazyImporter:
 
 lazy_importer = LazyImporter()
 
-AccountIndexTuple = namedtuple('AccountIndexTuple',
-                               field_names='account_id, role_bs, role, code, name, balance_type, balance')
+
+# AccountIndexTuple = namedtuple('AccountIndexTuple',
+#                                field_names='account_id, role_bs, role, code, name, balance_type, balance,'
+#                                            'period_year, period_month')
 
 
 def validate_tx_data(tx_data: list):
@@ -137,7 +140,8 @@ class IOMixIn:
                    role: str = None,
                    accounts: str or List[str] or Set[str] = None,
                    posted: bool = True,
-                   exclude_zero_bal: bool = True):
+                   exclude_zero_bal: bool = True,
+                   by_period: bool = False):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
@@ -190,7 +194,18 @@ class IOMixIn:
             'account__code',
             'account__name',
             'account__role',
-        ).annotate(balance=Sum('amount')).order_by('account__code')
+        )
+
+        if not by_period:
+            txs_qs = txs_qs.annotate(
+                balance=Sum('amount'),
+            ).order_by('account__uuid')
+        else:
+            txs_qs = txs_qs.annotate(
+                balance=Sum('amount'),
+                dt_idx=TruncMonth('journal_entry__date'),
+            ).order_by('account__uuid', 'journal_entry__date')
+
         return txs_qs
 
     def get_jes(self,
@@ -200,7 +215,8 @@ class IOMixIn:
                 activity: str = None,
                 role: str = None,
                 accounts: set = None,
-                signs: bool = False):
+                signs: bool = False,
+                by_period: bool = False):
 
         if equity_only:
             role = roles.GROUP_EARNINGS
@@ -210,26 +226,38 @@ class IOMixIn:
             as_of=as_of,
             activity=activity,
             role=role,
-            accounts=accounts)
+            accounts=accounts,
+            by_period=by_period)
 
-        # reverts the amount sign if the tx_type does not math the account_type.
+        # reverts the amount sign if the tx_type does not math the account_type prior to summing balances.
         for tx in je_txs:
             if tx['account__balance_type'] != tx['tx_type']:
                 tx['balance'] = -tx['balance']
 
-        acc_balances = set(AccountIndexTuple(
-            account_id=je['account__uuid'],
-            role_bs=roles.BS_ROLES.get(je['account__role']),
-            role=je['account__role'],
-            code=je['account__code'],
-            name=je['account__name'],
-            balance_type=je['account__balance_type'],
-            balance=sum(r['balance'] for r in je_txs if r['account__code'] == je['account__code'])
-        ) for je in je_txs)
-        acc_balances = [acc_idx._asdict() for acc_idx in acc_balances]
+        accounts_gb_code = groupby(je_txs, key=lambda a: (
+            a['account__uuid'],
+            a.get('dt_idx').year if by_period else None,
+            a.get('dt_idx').month if by_period else None,
+        ))
+
+        gb_digest = list()
+        for k, g in accounts_gb_code:
+            gl = list(g)
+            gb_digest.append({
+                'account_uuid': k[0],
+                'period_year': k[1],
+                'period_month': k[2],
+                'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
+                'role': gl[0]['account__role'],
+                'code': gl[0]['account__code'],
+                'name': gl[0]['account__name'],
+                'balance_type': gl[0]['account__balance_type'],
+                'balance': sum(a['balance'] for a in gl),
+                'account_list': gl
+            })
 
         if signs:
-            for acc in acc_balances:
+            for acc in gb_digest:
                 if any([
                     all([acc['role_bs'] == 'assets',
                          acc['balance_type'] == 'credit']),
@@ -238,7 +266,7 @@ class IOMixIn:
                 ]):
                     acc['balance'] = -acc['balance']
 
-        return acc_balances
+        return gb_digest
 
     def digest(self,
                user_model: UserModel,
@@ -248,24 +276,29 @@ class IOMixIn:
                process_roles: bool = True,
                process_groups: bool = False,
                process_ratios: bool = False,
-               equity_only: bool = False) -> dict:
+               equity_only: bool = False,
+               by_period: bool = False) -> dict:
 
-        accounts = self.get_jes(signs=True,
-                                user=user_model,
-                                accounts=accounts,
-                                activity=activity,
-                                as_of=as_of,
-                                equity_only=equity_only)
+        accounts_digest = self.get_jes(
+            signs=True,
+            user=user_model,
+            accounts=accounts,
+            activity=activity,
+            as_of=as_of,
+            equity_only=equity_only,
+            by_period=by_period
+        )
 
         digest = dict(
-            accounts=accounts
+            accounts=accounts_digest
         )
 
         if process_roles or process_groups:
             roles_mgr = RolesManager(
                 tx_digest=digest,
                 roles=process_roles,
-                groups=process_groups)
+                groups=process_groups,
+                by_period=by_period)
             digest = roles_mgr.generate()
 
         if process_ratios:

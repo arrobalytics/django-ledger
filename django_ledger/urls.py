@@ -25,6 +25,10 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/set-date/',
          views.SetDateView.as_view(),
          name='entity-set-date'),
+    path('entity/<slug:entity_slug>/generate-sample-data/',
+         views.GenerateSampleData.as_view(),
+         name='entity-generate-sample-data'),
+    path('entity/<slug:entity_slug>/data/', views.TestJsonData.as_view(), name='entity-data'),
 
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',
@@ -142,5 +146,4 @@ urlpatterns = [
 
     path('', views.RootUrlView.as_view(), name='root-url'),
 
-    path('data/', views.TestJsonData.as_view(), name='test-json')
 ]

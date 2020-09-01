@@ -6,6 +6,6 @@ export function startDJLApp() {
     return new DjetlerApp();
 }
 
-export function renderRnNIChart(id: string) {
-    return new RevenueAndNetIncome(id);
+export function renderRnNIChart(selector: string, entitySlug: string) {
+    return new RevenueAndNetIncome(selector, entitySlug);
 }

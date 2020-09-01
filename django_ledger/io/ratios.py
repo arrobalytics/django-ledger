@@ -8,16 +8,16 @@ class FinancialRatioManager:
         self.ACCOUNTS = tx_digest['accounts']
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = tx_digest['groups']['GROUP_QUICK_ASSETS']
-        self.assets = tx_digest['groups']['GROUP_ASSETS']
-        self.current_liabilities = tx_digest['groups']['GROUP_CURRENT_LIABILITIES']
-        self.current_assets = tx_digest['groups']['GROUP_CURRENT_ASSETS']
-        self.equity = tx_digest['groups']['GROUP_CAPITAL']
-        self.liabilities = tx_digest['groups']['GROUP_LIABILITIES']
-        self.net_income = tx_digest['groups']['GROUP_EARNINGS']
-        self.net_sales = tx_digest['groups']['GROUP_NET_SALES']
-        self.net_profit = tx_digest['groups']['GROUP_NET_PROFIT']
-        self.gross_profit = tx_digest['groups']['GROUP_GROSS_PROFIT']
+        self.quick_assets = tx_digest['group_balance']['GROUP_QUICK_ASSETS']
+        self.assets = tx_digest['group_balance']['GROUP_ASSETS']
+        self.current_liabilities = tx_digest['group_balance']['GROUP_CURRENT_LIABILITIES']
+        self.current_assets = tx_digest['group_balance']['GROUP_CURRENT_ASSETS']
+        self.equity = tx_digest['group_balance']['GROUP_CAPITAL']
+        self.liabilities = tx_digest['group_balance']['GROUP_LIABILITIES']
+        self.net_income = tx_digest['group_balance']['GROUP_EARNINGS']
+        self.net_sales = tx_digest['group_balance']['GROUP_NET_SALES']
+        self.net_profit = tx_digest['group_balance']['GROUP_NET_PROFIT']
+        self.gross_profit = tx_digest['group_balance']['GROUP_GROSS_PROFIT']
         self.RATIOS = dict()
 
     def generate(self):
