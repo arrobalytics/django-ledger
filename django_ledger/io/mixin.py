@@ -46,11 +46,6 @@ class LazyImporter:
 lazy_importer = LazyImporter()
 
 
-# AccountIndexTuple = namedtuple('AccountIndexTuple',
-#                                field_names='account_id, role_bs, role, code, name, balance_type, balance,'
-#                                            'period_year, period_month')
-
-
 def validate_tx_data(tx_data: list):
     credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
     debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')

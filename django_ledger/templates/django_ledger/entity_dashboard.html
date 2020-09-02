@@ -8,7 +8,7 @@
     <section class="hero is-primary is-bold">
         <div class="hero-body">
             <div class="container">
-                <h1 class="title">Financial Overview</h1>
+                <h1 class="title">{% trans 'Financial Overview' %}</h1>
                 <h2 class="subtitle">
                     <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
             </div>
@@ -48,7 +48,7 @@
                 </div>
 
                 <div class="column is-12">
-                    {% profit_chart profit_chart_id %}
+                    {% pnl_chart pnl_chart_id %}
                 </div>
             </div>
         </div>
@@ -57,7 +57,67 @@
     <section class="hero is-primary is-bold">
         <div class="hero-body">
             <div class="container">
-                <h1 class="title">Payables</h1>
+                <h1 class="title">{% trans 'Payables' %}</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+
+        <div class="container">
+            <div class="columns is-multiline">
+                <div class="column is-12">
+                    {% payables_chart payables_chart_id %}
+                </div>
+                {% for bill in bills %}
+                    <div class="column is-6-tablet is-4-desktop">
+                        <div class="card">
+                            <div class="card-content">
+                                <p class="title has-text-weight-light">
+                                        <span class="icon is-medium"><i
+                                                class="mdi mdi-24px mdi-calendar-month-outline is-large"></i></span>{{ bill.bill_to }}
+                                </p>
+                                <p class="subtitle">{{ bill.address_1 }}</p>
+                                {% if not bill.is_past_due %}
+                                    <p>Due in: {{ bill.due_date | timeuntil }}</p>
+                                {% else %}
+                                    <p class="has-text-danger has-text-weight-bold">Past
+                                        Due: {{ bill.due_date | timesince }} ago</p>
+                                {% endif %}
+
+                                <p class="is-size-5">Amount Open: ${{ bill.get_amount_open |cs_thousands }}</p>
+                            </div>
+                            <footer class="card-footer">
+                                <a href="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                                   class="card-footer-item">Details</a>
+                                <a href="{{ entity.get_manage_url }}" class="card-footer-item">Details</a>
+                                <a href="#" class="card-footer-item">Void</a>
+                            </footer>
+                        </div>
+                    </div>
+
+                {% endfor %}
+
+                <div class="column is-6-tablet is-4-desktop has-text-centered">
+                    <div class="box">
+                        <a href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">
+                            <span class="icon is-large">
+                                <i class="mdi mdi-48px mdi-plus-circle-outline"
+                                   style="color: #929292;"></i></span></a>
+                        <h2 class="is-size-3">{% trans 'New Bill' %}</h2>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">Receivables</h1>
                 <h2 class="subtitle">
                     <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
             </div>
@@ -158,7 +218,8 @@
 {% block script_bottom %}
     {{ block.super }}
     <script>
-        djLedger.renderRnNIChart("{{ profit_chart_id }}", "{{ view.kwargs.entity_slug }}")
+        djLedger.renderPnLChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}")
+        djLedger.renderNetPayablesChart("{{ payables_chart_id }}", "{{ view.kwargs.entity_slug }}")
     </script>
 {% endblock %}
 

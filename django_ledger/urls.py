@@ -28,7 +28,14 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/generate-sample-data/',
          views.GenerateSampleData.as_view(),
          name='entity-generate-sample-data'),
-    path('entity/<slug:entity_slug>/data/', views.TestJsonData.as_view(), name='entity-data'),
+
+    # Entity JSON Data Layer ----
+    path('entity/<slug:entity_slug>/data/pnl/',
+         views.EntityPnLDataView.as_view(),
+         name='entity-json-pnl'),
+    path('entity/<slug:entity_slug>/data/net-payables/',
+         views.EntityPayableNetDataView.as_view(),
+         name='entity-json-net-payables'),
 
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',

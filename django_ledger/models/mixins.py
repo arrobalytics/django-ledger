@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
@@ -38,6 +39,17 @@ class SlugNameMixIn(models.Model):
 class CreateUpdateMixIn(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class ContactInfoMixIn(models.Model):
+    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
+    address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
+    email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
+    website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
+    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Phone Number'))
 
     class Meta:
         abstract = True
@@ -216,16 +228,16 @@ class ProgressibleMixIn(models.Model):
 
             account_data = txs_digest['tx_digest']['accounts']
             cash_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.cash_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.cash_account_id), None
             )
             rcv_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.receivable_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.receivable_account_id), None
             )
             pay_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.payable_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.payable_account_id), None
             )
             earn_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.earnings_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.earnings_account_id), None
             )
 
             new_state = self.new_state(commit=True)
@@ -337,9 +349,8 @@ class ProgressibleMixIn(models.Model):
 
     def clean(self):
 
-        # todo: add validation based on income or expense scope...
         if not self.date:
-            self.date = datetime.now().date()
+            self.date = now().date()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
         if self.receivable_account.role != ASSET_CA_RECEIVABLES:
@@ -375,7 +386,7 @@ class ProgressibleMixIn(models.Model):
             self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
 
-            today = datetime.now().date()
+            today = now().date()
             if not self.paid_date:
                 self.paid_date = today
             if self.paid_date > today:
@@ -387,14 +398,3 @@ class ProgressibleMixIn(models.Model):
 
         if not self.migrate_allowed():
             self.update_state()
-
-
-class ContactInfoMixIn(models.Model):
-    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
-    address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
-    email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
-    website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
-    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Phone Number'))
-
-    class Meta:
-        abstract = True

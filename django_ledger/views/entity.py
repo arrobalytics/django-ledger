@@ -9,9 +9,12 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from django_ledger.models.utils import populate_default_coa, generate_sample_data
+from django_ledger.models.utils import (
+    get_date_filter_session_key, get_default_entity_session_key,
+    populate_default_coa, generate_sample_data
+)
 
 
 # Entity Views ----
@@ -39,10 +42,13 @@ class EntityModelDashboardView(DetailView):
         entity = self.object
         context['page_title'] = entity.name
         context['header_title'] = _('Dashboard') + ': ' + entity.name
+
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
         date_filter = datetime.fromisoformat(date_filter) if date_filter else now()
-        context['profit_chart_id'] = f'djetler-profit-chart-{randint(10000, 99999)}'
+
+        context['pnl_chart_id'] = f'djetler-pnl-chart-{randint(10000, 99999)}'
+        context['payables_chart_id'] = f'djetler-payables-chart-{randint(10000, 99999)}'
         by_period = self.request.GET.get('by_period')
         digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
@@ -52,6 +58,12 @@ class EntityModelDashboardView(DetailView):
                                process_groups=True)
         context.update(digest)
         context['date_filter'] = date_filter - timedelta(days=1)
+
+        context['bills'] = BillModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).filter(paid=False).order_by('-due_date')
+
         return context
 
     def get_queryset(self):
@@ -60,7 +72,8 @@ class EntityModelDashboardView(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user_model=self.request.user)
+        return EntityModel.objects.for_user(
+            user_model=self.request.user)
 
 
 class EntityModelCreateView(CreateView):

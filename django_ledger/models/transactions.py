@@ -54,8 +54,11 @@ class TransactionModelAdmin(models.Manager):
             Q(journal_entry__ledger__entity__managers__in=[user_model])
         )
 
-    # todo: include user_model param in for_entity
-    def for_entity(self, user_model, entity_model: EntityModel = None, entity_slug: str = None):
+    # todo: can change to entity only and determine which type it is?...
+    def for_entity(self,
+                   user_model,
+                   entity_model: EntityModel = None,
+                   entity_slug: str = None):
 
         if not entity_model and not entity_slug:
             raise ValueError(f'None entity_model or entity_slug were provided.')
@@ -68,8 +71,10 @@ class TransactionModelAdmin(models.Manager):
         elif entity_slug and isinstance(entity_slug, str):
             return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
-    # todo: include user_model param in for_ledger
-    def for_ledger(self, user_model, ledger_model: LedgerModel = None, ledger_pk: str = None):
+    def for_ledger(self,
+                   user_model,
+                   ledger_model: LedgerModel = None,
+                   ledger_pk: str = None):
 
         if not ledger_model and not ledger_pk:
             raise ValueError(f'None leger_model or ledger_slug were provided.')

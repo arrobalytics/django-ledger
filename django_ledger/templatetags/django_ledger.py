@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from random import randint
 from itertools import groupby
+from random import randint
 
 from django import template
 from django.utils.timezone import now
@@ -232,8 +232,16 @@ def current_end_date_filter(context):
         return (dt_filter - timedelta(days=1)).date()
 
 
-@register.inclusion_tag('django_ledger/tags/profit_chart.html')
-def profit_chart(chart_id):
+# todo: charts can only have one tag...?
+@register.inclusion_tag('django_ledger/tags/chart_container.html')
+def pnl_chart(chart_id):
+    return {
+        'chart_id': chart_id
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/chart_container.html')
+def payables_chart(chart_id):
     return {
         'chart_id': chart_id
     }

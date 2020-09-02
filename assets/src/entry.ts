@@ -1,11 +1,15 @@
 import {DjetlerApp} from "./DjetlerApp";
-import {RevenueAndNetIncome} from "./AppCharts";
+import {NetPayablesChart, PnLChart} from "./AppCharts";
 
 
 export function startDJLApp() {
     return new DjetlerApp();
 }
 
-export function renderRnNIChart(selector: string, entitySlug: string) {
-    return new RevenueAndNetIncome(selector, entitySlug);
+export function renderPnLChart(selector: string, entitySlug: string) {
+    return new PnLChart(selector, entitySlug);
+}
+
+export function renderNetPayablesChart(selector: string, entitySlug: string) {
+    return new NetPayablesChart(selector, entitySlug);
 }

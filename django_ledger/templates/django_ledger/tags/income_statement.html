@@ -1,7 +1,8 @@
 {% load django_ledger %}
+{% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth">
+    <table class="table is-fullwidth is-narrow is-striped">
         <tr>
             <th>Account Number</th>
             <th>Description</th>
@@ -9,12 +10,12 @@
             <th>Balance</th>
         </tr>
         <tr>
-            <td><h2 class="is-size-3">Income</h2></td>
+            <td><h2 class="is-size-3">{% trans 'Income' %}</h2></td>
             <td></td>
             <td></td>
             <td></td>
         </tr>
-        {% for acc in tx_digest.groups_account.GROUP_INCOME %}
+        {% for acc in tx_digest.group_account.GROUP_INCOME %}
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
@@ -36,12 +37,12 @@
 
 
         <tr>
-            <td><h2 class="is-size-3">Expenses</h2></td>
+            <td><h2 class="is-size-3">{% trans 'Expenses' %}</h2></td>
             <td></td>
             <td></td>
             <td></td>
         </tr>
-        {% for acc in tx_digest.groups_account.GROUP_EXPENSES %}
+        {% for acc in tx_digest.group_account.GROUP_EXPENSES %}
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>

@@ -56,7 +56,7 @@ class BillModelCreateForm(ModelForm):
             }),
             'bill_to': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Bill To...')
+                'placeholder': _('Bill from...')
             }),
             'address_1': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
