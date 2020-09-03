@@ -75,19 +75,38 @@
                     <div class="column is-6-tablet is-4-desktop">
                         <div class="card">
                             <div class="card-content">
-                                <p class="title has-text-weight-light">
-                                        <span class="icon is-medium"><i
-                                                class="mdi mdi-24px mdi-calendar-month-outline is-large"></i></span>{{ bill.bill_to }}
-                                </p>
+                                <p class="subtitle has-text-grey-lighter has-text-right">
+                                    <span class="icon is-medium"><i
+                                            class="mdi mdi-24px mdi-credit-card-outline is-medium"></i></span>Bill</p>
+                                <p class="title has-text-weight-light">{{ bill.bill_to }}</p>
                                 <p class="subtitle">{{ bill.address_1 }}</p>
                                 {% if not bill.is_past_due %}
-                                    <p>Due in: {{ bill.due_date | timeuntil }}</p>
+                                    <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
                                 {% else %}
-                                    <p class="has-text-danger has-text-weight-bold">Past
+                                    <p class="has-text-danger has-text-weight-bold is-size-4">Past
                                         Due: {{ bill.due_date | timesince }} ago</p>
                                 {% endif %}
 
-                                <p class="is-size-5">Amount Open: ${{ bill.get_amount_open |cs_thousands }}</p>
+                                {% if bill.progressible %}
+                                    <p>Is Progressible: <span class="icon has-text-success"><i
+                                            class="mdi mdi-18px mdi-check-circle"></i></span></p>
+                                {% else %}
+                                    <p>Is Progressible: <span class="icon has-text-danger"><i
+                                            class="mdi mdi-18px mdi-do-not-disturb"></i></span>
+                                    </p>
+                                {% endif %}
+                                <p class="is-size-5">Amount Open: ${{ bill.get_amount_open | cs_thousands }}</p>
+                                <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
+                                <p>Progressed: {{ bill.get_progress | percentage }}</p>
+
+
+                                {#                                <p>Is Progressible: {% if bill.progressible %}#}
+                                {#                                    <span class="icon has-text-success"><i#}
+                                {#                                            class="mdi mdi-18px mdi-check-circle"></i></span>#}
+                                {#                                {% else %}#}
+                                {#                                    <span class="icon has-text-danger"><i#}
+                                {#                                            class="mdi mdi-18px mdi-do-not-disturb"></i></span>#}
+                                {#                                {% endif %} </p>#}
                             </div>
                             <footer class="card-footer">
                                 <a href="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"

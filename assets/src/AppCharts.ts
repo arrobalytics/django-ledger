@@ -196,15 +196,23 @@ class NetPayablesChart {
                         borderColor: 'rgb(195,195,195)',
                         borderWidth: 0.75,
                         backgroundColor: [
-                            'rgba(225, 238, 246, 1)',
-                            'rgba(252, 190, 50, 1)',
-                            'rgba(0, 78, 102, 1)',
+                            'rgba(102, 24, 0, 1)',
                             'rgba(255, 95, 46, 1)',
-                            'rgba(102, 24, 0, 1)'],
+                            'rgba(252, 190, 50, 1)',
+                            'rgba(0,210,1,1)',
+                            'rgba(225, 238, 246, 1)',
+                        ],
                         data: netPayablesDataSet
                     }
                 ]
             }
+                        // backgroundColor: [
+                        //     'rgba(102, 24, 0, 1)',
+                        //     'rgba(255, 95, 46, 1)',
+                        //     'rgba(252, 190, 50, 1)',
+                        //     'rgba(0,210,1,1)',
+                        //     'rgba(225, 238, 246, 1)',
+                        // ],
 
 
             // @ts-ignore

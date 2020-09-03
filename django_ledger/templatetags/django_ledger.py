@@ -19,6 +19,11 @@ def cs_thousands(value):
     return value
 
 
+@register.filter(name='percentage')
+def percentage(value):
+    return '{0:,.2f}%'.format(value * 100)
+
+
 @register.filter(name='reverse_sing')
 def reverse_sign(value: float):
     if value:

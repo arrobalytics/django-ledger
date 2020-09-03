@@ -122,7 +122,9 @@ class ProgressibleMixIn(models.Model):
         abstract = True
 
     def get_progress(self):
-        return self.progress
+        if self.progressible:
+            return self.progress
+        return self.amount_paid / self.amount_due
 
     def get_amount_cash(self):
         if self.IS_DEBIT_BALANCE:
