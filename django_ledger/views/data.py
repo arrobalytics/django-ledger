@@ -4,8 +4,9 @@ from django.http import JsonResponse
 from django.views.generic import View
 
 from django_ledger.models.bill import BillModel
-from django_ledger.models.bill import get_current_payable_net_summary
 from django_ledger.models.entity import EntityModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.utils import progressible_net_summary
 
 
 class EntityPnLDataView(View):
@@ -46,12 +47,36 @@ class EntityPayableNetDataView(View):
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            bill_qs = BillModel.objects.for_entity_open(
+            bill_qs = BillModel.objects.for_entity_unpaid(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
             )
 
-            net_summary = get_current_payable_net_summary(bill_qs)
+            net_summary = progressible_net_summary(bill_qs)
+
+            return JsonResponse({
+                'results': {
+                    'entity_slug': self.kwargs['entity_slug'],
+                    'net_payable_data': net_summary
+                }
+            })
+
+        return JsonResponse({
+            'message': 'Unauthorized'
+        }, status=401)
+
+
+class EntityReceivableNetDataView(View):
+    http_method_names = ['get']
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            invoice_qs = InvoiceModel.objects.for_entity_unpaid(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=request.user,
+            )
+
+            net_summary = progressible_net_summary(invoice_qs)
 
             return JsonResponse({
                 'results': {

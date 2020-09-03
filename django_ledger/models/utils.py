@@ -4,6 +4,7 @@ from random import choice, random, randint
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db.models import QuerySet
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
@@ -219,3 +220,22 @@ def generate_sample_data(entity: str or EntityModel,
                           je_activity='op',
                           je_posted=True,
                           je_ledger=ledger)
+
+
+def progressible_net_summary(queryset: QuerySet) -> dict:
+    """
+    A convenience function that computes current net summary of progressible items.
+    "net_30" group indicates the total amount is due in 30 days or less.
+    "net_0" group indicates total past due amount.
+
+    :param queryset: Progressible Objects Queryset.
+    :return: A dictionary summarizing current net summary 0,30,60,90,90+ bill open amounts.
+    """
+    bill_nets = [{
+        'net_due_group': b.net_due_group(),
+        'amount_open': b.get_amount_open()
+    } for b in queryset]
+    bill_nets.sort(key=lambda b: b['net_due_group'])
+    return {
+        g: float(sum(b['amount_open'] for b in l)) for g, l in groupby(bill_nets, key=lambda b: b['net_due_group'])
+    }

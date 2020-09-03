@@ -28,7 +28,7 @@ def percentage(value):
 def reverse_sign(value: float):
     if value:
         return -value
-
+    return 0
 
 @register.filter(name='last_four')
 def last_four(value: str):
@@ -237,16 +237,8 @@ def current_end_date_filter(context):
         return (dt_filter - timedelta(days=1)).date()
 
 
-# todo: charts can only have one tag...?
 @register.inclusion_tag('django_ledger/tags/chart_container.html')
-def pnl_chart(chart_id):
-    return {
-        'chart_id': chart_id
-    }
-
-
-@register.inclusion_tag('django_ledger/tags/chart_container.html')
-def payables_chart(chart_id):
+def chart_container(chart_id):
     return {
         'chart_id': chart_id
     }

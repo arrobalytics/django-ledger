@@ -1,5 +1,6 @@
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, CreateView
+from django.utils.translation import gettext_lazy as _
+from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
 from django_ledger.models.invoice import InvoiceModel
@@ -9,12 +10,11 @@ from django_ledger.models.utils import new_invoice_protocol
 class InvoiceModelListView(ListView):
     template_name = 'django_ledger/invoice_list.html'
     context_object_name = 'invoices'
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        context['page_title'] = 'Invoice List'
-        context['header_title'] = 'Invoice List'
-        return context
+    PAGE_TITLE = _('Invoice List')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
         entity_slug = self.kwargs['entity_slug']
@@ -26,12 +26,11 @@ class InvoiceModelListView(ListView):
 
 class InvoiceModelCreateView(CreateView):
     template_name = 'django_ledger/invoice_create.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Create Invoice'
-        context['header_title'] = 'Create Invoice'
-        return context
+    PAGE_TITLE = _('Create Invoice')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
@@ -93,3 +92,28 @@ class InvoiceModelUpdateView(UpdateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('ledger')
+
+
+class InvoiceModelDeleteView(DeleteView):
+    slug_url_kwarg = 'invoice_pk'
+    slug_field = 'uuid'
+    template_name = 'django_ledger/invoice_delete.html'
+    context_object_name = 'invoice'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['page_title'] = _('Delete Invoice ') + self.object.invoice_number
+        context['header_title'] = context['page_title']
+        return context
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-dashboard',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+    def get_queryset(self):
+        return InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )

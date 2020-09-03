@@ -1,26 +1,19 @@
-import Chart, {
-    ChartOptions,
-    ChartScales,
-    ChartTitleOptions,
-    ChartTooltipCallback,
-    ChartTooltipOptions,
-    TickOptions
-} from "chart.js";
+import Chart, {ChartOptions, ChartTitleOptions, ChartTooltipOptions} from "chart.js";
 import Axios, {AxiosInstance, AxiosResponse} from "axios";
 
-
-interface EntityPnLDataResponse {
-    entity_slug: string,
-    entity_name: string,
-    pnl_data: object
+function currencyFormatter(value: number): string {
+    return Intl.NumberFormat(
+        'en-US',
+        {style: 'currency', currency: 'USD'})
+        .format(value);
 }
+
 
 interface DjangoLedgerJSONDataResponse {
-    results: EntityPnLDataResponse
+    results: object
 }
 
-
-class PnLChart {
+class BaseChart {
 
     selector: string;
     endPoint: string;
@@ -30,46 +23,73 @@ class PnLChart {
     entitySlug: string;
     consoleLogData: boolean = false;
     lazyGetData: boolean = false;
+    baseURL: string;
 
-
-    constructor(selector: string, entitySlug: string) {
+    constructor(selector: string, entitySlug: string, chartData = null) {
+        this.baseURL = 'http://127.0.0.1:8000/';
         this.entitySlug = entitySlug;
         this.endPoint = this.getEndPoint();
         this.selector = selector;
-        this.getHttpClient()
+        if (!chartData) {
+            this.startHttpClient()
+        }
     }
 
-    getEndPoint() {
-        return `entity/${this.entitySlug}/data/pnl/`
+    getBaseURL(): string {
+        return this.baseURL;
     }
 
-    getHttpClient() {
+    // @ts-ignore
+    getEndPoint(): string {
+    }
+
+    getChartData() {
+        if (!this.chartData) {
+            this.http?.get(
+                this.endPoint
+            ).then((r: AxiosResponse<DjangoLedgerJSONDataResponse>) => {
+                this.chartData = r.data;
+                if (this.consoleLogData) {
+                    console.log(r);
+                }
+                this.renderChart()
+            })
+        } else {
+            this.renderChart()
+        }
+    }
+
+    startHttpClient() {
         this.http = Axios.create({
-            baseURL: 'http://127.0.0.1:8000/'
+            baseURL: this.getBaseURL()
         })
         if (!this.lazyGetData) {
             this.getChartData()
         }
     }
 
-    getChartData() {
-        this.http?.get(
-            this.endPoint
-        ).then((r: AxiosResponse<DjangoLedgerJSONDataResponse>) => {
-            this.chartData = r.data;
-            if (this.consoleLogData) {
-                console.log(r);
-            }
-            this.renderChart()
-        })
+    renderChart() {
+
+
+    }
+
+}
+
+class PnLChart extends BaseChart {
+
+
+    getEndPoint() {
+        return `entity/${this.entitySlug}/data/pnl/`
     }
 
 
     renderChart() {
 
         if (this.chartData) {
-            let entityName = this.chartData.results.entity_name
-            let pnlData = this.chartData.results.pnl_data
+            // @ts-ignore
+            let entityName = this.chartData.results['entity_name']
+            // @ts-ignore
+            let pnlData = this.chartData.results['pnl_data']
             let chartLabels = Object.keys(pnlData);
             let revenue = chartLabels.map(k => {
                 // @ts-ignore
@@ -97,6 +117,24 @@ class PnLChart {
                     }]
             }
 
+            let tooltipOptions: ChartTooltipOptions = {
+                callbacks: {
+                    label(
+                        tooltipItem: Chart.ChartTooltipItem,
+                        data: Chart.ChartData): string | string[] {
+
+                        // @ts-ignore
+                        let dataSet = data.datasets[tooltipItem.datasetIndex];
+                        let tooltipLabelIndex = tooltipItem.index;
+                        let value = dataSet.data[tooltipLabelIndex];
+
+                        return currencyFormatter(value);
+
+                    }
+                }
+            }
+
+
             // @ts-ignore
             var ctx = document.getElementById(this.selector).getContext('2d');
             let chartTitleOptions: ChartTitleOptions = {
@@ -106,7 +144,8 @@ class PnLChart {
             }
 
             let chartOptions: ChartOptions = {
-                title: chartTitleOptions
+                title: chartTitleOptions,
+                tooltips: tooltipOptions,
             }
 
             this.chart = new Chart(ctx, {
@@ -120,65 +159,19 @@ class PnLChart {
 
 }
 
-interface EntityPnLDataResponse2 {
-    entity_slug: string,
-    net_payable_data: object
-}
+class NetPayablesChart extends BaseChart {
 
-interface DjangoLedgerJSONDataResponse2 {
-    results: EntityPnLDataResponse2
-}
-
-
-class NetPayablesChart {
-
-    selector: string;
-    endPoint: string;
-    chart: Chart | undefined;
-    chartData: DjangoLedgerJSONDataResponse2 | undefined;
-    http: AxiosInstance | undefined;
-    entitySlug: string;
-    consoleLogData: boolean = false;
-    lazyGetData: boolean = false;
-
-
-    constructor(selector: string, entitySlug: string) {
-        this.entitySlug = entitySlug;
-        this.endPoint = this.getEndPoint();
-        this.selector = selector;
-        this.getHttpClient()
-    }
 
     getEndPoint() {
         return `entity/${this.entitySlug}/data/net-payables/`
     }
 
-    getHttpClient() {
-        this.http = Axios.create({
-            baseURL: 'http://127.0.0.1:8000/'
-        })
-        if (!this.lazyGetData) {
-            this.getChartData()
-        }
-    }
-
-    getChartData() {
-        this.http?.get(
-            this.endPoint
-        ).then((r: AxiosResponse<DjangoLedgerJSONDataResponse2>) => {
-            this.chartData = r.data;
-            if (this.consoleLogData) {
-                console.log(r);
-            }
-            this.renderChart()
-        })
-    }
 
     renderChart() {
 
         if (this.chartData) {
-            // let entityName = this.chartData.results.entity_name
-            let netPayablesData = this.chartData.results.net_payable_data
+            // @ts-ignore
+            let netPayablesData = this.chartData.results['net_payable_data']
             let chartLabels = Object.keys(netPayablesData);
             let netPayablesDataSet = chartLabels.map(k => {
                 // @ts-ignore
@@ -206,13 +199,6 @@ class NetPayablesChart {
                     }
                 ]
             }
-                        // backgroundColor: [
-                        //     'rgba(102, 24, 0, 1)',
-                        //     'rgba(255, 95, 46, 1)',
-                        //     'rgba(252, 190, 50, 1)',
-                        //     'rgba(0,210,1,1)',
-                        //     'rgba(225, 238, 246, 1)',
-                        // ],
 
 
             // @ts-ignore
@@ -232,10 +218,9 @@ class NetPayablesChart {
                         let dataSet = data.datasets[tooltipItem.datasetIndex];
                         let tooltipLabelIndex = tooltipItem.index;
                         let value = dataSet.data[tooltipLabelIndex];
-                        return Intl.NumberFormat(
-                            'en-US',
-                            {style: 'currency', currency: 'USD', minimumFractionDigits: 0})
-                            .format(value);
+
+                        return currencyFormatter(value);
+
                     }
                 }
             }
@@ -256,5 +241,87 @@ class NetPayablesChart {
 
 }
 
-export {PnLChart, NetPayablesChart};
+class NetReceivablesChart extends BaseChart {
+
+
+    getEndPoint() {
+        return `entity/${this.entitySlug}/data/net-receivables/`
+    }
+
+
+    renderChart() {
+
+        if (this.chartData) {
+            // @ts-ignore
+            let netPayablesData = this.chartData.results['net_payable_data']
+            let chartLabels = Object.keys(netPayablesData);
+            let netPayablesDataSet = chartLabels.map(k => {
+                // @ts-ignore
+                return netPayablesData[k]
+            });
+            let chartLabelsFormatted = chartLabels.map(k => {
+                // @ts-ignore
+                return k.replace("_", " ").toUpperCase()
+            });
+            let data = {
+                labels: chartLabelsFormatted,
+                datasets: [
+                    {
+                        // label: 'Income',
+                        borderColor: 'rgb(195,195,195)',
+                        borderWidth: 0.75,
+                        backgroundColor: [
+                            'rgba(102, 24, 0, 1)',
+                            'rgba(255, 95, 46, 1)',
+                            'rgba(252, 190, 50, 1)',
+                            'rgba(0,210,1,1)',
+                            'rgba(225, 238, 246, 1)',
+                        ],
+                        data: netPayablesDataSet
+                    }
+                ]
+            }
+
+
+            // @ts-ignore
+            var ctx = document.getElementById(this.selector).getContext('2d');
+            let chartTitleOptions: ChartTitleOptions = {
+                display: true,
+                text: "Net Receivables 0-90+ Days",
+                fontSize: 20
+            }
+            let tooltipOptions: ChartTooltipOptions = {
+                callbacks: {
+                    label(
+                        tooltipItem: Chart.ChartTooltipItem,
+                        data: Chart.ChartData): string | string[] {
+
+                        // @ts-ignore
+                        let dataSet = data.datasets[tooltipItem.datasetIndex];
+                        let tooltipLabelIndex = tooltipItem.index;
+                        let value = dataSet.data[tooltipLabelIndex];
+
+                        return currencyFormatter(value);
+
+                    }
+                }
+            }
+
+            let chartOptions: ChartOptions = {
+                title: chartTitleOptions,
+                tooltips: tooltipOptions
+            }
+
+            this.chart = new Chart(ctx, {
+                type: 'pie',
+                data: data,
+                options: chartOptions
+            });
+        }
+
+    }
+
+}
+
+export {PnLChart, NetPayablesChart, NetReceivablesChart};
 

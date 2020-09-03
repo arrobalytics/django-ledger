@@ -11,6 +11,7 @@ from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
+from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.utils import (
     get_date_filter_session_key, get_default_entity_session_key,
     populate_default_coa, generate_sample_data
@@ -49,6 +50,9 @@ class EntityModelDashboardView(DetailView):
 
         context['pnl_chart_id'] = f'djetler-pnl-chart-{randint(10000, 99999)}'
         context['payables_chart_id'] = f'djetler-payables-chart-{randint(10000, 99999)}'
+        context['receivables_chart_id'] = f'djetler-receivables-chart-{randint(10000, 99999)}'
+
+        # DIGEST PHASE ---
         by_period = self.request.GET.get('by_period')
         digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
@@ -59,11 +63,15 @@ class EntityModelDashboardView(DetailView):
         context.update(digest)
         context['date_filter'] = date_filter - timedelta(days=1)
 
-        context['bills'] = BillModel.objects.for_entity(
+        context['bills'] = BillModel.objects.for_entity_unpaid(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
-        ).filter(paid=False).order_by('-due_date')
+        ).order_by('due_date')
 
+        context['invoices'] = InvoiceModel.objects.for_entity_unpaid(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).order_by('due_date')
         return context
 
     def get_queryset(self):

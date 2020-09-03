@@ -1,6 +1,6 @@
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, CreateView
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import ListView, UpdateView, CreateView, DeleteView
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
 from django_ledger.models.bill import BillModel
@@ -86,9 +86,32 @@ class BillModelUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        qs = BillModel.objects.for_user(
-            user_model=self.request.user).filter(
-            ledger__entity__slug__exact=entity_slug
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         ).select_related('ledger')
-        return qs
+
+
+class BillModelDeleteView(DeleteView):
+    slug_url_kwarg = 'bill_pk'
+    slug_field = 'uuid'
+    context_object_name = 'bill'
+    template_name = 'django_ledger/bill_delete.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['page_title'] = _('Delete Bill ') + self.object.bill_number
+        context['header_title'] = context['page_title']
+        return context
+
+    def get_queryset(self):
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-dashboard',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                       })

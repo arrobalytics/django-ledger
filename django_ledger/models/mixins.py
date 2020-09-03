@@ -124,7 +124,10 @@ class ProgressibleMixIn(models.Model):
     def get_progress(self):
         if self.progressible:
             return self.progress
-        return self.amount_paid / self.amount_due
+        return (self.amount_paid or 0) / self.amount_due
+
+    def get_progress_percent(self):
+        return self.get_progress() * 100
 
     def get_amount_cash(self):
         if self.IS_DEBIT_BALANCE:
@@ -242,7 +245,7 @@ class ProgressibleMixIn(models.Model):
                 iter(acc for acc in account_data if acc['account_uuid'] == self.earnings_account_id), None
             )
 
-            new_state = self.new_state(commit=True)
+            new_state = self.new_state(commit=commit)
 
             diff = {
                 'amount_paid': new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0),
@@ -320,7 +323,7 @@ class ProgressibleMixIn(models.Model):
 
             if len(je_txs) > 0:
                 self.ledger.commit_txs(
-                    je_date=datetime.now().date(),
+                    je_date=now().date(),
                     je_txs=je_txs,
                     je_activity='op',
                     je_posted=True,
@@ -348,6 +351,25 @@ class ProgressibleMixIn(models.Model):
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
+
+    def due_in_days(self):
+        td = self.due_date - now().date()
+        if td.days < 0:
+            return 0
+        return td.days
+
+    def net_due_group(self):
+        due_in = self.due_in_days()
+        if due_in == 0:
+            return 'net_0'
+        elif due_in <= 30:
+            return 'net_30'
+        elif due_in <= 60:
+            return 'net_60'
+        elif due_in <= 90:
+            return 'net_90'
+        else:
+            return 'net_90+'
 
     def clean(self):
 

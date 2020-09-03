@@ -1,0 +1,53 @@
+{% load django_ledger %}
+{% load i18n %}
+
+{% if not create_bill %}
+    <div class="card">
+        <div class="card-content">
+            <p class="subtitle has-text-grey has-text-right">
+                                    <span class="icon is-medium"><i
+                                            class="mdi mdi-24px mdi-credit-card-outline is-medium"></i></span>{% trans 'Bill' %}
+            </p>
+            <p class="title">{{ bill.bill_to }}</p>
+            <p class="subtitle has-text-weight-light">{{ bill.address_1 }}</p>
+            {% if not bill.is_past_due %}
+                <p class="is-size-5 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
+            {% else %}
+                <p class="has-text-danger has-text-weight-bold is-size-5">Past
+                    Due: {{ bill.due_date | timesince }} ago</p>
+            {% endif %}
+
+            {% if bill.progressible %}
+                <p>Is Progressible: <span class="icon has-text-success"><i
+                        class="mdi mdi-18px mdi-check-circle"></i></span></p>
+            {% else %}
+                <p>Is Progressible: <span class="icon has-text-danger"><i
+                        class="mdi mdi-18px mdi-do-not-disturb"></i></span>
+                </p>
+            {% endif %}
+            <p class="is-size-5">Amount Open: ${{ bill.get_amount_open | cs_thousands }}</p>
+            <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
+            <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
+            <progress class="progress is-medium"
+                      value="{{ bill.get_progress_percent }}"
+                      max="100">
+                {{ bill.get_progress | percentage }}
+            </progress>
+        </div>
+        <footer class="card-footer">
+            <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
+               class="card-footer-item has-background-info-light">{% trans 'Details' %}</a>
+            <a href="" class="card-footer-item has-background-success-light">{% trans 'Mark as Paid' %}</a>
+            <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
+               class="card-footer-item has-background-danger-light">{% trans 'Delete' %}</a>
+        </footer>
+    </div>
+{% else %}
+    <div class="box has-text-centered">
+        <a href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}">
+                            <span class="icon is-large has-text-grey">
+                                <i class="mdi mdi-48px mdi-plus-circle-outline"></i></span></a>
+        <h2 class="is-size-3 has-text-grey">{% trans 'New Bill' %}</h2>
+    </div>
+{% endif %}
+
