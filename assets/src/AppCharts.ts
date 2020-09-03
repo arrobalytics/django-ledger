@@ -1,4 +1,11 @@
-import Chart, {ChartOptions, ChartTitleOptions} from "chart.js";
+import Chart, {
+    ChartOptions,
+    ChartScales,
+    ChartTitleOptions,
+    ChartTooltipCallback,
+    ChartTooltipOptions,
+    TickOptions
+} from "chart.js";
 import Axios, {AxiosInstance, AxiosResponse} from "axios";
 
 
@@ -167,7 +174,6 @@ class NetPayablesChart {
         })
     }
 
-
     renderChart() {
 
         if (this.chartData) {
@@ -178,21 +184,28 @@ class NetPayablesChart {
                 // @ts-ignore
                 return netPayablesData[k]
             });
+            let chartLabelsFormatted = chartLabels.map(k => {
+                // @ts-ignore
+                return k.replace("_", " ").toUpperCase()
+            });
             let data = {
-                labels: chartLabels,
+                labels: chartLabelsFormatted,
                 datasets: [
                     {
                         // label: 'Income',
+                        borderColor: 'rgb(195,195,195)',
+                        borderWidth: 0.75,
                         backgroundColor: [
-                            'rgba(255, 54, 45, 1)',
-                            'rgba(137, 212, 244, 1)',
-                            'rgba(255, 209, 14, 1)',
-                            'rgb(237,232,216)',
-                            'rgba(1, 73, 5, 1)'],
+                            'rgba(225, 238, 246, 1)',
+                            'rgba(252, 190, 50, 1)',
+                            'rgba(0, 78, 102, 1)',
+                            'rgba(255, 95, 46, 1)',
+                            'rgba(102, 24, 0, 1)'],
                         data: netPayablesDataSet
                     }
                 ]
             }
+
 
             // @ts-ignore
             var ctx = document.getElementById(this.selector).getContext('2d');
@@ -201,13 +214,31 @@ class NetPayablesChart {
                 text: "Net Payables 0-90+ Days",
                 fontSize: 20
             }
+            let tooltipOptions: ChartTooltipOptions = {
+                callbacks: {
+                    label(
+                        tooltipItem: Chart.ChartTooltipItem,
+                        data: Chart.ChartData): string | string[] {
+
+                        // @ts-ignore
+                        let dataSet = data.datasets[tooltipItem.datasetIndex];
+                        let tooltipLabelIndex = tooltipItem.index;
+                        let value = dataSet.data[tooltipLabelIndex];
+                        return Intl.NumberFormat(
+                            'en-US',
+                            {style: 'currency', currency: 'USD', minimumFractionDigits: 0})
+                            .format(value);
+                    }
+                }
+            }
 
             let chartOptions: ChartOptions = {
-                title: chartTitleOptions
+                title: chartTitleOptions,
+                tooltips: tooltipOptions
             }
 
             this.chart = new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: data,
                 options: chartOptions
             });
