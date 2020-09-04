@@ -86,7 +86,6 @@ class BillModelCreateForm(ModelForm):
         }
 
 
-# todo: consolidate bill/invoice forms into one & inherit...
 class BillModelUpdateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):

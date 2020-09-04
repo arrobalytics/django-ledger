@@ -54,36 +54,6 @@
         </div>
     </section>
 
-    {# PAYABLES SECTION START #}
-    <section class="hero is-primary is-bold">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">{% trans 'Payables' %}</h1>
-                <h2 class="subtitle">
-                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="container">
-            <div class="columns is-multiline is-centered">
-                <div class="column is-8-tablet is-6-desktop">
-                    {% chart_container payables_chart_id %}
-                </div>
-                {% for bill in bills %}
-                    <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=entity.slug %}
-                    </div>
-                {% endfor %}
-                <div class="column is-6-tablet is-4-desktop">
-                    {% include 'django_ledger/includes/card_bill.html' with create_bill=True entity_slug=entity.slug %}
-                </div>
-            </div>
-        </div>
-    </section>
-    {# PAYABLES SECTION END #}
-
     {# RECEIVABLES SECTION START #}
     <section class="hero is-primary is-bold">
         <div class="hero-body">
@@ -97,9 +67,12 @@
     <section class="section">
         <div class="container">
             <div class="columns is-multiline is-centered">
-                <div class="column is-8-tablet is-6-desktop">
-                    {% chart_container receivables_chart_id %}
-                </div>
+                {% if invoices %}
+                    <div class="column is-8-tablet is-6-desktop">
+                        {% chart_container receivables_chart_id %}
+                    </div>
+                {% endif %}
+
                 {% for invoice in invoices %}
                     <div class="column is-6-tablet is-4-desktop">
                         {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug %}
@@ -111,8 +84,40 @@
             </div>
         </div>
     </section>
-
     {# RECEIVABLES SECTION END #}
+
+
+    {# PAYABLES SECTION START #}
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">{% trans 'Payables' %}</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline is-centered">
+                {% if bills %}
+                    <div class="column is-8-tablet">
+                        {% chart_container payables_chart_id %}
+                    </div>
+                {% endif %}
+                {% for bill in bills %}
+                    <div class="column is-6-tablet is-4-desktop">
+                        {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=entity.slug %}
+                    </div>
+                {% endfor %}
+                <div class="column is-6-tablet is-4-desktop">
+                    {% include 'django_ledger/includes/card_bill.html' with create_bill=True entity_slug=entity.slug %}
+                </div>
+            </div>
+        </div>
+    </section>
+    {# PAYABLES SECTION END #}
+
 
     <section class="section">
         <div class="container">

@@ -28,16 +28,55 @@
             <p class="is-size-5">Amount Open: ${{ bill.get_amount_open | cs_thousands }}</p>
             <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
             <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
-            <progress class="progress is-medium"
+            <progress class="progress is-medium is-success"
                       value="{{ bill.get_progress_percent }}"
                       max="100">
                 {{ bill.get_progress | percentage }}
             </progress>
+
+
+            {# MARK AS PAID MODAL #}
+            <div id="djledger-bill-modal-{{ bill.uuid }}"
+                 class="modal">
+
+                <form name="django-ledger-bill-paid-{{ bill.uuid }}"
+                      method="post"
+                      action="{% url 'django_ledger:bill-mark-paid' entity_slug=entity_slug bill_pk=bill.uuid %}">
+                    {% csrf_token %}
+                    <input type="text" hidden name="entity_slug" value="{{ entity_slug }}">
+                    <input type="text" hidden name="biil_pk" value="{{ bill.uuid }}">
+                </form>
+
+                <div class="modal-background"></div>
+                <div class="modal-content">
+
+                    {#  todo: add more context to the modal card... #}
+                    <div class="card">
+                        <div class="card-content">
+                            <p class="title">Are you sure you want to mark bill {{ bill.bill_number }} as paid??</p>
+                        </div>
+                        <div class="card-footer">
+                            <a onclick="djLedger.closeModal('djledger-bill-modal-{{ bill.uuid }}')"
+                               class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
+                            <a onclick="djLedger.submitForm(
+                                    'django-ledger-bill-paid-{{ bill.uuid }}',
+                                    'djledger-bill-modal-{{ bill.uuid }}')"
+                               class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <button class="modal-close is-large"
+                        aria-label="close"
+                        onclick="djLedger.closeModal('djledger-bill-modal-{{ bill.uuid }}')"></button>
+            </div>
+
+
         </div>
         <footer class="card-footer">
             <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
                class="card-footer-item has-background-info-light">{% trans 'Details' %}</a>
-            <a href="" class="card-footer-item has-background-success-light">{% trans 'Mark as Paid' %}</a>
+            <a onclick="djLedger.showModal('djledger-bill-modal-{{ bill.uuid }}')"
+               class="card-footer-item has-background-success-light">{% trans 'Mark as Paid' %}</a>
             <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
                class="card-footer-item has-background-danger-light">{% trans 'Delete' %}</a>
         </footer>

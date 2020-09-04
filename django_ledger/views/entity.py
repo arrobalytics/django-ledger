@@ -94,7 +94,7 @@ class EntityModelCreateView(CreateView):
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:dashboard')
+        return reverse('django_ledger:home')
 
     def form_valid(self, form):
         user = self.request.user
@@ -179,7 +179,7 @@ class SetDefaultEntityView(RedirectView):
         session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
-            self.url = reverse('django_ledger:entity-detail',
+            self.url = reverse('django_ledger:entity-dashboard',
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })

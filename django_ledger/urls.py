@@ -116,6 +116,9 @@ urlpatterns = [
     path('invoice/<slug:entity_slug>/<uuid:invoice_pk>/delete/',
          views.InvoiceModelDeleteView.as_view(),
          name='invoice-delete'),
+    path('invoice/<slug:entity_slug>/<uuid:invoice_pk>/mark-as-paid/',
+         views.InvoiceModelMarkPaidView.as_view(),
+         name='invoice-mark-paid'),
 
     # Bills ----
     path('bill/<slug:entity_slug>/',
@@ -130,6 +133,9 @@ urlpatterns = [
     path('bill/<slug:entity_slug>/<uuid:bill_pk>/delete/',
          views.BillModelDeleteView.as_view(),
          name='bill-delete'),
+    path('bill/<slug:entity_slug>/<uuid:bill_pk>/mark-as-paid/',
+         views.BillModelMarkPaidView.as_view(),
+         name='bill-mark-paid'),
 
     # Bank Accounts ---
     path('bank-accounts/<slug:entity_slug>/',

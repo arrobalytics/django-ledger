@@ -27,7 +27,7 @@ class EntityPnLDataView(View):
 
             group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']
             entity_data = {
-                f'{month_name[k[1] + 1]} {k[0]}': {d: float(f) for d, f in v.items()} for k, v in
+                f'{month_name[k[1]]} {k[0]}': {d: float(f) for d, f in v.items()} for k, v in
                 group_balance_by_period.items()}
             return JsonResponse({
                 'results': {

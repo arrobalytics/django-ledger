@@ -116,10 +116,10 @@ class InvoiceModelUpdateForm(ModelForm):
             'progressible'
         ]
         labels = {
-            'progress': _('Progress Amount 0.00 -> 1.00 (percent)')
+            'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
+            'amount_paid': _('Amount Received')
         }
         widgets = {
-
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

@@ -142,7 +142,7 @@ class DataImportOFXFileView(FormView):
             ]
             for tx in txs_models:
                 tx.clean()
-            txs_models = StagedTransactionModel.objects.bulk_create(txs_models)
+            StagedTransactionModel.objects.bulk_create(txs_models)
 
         return super().form_valid(form=form)
 

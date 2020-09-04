@@ -1,6 +1,10 @@
+from django.contrib import messages
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import ListView, UpdateView, CreateView, DeleteView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
 from django_ledger.models.invoice import InvoiceModel
@@ -76,6 +80,21 @@ class InvoiceModelUpdateView(UpdateView):
         title = f'Invoice {invoice}'
         context['page_title'] = title
         context['header_title'] = title
+
+        ledger_model = self.object.ledger
+
+        if ledger_model.locked:
+            messages.add_message(self.request,
+                                 messages.ERROR,
+                                 f'Warning! This Invoice is Locked. Must unlock before making any changes.',
+                                 extra_tags='is-danger')
+
+        if not ledger_model.posted:
+            messages.add_message(self.request,
+                                 messages.INFO,
+                                 f'This Invoice has not been posted. Must post to see ledger changes.',
+                                 extra_tags='is-info')
+
         return context
 
     def get_success_url(self):
@@ -92,6 +111,14 @@ class InvoiceModelUpdateView(UpdateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('ledger')
+
+    def form_valid(self, form):
+        form.save(commit=False)
+        messages.add_message(self.request,
+                             messages.SUCCESS,
+                             f'Invoice {self.object.invoice_number} successfully updated.',
+                             extra_tags='is-success')
+        return super().form_valid(form)
 
 
 class InvoiceModelDeleteView(DeleteView):
@@ -117,3 +144,29 @@ class InvoiceModelDeleteView(DeleteView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
+
+
+class InvoiceModelMarkPaidView(View, SingleObjectMixin):
+    slug_url_kwarg = 'invoice_pk'
+    slug_field = 'uuid'
+
+    def get_queryset(self):
+        return InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def post(self, request, *args, **kwargs):
+        invoice: InvoiceModel = self.get_object()
+        invoice.paid = True
+        invoice.full_clean()
+        invoice.save()
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             f'Successfully marked bill {invoice.invoice_number} as Paid.',
+                             extra_tags='is-success')
+        redirect_url = reverse('django_ledger:entity-dashboard',
+                               kwargs={
+                                   'entity_slug': self.kwargs['entity_slug']
+                               })
+        return HttpResponseRedirect(redirect_url)

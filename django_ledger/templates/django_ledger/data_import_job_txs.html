@@ -10,17 +10,6 @@
 
             <div class="columns is-multiline">
 
-                {% if messages %}
-                    <div class="column">
-                        {% for msg in messages %}
-                            <div class="notification {{ msg.tags }}">
-                                <button class="delete"></button>
-                                {{ msg }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
                 <div class="column is-12">
                     <div class="box">
                         <div class="columns is-multiline">

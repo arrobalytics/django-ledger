@@ -146,6 +146,15 @@ class PnLChart extends BaseChart {
             let chartOptions: ChartOptions = {
                 title: chartTitleOptions,
                 tooltips: tooltipOptions,
+                scales: {
+                    yAxes: [
+                        {
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }
+                    ]
+                }
             }
 
             this.chart = new Chart(ctx, {

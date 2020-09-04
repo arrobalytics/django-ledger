@@ -22,6 +22,9 @@
 {% endblock %}
 
 {% block breadcrumbs %}{% endblock %}
+{% block messages %}
+    {% include 'django_ledger/includes/messages.html' with messages=messages %}
+{% endblock %}
 {% block content %}{% endblock %}
 {% block footer %}
     {% include 'django_ledger/includes/footer.html' %}

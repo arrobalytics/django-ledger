@@ -113,7 +113,9 @@
                                                 class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
                                         </button>
                                         <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                                           class="button is-small is-dark is-fullwidth">Back</a>
+                                           class="button is-small is-info is-fullwidth">{% trans 'Invoice List' %}</a>
+                                        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                           class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                                     </form>
 
                                 </div>
@@ -151,16 +153,43 @@
                                             <p>{{ invoice.earnings_account }}:
                                                 ${{ invoice.amount_earned | cs_thousands }}</p>
                                         </div>
-                                        {# todo: make sure the select_related queryset in view is working so we dont hit the database for the ledger uuid #}
+                                        <div class="column is-12">
+                                            <p>Ledger is Posted: {% if invoice.ledger.posted %}
+                                                <span class="icon has-text-success"><i
+                                                        class="mdi mdi-18px mdi-check-circle"></i></span>
+                                            {% else %}
+                                                <span class="icon has-text-danger"><i
+                                                        class="mdi mdi-18px mdi-do-not-disturb"></i></span>
+                                            {% endif %}
+                                            </p>
+                                            <p>Ledger Locked: {% if invoice.ledger.locked %}
+                                                <span class="icon has-text-success"><i
+                                                        class="mdi mdi-18px mdi-lock"></i></span>
+                                            {% else %}
+                                                <span class="icon has-text-danger"><i
+                                                        class="mdi mdi-18px mdi-lock-open-variant"></i></span>
+                                            {% endif %}
+                                            </p>
+                                        </div>
                                         <div class="column is-6">
                                             <a class="button is-outlined is-small is-primary is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Balance
-                                                Sheet</a>
+                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Balance Sheet' %}</a>
                                         </div>
                                         <div class="column is-6">
                                             <a class="button is-outlined is-small is-info is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Income
-                                                Statement</a>
+                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Income Statement' %}</a>
+                                        </div>
+                                        <div class="column is-12">
+                                            <a class="button is-small is-warning is-fullwidth"
+                                               href="{% url 'django_ledger:ledger-update' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Invoice Ledger' %}
+                                            </a>
+                                            <a class="button is-small is-info is-fullwidth mt-2"
+                                               href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Ledger Journal Entries' %}
+                                            </a>
                                         </div>
                                     </div>
 
