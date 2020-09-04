@@ -13,8 +13,13 @@ class InvoiceModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        account_qs = AccountModel.on_coa.for_entity_available(user_model=self.USER_MODEL,
-                                                              entity_slug=self.ENTITY_SLUG)
+
+        account_qs = AccountModel.on_coa.for_create_invoice(
+            user_model=self.USER_MODEL,
+            entity_slug=self.ENTITY_SLUG)
+
+        # forcing evaluation of qs to cache results for fields... (avoids 4 database queries, vs 1)
+        len(account_qs)
 
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
@@ -111,10 +116,10 @@ class InvoiceModelUpdateForm(ModelForm):
             'progressible'
         ]
         labels = {
-            'progress': _('Progress Amount 0.00 -> 1.00 (percent)')
+            'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
+            'amount_paid': _('Amount Received')
         }
         widgets = {
-
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

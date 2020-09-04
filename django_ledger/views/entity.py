@@ -1,14 +1,21 @@
+from datetime import datetime, timedelta
+from random import randint
+
 from django.urls import reverse
 from django.utils.timezone import make_aware
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
-from django_ledger.examples.quickstart import quickstart
-from django_ledger.forms.app_filters import EndDateFilterForm, EntityFilterForm
+from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from django_ledger.models.utils import populate_default_coa
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.utils import (
+    get_date_filter_session_key, get_default_entity_session_key,
+    populate_default_coa, generate_sample_data
+)
 
 
 # Entity Views ----
@@ -26,28 +33,45 @@ class EntityModelListView(ListView):
             user_model=self.request.user)
 
 
-class EntityModelDetailVew(DetailView):
+class EntityModelDashboardView(DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/entity_detail.html'
+    template_name = 'django_ledger/entity_dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = self.object.name
-        context['header_title'] = _('Entity') + ': ' + self.object.name
         entity = self.object
+        context['page_title'] = entity.name
+        context['header_title'] = _('Dashboard') + ': ' + entity.name
+
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
+        date_filter = datetime.fromisoformat(date_filter) if date_filter else now()
 
-        # entity_slug = self.kwargs.get('entity_slug')
-        user = self.request.user
+        context['pnl_chart_id'] = f'djetler-pnl-chart-{randint(10000, 99999)}'
+        context['payables_chart_id'] = f'djetler-payables-chart-{randint(10000, 99999)}'
+        context['receivables_chart_id'] = f'djetler-receivables-chart-{randint(10000, 99999)}'
 
-        digest = entity.digest(user_model=user,
+        # DIGEST PHASE ---
+        by_period = self.request.GET.get('by_period')
+        digest = entity.digest(user_model=self.request.user,
                                as_of=date_filter,
+                               by_period=True if by_period else False,
                                process_ratios=True,
                                process_roles=True,
                                process_groups=True)
         context.update(digest)
+        context['date_filter'] = date_filter - timedelta(days=1)
+
+        context['bills'] = BillModel.objects.for_entity_unpaid(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).order_by('due_date')
+
+        context['invoices'] = InvoiceModel.objects.for_entity_unpaid(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).order_by('due_date')
         return context
 
     def get_queryset(self):
@@ -56,7 +80,8 @@ class EntityModelDetailVew(DetailView):
         Queryset is annotated with user_role parameter (owned/managed).
         :return: The View queryset.
         """
-        return EntityModel.objects.for_user(user_model=self.request.user)
+        return EntityModel.objects.for_user(
+            user_model=self.request.user)
 
 
 class EntityModelCreateView(CreateView):
@@ -69,26 +94,20 @@ class EntityModelCreateView(CreateView):
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:entity-list')
+        return reverse('django_ledger:home')
 
     def form_valid(self, form):
         user = self.request.user
-        if user.is_authenticated:
-            form.instance.admin = user
-            self.object = form.save()
-
-            use_quickstart = form.cleaned_data.get('quickstart')
-            if use_quickstart:
-                quickstart(user_model=self.request.user,
-                           entity_model=form.instance)
-
-            create_coa = form.cleaned_data.get('populate_default_coa')
-            if create_coa and not use_quickstart:
-                populate_default_coa(entity_model=self.object)
+        form.instance.admin = user
+        entity = form.save()
+        default_coa = form.cleaned_data.get('default_coa')
+        if default_coa:
+            populate_default_coa(entity_model=entity)
+        self.object = entity
         return super().form_valid(form)
 
 
-class EntityModelUpdateView(UpdateView):
+class EntityModelManageView(UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -96,8 +115,8 @@ class EntityModelUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('update entity: ') + self.object.name
-        context['header_title'] = _('update entity: ') + self.object.name
+        context['page_title'] = _('Manage Entity: ') + self.object.name
+        # context['header_title'] = _('Manage Entity: ') + self.object.name
         return context
 
     def get_success_url(self):
@@ -119,8 +138,8 @@ class EntityModelBalanceSheetView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('balance sheet') + ': ' + self.object.name
-        context['header_title'] = _('balance sheet') + ': ' + self.object.name
+        context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
+        context['header_title'] = context['page_title']
         return context
 
     def get_queryset(self):
@@ -160,7 +179,7 @@ class SetDefaultEntityView(RedirectView):
         session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
-            self.url = reverse('django_ledger:entity-detail',
+            self.url = reverse('django_ledger:entity-dashboard',
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
@@ -178,14 +197,39 @@ class SetDateView(RedirectView):
 
     def post(self, request, *args, **kwargs):
         entity_slug = kwargs['entity_slug']
-        as_of_form = EndDateFilterForm(data=request.POST, form_id=None)
+        as_of_form = AsOfDateFilterForm(data=request.POST, form_id=None)
         next_url = request.GET['next']
 
         if as_of_form.is_valid():
-            session_item = get_date_filter_session_key(entity_slug)
-            new_aware_date = make_aware(as_of_form.cleaned_data['date'])
-            new_date_filter = new_aware_date.strftime('%Y-%m-%d')
-            request.session[session_item] = new_date_filter
-
+            as_of_date = as_of_form.cleaned_data['date']
+            as_of_dttm = datetime(
+                year=as_of_date.year,
+                month=as_of_date.month,
+                day=as_of_date.day,
+                hour=0)
+            as_of_dttm += timedelta(days=1)
+            aware_dttm = make_aware(as_of_dttm)
+            new_dttm_filter = aware_dttm.isoformat()
+            session_key = get_date_filter_session_key(entity_slug)
+            request.session[session_key] = new_dttm_filter
         self.url = next_url
         return super().post(request, *args, **kwargs)
+
+
+class GenerateSampleData(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:entity-detail',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            generate_sample_data(
+                entity=self.kwargs['entity_slug'],
+                start_dt=datetime(2020, 2, 1),
+                user_model=self.request.user,
+                days_fw=30 * 6
+            )
+        return super().get(request, *args, **kwargs)

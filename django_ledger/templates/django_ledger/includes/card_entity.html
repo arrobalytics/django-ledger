@@ -1,0 +1,15 @@
+<div class="card">
+    <div class="card-content">
+        <p class="title has-text-weight-light">
+                                        <span class="icon"><i
+                                                class="mdi mdi-office-building"></i></span>{{ entity.name }}
+        </p>
+        <p class="subtitle">{{ entity.address_1 }}</p>
+        <p>Created: {{ entity.created | timesince }} ago</p>
+    </div>
+    <footer class="card-footer">
+        <a href="{{ entity.get_absolute_url }}" class="card-footer-item">Dashboard</a>
+        <a href="{{ entity.get_manage_url }}" class="card-footer-item">Manage</a>
+        <a href="#" class="card-footer-item">Delete</a>
+    </footer>
+</div>

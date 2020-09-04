@@ -1,0 +1,38 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block content %}
+
+    <section class="hero is-small is-success">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title has-text-weight-light">{% trans 'My Entities' %}</h1>
+                <h2 class="subtitle">{{ request.user.get_full_name }}</h2>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+
+                {% for entity in entities %}
+                    <div class="column is-6-tablet">
+                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
+                    </div>
+                {% endfor %}
+
+                <div class="column is-6-tablet has-text-centered">
+                    <div class="box">
+                        <a href="{% url 'django_ledger:entity-create' %}">
+                            <span class="icon is-large">
+                                <i class="mdi mdi-48px mdi-plus-circle-outline"
+                                   style="color: #929292;"></i></span></a>
+                        <h2 class="is-size-3">{% trans 'New Entity' %}</h2>
+                    </div>
+                </div>
+
+    </section>
+
+{% endblock %}

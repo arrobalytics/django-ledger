@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
@@ -38,6 +39,17 @@ class SlugNameMixIn(models.Model):
 class CreateUpdateMixIn(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class ContactInfoMixIn(models.Model):
+    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
+    address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
+    email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
+    website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
+    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Phone Number'))
 
     class Meta:
         abstract = True
@@ -110,7 +122,12 @@ class ProgressibleMixIn(models.Model):
         abstract = True
 
     def get_progress(self):
-        return self.progress
+        if self.progressible:
+            return self.progress
+        return (self.amount_paid or 0) / self.amount_due
+
+    def get_progress_percent(self):
+        return self.get_progress() * 100
 
     def get_amount_cash(self):
         if self.IS_DEBIT_BALANCE:
@@ -216,19 +233,19 @@ class ProgressibleMixIn(models.Model):
 
             account_data = txs_digest['tx_digest']['accounts']
             cash_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.cash_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.cash_account_id), None
             )
             rcv_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.receivable_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.receivable_account_id), None
             )
             pay_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.payable_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.payable_account_id), None
             )
             earn_acc_db = next(
-                iter(acc for acc in account_data if acc['account_id'] == self.earnings_account_id), None
+                iter(acc for acc in account_data if acc['account_uuid'] == self.earnings_account_id), None
             )
 
-            new_state = self.new_state(commit=True)
+            new_state = self.new_state(commit=commit)
 
             diff = {
                 'amount_paid': new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0),
@@ -305,8 +322,8 @@ class ProgressibleMixIn(models.Model):
                 je_txs.append(earnings_tx)
 
             if len(je_txs) > 0:
-                self.ledger.create_je_acc_id(
-                    je_date=datetime.now().date(),
+                self.ledger.commit_txs(
+                    je_date=now().date(),
                     je_txs=je_txs,
                     je_activity='op',
                     je_posted=True,
@@ -335,11 +352,29 @@ class ProgressibleMixIn(models.Model):
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
 
+    def due_in_days(self):
+        td = self.due_date - now().date()
+        if td.days < 0:
+            return 0
+        return td.days
+
+    def net_due_group(self):
+        due_in = self.due_in_days()
+        if due_in == 0:
+            return 'net_0'
+        elif due_in <= 30:
+            return 'net_30'
+        elif due_in <= 60:
+            return 'net_60'
+        elif due_in <= 90:
+            return 'net_90'
+        else:
+            return 'net_90+'
+
     def clean(self):
 
-        # todo: add validation based on income or expense scope...
         if not self.date:
-            self.date = datetime.now().date()
+            self.date = now().date()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
         if self.receivable_account.role != ASSET_CA_RECEIVABLES:
@@ -375,7 +410,7 @@ class ProgressibleMixIn(models.Model):
             self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
 
-            today = datetime.now().date()
+            today = now().date()
             if not self.paid_date:
                 self.paid_date = today
             if self.paid_date > today:
@@ -387,14 +422,3 @@ class ProgressibleMixIn(models.Model):
 
         if not self.migrate_allowed():
             self.update_state()
-
-
-class ContactInfoMixIn(models.Model):
-    address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
-    address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
-    email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
-    website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
-    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Phone Number'))
-
-    class Meta:
-        abstract = True

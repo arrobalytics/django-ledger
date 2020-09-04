@@ -146,6 +146,8 @@ GROUP_EARNINGS = GROUP_INCOME + GROUP_EXPENSES
 GROUP_EQUITY = GROUP_CAPITAL + GROUP_EARNINGS
 GROUP_LIABILITIES_EQUITY = GROUP_LIABILITIES + GROUP_EQUITY
 
+GROUP_CREATE_INVOICE = [ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE] + GROUP_INCOME
+
 ACCOUNT_ROLES = [
     ('Assets', (
         # CURRENT ASSETS ----
@@ -246,7 +248,13 @@ for group in ROLES_GROUPS:
 
 class RolesManager:
 
-    def __init__(self, tx_digest: dict, roles: bool = False, groups: bool = False):
+    def __init__(self,
+                 tx_digest: dict,
+                 roles: bool = False,
+                 groups: bool = False,
+                 by_period: bool = False):
+
+        self.BY_PERIOD = by_period
 
         self.PROCESS_ROLES = roles
         self.PROCESS_GROUPS = groups
@@ -254,40 +262,82 @@ class RolesManager:
         self.DIGEST = tx_digest
         self.ACCOUNTS = tx_digest['accounts']
 
-        self.ROLES_BALANCES = dict()
         self.ROLES_ACCOUNTS = dict()
+        self.ROLES_BALANCES = dict()
+        if self.BY_PERIOD:
+            self.ROLES_BALANCES_BY_PERIOD = dict()
 
-        self.GROUPS_BALANCES = dict()
         self.GROUPS_ACCOUNTS = dict()
+        self.GROUPS_BALANCES = dict()
+        if self.BY_PERIOD:
+            self.GROUPS_BALANCES_BY_PERIOD = dict()
+
+        self.DIGEST['role_account'] = None
+        self.DIGEST['role_balance'] = None
+        self.DIGEST['role_balance_by_period'] = None
+
+        self.DIGEST['group_account'] = None
+        self.DIGEST['group_balance'] = None
+        self.DIGEST['group_balance_by_period'] = None
 
     def generate(self):
 
-        self.DIGEST['roles_accounts'] = None
-        self.DIGEST['roles'] = None
         if self.PROCESS_ROLES:
             self.process_roles()
-            self.DIGEST['roles'] = self.ROLES_BALANCES
+            self.DIGEST['role_account'] = self.ROLES_ACCOUNTS
+            self.DIGEST['role_balance'] = self.ROLES_BALANCES
+            if self.BY_PERIOD:
+                self.DIGEST['role_balance_by_period'] = self.ROLES_BALANCES_BY_PERIOD
 
-        self.DIGEST['groups'] = None
         if self.PROCESS_GROUPS:
             self.process_groups()
-            self.DIGEST['groups'] = self.GROUPS_BALANCES
+            self.DIGEST['group_account'] = self.GROUPS_ACCOUNTS
+            self.DIGEST['group_balance'] = self.GROUPS_BALANCES
+            if self.BY_PERIOD:
+                self.DIGEST['group_balance_by_period'] = self.GROUPS_BALANCES_BY_PERIOD
 
         return self.DIGEST
 
     def process_roles(self):
+
         for c, l in ROLES_DIRECTORY.items():
             for r in l:
                 acc_list = [acc for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r)]
                 self.ROLES_ACCOUNTS[r] = acc_list
-                self.ROLES_BALANCES[r] = sum([acc['balance'] for acc in acc_list])
-        self.DIGEST['roles_accounts'] = self.ROLES_ACCOUNTS
-        self.DIGEST['roles'] = self.ROLES_BALANCES
+                self.ROLES_BALANCES[r] = sum(acc['balance'] for acc in acc_list)
+
+                if self.BY_PERIOD:
+                    for acc in acc_list:
+                        per_key = (acc['period_year'], acc['period_month'])
+
+                        try:
+                            self.ROLES_BALANCES_BY_PERIOD[per_key]
+                        except KeyError:
+                            self.ROLES_BALANCES_BY_PERIOD[per_key] = dict()
+
+                        self.ROLES_BALANCES_BY_PERIOD[per_key][r] = sum(acc['balance'] for acc in acc_list if all([
+                            acc['period_year'] == per_key[0],
+                            acc['period_month'] == per_key[1]]
+                        )
+                                                                        )
 
     def process_groups(self):
         for g in ROLES_GROUPS:
             acc_list = [acc for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g)]
             self.GROUPS_ACCOUNTS[g] = acc_list
             self.GROUPS_BALANCES[g] = sum([acc['balance'] for acc in acc_list])
-        self.DIGEST['groups_accounts'] = self.GROUPS_ACCOUNTS
-        self.DIGEST['groups'] = self.GROUPS_BALANCES
+
+            if self.BY_PERIOD:
+                for acc in acc_list:
+                    per_key = (acc['period_year'], acc['period_month'])
+
+                    try:
+                        self.GROUPS_BALANCES_BY_PERIOD[per_key]
+                    except KeyError:
+                        self.GROUPS_BALANCES_BY_PERIOD[per_key] = dict()
+
+                    self.GROUPS_BALANCES_BY_PERIOD[per_key][g] = sum(
+                        acc['balance'] for acc in acc_list if all([
+                            acc['period_year'] == per_key[0],
+                            acc['period_month'] == per_key[1]]
+                        ))

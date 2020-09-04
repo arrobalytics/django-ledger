@@ -5,6 +5,7 @@ from uuid import uuid4
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
@@ -13,7 +14,12 @@ from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, Co
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
 
-def generate_bill_number(length: int = 10):
+def generate_bill_number(length: int = 10) -> str:
+    """
+    A function that generates a random bill identifier for new bill models.
+    :param length: The length of the bill number.
+    :return: A string representing a random bill identifier.
+    """
     return 'B-' + ''.join(choices(BILL_NUMBER_CHARS, k=length))
 
 
@@ -41,6 +47,11 @@ class BillModelManager(models.Manager):
                 )
             )
 
+    def for_entity_unpaid(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug,
+                             user_model=user_model)
+        return qs.filter(paid=False)
+
 
 class BillModelAbstract(ProgressibleMixIn,
                         ContactInfoMixIn,
@@ -50,6 +61,7 @@ class BillModelAbstract(ProgressibleMixIn,
     ALLOW_MIGRATE = True
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    # todo: rename to "bill_from"
     bill_to = models.CharField(max_length=100, verbose_name=_('Bill To'))
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
@@ -97,11 +109,12 @@ class BillModelAbstract(ProgressibleMixIn,
         """
         return f'Bill {self.bill_number} account adjustment.'
 
+    def is_past_due(self):
+        return self.due_date < now().date()
+
     def clean(self):
         if not self.bill_number:
             self.bill_number = generate_bill_number()
-
-        # todo: this is not executing the mixin clean() method...???
         super().clean()
 
 

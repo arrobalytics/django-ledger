@@ -22,10 +22,19 @@
 {% endblock %}
 
 {% block breadcrumbs %}{% endblock %}
+{% block messages %}
+    {% include 'django_ledger/includes/messages.html' with messages=messages %}
+{% endblock %}
 {% block content %}{% endblock %}
+{% block footer %}
+    {% include 'django_ledger/includes/footer.html' %}
+{% endblock %}
 
 {% block script_bottom %}
     <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+    <script>
+        djLedger.startDJLApp()
+    </script>
 {% endblock %}
 
 </body>

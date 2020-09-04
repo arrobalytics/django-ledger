@@ -16,15 +16,29 @@ urlpatterns = [
     path('entity/set-default/',
          views.SetDefaultEntityView.as_view(),
          name='entity-set-default'),
-    path('entity/<slug:entity_slug>/',
-         views.EntityModelDetailVew.as_view(),
-         name='entity-detail'),
+    path('entity/<slug:entity_slug>/dashboard/',
+         views.EntityModelDashboardView.as_view(),
+         name='entity-dashboard'),
+    path('entity/<slug:entity_slug>/manage/',
+         views.EntityModelManageView.as_view(),
+         name='entity-manage'),
     path('entity/<slug:entity_slug>/set-date/',
          views.SetDateView.as_view(),
          name='entity-set-date'),
-    path('entity/<slug:entity_slug>/update/',
-         views.EntityModelUpdateView.as_view(),
-         name='entity-update'),
+    path('entity/<slug:entity_slug>/generate-sample-data/',
+         views.GenerateSampleData.as_view(),
+         name='entity-generate-sample-data'),
+
+    # Entity JSON Data Layer ----
+    path('entity/<slug:entity_slug>/data/pnl/',
+         views.EntityPnLDataView.as_view(),
+         name='entity-json-pnl'),
+    path('entity/<slug:entity_slug>/data/net-payables/',
+         views.EntityPayableNetDataView.as_view(),
+         name='entity-json-net-payables'),
+    path('entity/<slug:entity_slug>/data/net-receivables/',
+         views.EntityReceivableNetDataView.as_view(),
+         name='entity-json-net-receivables'),
 
     # Financial Statements ---
     path('entity/<slug:entity_slug>/balance-sheet/',
@@ -99,6 +113,12 @@ urlpatterns = [
     path('invoice/<slug:entity_slug>/<uuid:invoice_pk>/update/',
          views.InvoiceModelUpdateView.as_view(),
          name='invoice-update'),
+    path('invoice/<slug:entity_slug>/<uuid:invoice_pk>/delete/',
+         views.InvoiceModelDeleteView.as_view(),
+         name='invoice-delete'),
+    path('invoice/<slug:entity_slug>/<uuid:invoice_pk>/mark-as-paid/',
+         views.InvoiceModelMarkPaidView.as_view(),
+         name='invoice-mark-paid'),
 
     # Bills ----
     path('bill/<slug:entity_slug>/',
@@ -110,6 +130,12 @@ urlpatterns = [
     path('bill/<slug:entity_slug>/<uuid:bill_pk>/update/',
          views.BillModelUpdateView.as_view(),
          name='bill-update'),
+    path('bill/<slug:entity_slug>/<uuid:bill_pk>/delete/',
+         views.BillModelDeleteView.as_view(),
+         name='bill-delete'),
+    path('bill/<slug:entity_slug>/<uuid:bill_pk>/mark-as-paid/',
+         views.BillModelMarkPaidView.as_view(),
+         name='bill-mark-paid'),
 
     # Bank Accounts ---
     path('bank-accounts/<slug:entity_slug>/',
@@ -134,11 +160,12 @@ urlpatterns = [
          name='data-import-job-txs'),
 
     # Dashboard ----
-    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('home/', views.HomeView.as_view(), name='home'),
 
     # Auth Views ---
     path('accounts/login/', views.DjangoLedgerLoginView.as_view(), name='login'),
     path('accounts/logout/', views.DjangoLedgerLogoutView.as_view(), name='logout'),
 
-    path('', views.RootUrlView.as_view(), name='root-url')
+    path('', views.RootUrlView.as_view(), name='root-url'),
+
 ]

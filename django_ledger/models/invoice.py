@@ -43,6 +43,10 @@ class InvoiceModelManager(models.Manager):
         elif isinstance(entity_slug, str):
             return qs.filter(ledger__entity__slug__exact=entity_slug)
 
+    def for_entity_unpaid(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(paid=False)
+
 
 class InvoiceModelAbstract(ProgressibleMixIn,
                            ContactInfoMixIn,

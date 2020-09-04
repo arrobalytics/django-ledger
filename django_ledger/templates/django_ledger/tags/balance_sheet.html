@@ -2,7 +2,7 @@
 {% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth">
+    <table class="table is-fullwidth is-narrow is-striped">
         <thead>
         <tr>
             <th>{% trans 'Account Number' %}</th>
@@ -21,7 +21,7 @@
         </tr>
 
         {# ASSETS #}
-        {% for acc in tx_digest.groups_accounts.GROUP_ASSETS %}
+        {% for acc in tx_digest.group_account.GROUP_ASSETS %}
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
@@ -38,7 +38,7 @@
             <td>{% trans 'Total Assets' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_ASSETS | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_ASSETS | cs_thousands }}</td>
         </tr>
 
         <tr>
@@ -49,7 +49,7 @@
         </tr>
 
         {# LIABILITIES #}
-        {% for acc in tx_digest.groups_accounts.GROUP_LIABILITIES %}
+        {% for acc in tx_digest.group_account.GROUP_LIABILITIES %}
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
@@ -66,7 +66,7 @@
             <td>{% trans 'Total Liabilities' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_LIABILITIES | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_LIABILITIES | cs_thousands }}</td>
         </tr>
 
 
@@ -78,7 +78,7 @@
         </tr>
 
         {# CAPITAL #}
-        {% for acc in tx_digest.groups_accounts.GROUP_CAPITAL %}
+        {% for acc in tx_digest.group_account.GROUP_CAPITAL %}
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
@@ -96,7 +96,7 @@
             <td>{% trans 'Total Capital' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_CAPITAL | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_CAPITAL | cs_thousands }}</td>
         </tr>
 
 
@@ -104,21 +104,21 @@
             <td>{% trans 'Retained Earnings' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_EARNINGS | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_EARNINGS | cs_thousands }}</td>
         </tr>
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Equity' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_EQUITY | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_EQUITY | cs_thousands }}</td>
         </tr>
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Equity + Liabilities' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.groups.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
+            <td>${{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
         </tr>
         </tbody>
 

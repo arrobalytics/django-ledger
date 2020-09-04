@@ -22,13 +22,14 @@
                             </div>
                             <div class="card-content">
                                 <div class="content">
-                                    <h1 class="has-text-weight-light">{{ object.subject_name }}</h1>
+                                    <h1 class="has-text-weight-light">{{ bill.bill_to }}</h1>
                                     <p>
-                                        {{ object.address_1 }}<br>
-                                        {{ object.address_2 }}<br>
-                                        {{ object.phone }}<br>
-                                        {{ object.email }}<br>
-                                        {{ object.website }}<br>
+                                        {# todo: only show populated info... #}
+                                        {% if bill.address_1 %}{{ bill.address_1 }}{% endif %}<br>
+                                        {% if bill.address_2 %}{{ bill.address_2 }}{% endif %}<br>
+                                        {% if bill.phone %}{{ bill.phone }}{% endif %}<br>
+                                        {% if bill.email %}{{ bill.email }}{% endif %}<br>
+                                        {% if bill.website %}{{ bill.website }}{% endif %}<br>
                                     </p>
                                 </div>
 
@@ -43,7 +44,7 @@
                             <div class="card-content">
                                 <div class="content">
                                     <h3 class="has-text-weight-light">Bill Amount:
-                                        <strong>${{ object.amount_due | cs_thousands }}</strong>
+                                        <strong>${{ bill.amount_due | cs_thousands }}</strong>
                                         <button type="button"
                                                 onclick="document.getElementById('django-ledger-bill-amount-field').classList.remove('is-hidden')"
                                                 class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
@@ -54,8 +55,8 @@
                                             {{ form.amount_due }}
                                         </div>
                                     </div>
-                                    <h4 class="has-text-weight-light">Bill Date: {{ object.date }}</h4>
-                                    <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
+                                    <h4 class="has-text-weight-light">Bill Date: {{ bill.date }}</h4>
+                                    <h4 class="has-text-weight-light">Terms: {{ bill.get_terms_display }}</h4>
                                     <h4 class="has-text-weight-light">External Reference: {{ bill.xref }}
                                         <button type="button"
                                                 onclick="document.getElementById('django-ledger-bill-xref-field').classList.remove('is-hidden')"
@@ -121,11 +122,13 @@
 
 
                                         <button type="submit"
-                                                class="button is-primary is-outlined is-fullwidth djetler_my_1">
+                                                class="button is-primary is-fullwidth djetler_my_1">
                                             {% trans 'Save' %}
                                         </button>
                                         <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
-                                           class="button is-small is-dark is-fullwidth">{% trans 'Done' %}</a>
+                                           class="button is-small is-info is-fullwidth">{% trans 'Bill List' %}</a>
+                                        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                           class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                                     </form>
 
                                 </div>
@@ -174,6 +177,17 @@
                                                href="{% url 'django_ledger:ledger-ic' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Income
                                                 Statement</a>
                                         </div>
+                                        <div class="column is-12">
+                                            <a class="button is-small is-warning is-fullwidth"
+                                               href="{% url 'django_ledger:ledger-update' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Bill Ledger' %}
+                                            </a>
+                                            <a class="button is-small is-info is-fullwidth mt-2"
+                                               href="{% url 'django_ledger:je-list' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                                {% trans 'Ledger Journal Entries' %}
+                                            </a>
+                                        </div>
+
                                     </div>
 
                                 </div>

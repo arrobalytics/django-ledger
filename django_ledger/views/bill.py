@@ -1,6 +1,9 @@
+from django.contrib import messages
+from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, CreateView
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import ListView, UpdateView, CreateView, DeleteView, View
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
 from django_ledger.models.bill import BillModel
@@ -86,9 +89,66 @@ class BillModelUpdateView(UpdateView):
                        })
 
     def get_queryset(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        qs = BillModel.objects.for_user(
-            user_model=self.request.user).filter(
-            ledger__entity__slug__exact=entity_slug
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         ).select_related('ledger')
-        return qs
+
+    def form_valid(self, form):
+        form.save(commit=False)
+        messages.add_message(self.request,
+                             messages.SUCCESS,
+                             f'Bill {self.object.bill_number} successfully updated.',
+                             extra_tags='is-success')
+        return super().form_valid(form)
+
+
+class BillModelDeleteView(DeleteView):
+    slug_url_kwarg = 'bill_pk'
+    slug_field = 'uuid'
+    context_object_name = 'bill'
+    template_name = 'django_ledger/bill_delete.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['page_title'] = _('Delete Bill ') + self.object.bill_number
+        context['header_title'] = context['page_title']
+        return context
+
+    def get_queryset(self):
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:entity-dashboard',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                       })
+
+
+class BillModelMarkPaidView(View, SingleObjectMixin):
+    slug_url_kwarg = 'bill_pk'
+    slug_field = 'uuid'
+
+    def get_queryset(self):
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def post(self, request, *args, **kwargs):
+        bill: BillModel = self.get_object()
+        bill.paid = True
+        bill.full_clean()
+        bill.save()
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             f'Successfully marked bill {bill.bill_number} as Paid.',
+                             extra_tags='is-success')
+        redirect_url = reverse('django_ledger:entity-dashboard',
+                               kwargs={
+                                   'entity_slug': self.kwargs['entity_slug']
+                               })
+        return HttpResponseRedirect(redirect_url)

@@ -10,12 +10,12 @@ class RootUrlView(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         if not self.request.user.is_authenticated:
             return reverse('django_ledger:login')
-        return reverse('django_ledger:dashboard')
+        return reverse('django_ledger:home')
 
 
-class DashboardView(ListView):
-    template_name = 'django_ledger/dashboard.html'
-    PAGE_TITLE = _('Dashboard')
+class HomeView(ListView):
+    template_name = 'django_ledger/home.html'
+    PAGE_TITLE = _('Home')
     context_object_name = 'entities'
     extra_context = {
         'page_title': PAGE_TITLE,

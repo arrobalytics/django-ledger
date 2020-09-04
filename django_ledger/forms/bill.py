@@ -56,7 +56,7 @@ class BillModelCreateForm(ModelForm):
             }),
             'bill_to': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Bill To...')
+                'placeholder': _('Bill from...')
             }),
             'address_1': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
@@ -86,7 +86,6 @@ class BillModelCreateForm(ModelForm):
         }
 
 
-# todo: consolidate bill/invoice forms into one & inherit...
 class BillModelUpdateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):

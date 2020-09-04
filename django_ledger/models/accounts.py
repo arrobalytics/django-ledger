@@ -7,7 +7,7 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 
-from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES
+from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_CREATE_INVOICE
 from django_ledger.models.mixins import CreateUpdateMixIn
 
 
@@ -37,6 +37,13 @@ class AccountModelManager(models.Manager):
             active=True,
             locked=False
         )
+
+    def for_create_invoice(self, user_model, entity_slug: str, coa_slug: str = None):
+        qs = self.for_entity_available(
+            user_model=user_model,
+            entity_slug=entity_slug,
+            coa_slug=coa_slug)
+        return qs.filter(role__in=GROUP_CREATE_INVOICE)
 
 
 class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):

@@ -12,7 +12,7 @@ class DjangoLedgerLoginView(LoginView):
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:dashboard')
+        return reverse('django_ledger:home')
 
 
 class DjangoLedgerLogoutView(LogoutView):

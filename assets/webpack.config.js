@@ -9,6 +9,8 @@ module.exports = {
     output: {
         filename: "[name].bundle.js",
         path: path.resolve(__dirname, '../django_ledger/static/django_ledger/bundle/'),
+        library: "djLedger",
+        // libraryTarget: "umd"
     },
     resolve: {
         extensions: [".ts", ".tsx", ".js"],

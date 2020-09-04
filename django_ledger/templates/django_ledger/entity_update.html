@@ -4,6 +4,18 @@
 
 {% block content %}
 
+    <section class="hero is-small is-primary">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">{{ entity.name }}<span class="icon is-large">
+                    <i class="mdi mdi-domain"></i>
+                </span></h1>
+                <h2 class="subtitle">{% trans 'Manage Entity' %}</h2>
+            </div>
+        </div>
+    </section>
+
+
     <section class="section">
         <div class="container">
             <div class="columns is-centered">
@@ -13,7 +25,8 @@
                         {% csrf_token %}
                         {{ form.as_p }}
                         <button class="button is-fullwidth is-primary is-outlined is-dark djetler_my_1"
-                                type="submit">Update</button>
+                                type="submit">Update
+                        </button>
                         <a class="button is-small is-fullwidth is-dark"
                            href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
                     </form>

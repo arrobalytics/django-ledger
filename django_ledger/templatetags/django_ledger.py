@@ -1,10 +1,11 @@
-from datetime import datetime
-from random import randint
+from datetime import datetime, timedelta
 from itertools import groupby
+from random import randint
 
 from django import template
+from django.utils.timezone import now
 
-from django_ledger.forms.app_filters import EntityFilterForm, EndDateFilterForm, ActivityFilterForm
+from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 
@@ -13,15 +14,21 @@ register = template.Library()
 
 @register.filter(name='cs_thousands')
 def cs_thousands(value):
-    if value != '':
+    if value:
         return '{0:,.2f}'.format(value)
     return value
 
 
+@register.filter(name='percentage')
+def percentage(value):
+    return '{0:,.2f}%'.format(value * 100)
+
+
 @register.filter(name='reverse_sing')
 def reverse_sign(value: float):
-    return -value
-
+    if value:
+        return -value
+    return 0
 
 @register.filter(name='last_four')
 def last_four(value: str):
@@ -173,10 +180,11 @@ def date_filter(context, inline=False):
     entity_slug = context['view'].kwargs.get('entity_slug')
     session_item = get_date_filter_session_key(entity_slug)
     session = context['request'].session
-    date_filter = session.get(session_item)
+    # todo: move this action to a function...
+    date_filter = datetime.fromisoformat(session.get(session_item)) - timedelta(days=1)
     identity = randint(0, 1000000)
     if entity_slug:
-        form = EndDateFilterForm(form_id=identity, initial={
+        form = AsOfDateFilterForm(form_id=identity, initial={
             'entity_slug': context['view'].kwargs['entity_slug'],
             'date': date_filter
         })
@@ -212,10 +220,25 @@ def activity_filter(context):
 @register.simple_tag(takes_context=True)
 def current_end_date_filter(context):
     entity_slug = context['view'].kwargs.get('entity_slug')
-    session_item = get_date_filter_session_key(entity_slug)
+    session_key = get_date_filter_session_key(entity_slug)
     session = context['request'].session
-    date_filter = session.get(session_item)
-    if not date_filter:
-        date_filter = datetime.now().date().strftime('%Y-%m-%d')
-        session[session_item] = date_filter
-    return date_filter
+    filter_iso = session.get(session_key)
+    if not filter_iso:
+        now_tz = now()
+        new_filter = datetime(year=now_tz.year,
+                              month=now_tz.month,
+                              day=now_tz.day,
+                              hour=0)
+        new_filter += timedelta(days=1)
+        session[session_key] = new_filter.isoformat()
+        return now_tz.date()
+    else:
+        dt_filter = datetime.fromisoformat(filter_iso)
+        return (dt_filter - timedelta(days=1)).date()
+
+
+@register.inclusion_tag('django_ledger/tags/chart_container.html')
+def chart_container(chart_id):
+    return {
+        'chart_id': chart_id
+    }

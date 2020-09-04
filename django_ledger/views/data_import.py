@@ -142,7 +142,7 @@ class DataImportOFXFileView(FormView):
             ]
             for tx in txs_models:
                 tx.clean()
-            txs_models = StagedTransactionModel.objects.bulk_create(txs_models)
+            StagedTransactionModel.objects.bulk_create(txs_models)
 
         return super().form_valid(form=form)
 
@@ -229,7 +229,7 @@ class DataImportJobDetailView(DetailView):
                                       cash_account=cash_account) for tx in staged_to_import
                 ))
 
-                je_model, txs_models = ledger_model.create_je_acc_id(
+                je_model, txs_models = ledger_model.commit_txs(
                     je_posted=True,
                     je_date=now().date(),
                     je_txs=txs_digest,
