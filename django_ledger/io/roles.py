@@ -1,4 +1,5 @@
 import sys
+from collections import defaultdict
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
@@ -265,12 +266,12 @@ class RolesManager:
         self.ROLES_ACCOUNTS = dict()
         self.ROLES_BALANCES = dict()
         if self.BY_PERIOD:
-            self.ROLES_BALANCES_BY_PERIOD = dict()
+            self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
 
         self.GROUPS_ACCOUNTS = dict()
         self.GROUPS_BALANCES = dict()
         if self.BY_PERIOD:
-            self.GROUPS_BALANCES_BY_PERIOD = dict()
+            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
 
         self.DIGEST['role_account'] = None
         self.DIGEST['role_balance'] = None
@@ -310,11 +311,6 @@ class RolesManager:
                     for acc in acc_list:
                         per_key = (acc['period_year'], acc['period_month'])
 
-                        try:
-                            self.ROLES_BALANCES_BY_PERIOD[per_key]
-                        except KeyError:
-                            self.ROLES_BALANCES_BY_PERIOD[per_key] = dict()
-
                         self.ROLES_BALANCES_BY_PERIOD[per_key][r] = sum(acc['balance'] for acc in acc_list if all([
                             acc['period_year'] == per_key[0],
                             acc['period_month'] == per_key[1]]
@@ -330,11 +326,6 @@ class RolesManager:
             if self.BY_PERIOD:
                 for acc in acc_list:
                     per_key = (acc['period_year'], acc['period_month'])
-
-                    try:
-                        self.GROUPS_BALANCES_BY_PERIOD[per_key]
-                    except KeyError:
-                        self.GROUPS_BALANCES_BY_PERIOD[per_key] = dict()
 
                     self.GROUPS_BALANCES_BY_PERIOD[per_key][g] = sum(
                         acc['balance'] for acc in acc_list if all([

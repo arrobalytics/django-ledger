@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta
+from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
+from django.utils.timezone import localtime
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
@@ -17,6 +19,7 @@ from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.ledger import LedgerModel
 
 UserModel = get_user_model()
+FAKER_IMPORTED = False
 
 
 def new_bill_protocol(bill_model: BillModel, entity_slug: str or EntityModel, user_model: UserModel) -> BillModel:
@@ -119,10 +122,10 @@ def generate_sample_data(entity: str or EntityModel,
                          user_model,
                          start_dt: datetime,
                          days_fw: int,
-                         cap_contribution: float or int = 10000,
+                         cap_contribution: float or int = 20000,
                          income_tx_avg: float or int = 2000,
                          expense_tx_avg: float or int = 1000,
-                         tx_quantity: int = 200):
+                         tx_quantity: int = 100):
     """
     TXS = List[{
             'account_id': Account Database UUID
@@ -142,8 +145,24 @@ def generate_sample_data(entity: str or EntityModel,
     :return:
     """
 
+    try:
+        from faker import Faker
+        from faker.providers import company, address, phone_number
+        global FAKER_IMPORTED
+        FAKER_IMPORTED = True
+    except ImportError:
+        return False
+
     if not isinstance(entity, EntityModel):
         entity = EntityModel.objects.get(slug__exact=entity)
+
+    entity.ledgers.all().delete()
+
+    ledger, created = entity.ledgers.get_or_create(
+        name='Sample Data Ledger',
+        posted=True
+    )
+
     accounts = AccountModel.on_coa.for_entity_available(
         entity_slug=entity.slug,
         user_model=user_model
@@ -155,10 +174,14 @@ def generate_sample_data(entity: str or EntityModel,
 
     capital_acc = choice(accounts_gb['eq_capital'])
     cash_acc = choice(accounts_gb['asset_ca_cash'])
-    ledger = entity.ledgers.first()
-    ledger.journal_entries.all().delete()
 
     txs = list()
+
+    fk = Faker()
+    fk.add_provider(company)
+    fk.add_provider(address)
+    fk.add_provider(phone_number)
+
     txs.append({
         'account_id': cash_acc.uuid,
         'tx_type': 'debit',
@@ -171,55 +194,128 @@ def generate_sample_data(entity: str or EntityModel,
         'amount': cap_contribution,
         'description': f'Sample data for {entity.name}'
     })
-    entity.commit_txs(je_date=start_dt,
-                      je_txs=txs,
-                      je_activity='op',
-                      je_posted=True,
-                      je_ledger=ledger)
 
+    entity.commit_txs(
+        je_date=start_dt,
+        je_txs=txs,
+        je_activity='op',
+        je_posted=True,
+        je_ledger=ledger
+    )
+
+    loc_time = localtime()
     rng = tx_quantity
     for i in range(rng):
-        txs = list()
-        dt = start_dt + timedelta(days=randint(0, days_fw))
+
+        issue_dttm = start_dt + timedelta(days=randint(0, days_fw))
+        if issue_dttm > loc_time:
+            issue_dttm = loc_time
+
+        is_progressible = random() > .8
+        progress = Decimal(round(random(), 2)) if is_progressible else 0
+
+        is_paid = random() < .95
+        paid_dttm = issue_dttm + timedelta(days=randint(0, 90)) if is_paid else None
+        if paid_dttm and paid_dttm >= loc_time:
+            paid_dttm = None
+            is_paid = False
+
+        issue_dt = issue_dttm.date()
+        paid_dt = paid_dttm.date() if paid_dttm else None
+        switch_amt = random() > 0.75
+
         if i % 2 == 0:
-            exp_amt = random() * expense_tx_avg
-            txs.append({
-                'account_id': cash_acc.uuid,
-                'tx_type': 'credit',
-                'amount': exp_amt,
-                'description': f'Sample data for {entity.name}'
-            })
 
-            exp_acc = choice(accounts_gb['ex_op'])
-            txs.append({
-                'account_id': exp_acc.uuid,
-                'tx_type': 'debit',
-                'amount': exp_amt,
-                'description': f'Sample data for {entity.name}'
-            })
+            amt = expense_tx_avg if not switch_amt else income_tx_avg
+            bill_amt = Decimal(round(random() * amt, 2))
+            bill_amt_paid = Decimal(round(Decimal(random()) * bill_amt, 2))
+
+            bill = BillModel(
+                bill_to=fk.name() if random() > .5 else fk.company(),
+                address_1=fk.address(),
+                phone=fk.phone_number(),
+                email=fk.email(),
+                website=fk.url(),
+                progressible=is_progressible,
+                progress=progress,
+                terms=choice(BillModel.TERMS)[0],
+                xref=generate_bill_number(length=15, prefix=False),
+                cash_account=choice(accounts_gb['asset_ca_cash']),
+                receivable_account=choice(accounts_gb['asset_ca_recv']),
+                payable_account=choice(accounts_gb['lia_cl_acc_pay']),
+                earnings_account=choice(accounts_gb['ex_op']),
+                amount_due=bill_amt,
+                amount_paid=bill_amt_paid,
+                date=issue_dt,
+                paid=is_paid,
+                paid_date=paid_dt
+            )
+
+            bill = new_bill_protocol(bill_model=bill, entity_slug=entity.slug, user_model=user_model)
+            bill.clean()
+            bill.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
+            bill.save()
+            print(f'Bill {bill.bill_number} created...')
+
         else:
-            in_amt = random() * income_tx_avg
-            txs.append({
-                'account_id': cash_acc.uuid,
-                'tx_type': 'debit',
-                'amount': in_amt,
-                'description': f'Sample data for {entity.name}'
-            })
 
-            in_acc = choice(accounts_gb['in_sales'])
-            txs.append({
-                'account_id': in_acc.uuid,
-                'tx_type': 'credit',
-                'amount': in_amt,
-                'description': f'Sample data for {entity.name}'
-            })
+            amt = income_tx_avg if not switch_amt else expense_tx_avg
+            inv_amt = Decimal(round(random() * amt, 2))
+            inv_amt_paid = Decimal(round(Decimal(random()) * inv_amt, 2))
 
-        print(f'TXS: {i + 1}/{rng} created...')
-        entity.commit_txs(je_date=dt,
-                          je_txs=txs,
-                          je_activity='op',
-                          je_posted=True,
-                          je_ledger=ledger)
+            invoice = InvoiceModel(
+                invoice_to=fk.name() if random() > .5 else fk.company(),
+                address_1=fk.address(),
+                phone=fk.phone_number(),
+                email=fk.email(),
+                website=fk.url(),
+                progressible=is_progressible,
+                progress=progress,
+                terms=choice(InvoiceModel.TERMS)[0],
+                invoice_number=generate_invoice_number(),
+                cash_account=choice(accounts_gb['asset_ca_cash']),
+                receivable_account=choice(accounts_gb['asset_ca_recv']),
+                payable_account=choice(accounts_gb['lia_cl_acc_pay']),
+                earnings_account=choice(accounts_gb['in_sales']),
+                amount_due=inv_amt,
+                amount_paid=inv_amt_paid,
+                date=issue_dt,
+                paid=is_paid,
+                paid_date=paid_dt
+            )
+
+            invoice = new_invoice_protocol(
+                invoice_model=invoice,
+                entity_slug=entity.slug,
+                user_model=user_model)
+
+            invoice.clean()
+            invoice.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
+            invoice.save()
+            print(f'Invoice {invoice.invoice_number} created...')
+
+            # in_amt = random() * income_tx_avg
+            # txs.append({
+            #     'account_id': cash_acc.uuid,
+            #     'tx_type': 'debit',
+            #     'amount': in_amt,
+            #     'description': f'Sample data for {entity.name}'
+            # })
+            #
+            # in_acc = choice(accounts_gb['in_sales'])
+            # txs.append({
+            #     'account_id': in_acc.uuid,
+            #     'tx_type': 'credit',
+            #     'amount': in_amt,
+            #     'description': f'Sample data for {entity.name}'
+            # })
+
+        # print(f'TXS: {i + 1}/{rng} created...')
+        # entity.commit_txs(je_date=dttm,
+        #                   je_txs=txs,
+        #                   je_activity='op',
+        #                   je_posted=True,
+        #                   je_ledger=ledger)
 
 
 def progressible_net_summary(queryset: QuerySet) -> dict:

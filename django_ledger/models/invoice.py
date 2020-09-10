@@ -1,4 +1,4 @@
-from random import choice
+from random import choice, choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
@@ -27,8 +27,17 @@ lazy_loader = LazyLoader()
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
 
-def generate_invoice_number(length=10):
-    return 'I-' + ''.join(choice(INVOICE_NUMBER_CHARS) for _ in range(length))
+def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
+    """
+    A function that generates a random bill identifier for new bill models.
+    :param prefix:
+    :param length: The length of the bill number.
+    :return: A string representing a random bill identifier.
+    """
+    invoice_number = ''.join(choices(INVOICE_NUMBER_CHARS, k=length))
+    if prefix:
+        invoice_number = 'I-' + invoice_number
+    return invoice_number
 
 
 class InvoiceModelManager(models.Manager):

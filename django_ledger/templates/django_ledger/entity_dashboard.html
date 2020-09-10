@@ -212,7 +212,7 @@
 {% block script_bottom %}
     {{ block.super }}
     <script>
-        djLedger.renderPnLChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}")
+        djLedger.renderInEChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}")
         djLedger.renderNetPayablesChart("{{ payables_chart_id }}", "{{ view.kwargs.entity_slug }}")
         djLedger.renderNetReceivablesChart("{{ receivables_chart_id }}", "{{ view.kwargs.entity_slug }}")
     </script>

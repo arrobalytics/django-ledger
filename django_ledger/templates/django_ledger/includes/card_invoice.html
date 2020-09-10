@@ -15,7 +15,6 @@
                 <p class="has-text-danger has-text-weight-bold is-size-5">Past
                     Due: {{ invoice.due_date | timesince }} ago</p>
             {% endif %}
-
             {% if invoice.progressible %}
                 <p>Is Progressible: <span class="icon has-text-success"><i
                         class="mdi mdi-18px mdi-check-circle"></i></span></p>

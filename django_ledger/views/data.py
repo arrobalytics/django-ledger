@@ -21,6 +21,7 @@ class EntityPnLDataView(View):
             entity_digest = entity.digest(
                 user_model=self.request.user,
                 equity_only=True,
+                signs=False,
                 by_period=True,
                 process_groups=True
             )

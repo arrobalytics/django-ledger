@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 from random import randint
 
 from django.urls import reverse
+from django.utils.timezone import localtime
 from django.utils.timezone import make_aware
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
@@ -46,7 +46,7 @@ class EntityModelDashboardView(DetailView):
 
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
-        date_filter = datetime.fromisoformat(date_filter) if date_filter else now()
+        date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
 
         context['pnl_chart_id'] = f'djetler-pnl-chart-{randint(10000, 99999)}'
         context['payables_chart_id'] = f'djetler-payables-chart-{randint(10000, 99999)}'
@@ -219,7 +219,7 @@ class SetDateView(RedirectView):
 class GenerateSampleData(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:entity-detail',
+        return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
@@ -228,8 +228,8 @@ class GenerateSampleData(RedirectView):
         if request.user.is_authenticated:
             generate_sample_data(
                 entity=self.kwargs['entity_slug'],
-                start_dt=datetime(2020, 2, 1),
                 user_model=self.request.user,
-                days_fw=30 * 6
+                start_dt=localtime() - timedelta(days=30 * 6),
+                days_fw=30 * 9
             )
         return super().get(request, *args, **kwargs)

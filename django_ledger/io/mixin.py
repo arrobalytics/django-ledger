@@ -191,16 +191,15 @@ class IOMixIn:
             'account__role',
         )
 
-        if not by_period:
-            txs_qs = txs_qs.annotate(
-                balance=Sum('amount'),
-            ).order_by('account__uuid')
-        else:
+        if by_period:
             txs_qs = txs_qs.annotate(
                 balance=Sum('amount'),
                 dt_idx=TruncMonth('journal_entry__date'),
-            ).order_by('account__uuid', 'journal_entry__date')
-
+            ).order_by('journal_entry__date', 'account__uuid')
+        else:
+            txs_qs = txs_qs.annotate(
+                balance=Sum('amount'),
+            ).order_by('account__uuid')
         return txs_qs
 
     def get_jes(self,
@@ -211,7 +210,7 @@ class IOMixIn:
                 role: str = None,
                 accounts: set = None,
                 signs: bool = False,
-                by_period: bool = False):
+                by_period: bool = False) -> dict:
 
         if equity_only:
             role = roles.GROUP_EARNINGS
@@ -267,6 +266,7 @@ class IOMixIn:
                user_model: UserModel,
                accounts: set = None,
                activity: str = None,
+               signs: bool = True,
                as_of: str = None,
                process_roles: bool = True,
                process_groups: bool = False,
@@ -275,11 +275,11 @@ class IOMixIn:
                by_period: bool = False) -> dict:
 
         accounts_digest = self.get_jes(
-            signs=True,
             user=user_model,
             accounts=accounts,
             activity=activity,
             as_of=as_of,
+            signs=signs,
             equity_only=equity_only,
             by_period=by_period
         )

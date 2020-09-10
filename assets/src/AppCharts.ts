@@ -75,7 +75,7 @@ class BaseChart {
 
 }
 
-class PnLChart extends BaseChart {
+class IncomeExpensesChart extends BaseChart {
 
 
     getEndPoint() {
@@ -89,15 +89,15 @@ class PnLChart extends BaseChart {
             // @ts-ignore
             let entityName = this.chartData.results['entity_name']
             // @ts-ignore
-            let pnlData = this.chartData.results['pnl_data']
-            let chartLabels = Object.keys(pnlData);
-            let revenue = chartLabels.map(k => {
+            let incExpData = this.chartData.results['pnl_data']
+            let chartLabels = Object.keys(incExpData);
+            let income = chartLabels.map(k => {
                 // @ts-ignore
-                return pnlData[k]['GROUP_INCOME']
+                return incExpData[k]['GROUP_INCOME']
             })
-            let netIncome = chartLabels.map(k => {
+            let expenses = chartLabels.map(k => {
                 // @ts-ignore
-                return pnlData[k]['GROUP_EARNINGS']
+                return incExpData[k]['GROUP_EXPENSES']
             })
 
             let data = {
@@ -105,15 +105,15 @@ class PnLChart extends BaseChart {
                 datasets: [
                     {
                         label: 'Income',
-                        backgroundColor: 'rgb(255,127,153)',
-                        borderColor: 'rgb(255, 99, 132)',
-                        data: revenue
-                    },
-                    {
-                        label: 'Earnings',
                         backgroundColor: 'rgb(110,210,81)',
                         borderColor: 'rgb(115,255,99)',
-                        data: netIncome
+                        data: income
+                    },
+                    {
+                        label: 'Expenses',
+                        backgroundColor: 'rgb(255,127,153)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: expenses
                     }]
             }
 
@@ -128,7 +128,7 @@ class PnLChart extends BaseChart {
                         let tooltipLabelIndex = tooltipItem.index;
                         let value = dataSet.data[tooltipLabelIndex];
 
-                        return currencyFormatter(value);
+                        return `${dataSet.label}: ${currencyFormatter(value)}`;
 
                     }
                 }
@@ -139,7 +139,7 @@ class PnLChart extends BaseChart {
             var ctx = document.getElementById(this.selector).getContext('2d');
             let chartTitleOptions: ChartTitleOptions = {
                 display: true,
-                text: `${entityName} - Income & Earnings`,
+                text: `${entityName} - Income & Expenses`,
                 fontSize: 20
             }
 
@@ -332,5 +332,5 @@ class NetReceivablesChart extends BaseChart {
 
 }
 
-export {PnLChart, NetPayablesChart, NetReceivablesChart};
+export {IncomeExpensesChart, NetPayablesChart, NetReceivablesChart};
 

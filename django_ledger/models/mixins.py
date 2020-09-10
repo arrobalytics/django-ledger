@@ -1,10 +1,10 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
-from django.utils.timezone import now
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
@@ -125,6 +125,7 @@ class ProgressibleMixIn(models.Model):
         if self.progressible:
             return self.progress
         return (self.amount_paid or 0) / self.amount_due
+        # return Decimal(round(((self.amount_paid or 0) / self.amount_due), 2))
 
     def get_progress_percent(self):
         return self.get_progress() * 100
@@ -224,12 +225,19 @@ class ProgressibleMixIn(models.Model):
             return tx_types[acc_bal_type + d_or_i]
         return 'debit'
 
-    def migrate_state(self, user_model, entity_slug: str, force_migrate: bool = False, commit: bool = True):
+    def migrate_state(self, user_model,
+                      entity_slug: str,
+                      force_migrate: bool = False,
+                      commit: bool = True,
+                      je_date: date = None):
+
         if self.migrate_allowed() or force_migrate:
-            txs_digest = self.ledger.digest(user_model=user_model,
-                                            process_groups=False,
-                                            process_roles=False,
-                                            process_ratios=False)
+            txs_digest = self.ledger.digest(
+                user_model=user_model,
+                process_groups=False,
+                process_roles=False,
+                process_ratios=False
+            )
 
             account_data = txs_digest['tx_digest']['accounts']
             cash_acc_db = next(
@@ -248,12 +256,16 @@ class ProgressibleMixIn(models.Model):
             new_state = self.new_state(commit=commit)
 
             diff = {
-                'amount_paid': new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0),
-                'amount_receivable': new_state['amount_receivable'] - (rcv_acc_db['balance'] if rcv_acc_db else 0),
-                'amount_payable': new_state['amount_unearned'] - (pay_acc_db['balance'] if pay_acc_db else 0),
+                'amount_paid': round(
+                    new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0), 2),
+                'amount_receivable': round(
+                    new_state['amount_receivable'] - (rcv_acc_db['balance'] if rcv_acc_db else 0), 2),
+                'amount_payable': round(
+                    new_state['amount_unearned'] - (pay_acc_db['balance'] if pay_acc_db else 0), 2),
                 # todo: chunk this down and figure out a cleaner way to deal with the earnings account.
                 # todo: absolute is used here because amount earned can come from an income account or expense account.
-                'amount_earned': new_state['amount_earned'] - abs(earn_acc_db['balance'] if earn_acc_db else 0)
+                'amount_earned': round(
+                    new_state['amount_earned'] - abs(earn_acc_db['balance'] if earn_acc_db else 0), 2)
             }
 
             je_txs = list()
@@ -323,7 +335,7 @@ class ProgressibleMixIn(models.Model):
 
             if len(je_txs) > 0:
                 self.ledger.commit_txs(
-                    je_date=now().date(),
+                    je_date=localdate() if not je_date else je_date,
                     je_txs=je_txs,
                     je_activity='op',
                     je_posted=True,
@@ -353,10 +365,13 @@ class ProgressibleMixIn(models.Model):
         self.amount_earned = state['amount_earned']
 
     def due_in_days(self):
-        td = self.due_date - now().date()
+        td = self.due_date - localdate()
         if td.days < 0:
             return 0
         return td.days
+
+    def is_past_due(self):
+        return self.due_date < localdate()
 
     def net_due_group(self):
         due_in = self.due_in_days()
@@ -374,7 +389,7 @@ class ProgressibleMixIn(models.Model):
     def clean(self):
 
         if not self.date:
-            self.date = now().date()
+            self.date = localdate()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
         if self.receivable_account.role != ASSET_CA_RECEIVABLES:
@@ -409,8 +424,8 @@ class ProgressibleMixIn(models.Model):
         if self.paid:
             self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
+            today = localdate()
 
-            today = now().date()
             if not self.paid_date:
                 self.paid_date = today
             if self.paid_date > today:

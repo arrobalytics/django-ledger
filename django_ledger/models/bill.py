@@ -5,7 +5,6 @@ from uuid import uuid4
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
@@ -14,13 +13,17 @@ from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, Co
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
 
-def generate_bill_number(length: int = 10) -> str:
+def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
     """
     A function that generates a random bill identifier for new bill models.
+    :param prefix:
     :param length: The length of the bill number.
     :return: A string representing a random bill identifier.
     """
-    return 'B-' + ''.join(choices(BILL_NUMBER_CHARS, k=length))
+    bill_number = ''.join(choices(BILL_NUMBER_CHARS, k=length))
+    if prefix:
+        bill_number = 'B-' + bill_number
+    return bill_number
 
 
 class BillModelManager(models.Manager):
@@ -108,9 +111,6 @@ class BillModelAbstract(ProgressibleMixIn,
         :return:
         """
         return f'Bill {self.bill_number} account adjustment.'
-
-    def is_past_due(self):
-        return self.due_date < now().date()
 
     def clean(self):
         if not self.bill_number:
