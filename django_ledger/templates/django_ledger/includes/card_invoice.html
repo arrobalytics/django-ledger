@@ -39,8 +39,6 @@
                       method="post"
                       action="{% url 'django_ledger:invoice-mark-paid' entity_slug=entity_slug invoice_pk=invoice.uuid %}">
                     {% csrf_token %}
-                    <input type="text" hidden name="entity_slug" value="{{ entity_slug }}">
-                    <input type="text" hidden name="biil_pk" value="{{ invoice.uuid }}">
                 </form>
 
                 <div class="modal-background"></div>
@@ -49,8 +47,9 @@
                     {#  todo: add more context to the modal card... #}
                     <div class="card">
                         <div class="card-content">
-                            <p class="title">Are you sure you want to mark invoice {{ invoice.invoice_number }} as
-                                paid??</p>
+                            <p class="is-size-4 has-font-weight-light">
+                                Are you sure you want to mark invoice {{ invoice.invoice_number }} as paid?
+                            </p>
                         </div>
                         <div class="card-footer">
                             <a onclick="djLedger.closeModal('djledger-invoice-modal-{{ invoice.uuid }}')"

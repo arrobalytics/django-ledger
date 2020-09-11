@@ -9,7 +9,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
 from django_ledger.models.bill import BillModel
-from django_ledger.models.utils import new_bill_protocol
+from django_ledger.models.utils import new_bill_protocol, mark_progressible_paid
 
 
 class BillModelListView(MonthArchiveView):
@@ -157,6 +157,7 @@ class BillModelDeleteView(DeleteView):
 
 
 class BillModelMarkPaidView(View, SingleObjectMixin):
+    http_method_names = ['post']
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
 
@@ -167,10 +168,12 @@ class BillModelMarkPaidView(View, SingleObjectMixin):
         )
 
     def post(self, request, *args, **kwargs):
-        bill: BillModel = self.get_object()
-        bill.paid = True
-        bill.full_clean()
-        bill.save()
+        bill = self.get_object()
+        mark_progressible_paid(
+            progressible_model=bill,
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
         messages.add_message(request,
                              messages.SUCCESS,
                              f'Successfully marked bill {bill.bill_number} as Paid.',

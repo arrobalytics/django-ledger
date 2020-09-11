@@ -17,6 +17,7 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.mixins import ProgressibleMixIn
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -312,3 +313,13 @@ def progressible_net_summary(queryset: QuerySet) -> dict:
     return {
         g: float(sum(b['amount_open'] for b in l)) for g, l in groupby(bill_nets, key=lambda b: b['net_due_group'])
     }
+
+
+def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, entity_slug: str):
+    progressible_model.paid = True
+    progressible_model.clean()
+    progressible_model.save()
+    progressible_model.migrate_state(
+        user_model=user_model,
+        entity_slug=entity_slug
+    )

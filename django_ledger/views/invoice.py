@@ -10,7 +10,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.utils import new_invoice_protocol
+from django_ledger.models.utils import new_invoice_protocol, mark_progressible_paid
 
 
 class InvoiceModelListView(MonthArchiveView):
@@ -175,6 +175,7 @@ class InvoiceModelDeleteView(DeleteView):
 
 
 class InvoiceModelMarkPaidView(View, SingleObjectMixin):
+    http_method_names = ['post']
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
 
@@ -186,9 +187,11 @@ class InvoiceModelMarkPaidView(View, SingleObjectMixin):
 
     def post(self, request, *args, **kwargs):
         invoice: InvoiceModel = self.get_object()
-        invoice.paid = True
-        invoice.full_clean()
-        invoice.save()
+        mark_progressible_paid(
+            progressible_model=invoice,
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
         messages.add_message(request,
                              messages.SUCCESS,
                              f'Successfully marked bill {invoice.invoice_number} as Paid.',

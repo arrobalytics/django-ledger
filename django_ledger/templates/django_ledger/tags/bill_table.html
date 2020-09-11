@@ -1,4 +1,5 @@
 {% load django_ledger %}
+{% load i18n %}
 
 <div class="table-container">
 
@@ -34,10 +35,75 @@
                     <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
                 {% endif %} </td>
                 <td>
-                    <a class="button is-dark is-small"
-                       href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}">View</a>
-                    <a class="button is-warning is-small"
-                       href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}">Edit</a>
+
+
+                    <div class="dropdown is-right" id="bill-action-{{ bill.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    onclick="djLedger.toggleDropdown('bill-action-{{ bill.uuid }}')"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">
+                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
+                                      </span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu" id="dropdown-menu-{{ bill.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                                   class="dropdown-item has-text-success">View</a>
+
+                                {% if not bill.paid %}
+                                    {# MARK AS PAID MODAL START #}
+                                    <div id="djledger-bill-as-paid-modal-{{ bill.uuid }}" class="modal">
+
+                                        <form name="form-bill-mark-paid-{{ bill.uuid }}"
+                                              method="post"
+                                              action="{% url 'django_ledger:bill-mark-paid' entity_slug=entity_slug bill_pk=bill.uuid %}">
+                                            {% csrf_token %}
+                                        </form>
+
+                                        <div class="modal-background"></div>
+                                        <div class="modal-content">
+                                            {#  todo: add more context to the modal card... #}
+                                            <div class="card">
+                                                <div class="card-content">
+                                                    <p class="is-size-4 has-font-weight-light">
+                                                        Are you sure you want to mark
+                                                        bill {{ bill.invoice_number }} as
+                                                        paid?
+                                                    </p>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <a onclick="djLedger.closeModal('djledger-bill-as-paid-modal-{{ bill.uuid }}')"
+                                                       class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
+                                                    <a onclick="djLedger.submitForm(
+                                                            'form-bill-mark-paid-{{ bill.uuid }}',
+                                                            'djledger-bill-as-paid-modal-{{ bill.uuid }}')"
+                                                       class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button class="modal-close is-large"
+                                                aria-label="close"
+                                                onclick="djLedger.closeModal('djledger-bill-as-paid-modal-{{ bill.uuid }}')"></button>
+                                    </div>
+                                    {# MARK AS PAID MODAL END #}
+
+                                    <a onclick="djLedger.showModal('djledger-bill-as-paid-modal-{{ bill.uuid }}')"
+                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
+                                {% endif %}
+                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
+
+                            </div>
+                        </div>
+                    </div>
+
+
                 </td>
             </tr>
         {% endfor %}

@@ -49,7 +49,7 @@ class ContactInfoMixIn(models.Model):
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
     email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
     website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
-    phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('Phone Number'))
+    phone = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('Phone Number'))
 
     class Meta:
         abstract = True
@@ -435,5 +435,5 @@ class ProgressibleMixIn(models.Model):
         else:
             self.paid_date = None
 
-        if not self.migrate_allowed():
+        if self.migrate_allowed():
             self.update_state()

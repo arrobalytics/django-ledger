@@ -73,6 +73,19 @@
                     </div>
                 {% endif %}
 
+                <div class="column is-4-tablet">
+                    <div class="box">
+                        <div class="container">
+                            <div class="columns">
+                                <div class="column">
+                                    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                       class="button is-fullwidth is-info">View All Invoices</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {% for invoice in invoices %}
                     <div class="column is-6-tablet is-4-desktop">
                         {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug %}
