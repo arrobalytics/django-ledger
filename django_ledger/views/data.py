@@ -82,7 +82,7 @@ class EntityReceivableNetDataView(View):
             return JsonResponse({
                 'results': {
                     'entity_slug': self.kwargs['entity_slug'],
-                    'net_payable_data': net_summary
+                    'net_receivable_data': net_summary
                 }
             })
 

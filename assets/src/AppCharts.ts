@@ -170,11 +170,9 @@ class IncomeExpensesChart extends BaseChart {
 
 class NetPayablesChart extends BaseChart {
 
-
     getEndPoint() {
         return `entity/${this.entitySlug}/data/net-payables/`
     }
-
 
     renderChart() {
 
@@ -252,17 +250,15 @@ class NetPayablesChart extends BaseChart {
 
 class NetReceivablesChart extends BaseChart {
 
-
     getEndPoint() {
         return `entity/${this.entitySlug}/data/net-receivables/`
     }
-
 
     renderChart() {
 
         if (this.chartData) {
             // @ts-ignore
-            let netPayablesData = this.chartData.results['net_payable_data']
+            let netPayablesData = this.chartData.results['net_receivable_data']
             let chartLabels = Object.keys(netPayablesData);
             let netPayablesDataSet = chartLabels.map(k => {
                 // @ts-ignore
@@ -322,7 +318,7 @@ class NetReceivablesChart extends BaseChart {
             }
 
             this.chart = new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: data,
                 options: chartOptions
             });
