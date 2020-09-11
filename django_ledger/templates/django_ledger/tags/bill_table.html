@@ -1,17 +1,17 @@
 {% load django_ledger %}
 
 <div class="table-container">
+
     <table class="table is-fullwidth is-narrow is-striped">
         <thead>
         <tr>
             <th>Bill Number</th>
-            <th>Bill XRef</th>
-            <th>From</th>
+            <th>Bill Date</th>
+            <th>Billed To</th>
             <th>Amount</th>
             <th>Payments</th>
-            <th>Due Date</th>
-            <th>Created</th>
-            <th>Last Updated</th>
+            <th>Is Paid?</th>
+            <th>Past Due?</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -19,13 +19,20 @@
         {% for bill in bills %}
             <tr>
                 <td>{{ bill.bill_number }}</td>
-                <td>{{ bill.xref }}</td>
+                <td>{{ bill.date }}</td>
                 <td>{{ bill.bill_to }}</td>
                 <td>${{ bill.amount_due | cs_thousands }}</td>
                 <td>${{ bill.amount_paid | cs_thousands }}</td>
-                <td>{{ bill.due_date }}</td>
-                <td>{{ bill.created }}</td>
-                <td>{{ bill.updated }}</td>
+                <td>{% if bill.paid %}
+                    <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
+                {% else %}
+                    <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
+                {% endif %} </td>
+                <td>{% if bill.is_past_due %}
+                    <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
+                {% else %}
+                    <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
+                {% endif %} </td>
                 <td>
                     <a class="button is-dark is-small"
                        href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}">View</a>

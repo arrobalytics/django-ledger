@@ -1,9 +1,11 @@
 from django.contrib import messages
+from django.core.exceptions import FieldError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import ListView, UpdateView, CreateView, DeleteView
+from django.views.generic import UpdateView, CreateView, DeleteView, MonthArchiveView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
@@ -11,21 +13,47 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.utils import new_invoice_protocol
 
 
-class InvoiceModelListView(ListView):
+class InvoiceModelListView(MonthArchiveView):
     template_name = 'django_ledger/invoice_list.html'
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
+    date_field = 'date'
+    month_format = '%m'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
 
+    def get_year(self):
+        try:
+            year = self.request.GET['year']
+        except KeyError:
+            year = localdate().year
+        return year
+
+    def get_month(self):
+        try:
+            month = self.request.GET['month']
+        except KeyError:
+            month = str(localdate().month)
+            month = len(month) * '0' + month
+        return month
+
     def get_queryset(self):
-        entity_slug = self.kwargs['entity_slug']
-        return InvoiceModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=entity_slug
+        qs = InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
         )
+        sort = self.request.GET.get('sort')
+        if sort:
+            try:
+                qs = qs.order_by(sort)
+            except FieldError:
+                messages.add_message(self.request,
+                                     level=messages.ERROR,
+                                     message=f'Invalid sort {sort}',
+                                     extra_tags='is-danger')
+        return qs
 
 
 class InvoiceModelCreateView(CreateView):

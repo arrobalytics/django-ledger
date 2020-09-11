@@ -24,7 +24,7 @@
                         class="mdi mdi-18px mdi-do-not-disturb"></i></span>
                 </p>
             {% endif %}
-            <p class="is-size-5">Amount Open: ${{ bill.get_amount_open | cs_thousands }}</p>
+            <p class="is-size-5 has-text-danger">You Still Owe: ${{ bill.get_amount_open | cs_thousands }}</p>
             <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
             <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
             <progress class="progress is-medium is-success"
