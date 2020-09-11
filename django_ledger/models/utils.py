@@ -215,7 +215,7 @@ def generate_sample_data(entity: str or EntityModel,
         progress = Decimal(round(random(), 2)) if is_progressible else 0
 
         is_paid = random() < .95
-        paid_dttm = issue_dttm + timedelta(days=randint(0, 90)) if is_paid else None
+        paid_dttm = issue_dttm + timedelta(days=randint(0, 60)) if is_paid else None
         if paid_dttm and paid_dttm >= loc_time:
             paid_dttm = None
             is_paid = False
@@ -293,29 +293,6 @@ def generate_sample_data(entity: str or EntityModel,
             invoice.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
             invoice.save()
             print(f'Invoice {invoice.invoice_number} created...')
-
-            # in_amt = random() * income_tx_avg
-            # txs.append({
-            #     'account_id': cash_acc.uuid,
-            #     'tx_type': 'debit',
-            #     'amount': in_amt,
-            #     'description': f'Sample data for {entity.name}'
-            # })
-            #
-            # in_acc = choice(accounts_gb['in_sales'])
-            # txs.append({
-            #     'account_id': in_acc.uuid,
-            #     'tx_type': 'credit',
-            #     'amount': in_amt,
-            #     'description': f'Sample data for {entity.name}'
-            # })
-
-        # print(f'TXS: {i + 1}/{rng} created...')
-        # entity.commit_txs(je_date=dttm,
-        #                   je_txs=txs,
-        #                   je_activity='op',
-        #                   je_posted=True,
-        #                   je_ledger=ledger)
 
 
 def progressible_net_summary(queryset: QuerySet) -> dict:
