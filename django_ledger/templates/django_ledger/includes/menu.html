@@ -1,0 +1,41 @@
+<aside class="menu">
+    <p class="menu-label">Administration</p>
+    <ul class="menu-list">
+        <li><a>Entity Dashboard</a></li>
+        <li>
+            <a>Manage Your Lists</a>
+            <ul>
+                <li><a>Customers</a></li>
+                <li><a>Vendors</a></li>
+                <li><a href="{{ entity.get_bank_account_list_url }}">Banks</a></li>
+                <li><a href="{{ entity.get_bill_list_url }}">Bills</a></li>
+                <li><a href="{{ entity.get_invoice_list_url }}">Invoices</a></li>
+            </ul>
+        </li>
+        <li>
+            <a>Reports</a>
+            <ul>
+                <li><a href="{{ entity.get_balance_sheet_url }}">Balance Sheet</a></li>
+                <li><a href="{{ entity.get_income_statement_url }}">Income Statement</a></li>
+            </ul>
+        </li>
+        <li>
+            <a>Manage Entity</a>
+            <ul>
+                <li><a href="{% url 'django_ledger:account-list' entity_slug=entity.slug coa_slug=entity.coa.slug %}">
+                    Chart of Accounts</a></li>
+                <li><a href="{{ entity.get_ledger_list_url }}">Ledgers</a></li>
+                <li><a href="{{ entity.get_data_import_url }}">Import Transactions</a></li>
+                <li><a>Collaborators</a></li>
+                <li><a>Settings</a></li>
+            </ul>
+        </li>
+    </ul>
+
+    <p class="menu-label">General</p>
+    <ul class="menu-list">
+        <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
+        <li><a>My Messages</a></li>
+    </ul>
+
+</aside>

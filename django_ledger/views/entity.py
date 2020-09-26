@@ -81,7 +81,7 @@ class EntityModelDashboardView(DetailView):
         :return: The View queryset.
         """
         return EntityModel.objects.for_user(
-            user_model=self.request.user)
+            user_model=self.request.user).select_related('coa')
 
 
 class EntityModelCreateView(CreateView):

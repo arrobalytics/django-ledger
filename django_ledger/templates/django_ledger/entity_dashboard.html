@@ -16,133 +16,58 @@
     </section>
 
     <section class="section">
-        <div class="container">
-            <div class="columns is-multiline">
-
-                <div class="column is-6-tablet">
-                    <div class="box content djetler-box-green">
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
-                        <h1 class="has-text-centered">${{ tx_digest.group_balance.GROUP_ASSETS | cs_thousands }}</h1>
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
-                        <h1 class="has-text-centered">
-                            ${{ tx_digest.group_balance.GROUP_LIABILITIES | cs_thousands }}</h1>
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
-                        <h1 class="has-text-centered">${{ tx_digest.group_balance.GROUP_EQUITY | cs_thousands }}</h1>
-                        <h4 class="has-text-centered has-text-weight-light">{% trans 'Cash' %}</h4>
-                        <h3 class="has-text-centered">${{ tx_digest.role_balance.ASSET_CA_CASH | cs_thousands }}</h3>
-                    </div>
-                </div>
-
-                <div class="column is-6-tablet">
-                    <div class="box content djetler-box-yellow">
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
-                        <h1 class="has-text-centered">${{ tx_digest.group_balance.GROUP_INCOME | cs_thousands }}</h1>
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
-                        <h1 class="has-text-centered">
-                            ${{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
-                        <h1 class="has-text-centered">${{ tx_digest.group_balance.GROUP_EARNINGS | cs_thousands }}</h1>
-                        <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
-                        <h3 class="has-text-centered">{{ date_filter | date }}</h3>
-                    </div>
-                </div>
-
-                <div class="column is-12">
-                    {% chart_container pnl_chart_id %}
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {# RECEIVABLES SECTION START #}
-    <section class="hero is-primary is-bold">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">{% trans 'Receivables' %}</h1>
-                <h2 class="subtitle">
-                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
-            </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
-            <div class="columns is-multiline is-centered">
-                {% if invoices %}
-                    <div class="column is-8-tablet">
-                        {% chart_container receivables_chart_id %}
-                    </div>
-                {% endif %}
-
-                <div class="column is-4-tablet">
+        <div class="container is-fluid">
+            <div class="columns">
+                <div class="column is-3">
                     <div class="box">
-                        <div class="container">
-                            <div class="columns">
-                                <div class="column">
-                                    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                                       class="button is-fullwidth is-info">View All Invoices</a>
-                                </div>
+                        {% include 'django_ledger/includes/menu.html' %}
+                    </div>
+
+                </div>
+                <div class="column is-9">
+                    <div class="columns is-multiline">
+
+                        <div class="column is-6-tablet">
+                            <div class="box content djetler-box-green">
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Assets' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_ASSETS | cs_thousands }}</h1>
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Liabilities' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_LIABILITIES | cs_thousands }}</h1>
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Equity' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_EQUITY | cs_thousands }}</h1>
+                                <h4 class="has-text-centered has-text-weight-light">{% trans 'Cash' %}</h4>
+                                <h3 class="has-text-centered">
+                                    ${{ tx_digest.role_balance.ASSET_CA_CASH | cs_thousands }}</h3>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {% for invoice in invoices %}
-                    <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug %}
-                    </div>
-                {% endfor %}
-                <div class="column is-6-tablet is-4-desktop">
-                    {% include 'django_ledger/includes/card_invoice.html' with create_invoice=True entity_slug=entity.slug %}
-                </div>
-            </div>
-        </div>
-    </section>
-    {# RECEIVABLES SECTION END #}
+                        <div class="column is-6-tablet">
+                            <div class="box content djetler-box-yellow">
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_INCOME | cs_thousands }}</h1>
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
+                                <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
+                                <h1 class="has-text-centered">
+                                    ${{ tx_digest.group_balance.GROUP_EARNINGS | cs_thousands }}</h1>
+                                <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
+                                <h3 class="has-text-centered">{{ date_filter | date }}</h3>
+                            </div>
+                        </div>
 
+                        <div class="column is-12">
+                            <div class="box">
+                                {% chart_container pnl_chart_id %}
+                            </div>
 
-    {# PAYABLES SECTION START #}
-    <section class="hero is-primary is-bold">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">{% trans 'Payables' %}</h1>
-                <h2 class="subtitle">
-                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
-            </div>
-        </div>
-    </section>
-    <section class="section">
-        <div class="container">
-            <div class="columns is-multiline is-centered">
-                {% if bills %}
-                    <div class="column is-8-tablet">
-                        {% chart_container payables_chart_id %}
-                    </div>
-                {% endif %}
-                {% for bill in bills %}
-                    <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=entity.slug %}
-                    </div>
-                {% endfor %}
-                <div class="column is-6-tablet is-4-desktop">
-                    {% include 'django_ledger/includes/card_bill.html' with create_bill=True entity_slug=entity.slug %}
-                </div>
-            </div>
-        </div>
-    </section>
-    {# PAYABLES SECTION END #}
-
-
-    <section class="section">
-        <div class="container">
-            <div class="tile is-ancestor">
-                <div class="tile is-vertical is-8">
-                    <div class="tile">
-
-
-                        <div class="tile is-parent is-vertical">
-
-
-                            <div class="tile is-child box content">
+                        </div>
+                        <div class="column is-6">
+                            <div class="box content">
                                 <h2 class="has-text-weight-light has-text-centered">Financial Analysis</h2>
 
                                 <h4>Solvency:</h4>
@@ -202,56 +127,99 @@
                                         max="{% fin_ratio_max_value ratio='gross_profit_margin' %}">{{ tx_digest.ratios.gross_profit_margin }}</progress>
 
                             </div>
+
                         </div>
+
+
                     </div>
 
                 </div>
-                <div class="tile is-parent">
-                    <div class="tile is-child box content">
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Chart of Accounts' %}</h2>
-                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:account-list' entity_slug=entity.slug coa_slug=entity.coa.slug %}">Accounts</a>
-                        <a class="button is-primary is-outlined is-fullwidth"
-                           href="{{ entity.coa.get_update_url }}">CoA Settings</a>
+            </div>
 
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Ledgers' %}</h2>
-                        <a class="button is-primary is-outlined is-fullwidth"
-                           href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Ledgers</a>
+        </div>
+    </section>
 
-
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Actions' %}</h2>
-                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
-                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bills</a>
-
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Reports' %}</h2>
-                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">Balance
-                            Sheet</a>
-                        <a class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">Income
-                            Statement</a>
-
-                        <h2 class="has-text-centered has-text-weight-light">{% trans 'Entity' %}</h2>
-                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">Bank
-                            Accounts</a>
-                        <a class="button is-danger is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">Import</a>
-                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-manage' entity_slug=view.kwargs.entity_slug %}">Manage</a>
-                        <a class="button is-info is-outlined is-fullwidth djetler_my_1"
-                           href="{% url 'django_ledger:entity-generate-sample-data' entity_slug=view.kwargs.entity_slug %}">Sample
-                            Data</a>
-
+    {# RECEIVABLES SECTION START #}
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">{% trans 'Receivables' %}</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline is-centered">
+                {% if invoices %}
+                    <div class="column is-8-tablet">
+                        <div class="box">
+                            {% chart_container receivables_chart_id %}
+                        </div>
                     </div>
+                {% endif %}
+
+                <div class="column is-4-tablet">
+                    <div class="box">
+                        <div class="container">
+                            <div class="columns">
+                                <div class="column">
+                                    <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                       class="button is-fullwidth is-info">View All Invoices</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% for invoice in invoices %}
+                    <div class="column is-6-tablet is-4-desktop">
+                        {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug %}
+                    </div>
+                {% endfor %}
+                <div class="column is-6-tablet is-4-desktop">
+                    {% include 'django_ledger/includes/card_invoice.html' with create_invoice=True entity_slug=entity.slug %}
                 </div>
             </div>
         </div>
-
-
     </section>
+    {# RECEIVABLES SECTION END #}
+
+
+    {# PAYABLES SECTION START #}
+    <section class="hero is-primary is-bold">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">{% trans 'Payables' %}</h1>
+                <h2 class="subtitle">
+                    <span class="icon"><i class="icon mdi mdi-domain"></i></span>{{ entity.name }}</h2>
+            </div>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline is-centered">
+                {% if bills %}
+                    <div class="column is-8-tablet">
+                        <div class="box">
+                            {% chart_container payables_chart_id %}
+                        </div>
+                    </div>
+                {% endif %}
+                {% for bill in bills %}
+                    <div class="column is-6-tablet is-4-desktop">
+                        {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=entity.slug %}
+                    </div>
+                {% endfor %}
+                <div class="column is-6-tablet is-4-desktop">
+                    {% include 'django_ledger/includes/card_bill.html' with create_bill=True entity_slug=entity.slug %}
+                </div>
+            </div>
+        </div>
+    </section>
+    {# PAYABLES SECTION END #}
+
 
 {% endblock %}
 

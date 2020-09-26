@@ -80,6 +80,48 @@ class EntityModelAbstract(MPTTModel,
                            'entity_slug': self.slug
                        })
 
+    def get_ledger_list_url(self):
+        return reverse('django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_bill_list_url(self):
+        return reverse('django_ledger:bill-list',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_invoice_list_url(self):
+        return reverse('django_ledger:invoice-list',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_bank_account_list_url(self):
+        return reverse('django_ledger:bank-account-list',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_balance_sheet_url(self):
+        return reverse('django_ledger:entity-bs',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_income_statement_url(self):
+        return reverse('django_ledger:entity-ic',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_data_import_url(self):
+        return reverse('django_ledger:data-import-jobs-list',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
     def clean(self):
         if not self.name:
             raise ValidationError(message=_('Must provide a name for EntityModel'))

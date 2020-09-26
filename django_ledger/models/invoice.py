@@ -1,4 +1,4 @@
-from random import choice, choices
+from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 

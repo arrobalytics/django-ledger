@@ -8,7 +8,7 @@ from django.utils.timezone import now
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
-from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALISYS
+from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALYSIS
 
 register = template.Library()
 
@@ -248,13 +248,13 @@ def chart_container(chart_id):
 
 @register.simple_tag
 def fin_ratio_max_value(ratio: str):
-    params = DJANGO_LEDGER_FINANCIAL_ANALISYS['ratios'][ratio]['ranges']
+    params = DJANGO_LEDGER_FINANCIAL_ANALYSIS['ratios'][ratio]['ranges']
     return params['healthy']
 
 
 @register.filter
 def fin_ratio_threshold_class(value, ratio):
-    params = DJANGO_LEDGER_FINANCIAL_ANALISYS['ratios'][ratio]
+    params = DJANGO_LEDGER_FINANCIAL_ANALYSIS['ratios'][ratio]
     ranges = params['ranges']
 
     if params['good_incremental']:

@@ -13,7 +13,7 @@
                            href="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}">
                             Create Bank Account</a>
                         <a class="button is-dark"
-                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Back</a>
                         {% bank_account_table %}
                     </div>
                 </div>
