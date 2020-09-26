@@ -52,17 +52,6 @@ export class DjetlerApp {
         this.endDateFilters = flatpickr(".djetler-end-date-icon-filter", this.getFlatPickrOptions(false));
         this.dateFilters = flatpickr(".djetler-date-filter", this.getFlatPickrOptions(true));
 
-        let djVue = document.getElementById('djetler-vue');
-        if (djVue) {
-            this.vueInstance = new Vue({
-                el: "#djetler-vue",
-                delimiters: ["[[", "]]"],
-                data: {
-                    message: "Hello Djetler Vue Yey!!!"
-                }
-            });
-        }
-
     }
 
     getFlatPickrOptions(inline: boolean = false) {

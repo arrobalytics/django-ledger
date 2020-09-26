@@ -126,7 +126,9 @@ def generate_sample_data(entity: str or EntityModel,
                          cap_contribution: float or int = 20000,
                          income_tx_avg: float or int = 2000,
                          expense_tx_avg: float or int = 1000,
-                         tx_quantity: int = 100):
+                         tx_quantity: int = 100,
+                         is_progressible_probability: float = 0.2,
+                         is_paid_probability: float = 0.97):
     """
     TXS = List[{
             'account_id': Account Database UUID
@@ -135,6 +137,8 @@ def generate_sample_data(entity: str or EntityModel,
             'description': string,
             'staged_tx_model': StagedTransactionModel or None
         }]
+    :param is_paid_probability:
+    :param is_progressible_probability:
     :param tx_quantity:
     :param expense_tx_avg:
     :param income_tx_avg:
@@ -212,10 +216,10 @@ def generate_sample_data(entity: str or EntityModel,
         if issue_dttm > loc_time:
             issue_dttm = loc_time
 
-        is_progressible = random() > .8
+        is_progressible = random() < is_progressible_probability
         progress = Decimal(round(random(), 2)) if is_progressible else 0
 
-        is_paid = random() < .95
+        is_paid = random() < is_paid_probability
         paid_dttm = issue_dttm + timedelta(days=randint(0, 60)) if is_paid else None
         if paid_dttm and paid_dttm >= loc_time:
             paid_dttm = None

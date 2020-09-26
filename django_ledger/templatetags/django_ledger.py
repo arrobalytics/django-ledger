@@ -8,6 +8,7 @@ from django.utils.timezone import now
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
+from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALISYS
 
 register = template.Library()
 
@@ -29,6 +30,7 @@ def reverse_sign(value: float):
     if value:
         return -value
     return 0
+
 
 @register.filter(name='last_four')
 def last_four(value: str):
@@ -242,3 +244,32 @@ def chart_container(chart_id):
     return {
         'chart_id': chart_id
     }
+
+
+@register.simple_tag
+def fin_ratio_max_value(ratio: str):
+    params = DJANGO_LEDGER_FINANCIAL_ANALISYS['ratios'][ratio]['ranges']
+    return params['healthy']
+
+
+@register.filter
+def fin_ratio_threshold_class(value, ratio):
+    params = DJANGO_LEDGER_FINANCIAL_ANALISYS['ratios'][ratio]
+    ranges = params['ranges']
+
+    if params['good_incremental']:
+        if value <= ranges['critical']:
+            return 'is-danger'
+        elif value <= ranges['warning']:
+            return 'is-warning'
+        elif value <= ranges['watch']:
+            return 'is-primary'
+        return 'is-success'
+    else:
+        if value >= ranges['critical']:
+            return 'is-danger'
+        elif value >= ranges['warning']:
+            return 'is-warning'
+        elif value >= ranges['watch']:
+            return 'is-primary'
+        return 'is-success'

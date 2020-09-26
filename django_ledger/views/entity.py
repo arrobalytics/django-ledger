@@ -230,6 +230,7 @@ class GenerateSampleData(RedirectView):
                 entity=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 start_dt=localtime() - timedelta(days=30 * 6),
-                days_fw=30 * 9
+                days_fw=30 * 9,
+                tx_quantity=50
             )
         return super().get(request, *args, **kwargs)
