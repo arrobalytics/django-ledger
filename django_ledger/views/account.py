@@ -20,7 +20,6 @@ class AccountModelListView(ListView):
         return AccountModel.on_coa.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            coa_slug=self.kwargs['coa_slug']
         ).order_by('code')
 
 
@@ -28,9 +27,7 @@ class AccountModelUpdateView(UpdateView):
     context_object_name = 'account'
     template_name = 'django_ledger/account_update.html'
     slug_url_kwarg = 'account_pk'
-
-    def get_slug_field(self):
-        return 'uuid'
+    slug_field = 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -39,25 +36,23 @@ class AccountModelUpdateView(UpdateView):
         return context
 
     def get_form(self, form_class=None):
-        return AccountModelUpdateForm(coa_slug=self.kwargs['coa_slug'],
-                                      entity_slug=self.kwargs['entity_slug'],
-                                      user_model=self.request.user,
-                                      **self.get_form_kwargs())
+        return AccountModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
 
     def get_success_url(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        coa_slug = self.kwargs.get('coa_slug')
+        entity_slug = self.kwargs['entity_slug']
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'coa_slug': coa_slug,
                        })
 
     def get_queryset(self):
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-            coa_slug=self.kwargs['coa_slug']
         )
 
 
@@ -70,9 +65,16 @@ class AccountModelCreateView(CreateView):
         context['header_title'] = _('Create Account')
         return context
 
+    def get_initial(self):
+        return {
+            'coa': ChartOfAccountModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).get(entity__slug__exact=self.kwargs['entity_slug'])
+        }
+
     def get_form(self, form_class=None):
         return AccountModelCreateForm(
-            coa_slug=self.kwargs['coa_slug'],
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
             **self.get_form_kwargs()
@@ -81,9 +83,8 @@ class AccountModelCreateView(CreateView):
     def form_valid(self, form):
         coa_model = ChartOfAccountModel.objects.for_entity(
             user_model=self.request.user,
-            coa_slug=self.kwargs['coa_slug'],
             entity_slug=self.kwargs['entity_slug']
-        ).get(slug__iexact=self.kwargs['coa_slug'])
+        ).get(entity__slug__exact=self.kwargs['entity_slug'])
         form.instance.coa = coa_model
         self.object = form.save()
         return super().form_valid(form)
@@ -99,5 +100,4 @@ class AccountModelCreateView(CreateView):
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'coa_slug': coa_slug,
                        })

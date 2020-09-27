@@ -1,20 +1,19 @@
-from django.forms import ModelForm, TextInput, Select
+from django.forms import ModelForm, TextInput, Select, HiddenInput
 
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class AccountModelBaseForm(ModelForm):
 
-    def __init__(self, coa_slug, entity_slug, user_model, *args, **kwargs):
+    def __init__(self, entity_slug, user_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.COA_SLUG = coa_slug
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         account_qs = AccountModel.on_coa.for_entity_available(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG,
-            coa_slug=self.COA_SLUG
         )
         self.fields['parent'].queryset = account_qs
 
@@ -24,6 +23,7 @@ class AccountModelCreateForm(AccountModelBaseForm):
         model = AccountModel
         fields = [
             'parent',
+            'coa',
             'code',
             'name',
             'role',
@@ -45,7 +45,9 @@ class AccountModelCreateForm(AccountModelBaseForm):
             'balance_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-
+            'coa': HiddenInput(attrs={
+                'readonly': True
+            })
         }
 
 

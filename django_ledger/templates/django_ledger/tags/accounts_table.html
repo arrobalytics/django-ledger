@@ -5,6 +5,12 @@
         <tbody>
         <tr>
             <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Asset Accounts' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
         <tr>
             <th>Role</th>
@@ -34,15 +40,21 @@
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
                     <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
+                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
                     <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
+                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
         {% endfor %}
 
         <tr>
             <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Liability Accounts' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
         <tr>
             <th>Role</th>
@@ -70,15 +82,21 @@
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
                     <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
+                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
                     <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
+                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
         {% endfor %}
 
         <tr>
             <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Equity Accounts' %}</h2></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
         </tr>
         <tr>
             <th>Role</th>
@@ -106,9 +124,9 @@
                     <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
                 <td>
                     <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Edit</a>
+                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
                     <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug coa_slug=coa_slug account_pk=account.uuid %}">Txs</a>
+                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
                 </td>
             </tr>
         {% endfor %}

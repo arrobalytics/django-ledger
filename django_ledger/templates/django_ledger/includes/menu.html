@@ -22,8 +22,7 @@
         <li>
             <a>Manage Entity</a>
             <ul>
-                <li><a href="{% url 'django_ledger:account-list' entity_slug=entity.slug coa_slug=entity.coa.slug %}">
-                    Chart of Accounts</a></li>
+                <li><a href="{{ entity.get_chart_of_accounts_url }}">Chart of Accounts</a></li>
                 <li><a href="{{ entity.get_ledger_list_url }}">Ledgers</a></li>
                 <li><a href="{{ entity.get_data_import_url }}">Import Transactions</a></li>
                 <li><a>Collaborators</a></li>

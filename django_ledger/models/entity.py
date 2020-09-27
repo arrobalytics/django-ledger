@@ -122,6 +122,12 @@ class EntityModelAbstract(MPTTModel,
                            'entity_slug': self.slug
                        })
 
+    def get_chart_of_accounts_url(self):
+        return reverse('django_ledger:account-list',
+                       kwargs={
+                           'entity_slug': self.slug,
+                       })
+
     def clean(self):
         if not self.name:
             raise ValidationError(message=_('Must provide a name for EntityModel'))

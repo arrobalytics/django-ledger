@@ -35,16 +35,14 @@ def make_account_active(coa_model, account_codes: str or list):
 
 class ChartOfAccountModelManager(Manager):
 
-    def for_entity(self, entity_slug: str, coa_slug: str, user_model):
+    def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
         return qs.filter(
-            Q(slug__iexact=coa_slug) &
             Q(entity__slug__iexact=entity_slug) &
             (
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
-
         )
 
 

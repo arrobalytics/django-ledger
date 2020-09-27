@@ -143,7 +143,6 @@ def accounts_table(context):
         'accounts': context['accounts'],
         'accounts_by_role_bs': accounts_gb,
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'coa_slug': context['view'].kwargs['coa_slug'],
     }
 
 
