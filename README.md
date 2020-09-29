@@ -6,16 +6,15 @@ Django Ledger supports:
 
 - Chart of Accounts.
 - Financial Statements (Income Statement & Balance Sheets).
-- Automatic financial ratio calculations.
-- Multiple Entities.
-- Self-contained Ledgers.
-- Journal Entries & Transactions.
+- Automatic financial ratio & insight calculations.
+- Multi tenancy.
+- Hierarchical entity management. 
+- Self-contained Ledgers, Journal Entries & Transactions.
 - Financial Activities Support (operational/financial/investing).
 - Basic OFX & QFX file import.
 - Bills & Invoices with progressible functionality.
-- Basic templates.
-- Entity administrators & entity manager support.
-- Multi-tenancy.
+- Basic navigational templates.
+- Entity administration & entity manager support.
 - Bank Accounts.
 - Extensible API & Object Oriented Accounting.
 
@@ -29,8 +28,7 @@ the following functionality:
 - Basic navigational views & template tags.
 - Basic entity insights.
 - Cash flow statement.
-- Inventory.
-- Per activity reports.
+- Inventory Management.
 - Tax line mapping.
 - Package documentation.
 - And a lot more stuff...
@@ -41,26 +39,33 @@ Make sure to select the appropriate option when creating new entities.
     
 * Install Django Ledger
 
-
-    pip install django_ledger
+```shell script
+pip install git+https://github.com/arrobalytics/django-ledger.git
+```
+    
     
 * Add django_ledger to INSTALLED_APPS
 
 
-    INSTALLED_APPS = [
-        ...
-        'django_ledger',
-        ...
-    ]
+```python
+INSTALLED_APPS = [
+    ...,
+    'django_ledger',
+    ...,
+]
+```
+
 
 * Add URLs to your project:
 
+```python
+urlpatterns = [
+    ...,
+    path('djl/', include('django_ledger.urls', namespace='django_ledger')),
+    ...,
+]
+```
 
-    urlpatterns = [
-        ...
-        path('djl/', include('django_ledger.urls', namespace='django_ledger')),
-        ...
-    ]
   
 __This project is actively looking for contributors. Any financial and/or
 accounting experience is a big plus.__ \
