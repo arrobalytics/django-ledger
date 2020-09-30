@@ -1,4 +1,4 @@
-![alt text](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
+![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
 ### A Book Keeping & Financial Analysis Engine for the Django Framework.
 
@@ -65,6 +65,11 @@ urlpatterns = [
     ...,
 ]
 ```
+
+
+# Screenshoots
+
+![django ledger screenshoot](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_screenshot.png)
 
   
 __This project is actively looking for contributors. Any financial and/or
