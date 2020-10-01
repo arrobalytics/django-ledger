@@ -19,31 +19,28 @@ class InvoiceModelListView(MonthArchiveView):
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
     month_format = '%m'
+    allow_empty = True
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
 
     def get_year(self):
-        try:
-            year = self.request.GET['year']
-        except KeyError:
-            year = localdate().year
-        return year
+        year = self.request.GET.get('year')
+        return year if year else localdate().year
 
     def get_month(self):
-        try:
-            month = self.request.GET['month']
-        except KeyError:
+        month = self.request.GET.get('month')
+        if not month:
             month = str(localdate().month)
-            month = len(month) * '0' + month
+            month = '0' + month if len(month) == 1 else month
         return month
 
     def get_queryset(self):
         qs = InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('customer')
         sort = self.request.GET.get('sort')
         if sort:
             try:
@@ -138,7 +135,7 @@ class InvoiceModelUpdateView(UpdateView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('ledger')
+        ).select_related('ledger', 'customer')
 
     def form_valid(self, form):
         form.save(commit=False)

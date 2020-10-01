@@ -66,12 +66,12 @@ class EntityModelDashboardView(DetailView):
         context['bills'] = BillModel.objects.for_entity_unpaid(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
-        ).order_by('due_date')
+        ).select_related('vendor').order_by('due_date')
 
         context['invoices'] = InvoiceModel.objects.for_entity_unpaid(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
-        ).order_by('due_date')
+        ).select_related('customer').order_by('due_date')
         return context
 
     def get_queryset(self):
@@ -101,13 +101,14 @@ class EntityModelCreateView(CreateView):
         form.instance.admin = user
         entity = form.save()
         default_coa = form.cleaned_data.get('default_coa')
+        activate_accounts = form.cleaned_data.get('activate_all_accounts')
         if default_coa:
-            populate_default_coa(entity_model=entity)
+            populate_default_coa(entity_model=entity, activate_accounts=activate_accounts)
         self.object = entity
         return super().form_valid(form)
 
 
-class EntityModelManageView(UpdateView):
+class EntityModelUpdateView(UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -116,18 +117,12 @@ class EntityModelManageView(UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Manage Entity: ') + self.object.name
-        # context['header_title'] = _('Manage Entity: ') + self.object.name
         return context
 
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
 
     def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 

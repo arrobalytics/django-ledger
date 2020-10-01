@@ -7,8 +7,8 @@
             <p class="subtitle has-text-grey has-text-right">
                                     <span class="icon is-medium"><i
                                             class="mdi mdi-24px mdi-cash"></i></span>{% trans 'Invoice' %}</p>
-            <p class="title">{{ invoice.invoice_to }}</p>
-            <p class="subtitle has-text-weight-light">{{ invoice.address_1 }}</p>
+            <p class="title">{{ invoice.customer.customer_name }}</p>
+            <p class="subtitle has-text-weight-light">{{ invoice.customer.address_1 }}</p>
             {% if not invoice.is_past_due %}
                 <p class="is-size-5 has-text-info">Due in: {{ invoice.due_date | timeuntil }}</p>
             {% else %}

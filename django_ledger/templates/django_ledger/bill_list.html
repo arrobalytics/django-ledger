@@ -10,9 +10,13 @@
                 <div class="column">
                     <div class="box">
                         <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">Create</a>
+                           href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Create' %}
+                        </a>
                         <a class="button is-dark"
-                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Go Back' %}
+                        </a>
                         {% bill_table %}
                     </div>
                 </div>

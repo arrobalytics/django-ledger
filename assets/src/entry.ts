@@ -44,7 +44,6 @@ export function submitForm(formName: string, modalId: string) {
 }
 
 export function toggleDropdown(buttonId: string) {
-    console.log(buttonId);
     let button: HTMLElement | null = document.getElementById(buttonId)
     if (button) {
         !button.classList.contains('is-active') ? button.classList.add('is-active') : button.classList.remove('is-active')

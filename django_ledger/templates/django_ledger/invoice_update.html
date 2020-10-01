@@ -22,13 +22,15 @@
                             </div>
                             <div class="card-content">
                                 <div class="content">
-                                    <h1 class="has-text-weight-light">{{ object.invoice_to }}</h1>
+                                    <h1 class="has-text-weight-light">{{ invoice.customer.customer_name }}</h1>
                                     <p>
-                                        {% if invoice.address_1 %}{{ invoice.address_1 }}{% endif %}<br>
-                                        {% if invoice.address_2 %}{{ invoice.address_2 }}{% endif %}<br>
-                                        {% if invoice.phone %}{{ invoice.phone }}{% endif %}<br>
-                                        {% if invoice.email %}{{ invoice.email }}{% endif %}<br>
-                                        {% if invoice.website %}{{ invoice.website }}{% endif %}<br>
+                                        {% if invoice.customer.address_1 %}
+                                            {{ invoice.customer.address_1 }}{% endif %}<br>
+                                        {% if invoice.customer.address_2 %}
+                                            {{ invoice.customer.address_2 }}{% endif %}<br>
+                                        {% if invoice.customer.phone %}{{ invoice.customer.phone }}{% endif %}<br>
+                                        {% if invoice.customer.email %}{{ invoice.customer.email }}{% endif %}<br>
+                                        {% if invoice.customer.website %}{{ invoice.customer.website }}{% endif %}<br>
                                     </p>
                                 </div>
 

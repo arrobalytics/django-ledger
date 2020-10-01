@@ -5,6 +5,7 @@ from random import randint
 from django import template
 from django.utils.timezone import now
 
+from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
@@ -13,16 +14,22 @@ from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALYSIS
 register = template.Library()
 
 
+@register.simple_tag(name='current_version')
+def current_version():
+    return __version__
+
+
 @register.filter(name='cs_thousands')
 def cs_thousands(value):
     if value:
         return '{0:,.2f}'.format(value)
-    return value
+    return 0
 
 
 @register.filter(name='percentage')
 def percentage(value):
-    return '{0:,.2f}%'.format(value * 100)
+    if value:
+        return '{0:,.2f}%'.format(value * 100)
 
 
 @register.filter(name='reverse_sing')
@@ -92,19 +99,19 @@ def data_import_job_txs_imported(context):
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)
-def jes_table(context, je_queryset):
+def jes_table(context):
     return {
-        'jes': je_queryset,
+        'jes': context['journal_entries'],
         'entity_slug': context['view'].kwargs['entity_slug'],
         'ledger_pk': context['view'].kwargs['ledger_pk']
     }
 
 
 @register.inclusion_tag('django_ledger/tags/txs_table.html')
-def txs_table(je_model):
-    txs_queryset = je_model.txs.all()
-    total_credits = sum([tx.amount for tx in txs_queryset if tx.tx_type == 'credit'])
-    total_debits = sum([tx.amount for tx in txs_queryset if tx.tx_type == 'debit'])
+def txs_table(journal_entry_model):
+    txs_queryset = journal_entry_model.txs.all()
+    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
+    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {
         'txs': txs_queryset,
         'total_debits': total_debits,
@@ -144,6 +151,16 @@ def accounts_table(context):
         'accounts_by_role_bs': accounts_gb,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
+
+
+@register.inclusion_tag('django_ledger/tags/customer_table.html', takes_context=True)
+def customer_table(context):
+    return context
+
+
+@register.inclusion_tag('django_ledger/tags/vendor_table.html', takes_context=True)
+def vendor_table(context):
+    return context
 
 
 @register.inclusion_tag('django_ledger/tags/breadcrumbs.html', takes_context=True)
@@ -253,22 +270,23 @@ def fin_ratio_max_value(ratio: str):
 
 @register.filter
 def fin_ratio_threshold_class(value, ratio):
-    params = DJANGO_LEDGER_FINANCIAL_ANALYSIS['ratios'][ratio]
-    ranges = params['ranges']
+    if value:
+        params = DJANGO_LEDGER_FINANCIAL_ANALYSIS['ratios'][ratio]
+        ranges = params['ranges']
 
-    if params['good_incremental']:
-        if value <= ranges['critical']:
-            return 'is-danger'
-        elif value <= ranges['warning']:
-            return 'is-warning'
-        elif value <= ranges['watch']:
-            return 'is-primary'
-        return 'is-success'
-    else:
-        if value >= ranges['critical']:
-            return 'is-danger'
-        elif value >= ranges['warning']:
-            return 'is-warning'
-        elif value >= ranges['watch']:
-            return 'is-primary'
-        return 'is-success'
+        if params['good_incremental']:
+            if value <= ranges['critical']:
+                return 'is-danger'
+            elif value <= ranges['warning']:
+                return 'is-warning'
+            elif value <= ranges['watch']:
+                return 'is-primary'
+            return 'is-success'
+        else:
+            if value >= ranges['critical']:
+                return 'is-danger'
+            elif value >= ranges['warning']:
+                return 'is-warning'
+            elif value >= ranges['watch']:
+                return 'is-primary'
+            return 'is-success'

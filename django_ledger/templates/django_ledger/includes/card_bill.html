@@ -8,8 +8,8 @@
                                     <span class="icon is-medium"><i
                                             class="mdi mdi-24px mdi-credit-card-outline is-medium"></i></span>{% trans 'Bill' %}
             </p>
-            <p class="title">{{ bill.bill_to }}</p>
-            <p class="subtitle has-text-weight-light">{{ bill.address_1 }}</p>
+            <p class="title">{{ bill.vendor.vendor_name }}</p>
+            <p class="subtitle has-text-weight-light">{{ bill.vendor.address_1 }}</p>
             {% if not bill.is_past_due %}
                 <p class="is-size-5 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
             {% else %}

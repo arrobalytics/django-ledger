@@ -14,9 +14,7 @@
                            href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Add</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
-
-                        {% jes_table jes %}
-
+                        {% jes_table %}
                     </div>
                 </div>
             </div>

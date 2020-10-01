@@ -56,18 +56,19 @@ class BillModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class BillModelAbstract(ProgressibleMixIn,
-                        ContactInfoMixIn,
-                        CreateUpdateMixIn):
+class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    # todo: rename to "bill_from"
-    bill_to = models.CharField(max_length=100, verbose_name=_('Bill To'))
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
+    vendor = models.ForeignKey('django_ledger.VendorModel',
+                               on_delete=models.PROTECT,
+                               verbose_name=_('Vendor'),
+                               blank=True,
+                               null=True)
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.CASCADE,

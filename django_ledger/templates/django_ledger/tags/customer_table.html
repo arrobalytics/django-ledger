@@ -1,0 +1,55 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+
+    <table class="table is-fullwidth is-narrow is-striped">
+        <thead>
+        <tr>
+            <th>Customer</th>
+            <th>Address</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for customer in customers %}
+            <tr>
+                <td>{{ customer.customer_name }}</td>
+                <td>{{ customer.address_1 }}</td>
+                <td>{{ customer.updated | timesince }}</td>
+                <td>
+                    <div class="dropdown is-right" id="customer-action-{{ customer.uuid }}">
+
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    onclick="djLedger.toggleDropdown('customer-action-{{ customer.uuid }}')"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">
+                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
+                                      </span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu"
+                             id="dropdown-menu-{{ customer.uuid }}"
+                             role="menu">
+                            <div class="dropdown-content">
+                                {#                                <a href="" class="dropdown-item has-text-success">View</a>#}
+                                <a href="{% url 'django_ledger:customer-update' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </td>
+
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

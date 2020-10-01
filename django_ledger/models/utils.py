@@ -10,14 +10,16 @@ from django.utils.timezone import localtime
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.models.bill import BillModel
-from django_ledger.models.bill import generate_bill_number
+from django_ledger.models.bill import BillModel, generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import ProgressibleMixIn
+from django_ledger.models.vendor import VendorModel
+from django_ledger.models.customer import CustomerModel
+from django_ledger.models.transactions import TransactionModel
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -90,12 +92,13 @@ def new_bankaccount_protocol(bank_account_model: BankAccountModel,
     return bank_account_model
 
 
-def populate_default_coa(entity_model: EntityModel):
+def populate_default_coa(entity_model: EntityModel, activate_accounts: bool = False):
     acc_objs = [AccountModel(
         code=a['code'],
         name=a['name'],
         role=a['role'],
         balance_type=a['balance_type'],
+        active=activate_accounts,
         coa=entity_model.coa,
     ) for a in CHART_OF_ACCOUNTS]
 
@@ -155,6 +158,12 @@ def generate_sample_data(entity: str or EntityModel,
         from faker.providers import company, address, phone_number
         global FAKER_IMPORTED
         FAKER_IMPORTED = True
+
+        fk = Faker()
+        fk.add_provider(company)
+        fk.add_provider(address)
+        fk.add_provider(phone_number)
+
     except ImportError:
         return False
 
@@ -162,9 +171,53 @@ def generate_sample_data(entity: str or EntityModel,
         entity = EntityModel.objects.get(slug__exact=entity)
 
     entity.ledgers.all().delete()
+    entity.customers.all().delete()
+    entity.vendors.all().delete()
+
+    vendor_count = randint(40, 60)
+    vendor_models = [
+        VendorModel(
+            vendor_name=fk.name() if random() > .7 else fk.company(),
+            entity=entity,
+            address_1=fk.street_address(),
+            address_2=f'{fk.city()}. {fk.postcode()}',
+            phone=fk.phone_number(),
+            email=fk.email(),
+            website=fk.url(),
+            active=True,
+            hidden=False
+        ) for _ in range(vendor_count)
+    ]
+
+    for vendor in vendor_models:
+        vendor.clean()
+
+    vendor_models = VendorModel.objects.bulk_create(vendor_models)
+
+    customer_count = randint(40, 60)
+    customer_models = [
+        CustomerModel(
+            customer_name=fk.name() if random() > .2 else fk.company(),
+            entity=entity,
+            address_1=fk.street_address(),
+            address_2=f'{fk.city()}. {fk.postcode()}',
+            phone=fk.phone_number(),
+            email=fk.email(),
+            website=fk.url(),
+            active=True,
+            hidden=False
+        ) for _ in range(customer_count)
+    ]
+
+    for customer in customer_models:
+        customer.clean()
+
+    customer_models = CustomerModel.objects.bulk_create(customer_models)
+
+    # todo: create bank account models...
 
     ledger, created = entity.ledgers.get_or_create(
-        name='Sample Data Ledger',
+        name='Business Funding Ledger',
         posted=True
     )
 
@@ -181,11 +234,6 @@ def generate_sample_data(entity: str or EntityModel,
     cash_acc = choice(accounts_gb['asset_ca_cash'])
 
     txs = list()
-
-    fk = Faker()
-    fk.add_provider(company)
-    fk.add_provider(address)
-    fk.add_provider(phone_number)
 
     txs.append({
         'account_id': cash_acc.uuid,
@@ -236,11 +284,7 @@ def generate_sample_data(entity: str or EntityModel,
             bill_amt_paid = Decimal(round(Decimal(random()) * bill_amt, 2))
 
             bill = BillModel(
-                bill_to=fk.name() if random() > .5 else fk.company(),
-                address_1=fk.address(),
-                phone=fk.phone_number(),
-                email=fk.email(),
-                website=fk.url(),
+                vendor=choice(vendor_models),
                 progressible=is_progressible,
                 progress=progress,
                 terms=choice(BillModel.TERMS)[0],
@@ -269,11 +313,7 @@ def generate_sample_data(entity: str or EntityModel,
             inv_amt_paid = Decimal(round(Decimal(random()) * inv_amt, 2))
 
             invoice = InvoiceModel(
-                invoice_to=fk.name() if random() > .5 else fk.company(),
-                address_1=fk.address(),
-                phone=fk.phone_number(),
-                email=fk.email(),
-                website=fk.url(),
+                customer=choice(customer_models),
                 progressible=is_progressible,
                 progress=progress,
                 terms=choice(InvoiceModel.TERMS)[0],

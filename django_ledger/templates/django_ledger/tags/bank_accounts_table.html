@@ -1,14 +1,14 @@
 {% load django_ledger %}
+{% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth">
+    <table class="table is-fullwidth is-narrow is-striped">
         <thead>
         <tr>
-            <th>Status</th>
-            <th>Description</th>
+            <th>Name</th>
             <th>Account Number</th>
             <th>Routing Number</th>
-            <th>ABA</th>
+            <th>Type</th>
             <th>Cash Account</th>
             <th>Actions</th>
         </tr>
@@ -16,21 +16,39 @@
         <tbody>
         {% for bank_acc in bank_accounts %}
             <tr>
-                <td><a class="button is-warning is-small"
-                       href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_acc.uuid %}">Edit</a>
-                </td>
                 <td>{{ bank_acc.name }}</td>
                 <td>{{ bank_acc.account_number | last_four }}</td>
                 <td>{{ bank_acc.routing_number | last_four }}</td>
-                <td>{{ bank_acc.aba_number | last_four }}</td>
+                <td>{{ bank_acc.get_account_type_display }}</td>
                 <td>{{ bank_acc.cash_account }}</td>
                 <td>
-                    <a class="button is-small is-warning is-outlined"
-                       href="{% url 'django_ledger:ledger-update' entity_slug=view.kwargs.entity_slug ledger_pk=bank_acc.ledger.uuid %}">Ledger</a>
-                    <a class="button is-small is-warning is-outlined"
-                       href="">Edit</a>
-                    <a class="button is-small is-info is-outlined"
-                       href="">Txs</a>
+                    <div class="dropdown is-right" id="bank-action-{{ bank_acc.uuid }}">
+
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    onclick="djLedger.toggleDropdown('bank-action-{{ bank_acc.uuid }}')"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">
+                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
+                                      </span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu"
+                             id="dropdown-menu-{{ bank_acc.uuid }}"
+                             role="menu">
+                            <div class="dropdown-content">
+{#                                <a href=""#}
+{#                                   class="dropdown-item has-text-weight-bold has-text-success">{% trans 'View' %}</a>#}
+                                <a href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_acc.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </td>
             </tr>
         {% endfor %}

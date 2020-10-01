@@ -8,7 +8,7 @@
         <tr>
             <th>Bill Number</th>
             <th>Bill Date</th>
-            <th>Billed To</th>
+            <th>Bill From</th>
             <th>Amount</th>
             <th>Payments</th>
             <th>Is Paid?</th>
@@ -21,9 +21,10 @@
             <tr>
                 <td>{{ bill.bill_number }}</td>
                 <td>{{ bill.date }}</td>
-                <td>{{ bill.bill_to }}</td>
+                <td>{{ bill.vendor.vendor_name }}</td>
                 <td>${{ bill.amount_due | cs_thousands }}</td>
                 <td>${{ bill.amount_paid | cs_thousands }}</td>
+
                 <td>{% if bill.paid %}
                     <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
                 {% else %}
@@ -33,10 +34,10 @@
                     <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
                 {% else %}
                     <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
-                {% endif %} </td>
+                {% endif %}
+                </td>
+
                 <td>
-
-
                     <div class="dropdown is-right" id="bill-action-{{ bill.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"

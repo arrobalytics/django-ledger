@@ -1,5 +1,5 @@
 from django.urls import reverse
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
@@ -9,14 +9,13 @@ from django_ledger.models.ledger import LedgerModel
 
 # JE Views ---
 class JournalEntryListView(ListView):
-    context_object_name = 'jes'
+    context_object_name = 'journal_entries'
     template_name = 'django_ledger/je_list.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('journal entries')
-        context['header_title'] = _('journal entries')
-        return context
+    PAGE_TITLE = _('Journal Entries')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
         sort = self.request.GET.get('sort')
@@ -33,15 +32,8 @@ class JournalEntryDetailView(DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_detail.html'
     slug_url_kwarg = 'je_pk'
-
-    def get_slug_field(self):
-        return 'uuid'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('journal entry detail')
-        context['header_title'] = _('journal entry detail')
-        return context
+    slug_field = 'uuid'
+    PAGE_TITLE = _('Journal Entry Detail')
 
     def get_queryset(self):
         return JournalEntryModel.on_coa.for_ledger(
@@ -55,6 +47,11 @@ class JournalEntryUpdateView(UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
     slug_url_kwarg = 'je_pk'
+    PAGE_TITLE = _('Update Journal Entry')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_slug_field(self):
         return 'uuid'
@@ -73,12 +70,6 @@ class JournalEntryUpdateView(UpdateView):
             'ledger_pk': self.kwargs['ledger_pk']
         })
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('update journal entry')
-        context['header_title'] = _('update journal entry')
-        return context
-
     def get_queryset(self):
         return JournalEntryModel.on_coa.for_ledger(
             entity_slug=self.kwargs['entity_slug'],
@@ -89,6 +80,11 @@ class JournalEntryUpdateView(UpdateView):
 
 class JournalEntryCreateView(CreateView):
     template_name = 'django_ledger/je_create.html'
+    PAGE_TITLE = _('Create Journal Entry')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
 
     def get_form(self, form_class=None):
         return JournalEntryModelCreateForm(
@@ -97,12 +93,6 @@ class JournalEntryCreateView(CreateView):
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('create journal entry')
-        context['header_title'] = _('create journal entry')
-        return context
 
     def form_valid(self, form):
         ledger_model = LedgerModel.objects.for_entity(

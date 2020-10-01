@@ -96,10 +96,9 @@ class JournalEntryModelAbstract(MPTTModel):
         indexes = [
             models.Index(fields=['date']),
             models.Index(fields=['parent']),
+            models.Index(fields=['activity']),
             models.Index(fields=['ledger', 'parent']),
-            models.Index(fields=['ledger', 'activity']),
             models.Index(fields=['ledger', 'posted', 'locked']),
-            models.Index(fields=['ledger', 'date', 'activity', 'posted']),
         ]
 
     class MPTTMeta:

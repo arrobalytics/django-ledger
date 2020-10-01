@@ -57,16 +57,17 @@ class InvoiceModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class InvoiceModelAbstract(ProgressibleMixIn,
-                           ContactInfoMixIn,
-                           CreateUpdateMixIn):
+class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    # todo: can add help text here....?
-    invoice_to = models.CharField(max_length=100, verbose_name=_('Invoice To'))
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
+    customer = models.ForeignKey('django_ledger.CustomerModel',
+                                 on_delete=models.PROTECT,
+                                 verbose_name=_('Customer'),
+                                 blank=True,
+                                 null=True)
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.CASCADE,

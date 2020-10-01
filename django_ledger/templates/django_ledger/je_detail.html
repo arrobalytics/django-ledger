@@ -12,7 +12,7 @@
                     <div class="box">
                         {% txs_table journal_entry %}
                         <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:txs' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">Edit
+                           href="{% url 'django_ledger:txs-journal-entry' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">Edit
                             Txs</a>
                         <a class="button is-dark"
                            href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Back</a>

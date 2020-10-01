@@ -27,6 +27,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     ledger = models.ForeignKey('django_ledger.LedgerModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger'))
+    completed = models.BooleanField(default=False, verbose_name=_('Import Job Completed'))
 
     objects = ImportJobModelManager()
 

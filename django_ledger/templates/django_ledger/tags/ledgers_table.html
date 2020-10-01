@@ -31,9 +31,9 @@
                 <td>{{ ledger.created | timesince }}</td>
                 <td>{{ ledger.updated | timesince }}</td>
                 <td>
-                    <a class="button is-small is-dark"
+                    <a class="button is-small is-success"
                        href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}">View</a>
-                    <a class="button is-warning is-small"
+                    <a class="button is-info is-small"
                        href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Edit</a>
                 </td>
             </tr>

@@ -7,6 +7,12 @@
     <section class="section">
         <div class="container">
             <div class="columns is-multiline">
+                <div class="column is-4-desktop is-12-mobile">
+                    <div class="box">
+                        {% include 'django_ledger/includes/menu.html' %}
+                    </div>
+
+                </div>
                 <div class="column is-8-desktop is-12-mobile">
                     <div class="box">
                         {% balance_sheet_table %}
@@ -21,9 +27,8 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="column is-4-desktop is-12-mobile">
-                    {% include 'django_ledger/tags/filters.html' %}
-                </div>
+
+
             </div>
         </div>
     </section>

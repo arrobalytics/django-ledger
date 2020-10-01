@@ -1,0 +1,16 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="box content djetler-box-yellow">
+    <h2 class="has-text-centered has-text-weight-light">{% trans 'Revenue' %}</h2>
+    <h1 class="has-text-centered">
+        ${{ tx_digest.group_balance.GROUP_INCOME | cs_thousands }}</h1>
+    <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
+    <h1 class="has-text-centered">
+        ${{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sing | cs_thousands }}</h1>
+    <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
+    <h1 class="has-text-centered">
+        ${{ tx_digest.group_balance.GROUP_EARNINGS | cs_thousands }}</h1>
+    <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
+    <h3 class="has-text-centered">{{ date_filter | date }}</h3>
+</div>

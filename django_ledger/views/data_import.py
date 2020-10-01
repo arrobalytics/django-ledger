@@ -14,6 +14,7 @@ from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.utils import new_bankaccount_protocol
+from django.utils.safestring import mark_safe
 
 
 def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
@@ -172,11 +173,19 @@ class DataImportJobDetailView(DetailView):
         bank_account_model = job_model.ledger.bankaccountmodel
         cash_account_model = job_model.ledger.bankaccountmodel.cash_account
         if not cash_account_model:
-            messages.add_message(self.request,
-                                 messages.ERROR,
-                                 f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}.'
-                                 f'Importing has been disabled until Cash Account is assigned.',
-                                 extra_tags='is-danger')
+            bank_acct_url = reverse('django_ledger:bank-account-update',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug'],
+                                        'bank_account_pk': bank_account_model.uuid
+                                    })
+            messages.add_message(
+                self.request,
+                messages.ERROR,
+                mark_safe(f'Warning! No cash account has been set for {job_model.ledger.bankaccountmodel}. '
+                          f'Importing has been disabled until Cash Account is assigned. '
+                          f'Click <a href="{bank_acct_url}">here</a> to assign'),
+                extra_tags='is-danger'
+            )
 
         stx_qs = job_model.stagedtransactionmodel_set.all()
         stx_qs = stx_qs.select_related('tx__account').order_by('-date_posted', '-amount')

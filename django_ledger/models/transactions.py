@@ -105,13 +105,13 @@ class TransactionModelAdmin(models.Manager):
 
     def for_account(self,
                     account_pk: str,
-                    coa_slug: str,
+                    # coa_slug: str,
                     user_model,
                     entity_slug: str = None):
         qs = self.get_queryset()
         return qs.filter(
             Q(journal_entry__ledger__entity__slug__exact=entity_slug) &
-            Q(account__coa__slug__exact=coa_slug) &
+            # Q(account__coa__slug__exact=coa_slug) &
             Q(account_id=account_pk) &
             (
                     Q(journal_entry__ledger__entity__admin=user_model) |

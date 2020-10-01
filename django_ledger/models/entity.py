@@ -75,30 +75,30 @@ class EntityModelAbstract(MPTTModel,
                        })
 
     def get_manage_url(self):
-        return reverse('django_ledger:entity-manage',
+        return reverse('django_ledger:entity-update',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_ledger_list_url(self):
+    def get_ledgers_url(self):
         return reverse('django_ledger:ledger-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_bill_list_url(self):
+    def get_bills_url(self):
         return reverse('django_ledger:bill-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_invoice_list_url(self):
+    def get_invoices_url(self):
         return reverse('django_ledger:invoice-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_bank_account_list_url(self):
+    def get_banks_url(self):
         return reverse('django_ledger:bank-account-list',
                        kwargs={
                            'entity_slug': self.slug
@@ -124,6 +124,18 @@ class EntityModelAbstract(MPTTModel,
 
     def get_chart_of_accounts_url(self):
         return reverse('django_ledger:account-list',
+                       kwargs={
+                           'entity_slug': self.slug,
+                       })
+
+    def get_customers_url(self):
+        return reverse('django_ledger:customer-list',
+                       kwargs={
+                           'entity_slug': self.slug,
+                       })
+
+    def get_vendors_url(self):
+        return reverse('django_ledger:vendor-list',
                        kwargs={
                            'entity_slug': self.slug,
                        })

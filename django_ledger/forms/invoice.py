@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.customer import CustomerModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -26,28 +27,34 @@ class InvoiceModelCreateForm(ModelForm):
         self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
         self.fields['earnings_account'].queryset = account_qs.filter(role__in=GROUP_INCOME)
 
+        customer_qs = CustomerModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+        self.fields['customer'].queryset = customer_qs
+
     class Meta:
         model = InvoiceModel
         fields = [
+
+            'customer',
+
             'date',
             'amount_due',
             'terms',
-            'invoice_to',
-            'address_1',
-            'address_2',
-            'phone',
-            'email',
-            'website',
 
             'cash_account',
             'receivable_account',
             'payable_account',
-            'earnings_account'
+            'earnings_account',
+
         ]
         labels = {
             'terms': _('Invoice Terms')
         }
         widgets = {
+            'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+
             'date': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Invoice Date (YYYY-MM-DD)...')
@@ -58,35 +65,12 @@ class InvoiceModelCreateForm(ModelForm):
             'terms': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
             }),
-            'invoice_to': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Invoice To...')
-            }),
-            'address_1': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Address line 1...')
-            }),
-            'address_2': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('City, State, ZIP...')
-            }),
-            'phone': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Phone number...')
-            }),
-            'email': EmailInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Customer email...')
-            }),
-            'website': URLInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Customer website...')
-            }),
 
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'receivable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'payable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'earnings_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+
         }
 
 

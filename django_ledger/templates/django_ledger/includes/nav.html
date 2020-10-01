@@ -50,6 +50,15 @@
                 <div class="navbar-item">
                     <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">Logout</a>
                 </div>
+                <div class="navbar-item">
+                    <a class="button is-small is-success">
+                            <span class="icon is-small">
+                              <i class="mdi mdi-comment-quote"></i>
+                            </span>
+                        <span>Feedback</span>
+                    </a>
+                </div>
+                <div class="navbar-item">v{% current_version %}</div>
             </div>
 
         </div>

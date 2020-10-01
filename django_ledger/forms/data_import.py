@@ -72,7 +72,7 @@ class StagedTransactionModelForm(ModelForm):
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, exclude_account, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, exclude_account=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
@@ -83,7 +83,8 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
         )
-        accounts_qs = accounts_qs.exclude(uuid__exact=exclude_account.uuid)
+        if exclude_account:
+            accounts_qs = accounts_qs.exclude(uuid__exact=exclude_account.uuid)
 
         import_job_qs = ImportJobModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,

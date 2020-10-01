@@ -20,7 +20,7 @@
             <tr>
                 <td>{{ invoice.invoice_number }}</td>
                 <td>{{ invoice.date }}</td>
-                <td>{{ invoice.invoice_to }}</td>
+                <td>{{ invoice.customer.customer_name }}</td>
                 <td>${{ invoice.amount_due | cs_thousands }}</td>
                 <td>${{ invoice.amount_paid | cs_thousands }}</td>
                 <td>{% if invoice.paid %}

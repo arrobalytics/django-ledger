@@ -7,16 +7,7 @@
         <div class="container">
 
             <div class="columns is-multiline">
-                {% if messages %}
-                    <div class="column">
-                        {% for msg in messages %}
-                            <div class="notification {{ msg.tags }}">
-                                <button class="delete"></button>
-                                {{ msg }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
+
                 <div class="column is-12">
                     <div class="box">
 
@@ -29,7 +20,7 @@
                                     {{ txs_formset.management_form }}
                                 </div>
                                 <div class="column is-12">
-                                    <table class="table is-fullwidth">
+                                    <table class="table is-fullwidth is-narrow is-striped">
                                         <tr>
                                             <th>Account</th>
                                             <th>TX Type</th>

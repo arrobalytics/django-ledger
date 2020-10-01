@@ -1,4 +1,4 @@
-RATIO_NA = 'NA'
+RATIO_NA = 0
 
 
 class FinancialRatioManager:

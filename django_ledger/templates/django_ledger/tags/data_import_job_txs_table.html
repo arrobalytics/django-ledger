@@ -1,3 +1,5 @@
+{% load i18n %}
+
 <form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
       method="post">
 
@@ -50,11 +52,12 @@
 
     <div class="columns is-centered">
         <div class="column is-4 has-text-centered">
-            <button class="button is-primary is-outlined is-fullwidth">Save/Import</button>
+            <button class="button is-primary is-small is-fullwidth">{% trans 'Save/Import' %}</button>
         </div>
         <div class="column is-4 has-text-centered">
-            <a class="button is-info is-outlined is-fullwidth"
-               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">Bank Account</a>
+            <a class="button is-info is-small is-fullwidth"
+               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">
+                {% trans 'Bank Account' %}</a>
         </div>
     </div>
 

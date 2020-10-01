@@ -63,7 +63,7 @@ class TXSAccountView(ListView):
         # todo: prefetch account details?...
         return TransactionModel.objects.for_account(
             account_pk=self.kwargs['account_pk'],
-            coa_slug=self.kwargs['coa_slug'],
+            # coa_slug=self.kwargs['coa_slug'],
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         )

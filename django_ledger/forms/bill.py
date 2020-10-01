@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
+from django_ledger.models.vendor import VendorModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -13,31 +14,39 @@ class BillModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        account_qs = AccountModel.on_coa.for_entity_available(user_model=self.USER_MODEL,
-                                                              entity_slug=self.ENTITY_SLUG)
+
+        account_qs = AccountModel.on_coa.for_entity_available(
+            user_model=self.USER_MODEL,
+            entity_slug=self.ENTITY_SLUG
+        )
+
+        # forcing evaluation of qs to cache results for fields... (avoids 4 database queries, vs 1)
+        len(account_qs)
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
         self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
         self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
         self.fields['earnings_account'].queryset = account_qs.filter(role__in=GROUP_EXPENSES)
 
+        vendor_qs = VendorModel.objects.for_entity(
+            user_model=self.USER_MODEL,
+            entity_slug=self.ENTITY_SLUG
+        )
+        self.fields['vendor'].queryset = vendor_qs
+
     class Meta:
         model = BillModel
         fields = [
+            'vendor',
+
             'xref',
             'date',
             'amount_due',
             'terms',
-            'bill_to',
-            'address_1',
-            'address_2',
-            'phone',
-            'email',
-            'website',
 
             'cash_account',
             'receivable_account',
             'payable_account',
-            'earnings_account'
+            'earnings_account',
 
         ]
         widgets = {
@@ -54,29 +63,8 @@ class BillModelCreateForm(ModelForm):
             'terms': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
             }),
-            'bill_to': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Bill from...')
-            }),
-            'address_1': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Address line 1...')
-            }),
-            'address_2': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('City, State, ZIP...')
-            }),
-            'phone': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Phone number...')
-            }),
-            'email': EmailInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Customer email...')
-            }),
-            'website': URLInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
-                'placeholder': _('Customer website...')
+            'vendor': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
 
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

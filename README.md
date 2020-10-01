@@ -1,6 +1,6 @@
 ![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-### A Book Keeping & Financial Analysis Engine for the Django Framework.
+### A Bookkeeping & Financial Analysis Engine for the Django Framework.
 
 Django Ledger supports:
 
