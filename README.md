@@ -61,7 +61,7 @@ INSTALLED_APPS = [
 ```python
 urlpatterns = [
     ...,
-    path('djl/', include('django_ledger.urls', namespace='django_ledger')),
+    path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
     ...,
 ]
 ```
