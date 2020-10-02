@@ -1,3 +1,4 @@
-Django~=3.0.6
-setuptools~=45.0.0
+Django>=2.2
+ofxtools~=0.8.22
 django-mptt~=0.11.0
+setuptools~=45.2.0

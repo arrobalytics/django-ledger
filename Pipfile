@@ -4,12 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=3.1"
+django = ">=2.2"
 django-mptt = "~=0.11.0"
 ofxtools = "~=0.8.21"
 
 [dev-packages]
-sphinx = "*"
+sphinx = "~=3.2"
 faker = "*"
 
 [requires]
