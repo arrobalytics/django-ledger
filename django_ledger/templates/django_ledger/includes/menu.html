@@ -1,12 +1,4 @@
 <aside class="menu">
-    <p class="menu-label">Administration</p>
-    <ul class="menu-list">
-        <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
-        <li><a>My Messages</a></li>
-        <li><a>Settings</a></li>
-    </ul>
-
-
     <p class="menu-label">{{ entity.name }}</p>
     <ul class="menu-list">
         <li><a href="{{ entity.get_absolute_url }}">Dashboard</a></li>
@@ -40,5 +32,11 @@
         </li>
     </ul>
 
+    <p class="menu-label">Administration</p>
+    <ul class="menu-list">
+        <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
+        <li><a>My Messages</a></li>
+        <li><a>Settings</a></li>
+    </ul>
 
 </aside>

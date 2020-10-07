@@ -53,3 +53,11 @@ each(@sectionMinHeights, {
   background-size: cover;
   background-position: center;
 }
+
+@iconSizes: range(12, 120, 12);
+
+each(@iconSizes, {
+  .djl-icon-@{value} {
+    font-size: (@value * 1px);
+  }
+})

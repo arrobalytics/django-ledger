@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@mdi/font": "^4.8.95",
+    "@iconify/iconify": "^1.0.7",
     "@types/chart.js": "^2.9.24",
     "@types/lodash": "^4.14.149",
     "axios": "^0.20.0",

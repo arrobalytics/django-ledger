@@ -5,8 +5,8 @@
     <div class="card">
         <div class="card-content">
             <p class="subtitle has-text-grey has-text-right">
-                                    <span class="icon is-medium"><i
-                                            class="mdi mdi-24px mdi-credit-card-outline is-medium"></i></span>{% trans 'Bill' %}
+                <span class="icon">{% icon "ri:bill-line" 16 %}</span>
+                {% trans 'Bill' %}
             </p>
             <p class="title">{{ bill.vendor.vendor_name }}</p>
             <p class="subtitle has-text-weight-light">{{ bill.vendor.address_1 }}</p>
@@ -74,18 +74,17 @@
         </div>
         <footer class="card-footer">
             <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
-               class="card-footer-item has-background-info-light">{% trans 'Details' %}</a>
+               class="card-footer-item has-text-primary">{% trans 'Details' %}</a>
             <a onclick="djLedger.showModal('djledger-bill-modal-{{ bill.uuid }}')"
-               class="card-footer-item has-background-success-light">{% trans 'Mark as Paid' %}</a>
+               class="card-footer-item has-text-info">{% trans 'Mark as Paid' %}</a>
             <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-               class="card-footer-item has-background-danger-light">{% trans 'Delete' %}</a>
+               class="card-footer-item has-text-danger">{% trans 'Delete' %}</a>
         </footer>
     </div>
 {% else %}
     <div class="box has-text-centered">
         <a href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}">
-                            <span class="icon is-large has-text-grey">
-                                <i class="mdi mdi-48px mdi-plus-circle-outline"></i></span></a>
+            <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
         <h2 class="is-size-3 has-text-grey">{% trans 'New Bill' %}</h2>
     </div>
 {% endif %}

@@ -147,13 +147,14 @@ class IncomeExpensesChart extends BaseChart {
                 title: chartTitleOptions,
                 tooltips: tooltipOptions,
                 scales: {
-                    yAxes: [
-                        {
-                            ticks: {
-                                beginAtZero: true
-                            }
-                        }
-                    ]
+                    yAxes: [{
+                        ticks: {
+                            callback: (value: number, index, values) => {
+                                return currencyFormatter(value);
+                            },
+                            beginAtZero: true
+                        },
+                    }]
                 }
             }
 
@@ -234,7 +235,7 @@ class NetPayablesChart extends BaseChart {
 
             let chartOptions: ChartOptions = {
                 title: chartTitleOptions,
-                tooltips: tooltipOptions
+                tooltips: tooltipOptions,
             }
 
             this.chart = new Chart(ctx, {
@@ -325,6 +326,10 @@ class NetReceivablesChart extends BaseChart {
         }
 
     }
+
+}
+
+class ProfitabilityChart extends BaseChart {
 
 }
 

@@ -1,5 +1,6 @@
 import {DjetlerApp} from "./DjetlerApp";
 import {NetPayablesChart, IncomeExpensesChart, NetReceivablesChart} from "./AppCharts";
+import Iconify from '@iconify/iconify';
 
 
 export function startDJLApp() {
@@ -12,7 +13,6 @@ export function renderInEChart(selector: string, entitySlug: string) {
 
 export function renderNetPayablesChart(selector: string, entitySlug: string) {
     return new NetPayablesChart(selector, entitySlug);
-
 }
 
 export function renderNetReceivablesChart(selector: string, entitySlug: string) {
@@ -49,3 +49,5 @@ export function toggleDropdown(buttonId: string) {
         !button.classList.contains('is-active') ? button.classList.add('is-active') : button.classList.remove('is-active')
     }
 }
+
+export {Iconify};

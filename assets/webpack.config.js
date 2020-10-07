@@ -61,18 +61,6 @@ module.exports = {
                     "ts-loader"
                 ],
             },
-            {
-                test: /\.(png|woff|woff2|eot|ttf|svg)$/,
-                use: {
-                    loader: 'url-loader',
-                    options: {
-                        limit: 1000,
-                        publicPath: '/static/django_ledger/bundle/files/',
-                        outputPath: 'files/'
-                    }
-                },
-
-            }
         ]
     }
 };

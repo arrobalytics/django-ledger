@@ -1,6 +1,7 @@
 {% extends 'django_ledger/base.html' %}
 {% load i18n %}
 {% load static %}
+{% load django_ledger %}
 
 {% block content %}
 
@@ -26,9 +27,7 @@
                 <div class="column is-6-tablet has-text-centered">
                     <div class="box">
                         <a href="{% url 'django_ledger:entity-create' %}">
-                            <span class="icon is-large">
-                                <i class="mdi mdi-48px mdi-plus-circle-outline"
-                                   style="color: #929292;"></i></span></a>
+                            <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
                         <h2 class="is-size-3">{% trans 'New Entity' %}</h2>
                     </div>
                 </div>

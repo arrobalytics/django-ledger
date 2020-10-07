@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import flatpickr from "flatpickr";
 
+
 export class DjetlerApp {
 
     dateFilters: any | null = null;

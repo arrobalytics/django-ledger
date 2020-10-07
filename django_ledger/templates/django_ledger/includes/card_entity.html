@@ -1,8 +1,9 @@
+{% load django_ledger %}
+
 <div class="card">
     <div class="card-content">
         <p class="title has-text-weight-light">
-                                        <span class="icon"><i
-                                                class="mdi mdi-office-building"></i></span>{{ entity.name }}
+            <span class="icon is-medium">{% icon "ic:baseline-business" 36 %}</span>{{ entity.name }}
         </p>
         <p class="subtitle">{{ entity.address_1 }}</p>
         <p>Created: {{ entity.created | timesince }} ago</p>

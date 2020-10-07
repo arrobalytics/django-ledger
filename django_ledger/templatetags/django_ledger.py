@@ -46,6 +46,14 @@ def last_four(value: str):
     return ''
 
 
+@register.inclusion_tag('django_ledger/tags/icon.html')
+def icon(icon_name, size):
+    return {
+        'icon': icon_name,
+        'size': size
+    }
+
+
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
 def balance_sheet_table(context):
     ledger_or_entity = context['object']
