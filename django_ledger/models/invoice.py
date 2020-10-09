@@ -105,11 +105,20 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Invoice: {self.invoice_number}'
 
-    def get_absolute_url(self, entity_slug):
-        return reverse('django_ledger:invoice-detail',
+    def get_document_id(self):
+        return self.invoice_number
+
+    def get_html_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_html_form_name(self):
+        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_mark_paid_url(self, entity_slug):
+        return reverse('django_ledger:invoice-mark-paid',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'invoice_slug': self.invoice_number
+                           'invoice_pk': self.uuid
                        })
 
     def get_migrate_state_desc(self):

@@ -1,0 +1,35 @@
+{% load i18n %}
+
+
+<div id="{{ object.get_html_id }}" class="modal">
+
+    <form name="{{ object.get_html_form_name }}"
+          method="post"
+          action="{{ action_url }}">
+        {% csrf_token %}
+    </form>
+
+    <div class="modal-background"></div>
+
+    <div class="modal-content">
+        <div class="card">
+            <div class="card-content">
+                <p class="is-size-4 has-font-weight-light">{{ message }}</p>
+            </div>
+            <div class="card-footer">
+                <a onclick="djLedger.toggleModal('{{ object.get_html_id }}')"
+                   class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
+                <a onclick="djLedger.submitForm(
+                        '{{ object.get_html_form_name }}',
+                        '{{ object.get_html_id }}')"
+                   class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+            </div>
+        </div>
+    </div>
+
+    <button class="modal-close is-large"
+            aria-label="close"
+            onclick="djLedger.toggleModal('djl-modal-{{ object_name }}-{{ uuid }}')"></button>
+</div>
+
+

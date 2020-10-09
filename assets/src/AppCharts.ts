@@ -16,37 +16,31 @@ interface DjangoLedgerJSONDataResponse {
 class BaseChart {
 
     selector: string;
-    endPoint: string;
     chart: Chart | undefined;
     chartData: DjangoLedgerJSONDataResponse | undefined;
     http: AxiosInstance | undefined;
     entitySlug: string;
     consoleLogData: boolean = false;
     lazyGetData: boolean = false;
-    baseURL: string;
 
     constructor(selector: string, entitySlug: string, chartData = null) {
-        this.baseURL = 'http://127.0.0.1:8000/';
-        this.entitySlug = entitySlug;
-        this.endPoint = this.getEndPoint();
         this.selector = selector;
         if (!chartData) {
             this.startHttpClient()
         }
+        this.entitySlug = entitySlug;
     }
 
-    getBaseURL(): string {
-        return this.baseURL;
-    }
 
-    // @ts-ignore
-    getEndPoint(): string {
+    getEndPoint(): string | undefined {
+        // @ts-ignore
+        return document.getElementById(this.selector).dataset.endpoint
     }
 
     getChartData() {
         if (!this.chartData) {
             this.http?.get(
-                this.endPoint
+                <string>this.getEndPoint()
             ).then((r: AxiosResponse<DjangoLedgerJSONDataResponse>) => {
                 this.chartData = r.data;
                 if (this.consoleLogData) {
@@ -60,27 +54,18 @@ class BaseChart {
     }
 
     startHttpClient() {
-        this.http = Axios.create({
-            baseURL: this.getBaseURL()
-        })
+        this.http = Axios.create({})
         if (!this.lazyGetData) {
             this.getChartData()
         }
     }
 
     renderChart() {
-
-
     }
 
 }
 
 class IncomeExpensesChart extends BaseChart {
-
-
-    getEndPoint() {
-        return `entity/${this.entitySlug}/data/pnl/`
-    }
 
 
     renderChart() {
@@ -137,14 +122,13 @@ class IncomeExpensesChart extends BaseChart {
 
             // @ts-ignore
             var ctx = document.getElementById(this.selector).getContext('2d');
-            let chartTitleOptions: ChartTitleOptions = {
-                display: true,
-                text: `${entityName} - Income & Expenses`,
-                fontSize: 20
-            }
-
             let chartOptions: ChartOptions = {
-                title: chartTitleOptions,
+                title: {
+                    display: true,
+                    text: `${entityName} - Income & Expenses`,
+                    fontSize: 20
+                },
+                // aspectRatio: 1,
                 tooltips: tooltipOptions,
                 scales: {
                     yAxes: [{
@@ -171,9 +155,6 @@ class IncomeExpensesChart extends BaseChart {
 
 class NetPayablesChart extends BaseChart {
 
-    getEndPoint() {
-        return `entity/${this.entitySlug}/data/net-payables/`
-    }
 
     renderChart() {
 
@@ -211,11 +192,6 @@ class NetPayablesChart extends BaseChart {
 
             // @ts-ignore
             var ctx = document.getElementById(this.selector).getContext('2d');
-            let chartTitleOptions: ChartTitleOptions = {
-                display: true,
-                text: "Net Payables 0-90+ Days",
-                fontSize: 20
-            }
             let tooltipOptions: ChartTooltipOptions = {
                 callbacks: {
                     label(
@@ -234,8 +210,16 @@ class NetPayablesChart extends BaseChart {
             }
 
             let chartOptions: ChartOptions = {
-                title: chartTitleOptions,
+                title: {
+                    display: true,
+                    position: "top",
+                    text: "Net Payables 0-90+ Days",
+                    fontSize: 20
+                },
                 tooltips: tooltipOptions,
+                legend: {
+                    position: "right"
+                }
             }
 
             this.chart = new Chart(ctx, {
@@ -251,9 +235,6 @@ class NetPayablesChart extends BaseChart {
 
 class NetReceivablesChart extends BaseChart {
 
-    getEndPoint() {
-        return `entity/${this.entitySlug}/data/net-receivables/`
-    }
 
     renderChart() {
 
@@ -291,11 +272,6 @@ class NetReceivablesChart extends BaseChart {
 
             // @ts-ignore
             var ctx = document.getElementById(this.selector).getContext('2d');
-            let chartTitleOptions: ChartTitleOptions = {
-                display: true,
-                text: "Net Receivables 0-90+ Days",
-                fontSize: 20
-            }
             let tooltipOptions: ChartTooltipOptions = {
                 callbacks: {
                     label(
@@ -314,8 +290,16 @@ class NetReceivablesChart extends BaseChart {
             }
 
             let chartOptions: ChartOptions = {
-                title: chartTitleOptions,
-                tooltips: tooltipOptions
+                title: {
+                    display: true,
+                    position: "top",
+                    text: "Net Receivables 0-90+ Days",
+                    fontSize: 20
+                },
+                tooltips: tooltipOptions,
+                legend: {
+                    position: "right"
+                },
             }
 
             this.chart = new Chart(ctx, {
@@ -326,10 +310,6 @@ class NetReceivablesChart extends BaseChart {
         }
 
     }
-
-}
-
-class ProfitabilityChart extends BaseChart {
 
 }
 

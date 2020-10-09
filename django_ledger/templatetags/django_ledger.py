@@ -264,9 +264,21 @@ def current_end_date_filter(context):
 
 
 @register.inclusion_tag('django_ledger/tags/chart_container.html')
-def chart_container(chart_id):
+def chart_container(chart_id, endpoint=None):
     return {
-        'chart_id': chart_id
+        'chart_id': chart_id,
+        'endpoint': endpoint
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/modals.html', takes_context=True)
+def mark_as_paid(context, obj):
+    entity_slug = context['view'].kwargs['entity_slug']
+    action_url = obj.get_mark_paid_url(entity_slug=entity_slug)
+    return {
+        'object': obj,
+        'action_url': action_url,
+        'message': f'Do you want to mark {obj.__class__._meta.verbose_name} {obj.get_document_id()} as paid?'
     }
 
 

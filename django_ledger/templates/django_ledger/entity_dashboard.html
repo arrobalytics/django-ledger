@@ -5,7 +5,7 @@
 
 {% block content %}
 
-    <section class="hero is-primary is-bold">
+    <section class="hero is-primary is-bold is-small">
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">{% trans 'Financial Overview' %}</h1>
@@ -16,15 +16,12 @@
     </section>
 
     <section class="section">
-        <div class="container is-fluid">
+        <div class="container is-fluid p-0">
             <div class="columns">
-                <div class="column is-3">
-                    <div class="box">
+                <div class="column is-3 is-hidden-tablet is-hidden-mobile">
                         {% include 'django_ledger/includes/menu.html' %}
-                    </div>
-
                 </div>
-                <div class="column is-9">
+                <div class="column">
                     <div class="columns is-multiline">
 
                         <div class="column is-6-tablet">
@@ -37,11 +34,11 @@
 
                         <div class="column is-12">
                             <div class="box">
-                                {% chart_container pnl_chart_id %}
+                                {% chart_container pnl_chart_id pnl_chart_endpoint %}
                             </div>
 
                         </div>
-                        <div class="column is-6">
+                        <div class="column is-12">
                             {% include 'django_ledger/includes/widget_ratios.html' with tx_digest=tx_digest %}
                         </div>
 
@@ -54,7 +51,7 @@
     </section>
 
     {# RECEIVABLES SECTION START #}
-    <section class="hero is-primary is-bold">
+    <section class="hero is-primary is-bold is-small">
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">{% trans 'Receivables' %}</h1>
@@ -67,9 +64,9 @@
         <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if invoices %}
-                    <div class="column is-8-tablet">
+                    <div class="column is-12-tablet">
                         <div class="box">
-                            {% chart_container receivables_chart_id %}
+                            {% chart_container receivables_chart_id receivables_chart_endpoint %}
                         </div>
                     </div>
                 {% endif %}
@@ -90,7 +87,7 @@
 
 
     {# PAYABLES SECTION START #}
-    <section class="hero is-primary is-bold">
+    <section class="hero is-primary is-bold is-small">
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">{% trans 'Payables' %}</h1>
@@ -103,9 +100,9 @@
         <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if bills %}
-                    <div class="column is-8-tablet">
+                    <div class="column is-12-tablet">
                         <div class="box">
-                            {% chart_container payables_chart_id %}
+                            {% chart_container payables_chart_id payables_chart_endpoint %}
                         </div>
                     </div>
                 {% endif %}

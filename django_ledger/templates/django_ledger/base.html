@@ -1,5 +1,6 @@
 {% load static %}
 {% load django_ledger %}
+{% load cache %}
 
 <!DOCTYPE html>
 <html>
@@ -32,9 +33,6 @@
 
 {% block script_bottom %}
     <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
-    <script>
-        djLedger.startDJLApp()
-    </script>
 {% endblock %}
 
 </body>

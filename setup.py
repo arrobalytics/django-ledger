@@ -13,6 +13,7 @@ setup(
     author_email=django_ledger.__email__,
     description='Financial analysis backend for Django. Balance Sheet, Income Statements, Chart of Accounts, Entities',
     include_package_data=True,
+    use_pipfile=True,
     install_requires=[
         'django',
         'django-mptt',

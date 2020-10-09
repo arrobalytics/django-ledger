@@ -5,10 +5,11 @@ from uuid import uuid4
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ContactInfoMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -112,6 +113,22 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
         :return:
         """
         return f'Bill {self.bill_number} account adjustment.'
+
+    def get_document_id(self):
+        return self.bill_number
+
+    def get_html_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_html_form_name(self):
+        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_mark_paid_url(self, entity_slug):
+        return reverse('django_ledger:bill-mark-paid',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'bill_pk': self.uuid
+                       })
 
     def clean(self):
         if not self.bill_number:

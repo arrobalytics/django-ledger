@@ -2,10 +2,8 @@ import {DjetlerApp} from "./DjetlerApp";
 import {NetPayablesChart, IncomeExpensesChart, NetReceivablesChart} from "./AppCharts";
 import Iconify from '@iconify/iconify';
 
+let app = new DjetlerApp();
 
-export function startDJLApp() {
-    return new DjetlerApp();
-}
 
 export function renderInEChart(selector: string, entitySlug: string) {
     return new IncomeExpensesChart(selector, entitySlug);
@@ -33,6 +31,14 @@ export function closeModal(modalId: string) {
     }
 }
 
+export function toggleModal(modalId: string) {
+    let modalElement = document.getElementById(modalId);
+    if (modalElement) {
+        modalElement.classList.toggle('is-active')
+        modalElement.classList.toggle('is-clipped')
+    }
+}
+
 export function submitForm(formName: string, modalId: string) {
     let form = document.forms.namedItem(formName);
     if (form) {
@@ -43,11 +49,13 @@ export function submitForm(formName: string, modalId: string) {
     }
 }
 
+
 export function toggleDropdown(buttonId: string) {
     let button: HTMLElement | null = document.getElementById(buttonId)
     if (button) {
         !button.classList.contains('is-active') ? button.classList.add('is-active') : button.classList.remove('is-active')
     }
 }
+
 
 export {Iconify};

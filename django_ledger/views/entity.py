@@ -48,9 +48,23 @@ class EntityModelDashboardView(DetailView):
         date_filter = self.request.session.get(session_date_filter_key)
         date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
 
-        context['pnl_chart_id'] = f'djetler-pnl-chart-{randint(10000, 99999)}'
-        context['payables_chart_id'] = f'djetler-payables-chart-{randint(10000, 99999)}'
-        context['receivables_chart_id'] = f'djetler-receivables-chart-{randint(10000, 99999)}'
+        context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
+        context['pnl_chart_endpoint'] = reverse('django_ledger:entity-json-pnl',
+                                                kwargs={
+                                                    'entity_slug': self.kwargs['entity_slug']
+                                                })
+
+        context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
+        context['payables_chart_endpoint'] = reverse('django_ledger:entity-json-net-payables',
+                                                     kwargs={
+                                                         'entity_slug': self.kwargs['entity_slug']
+                                                     })
+
+        context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
+        context['receivables_chart_endpoint'] = reverse('django_ledger:entity-json-net-receivables',
+                                                        kwargs={
+                                                            'entity_slug': self.kwargs['entity_slug']
+                                                        })
 
         # DIGEST PHASE ---
         by_period = self.request.GET.get('by_period')

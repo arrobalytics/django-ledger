@@ -23,8 +23,8 @@ urlpatterns = [
     path('vendor/', include('django_ledger.urls.vendor')),
     path('bank-account/', include('django_ledger.urls.bank_account')),
     path('data-import/', include('django_ledger.urls.data_import')),
-    path('home/', include('django_ledger.urls.home')),
     path('auth/', include('django_ledger.urls.auth')),
+    path('', include('django_ledger.urls.home')),
 
 
     path('', views.RootUrlView.as_view(), name='root-url'),

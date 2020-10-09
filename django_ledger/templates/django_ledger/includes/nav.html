@@ -48,13 +48,13 @@
                     {% default_entity %}
                 </div>
                 <div class="navbar-item">
-                    <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">Logout</a>
+                    <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">
+                        {% trans 'Logout' %}
+                    </a>
                 </div>
                 <div class="navbar-item">
                     <a class="button is-small is-success">
-                            <span class="icon is-small">
-                              <i class="mdi mdi-comment-quote"></i>
-                            </span>
+                            <span class="icon">{% icon "topcoat:feedback" 24 %}</span>
                         <span>Feedback</span>
                     </a>
                 </div>
