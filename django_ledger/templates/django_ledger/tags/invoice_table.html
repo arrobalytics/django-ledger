@@ -24,14 +24,14 @@
                 <td>${{ invoice.amount_due | cs_thousands }}</td>
                 <td>${{ invoice.amount_paid | cs_thousands }}</td>
                 <td>{% if invoice.paid %}
-                    <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
+                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
                 {% else %}
-                    <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
+                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
                 {% endif %} </td>
                 <td>{% if invoice.is_past_due %}
-                    <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
+                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
                 {% else %}
-                    <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
+                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
                 {% endif %} </td>
                 <td>
                     {# todo: Develop an Invoice Detail View... #}
@@ -43,7 +43,7 @@
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
                                 <span class="icon is-small">
-                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
+                                        {% icon 'bi:arrow-down' 24 %}
                                       </span>
                             </button>
                         </div>

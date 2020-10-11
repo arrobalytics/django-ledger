@@ -12,7 +12,7 @@ class CustomerModelListView(ListView):
     PAGE_TITLE = _('Customer List')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
     }
     context_object_name = 'customers'
 

@@ -1,25 +1,56 @@
 {% load static %}
+{% load i18n %}
+{% load django_ledger %}
 
-<section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
-    <div class="hero-body">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-4">
-                    <figure class="image">
-                        <a target="_blank"
-                           href="https://arrobalytics.com"><img
-                                src="{% static 'django_ledger/logo/django-ledger-logo.png' %}"
-                                alt=""></a>
-                    </figure>
-                </div>
-            </div>
-            {% if header_title %}
-                <div class="columns is-centered">
-                    <div class="column is-12 has-text-centered">
-                        <h1 class="title is-size-1 has-text-weight-light">{{ header_title }}</h1>
+{% if not header_style %}
+    <section class="hero is-primary is-bold is-small">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-mobile">
+                    {% if header_subtitle_icon %}
+                        <div class="column is-3 has-text-centered is-hidden-tablet">
+                            {% icon header_subtitle_icon 36 %}
+                        </div>
+                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-desktop">
+                            {% icon header_subtitle_icon 48 %}
+                        </div>
+                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-tablet-only">
+                            {% icon header_subtitle_icon 60 %}
+                        </div>
+                    {% endif %}
+                    <div class="column is-9">
+                        <h1 class="title has-text-weight-light">{{ header_title }}</h1>
+                        {% if header_subtitle %}
+                            <h2 class="subtitle">{{ header_subtitle }}</h2>
+                        {% endif %}
                     </div>
                 </div>
-            {% endif %}
+            </div>
+    </section>
+{% else %}
+    <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <figure class="image">
+                            <a target="_blank"
+                               href="https://arrobalytics.com"><img
+                                    src="{% static 'django_ledger/logo/django-ledger-logo.png' %}"
+                                    alt=""></a>
+                        </figure>
+                    </div>
+                </div>
+                {% if header_title %}
+                    <div class="columns is-centered">
+                        <div class="column is-12 has-text-centered">
+                            <h1 class="title is-size-1 has-text-weight-light">{{ header_title }}</h1>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+{% endif %}
+
+

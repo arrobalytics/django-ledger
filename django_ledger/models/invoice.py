@@ -64,7 +64,7 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
-                                 on_delete=models.PROTECT,
+                                 on_delete=models.CASCADE,
                                  verbose_name=_('Customer'),
                                  blank=True,
                                  null=True)

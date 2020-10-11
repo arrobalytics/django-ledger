@@ -12,14 +12,13 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.bill import BillModel, generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
+from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import ProgressibleMixIn
 from django_ledger.models.vendor import VendorModel
-from django_ledger.models.customer import CustomerModel
-from django_ledger.models.transactions import TransactionModel
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -304,7 +303,6 @@ def generate_sample_data(entity: str or EntityModel,
             bill.clean()
             bill.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
             bill.save()
-            print(f'Bill {bill.bill_number} created...')
 
         else:
 
@@ -337,7 +335,6 @@ def generate_sample_data(entity: str or EntityModel,
             invoice.clean()
             invoice.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
             invoice.save()
-            print(f'Invoice {invoice.invoice_number} created...')
 
 
 def progressible_net_summary(queryset: QuerySet) -> dict:

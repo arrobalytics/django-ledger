@@ -8,6 +8,6 @@ urlpatterns = [
     path('set-default/', views.SetDefaultEntityView.as_view(), name='entity-set-default'),
     path('<slug:entity_slug>/dashboard/', views.EntityModelDashboardView.as_view(), name='entity-dashboard'),
     path('<slug:entity_slug>/update/', views.EntityModelUpdateView.as_view(), name='entity-update'),
+    path('<slug:entity_slug>/delete/', views.EntityDeleteView.as_view(), name='entity-delete'),
     path('<slug:entity_slug>/set-date/', views.SetDateView.as_view(), name='entity-set-date'),
-    path('<slug:entity_slug>/generate-sample-data/', views.GenerateSampleData.as_view(), name='entity-gen-sample-data'),
 ]

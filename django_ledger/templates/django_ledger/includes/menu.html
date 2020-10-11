@@ -36,8 +36,8 @@
         <p class="menu-label">Administration</p>
         <ul class="menu-list">
             <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
-            <li><a>My Messages</a></li>
-            <li><a>Settings</a></li>
+{#            <li><a>My Messages</a></li>#}
+            <li><a href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a></li>
         </ul>
 
     </aside>

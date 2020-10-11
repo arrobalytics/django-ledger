@@ -5,5 +5,8 @@
             <a href="https://arrobalytics.com">Arrobalytics</a>. The source code is licensed
             <a href="https://opensource.org/licenses/GPL-3.0">GPL 3.0</a>
         </p>
+        {% if user.is_superuser %}
+            <a href="/admin">Admin</a>
+        {% endif %}
     </div>
 </footer>

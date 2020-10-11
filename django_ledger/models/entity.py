@@ -44,7 +44,7 @@ class EntityModelAbstract(MPTTModel,
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'), null=True, blank=True)
-    admin = models.ForeignKey(UserModel, on_delete=models.PROTECT,
+    admin = models.ForeignKey(UserModel, on_delete=models.CASCADE,
                               related_name='admin_of', verbose_name=_('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
                                       related_name='managed_by', verbose_name=_('Managers'))
@@ -56,10 +56,10 @@ class EntityModelAbstract(MPTTModel,
         abstract = True
         ordering = ['-created']
         verbose_name = _('Entity')
-        verbose_name_plural = _('Entities')  # idea: can use th django plural function...
+        verbose_name_plural = _('Entities')
         indexes = [
             models.Index(fields=['admin']),
-            models.Index(fields=['parent']),
+            models.Index(fields=['slug', 'admin']),
         ]
 
     class MPTTMeta:
@@ -138,6 +138,12 @@ class EntityModelAbstract(MPTTModel,
         return reverse('django_ledger:vendor-list',
                        kwargs={
                            'entity_slug': self.slug,
+                       })
+
+    def get_delete_url(self):
+        return reverse('django_ledger:entity-delete',
+                       kwargs={
+                           'entity_slug': self.slug
                        })
 
     def clean(self):

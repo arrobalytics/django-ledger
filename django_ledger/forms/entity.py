@@ -6,63 +6,10 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-class EntityModelUpdateForm(ModelForm):
-    class Meta:
-        model = EntityModel
-        fields = [
-            'name',
-            'address_1',
-            'address_2',
-            'email',
-            'phone',
-            'website'
-        ]
-        labels = {
-            'name': _('Entity Name')
-        }
-        widgets = {
-            'name': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Entity name...')
-                }
-            ),
-            'address_1': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address 1...')
-                }
-            ),
-            'address_2': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address 2...')
-                }
-            ),
-            'email': EmailInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Email...')
-                }
-            ),
-            'phone': TextInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Phone...')
-                }
-            ),
-            'website': URLInput(
-                attrs={
-                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Website...')
-                }
-            ),
-        }
-
-
 class EntityModelCreateForm(ModelForm):
-    default_coa = BooleanField(required=True, initial=False, label=_('Populate Default CoA'))
-    activate_all_accounts = BooleanField(required=True, initial=False, label=_('Activate All Accounts'))
+    default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
+    activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))
+    generate_sample_data = BooleanField(required=False, initial=False, label=_('Fill With Sample Data?'))
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -118,4 +65,58 @@ class EntityModelCreateForm(ModelForm):
             'default_coa': CheckboxInput(attrs={
                 'class': 'checkbox'
             })
+        }
+
+
+class EntityModelUpdateForm(ModelForm):
+    class Meta:
+        model = EntityModel
+        fields = [
+            'name',
+            'address_1',
+            'address_2',
+            'email',
+            'phone',
+            'website'
+        ]
+        labels = {
+            'name': _('Entity Name')
+        }
+        widgets = {
+            'name': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Entity name...')
+                }
+            ),
+            'address_1': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Address 1...')
+                }
+            ),
+            'address_2': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Address 2...')
+                }
+            ),
+            'email': EmailInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Email...')
+                }
+            ),
+            'phone': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Phone...')
+                }
+            ),
+            'website': URLInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Website...')
+                }
+            ),
         }

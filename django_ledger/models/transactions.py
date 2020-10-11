@@ -138,7 +138,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     account = models.ForeignKey('django_ledger.AccountModel',
                                 related_name='txs',
                                 verbose_name=_('Account'),
-                                on_delete=models.PROTECT)
+                                on_delete=models.CASCADE)
     amount = models.DecimalField(decimal_places=2,
                                  max_digits=20,
                                  null=True,

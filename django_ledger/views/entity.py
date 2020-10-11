@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
@@ -42,7 +42,9 @@ class EntityModelDashboardView(DetailView):
         context = super().get_context_data(**kwargs)
         entity = self.object
         context['page_title'] = entity.name
-        context['header_title'] = _('Dashboard') + ': ' + entity.name
+        context['header_title'] = entity.name
+        context['header_subtitle'] = _('Dashboard')
+        context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
         session_date_filter_key = get_date_filter_session_key(entity.slug)
         date_filter = self.request.session.get(session_date_filter_key)
@@ -118,6 +120,16 @@ class EntityModelCreateView(CreateView):
         activate_accounts = form.cleaned_data.get('activate_all_accounts')
         if default_coa:
             populate_default_coa(entity_model=entity, activate_accounts=activate_accounts)
+
+        sample_data = form.cleaned_data.get('generate_sample_data')
+        if sample_data:
+            generate_sample_data(
+                entity=entity.slug,
+                user_model=self.request.user,
+                start_dt=localtime() - timedelta(days=30 * 6),
+                days_fw=30 * 9,
+                tx_quantity=50
+            )
         self.object = entity
         return super().form_valid(form)
 
@@ -138,6 +150,26 @@ class EntityModelUpdateView(UpdateView):
 
     def get_queryset(self):
         return EntityModel.objects.for_user(user_model=self.request.user)
+
+
+class EntityDeleteView(DeleteView):
+    slug_url_kwarg = 'entity_slug'
+    context_object_name = 'entity'
+    template_name = 'django_ledger/entity_delete.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['page_title'] = _('Delete Entity ') + self.object.name
+        context['header_title'] = context['page_title']
+        return context
+
+    def get_queryset(self):
+        return EntityModel.objects.for_user(
+            user_model=self.request.user
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:home')
 
 
 class EntityModelBalanceSheetView(DetailView):

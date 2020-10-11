@@ -8,7 +8,6 @@
         <tr>
             <th>Customer</th>
             <th>Address</th>
-            <th>Last Updated</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -17,7 +16,6 @@
             <tr>
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
-                <td>{{ customer.updated | timesince }}</td>
                 <td>
                     <div class="dropdown is-right" id="customer-action-{{ customer.uuid }}">
 
@@ -28,7 +26,7 @@
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
                                 <span class="icon is-small">
-                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
+                                        {% icon 'bi:arrow-down' 24 %}
                                       </span>
                             </button>
                         </div>

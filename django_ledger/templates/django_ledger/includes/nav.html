@@ -8,8 +8,7 @@
         <div class="navbar-brand">
 
             <a class="navbar-item" href="{% url 'django_ledger:home' %}">
-                <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}"
-                     height="28">
+                <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
             </a>
 
             <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
@@ -22,14 +21,62 @@
         </div>
 
         <div id="navbarBasicExample" class="navbar-menu">
-            <div class="navbar-start">
 
-                <a class="navbar-item" href="{% url 'django_ledger:home' %}">{% trans 'Home' %}</a>
-                {% if user.is_superuser and user.is_authenticated %}
-                    <a class="navbar-item" href="/admin">{% trans 'Admin' %}</a>
-                {% endif %}
+            {% if view.kwargs.entity_slug %}
+                <div class="navbar-start">
 
-            </div>
+                    <div class="navbar-item has-text-weight-bold is-hidden-desktop">{{ entity.name | upper }}</div>
+                    <a class="navbar-item is-hidden-desktop"
+                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Dashboard' %}</a>
+                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
+                        <a class="navbar-link">{% trans 'Lists' %}</a>
+                        <div class="navbar-dropdown">
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:customer-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Customers' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Vendors' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Bank Accounts' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Bills' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Invoices' %}</a>
+                        </div>
+                    </div>
+
+                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
+                        <a class="navbar-link">{% trans 'Reports' %}</a>
+                        <div class="navbar-dropdown">
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">{% trans 'Balance Sheet' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">{% trans 'Income Statement' %}</a>
+                        </div>
+                    </div>
+
+                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
+                        <a class="navbar-link">{% trans 'Manage' %}</a>
+                        <div class="navbar-dropdown">
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Chart of Accounts' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Ledger' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Import Transactions' %}</a>
+                            <a class="navbar-item"
+                               href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">{% trans 'Entity Settings' %}</a>
+                        </div>
+                    </div>
+                    <a class="navbar-item is-hidden-desktop"
+                       href="{% url 'django_ledger:home' %}">{% trans 'My Entities' %}</a>
+                    {% if user.is_superuser and user.is_authenticated %}
+                        <a class="navbar-item is-hidden-desktop" href="/admin">{% trans 'Admin' %}</a>
+                    {% endif %}
+
+
+                </div>
+            {% endif %}
+
             <div class="navbar-end">
 
                 {% if view.kwargs.entity_slug %}
@@ -54,7 +101,7 @@
                 </div>
                 <div class="navbar-item">
                     <a class="button is-small is-success">
-                            <span class="icon">{% icon "topcoat:feedback" 24 %}</span>
+                        <span class="icon">{% icon "topcoat:feedback" 24 %}</span>
                         <span>Feedback</span>
                     </a>
                 </div>
@@ -62,5 +109,8 @@
             </div>
 
         </div>
+
+
+    </div>
     </div>
 </nav>

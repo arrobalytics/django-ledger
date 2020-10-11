@@ -1,3 +1,5 @@
+{% load django_ledger %}
+
 {% if inline %}
     <div class="flatpickr djetler-date-filter"></div>
 {% else %}
@@ -9,7 +11,9 @@
             {{ date_form.entity_slug }}
             {{ date_form.date }}
         </form>
-        <i class="icon mdi mdi-calendar mdi-24px" data-toggle></i>
+        <div data-toggle>
+            {% icon "bi:calendar-check" 24 %}
+        </div>
     </div>
 {% endif %}
 

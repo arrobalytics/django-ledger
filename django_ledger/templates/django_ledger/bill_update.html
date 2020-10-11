@@ -22,14 +22,15 @@
                             </div>
                             <div class="card-content">
                                 <div class="content">
-                                    <h1 class="has-text-weight-light">{{ bill.bill_to }}</h1>
+                                    <h1 class="has-text-weight-light">{{ bill.vendor.vendor_name }}</h1>
                                     <p>
-                                        {# todo: only show populated info... #}
-                                        {% if bill.address_1 %}{{ bill.address_1 }}{% endif %}<br>
-                                        {% if bill.address_2 %}{{ bill.address_2 }}{% endif %}<br>
-                                        {% if bill.phone %}{{ bill.phone }}{% endif %}<br>
-                                        {% if bill.email %}{{ bill.email }}{% endif %}<br>
-                                        {% if bill.website %}{{ bill.website }}{% endif %}<br>
+                                        {% if bill.vendor.address_1 %}
+                                            {{ bill.vendor.address_1 }}{% endif %}<br>
+                                        {% if bill.vendor.address_2 %}
+                                            {{ bill.vendor.address_2 }}{% endif %}<br>
+                                        {% if bill.vendor.phone %}{{ bill.vendor.phone }}{% endif %}<br>
+                                        {% if bill.vendor.email %}{{ bill.vendor.email }}{% endif %}<br>
+                                        {% if bill.vendor.website %}{{ bill.vendor.website }}{% endif %}<br>
                                     </p>
                                 </div>
 

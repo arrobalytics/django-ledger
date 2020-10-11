@@ -66,7 +66,7 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
     vendor = models.ForeignKey('django_ledger.VendorModel',
-                               on_delete=models.PROTECT,
+                               on_delete=models.CASCADE,
                                verbose_name=_('Vendor'),
                                blank=True,
                                null=True)

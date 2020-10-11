@@ -5,21 +5,12 @@
 
 {% block content %}
 
-    <section class="hero is-primary is-bold is-small">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">{% trans 'Financial Overview' %}</h1>
-                <h2 class="subtitle">
-                    <span class="icon">{% icon "ic:baseline-business" 16 %}</span>{{ entity.name }}</h2>
-            </div>
-        </div>
-    </section>
 
     <section class="section">
         <div class="container is-fluid p-0">
             <div class="columns">
-                <div class="column is-3 is-hidden-tablet is-hidden-mobile">
-                        {% include 'django_ledger/includes/menu.html' %}
+                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                    {% include 'django_ledger/includes/menu.html' %}
                 </div>
                 <div class="column">
                     <div class="columns is-multiline">
@@ -51,7 +42,7 @@
     </section>
 
     {# RECEIVABLES SECTION START #}
-    <section class="hero is-primary is-bold is-small">
+    <section class="hero is-light is-bold is-small">
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">{% trans 'Receivables' %}</h1>
@@ -87,7 +78,7 @@
 
 
     {# PAYABLES SECTION START #}
-    <section class="hero is-primary is-bold is-small">
+    <section class="hero is-light is-bold is-small">
         <div class="hero-body">
             <div class="container">
                 <h1 class="title">{% trans 'Payables' %}</h1>

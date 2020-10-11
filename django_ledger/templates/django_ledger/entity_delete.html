@@ -1,0 +1,41 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block content %}
+
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-6">
+                    <form action="{{ entity.get_delete_url }}"
+                          method="post">
+                        {% csrf_token %}
+                        <div class="card">
+                            <div class="card-content has-text-centered">
+                                <p class="title has-text-weight-light">Are you sure you want to delete
+                                    Entity {{ entity.name }}?</p>
+                            </div>
+                            <div class="card-content has-text-centered">
+                                <p class="subtitle">All data associated with this entity will be deleted.</p>
+                            </div>
+                            <div class="card-content has-text-centered">
+                                <a href="{{ entity.get_absolute_url }}"
+                                   class="button is-primary">{% trans 'Go Back' %}</a>
+                                <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
+                            </div>
+
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+{% endblock %}
+
+
+
+
