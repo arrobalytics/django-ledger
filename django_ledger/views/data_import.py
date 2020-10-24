@@ -2,6 +2,7 @@ from itertools import chain
 
 from django.contrib import messages
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, FormView, DetailView
@@ -13,8 +14,7 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.utils import new_bankaccount_protocol
-from django.utils.safestring import mark_safe
+from django_ledger.utils import new_bankaccount_protocol
 
 
 def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):

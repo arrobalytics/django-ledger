@@ -1,26 +1,32 @@
 {% load django_ledger %}
 
-<table class="table is-fullwidth is-narrow is-striped">
-    <tr>
-        <th>Account</th>
-        <th>Account Name</th>
-        <th>Credit</th>
-        <th>Debit</th>
-        <th>Description</th>
-    </tr>
-    {% for tx in txs %}
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped">
         <tr>
-            <td>{{ tx.account.code }}</td>
-            <td>{{ tx.account.name }}</td>
-            <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
-            <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
-            <td>{{ tx.description }}</td>
+            <th>Date</th>
+            <th>Account</th>
+            <th>Account Name</th>
+            <th>Credit</th>
+            <th>Debit</th>
+            <th>Description</th>
         </tr>
-    {% endfor %}
-    <tr class="has-text-weight-bold">
-        <td>Total</td>
-        <td></td>
-        <td>${{ total_credits | cs_thousands }}</td>
-        <td>${{ total_debits | cs_thousands }}</td>
-    </tr>
-</table>
+        {% for tx in txs %}
+            <tr>
+                <td>{{ tx.journal_entry.date }}</td>
+                <td>{{ tx.account.code }}</td>
+                <td>{{ tx.account.name }}</td>
+                <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
+                <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
+                <td>{{ tx.description }}</td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td>Total</td>
+            <td></td>
+            <td></td>
+            <td>${{ total_credits | cs_thousands }}</td>
+            <td>${{ total_debits | cs_thousands }}</td>
+            <td></td>
+        </tr>
+    </table>
+</div>

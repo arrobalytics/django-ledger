@@ -364,3 +364,10 @@ def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, en
         user_model=user_model,
         entity_slug=entity_slug
     )
+
+
+def get_date_filter_from_session(entity_slug: str, request):
+    session_date_filter_key = get_date_filter_session_key(entity_slug)
+    date_filter = request.session.get(session_date_filter_key)
+    date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
+    return date_filter

@@ -11,6 +11,7 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.io.roles import ASSET_CA_RECEIVABLES
 
 
 class TransactionQuerySet(models.QuerySet):
@@ -118,6 +119,25 @@ class TransactionModelAdmin(models.Manager):
                     Q(journal_entry__ledger__entity__managers__in=[user_model])
             )
         )
+
+    def for_bill(self,
+                 bill_pk: str,
+                 user_model,
+                 entity_slug: str):
+        qs = self.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug)
+        return qs.filter(journal_entry__ledger__billmodel__uuid__exact=bill_pk)
+
+    def for_invoice(self,
+                    invoice_pk: str,
+                    user_model,
+                    entity_slug: str):
+        qs = self.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug).exclude(
+            account__role=ASSET_CA_RECEIVABLES)
+        return qs.filter(journal_entry__ledger__invoicemodel__uuid__exact=invoice_pk)
 
 
 class TransactionModelAbstract(CreateUpdateMixIn):

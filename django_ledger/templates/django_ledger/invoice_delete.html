@@ -22,7 +22,7 @@
                                     If you want to void the invoice instead, click here</p>
                             </div>
                             <div class="card-content has-text-centered">
-                                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
                                    class="button is-primary">{% trans 'Go Back' %}</a>
                                 <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
                             </div>

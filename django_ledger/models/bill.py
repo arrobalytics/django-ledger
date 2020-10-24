@@ -107,6 +107,13 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Bill: {self.bill_number}'
 
+    def get_absolute_url(self):
+        return reverse('django_ledger:invoice-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
     def get_migrate_state_desc(self):
         """
         Must be implemented.

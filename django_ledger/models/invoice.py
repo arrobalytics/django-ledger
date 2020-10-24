@@ -105,6 +105,13 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Invoice: {self.invoice_number}'
 
+    def get_absolute_url(self):
+        return reverse('django_ledger:bill-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
     def get_document_id(self):
         return self.invoice_number
 

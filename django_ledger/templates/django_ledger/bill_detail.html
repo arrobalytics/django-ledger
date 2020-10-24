@@ -1,0 +1,39 @@
+{% extends 'django_ledger/base.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block content %}
+    <section class="section">
+        <div class="container is-fluid">
+            <div class="columns">
+                <div class="column is-4">
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=view.kwargs.entity_slug style='bill-detail' %}
+                        </div>
+                        <div class="column is-12">
+                            {% include 'django_ledger/includes/card_vendor.html' with vendor=bill.vendor %}
+                        </div>
+                        <div class="column is-12">
+                            <a class="button is-info is-fullwidth is-outlined" href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bill List</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Bill Transactions' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            {% bill_txs_table bill %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

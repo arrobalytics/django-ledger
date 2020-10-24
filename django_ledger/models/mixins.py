@@ -371,7 +371,7 @@ class ProgressibleMixIn(models.Model):
         return td.days
 
     def is_past_due(self):
-        return self.due_date < localdate()
+        return not self.paid if self.paid else self.due_date < localdate()
 
     def net_due_group(self):
         due_in = self.due_in_days()

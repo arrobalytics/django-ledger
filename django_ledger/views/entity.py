@@ -12,7 +12,7 @@ from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateF
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.utils import (
+from django_ledger.utils import (
     get_date_filter_session_key, get_default_entity_session_key,
     populate_default_coa, generate_sample_data
 )

@@ -1,0 +1,29 @@
+{% load i18n %}
+{% load django_ledger %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Customer Information' %}</h2>
+    </div>
+    <div class="card-content">
+        <div class="content">
+            <h1 class="has-text-weight-bold">
+                <span class="icon is-large">
+                    {% icon 'bi:person-lines-fill' 36 %}</span>
+                {{ customer.customer_name }}
+            </h1>
+            <p>
+                {% if customer.address_1 %}{{ customer.address_1 }}{% endif %}<br>
+                {% if customer.address_2 %}{{ customer.address_2 }}{% endif %}<br>
+                {% if customer.phone %}{{ customer.phone }}{% endif %}<br>
+                {% if customer.email %}{{ customer.email }}{% endif %}<br>
+                {% if customer.website %}{{ customer.website }}{% endif %}<br>
+            </p>
+        </div>
+    </div>
+    <footer class="card-footer">
+        <a href="{% url 'django_ledger:customer-update' customer_pk=customer.uuid entity_slug=view.kwargs.entity_slug %}"
+           class="card-footer-item has-text-primary has-text-centered">{% trans 'Edit' %}</a>
+    </footer>
+
+</div>

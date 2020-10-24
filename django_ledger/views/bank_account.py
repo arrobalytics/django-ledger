@@ -4,7 +4,7 @@ from django.views.generic import ListView, CreateView, UpdateView
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.models.utils import new_bankaccount_protocol
+from django_ledger.utils import new_bankaccount_protocol
 
 
 class BankAccountModelListView(ListView):

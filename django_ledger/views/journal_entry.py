@@ -34,6 +34,9 @@ class JournalEntryDetailView(DetailView):
     slug_url_kwarg = 'je_pk'
     slug_field = 'uuid'
     PAGE_TITLE = _('Journal Entry Detail')
+    extra_context = {
+        'page_title': PAGE_TITLE
+    }
 
     def get_queryset(self):
         return JournalEntryModel.on_coa.for_ledger(

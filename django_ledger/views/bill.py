@@ -4,12 +4,13 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import UpdateView, CreateView, DeleteView, View, MonthArchiveView
+from django.views.generic import UpdateView, CreateView, DeleteView, View, MonthArchiveView, DetailView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
 from django_ledger.models.bill import BillModel
-from django_ledger.models.utils import new_bill_protocol, mark_progressible_paid
+from django_ledger.utils import new_bill_protocol, mark_progressible_paid
+from django_ledger.views.transactions import TransactionModel
 
 
 class BillModelListView(MonthArchiveView):
@@ -21,7 +22,8 @@ class BillModelListView(MonthArchiveView):
     allow_empty = True
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'uil:bill'
     }
 
     def get_year(self):
@@ -88,6 +90,9 @@ class BillModelUpdateView(UpdateView):
     slug_field = 'uuid'
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_update.html'
+    extra_context = {
+        'header_subtitle_icon': 'uil:bill'
+    }
 
     def get_form(self, form_class=None):
         return BillModelUpdateForm(
@@ -107,7 +112,7 @@ class BillModelUpdateView(UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-update',
+        return reverse('django_ledger:bill-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'bill_pk': bill_pk
@@ -126,6 +131,35 @@ class BillModelUpdateView(UpdateView):
                              f'Bill {self.object.bill_number} successfully updated.',
                              extra_tags='is-success')
         return super().form_valid(form)
+
+
+class BillModelDetailView(DetailView):
+    slug_url_kwarg = 'bill_pk'
+    slug_field = 'uuid'
+    context_object_name = 'bill'
+    template_name = 'django_ledger/bill_detail.html'
+    extra_context = {
+        'header_subtitle_icon': 'uil:bill'
+    }
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        bill_model: BillModel = self.object
+        title = f'Bill {bill_model.bill_number}'
+        context['page_title'] = title
+        context['header_title'] = title
+        context['transactions'] = TransactionModel.objects.for_bill(
+            bill_pk=bill_model.uuid,
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).select_related('journal_entry').order_by('-journal_entry__date')
+        return context
+
+    def get_queryset(self):
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).select_related('ledger', 'vendor')
 
 
 class BillModelDeleteView(DeleteView):

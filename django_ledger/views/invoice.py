@@ -5,12 +5,12 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import UpdateView, CreateView, DeleteView, MonthArchiveView
+from django.views.generic import UpdateView, CreateView, DeleteView, MonthArchiveView, DetailView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.utils import new_invoice_protocol, mark_progressible_paid
+from django_ledger.utils import new_invoice_protocol, mark_progressible_paid
 
 
 class InvoiceModelListView(MonthArchiveView):
@@ -144,6 +144,27 @@ class InvoiceModelUpdateView(UpdateView):
                              f'Invoice {self.object.invoice_number} successfully updated.',
                              extra_tags='is-success')
         return super().form_valid(form)
+
+
+class InvoiceModelDetailView(DetailView):
+    slug_url_kwarg = 'invoice_pk'
+    slug_field = 'uuid'
+    context_object_name = 'invoice'
+    template_name = 'django_ledger/invoice_detail.html'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        invoice = self.object.invoice_number
+        title = f'Invoice {invoice}'
+        context['page_title'] = title
+        context['header_title'] = title
+        return context
+
+    def get_queryset(self):
+        return InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).select_related('ledger', 'customer')
 
 
 class InvoiceModelDeleteView(DeleteView):

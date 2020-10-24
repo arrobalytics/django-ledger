@@ -7,9 +7,10 @@ from django.utils.timezone import now
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
+from django_ledger.models import TransactionModel, BillModel, InvoiceModel
 from django_ledger.models.journalentry import validate_activity
-from django_ledger.models.utils import get_date_filter_session_key, get_default_entity_session_key
 from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALYSIS
+from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key
 
 register = template.Library()
 
@@ -116,8 +117,40 @@ def jes_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/txs_table.html')
-def txs_table(journal_entry_model):
+def journal_entry_txs_table(journal_entry_model):
     txs_queryset = journal_entry_model.txs.all()
+    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
+    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
+    return {
+        'txs': txs_queryset,
+        'total_debits': total_debits,
+        'total_credits': total_credits
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/txs_table.html', takes_context=True)
+def bill_txs_table(context, bill_model: BillModel):
+    txs_queryset = TransactionModel.objects.for_bill(
+        bill_pk=bill_model.uuid,
+        user_model=context['request'].user,
+        entity_slug=context['view'].kwargs['entity_slug']
+    ).select_related('journal_entry').order_by('-journal_entry__date')
+    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
+    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
+    return {
+        'txs': txs_queryset,
+        'total_debits': total_debits,
+        'total_credits': total_credits
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/txs_table.html', takes_context=True)
+def invoice_txs_table(context, invoice_model: InvoiceModel):
+    txs_queryset = TransactionModel.objects.for_invoice(
+        invoice_pk=invoice_model.uuid,
+        user_model=context['request'].user,
+        entity_slug=context['view'].kwargs['entity_slug']
+    ).select_related('journal_entry').order_by('-journal_entry__date')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {
@@ -272,13 +305,14 @@ def chart_container(chart_id, endpoint=None):
 
 
 @register.inclusion_tag('django_ledger/tags/modals.html', takes_context=True)
-def mark_as_paid(context, obj):
-    entity_slug = context['view'].kwargs['entity_slug']
-    action_url = obj.get_mark_paid_url(entity_slug=entity_slug)
+def mark_as_paid(context, model, entity_slug: str = None):
+    if not entity_slug:
+        entity_slug = context['view'].kwargs['entity_slug']
+    action_url = model.get_mark_paid_url(entity_slug=entity_slug)
     return {
-        'object': obj,
+        'object': model,
         'action_url': action_url,
-        'message': f'Do you want to mark {obj.__class__._meta.verbose_name} {obj.get_document_id()} as paid?'
+        'message': f'Do you want to mark {model.__class__._meta.verbose_name} {model.get_document_id()} as paid?'
     }
 
 
