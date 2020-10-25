@@ -63,7 +63,7 @@
                 {% endif %}
                 {% for invoice in invoices %}
                     <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug %}
+                        {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug style='dashboard' %}
                     </div>
                 {% endfor %}
                 <div class="column is-6-tablet is-4-desktop">
@@ -85,7 +85,7 @@
             </div>
         </div>
     </section>
-    <section class="section">
+    <section class="section">r
         <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if bills %}
