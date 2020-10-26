@@ -3,7 +3,7 @@
 
 <div class="table-container">
 
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered">
         <thead>
         <tr>
             <th>Bill Number</th>
@@ -25,16 +25,18 @@
                 <td>${{ bill.amount_due | cs_thousands }}</td>
                 <td>${{ bill.amount_paid | cs_thousands }}</td>
 
-                <td>{% if bill.paid %}
-                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                {% else %}
-                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                {% endif %} </td>
-                <td>{% if bill.is_past_due %}
-                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                {% else %}
-                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                {% endif %}
+                <td class="has-text-centered">
+                    {% if bill.paid %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                    {% endif %} </td>
+                <td class="has-text-centered">
+                    {% if bill.is_past_due %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                    {% endif %}
                 </td>
 
                 <td>

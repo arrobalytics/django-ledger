@@ -4,9 +4,12 @@
 {% load django_ledger %}
 
 {% block content %}
-    <div class="section">
-        <div class="container">
+    <section class="section">
+        <div class="container is-fluid">
             <div class="columns">
+                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                    {% include 'django_ledger/includes/menu.html' %}
+                </div>
                 <div class="column">
                     <div class="box">
                         <a class="button is-primary is-outlined"
@@ -22,6 +25,6 @@
 
             </div>
         </div>
-    </div>
+    </section>
 
 {% endblock %}

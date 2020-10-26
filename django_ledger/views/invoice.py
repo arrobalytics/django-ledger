@@ -1,11 +1,10 @@
 from django.contrib import messages
-from django.core.exceptions import FieldError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import UpdateView, CreateView, DeleteView, MonthArchiveView, DetailView
+from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
+                                  ArchiveIndexView, YearArchiveView, DetailView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
@@ -13,44 +12,33 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import new_invoice_protocol, mark_progressible_paid
 
 
-class InvoiceModelListView(MonthArchiveView):
+class InvoiceModelListView(ArchiveIndexView):
     template_name = 'django_ledger/invoice_list.html'
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
-    month_format = '%m'
-    allow_empty = True
+    paginate_by = 10
+    paginate_orphans = 2
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
 
-    def get_year(self):
-        year = self.request.GET.get('year')
-        return year if year else localdate().year
-
-    def get_month(self):
-        month = self.request.GET.get('month')
-        if not month:
-            month = str(localdate().month)
-            month = '0' + month if len(month) == 1 else month
-        return month
-
     def get_queryset(self):
-        qs = InvoiceModel.objects.for_entity(
+        return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('customer')
-        sort = self.request.GET.get('sort')
-        if sort:
-            try:
-                qs = qs.order_by(sort)
-            except FieldError:
-                messages.add_message(self.request,
-                                     level=messages.ERROR,
-                                     message=f'Invalid sort {sort}',
-                                     extra_tags='is-danger')
-        return qs
+        ).select_related('customer').order_by('-date')
+
+
+class InvoiceModelYearlyListView(YearArchiveView, InvoiceModelListView):
+    paginate_by = 10
+    make_object_list = True
+
+
+class InvoiceModelMonthlyListView(MonthArchiveView, InvoiceModelListView):
+    paginate_by = 10
+    month_format = '%m'
 
 
 class InvoiceModelCreateView(CreateView):

@@ -37,12 +37,12 @@
             </div>
 
             <footer class="card-footer">
+                <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
+                   class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                   class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+                   class="card-footer-item has-text-warning-dark has-text-centered">{% trans 'Update' %}</a>
                 <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
                    class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
-                <a href="{% url 'django_ledger:invoice-delete' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
             </footer>
         </div>
     {% elif style == 'invoice-detail' %}
@@ -74,7 +74,7 @@
                         <p class="has-text-danger has-text-weight-bold is-size-3">Past
                             Due: {{ invoice.due_date | timesince }} ago</p>
                     {% endif %}
-                    <p class="is-size-5 has-text-danger">You Still Owe: ${{ invoice.get_amount_open | cs_thousands }}</p>
+                    <p class="is-size-5 has-text-success">Owed to You: ${{ invoice.get_amount_open | cs_thousands }}</p>
 
                     {% if invoice.progressible %}
                         <p>Is Progressible: <span

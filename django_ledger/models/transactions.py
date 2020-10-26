@@ -135,8 +135,7 @@ class TransactionModelAdmin(models.Manager):
                     entity_slug: str):
         qs = self.for_entity(
             user_model=user_model,
-            entity_slug=entity_slug).exclude(
-            account__role=ASSET_CA_RECEIVABLES)
+            entity_slug=entity_slug)
         return qs.filter(journal_entry__ledger__invoicemodel__uuid__exact=invoice_pk)
 
 

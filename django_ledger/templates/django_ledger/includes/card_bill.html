@@ -38,12 +38,12 @@
 
             </div>
             <footer class="card-footer">
+                <a href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                   class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
                 <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+                   class="card-footer-item has-text-warning-dark has-text-centered">{% trans 'Update' %}</a>
                 <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
                    class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
-                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
             </footer>
         </div>
     {% elif style == 'bill-detail' %}
@@ -98,8 +98,6 @@
 
                 {% endif %}
 
-
-
                 {# MARK AS PAID MODAL #}
                 {% mark_as_paid bill %}
 
@@ -109,8 +107,6 @@
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
                 <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
                    class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
-                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
             </footer>
         </div>
     {% endif %}

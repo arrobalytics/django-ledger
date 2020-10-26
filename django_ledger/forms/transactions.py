@@ -69,7 +69,6 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
         for form in self.forms:
             if self.can_delete and self._should_delete_form(form):
                 continue
-        # todo: can you use a generator?
         txs_balances = [{
             'tx_type': tx.cleaned_data.get('tx_type'),
             'amount': tx.cleaned_data.get('amount')

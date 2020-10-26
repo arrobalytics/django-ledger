@@ -5,9 +5,6 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-# todo: move this to settings & make it a list??...
-
-
 class ChartOfAccountsModelForm(ModelForm):
     class Meta:
         model = ChartOfAccountModel

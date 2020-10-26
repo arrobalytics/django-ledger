@@ -1,31 +1,49 @@
 <div class="box">
     <aside class="menu">
-        <p class="menu-label">{{ entity.name }}</p>
+        {% if entity %}
+            <p class="menu-label">{{ entity.name }}</p>
+        {% endif %}
         <ul class="menu-list">
-            <li><a href="{{ entity.get_absolute_url }}">Dashboard</a></li>
+            <li>
+                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Dashboard</a>
+            </li>
             <li>
                 <a>Manage Your Lists</a>
                 <ul>
-                    <li><a href="{{ entity.get_customers_url }}">Customers</a></li>
-                    <li><a href="{{ entity.get_vendors_url }}">Vendors</a></li>
-                    <li><a href="{{ entity.get_banks_url }}">Banks</a></li>
-                    <li><a href="{{ entity.get_bills_url }}">Bills</a></li>
-                    <li><a href="{{ entity.get_invoices_url }}">Invoices</a></li>
+                    <li><a href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}">Vendors</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'django_ledger:customer-list' entity_slug=view.kwargs.entity_slug %}">Customers</a>
+                    </li>
+                    <li>
+                        <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">Banks</a>
+                    </li>
+                    <li><a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bills</a></li>
+                    <li>
+                        <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
+                    </li>
                 </ul>
             </li>
             <li>
                 <a>Reports</a>
                 <ul>
-                    <li><a href="{{ entity.get_balance_sheet_url }}">Balance Sheet</a></li>
-                    <li><a href="{{ entity.get_income_statement_url }}">Income Statement</a></li>
+                    <li><a href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">Balance
+                        Sheet</a></li>
+                    <li><a href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">Income
+                        Statement</a></li>
                 </ul>
             </li>
             <li>
                 <a>Manage Entity</a>
                 <ul>
-                    <li><a href="{{ entity.get_chart_of_accounts_url }}">Chart of Accounts</a></li>
-                    <li><a href="{{ entity.get_ledgers_url }}">Ledgers</a></li>
-                    <li><a href="{{ entity.get_data_import_url }}">Import Transactions</a></li>
+                    {# todo: change CoA URL not to require CoA Slug #}
+                    {% if entity %}
+                        <li><a href="{{ entity.get_chart_of_accounts_url }}">Chart of Accounts</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Ledgers</a>
+                    </li>
+                    <li><a href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">Import
+                        Data</a></li>
                     <li><a>Entity Settings</a></li>
                     {#                                <li><a>Collaborators</a></li>#}
                     {#                <li><a>Settings</a></li>#}
@@ -36,7 +54,7 @@
         <p class="menu-label">Administration</p>
         <ul class="menu-list">
             <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
-{#            <li><a>My Messages</a></li>#}
+            {#            <li><a>My Messages</a></li>#}
             <li><a href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a></li>
         </ul>
 

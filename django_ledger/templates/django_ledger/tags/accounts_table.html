@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load django_ledger %}
 
 <div class="table-container">
     <table class="table is-fullwidth is-striped is-narrow">
@@ -30,14 +31,30 @@
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                        <span class="icon"><i
-                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                        ></i></span>
+                    {% if account.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif account.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td class="has-text-centered">{% if account.active %}
-                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td class="has-text-centered">{% if account.locked %}
-                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    {% if account.active %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'ant-design:check-circle-filled' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if account.locked %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'bi:lock-fill' 24 %}
+                        </span>
+                    {% elif not account.locked %}
+                        <span class="icon has-text-danger-dark">
+                            {% icon 'bx:bx-lock-open-alt' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
                 <td>
                     <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
@@ -72,14 +89,30 @@
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                        <span class="icon"><i
-                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                        ></i></span>
+                    {% if account.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif account.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td class="has-text-centered">{% if account.active %}
-                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td class="has-text-centered">{% if account.locked %}
-                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    {% if account.active %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'ant-design:check-circle-filled' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if account.locked %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'bi:lock-fill' 24 %}
+                        </span>
+                    {% elif not account.locked %}
+                        <span class="icon has-text-danger-dark">
+                            {% icon 'bx:bx-lock-open-alt' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
                 <td>
                     <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
@@ -114,14 +147,30 @@
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                        <span class="icon"><i
-                                class="mdi {% if account.balance_type == 'debit' %}mdi-arrow-expand-down{% elif account.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                        ></i></span>
+                    {% if account.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif account.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td class="has-text-centered">{% if account.active %}
-                    <span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td class="has-text-centered">{% if account.locked %}
-                    <span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td class="has-text-centered">
+                    {% if account.active %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'ant-design:check-circle-filled' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if account.locked %}
+                        <span class="icon has-text-success-dark">
+                            {% icon 'bi:lock-fill' 24 %}
+                        </span>
+                    {% elif not account.locked %}
+                        <span class="icon has-text-danger-dark">
+                            {% icon 'bx:bx-lock-open-alt' 24 %}
+                        </span>
+                    {% endif %}
+                </td>
                 <td>
                     <a class="button is-small is-warning"
                        href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>

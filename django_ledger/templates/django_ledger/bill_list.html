@@ -5,23 +5,89 @@
 
 {% block content %}
     <section class="section">
-        <div class="container">
+        <div class="container is-fluid">
+
             <div class="columns">
+                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                    {% include 'django_ledger/includes/menu.html' %}
+                </div>
+
                 <div class="column">
-                    <div class="box">
-                        <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'Create' %}
-                        </a>
-                        <a class="button is-dark"
-                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'Go Back' %}
-                        </a>
-                        {% bill_table %}
+                    <div class="card">
+                        <div class="card-content">
+                            <div class="level">
+                                <div class="level-left">
+                                    <div class="level-item">
+                                        {% if month %}
+                                            <h1 class="is-size-1 has-text-weight-thin">{{ month | date:'F Y' }}</h1>
+                                        {% elif year %}
+                                            <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
+                                                Bills</h1>
+                                        {% else %}
+                                            <h1 class="is-size-1 has-text-weight-thin">Latest Bills</h1>
+                                        {% endif %}
+                                    </div>
+                                    <div class="level-item">
+                                        <a href="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}">
+                                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                                    </div>
+                                </div>
+                                <div class="level-right">
+                                    {% if previous_month %}
+                                        <div class="level-item">
+                                            <a class="button is-small is-dark is-outlined"
+                                               href="{% url 'django_ledger:bill-list-month' year=previous_month.year month=previous_month.month entity_slug=view.kwargs.entity_slug %}">
+                                                <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 16 %}</span>
+                                                <span>{{ previous_month | date:'F Y' }}</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if next_month %}
+                                        <div class="level-item">
+                                            <a class="button is-small is-dark is-outlined"
+                                               href="{% url 'django_ledger:bill-list-month' year=next_month.year month=next_month.month entity_slug=view.kwargs.entity_slug %}">
+                                                <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 16 %}</span>
+                                                <span>{{ next_month | date:'F Y' }}</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if page_obj %}
+                                        {% if page_obj.has_previous %}
+                                            <div class="level-item">
+                                                <a href="?page={{ page_obj.previous_page_number }}"
+                                                   class="button is-small is-dark is-outlined">
+                                                    <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 24 %}</span>
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                        {% if page_obj.has_next %}
+                                            <div class="level-item">
+                                                <a href="?page={{ page_obj.next_page_number }}"
+                                                   class="button is-small is-dark is-outlined">
+                                                    <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 24 %}</span>
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                        <div class="level-item">
+                                            <p class="is-italic">page {{ page_obj.number }}
+                                                of {{ page_obj.paginator.num_pages }}</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% bill_table %}
+                            <div class="columns is-centered">
+                                <div class="column is-2">
+                                    <a class="button is-dark is-fullwidth"
+                                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
+                                        {% trans 'Dashboard' %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
         </div>
     </section>
 {% endblock %}
