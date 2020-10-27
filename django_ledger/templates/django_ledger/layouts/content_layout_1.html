@@ -2,4 +2,20 @@
 
 {% block content %}
 
+    <section class="section">
+        <div class="container is-fluid is-paddingless">
+            <div class="columns">
+
+                {# SIDE MENU #}
+                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                    {% include 'django_ledger/includes/menu.html' %}
+                </div>
+
+                {% block view_content %}{% endblock %}
+            </div>
+        </div>
+
+
+    </section>
+
 {% endblock content %}

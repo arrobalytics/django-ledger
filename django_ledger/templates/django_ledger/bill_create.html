@@ -9,9 +9,9 @@
         <div class="container">
             <form action="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}"
                   method="post">
+
                 <div class="columns is-multiline is-centered">
                     {% csrf_token %}
-
                     <div class="column is-6">
                         <div class="card">
                             <div class="card-header">

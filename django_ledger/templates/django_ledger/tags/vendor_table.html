@@ -3,7 +3,7 @@
 
 <div class="table-container">
 
-    <table class="table is-fullwidth is-narrow is-striped">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered">
         <thead>
         <tr>
             <th>Vendor</th>
@@ -26,9 +26,7 @@
                                     onclick="djLedger.toggleDropdown('vendor-action-{{ vendor.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
-                                <span class="icon is-small">
-                                        {% icon 'bi:arrow-down' 24 %}
-                                      </span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
 

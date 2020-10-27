@@ -5,23 +5,27 @@
 
 {% block content %}
     <section class="section">
-        <div class="container is-fluid">
+        <div class="container is-fluid is-paddingless">
             <div class="columns">
                 <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
                     {% include 'django_ledger/includes/menu.html' %}
                 </div>
-
                 <div class="column">
+
+                    <div class="columns">
+                        <div class="column">
+                            <a class="button is-primary is-outlined is-small"
+                               href="{% url 'django_ledger:vendor-create' entity_slug=view.kwargs.entity_slug %}">
+                                <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 24 %}</span>
+                                <span>{% trans 'New Vendor' %}</span>
+                            </a>
+                        </div>
+                    </div>
+
                     <div class="box">
-                        <a class="button is-primary is-outlined"
-                           href="{% url 'django_ledger:vendor-create' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'New Vendor' %}
-                        </a>
-                        <a class="button is-dark"
-                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
-                            {% trans 'Back' %}
-                        </a>
+
                         {% vendor_table %}
+
                     </div>
                 </div>
             </div>

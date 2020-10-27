@@ -5,7 +5,7 @@
 
 {% block content %}
     <section class="section">
-        <div class="container is-fluid">
+        <div class="container is-fluid is-paddingless">
 
             <div class="columns">
                 <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
@@ -76,14 +76,6 @@
                                 </div>
                             </div>
                             {% bill_table %}
-                            <div class="columns is-centered">
-                                <div class="column is-2">
-                                    <a class="button is-dark is-fullwidth"
-                                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
-                                        {% trans 'Dashboard' %}
-                                    </a>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
