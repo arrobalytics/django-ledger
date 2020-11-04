@@ -37,9 +37,11 @@ class BillModelYearListView(YearArchiveView, BillModelListView):
     paginate_by = 10
     make_object_list = True
 
+
 class BillModelMonthListView(MonthArchiveView, BillModelListView):
     paginate_by = 10
     month_format = '%m'
+    date_list_period = 'year'
 
 
 class BillModelCreateView(CreateView):
@@ -127,7 +129,8 @@ class BillModelDetailView(DetailView):
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_detail.html'
     extra_context = {
-        'header_subtitle_icon': 'uil:bill'
+        'header_subtitle_icon': 'uil:bill',
+        'hide_menu': True
     }
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -155,6 +158,9 @@ class BillModelDeleteView(DeleteView):
     slug_field = 'uuid'
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_delete.html'
+    extra_context = {
+        'hide_menu': True
+    }
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)

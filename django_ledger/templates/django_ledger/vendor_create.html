@@ -1,32 +1,23 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load django_ledger %}
 
-{% block content %}
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-6">
-                    <div class="box">
-                        <form method="post"
-                              action="{% url 'django_ledger:vendor-create' entity_slug=view.kwargs.entity_slug %}">
+{% block view_content %}
+    <div class="box">
+        <form method="post"
+              action="{% url 'django_ledger:vendor-create' entity_slug=view.kwargs.entity_slug %}">
 
-                            <div class="field">
-                                {{ form.as_p }}
-                                {% csrf_token %}
-                            </div>
-
-                            <div class="field">
-                                <button class="button is-primary is-small is-fullwidth">{% trans 'Create Vendor' %}</button>
-                                <a href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}"
-                                   class="button is-dark is-small is-fullwidth mt-2">{% trans 'Go Back' %}</a>
-                            </div>
-                        </form>
-
-                    </div>
-                </div>
+            <div class="field">
+                {{ form.as_p }}
+                {% csrf_token %}
             </div>
 
-        </div>
-    </section>
+            <div class="field">
+                <button class="button is-primary is-small is-fullwidth">{% trans 'Create Vendor' %}</button>
+                <a href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-dark is-small is-fullwidth mt-2">{% trans 'Go Back' %}</a>
+            </div>
+        </form>
+
+    </div>
 {% endblock %}

@@ -1,4 +1,4 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
@@ -6,26 +6,22 @@
 
 
 
-{% block content %}
+{% block view_content %}
 
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-8-tablet is-6-desktop">
-                    <div class="box">
-                        <form action="{% url "django_ledger:account-create" entity_slug=view.kwargs.entity_slug %}"
-                              method="post">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
-                            <a class="button is-dark is-small is-fullwidth djetler_my_1"
-                               href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
-                        </form>
-                    </div>
-
-                </div>
+    <div class="columns is-centered">
+        <div class="column is-8-tablet is-6-desktop">
+            <div class="box">
+                <form action="{% url "django_ledger:account-create" entity_slug=view.kwargs.entity_slug %}"
+                      method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
+                    <a class="button is-dark is-small is-fullwidth djetler_my_1"
+                       href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                </form>
             </div>
+
         </div>
-    </section>
+    </div>
 
 {% endblock %}

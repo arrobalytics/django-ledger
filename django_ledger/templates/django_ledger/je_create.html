@@ -1,26 +1,21 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 
-{% block content %}
-
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-4">
-                    <div class="box">
-                        <form method="post"
-                              action="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button class="button is-outlined is-primary is-fullwidth djetler_my_1" type="submit">Create</button>
-                            <a class="button is-small is-dark is-fullwidth"
-                               href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Back</a>
-                        </form>
-                    </div>
-                </div>
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-4">
+            <div class="box">
+                <form method="post"
+                      action="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button class="button is-outlined is-primary is-fullwidth djetler_my_1" type="submit">Create
+                    </button>
+                    <a class="button is-small is-dark is-fullwidth"
+                       href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Back</a>
+                </form>
             </div>
         </div>
-
-    </section>
+    </div>
 {% endblock %}

@@ -47,9 +47,7 @@
                                     onclick="djLedger.toggleDropdown('bill-action-{{ bill.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
-                                <span class="icon is-small">
-                                        {% icon 'bi:arrow-down' 24 %}
-                                      </span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
 
@@ -62,7 +60,6 @@
 
                                 {% if not bill.paid %}
                                     {% mark_as_paid bill entity_slug %}
-
                                     <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"
                                        class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
                                 {% endif %}

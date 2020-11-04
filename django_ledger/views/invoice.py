@@ -139,6 +139,9 @@ class InvoiceModelDetailView(DetailView):
     slug_field = 'uuid'
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_detail.html'
+    extra_context = {
+        'hide_menu': True
+    }
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -160,6 +163,9 @@ class InvoiceModelDeleteView(DeleteView):
     slug_field = 'uuid'
     template_name = 'django_ledger/invoice_delete.html'
     context_object_name = 'invoice'
+    extra_context = {
+        'hide_menu': True
+    }
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)

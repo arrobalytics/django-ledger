@@ -123,7 +123,7 @@ class EntityModelAbstract(MPTTModel,
                            'entity_slug': self.slug
                        })
 
-    def get_chart_of_accounts_url(self):
+    def get_accounts_url(self):
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': self.slug,

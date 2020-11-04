@@ -7,13 +7,14 @@ from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class EntityFilterForm(Form):
+
     entity_model = ModelChoiceField(
         queryset=EntityModel.objects.none(),
         widget=Select(attrs={
             'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' djetler-set-entity-form-input',
         }))
 
-    def __init__(self, *args, user_model, default_entity=None, form_id=None, **kwargs):
+    def __init__(self, *args, user_model, current_entity_uuid=None, form_id=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.form_id = form_id
@@ -21,9 +22,10 @@ class EntityFilterForm(Form):
             user_model=self.USER_MODEL).only('slug', 'name')
         if form_id:
             self.fields['entity_model'].widget.attrs['class'] += f' djetler-default-entity-input-{self.form_id}'
-        if default_entity:
+
+        if current_entity_uuid:
             self.initial = {
-                'entity_model': default_entity
+                'entity_model': current_entity_uuid
             }
 
 

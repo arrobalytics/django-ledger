@@ -1,27 +1,21 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 
-{% block content %}
-
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-6">
-                    <div class="box">
-                        <form method="post"
-                              action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button class="button is-fullwidth is-primary is-outlined djetler_my_1" type="submit">Update</button>
-                            <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}"
-                               class="button is-small is-dark is-fullwidth">Back</a>
-                        </form>
-                    </div>
-
-                </div>
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-6">
+            <div class="box">
+                <form method="post"
+                      action="{% url 'django_ledger:je-update' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button class="button is-fullwidth is-primary is-outlined djetler_my_1" type="submit">Update
+                    </button>
+                    <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}"
+                       class="button is-small is-dark is-fullwidth">Back</a>
+                </form>
             </div>
         </div>
-
-    </section>
+    </div>
 {% endblock %}

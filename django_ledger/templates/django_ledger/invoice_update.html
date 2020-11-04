@@ -1,212 +1,189 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
-    <section class="section">
-        <div class="container">
-            <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                  method="post">
+{% block view_content %}
 
-                {% if form.errors %}
-                    {{ form.errors }}
-                {% endif %}
+    <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+          method="post">
 
-                {% csrf_token %}
-                <div class="columns is-multiline">
-                    <div class="column is-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Customer Information' %}</p>
-                            </div>
-                            <div class="card-content">
-                                <div class="content">
-                                    <h1 class="has-text-weight-light">{{ invoice.customer.customer_name }}</h1>
-                                    <p>
-                                        {% if invoice.customer.address_1 %}
-                                            {{ invoice.customer.address_1 }}{% endif %}<br>
-                                        {% if invoice.customer.address_2 %}
-                                            {{ invoice.customer.address_2 }}{% endif %}<br>
-                                        {% if invoice.customer.phone %}{{ invoice.customer.phone }}{% endif %}<br>
-                                        {% if invoice.customer.email %}{{ invoice.customer.email }}{% endif %}<br>
-                                        {% if invoice.customer.website %}{{ invoice.customer.website }}{% endif %}<br>
-                                    </p>
-                                </div>
+        {% if form.errors %}
+            {{ form.errors }}
+        {% endif %}
 
-                            </div>
-                        </div>
+        {% csrf_token %}
+        <div class="columns is-multiline">
+            <div class="column is-6">
+                {% include 'django_ledger/includes/card_customer.html' with customer=invoice.customer %}
+            </div>
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-header">
+                        <p class="card-header-title">{% trans 'Invoice Amount & Terms' %}</p>
                     </div>
-                    <div class="column is-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Invoice Amount & Terms' %}</p>
+                    <div class="card-content">
+                        <div class="content">
+                            <h3 class="has-text-weight-light">{% trans 'Invoice Amount:' %}
+                                <strong>${{ invoice.amount_due | cs_thousands }}</strong>
+                                <button type="button"
+                                        onclick="document.getElementById('django-ledger-invoice-amount-field').classList.remove('is-hidden')"
+                                        class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
+                            </h3>
+                            <div class="field is-hidden"
+                                 id="django-ledger-invoice-amount-field">
+                                <div class="control">
+                                    {{ form.amount_due }}
+                                </div>
                             </div>
-                            <div class="card-content">
-                                <div class="content">
-                                    <h3 class="has-text-weight-light">Invoice Amount:
-                                        <strong>${{ invoice.amount_due | cs_thousands }}</strong>
-                                        <button type="button"
-                                                onclick="document.getElementById('django-ledger-invoice-amount-field').classList.remove('is-hidden')"
-                                                class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
-                                    </h3>
-                                    <div class="field is-hidden"
-                                         id="django-ledger-invoice-amount-field">
-                                        <div class="control">
-                                            {{ form.amount_due }}
-                                        </div>
+
+                            <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
+                            <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
+                            <h4 class="has-text-weight-light">Make Invoice
+                                Progressible: {{ form.progressible }}</h4>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-header">
+                        <p class="card-header-title">{% trans 'Invoice State' %}</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-content">
+                            <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                                  method="post">
+                                {% csrf_token %}
+
+                                <div class="field">
+                                    <label for="{{ form.paid.id_for_amount_paid }}"
+                                           class="label is-small">{{ form.amount_paid.label }}</label>
+                                    <div class="control">
+                                        {{ form.amount_paid }}
                                     </div>
-
-                                    <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
-                                    <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
-                                    <h4 class="has-text-weight-light">Make Invoice
-                                        Progressible: {{ form.progressible }}</h4>
-
                                 </div>
 
-                            </div>
-                        </div>
-                    </div>
-                    <div class="column is-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Invoice State' %}</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                                          method="post">
-                                        {% csrf_token %}
-
-                                        <div class="field">
-                                            <label for="{{ form.paid.id_for_amount_paid }}"
-                                                   class="label is-small">{{ form.amount_paid.label }}</label>
-                                            <div class="control">
-                                                {{ form.amount_paid }}
-                                            </div>
-                                        </div>
-
-                                        <div class="field">
-                                            <label for="{{ form.paid.id_for_label }}"
-                                                   class="label is-small">
-                                                {{ form.paid }}
-                                                {{ form.paid.label }}</label>
-                                        </div>
-
-                                        <div class="field">
-                                            <label class="label is-small"
-                                                   for="{{ form.paid_date.id_for_label }}">{{ form.paid_date.label }}</label>
-                                            <div class="control">
-                                                {{ form.paid_date }}
-                                            </div>
-                                        </div>
-
-
-                                        <div class="field">
-                                            <label class="label is-small"
-                                                   for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
-                                            <div class="control">
-                                                {{ form.progress }}
-                                            </div>
-                                        </div>
-
-
-                                        <button type="submit"
-                                                class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
-                                        </button>
-                                        <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                                           class="button is-small is-info is-fullwidth">{% trans 'Invoice List' %}</a>
-                                        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-                                           class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
-                                    </form>
-
+                                <div class="field">
+                                    <label for="{{ form.paid.id_for_label }}"
+                                           class="label is-small">
+                                        {{ form.paid }}
+                                        {{ form.paid.label }}</label>
                                 </div>
 
-                            </div>
-                        </div>
-
-                    </div>
-                    <div class="column is-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Invoice State' %}</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="card-content">
-                                    <div class="columns is-multiline">
-                                        <div class="column is-12">
-                                            <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
-                                            <p>{{ invoice.cash_account }}:
-                                                ${{ invoice.get_amount_cash | cs_thousands }}</p>
-                                            <p>{{ invoice.receivable_account }}:
-                                                ${{ invoice.get_amount_receivable | cs_thousands }}</p>
-                                            <p>{{ invoice.payable_account }}:
-                                                ${{ invoice.get_amount_payable | cs_thousands }}</p>
-                                            <p>{{ invoice.earnings_account }}:
-                                                ${{ invoice.get_amount_earned | cs_thousands }}</p>
-                                        </div>
-                                        <div class="column is-12">
-                                            <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
-                                            <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
-                                            <p>{{ invoice.receivable_account }}:
-                                                ${{ invoice.amount_receivable | cs_thousands }}</p>
-                                            <p>{{ invoice.payable_account }}:
-                                                ${{ invoice.amount_unearned | cs_thousands }}</p>
-                                            <p>{{ invoice.earnings_account }}:
-                                                ${{ invoice.amount_earned | cs_thousands }}</p>
-                                        </div>
-                                        <div class="column is-12">
-                                            <p>Ledger is Posted: {% if invoice.ledger.posted %}
-                                                <span class="icon has-text-success"><i
-                                                        class="mdi mdi-18px mdi-check-circle"></i></span>
-                                            {% else %}
-                                                <span class="icon has-text-danger"><i
-                                                        class="mdi mdi-18px mdi-do-not-disturb"></i></span>
-                                            {% endif %}
-                                            </p>
-                                            <p>Ledger Locked: {% if invoice.ledger.locked %}
-                                                <span class="icon has-text-success"><i
-                                                        class="mdi mdi-18px mdi-lock"></i></span>
-                                            {% else %}
-                                                <span class="icon has-text-danger"><i
-                                                        class="mdi mdi-18px mdi-lock-open-variant"></i></span>
-                                            {% endif %}
-                                            </p>
-                                        </div>
-                                        <div class="column is-6">
-                                            <a class="button is-outlined is-small is-primary is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                                {% trans 'Balance Sheet' %}</a>
-                                        </div>
-                                        <div class="column is-6">
-                                            <a class="button is-outlined is-small is-info is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                                {% trans 'Income Statement' %}</a>
-                                        </div>
-                                        <div class="column is-12">
-                                            <a class="button is-small is-warning is-fullwidth"
-                                               href="{% url 'django_ledger:ledger-update' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                                {% trans 'Invoice Ledger' %}
-                                            </a>
-                                            <a class="button is-small is-info is-fullwidth mt-2"
-                                               href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                                {% trans 'Ledger Journal Entries' %}
-                                            </a>
-                                        </div>
+                                <div class="field">
+                                    <label class="label is-small"
+                                           for="{{ form.paid_date.id_for_label }}">{{ form.paid_date.label }}</label>
+                                    <div class="control">
+                                        {{ form.paid_date }}
                                     </div>
-
                                 </div>
 
-                            </div>
+
+                                <div class="field">
+                                    <label class="label is-small"
+                                           for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
+                                    <div class="control">
+                                        {{ form.progress }}
+                                    </div>
+                                </div>
+
+
+                                <button type="submit"
+                                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
+                                </button>
+                                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                   class="button is-small is-info is-fullwidth">{% trans 'Invoice List' %}</a>
+                                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                   class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
+                            </form>
+
                         </div>
 
                     </div>
                 </div>
 
+            </div>
+            <div class="column is-6">
+                <div class="card">
+                    <div class="card-header">
+                        <p class="card-header-title">{% trans 'Invoice State' %}</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-content">
+                            <div class="columns is-multiline">
+                                <div class="column is-12">
+                                    <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
+                                    <p>{{ invoice.cash_account }}:
+                                        ${{ invoice.get_amount_cash | cs_thousands }}</p>
+                                    <p>{{ invoice.receivable_account }}:
+                                        ${{ invoice.get_amount_receivable | cs_thousands }}</p>
+                                    <p>{{ invoice.payable_account }}:
+                                        ${{ invoice.get_amount_payable | cs_thousands }}</p>
+                                    <p>{{ invoice.earnings_account }}:
+                                        ${{ invoice.get_amount_earned | cs_thousands }}</p>
+                                </div>
+                                <div class="column is-12">
+                                    <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
+                                    <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
+                                    <p>{{ invoice.receivable_account }}:
+                                        ${{ invoice.amount_receivable | cs_thousands }}</p>
+                                    <p>{{ invoice.payable_account }}:
+                                        ${{ invoice.amount_unearned | cs_thousands }}</p>
+                                    <p>{{ invoice.earnings_account }}:
+                                        ${{ invoice.amount_earned | cs_thousands }}</p>
+                                </div>
+                                <div class="column is-12">
+                                    <p>Ledger is Posted: {% if invoice.ledger.posted %}
+                                        <span class="icon has-text-success"><i
+                                                class="mdi mdi-18px mdi-check-circle"></i></span>
+                                    {% else %}
+                                        <span class="icon has-text-danger"><i
+                                                class="mdi mdi-18px mdi-do-not-disturb"></i></span>
+                                    {% endif %}
+                                    </p>
+                                    <p>Ledger Locked: {% if invoice.ledger.locked %}
+                                        <span class="icon has-text-success"><i
+                                                class="mdi mdi-18px mdi-lock"></i></span>
+                                    {% else %}
+                                        <span class="icon has-text-danger"><i
+                                                class="mdi mdi-18px mdi-lock-open-variant"></i></span>
+                                    {% endif %}
+                                    </p>
+                                </div>
+                                <div class="column is-6">
+                                    <a class="button is-outlined is-small is-primary is-fullwidth"
+                                       href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                        {% trans 'Balance Sheet' %}</a>
+                                </div>
+                                <div class="column is-6">
+                                    <a class="button is-outlined is-small is-info is-fullwidth"
+                                       href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                        {% trans 'Income Statement' %}</a>
+                                </div>
+                                <div class="column is-12">
+                                    <a class="button is-small is-warning is-fullwidth"
+                                       href="{% url 'django_ledger:ledger-update' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                        {% trans 'Invoice Ledger' %}
+                                    </a>
+                                    <a class="button is-small is-info is-fullwidth mt-2"
+                                       href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                        {% trans 'Ledger Journal Entries' %}
+                                    </a>
+                                </div>
+                            </div>
 
-            </form>
+                        </div>
 
+                    </div>
+                </div>
+
+            </div>
         </div>
 
-    </section>
+
+    </form>
+
 {% endblock %}

@@ -2,7 +2,7 @@
 {% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth">
+    <table class="table is-fullwidth is-narrow is-striped mb-3">
         <thead>
         <tr>
             <th>Status</th>
@@ -25,7 +25,7 @@
                     <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
                 {% else %}
                     <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
-                {% endif %} </td>
+                {% endif %}</td>
                 <td>
                     <div class="dropdown is-right" id="customer-action-{{ job.uuid }}">
 
@@ -35,9 +35,7 @@
                                     onclick="djLedger.toggleDropdown('customer-action-{{ job.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
-                                <span class="icon is-small">
-                                        <i class="mdi mdi-arrow-down" aria-hidden="true"></i>
-                                      </span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
 

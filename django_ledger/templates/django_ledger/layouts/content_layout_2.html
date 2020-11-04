@@ -1,0 +1,13 @@
+{% extends 'django_ledger/base.html' %}
+
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <div class="columns">
+                <div class="column">
+                    {% block view_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock content %}

@@ -1,35 +1,21 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
-    <section class="section">
-        <div class="container is-fluid">
-            <div class="columns is-multiline">
-                <div class="column is-4-desktop is-12-mobile">
-                    <div class="box">
-                        {% include 'django_ledger/includes/menu.html' %}
-                    </div>
+{% block view_content %}
+    <div class="box">
+        {% balance_sheet_table %}
 
-                </div>
-                <div class="column is-8-desktop is-12-mobile">
-                    <div class="box">
-                        {% balance_sheet_table %}
-                        {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
-                            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
-                                Back</a>
-                        {% elif request.resolver_match.view_name == 'django_ledger:entity-bs' %}
-                            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                               href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
-                                Back</a>
-                        {% endif %}
-                    </div>
-                </div>
+        {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
+            <a class="button is-fullwidth is-dark is-small djetler_my_1"
+               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
+                Back</a>
+        {% elif request.resolver_match.view_name == 'django_ledger:entity-bs' %}
+            <a class="button is-fullwidth is-dark is-small djetler_my_1"
+               href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
+                Back</a>
+        {% endif %}
 
-
-            </div>
-        </div>
-    </section>
+    </div>
 {% endblock %}

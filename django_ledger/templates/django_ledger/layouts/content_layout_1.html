@@ -7,14 +7,17 @@
             <div class="columns">
 
                 {# SIDE MENU #}
-                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
-                    {% include 'django_ledger/includes/menu.html' %}
-                </div>
+                {% if not hide_menu %}
+                    <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                        {% include 'django_ledger/includes/menu.html' %}
+                    </div>
+                {% endif %}
 
-                {% block view_content %}{% endblock %}
+                <div class="column">
+                    {% block view_content %}{% endblock %}
+                </div>
             </div>
         </div>
-
 
     </section>
 

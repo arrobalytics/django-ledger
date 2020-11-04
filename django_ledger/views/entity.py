@@ -14,7 +14,7 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import (
     get_date_filter_session_key, get_default_entity_session_key,
-    populate_default_coa, generate_sample_data
+    populate_default_coa, generate_sample_data, set_default_entity
 )
 
 
@@ -40,15 +40,16 @@ class EntityModelDashboardView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        entity = self.object
-        context['page_title'] = entity.name
-        context['header_title'] = entity.name
+        entity_model = self.object
+        context['page_title'] = entity_model.name
+        context['header_title'] = entity_model.name
         context['header_subtitle'] = _('Dashboard')
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
-        session_date_filter_key = get_date_filter_session_key(entity.slug)
+        session_date_filter_key = get_date_filter_session_key(entity_model.slug)
         date_filter = self.request.session.get(session_date_filter_key)
         date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
+        set_default_entity(self.request, entity_model)
 
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
         context['pnl_chart_endpoint'] = reverse('django_ledger:entity-json-pnl',
@@ -70,12 +71,12 @@ class EntityModelDashboardView(DetailView):
 
         # DIGEST PHASE ---
         by_period = self.request.GET.get('by_period')
-        digest = entity.digest(user_model=self.request.user,
-                               as_of=date_filter,
-                               by_period=True if by_period else False,
-                               process_ratios=True,
-                               process_roles=True,
-                               process_groups=True)
+        digest = entity_model.digest(user_model=self.request.user,
+                                     as_of=date_filter,
+                                     by_period=True if by_period else False,
+                                     process_ratios=True,
+                                     process_roles=True,
+                                     process_groups=True)
         context.update(digest)
         context['date_filter'] = date_filter - timedelta(days=1)
 
@@ -142,7 +143,8 @@ class EntityModelUpdateView(UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Manage Entity: ') + self.object.name
+        context['page_title'] = self.object.name
+        context['header_title'] = self.object.name
         return context
 
     def get_success_url(self):
@@ -199,8 +201,8 @@ class EntityModelIncomeStatementView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('income statement: ') + self.object.name
-        context['header_title'] = _('income statement: ') + self.object.name
+        context['page_title'] = _('Income Statement: ') + self.object.name
+        context['header_title'] = _('Income Statement: ') + self.object.name
         return context
 
     def get_queryset(self):
@@ -224,7 +226,7 @@ class SetDefaultEntityView(RedirectView):
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
-            self.request.session[session_key] = str(entity_model.uuid)
+            set_default_entity(request, entity_model)
         else:
             try:
                 del self.request.session[session_key]

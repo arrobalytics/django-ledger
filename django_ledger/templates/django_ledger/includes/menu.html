@@ -1,61 +1,80 @@
+{% load i18n %}
+{% load session_entity_name from django_ledger %}
+
 <div class="box">
     <aside class="menu">
-        {% if entity %}
-            <p class="menu-label">{{ entity.name }}</p>
-        {% endif %}
+        <p class="menu-label">{% session_entity_name %}</p>
         <ul class="menu-list">
             <li>
-                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Dashboard</a>
+                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
+                    {% trans 'Dashboard' %}
+                </a>
             </li>
             <li>
-                <a>Manage Your Lists</a>
+                <a>{% trans 'Manage Your Lists' %}</a>
                 <ul>
-                    <li><a href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}">Vendors</a>
+                    <li><a href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Vendors' %}
+                    </a>
                     </li>
                     <li>
-                        <a href="{% url 'django_ledger:customer-list' entity_slug=view.kwargs.entity_slug %}">Customers</a>
+                        <a href="{% url 'django_ledger:customer-list' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Customers' %}
+                        </a>
                     </li>
                     <li>
-                        <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">Banks</a>
+                        <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Banks' %}
+                        </a>
                     </li>
-                    <li><a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bills</a></li>
+                    <li><a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Bills' %}
+                    </a></li>
                     <li>
-                        <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">Invoices</a>
+                        <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">
+                            {% trans 'Invoices' %}
+                        </a>
                     </li>
                 </ul>
             </li>
             <li>
-                <a>Reports</a>
+                <a>{% trans 'Reports' %}</a>
                 <ul>
-                    <li><a href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">Balance
-                        Sheet</a></li>
-                    <li><a href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">Income
-                        Statement</a></li>
+                    <li><a href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Balance Sheet' %}
+                    </a></li>
+                    <li><a href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Income Statement' %}
+                    </a></li>
                 </ul>
             </li>
             <li>
-                <a>Manage Entity</a>
+                <a>{% trans 'Manage Entity' %}</a>
                 <ul>
-                    {# todo: change CoA URL not to require CoA Slug #}
-                    {% if entity %}
-                        <li><a href="{{ entity.get_chart_of_accounts_url }}">Chart of Accounts</a></li>
-                    {% endif %}
-                    <li><a href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Ledgers</a>
+                    <li><a href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Chart of Accounts' %}
+                    </a></li>
+                    <li><a href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Ledgers' %}
+                    </a>
                     </li>
-                    <li><a href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">Import
-                        Data</a></li>
-                    <li><a>Entity Settings</a></li>
+                    <li><a href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Import Data' %}
+                    </a></li>
+                    <li><a>{% trans 'Entity Settings' %}</a></li>
+                    <li><a>{% trans 'Collaborators' %}</a></li>
                     {#                                <li><a>Collaborators</a></li>#}
                     {#                <li><a>Settings</a></li>#}
                 </ul>
             </li>
         </ul>
 
-        <p class="menu-label">Administration</p>
+        <p class="menu-label">{% trans 'Administration' %}</p>
         <ul class="menu-list">
-            <li><a href="{% url 'django_ledger:home' %}">My Entities</a></li>
+            <li><a href="{% url 'django_ledger:home' %}">{% trans 'My Entities' %}</a></li>
             {#            <li><a>My Messages</a></li>#}
-            <li><a href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">Settings</a></li>
+            <li><a href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">
+                {% trans 'Settings' %}</a></li>
         </ul>
 
     </aside>

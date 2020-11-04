@@ -22,16 +22,16 @@ class TransactionModelForm(ModelForm):
                 'readonly': True
             }),
             'account': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'tx_type': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'amount': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'description': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
         }
 

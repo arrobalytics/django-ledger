@@ -1,42 +1,40 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
-    <section class="section">
-        <div class="container is-fluid">
-            <div class="columns">
-                <div class="column is-4">
-                    <div class="columns is-multiline">
-                        <div class="column is-12">
-                            {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=view.kwargs.entity_slug style='invoice-detail' %}
-                        </div>
-                        <div class="column is-12">
-                            {% include 'django_ledger/includes/card_customer.html' with customer=invoice.customer %}
-                        </div>
-                        <div class="column is-12">
-                            <a class="button is-info is-fullwidth is-outlined"
-                               href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">
-                                Invoice List
-                            </a>
-                        </div>
-                    </div>
+{% block view_content %}
+
+    <div class="columns">
+        <div class="column is-4">
+            <div class="columns is-multiline">
+                <div class="column is-12">
+                    {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=view.kwargs.entity_slug style='invoice-detail' %}
                 </div>
-                <div class="column is-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-header-title has-text-weight-light is-size-3">
-                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
-                                {% trans 'Invoice Transactions' %}
-                            </h2>
-                        </div>
-                        <div class="card-content">
-                            {% invoice_txs_table invoice %}
-                        </div>
-                    </div>
+                <div class="column is-12">
+                    {% include 'django_ledger/includes/card_customer.html' with customer=invoice.customer %}
+                </div>
+                <div class="column is-12">
+                    <a class="button is-info is-fullwidth is-outlined"
+                       href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">
+                        Invoice List
+                    </a>
                 </div>
             </div>
         </div>
-    </section>
+        <div class="column is-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-header-title has-text-weight-light is-size-3">
+                        <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                        {% trans 'Invoice Transactions' %}
+                    </h2>
+                </div>
+                <div class="card-content">
+                    {% invoice_txs_table invoice %}
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}

@@ -4,8 +4,6 @@
 {% load django_ledger %}
 
 {% block content %}
-
-
     <section class="section">
         <div class="container is-fluid p-0">
             <div class="columns">
@@ -14,30 +12,21 @@
                 </div>
                 <div class="column">
                     <div class="columns is-multiline">
-
                         <div class="column is-6-tablet">
                             {% include 'django_ledger/includes/widget_bs.html' with tx_digest=tx_digest %}
                         </div>
-
                         <div class="column is-6-tablet">
                             {% include 'django_ledger/includes/widget_ic.html' with tx_digest=tx_digest %}
                         </div>
-
                         <div class="column is-12">
-                            <div class="box">
-                                {% chart_container pnl_chart_id pnl_chart_endpoint %}
-                            </div>
-
+                            <div class="box">{% chart_container pnl_chart_id pnl_chart_endpoint %}</div>
                         </div>
                         <div class="column is-12">
                             {% include 'django_ledger/includes/widget_ratios.html' with tx_digest=tx_digest %}
                         </div>
-
                     </div>
-
                 </div>
             </div>
-
         </div>
     </section>
 
@@ -74,7 +63,6 @@
     </section>
     {# RECEIVABLES SECTION END #}
 
-
     {# PAYABLES SECTION START #}
     <section class="hero is-light is-bold is-small">
         <div class="hero-body">
@@ -107,7 +95,6 @@
         </div>
     </section>
     {# PAYABLES SECTION END #}
-
 
 {% endblock %}
 

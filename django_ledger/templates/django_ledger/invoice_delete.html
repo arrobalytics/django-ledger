@@ -1,40 +1,34 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-6">
+            <form action="{% url 'django_ledger:invoice-delete' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                  method="post">
+                {% csrf_token %}
+                <div class="card">
+                    <div class="card-content has-text-centered">
+                        <p class="title has-text-weight-light">Are you sure you want to delete
+                            Invoice {{ invoice.invoice_number }}</p>
+                    </div>
+                    <div class="card-content has-text-centered">
+                        <p class="subtitle">All transactions associated with this invoice will be deleted.
+                            If you want to void the invoice instead, click here</p>
+                    </div>
+                    <div class="card-content has-text-centered">
+                        <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                           class="button is-primary">{% trans 'Go Back' %}</a>
+                        <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
+                    </div>
 
-    <section class="section">
-        <div class="container">
-            <div class="columns is-centered">
-                <div class="column is-6">
-                    <form action="{% url 'django_ledger:invoice-delete' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                          method="post">
-                        {% csrf_token %}
-                        <div class="card">
-                            <div class="card-content has-text-centered">
-                                <p class="title has-text-weight-light">Are you sure you want to delete
-                                    Invoice {{ invoice.invoice_number }}</p>
-                            </div>
-                            <div class="card-content has-text-centered">
-                                <p class="subtitle">All transactions associated with this invoice will be deleted.
-                                    If you want to void the invoice instead, click here</p>
-                            </div>
-                            <div class="card-content has-text-centered">
-                                <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                                   class="button is-primary">{% trans 'Go Back' %}</a>
-                                <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
-                            </div>
-
-                        </div>
-                    </form>
                 </div>
-
-            </div>
+            </form>
         </div>
-    </section>
 
+    </div>
 {% endblock %}
 
 

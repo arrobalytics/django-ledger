@@ -25,8 +25,6 @@
                             </ul>
                             <a href="{% url 'django_ledger:entity-create' %}"
                                class="button is-fullwidth is-primary is-outlined djetler_my_1">New Entity</a>
-{#                            <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"#}
-{#                               class="button is-fullwidth is-dark is-small">Back</a>#}
                         </div>
                     </div>
                 </div>
@@ -36,58 +34,3 @@
     </section>
 
 {% endblock %}
-
-
-{#<!DOCTYPE html>#}
-{#<html>#}
-{#<head>#}
-{#    <meta charset="utf-8">#}
-{#    <meta name="viewport" content="width=device-width, initial-scale=1">#}
-{#    <title>Entities</title>#}
-{#    <title>DJ Ledger - Entities</title>#}
-{#    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">#}
-{#</head>#}
-{#<body>#}
-{#<section class="section">#}
-{#    <div class="container">#}
-{#        <h1 class="title">#}
-{#            Django Ledger Entity View#}
-{#        </h1>#}
-{#    </div>#}
-{#</section>#}
-{#<section class="section">#}
-{#    <div class="container">#}
-{##}
-{#        <div class="columns">#}
-{#            <div class="column">#}
-{#                <h1 class="is-size-3">My Entities</h1>#}
-{#                <a href="{% url 'django_ledger:entity-create' %}" class="button is-info is-small">Create Entity</a>#}
-{#                <ul>#}
-{#                    {% for entity in object_list %}#}
-{#                        <li>{{ entity.name }}#}
-{#                            <a class="button is-dark is-small"#}
-{#                               href="{{ entity.get_absolute_url }}">View</a>#}
-{#                            <a class="button is-dark is-small"#}
-{#                               href="{{ entity.get_update_url }}">Update</a>#}
-{#                        </li>#}
-{#                    {% endfor %}#}
-{#                </ul>#}
-{#            </div>#}
-{#            <div class="column">#}
-{#                <h1 class="is-size-3">Managed Entities</h1>#}
-{#                <ul>#}
-{#                    {% for entity in object_list %}#}
-{#                        {% if entity.user_role == 'managed' %}#}
-{#                            <li>{{ entity.name }} <a class="button is-light is-small"#}
-{#                                                     href="{{ entity.get_absolute_url }}">View</a></li>#}
-{#                        {% endif %}#}
-{#                    {% endfor %}#}
-{#                </ul>#}
-{##}
-{#            </div>#}
-{#        </div>#}
-{##}
-{#    </div>#}
-{#</section>#}
-{#</body>#}
-{#</html>#}

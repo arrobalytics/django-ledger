@@ -1,35 +1,24 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
-    <section class="section">
-        <div class="container is-fluid is-paddingless">
-            <div class="columns">
-                <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
-                    {% include 'django_ledger/includes/menu.html' %}
-                </div>
-                <div class="column">
+{% block view_content %}
 
-                    <div class="columns">
-                        <div class="column">
-                            <a class="button is-primary is-outlined is-small"
-                               href="{% url 'django_ledger:customer-create' entity_slug=view.kwargs.entity_slug %}">
-                                <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 24 %}</span>
-                                <span>{% trans 'New Customer' %}</span>
-                            </a>
-                        </div>
-                    </div>
 
-                    <div class="box">
-
-                        {% customer_table %}
-
-                    </div>
-                </div>
+    <div class="box">
+        <div class="columns">
+            <div class="column">
+                <a class="button is-primary is-outlined is-small"
+                   href="{% url 'django_ledger:customer-create' entity_slug=view.kwargs.entity_slug %}">
+                    <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 24 %}</span>
+                    <span>{% trans 'New Customer' %}</span>
+                </a>
             </div>
-
         </div>
-    </section>
+
+        {% customer_table %}
+
+    </div>
+    </div>
 {% endblock %}

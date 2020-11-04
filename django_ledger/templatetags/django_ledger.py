@@ -222,15 +222,33 @@ def nav_breadcrumbs(context):
 def default_entity(context):
     user = context['user']
     session_key = get_default_entity_session_key()
-    default_entity_id = context['request'].session.get(session_key)
+    session = context['request'].session
+    session_entity_data = session.get(session_key)
     identity = randint(0, 1000000)
-    default_entity_form = EntityFilterForm(user_model=user,
-                                           form_id=identity,
-                                           default_entity=default_entity_id)
+    try:
+        entity_uuid = session_entity_data['entity_uuid']
+        default_entity_form = EntityFilterForm(
+            user_model=user,
+            form_id=identity,
+            current_entity_uuid=entity_uuid
+        )
+    except TypeError or KeyError:
+        default_entity_form = EntityFilterForm(
+            user_model=user,
+            form_id=identity,
+        )
+
     return {
         'default_entity_form': default_entity_form,
         'form_id': identity,
     }
+
+
+@register.simple_tag(takes_context=True)
+def session_entity_name(context):
+    session_key = get_default_entity_session_key()
+    session = context['request'].session
+    return session.get(session_key)['entity_name']
 
 
 # todo: rename template to date_form_filter.

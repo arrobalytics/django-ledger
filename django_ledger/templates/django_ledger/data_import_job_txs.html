@@ -1,40 +1,23 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
 
-{% block content %}
-
-    <section class="section">
-        <div class="container">
-
-            <div class="columns is-multiline">
-
-                <div class="column is-12">
-                    <div class="box">
-                        <div class="columns is-multiline">
-
-                            <div class="column is-12">
-                                <h1 class="is-size-2">Pending Transactions</h1>
-                                {% data_import_job_txs_pending %}
-                            </div>
-
-                            <div class="column is-12">
-                                <h2 class="is-size-2">Imported Transactions</h2>
-                                {% data_import_job_txs_imported %}
-                            </div>
-
-                            <div class="column is-12 has-text-centered">
-                                <a class="button is-dark"
-                                   href="{% url "django_ledger:data-import-jobs-list" entity_slug=view.kwargs.entity_slug %}">Back</a>
-                            </div>
-
-
-                        </div>
-                    </div>
-
-                </div>
-
+{% block view_content %}
+    <div class="box">
+        <div class="columns is-multiline">
+            <div class="column is-12">
+                <h1 class="is-size-2">Pending Transactions</h1>
+                {% data_import_job_txs_pending %}
             </div>
-    </section>
+            <div class="column is-12">
+                <h2 class="is-size-2">Imported Transactions</h2>
+                {% data_import_job_txs_imported %}
+            </div>
+            <div class="column is-12 has-text-centered">
+                <a class="button is-dark"
+                   href="{% url "django_ledger:data-import-jobs-list" entity_slug=view.kwargs.entity_slug %}">Back</a>
+            </div>
+        </div>
+    </div>
 {% endblock %}

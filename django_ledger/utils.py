@@ -121,6 +121,15 @@ def get_default_entity_session_key():
     return 'dj_ledger_default_entity_id'
 
 
+def set_default_entity(request, entity_model: EntityModel):
+    session_key = get_default_entity_session_key()
+    request.session[session_key] = {
+        'entity_uuid': str(entity_model.uuid),
+        'entity_slug': entity_model.slug,
+        'entity_name': entity_model.name,
+    }
+
+
 def generate_sample_data(entity: str or EntityModel,
                          user_model,
                          start_dt: datetime,

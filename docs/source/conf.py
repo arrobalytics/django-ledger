@@ -19,7 +19,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, here)
 sys.path.insert(0, '../../')
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "dj_dev.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "djltest.settings"
 django.setup()
 
 # sys.path.insert(0, os.path.abspath('.'))

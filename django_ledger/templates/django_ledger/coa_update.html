@@ -1,31 +1,24 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 
-{% block content %}
-
-    <section class="section">
-        <div class="container">
-
-            <div class="columns is-centered">
-                <div class="column is-8-tablet is-6-desktop">
-                    <div class="box">
-                        <form action="{{ coa.get_update_url }}" method="post">
-                            {% csrf_token %}
-                            {{ form.as_p }}
-                            <button class="button is-primary is-outlined is-fullwidth djetler_my_1"
-                                    type="submit">Update</button>
-                            <a class="button is-small is-dark is-fullwidth"
-                               href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}"
-                               type="submit">Back</a>
-                        </form>
-                    </div>
-                </div>
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-8-tablet is-6-desktop">
+            <div class="box">
+                <form action="{{ coa.get_update_url }}" method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button class="button is-primary is-outlined is-fullwidth djetler_my_1"
+                            type="submit">Update
+                    </button>
+                    <a class="button is-small is-dark is-fullwidth"
+                       href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}"
+                       type="submit">Back</a>
+                </form>
             </div>
-
         </div>
-    </section>
-
+    </div>
 {% endblock %}
 
 

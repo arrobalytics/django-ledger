@@ -1,71 +1,56 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 
-{% block content %}
-    <section class="section">
-        <div class="container">
+{% block view_content %}
+    <div class="box">
+
+        <form action="{{ view.request.path }}" method="post">
+            {% csrf_token %}
 
             <div class="columns is-multiline">
-
                 <div class="column is-12">
-                    <div class="box">
-
-                        <form action="{{ view.request.path }}" method="post">
-                            {% csrf_token %}
-
-                            <div class="columns is-multiline">
-                                <div class="column is-12">
-                                    {{ txs_formset.non_form_errors }}
-                                    {{ txs_formset.management_form }}
-                                </div>
-                                <div class="column is-12">
-                                    <table class="table is-fullwidth is-narrow is-striped">
-                                        <tr>
-                                            <th>Account</th>
-                                            <th>TX Type</th>
-                                            <th>Amount</th>
-                                            <th>Description</th>
-                                            {% if txs_formset.can_delete %}
-                                                <th>Delete</th>
-                                            {% endif %}
-                                        </tr>
-
-                                        {% for f in txs_formset %}
-                                            <tr>
-                                                <td>
-                                                    {% for hidden_field in f.hidden_fields %}
-                                                        {{ hidden_field }}
-                                                    {% endfor %}
-                                                    {{ f.account }}
-                                                </td>
-                                                <td>{{ f.tx_type }}</td>
-                                                <td>{{ f.amount }}</td>
-                                                <td>{{ f.description }}</td>
-                                                <td>
-                                                    {% if txs_formset.can_delete %}
-                                                        {{ f.DELETE }}
-                                                    {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-
-                                    </table>
-                                </div>
-                                <div class="column is-12 has-text-centered">
-                                    <button class="button is-primary is-outlined">Save</button>
-                                    <a class="button is-dark"
-                                       href="{% url "django_ledger:je-list" entity_slug=entity_slug ledger_pk=ledger_pk %}">Done</a>
-                                </div>
-                            </div>
-
-                        </form>
-
-                    </div>
+                    {{ txs_formset.non_form_errors }}
+                    {{ txs_formset.management_form }}
                 </div>
+                <div class="column is-12">
+                    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                        <tr>
+                            <th>Account</th>
+                            <th>TX Type</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            {% if txs_formset.can_delete %}
+                                <th>Delete</th>
+                            {% endif %}
+                        </tr>
+                        {% for f in txs_formset %}
+                            <tr>
+                                <td>
+                                    {% for hidden_field in f.hidden_fields %}
+                                        {{ hidden_field }}
+                                    {% endfor %}
+                                    {{ f.account }}
+                                </td>
+                                <td>{{ f.tx_type }}</td>
+                                <td>{{ f.amount }}</td>
+                                <td>{{ f.description }}</td>
+                                <td>
+                                    {% if txs_formset.can_delete %}
+                                        {{ f.DELETE }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
 
+                    </table>
+                </div>
+                <div class="column is-12 has-text-centered">
+                    <button class="button is-primary is-outlined">Save</button>
+                    <a class="button is-dark"
+                       href="{% url "django_ledger:je-list" entity_slug=entity_slug ledger_pk=ledger_pk %}">Done</a>
+                </div>
             </div>
-
-        </div>
-    </section>
+        </form>
+    </div>
 {% endblock %}
