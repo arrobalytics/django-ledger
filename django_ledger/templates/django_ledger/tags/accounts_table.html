@@ -2,38 +2,39 @@
 {% load django_ledger %}
 
 <div class="table-container">
-    <table class="table is-fullwidth is-striped is-narrow">
+    <table class="table is-fullwidth is-striped is-narrow django-ledger-table-bottom-margin-75">
         <tbody>
-        <tr>
-            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Asset Accounts' %}</h2></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
+        {% if title %}
+            <tr>
+                <td><h2 class="is-size-3 has-text-weight-light">{{ title }}</h2></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        {% endif %}
+
         <tr>
             <th>Role</th>
-            <th>Account Code</th>
+            <th>Code</th>
             <th>Account Name</th>
             <th>Balance Type</th>
             <th>Active</th>
             <th>Locked</th>
-            {# todo: make actions a drop down???... #}
             <th>Actions</th>
         </tr>
 
-
-        {% for account in accounts_by_role_bs.assets %}
+        {% for account in accounts %}
             <tr>
                 <td>{{ account.get_role_display }}</td>
                 <td>{{ account.code }}</td>
                 <td>{{ account.name }}</td>
                 <td class="has-text-centered">
-                    {% if account.balance_type == 'debit' %}
+                    {% if account.is_debit %}
                         <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif account.balance_type == 'credit' %}
+                    {% elif account.is_credit %}
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
@@ -56,131 +57,27 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
+                    <div class="dropdown is-right" id="account-action-{{ account.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined"
+                                    aria-haspopup="true"
+                                    onclick="djLedger.toggleDropdown('account-action-{{ account.uuid }}')"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ account.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=account.uuid %}"
+                                   class="dropdown-item has-text-success">Detail</a>
+                            </div>
+                        </div>
+                    </div>
                 </td>
             </tr>
         {% endfor %}
 
-        <tr>
-            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Liability Accounts' %}</h2></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <th>Role</th>
-            <th>Account Code</th>
-            <th>Account Name</th>
-            <th>Balance Type</th>
-            <th>Active</th>
-            <th>Locked</th>
-            <th>Actions</th>
-        </tr>
-
-        {% for account in accounts_by_role_bs.liabilities %}
-            <tr>
-                <td>{{ account.get_role_display }}</td>
-                <td>{{ account.code }}</td>
-                <td>{{ account.name }}</td>
-                <td class="has-text-centered">
-                    {% if account.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif account.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
-                    {% if account.active %}
-                        <span class="icon has-text-success-dark">
-                            {% icon 'ant-design:check-circle-filled' 24 %}
-                        </span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
-                    {% if account.locked %}
-                        <span class="icon has-text-success-dark">
-                            {% icon 'bi:lock-fill' 24 %}
-                        </span>
-                    {% elif not account.locked %}
-                        <span class="icon has-text-danger-dark">
-                            {% icon 'bx:bx-lock-open-alt' 24 %}
-                        </span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
-                </td>
-            </tr>
-        {% endfor %}
-
-        <tr>
-            <td><h2 class="is-size-3 has-text-weight-light">{% trans 'Equity Accounts' %}</h2></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-        </tr>
-        <tr>
-            <th>Role</th>
-            <th>Account Code</th>
-            <th>Account Name</th>
-            <th>Balance Type</th>
-            <th>Active</th>
-            <th>Locked</th>
-            <th>Actions</th>
-        </tr>
-
-        {% for account in accounts_by_role_bs.equity %}
-            <tr>
-                <td>{{ account.get_role_display }}</td>
-                <td>{{ account.code }}</td>
-                <td>{{ account.name }}</td>
-                <td class="has-text-centered">
-                    {% if account.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif account.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
-                    {% if account.active %}
-                        <span class="icon has-text-success-dark">
-                            {% icon 'ant-design:check-circle-filled' 24 %}
-                        </span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
-                    {% if account.locked %}
-                        <span class="icon has-text-success-dark">
-                            {% icon 'bi:lock-fill' 24 %}
-                        </span>
-                    {% elif not account.locked %}
-                        <span class="icon has-text-danger-dark">
-                            {% icon 'bx:bx-lock-open-alt' 24 %}
-                        </span>
-                    {% endif %}
-                </td>
-                <td>
-                    <a class="button is-small is-warning"
-                       href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}">Edit</a>
-                    <a class="button is-small is-info"
-                       href="{% url 'django_ledger:txs-account' entity_slug=entity_slug account_pk=account.uuid %}">Txs</a>
-                </td>
-            </tr>
-        {% endfor %}
-
-        </tbody>
     </table>
 </div>
 

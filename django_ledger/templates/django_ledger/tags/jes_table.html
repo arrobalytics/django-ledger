@@ -1,35 +1,37 @@
-<table class="table is-fullwidth is-narrow is-striped">
-    <thead>
-    <tr>
-        <th>Actions</th>
-        <th>ID</th>
-        <th>Description</th>
-        <th>Activity</th>
-        <th>JE Date</th>
-        <th>Posted</th>
-        <th>Locked</th>
-        <th>Created</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for je in jes %}
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped django-ledger-table-bottom-margin-75">
+        <thead>
         <tr>
-            <td>
-                <a class="button is-small is-warning is-outlined"
-                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">Edit</a>
-                <a class="button is-small is-primary is-outlined"
-                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">View</a>
-                <a class="button is-small is-dark is-outlined"
-                   href="{% url 'django_ledger:txs-journal-entry' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">Txs</a>
-            </td>
-            <td>{{ je.id }}</td>
-            <td>{{ je.description }}</td>
-            <td>{{ je.get_activity_display }}</td>
-            <td>{{ je.date }}</td>
-            <td>{% if je.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-            <td>{% if je.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
-            <td>{{ je.created | timesince }}</td>
+            <th>Actions</th>
+            <th>ID</th>
+            <th>Description</th>
+            <th>Activity</th>
+            <th>JE Date</th>
+            <th>Posted</th>
+            <th>Locked</th>
+            <th>Created</th>
         </tr>
-    {% endfor %}
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+        {% for je in jes %}
+            <tr>
+                <td>
+                    <a class="button is-small is-warning is-outlined"
+                       href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">Edit</a>
+                    <a class="button is-small is-primary is-outlined"
+                       href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">View</a>
+                    <a class="button is-small is-dark is-outlined"
+                       href="{% url 'django_ledger:txs-journal-entry' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">Txs</a>
+                </td>
+                <td>{{ je.id }}</td>
+                <td>{{ je.description }}</td>
+                <td>{{ je.get_activity_display }}</td>
+                <td>{{ je.date }}</td>
+                <td>{% if je.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
+                <td>{% if je.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td>{{ je.created | timesince }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

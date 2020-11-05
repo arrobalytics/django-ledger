@@ -58,6 +58,7 @@ class BankAccountModelUpdateView(UpdateView):
     template_name = 'django_ledger/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
+    context_object_name = 'bank_account'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE

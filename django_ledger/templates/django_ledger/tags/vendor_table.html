@@ -3,20 +3,19 @@
 
 <div class="table-container">
 
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Vendor</th>
-            <th>Address</th>
-            <th>Actions</th>
+            <th class="has-text-centered">Vendor</th>
+            <th class="has-text-centered">Address</th>
+            <th class="has-text-centered">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for vendor in vendors %}
-            <tr>
+            <tr class="has-text-centered">
                 <td>{{ vendor.vendor_name }}</td>
                 <td>{{ vendor.address_1 }}</td>
-
                 <td>
                     <div class="dropdown is-right" id="vendor-action-{{ vendor.uuid }}">
 

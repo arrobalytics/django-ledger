@@ -2,13 +2,15 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_CREATE_INVOICE
 from django_ledger.models.mixins import CreateUpdateMixIn
+
+DEBIT = 'debit'
+CREDIT = 'credit'
 
 
 class AccountModelManager(models.Manager):
@@ -49,8 +51,8 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     Djetler's Base Account Model Abstract
     """
     BALANCE_TYPE = [
-        ('credit', _('Credit')),
-        ('debit', _('Debit'))
+        (CREDIT, _('Credit')),
+        (DEBIT, _('Debit'))
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -103,20 +105,11 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     def role_bs(self):
         return BS_ROLES.get(self.role)
 
-    def get_balance(self):
+    def is_debit(self):
+        return self.balance_type == DEBIT
 
-        credits = self.txs.filter(
-            tx_type__exact='credit').aggregate(
-            credits=Coalesce(Sum('amount'), 0))['credits']
-
-        debits = self.txs.filter(
-            tx_type__exact='debit').aggregate(
-            debits=Coalesce(Sum('amount'), 0))['debits']
-
-        if self.balance_type == 'credit':
-            return credits - debits
-        elif self.balance_type == 'debit':
-            return debits - credits
+    def is_credit(self):
+        return self.balance_type == CREDIT
 
     def clean(self):
         if ' ' in self.code:

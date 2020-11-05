@@ -1,13 +1,11 @@
 from django.contrib import messages
-from django.views.generic import TemplateView, ListView
 from django.utils.translation import gettext_lazy as _
+from django.views.generic import TemplateView
 
 from django_ledger.forms.transactions import TransactionModelFormSet
 from django_ledger.models.transactions import TransactionModel
 
 
-# TXS View ---
-# todo: rename to JE Transactions???...
 class TXSJournalEntryView(TemplateView):
     template_name = 'django_ledger/txs.html'
     PAGE_TITLE = _('Edit Transactions')
@@ -54,16 +52,3 @@ class TXSJournalEntryView(TemplateView):
                                  'Hmmm, this doesn\'t add up!. Check your math!',
                                  extra_tags='is-danger')
         return self.render_to_response(context)
-
-
-class TXSAccountView(ListView):
-    template_name = 'django_ledger/txs_account.html'
-
-    def get_queryset(self):
-        # todo: prefetch account details?...
-        return TransactionModel.objects.for_account(
-            account_pk=self.kwargs['account_pk'],
-            # coa_slug=self.kwargs['coa_slug'],
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        )

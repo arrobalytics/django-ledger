@@ -2,20 +2,20 @@
 {% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Name</th>
-            <th>Account Number</th>
-            <th>Routing Number</th>
-            <th>Type</th>
-            <th>Cash Account</th>
-            <th>Actions</th>
+            <th class="has-text-centered">Name</th>
+            <th class="has-text-centered">Account Number</th>
+            <th class="has-text-centered">Routing Number</th>
+            <th class="has-text-centered">Type</th>
+            <th class="has-text-centered">Cash Account</th>
+            <th class="has-text-centered">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for bank_acc in bank_accounts %}
-            <tr>
+            <tr  class="has-text-centered">
                 <td>{{ bank_acc.name }}</td>
                 <td>{{ bank_acc.account_number | last_four }}</td>
                 <td>{{ bank_acc.routing_number | last_four }}</td>

@@ -11,7 +11,6 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
-from django_ledger.io.roles import ASSET_CA_RECEIVABLES
 
 
 class TransactionQuerySet(models.QuerySet):

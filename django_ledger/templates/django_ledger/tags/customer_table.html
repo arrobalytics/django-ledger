@@ -2,23 +2,21 @@
 {% load i18n %}
 
 <div class="table-container">
-
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Customer</th>
-            <th>Address</th>
-            <th>Actions</th>
+            <th class="has-text-centered">Customer</th>
+            <th class="has-text-centered">Address</th>
+            <th class="has-text-centered">Actions</th>
         </tr>
         </thead>
         <tbody>
         {% for customer in customers %}
-            <tr>
+            <tr class="has-text-centered">
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
                 <td>
                     <div class="dropdown is-right" id="customer-action-{{ customer.uuid }}">
-
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
@@ -41,13 +39,9 @@
                             </div>
                         </div>
                     </div>
-
-
                 </td>
-
             </tr>
         {% endfor %}
         </tbody>
     </table>
-
 </div>

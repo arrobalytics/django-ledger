@@ -185,11 +185,10 @@ def bill_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/accounts_table.html', takes_context=True)
-def accounts_table(context):
-    accounts_gb = {k: list(gb) for k, gb in groupby(context['accounts'], key=lambda acc: acc.role_bs)}
+def accounts_table(context, accounts_qs, title=None):
     return {
-        'accounts': context['accounts'],
-        'accounts_by_role_bs': accounts_gb,
+        'accounts': accounts_qs,
+        'title': title,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 
@@ -202,6 +201,17 @@ def customer_table(context):
 @register.inclusion_tag('django_ledger/tags/vendor_table.html', takes_context=True)
 def vendor_table(context):
     return context
+
+
+@register.inclusion_tag('django_ledger/tags/account_txs_table.html', takes_context=True)
+def account_txs_table(context, txs_qs):
+    return {
+        'transactions': txs_qs,
+        'total_credits': sum(tx.amount for tx in txs_qs if tx.tx_type == 'credit'),
+        'total_debits': sum(tx.amount for tx in txs_qs if tx.tx_type == 'debit'),
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'account_pk': context['view'].kwargs['account_pk']
+    }
 
 
 @register.inclusion_tag('django_ledger/tags/breadcrumbs.html', takes_context=True)

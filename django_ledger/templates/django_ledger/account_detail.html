@@ -1,0 +1,16 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-content has-text-centered">
+            <h1 class="is-size-1 has-text-weight-bold">{{ account.code }}: {{ account.name }}</h1>
+            <h2 class="is-size-2 has-text-weight-light is-italic">Account Transaction List Report</h2>
+        </div>
+        <div class="card-content">
+            {% account_txs_table transactions %}
+        </div>
+    </div>
+{% endblock %}

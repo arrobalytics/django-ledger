@@ -1,6 +1,6 @@
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.generic import ListView, UpdateView, CreateView
+from django.views.generic import ListView, UpdateView, CreateView, DetailView
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models.accounts import AccountModel
@@ -15,6 +15,14 @@ class AccountModelListView(ListView):
         'page_title': _('Entity Accounts'),
         'header_title': _('Entity Accounts')
     }
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = self.get_queryset()
+        context['asset_accounts'] = (a for a in qs if a.role_bs == 'assets')
+        context['liability_accounts'] = (a for a in qs if a.role_bs == 'liabilities')
+        context['equity_accounts'] = (a for a in qs if a.role_bs == 'equity')
+        return context
 
     def get_queryset(self):
         return AccountModel.on_coa.for_entity(
@@ -54,6 +62,25 @@ class AccountModelUpdateView(UpdateView):
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
         )
+
+
+class AccountModelDetailView(DetailView):
+    context_object_name = 'account'
+    template_name = 'django_ledger/account_detail.html'
+    slug_url_kwarg = 'account_pk'
+    slug_field = 'uuid'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        account = self.object
+        context['transactions'] = account.txs.all().order_by('-journal_entry__date')
+        return context
+
+    def get_queryset(self):
+        return AccountModel.on_coa.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+        ).prefetch_related('txs')
 
 
 class AccountModelCreateView(CreateView):

@@ -1,0 +1,56 @@
+{% load django_ledger %}
+{% load trans from i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <tr>
+            <th class="has-text-centered">Date</th>
+            <th class="has-text-centered">Credit</th>
+            <th class="has-text-centered">Debit</th>
+            <th class="has-text-centered">Description</th>
+            <th class="has-text-centered">Actions</th>
+        </tr>
+        {% for tx in transactions %}
+            <tr class="has-text-centered">
+                <td>{{ tx.journal_entry.date }}</td>
+                <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
+                <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | cs_thousands }}{% endif %}</td>
+                <td>{{ tx.description }}</td>
+                <td>
+                    <div class="dropdown is-right" id="tx-action-{{ tx.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined"
+                                    aria-haspopup="true"
+                                    onclick="djLedger.toggleDropdown('tx-action-{{ tx.uuid }}')"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ tx.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=tx.journal_entry.ledger.uuid je_pk=tx.journal_entry.uuid %}"
+                                   class="dropdown-item has-text-success">View JE</a>
+                                {% if tx.journal_entry.ledger.billmodel %}
+                                    <a href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=tx.journal_entry.ledger.billmodel.uuid %}"
+                                       class="dropdown-item has-text-primary">View Bill</a>
+                                {% elif tx.journal_entry.ledger.invoicemodel %}
+                                    <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=tx.journal_entry.ledger.invoicemodel.uuid %}"
+                                       class="dropdown-item has-text-info">View Invoice</a>
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        <tr class="has-text-weight-bold">
+            <td class="has-text-right">Total</td>
+            <td class="has-text-centered">${{ total_credits | cs_thousands }}</td>
+            <td class="has-text-centered">${{ total_debits | cs_thousands }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+    </table>
+</div>

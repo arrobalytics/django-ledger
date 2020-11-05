@@ -3,7 +3,7 @@
 
 <div class="table-container">
 
-    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
             <th>Bill Number</th>
@@ -50,7 +50,6 @@
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
-
                         <div class="dropdown-menu" id="dropdown-menu-{{ bill.uuid }}" role="menu">
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=bill.uuid %}"
@@ -69,8 +68,6 @@
                             </div>
                         </div>
                     </div>
-
-
                 </td>
             </tr>
         {% endfor %}

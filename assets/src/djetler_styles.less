@@ -1,7 +1,6 @@
 @margins: range(1, 10, 1);
 @sectionMinHeights: range(100, 500, 100);
 @pf: djetler;
-//@primary: hsl(263, 55%, 62%);
 
 each(@margins, {
   .@{pf}_my_@{value} {
@@ -61,3 +60,7 @@ each(@iconSizes, {
     font-size: (@value * 1px);
   }
 })
+
+.django-ledger-table-bottom-margin-75 {
+  margin-bottom: 75px;
+}
