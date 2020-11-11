@@ -2,8 +2,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from django.urls import reverse
-from django.utils.timezone import localtime
-from django.utils.timezone import make_aware
+from django.utils.timezone import localtime, make_aware
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
@@ -12,10 +11,10 @@ from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateF
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import (
-    get_date_filter_session_key, get_default_entity_session_key,
-    populate_default_coa, generate_sample_data, set_default_entity
-)
+from django_ledger.utils import (get_date_filter_session_key, get_default_entity_session_key,
+                                 populate_default_coa, generate_sample_data, set_default_entity,
+                                 get_date_filter_from_session)
+from django_ledger.views.mixins import QuarterlyReportMixIn, YearlyReportMixIn, MonthlyReportMixIn
 
 
 # Entity Views ----
@@ -46,9 +45,7 @@ class EntityModelDashboardView(DetailView):
         context['header_subtitle'] = _('Dashboard')
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
-        session_date_filter_key = get_date_filter_session_key(entity_model.slug)
-        date_filter = self.request.session.get(session_date_filter_key)
-        date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
+        date_filter = get_date_filter_from_session(entity_slug=entity_model.slug, request=self.request)
         set_default_entity(self.request, entity_model)
 
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
@@ -72,7 +69,7 @@ class EntityModelDashboardView(DetailView):
         # DIGEST PHASE ---
         by_period = self.request.GET.get('by_period')
         digest = entity_model.digest(user_model=self.request.user,
-                                     as_of=date_filter,
+                                     to_date=date_filter,
                                      by_period=True if by_period else False,
                                      process_ratios=True,
                                      process_roles=True,
@@ -194,7 +191,7 @@ class EntityModelBalanceSheetView(DetailView):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 
-class EntityModelIncomeStatementView(DetailView):
+class FiscalYearEntityIncomeStatementView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/income_statement.html'
@@ -206,12 +203,19 @@ class EntityModelIncomeStatementView(DetailView):
         return context
 
     def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
         return EntityModel.objects.for_user(user_model=self.request.user)
+
+
+class QuarterlyEntityIncomeStatementView(FiscalYearEntityIncomeStatementView, QuarterlyReportMixIn):
+    """
+    Quarter Income Statement View.
+    """
+
+
+class MonthlyEntityIncomeStatementView(FiscalYearEntityIncomeStatementView, MonthlyReportMixIn):
+    """
+    Monthly Income Statement View.
+    """
 
 
 class SetDefaultEntityView(RedirectView):
@@ -245,6 +249,7 @@ class SetDateView(RedirectView):
 
         if as_of_form.is_valid():
             as_of_date = as_of_form.cleaned_data['date']
+            # as_of_date = make_aware(as_of_form.cleaned_data['date'])
             as_of_dttm = datetime(
                 year=as_of_date.year,
                 month=as_of_date.month,

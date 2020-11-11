@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from itertools import groupby
 from random import randint
 
 from django import template
@@ -10,7 +9,8 @@ from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALYSIS
-from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key
+from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key, \
+    get_date_filter_from_session
 
 register = template.Library()
 
@@ -59,32 +59,30 @@ def icon(icon_name, size):
 def balance_sheet_table(context):
     ledger_or_entity = context['object']
     user_model = context['user']
+    entity_slug = context['view'].kwargs['entity_slug']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    end_date_session_key = get_date_filter_session_key(entity_slug=ledger_or_entity.uuid)
-    end_date_filter = context['request'].session.get(end_date_session_key)
-    # todo: incorporate digest in context???
+    to_date = get_date_filter_from_session(entity_slug=entity_slug,
+                                           request=context['request'])
     return ledger_or_entity.digest(activity=activity,
                                    user_model=user_model,
                                    equity_only=False,
-                                   as_of=end_date_filter,
+                                   to_date=to_date,
                                    process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement_table(context):
-    ledger_or_entity = context['object']
+def income_statement_table(context, ledger_or_entity, start_date, end_date):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    end_date_session_key = get_date_filter_session_key(entity_slug=ledger_or_entity.uuid)
-    end_date_filter = context['request'].session.get(end_date_session_key)
-    # todo: incorporate digest in context???
-    return ledger_or_entity.digest(activity=activity,
-                                   user_model=user_model,
-                                   as_of=end_date_filter,
-                                   equity_only=True,
-                                   process_groups=True)
+    return ledger_or_entity.digest(
+        activity=activity,
+        user_model=user_model,
+        from_date=start_date,
+        to_date=end_date,
+        equity_only=True,
+        process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/bank_accounts_table.html', takes_context=True)

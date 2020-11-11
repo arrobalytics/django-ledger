@@ -3,13 +3,14 @@
 {% block content %}
 
     <section class="section">
-        <div class="container is-fluid is-paddingless">
+        <div class="container is-fluid">
             <div class="columns">
 
                 {# SIDE MENU #}
                 {% if not hide_menu %}
                     <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
                         {% include 'django_ledger/includes/menu.html' %}
+                        {% block aux_menu %}{% endblock %}
                     </div>
                 {% endif %}
 

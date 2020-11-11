@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load session_entity_name from django_ledger %}
+{% now "Y" as current_year %}
 
 <div class="box">
     <aside class="menu">
@@ -43,7 +44,7 @@
                     <li><a href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">
                         {% trans 'Balance Sheet' %}
                     </a></li>
-                    <li><a href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">
+                    <li><a href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">
                         {% trans 'Income Statement' %}
                     </a></li>
                 </ul>

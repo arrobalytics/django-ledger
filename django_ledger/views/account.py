@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
@@ -5,6 +7,7 @@ from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.utils import get_date_filter_from_session
 
 
 # Account Views ----
@@ -69,11 +72,28 @@ class AccountModelDetailView(DetailView):
     template_name = 'django_ledger/account_detail.html'
     slug_url_kwarg = 'account_pk'
     slug_field = 'uuid'
+    DEFAULT_TXS_DAYS = 30
+    extra_context = {
+        'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS
+    }
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
         account = self.object
-        context['transactions'] = account.txs.all().order_by('-journal_entry__date')
+        context = super().get_context_data(**kwargs)
+        context['header_title'] = f'Account {account.code} - {account.name}'
+        context['page_title'] = f'Account {account.code} - {account.name}'
+        to_date = get_date_filter_from_session(
+            entity_slug=self.kwargs['entity_slug'],
+            request=self.request,
+        )
+        txs_qs = self.object.txs.order_by('-journal_entry__date').to_date(to_date)
+        txs_days = self.request.GET.get('txs_days')
+        if txs_days:
+            from_date = to_date - timedelta(days=int(txs_days))
+        else:
+            from_date = to_date - timedelta(days=self.DEFAULT_TXS_DAYS)
+        txs_qs = txs_qs.from_date(from_date)
+        context['transactions'] = txs_qs
         return context
 
     def get_queryset(self):

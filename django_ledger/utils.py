@@ -6,6 +6,7 @@ from random import choice, random, randint
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import localtime
 
 from django_ledger.models.accounts import AccountModel
@@ -378,5 +379,5 @@ def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, en
 def get_date_filter_from_session(entity_slug: str, request):
     session_date_filter_key = get_date_filter_session_key(entity_slug)
     date_filter = request.session.get(session_date_filter_key)
-    date_filter = datetime.fromisoformat(date_filter) if date_filter else localtime()
+    date_filter = parse_datetime(date_filter) if date_filter else localtime()
     return date_filter

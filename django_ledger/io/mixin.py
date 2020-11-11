@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
+from django.utils.dateparse import parse_date
 
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
@@ -53,6 +54,14 @@ def validate_tx_data(tx_data: list):
     if not is_valid:
         raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
     return is_valid
+
+
+def validate_dates(from_date: str or datetime = None, to_date: str or datetime = None):
+    if from_date and not isinstance(from_date, datetime):
+        from_date = parse_date(from_date)
+    if to_date and not isinstance(to_date, datetime):
+        to_date = parse_date(to_date)
+    return from_date, to_date
 
 
 class IOMixIn:
@@ -128,18 +137,21 @@ class IOMixIn:
         txs_models = TransactionModel.objects.bulk_create(txs_models)
         return je_model, txs_models
 
-    def get_je_txs(self,
-                   user_model: UserModel,
-                   as_of: str or datetime = None,
-                   activity: str = None,
-                   role: str = None,
-                   accounts: str or List[str] or Set[str] = None,
-                   posted: bool = True,
-                   exclude_zero_bal: bool = True,
-                   by_period: bool = False):
+    def get_txs_queryset(self,
+                         user_model: UserModel,
+                         to_date: str or datetime = None,
+                         from_date: str or datetime = None,
+                         year: int = None,
+                         activity: str = None,
+                         role: str = None,
+                         accounts: str or List[str] or Set[str] = None,
+                         posted: bool = True,
+                         exclude_zero_bal: bool = True,
+                         by_period: bool = False):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
+        from_date, to_date = validate_dates(from_date, to_date)
 
         TransactionModel = lazy_importer.get_txs_model()
 
@@ -165,8 +177,14 @@ class IOMixIn:
         if posted:
             txs_qs = txs_qs.posted()
 
-        if as_of:
-            txs_qs = txs_qs.as_of(as_of_date=as_of)
+        if from_date:
+            txs_qs = txs_qs.from_date(from_date=from_date)
+
+        if to_date:
+            txs_qs = txs_qs.to_date(to_date=to_date)
+
+        if year:
+            txs_qs = txs_qs.for_year(year)
 
         if accounts:
             if not isinstance(accounts, str):
@@ -204,7 +222,9 @@ class IOMixIn:
 
     def get_jes(self,
                 user: UserModel,
-                as_of: str = None,
+                to_date: str = None,
+                from_date: str = None,
+                year: str = None,
                 equity_only: bool = False,
                 activity: str = None,
                 role: str = None,
@@ -215,15 +235,17 @@ class IOMixIn:
         if equity_only:
             role = roles.GROUP_EARNINGS
 
-        je_txs = self.get_je_txs(
+        je_txs = self.get_txs_queryset(
             user_model=user,
-            as_of=as_of,
+            to_date=to_date,
+            from_date=from_date,
+            year=year,
             activity=activity,
             role=role,
             accounts=accounts,
             by_period=by_period)
 
-        # reverts the amount sign if the tx_type does not math the account_type prior to summing balances.
+        # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
         for tx in je_txs:
             if tx['account__balance_type'] != tx['tx_type']:
                 tx['balance'] = -tx['balance']
@@ -267,7 +289,9 @@ class IOMixIn:
                accounts: set = None,
                activity: str = None,
                signs: bool = True,
-               as_of: str = None,
+               to_date: str = None,
+               from_date: str = None,
+               year: int = None,
                process_roles: bool = True,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -278,7 +302,9 @@ class IOMixIn:
             user=user_model,
             accounts=accounts,
             activity=activity,
-            as_of=as_of,
+            to_date=to_date,
+            from_date=from_date,
+            year=year,
             signs=signs,
             equity_only=equity_only,
             by_period=by_period

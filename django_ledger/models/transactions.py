@@ -30,8 +30,7 @@ class TransactionQuerySet(models.QuerySet):
     def for_accounts(self, account_list: List[str or AccountModel]):
         if len(account_list) > 0 and isinstance(account_list[0], str):
             return self.filter(account__code__in=account_list)
-        else:
-            return self.filter(account__in=account_list)
+        return self.filter(account__in=account_list)
 
     def for_roles(self, role_list: List[str]):
         return self.filter(account__role__in=role_list)
@@ -39,8 +38,14 @@ class TransactionQuerySet(models.QuerySet):
     def for_activity(self, activity_list: List[str]):
         return self.filter(journal_entry__activity__in=activity_list)
 
-    def as_of(self, as_of_date: str or datetime):
-        return self.filter(journal_entry__date__lte=as_of_date)
+    def to_date(self, to_date: str or datetime):
+        return self.filter(journal_entry__date__lte=to_date)
+
+    def from_date(self, from_date: str or datetime):
+        return self.filter(journal_entry__date__gte=from_date)
+
+    def for_year(self, year):
+        return self.filter(journal_entry__date__year__exact=year)
 
 
 class TransactionModelAdmin(models.Manager):

@@ -25,7 +25,7 @@ class EntityPnLDataView(View):
                 signs=False,
                 by_period=True,
                 process_groups=True,
-                as_of=get_date_filter_from_session(self.kwargs['entity_slug'], request)
+                to_date=get_date_filter_from_session(self.kwargs['entity_slug'], request)
             )
 
             group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']

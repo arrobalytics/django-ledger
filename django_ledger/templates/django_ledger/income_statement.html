@@ -4,18 +4,35 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
-    <div class="box">
-        {% income_statement_table %}
-        {% if request.resolver_match.view_name == 'django_ledger:ledger-ic' %}
-            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
-                Back</a>
-        {% elif request.resolver_match.view_name == 'django_ledger:entity-ic' %}
-            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-               href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
-                Back</a>
-        {% endif %}
+    <div class="card">
+        <div class="card-content has-text-centered">
+            <div class="container mb-4">
+                <div class="columns">
+                    <div class="column">
+                        <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
+                        <h1 class="is-size-2 has-text-weight-bold">Income Statement</h1>
+                        <h2 class="is-size-2 has-text-weight-light">
+                            {% if quarter %}{{ year }} Q{{ quarter }}
+                                {% elif month %}{{ start_date | date:'F, Y' }}
+                            {% else %}Fiscal Year {{ year }}
+                            {% endif %}</h2>
+                        <h3 class="is-size-4 is-italic has-font-weight-light">
+                            {{ start_date | date:'m/d/Y' }} - {{ end_date | date:'m/d/Y' }}
+                        </h3>
+                    </div>
+                </div>
+            </div>
+            {% income_statement_table ledger_or_entity=object start_date=start_date end_date=end_date %}
+            {% if request.resolver_match.view_name == 'django_ledger:ledger-ic' %}
+                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
+                    Back</a>
+            {% elif entity %}
+                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
+                    Back</a>
+            {% endif %}
+        </div>
     </div>
 
 {% endblock %}

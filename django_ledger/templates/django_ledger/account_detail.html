@@ -7,10 +7,12 @@
     <div class="card">
         <div class="card-content has-text-centered">
             <h1 class="is-size-1 has-text-weight-bold">{{ account.code }}: {{ account.name }}</h1>
-            <h2 class="is-size-2 has-text-weight-light is-italic">Account Transaction List Report</h2>
+            <h2 class="is-size-2 has-text-weight-light">{% trans 'Account Transaction List Report' %}</h2>
+            <h3 class="is-size-5 has-text-weight-medium is-italic">
+                (Last {% if request.GET.txs_days %}{{ request.GET.txs_days }}{% else %}{{ DEFAULT_TXS_DAYS }}{% endif %}
+                days.)
+            </h3>
         </div>
-        <div class="card-content">
-            {% account_txs_table transactions %}
-        </div>
+        <div class="card-content">{% account_txs_table transactions %}</div>
     </div>
 {% endblock %}

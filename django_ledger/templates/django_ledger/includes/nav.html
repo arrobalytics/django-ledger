@@ -2,6 +2,7 @@
 {% load django_ledger %}
 {% load cache %}
 {% load i18n %}
+{% now "Y" as current_year %}
 
 <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="container">
@@ -50,7 +51,7 @@
                             <a class="navbar-item"
                                href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">{% trans 'Balance Sheet' %}</a>
                             <a class="navbar-item"
-                               href="{% url 'django_ledger:entity-ic' entity_slug=view.kwargs.entity_slug %}">{% trans 'Income Statement' %}</a>
+                               href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Income Statement' %}</a>
                         </div>
                     </div>
 
