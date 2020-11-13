@@ -230,7 +230,7 @@ class IOMixIn:
                 role: str = None,
                 accounts: set = None,
                 signs: bool = False,
-                by_period: bool = False) -> dict:
+                by_period: bool = False) -> list:
 
         if equity_only:
             role = roles.GROUP_EARNINGS
@@ -281,7 +281,6 @@ class IOMixIn:
                          acc['balance_type'] == 'debit'])
                 ]):
                     acc['balance'] = -acc['balance']
-
         return gb_digest
 
     def digest(self,

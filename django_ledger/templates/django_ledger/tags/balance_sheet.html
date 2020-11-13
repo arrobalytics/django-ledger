@@ -26,21 +26,21 @@
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i>
-                    </span>
+                    {% if acc.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif acc.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td>${{ acc.balance | cs_thousands }}</td>
+                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
-
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Assets' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_ASSETS | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_ASSETS | currency_format }}</td>
         </tr>
 
         <tr>
@@ -56,21 +56,21 @@
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i>
-                    </span>
+                    {% if acc.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif acc.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td>${{ acc.balance | cs_thousands }}</td>
+                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Liabilities' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_LIABILITIES | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES | currency_format }}</td>
         </tr>
-
 
         <tr class="is-primary">
             <td><h2 class="is-size-3">{% trans 'Equity' %}</h2></td>
@@ -85,12 +85,13 @@
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
                 <td class="has-text-centered">
-                    <span class="icon"><i
-                            class="mdi {% if acc.balance_type == 'debit' %}mdi-arrow-expand-down{% elif acc.balance_type == 'credit' %}mdi-arrow-expand-up{% endif %}"
-                    ></i>
-                    </span>
+                    {% if acc.balance_type == 'debit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif acc.balance_type == 'credit' %}
+                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
                 </td>
-                <td>${{ acc.balance | cs_thousands }}</td>
+                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
 
@@ -98,31 +99,29 @@
             <td>{% trans 'Total Capital' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_CAPITAL | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_CAPITAL | currency_format }}</td>
         </tr>
-
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Retained Earnings' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_EARNINGS | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
         </tr>
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Equity' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_EQUITY | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EQUITY | currency_format }}</td>
         </tr>
 
         <tr class="has-text-weight-bold">
             <td>{% trans 'Total Equity + Liabilities' %}</td>
             <td></td>
             <td></td>
-            <td>${{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | cs_thousands }}</td>
+            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | currency_format }}</td>
         </tr>
         </tbody>
-
     </table>
 </div>

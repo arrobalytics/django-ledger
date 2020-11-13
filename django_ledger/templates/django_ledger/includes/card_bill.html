@@ -24,8 +24,8 @@
                     <p>Is Progressible:
                     <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                 {% endif %}
-                <p class="is-size-5 has-text-danger">You Still Owe: ${{ bill.get_amount_open | cs_thousands }}</p>
-                <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
+                <p class="is-size-5 has-text-danger">You Still Owe: {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+                <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
                 <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
                 <progress class="progress is-medium is-success"
                           value="{{ bill.get_progress_percent }}"
@@ -63,11 +63,11 @@
                         </span>
                     </p>
                     <p class="is-size-4">Amount Paid:
-                        <span class="has-text-weight-bold">${{ bill.amount_paid | cs_thousands }}</span>
+                        <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</span>
                     </p>
                 {% else %}
                     <p class="is-size-3 has-text-dark">Bill Amount:
-                        <span class="has-text-weight-bold">${{ bill.amount_due | cs_thousands }}</span>
+                        <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
                     </p>
                     {% if not bill.is_past_due %}
                         <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
@@ -75,7 +75,7 @@
                         <p class="has-text-danger has-text-weight-bold is-size-3">Past
                             Due: {{ bill.due_date | timesince }} ago</p>
                     {% endif %}
-                    <p class="is-size-5 has-text-danger">You Still Owe: ${{ bill.get_amount_open | cs_thousands }}</p>
+                    <p class="is-size-5 has-text-danger">You Still Owe: {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
 
                     {% if bill.progressible %}
                         <p>Is Progressible: <span
@@ -87,7 +87,7 @@
                         </p>
                     {% endif %}
 
-                    <p>Amount Paid: ${{ bill.amount_paid | cs_thousands }}</p>
+                    <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
 
                     <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
                     <progress class="progress is-medium is-success"

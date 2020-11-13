@@ -12,12 +12,14 @@ class YearlyReportMixIn(YearMixin):
         context = super(YearlyReportMixIn, self).get_context_data(**kwargs)
         year = self.get_year()
         context['year'] = year
-        context['next_year'] = year - 1
-        context['previous_year'] = year + 1
+        context['next_year'] = year + 1
+        context['previous_year'] = year - 1
+        context['start_date'] = datetime(year=year, month=1, day=1)
+        context['end_date'] = datetime(year=year, month=12, day=31)
         return context
 
 
-class QuarterlyReportMixIn(YearlyReportMixIn):
+class QuarterlyReportMixIn(YearMixin):
     quarter = None
     quarter_url_kwarg = 'quarter'
     valid_quarters = [1, 2, 3, 4]
@@ -27,10 +29,10 @@ class QuarterlyReportMixIn(YearlyReportMixIn):
         year = self.get_year()
         context = super(QuarterlyReportMixIn, self).get_context_data(**kwargs)
         context['quarter'] = quarter
-        context['start_date'] = self.get_quarter_start_date(year=year, quarter=quarter)
-        context['end_date'] = self.get_quarter_end_date(year=year, quarter=quarter)
         context['next_quarter'] = self.get_next_quarter(quarter)
         context['previous_quarter'] = self.get_previous_quarter(quarter)
+        context['start_date'] = self.get_quarter_start_date(year=year, quarter=quarter)
+        context['end_date'] = self.get_quarter_end_date(year=year, quarter=quarter)
         return context
 
     def validate_quarter(self, quarter):

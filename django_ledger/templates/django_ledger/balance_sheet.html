@@ -3,19 +3,84 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block aux_menu %}
+    <div class="column is-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-header-title">{% trans 'Balance Sheet Options' %}</div>
+            </div>
+            <div class="card-content">
+                <h2 class="is-size-3 has-font-weight-light">Current Year {{ year }}</h2>
+                <p>Year:
+                    <a href="{% url 'django_ledger:entity-bs-year' entity_slug=view.kwargs.entity_slug year=previous_year %}"><< {{ previous_year }}</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-year' entity_slug=view.kwargs.entity_slug year=next_year %}">{{ next_year }}
+                        >></a>
+                </p>
+                <p>Quarter:
+                    <a href="{% url 'django_ledger:entity-bs-quarter' entity_slug=view.kwargs.entity_slug year=year quarter=1 %}">Q1</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-quarter' entity_slug=view.kwargs.entity_slug year=year quarter=2 %}">Q2</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-quarter' entity_slug=view.kwargs.entity_slug year=year quarter=3 %}">Q3</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-quarter' entity_slug=view.kwargs.entity_slug year=year quarter=4 %}">Q4</a>
+                </p>
+                <p>Month:
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=1 %}">Jan</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=2 %}">Feb</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=3 %}">Mar</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=4 %}">Apr</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=5 %}">May</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=6 %}">Jun</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=7 %}">Jul</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=8 %}">Aug</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=9 %}">Sep</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=10 %}">Oct</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=11 %}">Nov</a>
+                    |
+                    <a href="{% url 'django_ledger:entity-bs-month' entity_slug=view.kwargs.entity_slug year=year month=12 %}">Dec</a>
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
 {% block view_content %}
-    <div class="box">
-        {% balance_sheet_table %}
-
-        {% if request.resolver_match.view_name == 'django_ledger:ledger-bs' %}
-            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
-                Back</a>
-        {% elif request.resolver_match.view_name == 'django_ledger:entity-bs' %}
-            <a class="button is-fullwidth is-dark is-small djetler_my_1"
-               href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
-                Back</a>
-        {% endif %}
-
+    <div class="card">
+        <div class="card-content has-text-centered">
+            <div class="container mb-4">
+                <div class="columns">
+                    <div class="column">
+                        <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
+                        <h1 class="is-size-2 has-text-weight-bold">{% trans 'Balance Sheet' %}</h1>
+                        <h2 class="is-size-2 has-text-weight-light">
+                            {% if quarter %}{{ year }} | Q{{ quarter }}
+                                {% elif month %}{{ start_date | date:'F, Y' }}
+                            {% else %}Fiscal Year {{ year }}
+                            {% endif %}</h2>
+                        <h3 class="is-size-4 is-italic has-font-weight-light">As Of {{ end_date | date:'m/d/Y' }}</h3>
+                    </div>
+                </div>
+            </div>
+            {% balance_sheet_table object end_date %}
+            {% if entity %}
+                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+            {% elif ledger %}
+                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}

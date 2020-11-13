@@ -25,7 +25,7 @@
                     <div class="card-content">
                         <div class="content">
                             <h3 class="has-text-weight-light">{% trans 'Invoice Amount:' %}
-                                <strong>${{ invoice.amount_due | cs_thousands }}</strong>
+                                <strong>${{ invoice.amount_due | currency_format }}</strong>
                                 <button type="button"
                                         onclick="document.getElementById('django-ledger-invoice-amount-field').classList.remove('is-hidden')"
                                         class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
@@ -117,23 +117,23 @@
                                 <div class="column is-12">
                                     <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
                                     <p>{{ invoice.cash_account }}:
-                                        ${{ invoice.get_amount_cash | cs_thousands }}</p>
+                                        ${{ invoice.get_amount_cash | currency_format }}</p>
                                     <p>{{ invoice.receivable_account }}:
-                                        ${{ invoice.get_amount_receivable | cs_thousands }}</p>
+                                        ${{ invoice.get_amount_receivable | currency_format }}</p>
                                     <p>{{ invoice.payable_account }}:
-                                        ${{ invoice.get_amount_payable | cs_thousands }}</p>
+                                        ${{ invoice.get_amount_payable | currency_format }}</p>
                                     <p>{{ invoice.earnings_account }}:
-                                        ${{ invoice.get_amount_earned | cs_thousands }}</p>
+                                        ${{ invoice.get_amount_earned | currency_format }}</p>
                                 </div>
                                 <div class="column is-12">
                                     <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
-                                    <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | cs_thousands }}</p>
+                                    <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | currency_format }}</p>
                                     <p>{{ invoice.receivable_account }}:
-                                        ${{ invoice.amount_receivable | cs_thousands }}</p>
+                                        ${{ invoice.amount_receivable | currency_format }}</p>
                                     <p>{{ invoice.payable_account }}:
-                                        ${{ invoice.amount_unearned | cs_thousands }}</p>
+                                        ${{ invoice.amount_unearned | currency_format }}</p>
                                     <p>{{ invoice.earnings_account }}:
-                                        ${{ invoice.amount_earned | cs_thousands }}</p>
+                                        ${{ invoice.amount_earned | currency_format }}</p>
                                 </div>
                                 <div class="column is-12">
                                     <p>Ledger is Posted: {% if invoice.ledger.posted %}

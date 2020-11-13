@@ -3,14 +3,16 @@ from random import randint
 
 from django import template
 from django.utils.timezone import now
+from django.utils.formats import number_format
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel
 from django_ledger.models.journalentry import validate_activity
-from django_ledger.settings import DJANGO_LEDGER_FINANCIAL_ANALYSIS
-from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key, \
-    get_date_filter_from_session
+from django_ledger.settings import (
+    DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
+    DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
+from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key
 
 register = template.Library()
 
@@ -20,10 +22,17 @@ def current_version():
     return __version__
 
 
-@register.filter(name='cs_thousands')
-def cs_thousands(value):
+@register.simple_tag(name='currency_symbol')
+def currency_symbol(spaced: bool = False):
+    if spaced or DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL:
+        return f'{DJANGO_LEDGER_CURRENCY_SYMBOL} '
+    return DJANGO_LEDGER_CURRENCY_SYMBOL
+
+
+@register.filter(name='currency_format')
+def currency_format(value):
     if value:
-        return '{0:,.2f}'.format(value)
+        return number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
     return 0
 
 
@@ -56,19 +65,16 @@ def icon(icon_name, size):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
-def balance_sheet_table(context):
-    ledger_or_entity = context['object']
+def balance_sheet_table(context, ledger_or_entity, end_date):
     user_model = context['user']
-    entity_slug = context['view'].kwargs['entity_slug']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    to_date = get_date_filter_from_session(entity_slug=entity_slug,
-                                           request=context['request'])
-    return ledger_or_entity.digest(activity=activity,
-                                   user_model=user_model,
-                                   equity_only=False,
-                                   to_date=to_date,
-                                   process_groups=True)
+    return ledger_or_entity.digest(
+        activity=activity,
+        user_model=user_model,
+        equity_only=False,
+        to_date=end_date,
+        process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)

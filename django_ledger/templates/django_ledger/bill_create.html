@@ -16,7 +16,6 @@
                         <p class="card-header-title">{% trans 'Vendor Information' %}</p>
                     </div>
                     <div class="card-content">
-
                         <div class="field">
                             <div class="control">
                                 {{ form.vendor }}
@@ -36,8 +35,6 @@
                                 {{ form.xref }}
                             </div>
                         </div>
-
-
                         <div class="field">
                             <div class="control">
                                 {{ form.date }}
@@ -96,7 +93,6 @@
                                 {{ form.earnings_account }}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -107,10 +103,8 @@
                 <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
                    class="button is-small is-dark is-fullwidth">Back</a>
             </div>
-
         </div>
     </form>
-
 {% endblock %}
 
 

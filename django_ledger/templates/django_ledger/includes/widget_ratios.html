@@ -5,14 +5,14 @@
 
     <h4>Solvency:</h4>
     <h5 class="has-text-weight-light">Current
-        Ratio: {{ tx_digest.ratios.current_ratio | cs_thousands }}</h5>
+        Ratio: {{ tx_digest.ratios.current_ratio | currency_format }}</h5>
     <progress
             class="progress {{ tx_digest.ratios.current_ratio | fin_ratio_threshold_class:'current_ratio' }}"
             value="{{ tx_digest.ratios.current_ratio }}"
             max="{% fin_ratio_max_value ratio='current_ratio' %}">
         {{ tx_digest.ratios.current_ratio }}</progress>
     <h5 class="has-text-weight-light">Quick
-        Ratio: {{ tx_digest.ratios.quick_ratio | cs_thousands }} </h5>
+        Ratio: {{ tx_digest.ratios.quick_ratio | currency_format }} </h5>
     <progress
             class="progress {{ tx_digest.ratios.quick_ratio | fin_ratio_threshold_class:'quick_ratio' }}"
             value="{{ tx_digest.ratios.quick_ratio }}"
@@ -21,7 +21,7 @@
 
     <h4>Leverage:</h4>
     <h5 class="has-text-weight-light">Debt to
-        Equity: {{ tx_digest.ratios.debt_to_equity | cs_thousands }} </h5>
+        Equity: {{ tx_digest.ratios.debt_to_equity | currency_format }} </h5>
     <progress
             class="progress {{ tx_digest.ratios.debt_to_equity | fin_ratio_threshold_class:'debt_to_equity' }}"
             value="{{ tx_digest.ratios.debt_to_equity }}"
