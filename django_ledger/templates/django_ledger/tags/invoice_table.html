@@ -21,8 +21,8 @@
                 <td>{{ invoice.invoice_number }}</td>
                 <td>{{ invoice.date }}</td>
                 <td>{{ invoice.customer.customer_name }}</td>
-                <td>${{ invoice.amount_due | cs_thousands }}</td>
-                <td>${{ invoice.amount_paid | cs_thousands }}</td>
+                <td>${{ invoice.amount_due | currency_format }}</td>
+                <td>${{ invoice.amount_paid | currency_format }}</td>
                 <td>{% if invoice.paid %}
                     <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
                 {% else %}

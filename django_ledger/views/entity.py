@@ -11,9 +11,11 @@ from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateF
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import (get_date_filter_session_key, get_default_entity_session_key,
-                                 populate_default_coa, generate_sample_data, set_default_entity,
-                                 get_date_filter_from_session)
+from django_ledger.utils import (
+    get_date_filter_session_key, get_default_entity_session_key,
+    populate_default_coa, generate_sample_data, set_default_entity,
+    get_date_filter_from_session
+)
 from django_ledger.views.mixins import QuarterlyReportMixIn, YearlyReportMixIn, MonthlyReportMixIn
 
 
@@ -171,7 +173,7 @@ class EntityDeleteView(DeleteView):
         return reverse('django_ledger:home')
 
 
-class EntityModelBalanceSheetView(DetailView):
+class FiscalYearEntityModelBalanceSheetView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/balance_sheet.html'
@@ -191,7 +193,19 @@ class EntityModelBalanceSheetView(DetailView):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 
-class FiscalYearEntityIncomeStatementView(YearlyReportMixIn, DetailView):
+class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
+    """
+    Quarter Balance Sheet View.
+    """
+
+
+class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
+    """
+    Monthly Balance Sheet View.
+    """
+
+
+class FiscalYearEntityModelIncomeStatementView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/income_statement.html'
@@ -206,13 +220,13 @@ class FiscalYearEntityIncomeStatementView(YearlyReportMixIn, DetailView):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 
-class QuarterlyEntityIncomeStatementView(FiscalYearEntityIncomeStatementView, QuarterlyReportMixIn):
+class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
     """
     Quarter Income Statement View.
     """
 
 
-class MonthlyEntityIncomeStatementView(FiscalYearEntityIncomeStatementView, MonthlyReportMixIn):
+class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
     """
     Monthly Income Statement View.
     """

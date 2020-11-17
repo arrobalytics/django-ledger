@@ -22,8 +22,8 @@
                 <td>{{ bill.bill_number }}</td>
                 <td>{{ bill.date }}</td>
                 <td>{{ bill.vendor.vendor_name }}</td>
-                <td>${{ bill.amount_due | cs_thousands }}</td>
-                <td>${{ bill.amount_paid | cs_thousands }}</td>
+                <td>${{ bill.amount_due | currency_format }}</td>
+                <td>${{ bill.amount_paid | currency_format }}</td>
 
                 <td class="has-text-centered">
                     {% if bill.paid %}

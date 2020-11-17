@@ -108,6 +108,7 @@ venv.bak/
 .idea/
 djltest/
 dj_dev/
+djl_dev/
 manage.py
 
 node_modules

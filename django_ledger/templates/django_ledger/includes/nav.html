@@ -49,7 +49,7 @@
                         <a class="navbar-link">{% trans 'Reports' %}</a>
                         <div class="navbar-dropdown">
                             <a class="navbar-item"
-                               href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">{% trans 'Balance Sheet' %}</a>
+                               href="{% url 'django_ledger:entity-bs-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Balance Sheet' %}</a>
                             <a class="navbar-item"
                                href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Income Statement' %}</a>
                         </div>

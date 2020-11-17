@@ -9,8 +9,12 @@
                 {# SIDE MENU #}
                 {% if not hide_menu %}
                     <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
-                        {% include 'django_ledger/includes/menu.html' %}
-                        {% block aux_menu %}{% endblock %}
+                        <div class="columns is-multiline">
+                            {% block aux_menu %}{% endblock %}
+                            <div class="column is-12">
+                                {% include 'django_ledger/includes/menu.html' %}
+                            </div>
+                        </div>
                     </div>
                 {% endif %}
 

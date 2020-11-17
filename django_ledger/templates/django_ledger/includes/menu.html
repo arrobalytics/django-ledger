@@ -41,12 +41,14 @@
             <li>
                 <a>{% trans 'Reports' %}</a>
                 <ul>
-                    <li><a href="{% url 'django_ledger:entity-bs' entity_slug=view.kwargs.entity_slug %}">
-                        {% trans 'Balance Sheet' %}
-                    </a></li>
-                    <li><a href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">
-                        {% trans 'Income Statement' %}
-                    </a></li>
+                    <li>
+                        <a href="{% url 'django_ledger:entity-bs-year' entity_slug=view.kwargs.entity_slug year=current_year %}">
+                            {% trans 'Balance Sheet' %}
+                        </a></li>
+                    <li>
+                        <a href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">
+                            {% trans 'Income Statement' %}
+                        </a></li>
                 </ul>
             </li>
             <li>

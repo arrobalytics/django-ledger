@@ -16,7 +16,9 @@
                 </div>
                 <div class="column is-12">
                     <a class="button is-info is-fullwidth is-outlined"
-                       href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">Bill List</a>
+                       href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Bill List' %}
+                    </a>
                 </div>
             </div>
         </div>
