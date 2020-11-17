@@ -31,6 +31,7 @@ the following functionality:
 - Inventory Management.
 - Tax line mapping.
 - Package documentation.
+- Unit Tests & Behavioral Driven Tests.
 - And a lot more stuff...
 
 ## Quick Start
