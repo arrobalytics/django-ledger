@@ -1,12 +1,21 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+Miguel Sanda <msanda@arrobalytics.com>
+"""
+
 from datetime import datetime, timedelta
 from random import randint
 
 from django import template
-from django.utils.timezone import now
 from django.utils.formats import number_format
+from django.utils.timezone import now
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
+from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.settings import (
@@ -376,3 +385,22 @@ def fin_ratio_threshold_class(value, ratio):
             elif value >= ranges['watch']:
                 return 'is-primary'
             return 'is-success'
+
+
+@register.inclusion_tag('django_ledger/tags/feedback_button.html', takes_context=True)
+def feedback_button(context, button_size_class: str = 'is-small', color_class: str = 'is-success', icon_id: str = None):
+    bug_modal_html_id = f'djl-bug-button-{randint(10000, 99999)}'
+    feature_modal_html_id = f'djl-feature-button-{randint(10000, 99999)}'
+    bug_form = BugReportForm()
+    feature_form = RequestNewFeatureForm()
+    next_url = context['request'].path
+    return {
+        'icon_id': icon_id,
+        'bug_modal_html_id': bug_modal_html_id,
+        'feature_modal_html_id': feature_modal_html_id,
+        'button_size_class': button_size_class,
+        'color_class': color_class,
+        'bug_form': bug_form,
+        'feature_form': feature_form,
+        'next_url': next_url
+    }

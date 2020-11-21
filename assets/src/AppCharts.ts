@@ -1,4 +1,4 @@
-import Chart, {ChartOptions, ChartTitleOptions, ChartTooltipOptions} from "chart.js";
+import Chart, {ChartOptions, ChartTooltipOptions} from "chart.js";
 import Axios, {AxiosInstance, AxiosResponse} from "axios";
 
 function currencyFormatter(value: number): string {

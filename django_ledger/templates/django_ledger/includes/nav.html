@@ -7,11 +7,9 @@
 <nav class="navbar" role="navigation" aria-label="main navigation">
     <div class="container">
         <div class="navbar-brand">
-
             <a class="navbar-item" href="{% url 'django_ledger:home' %}">
                 <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
             </a>
-
             <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
                data-target="navbarBasicExample">
                 <span aria-hidden="true"></span>
@@ -101,10 +99,11 @@
                     </a>
                 </div>
                 <div class="navbar-item">
-                    <a class="button is-small is-success">
-                        <span class="icon">{% icon "topcoat:feedback" 24 %}</span>
-                        <span>Feedback</span>
-                    </a>
+
+
+                    {# FEEDBACK FORM MODAL #}
+                    {% feedback_button %}
+
                 </div>
                 <div class="navbar-item">v{% current_version %}</div>
             </div>
