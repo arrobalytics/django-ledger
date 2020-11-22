@@ -58,6 +58,7 @@
     <div class="modal-background"></div>
     <div class="modal-card">
         <form action="{% url 'django_ledger:new-feature' %}?next={{ next_url }}" method="post">
+            {% csrf_token %}
             <header class="modal-card-head">
                 <p class="modal-card-title">{% trans 'Request a New Feature' %}</p>
                 <button class="delete"

@@ -19,7 +19,7 @@ class BugReportView(SuccessUrlNextMixIn, FormView):
                   f'User email: {self.request.user.email}'
         if DJANGO_LEDGER_FEEDBACK_EMAIL_LIST:
             send_mail(
-                subject=f'Django Ledger Bug Report',
+                subject=f'DJL Bug Report',
                 from_email=DJANGO_LEDGER_FEEDBACK_FROM_EMAIL,
                 recipient_list=DJANGO_LEDGER_FEEDBACK_EMAIL_LIST,
                 fail_silently=True,
@@ -40,7 +40,7 @@ class RequestNewFeatureView(SuccessUrlNextMixIn, FormView):
                   f'User email: {self.request.user.email}'
         if DJANGO_LEDGER_FEEDBACK_EMAIL_LIST:
             send_mail(
-                subject=f'Django Ledger Bug Report',
+                subject=f'DJL New Feature Request',
                 from_email=DJANGO_LEDGER_FEEDBACK_FROM_EMAIL,
                 recipient_list=DJANGO_LEDGER_FEEDBACK_EMAIL_LIST,
                 fail_silently=True,
