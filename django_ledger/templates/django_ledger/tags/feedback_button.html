@@ -59,7 +59,7 @@
     <div class="modal-card">
         <form action="{% url 'django_ledger:new-feature' %}?next={{ next_url }}" method="post">
             <header class="modal-card-head">
-                <p class="modal-card-title">{% trans 'Report a Bug' %}</p>
+                <p class="modal-card-title">{% trans 'Request a New Feature' %}</p>
                 <button class="delete"
                         aria-label="close"
                         onclick="djLedger.toggleModal('{{ feature_modal_html_id }}')"></button>
@@ -82,6 +82,6 @@
                         onclick="djLedger.toggleModal('{{ feature_modal_html_id }}')">Cancel
                 </button>
             </footer>
-            {#        </form>#}
+        </form>
     </div>
 </div>
