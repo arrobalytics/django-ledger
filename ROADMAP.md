@@ -7,6 +7,7 @@
 * Vendor Model & Customer Models association with Bill/Invoice models respectively.
 * UI debugging, enhancements and mobile optimizations based on initial feedback from users.
 * User preferences and settings & account creation views.
+* Optimize charts for mobile.
 
 ### Version 0.4
 * Testing framework implementation that will include:
@@ -22,16 +23,24 @@ relevant random data for testing.
 
 ### Version 0.5
 * Inventory tracking functionality implementation.
+* Cash flow statement.
 * Update package documentation.
 
 ### Version 0.7
 * Currency Models implementation.
 * Evaluate a Multi-Currency approach and plan for version 1.0.
-* Update package documentation.
+* Update package and code documentation.
 
 ### Version 0.8
-* User roles and permissions on views.
-   
+* User roles and permissions on views to support read/write permissions for assigned managers
+to entities.
+* Update package and code documentation.
+
+### Version 0.9
+* Hierarchical entity structures and consolidated financial statements.
+
+### Version 1.0
+* TBD
  
 *** Roadmap is very dynamic and subject to change based on user feedback and backlog priorities.
 
