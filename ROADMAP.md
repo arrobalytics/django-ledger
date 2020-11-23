@@ -1,15 +1,18 @@
 ![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-# Roadmap to Version 1.0 Stable ***
+# Roadmap to Version 1.0 Stable
 
 ### Version 0.3
 * Implementation of Bill Model & Invoice Model.
 * Vendor Model & Customer Models association with Bill/Invoice models respectively.
-* UI debugging, enhancements and mobile optimizations based on initial feedback from users.
 * User preferences and settings & account creation views.
 * Optimize charts for mobile.
+* Bugfixes & UI/UX Enhancements.
 
 ### Version 0.4
+* Items, resources and & lists for bills & invoices itemization.
+* Time tracking.
+* Client proposals & estimates.
 * Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
@@ -20,16 +23,26 @@ relevant random data for testing.
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.  
+* Update package and code documentation.
+* Bugfixes & UI/UX Enhancements.
 
 ### Version 0.5
-* Inventory tracking functionality implementation.
+* Inventory tracking.
 * Cash flow statement.
-* Update package documentation.
+* Update package and code documentation.
+* Bugfixes & UI/UX Enhancements.
+
+### Version 0.6
+* Customer jobs & project tracking.
+* Update package and code documentation.
+* Bugfixes & UI/UX Enhancements.
+
 
 ### Version 0.7
-* Currency Models implementation.
-* Evaluate a Multi-Currency approach and plan for version 1.0.
+* Currency Models implementation as a way to define EntityModel default currency.
+* Produce financial statements in different currencies.
 * Update package and code documentation.
+* Bugfixes & UI/UX Enhancements.
 
 ### Version 0.8
 * User roles and permissions on views to support read/write permissions for assigned managers
@@ -37,10 +50,12 @@ to entities.
 * Update package and code documentation.
 
 ### Version 0.9
-* Hierarchical entity structures and consolidated financial statements.
+* Enable Hierarchical Entity structures via MPTT. 
+* Consolidated financial statements.
+* Update package and code documentation.
 
 ### Version 1.0
 * TBD
  
-*** Roadmap is very dynamic and subject to change based on user feedback and backlog priorities.
+*** Roadmap subject to change based on user feedback and backlog priorities.
 
