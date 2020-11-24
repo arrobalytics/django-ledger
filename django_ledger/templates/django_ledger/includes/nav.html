@@ -11,19 +11,17 @@
                 <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
             </a>
             <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
-               data-target="navbarBasicExample">
+               data-target="djl-navbar-menu">
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
             </a>
-
         </div>
 
-        <div id="navbarBasicExample" class="navbar-menu">
+        <div id="djl-navbar-menu" class="navbar-menu">
 
             {% if view.kwargs.entity_slug %}
                 <div class="navbar-start">
-
                     <div class="navbar-item has-text-weight-bold is-hidden-desktop">{{ entity.name | upper }}</div>
                     <a class="navbar-item is-hidden-desktop"
                        href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Dashboard' %}</a>
@@ -42,7 +40,6 @@
                                href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Invoices' %}</a>
                         </div>
                     </div>
-
                     <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
                         <a class="navbar-link">{% trans 'Reports' %}</a>
                         <div class="navbar-dropdown">
@@ -52,7 +49,6 @@
                                href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Income Statement' %}</a>
                         </div>
                     </div>
-
                     <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
                         <a class="navbar-link">{% trans 'Manage' %}</a>
                         <div class="navbar-dropdown">
@@ -71,22 +67,16 @@
                     {% if user.is_superuser and user.is_authenticated %}
                         <a class="navbar-item is-hidden-desktop" href="/admin">{% trans 'Admin' %}</a>
                     {% endif %}
-
-
                 </div>
             {% endif %}
 
             <div class="navbar-end">
-
                 {% if view.kwargs.entity_slug %}
-
                     <div class="navbar-item">
                         <span class="is-italic has-text-weight-semibold">
-                            <small>{% trans 'Date Filter' %}: {% current_end_date_filter %}</small></span>
+                            <small>{% trans 'Date Filter' %}: {% get_current_end_date_filter %}</small></span>
                     </div>
-
-                    {% date_filter %}
-
+                    {% date_filter_form %}
                 {% endif %}
 
                 <div class="navbar-item">
@@ -99,18 +89,11 @@
                     </a>
                 </div>
                 <div class="navbar-item">
-
-
                     {# FEEDBACK FORM MODAL #}
                     {% feedback_button %}
-
                 </div>
                 <div class="navbar-item">v{% current_version %}</div>
             </div>
-
         </div>
-
-
-    </div>
     </div>
 </nav>

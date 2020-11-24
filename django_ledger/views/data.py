@@ -6,7 +6,7 @@ from django.views.generic import View
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import get_date_filter_from_session
+from django_ledger.utils import get_end_date_from_session
 from django_ledger.utils import progressible_net_summary
 
 
@@ -25,7 +25,7 @@ class EntityPnLDataView(View):
                 signs=False,
                 by_period=True,
                 process_groups=True,
-                to_date=get_date_filter_from_session(self.kwargs['entity_slug'], request)
+                to_date=get_end_date_from_session(self.kwargs['entity_slug'], request)
             )
 
             group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']

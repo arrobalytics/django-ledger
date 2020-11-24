@@ -7,7 +7,7 @@ from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.utils import get_date_filter_from_session
+from django_ledger.utils import get_end_date_from_session
 
 
 # Account Views ----
@@ -82,7 +82,7 @@ class AccountModelDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
-        to_date = get_date_filter_from_session(
+        to_date = get_end_date_from_session(
             entity_slug=self.kwargs['entity_slug'],
             request=self.request,
         )
