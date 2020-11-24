@@ -12,7 +12,7 @@ Django Ledger supports:
 - Self-contained Ledgers, Journal Entries & Transactions.
 - Financial Activities Support (operational/financial/investing).
 - Basic OFX & QFX file import.
-- Bills & Invoices with optional progressible functionality.
+- Bills & Invoices with optional _progressible_ functionality.
 - Basic navigational templates.
 - Entity administration & entity manager support.
 - Bank Accounts.
@@ -25,12 +25,15 @@ the following functionality:
 ## High Level Road Map
 - Cash flow statement.
 - Inventory Management.
+- Entity Nesting and Corporate Structures.
 - Tax line mapping.
 - Package documentation.
 - Collaborators & Permissions.
 - Extensible API & Object Oriented Accounting.
 - Unit Tests & Behavioral Driven Tests.
 - And a lot more stuff...
+
+For more details please check our full v1.0 [Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md).
 
 # Want to contribute?
 __This project is actively looking for contributors. Any financial and/or
@@ -72,7 +75,7 @@ urlpatterns = [
 ```
 
 
-# Screenshoots
+# Screenshots
 
 ![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
 ![django ledger balance sheet](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_income_statement.png)
