@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
@@ -6,8 +6,8 @@ from random import choice, random, randint
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import localtime
+from django.utils.dateparse import parse_date
+from django.utils.timezone import localtime, localdate
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
@@ -112,14 +112,12 @@ def make_accounts_active(entity_model: EntityModel, account_code_set: set):
     accounts.update(active=True)
 
 
-def get_date_filter_session_key(entity_slug: str):
-    # todo: rename this key...
-    return f'dj_ledger_entity_{entity_slug}_date_filter'.replace('-', '_')
+def get_end_date_session_key(entity_slug: str):
+    return f'djl_end_date_filter_{entity_slug}'.replace('-', '_')
 
 
 def get_default_entity_session_key():
-    # todo: rename this key...
-    return 'dj_ledger_default_entity_id'
+    return 'djl_default_entity_id'
 
 
 def set_default_entity(request, entity_model: EntityModel):
@@ -129,6 +127,16 @@ def set_default_entity(request, entity_model: EntityModel):
         'entity_slug': entity_model.slug,
         'entity_name': entity_model.name,
     }
+
+
+def get_default_entity_from_session(request):
+    session_key = get_default_entity_session_key()
+    return request.session.get(session_key)
+
+
+def set_end_date_filter(request, entity_slug: str, end_date: date):
+    session_key = get_end_date_session_key(entity_slug)
+    request.session[session_key] = end_date.isoformat()
 
 
 def generate_sample_data(entity: str or EntityModel,
@@ -376,8 +384,8 @@ def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, en
     )
 
 
-def get_date_filter_from_session(entity_slug: str, request):
-    session_date_filter_key = get_date_filter_session_key(entity_slug)
-    date_filter = request.session.get(session_date_filter_key)
-    date_filter = parse_datetime(date_filter) if date_filter else localtime()
-    return date_filter
+def get_end_date_from_session(entity_slug: str, request) -> date:
+    session_end_date_filter = get_end_date_session_key(entity_slug)
+    end_date = request.session.get(session_end_date_filter)
+    end_date = parse_date(end_date) if end_date else localdate()
+    return end_date

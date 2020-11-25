@@ -7,7 +7,6 @@ from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class EntityFilterForm(Form):
-
     entity_model = ModelChoiceField(
         queryset=EntityModel.objects.none(),
         widget=Select(attrs={

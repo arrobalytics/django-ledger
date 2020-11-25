@@ -5,9 +5,9 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
+from django_ledger.views.mixins import YearlyReportMixIn, QuarterlyReportMixIn, MonthlyReportMixIn
 
 
-# Ledger Views ----
 class LedgerModelListView(ListView):
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger_list.html'
@@ -79,7 +79,7 @@ class LedgerModelUpdateView(UpdateView):
                        })
 
 
-class LedgerBalanceSheetView(DetailView):
+class FiscalYearLedgerBalanceSheetView(YearlyReportMixIn, DetailView):
     context_object_name = 'ledger'
     template_name = 'django_ledger/balance_sheet.html'
     slug_url_kwarg = 'ledger_pk'
@@ -98,7 +98,19 @@ class LedgerBalanceSheetView(DetailView):
             entity_slug=entity_slug)
 
 
-class LedgerIncomeStatementView(DetailView):
+class QuarterlyLedgerBalanceSheetView(QuarterlyReportMixIn, FiscalYearLedgerBalanceSheetView):
+    """
+    Quarter Balance Sheet View.
+    """
+
+
+class MonthlyLedgerBalanceSheetView(MonthlyReportMixIn, FiscalYearLedgerBalanceSheetView):
+    """
+    Monthly Balance Sheet View.
+    """
+
+
+class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn, DetailView):
     context_object_name = 'ledger'
     template_name = 'django_ledger/income_statement.html'
     slug_url_kwarg = 'ledger_pk'

@@ -6,12 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from datetime import datetime, timedelta
 from random import randint
 
 from django import template
 from django.utils.formats import number_format
-from django.utils.timezone import now
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
@@ -21,7 +19,7 @@ from django_ledger.models.journalentry import validate_activity
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
-from django_ledger.utils import get_date_filter_session_key, get_default_entity_session_key
+from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session
 
 register = template.Library()
 
@@ -274,31 +272,6 @@ def session_entity_name(context):
     return session.get(session_key)['entity_name']
 
 
-# todo: rename template to date_form_filter.
-@register.inclusion_tag('django_ledger/tags/date_filter.html', takes_context=True)
-def date_filter(context, inline=False):
-    entity_slug = context['view'].kwargs.get('entity_slug')
-    session_item = get_date_filter_session_key(entity_slug)
-    session = context['request'].session
-    # todo: move this action to a function...
-    date_filter = datetime.fromisoformat(session.get(session_item)) - timedelta(days=1)
-    identity = randint(0, 1000000)
-    if entity_slug:
-        form = AsOfDateFilterForm(form_id=identity, initial={
-            'entity_slug': context['view'].kwargs['entity_slug'],
-            'date': date_filter
-        })
-        next_url = context['request'].path
-        return {
-            'date_form': form,
-            'form_id': identity,
-            'entity_slug': entity_slug,
-            'date_filter': date_filter,
-            'next': next_url,
-            'inline': inline
-        }
-
-
 # todo: rename template to activity_form_filter.
 @register.inclusion_tag('django_ledger/tags/activity_form.html', takes_context=True)
 def activity_filter(context):
@@ -317,24 +290,31 @@ def activity_filter(context):
     }
 
 
-@register.simple_tag(takes_context=True)
-def current_end_date_filter(context):
+@register.inclusion_tag('django_ledger/tags/date_filter.html', takes_context=True)
+def date_filter_form(context, inline=False):
     entity_slug = context['view'].kwargs.get('entity_slug')
-    session_key = get_date_filter_session_key(entity_slug)
-    session = context['request'].session
-    filter_iso = session.get(session_key)
-    if not filter_iso:
-        now_tz = now()
-        new_filter = datetime(year=now_tz.year,
-                              month=now_tz.month,
-                              day=now_tz.day,
-                              hour=0)
-        new_filter += timedelta(days=1)
-        session[session_key] = new_filter.isoformat()
-        return now_tz.date()
-    else:
-        dt_filter = datetime.fromisoformat(filter_iso)
-        return (dt_filter - timedelta(days=1)).date()
+    end_date = get_end_date_from_session(entity_slug, context['request'])
+    identity = randint(0, 1000000)
+    if entity_slug:
+        form = AsOfDateFilterForm(form_id=identity, initial={
+            'entity_slug': context['view'].kwargs['entity_slug'],
+            'date': end_date
+        })
+        next_url = context['request'].path
+        return {
+            'date_form': form,
+            'form_id': identity,
+            'entity_slug': entity_slug,
+            'date_filter': end_date,
+            'next': next_url,
+            'inline': inline
+        }
+
+
+@register.simple_tag(takes_context=True)
+def get_current_end_date_filter(context):
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    return get_end_date_from_session(entity_slug, context['request'])
 
 
 @register.inclusion_tag('django_ledger/tags/chart_container.html')

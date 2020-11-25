@@ -6,16 +6,20 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from itertools import groupby
 from typing import List, Set
+from typing import Tuple
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.timezone import localdate
+from django.utils.timezone import make_aware, is_naive
 
+from django_ledger.exceptions import InvalidDateInputException
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RolesManager
@@ -64,11 +68,37 @@ def validate_tx_data(tx_data: list):
     return is_valid
 
 
-def validate_dates(from_date: str or datetime = None, to_date: str or datetime = None):
-    if from_date and not isinstance(from_date, datetime):
-        from_date = parse_date(from_date)
-    if to_date and not isinstance(to_date, datetime):
-        to_date = parse_date(to_date)
+def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True):
+    if isinstance(dt, date):
+        return dt
+    elif isinstance(dt, datetime):
+        if is_naive(dt):
+            return make_aware(dt).date
+        return dt.date
+    elif isinstance(dt, str):
+        # try to parse a date object from string...
+        fdt = parse_date(dt)
+        if not fdt:
+            # try to parse a datetime object from string...
+            fdt = parse_datetime(dt)
+            if not fdt:
+                raise InvalidDateInputException(
+                    message=f'Could not parse date from {dt}'
+                )
+            elif is_naive(fdt):
+                return make_aware(fdt).date
+            return fdt.date
+        return fdt
+    if no_parse_locadate:
+        return localdate()
+    return
+
+
+def validate_dates(
+        from_date: str or date or datetime = None,
+        to_date: str or date or datetime = None) -> Tuple[date, date]:
+    from_date = validate_io_date(from_date, no_parse_locadate=False)
+    to_date = validate_io_date(to_date)
     return from_date, to_date
 
 

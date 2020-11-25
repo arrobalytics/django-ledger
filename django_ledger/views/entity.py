@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from random import randint
 
 from django.urls import reverse
-from django.utils.timezone import localtime, make_aware
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
@@ -12,9 +12,9 @@ from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import (
-    get_date_filter_session_key, get_default_entity_session_key,
+    get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
-    get_date_filter_from_session
+    get_end_date_from_session, set_end_date_filter
 )
 from django_ledger.views.mixins import QuarterlyReportMixIn, YearlyReportMixIn, MonthlyReportMixIn
 
@@ -47,7 +47,9 @@ class EntityModelDashboardView(DetailView):
         context['header_subtitle'] = _('Dashboard')
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
-        date_filter = get_date_filter_from_session(entity_slug=entity_model.slug, request=self.request)
+        end_date = get_end_date_from_session(entity_slug=entity_model.slug, request=self.request)
+        context['date_filter'] = end_date
+
         set_default_entity(self.request, entity_model)
 
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
@@ -71,19 +73,20 @@ class EntityModelDashboardView(DetailView):
         # DIGEST PHASE ---
         by_period = self.request.GET.get('by_period')
         digest = entity_model.digest(user_model=self.request.user,
-                                     to_date=date_filter,
+                                     to_date=end_date,
                                      by_period=True if by_period else False,
                                      process_ratios=True,
                                      process_roles=True,
                                      process_groups=True)
         context.update(digest)
-        context['date_filter'] = date_filter - timedelta(days=1)
 
+        # Unpaid Bills for Dashboard
         context['bills'] = BillModel.objects.for_entity_unpaid(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).select_related('vendor').order_by('due_date')
 
+        # Unpaid Invoices for Dashboard
         context['invoices'] = InvoiceModel.objects.for_entity_unpaid(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
@@ -254,6 +257,9 @@ class SetDefaultEntityView(RedirectView):
 
 
 class SetDateView(RedirectView):
+    """
+    Sets the date filter on the session for a given entity.
+    """
     http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
@@ -262,18 +268,9 @@ class SetDateView(RedirectView):
         next_url = request.GET['next']
 
         if as_of_form.is_valid():
-            as_of_date = as_of_form.cleaned_data['date']
-            # as_of_date = make_aware(as_of_form.cleaned_data['date'])
-            as_of_dttm = datetime(
-                year=as_of_date.year,
-                month=as_of_date.month,
-                day=as_of_date.day,
-                hour=0)
-            as_of_dttm += timedelta(days=1)
-            aware_dttm = make_aware(as_of_dttm)
-            new_dttm_filter = aware_dttm.isoformat()
-            session_key = get_date_filter_session_key(entity_slug)
-            request.session[session_key] = new_dttm_filter
+            as_of_form.clean()
+            end_date = as_of_form.cleaned_data['date']
+            set_end_date_filter(request, entity_slug, end_date)
         self.url = next_url
         return super().post(request, *args, **kwargs)
 
