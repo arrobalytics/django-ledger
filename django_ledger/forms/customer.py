@@ -11,6 +11,10 @@ class CustomerModelForm(ModelForm):
             'customer_name',
             'address_1',
             'address_2',
+            'city',
+            'state',
+            'zip',
+            'country',
             'phone',
             'email',
             'website',
@@ -23,6 +27,18 @@ class CustomerModelForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'address_2': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'city': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'state': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'zip': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'country': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'phone': TextInput(attrs={
