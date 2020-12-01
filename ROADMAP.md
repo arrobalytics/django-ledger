@@ -52,10 +52,11 @@ to entities.
 ### Version 0.9
 * Enable Hierarchical Entity structures via MPTT. 
 * Consolidated financial statements.
+* Intercompany transactions.
 * Update package and code documentation.
 
 ### Version 1.0
-* TBD
+* Complete Internationalization of all user-related fields.
  
 *** Roadmap subject to change based on user feedback and backlog priorities.
 

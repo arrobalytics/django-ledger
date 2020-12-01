@@ -57,7 +57,7 @@ class ContactInfoMixIn(models.Model):
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
     city = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('City'))
     state = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('State/Province'))
-    zip = models.CharField(null=True, blank=True, max_length=20, verbose_name=_('Zip Code'))
+    zip_code = models.CharField(null=True, blank=True, max_length=20, verbose_name=_('Zip Code'))
     country = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Country'))
     email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
     website = models.URLField(null=True, blank=True, verbose_name=_('Website'))

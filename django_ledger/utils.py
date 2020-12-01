@@ -173,10 +173,11 @@ def generate_sample_data(entity: str or EntityModel,
     try:
         from faker import Faker
         from faker.providers import company, address, phone_number
+
         global FAKER_IMPORTED
         FAKER_IMPORTED = True
 
-        fk = Faker()
+        fk = Faker(['en_US'])
         fk.add_provider(company)
         fk.add_provider(address)
         fk.add_provider(phone_number)
@@ -196,9 +197,13 @@ def generate_sample_data(entity: str or EntityModel,
         VendorModel(
             vendor_name=fk.name() if random() > .7 else fk.company(),
             entity=entity,
-            address_1=fk.street_address(),
-            address_2=f'{fk.city()}. {fk.postcode()}',
+            address_1=fk.street_address() + fk.street_suffix(),
+            address_2=fk.building_number() if random() > .2 else None,
+            city=fk.city(),
+            state=fk.state_abbr(),
+            zip_code=fk.postcode(),
             phone=fk.phone_number(),
+            country='USA',
             email=fk.email(),
             website=fk.url(),
             active=True,
@@ -216,8 +221,12 @@ def generate_sample_data(entity: str or EntityModel,
         CustomerModel(
             customer_name=fk.name() if random() > .2 else fk.company(),
             entity=entity,
-            address_1=fk.street_address(),
-            address_2=f'{fk.city()}. {fk.postcode()}',
+            address_1=fk.street_address() + fk.street_suffix(),
+            address_2=fk.building_number() if random() > .2 else None,
+            city=fk.city(),
+            state=fk.state_abbr(),
+            zip_code=fk.postcode(),
+            country='USA',
             phone=fk.phone_number(),
             email=fk.email(),
             website=fk.url(),

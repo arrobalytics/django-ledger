@@ -23,13 +23,17 @@ class EntityModelCreateForm(ModelForm):
         model = EntityModel
         fields = [
             'name',
-            'default_coa',
-            'activate_all_accounts',
             'address_1',
             'address_2',
+            'city',
+            'state',
+            'zip_code',
+            'country',
             'email',
             'website',
-            'phone'
+            'phone',
+            'default_coa',
+            'activate_all_accounts',
         ]
         labels = {
             'name': _('Entity Name'),
@@ -44,11 +48,27 @@ class EntityModelCreateForm(ModelForm):
             ),
             'address_1': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Address line 1...')
+                'placeholder': _('Address line 1')
             }),
             'address_2': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('City, State, ZIP...')
+                'placeholder': _('Address line 2')
+            }),
+            'city': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('City')
+            }),
+            'state': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('State')
+            }),
+            'zip_code': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('Zip Code')
+            }),
+            'country': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('Country')
             }),
             'phone': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -75,6 +95,10 @@ class EntityModelUpdateForm(ModelForm):
             'name',
             'address_1',
             'address_2',
+            'city',
+            'state',
+            'zip_code',
+            'country',
             'email',
             'phone',
             'website'
@@ -92,15 +116,33 @@ class EntityModelUpdateForm(ModelForm):
             'address_1': TextInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address 1...')
-                }
-            ),
+                    'placeholder': _('Address line 1')
+                }),
             'address_2': TextInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                    'placeholder': _('Address 2...')
-                }
-            ),
+                    'placeholder': _('Address line 2')
+                }),
+            'city': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('City')
+                }),
+            'state': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('State')
+                }),
+            'zip_code': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Zip Code')
+                }),
+            'country': TextInput(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'placeholder': _('Country')
+                }),
             'email': EmailInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,

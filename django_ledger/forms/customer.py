@@ -13,7 +13,7 @@ class CustomerModelForm(ModelForm):
             'address_2',
             'city',
             'state',
-            'zip',
+            'zip_code',
             'country',
             'phone',
             'email',
@@ -35,7 +35,7 @@ class CustomerModelForm(ModelForm):
             'state': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'zip': TextInput(attrs={
+            'zip_code': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'country': TextInput(attrs={
