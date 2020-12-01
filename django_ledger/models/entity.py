@@ -68,7 +68,7 @@ class EntityModelAbstract(MPTTModel,
         verbose_name_plural = _('Entities')
         indexes = [
             models.Index(fields=['admin']),
-            models.Index(fields=['slug', 'admin']),
+            models.Index(fields=['parent'])
         ]
 
     class MPTTMeta:
