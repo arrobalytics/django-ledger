@@ -11,8 +11,7 @@
 
 ### Version 0.4
 * Items, resources and & lists for bills & invoices itemization.
-* Time tracking.
-* Client proposals & estimates.
+* Entity internal organizations, department, branches, etc.
 * Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
@@ -34,6 +33,8 @@ relevant random data for testing.
 
 ### Version 0.6
 * Customer jobs & project tracking.
+* Client proposals & estimates.
+* Time tracking.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
