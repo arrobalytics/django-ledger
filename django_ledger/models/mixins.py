@@ -55,6 +55,10 @@ class CreateUpdateMixIn(models.Model):
 class ContactInfoMixIn(models.Model):
     address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
+    city = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('City'))
+    state = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('State/Province'))
+    zip_code = models.CharField(null=True, blank=True, max_length=20, verbose_name=_('Zip Code'))
+    country = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Country'))
     email = models.EmailField(null=True, blank=True, verbose_name=_('Email'))
     website = models.URLField(null=True, blank=True, verbose_name=_('Website'))
     phone = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('Phone Number'))
