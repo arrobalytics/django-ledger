@@ -3,7 +3,6 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
     <div class="box">
         <form method="post"
               action="{% url 'django_ledger:customer-update' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}">
@@ -19,6 +18,5 @@
                    class="button is-dark is-small is-fullwidth mt-2">{% trans 'Go Back' %}</a>
             </div>
         </form>
-
     </div>
 {% endblock %}
