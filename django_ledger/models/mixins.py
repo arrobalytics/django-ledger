@@ -66,6 +66,15 @@ class ContactInfoMixIn(models.Model):
     class Meta:
         abstract = True
 
+    def get_cszc(self):
+        if all([
+            self.city,
+            self.state,
+            self.zip_code,
+            self.country,
+        ]):
+            return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
+
 
 class ProgressibleMixIn(models.Model):
     IS_DEBIT_BALANCE = None

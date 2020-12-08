@@ -1,10 +1,11 @@
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic.dates import YearMixin, MonthMixin
+from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
+from django.utils.dateparse import parse_date
 
 
 class SuccessUrlNextMixIn:
@@ -21,14 +22,24 @@ class SuccessUrlNextMixIn:
 
 class YearlyReportMixIn(YearMixin):
 
+    def get_year_start_date(self, year: int = None) -> datetime:
+        if not year:
+            year = self.get_year()
+        return datetime(year=year, month=1, day=1)
+
+    def get_year_end_date(self, year: int = None) -> datetime:
+        if not year:
+            year = self.get_year()
+        return datetime(year=year, month=12, day=31)
+
     def get_context_data(self, **kwargs):
         context = super(YearlyReportMixIn, self).get_context_data(**kwargs)
         year = self.get_year()
         context['year'] = year
         context['next_year'] = year + 1
         context['previous_year'] = year - 1
-        context['start_date'] = datetime(year=year, month=1, day=1)
-        context['end_date'] = datetime(year=year, month=12, day=31)
+        context['start_date'] = self.get_year_start_date(year)
+        context['end_date'] = self.get_year_end_date(year)
         return context
 
 
@@ -36,6 +47,23 @@ class QuarterlyReportMixIn(YearMixin):
     quarter = None
     quarter_url_kwarg = 'quarter'
     valid_quarters = [1, 2, 3, 4]
+
+    def get_quarter_start_date(self, quarter: int = None, year: int = None) -> datetime:
+        if not year:
+            year = self.get_year()
+        if not quarter:
+            quarter = self.get_quarter()
+        month = quarter * 3 - 2
+        return datetime(year=year, month=month, day=1)
+
+    def get_quarter_end_date(self, quarter: int = None, year: int = None) -> datetime:
+        if not year:
+            year = self.get_year()
+        if not quarter:
+            quarter = self.get_quarter()
+        month = quarter * 3
+        last_day = monthrange(year, month)[1]
+        return datetime(year=year, month=month, day=last_day)
 
     def get_context_data(self, **kwargs):
         quarter = self.get_quarter()
@@ -79,19 +107,6 @@ class QuarterlyReportMixIn(YearMixin):
         if quarter != 1:
             return quarter - 1
 
-    def get_quarter_start_date(self, quarter: int, year: int = None) -> datetime:
-        if not year:
-            year = self.get_year()
-        month = quarter * 3 - 2
-        return datetime(year=year, month=month, day=1)
-
-    def get_quarter_end_date(self, quarter: int, year: int = None) -> datetime:
-        if not year:
-            year = self.get_year()
-        month = quarter * 3
-        last_day = monthrange(year, month)[1]
-        return datetime(year=year, month=month, day=last_day)
-
 
 class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
 
@@ -116,9 +131,67 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
             return month - 1
         return 12
 
-    def get_month_start_date(self, month, year):
+    def get_month_start_date(self, month: int = None, year: int = None):
+        if not month:
+            month = int(self.get_month())
+        if not year:
+            year = self.get_year()
         return datetime(year=year, month=month, day=1)
 
-    def get_month_end_date(self, month, year):
+    def get_month_end_date(self, month: int = None, year: int = None):
+        if not month:
+            month = int(self.get_month())
+        if not year:
+            year = self.get_year()
         last_day = monthrange(year, month)[1]
         return datetime(year=year, month=month, day=last_day)
+
+
+class DateReportMixIn(MonthlyReportMixIn, DayMixin):
+
+    def get_context_data(self, **kwargs):
+        context = super(DateReportMixIn, self).get_context_data(**kwargs)
+        view_date = self.get_date()
+        context['view_date'] = view_date
+        context['next_day'] = view_date + timedelta(days=1)
+        context['previous_day'] = view_date - timedelta(days=1)
+        return context
+
+    def get_date(self):
+        return datetime(
+            year=self.get_year(),
+            month=self.get_month(),
+            day=self.get_day()
+        )
+
+
+class FromToDatesMixIn:
+    DJL_FROM_DATE_PARAM: str = 'from_date'
+    DJL_TO_DATE_PARAM: str = 'to_date'
+    DJL_NO_FROM_DATE_RAISE_404: bool = True
+    DJL_NO_TO_DATE_RAISE_404: bool = True
+
+    def get_from_date(self, query_param: str = None):
+        if not query_param:
+            query_param = self.DJL_FROM_DATE_PARAM
+        parsed_date = self.parse_date_from_query_param(query_param)
+        if not parsed_date and self.DJL_NO_FROM_DATE_RAISE_404:
+            raise Http404(_(f'Must provide {query_param} date parameter.'))
+        return parsed_date
+
+    def get_to_date(self, query_param: str = None):
+        if not query_param:
+            query_param = self.DJL_TO_DATE_PARAM
+        parsed_date = self.parse_date_from_query_param(query_param)
+        if not parsed_date and self.DJL_NO_TO_DATE_RAISE_404:
+            raise Http404(_(f'Must provide {query_param} date parameter.'))
+        return parsed_date
+
+    def parse_date_from_query_param(self, query_param: str):
+        param_date = self.request.GET.get(query_param)
+        if param_date:
+            parsed_date = parse_date(param_date)
+            if not parsed_date:
+                raise Http404(_(f'Invalid {query_param} {param_date} provided'))
+            param_date = parsed_date
+        return param_date

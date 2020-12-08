@@ -1,10 +1,15 @@
 from django.forms import ModelForm, TextInput, EmailInput
 
+from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.vendor import VendorModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class VendorModelForm(ModelForm):
+
+    def clean(self):
+        validate_cszc(self.cleaned_data)
+
     class Meta:
         model = VendorModel
         fields = [

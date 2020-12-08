@@ -14,11 +14,12 @@
                 {{ vendor.vendor_name }}
             </h1>
             <p>
-                {% if vendor.address_1 %}{{ vendor.address_1 }}{% endif %}<br>
-                {% if vendor.address_2 %}{{ vendor.address_2 }}{% endif %}<br>
-                {% if vendor.phone %}{{ vendor.phone }}{% endif %}<br>
-                {% if vendor.email %}{{ vendor.email }}{% endif %}<br>
-                {% if vendor.website %}{{ vendor.website }}{% endif %}<br>
+                {% if vendor.address_1 %}{{ vendor.address_1 }}<br>{% endif %}
+                {% if vendor.address_2 %}{{ vendor.address_2 }}<br>{% endif %}
+                {% if vendor.get_cszc %}{{ vendor.get_cszc }}<br>{% endif %}
+                {% if vendor.phone %}{{ vendor.phone }}<br>{% endif %}
+                {% if vendor.email %}{{ vendor.email }}<br>{% endif %}
+                {% if vendor.website %}{{ vendor.website }}<br>{% endif %}
             </p>
         </div>
 

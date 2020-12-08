@@ -1,8 +1,9 @@
 from datetime import timedelta
 from random import randint
 
+from django.db.models import Q
 from django.urls import reverse
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
@@ -14,12 +15,15 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
-    get_end_date_from_session, set_end_date_filter
+    set_end_date_filter
 )
-from django_ledger.views.mixins import QuarterlyReportMixIn, YearlyReportMixIn, MonthlyReportMixIn
+from django_ledger.views.mixins import (
+    QuarterlyReportMixIn, YearlyReportMixIn,
+    MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn
+)
 
 
-# Entity Views ----
+# Entity CRUD Views ----
 class EntityModelListView(ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
@@ -32,75 +36,6 @@ class EntityModelListView(ListView):
     def get_queryset(self):
         return EntityModel.objects.for_user(
             user_model=self.request.user)
-
-
-class EntityModelDashboardView(DetailView):
-    context_object_name = 'entity'
-    slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/entity_dashboard.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        entity_model = self.object
-        context['page_title'] = entity_model.name
-        context['header_title'] = entity_model.name
-        context['header_subtitle'] = _('Dashboard')
-        context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
-
-        end_date = get_end_date_from_session(entity_slug=entity_model.slug, request=self.request)
-        context['date_filter'] = end_date
-
-        set_default_entity(self.request, entity_model)
-
-        context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
-        context['pnl_chart_endpoint'] = reverse('django_ledger:entity-json-pnl',
-                                                kwargs={
-                                                    'entity_slug': self.kwargs['entity_slug']
-                                                })
-
-        context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
-        context['payables_chart_endpoint'] = reverse('django_ledger:entity-json-net-payables',
-                                                     kwargs={
-                                                         'entity_slug': self.kwargs['entity_slug']
-                                                     })
-
-        context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
-        context['receivables_chart_endpoint'] = reverse('django_ledger:entity-json-net-receivables',
-                                                        kwargs={
-                                                            'entity_slug': self.kwargs['entity_slug']
-                                                        })
-
-        # DIGEST PHASE ---
-        by_period = self.request.GET.get('by_period')
-        digest = entity_model.digest(user_model=self.request.user,
-                                     to_date=end_date,
-                                     by_period=True if by_period else False,
-                                     process_ratios=True,
-                                     process_roles=True,
-                                     process_groups=True)
-        context.update(digest)
-
-        # Unpaid Bills for Dashboard
-        context['bills'] = BillModel.objects.for_entity_unpaid(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).select_related('vendor').order_by('due_date')
-
-        # Unpaid Invoices for Dashboard
-        context['invoices'] = InvoiceModel.objects.for_entity_unpaid(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).select_related('customer').order_by('due_date')
-        return context
-
-    def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
-        return EntityModel.objects.for_user(
-            user_model=self.request.user).select_related('coa')
 
 
 class EntityModelCreateView(CreateView):
@@ -176,6 +111,136 @@ class EntityDeleteView(DeleteView):
         return reverse('django_ledger:home')
 
 
+# DASHBOARD VIEWS START ----
+class EntityDashboardView(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        loc_date = localdate()
+        return reverse('django_ledger:entity-dashboard-date',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': loc_date.year,
+                           'month': loc_date.month,
+                           'day': loc_date.day
+                       })
+
+
+class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, DetailView):
+    context_object_name = 'entity'
+    slug_url_kwarg = 'entity_slug'
+    template_name = 'django_ledger/entity_dashboard.html'
+    DJL_NO_FROM_DATE_RAISE_404 = False
+    DJL_NO_TO_DATE_RAISE_404 = False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        entity_model = self.object
+        context['page_title'] = entity_model.name
+        context['header_title'] = entity_model.name
+        context['header_subtitle'] = _('Dashboard')
+        context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
+
+        context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
+        context['pnl_chart_endpoint'] = reverse('django_ledger:entity-json-pnl',
+                                                kwargs={
+                                                    'entity_slug': self.kwargs['entity_slug']
+                                                })
+        context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
+        context['payables_chart_endpoint'] = reverse('django_ledger:entity-json-net-payables',
+                                                     kwargs={
+                                                         'entity_slug': self.kwargs['entity_slug']
+                                                     })
+        context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
+        context['receivables_chart_endpoint'] = reverse('django_ledger:entity-json-net-receivables',
+                                                        kwargs={
+                                                            'entity_slug': self.kwargs['entity_slug']
+                                                        })
+
+        context['from_date'] = self.get_from_date()
+        context['to_date'] = self.get_to_date()
+        set_default_entity(self.request, entity_model)
+        context = self.get_entity_digest(context)
+
+        # Unpaid Bills for Dashboard
+        context['bills'] = self.get_unpaid_bills_qs()
+
+        # Unpaid Invoices for Dashboard
+        context['invoices'] = self.get_unpaid_invoices_qs()
+        return context
+
+    def get_queryset(self):
+        """
+        Returns a queryset of all Entities owned or Managed by the User.
+        Queryset is annotated with user_role parameter (owned/managed).
+        :return: The View queryset.
+        """
+        return EntityModel.objects.for_user(
+            user_model=self.request.user).select_related('coa')
+
+    def get_digest_end_date(self):
+        return self.get_year_end_date()
+
+    def get_digest_start_date(self):
+        return self.get_year_start_date()
+
+    # def get_digest_end_date(self):
+    #     return get_end_date_from_session(entity_slug=self.object.slug, request=self.request)
+
+    def get_entity_digest(self, context, end_date=None):
+        by_period = self.request.GET.get('by_period')
+        entity_model = self.object
+        if not end_date:
+            end_date = self.get_digest_end_date()
+        digest = entity_model.digest(user_model=self.request.user,
+                                     to_date=end_date,
+                                     by_period=True if by_period else False,
+                                     process_ratios=True,
+                                     process_roles=True,
+                                     process_groups=True)
+        context.update(digest)
+        context['date_filter'] = end_date
+        return context
+
+    def get_unpaid_invoices_qs(self):
+        return InvoiceModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).filter(
+            Q(date__gte=self.get_digest_start_date()) &
+            Q(date__lte=self.get_digest_end_date())
+        ).select_related('customer').order_by('due_date')
+
+    def get_unpaid_bills_qs(self):
+        return BillModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).filter(
+            Q(date__gte=self.get_digest_start_date()) &
+            Q(date__lte=self.get_digest_end_date())
+        ).select_related('vendor').order_by('due_date')
+
+
+class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
+
+    def get_digest_end_date(self):
+        return self.get_quarter_end_date()
+
+    def get_digest_start_date(self):
+        return self.get_quarter_start_date()
+
+
+class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
+    def get_digest_end_date(self):
+        return self.get_month_end_date()
+
+    def get_digest_start_date(self):
+        return self.get_month_start_date()
+
+
+class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
+    pass
+
+
 class FiscalYearEntityModelBalanceSheetView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -235,6 +300,7 @@ class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntity
     """
 
 
+# ENTITY MISC VIEWS ---
 class SetDefaultEntityView(RedirectView):
     http_method_names = ['post']
 
@@ -256,7 +322,7 @@ class SetDefaultEntityView(RedirectView):
         return super().post(request, *args, **kwargs)
 
 
-class SetDateView(RedirectView):
+class SetSessionDate(RedirectView):
     """
     Sets the date filter on the session for a given entity.
     """
