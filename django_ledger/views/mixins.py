@@ -1,10 +1,11 @@
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic.dates import YearMixin, MonthMixin
+from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
+from django.utils.dateparse import parse_date
 
 
 class SuccessUrlNextMixIn:
@@ -144,3 +145,53 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
             year = self.get_year()
         last_day = monthrange(year, month)[1]
         return datetime(year=year, month=month, day=last_day)
+
+
+class DateReportMixIn(MonthlyReportMixIn, DayMixin):
+
+    def get_context_data(self, **kwargs):
+        context = super(DateReportMixIn, self).get_context_data(**kwargs)
+        view_date = self.get_date()
+        context['view_date'] = view_date
+        context['next_day'] = view_date + timedelta(days=1)
+        context['previous_day'] = view_date - timedelta(days=1)
+        return context
+
+    def get_date(self):
+        return datetime(
+            year=self.get_year(),
+            month=self.get_month(),
+            day=self.get_day()
+        )
+
+
+class FromToDatesMixIn:
+    DJL_FROM_DATE_PARAM: str = 'from_date'
+    DJL_TO_DATE_PARAM: str = 'to_date'
+    DJL_NO_FROM_DATE_RAISE_404: bool = True
+    DJL_NO_TO_DATE_RAISE_404: bool = True
+
+    def get_from_date(self, query_param: str = None):
+        if not query_param:
+            query_param = self.DJL_FROM_DATE_PARAM
+        parsed_date = self.parse_date_from_query_param(query_param)
+        if not parsed_date and self.DJL_NO_FROM_DATE_RAISE_404:
+            raise Http404(_(f'Must provide {query_param} date parameter.'))
+        return parsed_date
+
+    def get_to_date(self, query_param: str = None):
+        if not query_param:
+            query_param = self.DJL_TO_DATE_PARAM
+        parsed_date = self.parse_date_from_query_param(query_param)
+        if not parsed_date and self.DJL_NO_TO_DATE_RAISE_404:
+            raise Http404(_(f'Must provide {query_param} date parameter.'))
+        return parsed_date
+
+    def parse_date_from_query_param(self, query_param: str):
+        param_date = self.request.GET.get(query_param)
+        if param_date:
+            parsed_date = parse_date(param_date)
+            if not parsed_date:
+                raise Http404(_(f'Invalid {query_param} {param_date} provided'))
+            param_date = parsed_date
+        return param_date

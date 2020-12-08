@@ -1,8 +1,8 @@
-import {DjetlerApp} from "./DjetlerApp";
+import {DjangoLedgerApp} from "./DjangoLedgerApp";
 import {NetPayablesChart, IncomeExpensesChart, NetReceivablesChart} from "./AppCharts";
 import Iconify from '@iconify/iconify';
 
-let app = new DjetlerApp();
+let app = new DjangoLedgerApp();
 
 
 export function renderInEChart(selector: string, entitySlug: string) {

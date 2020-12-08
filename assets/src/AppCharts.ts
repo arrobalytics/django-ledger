@@ -17,7 +17,7 @@ class BaseChart {
 
     selector: string;
     chart: Chart | undefined;
-    chartData: DjangoLedgerJSONDataResponse | undefined;
+    chartData: DjangoLedgerJSONDataResponse | null | undefined;
     http: AxiosInstance | undefined;
     entitySlug: string;
     consoleLogData: boolean = false;
@@ -25,12 +25,15 @@ class BaseChart {
 
     constructor(selector: string, entitySlug: string, chartData = null) {
         this.selector = selector;
+
         if (!chartData) {
             this.startHttpClient()
+        } else {
+            this.chartData = chartData
         }
+
         this.entitySlug = entitySlug;
     }
-
 
     getEndPoint(): string | undefined {
         // @ts-ignore
