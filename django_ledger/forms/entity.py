@@ -2,6 +2,7 @@ from django.forms import (ModelForm, TextInput, BooleanField, ValidationError,
                           EmailInput, URLInput, CheckboxInput)
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -18,6 +19,10 @@ class EntityModelCreateForm(ModelForm):
         if len(name) < 3:
             raise ValidationError(_('Looks like this entity name is too short...'))
         return name
+
+    def clean(self):
+        validate_cszc(self.cleaned_data)
+
 
     class Meta:
         model = EntityModel
