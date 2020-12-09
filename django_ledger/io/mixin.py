@@ -18,13 +18,15 @@ from django.db.models.functions import TruncMonth
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import localdate
 from django.utils.timezone import make_aware, is_naive
+from jsonschema import validate
 
 from django_ledger.exceptions import InvalidDateInputException
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RolesManager
-from django_ledger.models.journalentry import JournalEntryModel
-from django_ledger.models.journalentry import validate_activity
+from django_ledger.models.journalentry import JournalEntryModel, validate_activity
+from django_ledger.models.schemas import SCHEMA_DIGEST
+from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
 
 UserModel = get_user_model()
 
@@ -362,6 +364,9 @@ class IOMixIn:
         if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=digest)
             digest = ratio_gen.generate()
+
+        if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+            validate(instance=digest, schema=SCHEMA_DIGEST)
 
         return {
             'tx_digest': digest,
