@@ -13,6 +13,7 @@ class CustomerModelListView(ListView):
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'dashicons:businesswoman'
     }
     context_object_name = 'customers'
 
@@ -30,7 +31,8 @@ class CustomerModelCreateView(CreateView):
     context_object_name = 'customer'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'dashicons:businesswoman'
     }
 
     def get_queryset(self):
@@ -62,7 +64,8 @@ class CustomerModelUpdateView(UpdateView):
     context_object_name = 'customer'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'dashicons:businesswoman'
     }
     slug_url_kwarg = 'customer_pk'
     slug_field = 'uuid'

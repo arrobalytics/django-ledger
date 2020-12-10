@@ -49,7 +49,8 @@ class BillModelCreateView(CreateView):
     PAGE_TITLE = _('Create Bill')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'uil:bill'
     }
 
     def get_form(self, form_class=None):
@@ -159,7 +160,8 @@ class BillModelDeleteView(DeleteView):
     context_object_name = 'bill'
     template_name = 'django_ledger/bill_delete.html'
     extra_context = {
-        'hide_menu': True
+        'hide_menu': True,
+        'header_subtitle_icon': 'uil:bill'
     }
 
     def get_context_data(self, *, object_list=None, **kwargs):
