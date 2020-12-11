@@ -21,7 +21,8 @@ class VendorModelListView(ListView):
     PAGE_TITLE = _('Vendor List')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'bi:person-lines-fill'
     }
 
     def get_queryset(self):
@@ -38,7 +39,8 @@ class VendorModelCreateView(CreateView):
     context_object_name = 'vendor'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'bi:person-lines-fill'
     }
 
     def get_queryset(self):
@@ -70,7 +72,8 @@ class VendorModelUpdateView(UpdateView):
     form_class = VendorModelForm
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'bi:person-lines-fill'
     }
     slug_url_kwarg = 'vendor_pk'
     slug_field = 'uuid'

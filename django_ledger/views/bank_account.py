@@ -21,7 +21,8 @@ class BankAccountModelListView(ListView):
     context_object_name = 'bank_accounts'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_queryset(self):
@@ -37,7 +38,8 @@ class BankAccountModelCreateView(CreateView):
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_form(self, form_class=None):
@@ -69,7 +71,8 @@ class BankAccountModelUpdateView(UpdateView):
     context_object_name = 'bank_account'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_success_url(self):
