@@ -10,15 +10,18 @@ from calendar import month_name
 
 from django.http import JsonResponse
 from django.views.generic import View
+from jsonschema import validate, ValidationError
 
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
+from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
 from django_ledger.utils import get_end_date_from_session
 from django_ledger.utils import progressible_net_summary
 
 
-class EntityPnLDataView(View):
+class EntityProfitNLossAPIView(View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -33,20 +36,33 @@ class EntityPnLDataView(View):
                 signs=False,
                 by_period=True,
                 process_groups=True,
-                to_date=get_end_date_from_session(self.kwargs['entity_slug'], request)
+                from_date=self.request.GET.get('startDate'),
+                to_date=self.request.GET.get('endDate')
             )
 
             group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']
             group_balance_by_period = dict(sorted((k, v) for k, v in group_balance_by_period.items()))
+
             entity_data = {
                 f'{month_name[k[1]]} {k[0]}': {d: float(f) for d, f in v.items()} for k, v in
                 group_balance_by_period.items()}
+
+            entity_pnl = {
+                'entity_slug': entity.slug,
+                'entity_name': entity.name,
+                'pnl_data': entity_data
+            }
+
+            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+                try:
+                    validate(instance=entity_pnl, schema=SCHEMA_PNL)
+                except ValidationError as e:
+                    return JsonResponse({
+                        'message': f'Schema validation error. {e.message}'
+                    }, status=500)
+
             return JsonResponse({
-                'results': {
-                    'entity_slug': entity.slug,
-                    'entity_name': entity.name,
-                    'pnl_data': entity_data
-                }
+                'results': entity_pnl
             })
 
         return JsonResponse({
@@ -54,23 +70,35 @@ class EntityPnLDataView(View):
         }, status=401)
 
 
-class EntityPayableNetDataView(View):
+class EntityPayableNetAPIView(View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
+
             bill_qs = BillModel.objects.for_entity_unpaid(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
-            )
+            ).select_related('ledger__entity')
 
             net_summary = progressible_net_summary(bill_qs)
+            entity_model = bill_qs.first().ledger.entity
+            net_payables = {
+                'entity_slug': self.kwargs['entity_slug'],
+                'entity_name': entity_model.name,
+                'net_payable_data': net_summary
+            }
+
+            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+                try:
+                    validate(instance=net_payables, schema=SCHEMA_NET_PAYABLES)
+                except ValidationError as e:
+                    return JsonResponse({
+                        'message': f'Schema validation error. {e.message}'
+                    }, status=500)
 
             return JsonResponse({
-                'results': {
-                    'entity_slug': self.kwargs['entity_slug'],
-                    'net_payable_data': net_summary
-                }
+                'results': net_payables
             })
 
         return JsonResponse({
@@ -78,7 +106,7 @@ class EntityPayableNetDataView(View):
         }, status=401)
 
 
-class EntityReceivableNetDataView(View):
+class EntityReceivableNetAPIView(View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -86,15 +114,26 @@ class EntityReceivableNetDataView(View):
             invoice_qs = InvoiceModel.objects.for_entity_unpaid(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
-            )
+            ).select_related('ledger__entity')
 
             net_summary = progressible_net_summary(invoice_qs)
+            entity_model = invoice_qs.first().ledger.entity
+            net_receivable = {
+                'entity_slug': self.kwargs['entity_slug'],
+                'entity_name': entity_model.name,
+                'net_receivable_data': net_summary
+            }
+
+            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+                try:
+                    validate(instance=net_receivable, schema=SCHEMA_NET_RECEIVABLE)
+                except ValidationError as e:
+                    return JsonResponse({
+                        'message': f'Schema validation error. {e.message}'
+                    }, status=500)
 
             return JsonResponse({
-                'results': {
-                    'entity_slug': self.kwargs['entity_slug'],
-                    'net_receivable_data': net_summary
-                }
+                'results': net_receivable
             })
 
         return JsonResponse({

@@ -1,20 +1,20 @@
 import {DjangoLedgerApp} from "./DjangoLedgerApp";
-import {NetPayablesChart, IncomeExpensesChart, NetReceivablesChart} from "./AppCharts";
+import {NetPayablesChart, PnLChart, NetReceivablesChart} from "./AppCharts";
 import Iconify from '@iconify/iconify';
 
 let app = new DjangoLedgerApp();
 
 
-export function renderInEChart(selector: string, entitySlug: string) {
-    return new IncomeExpensesChart(selector, entitySlug);
+export function renderPnLChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
+    return new PnLChart(selector, entitySlug, startDate, endDate);
 }
 
-export function renderNetPayablesChart(selector: string, entitySlug: string) {
-    return new NetPayablesChart(selector, entitySlug);
+export function renderNetPayablesChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
+    return new NetPayablesChart(selector, entitySlug, startDate, endDate);
 }
 
-export function renderNetReceivablesChart(selector: string, entitySlug: string) {
-    return new NetReceivablesChart(selector, entitySlug);
+export function renderNetReceivablesChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
+    return new NetReceivablesChart(selector, entitySlug, startDate, endDate);
 }
 
 export function showModal(modalId: string) {

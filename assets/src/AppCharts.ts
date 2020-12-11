@@ -1,5 +1,5 @@
 import Chart, {ChartOptions, ChartTooltipOptions} from "chart.js";
-import Axios, {AxiosInstance, AxiosResponse} from "axios";
+import Axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
 
 function currencyFormatter(value: number): string {
     return Intl.NumberFormat(
@@ -17,14 +17,22 @@ class BaseChart {
 
     selector: string;
     chart: Chart | undefined;
-    chartData: DjangoLedgerJSONDataResponse | null | undefined;
+    chartData: DjangoLedgerJSONDataResponse | undefined;
     http: AxiosInstance | undefined;
     entitySlug: string;
     consoleLogData: boolean = false;
     lazyGetData: boolean = false;
+    startDate: string | null
+    endDate: string | null
 
-    constructor(selector: string, entitySlug: string, chartData = null) {
-        this.selector = selector;
+    constructor(selector: string,
+                entitySlug: string,
+                startDate: string | null,
+                endDate: string | null,
+                chartData = undefined) {
+        this.selector = selector
+        this.startDate = startDate
+        this.endDate = endDate
 
         if (!chartData) {
             this.startHttpClient()
@@ -42,8 +50,14 @@ class BaseChart {
 
     getChartData() {
         if (!this.chartData) {
+            let axiosConfig: AxiosRequestConfig = {
+                params: {
+                    startDate: this.startDate ? this.startDate : null,
+                    endDate: this.endDate ? this.endDate : null,
+                }
+            }
             this.http?.get(
-                <string>this.getEndPoint()
+                <string>this.getEndPoint(), axiosConfig
             ).then((r: AxiosResponse<DjangoLedgerJSONDataResponse>) => {
                 this.chartData = r.data;
                 if (this.consoleLogData) {
@@ -68,7 +82,7 @@ class BaseChart {
 
 }
 
-class IncomeExpensesChart extends BaseChart {
+class PnLChart extends BaseChart {
 
 
     renderChart() {
@@ -316,5 +330,5 @@ class NetReceivablesChart extends BaseChart {
 
 }
 
-export {IncomeExpensesChart, NetPayablesChart, NetReceivablesChart};
+export {PnLChart, NetPayablesChart, NetReceivablesChart};
 
