@@ -366,21 +366,30 @@ def generate_sample_data(entity: str or EntityModel,
 
 def progressible_net_summary(queryset: QuerySet) -> dict:
     """
-    A convenience function that computes current net summary of progressible items.
+    A convenience function that computes current net summary of progressible models.
     "net_30" group indicates the total amount is due in 30 days or less.
     "net_0" group indicates total past due amount.
 
     :param queryset: Progressible Objects Queryset.
     :return: A dictionary summarizing current net summary 0,30,60,90,90+ bill open amounts.
     """
-    bill_nets = [{
+    nets = {
+        'net_0': 0,
+        'net_30': 0,
+        'net_60': 0,
+        'net_90': 0,
+        'net_90+': 0
+    }
+    nets_collect = [{
         'net_due_group': b.net_due_group(),
         'amount_open': b.get_amount_open()
     } for b in queryset]
-    bill_nets.sort(key=lambda b: b['net_due_group'])
-    return {
-        g: float(sum(b['amount_open'] for b in l)) for g, l in groupby(bill_nets, key=lambda b: b['net_due_group'])
+    nets_collect.sort(key=lambda b: b['net_due_group'])
+    nets_collect = {
+        g: float(sum(b['amount_open'] for b in l)) for g, l in groupby(nets_collect, key=lambda b: b['net_due_group'])
     }
+    nets.update(nets_collect)
+    return nets
 
 
 def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, entity_slug: str):

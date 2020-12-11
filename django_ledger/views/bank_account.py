@@ -1,3 +1,11 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+Miguel Sanda <msanda@arrobalytics.com>
+"""
+
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView
@@ -13,7 +21,8 @@ class BankAccountModelListView(ListView):
     context_object_name = 'bank_accounts'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_queryset(self):
@@ -29,7 +38,8 @@ class BankAccountModelCreateView(CreateView):
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_form(self, form_class=None):
@@ -61,7 +71,8 @@ class BankAccountModelUpdateView(UpdateView):
     context_object_name = 'bank_account'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'clarity:bank-line'
     }
 
     def get_success_url(self):

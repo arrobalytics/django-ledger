@@ -101,7 +101,9 @@
 {% block script_bottom %}
     {{ block.super }}
     <script>
-        djLedger.renderInEChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}")
+        let startDate = "{{ start_date | date:'Y-m-d' }}";
+        let endDate = "{{ end_date | date:'Y-m-d' }}";
+        djLedger.renderPnLChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}", startDate, endDate)
         djLedger.renderNetPayablesChart("{{ payables_chart_id }}", "{{ view.kwargs.entity_slug }}")
         djLedger.renderNetReceivablesChart("{{ receivables_chart_id }}", "{{ view.kwargs.entity_slug }}")
     </script>
