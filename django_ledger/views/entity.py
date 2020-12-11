@@ -124,12 +124,11 @@ class EntityDashboardView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
-        return reverse('django_ledger:entity-dashboard-date',
+        return reverse('django_ledger:entity-dashboard-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
                            'year': loc_date.year,
                            'month': loc_date.month,
-                           'day': loc_date.day
                        })
 
 
