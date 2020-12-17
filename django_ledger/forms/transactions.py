@@ -59,6 +59,7 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
             entity_slug=self.ENTITY_SLUG
         )
 
+<<<<<<< HEAD
         for form in self.forms:
             form.fields['account'].queryset = account_qs
 
@@ -69,6 +70,17 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
             je_pk=self.JE_PK,
             ledger_pk=self.LEDGER_PK
         ).order_by('account__code')
+=======
+        je_qs = JournalEntryModel.on_coa.for_ledger(
+            ledger_pk=self.LEDGER_PK,
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
+        for form in self.forms:
+            form.fields['account'].queryset = account_qs
+            form.fields['journal_entry'].initial = self.JE_PK
+>>>>>>> 01bf977 (transaction form starts with je_pk as it's initial value)
 
     def clean(self):
         if any(self.errors):
