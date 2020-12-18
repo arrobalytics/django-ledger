@@ -16,11 +16,11 @@
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
                 <td>
-                    <div class="dropdown is-right" id="customer-action-{{ customer.uuid }}">
+                    <div class="dropdown is-right is-hoverable"
+                         id="customer-action-{{ customer.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
-                                    onclick="djLedger.toggleDropdown('customer-action-{{ customer.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
                                 <span class="icon is-small">
