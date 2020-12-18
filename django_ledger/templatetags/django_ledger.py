@@ -99,8 +99,12 @@ def income_statement_table(context, ledger_or_entity, start_date, end_date):
 
 
 @register.inclusion_tag('django_ledger/tags/bank_accounts_table.html', takes_context=True)
-def bank_account_table(context):
-    return context
+def bank_account_table(context, bank_account_qs):
+    entity_slug = context['view'].kwargs['entity_slug']
+    return {
+        'bank_account_qs': bank_account_qs,
+        'entity_slug': entity_slug
+    }
 
 
 @register.inclusion_tag('django_ledger/tags/data_import_job_list_table.html', takes_context=True)

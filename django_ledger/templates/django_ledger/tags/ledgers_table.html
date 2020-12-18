@@ -1,4 +1,5 @@
 {% now "Y" as current_year %}
+{% load icon from django_ledger %}
 
 <div class="table-container">
     <table class="table is-fullwidth is-narrow is-striped django-ledger-table-bottom-margin-75">
@@ -28,8 +29,20 @@
                 <td><a class="button is-info is-small is-outlined"
                        href="{% url 'django_ledger:ledger-ic-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">Income
                     Statement</a></td>
-                <td>{% if ledger.posted %}<span class="icon"><i class="mdi mdi-check"></i></span>{% endif %}</td>
-                <td>{% if ledger.locked %}<span class="icon"><i class="mdi mdi-lock"></i></span>{% endif %}</td>
+                <td>
+                    {% if ledger.posted %}
+                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if ledger.locked %}
+                        <span class="icon has-text-success">{% icon 'bi:lock-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon has-text-danger">{% icon 'bx:bx-lock-open-alt' 24 %}</span>
+                    {% endif %}
+                </td>
                 <td>{{ ledger.created | timesince }}</td>
                 <td>{{ ledger.updated | timesince }}</td>
                 <td>

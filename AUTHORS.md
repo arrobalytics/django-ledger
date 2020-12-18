@@ -7,5 +7,9 @@ Django Ledger was created by [Miguel Sanda](https://github.com/elarroba).
 ### Project Maintainers
 * Miguel Sanda [@elarroba](https://github.com/elarroba)
 
+### Developers
+* Miguel Sanda [@elarroba](https://github.com/elarroba)
+
 ### Accountants
 * Albert Salazar [@Beachwood619](https://github.com/Beachwood619)
+* Michael Noel [@MNooel](https://github.com/MNooel)
