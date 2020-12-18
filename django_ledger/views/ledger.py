@@ -135,3 +135,15 @@ class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn, DetailView):
         return LedgerModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=entity_slug)
+
+
+class QuarterlyLedgerIncomeStatementView(QuarterlyReportMixIn, FiscalYearLedgerIncomeStatementView):
+    """
+    Income Statement Quarter Report.
+    """
+
+
+class MonthlyLedgerIncomeStatementView(MonthlyReportMixIn, FiscalYearLedgerIncomeStatementView):
+    """
+    Income Statement Monthly Report.
+    """

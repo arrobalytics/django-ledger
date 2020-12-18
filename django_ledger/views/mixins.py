@@ -30,6 +30,12 @@ class SuccessUrlNextMixIn:
 
 class YearlyReportMixIn(YearMixin):
 
+    def get_from_date(self, year: int = None, **kwargs):
+        return self.get_year_start_date(year)
+
+    def get_to_date(self, year: int = None, **kwargs):
+        return self.get_year_end_date(year)
+
     def get_year_start_date(self, year: int = None) -> datetime:
         if not year:
             year = self.get_year()
@@ -56,6 +62,12 @@ class QuarterlyReportMixIn(YearMixin):
     quarter_url_kwarg = 'quarter'
     valid_quarters = [1, 2, 3, 4]
 
+    def get_from_date(self, quarter: int = None, year: int = None, **kwargs) -> datetime:
+        return self.get_quarter_start_date(quarter, year)
+
+    def get_to_date(self, quarter: int = None, year: int = None, **kwargs) -> datetime:
+        return self.get_quarter_end_date(quarter, year)
+
     def get_quarter_start_date(self, quarter: int = None, year: int = None) -> datetime:
         if not year:
             year = self.get_year()
@@ -73,7 +85,7 @@ class QuarterlyReportMixIn(YearMixin):
         last_day = monthrange(year, month)[1]
         return datetime(year=year, month=month, day=last_day)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs) -> dict:
         quarter = self.get_quarter()
         year = self.get_year()
         context = super(QuarterlyReportMixIn, self).get_context_data(**kwargs)
@@ -84,7 +96,7 @@ class QuarterlyReportMixIn(YearMixin):
         context['end_date'] = self.get_quarter_end_date(year=year, quarter=quarter)
         return context
 
-    def validate_quarter(self, quarter):
+    def validate_quarter(self, quarter) -> int:
         try:
             if not isinstance(quarter, int):
                 quarter = int(quarter)
@@ -118,6 +130,27 @@ class QuarterlyReportMixIn(YearMixin):
 
 class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
 
+    def get_from_date(self, month: int = None, year: int = None, **kwargs):
+        return self.get_month_start_date(month=month, year=year)
+
+    def get_to_date(self, month: int = None, year: int = None, **kwargs):
+        return self.get_month_end_date(month=month, year=year)
+
+    def get_month_start_date(self, month: int = None, year: int = None):
+        if not month:
+            month = int(self.get_month())
+        if not year:
+            year = self.get_year()
+        return datetime(year=year, month=month, day=1)
+
+    def get_month_end_date(self, month: int = None, year: int = None):
+        if not month:
+            month = int(self.get_month())
+        if not year:
+            year = self.get_year()
+        last_day = monthrange(year, month)[1]
+        return datetime(year=year, month=month, day=last_day)
+
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
         month = int(self.get_month())
@@ -138,21 +171,6 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         if month != 1:
             return month - 1
         return 12
-
-    def get_month_start_date(self, month: int = None, year: int = None):
-        if not month:
-            month = int(self.get_month())
-        if not year:
-            year = self.get_year()
-        return datetime(year=year, month=month, day=1)
-
-    def get_month_end_date(self, month: int = None, year: int = None):
-        if not month:
-            month = int(self.get_month())
-        if not year:
-            year = self.get_year()
-        last_day = monthrange(year, month)[1]
-        return datetime(year=year, month=month, day=last_day)
 
 
 class DateReportMixIn(MonthlyReportMixIn, DayMixin):

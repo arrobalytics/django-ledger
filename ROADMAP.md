@@ -12,7 +12,6 @@
 ### Version 0.4
 * Items, resources and & lists for bills & invoices itemization.
 * Entity internal organizations, department, branches, etc.
-* Define Django Ledger IO Engine JSON Schema.
 * Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.

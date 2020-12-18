@@ -57,7 +57,8 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
     ledger = models.OneToOneField('django_ledger.LedgerModel',
                                   verbose_name=_('Ledger'),
                                   on_delete=models.CASCADE)
-
+    active = models.BooleanField(default=True)
+    hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager()
 
     class Meta:
@@ -74,6 +75,7 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
 
     def __str__(self):
         return self.name
+
 
 class BankAccountModel(BackAccountModelAbstract):
     """

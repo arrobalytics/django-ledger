@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView
@@ -56,12 +56,13 @@ class BankAccountModelCreateView(CreateView):
                        })
 
     def form_valid(self, form):
-        bank_account_model = form.instance
-        form.instance = new_bankaccount_protocol(
+        bank_account_model: BankAccountModel = form.save(commit=False)
+        new_bankaccount_protocol(
             bank_account_model=bank_account_model,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user)
-        return super().form_valid(form=form)
+        bank_account_model.save()
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class BankAccountModelUpdateView(UpdateView):

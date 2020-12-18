@@ -148,16 +148,19 @@
                                     <p>{{ bill.earnings_account }}:
                                         ${{ bill.amount_earned | currency_format }}</p>
                                 </div>
+
+                                {% now "Y" as current_year %}
+                                {% now "m" as current_month %}
+
                                 <div class="column is-6">
-                                    {#   todo: prefect this info #}
                                     <a class="button is-outlined is-small is-primary is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-bs' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Balance
-                                        Sheet</a>
+                                       href="{% url 'django_ledger:ledger-bs-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
+                                        {% trans 'Balance Sheet' %}</a>
                                 </div>
                                 <div class="column is-6">
                                     <a class="button is-outlined is-small is-info is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-ic' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">Income
-                                        Statement</a>
+                                       href="{% url 'django_ledger:ledger-ic-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
+                                        {% trans 'Income Statement' %}</a>
                                 </div>
                                 <div class="column is-12">
                                     <a class="button is-small is-warning is-fullwidth"
