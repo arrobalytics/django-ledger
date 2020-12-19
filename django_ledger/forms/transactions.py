@@ -77,8 +77,12 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        if je_pk:
+            je_qs = je_qs.filter(uuid__exact=self.JE_PK)
+
         for form in self.forms:
             form.fields['account'].queryset = account_qs
+            form.fields['journal_entry'].initial = je_qs
             form.fields['journal_entry'].initial = self.JE_PK
 >>>>>>> 01bf977 (transaction form starts with je_pk as it's initial value)
 
