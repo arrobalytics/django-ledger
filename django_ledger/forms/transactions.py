@@ -1,3 +1,12 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+Miguel Sanda <msanda@arrobalytics.com>
+Michael Noel <noel.michael87@gmail.com>
+"""
+
 from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, HiddenInput
 
 from django_ledger.io import validate_tx_data
@@ -62,6 +71,7 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
         for form in self.forms:
             form.fields['account'].queryset = account_qs
             form.fields['journal_entry'].queryset = je_qs
+            form.fields['journal_entry'].initial = self.JE_PK
 
     def clean(self):
         if any(self.errors):
