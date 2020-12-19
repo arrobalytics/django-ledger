@@ -4,15 +4,16 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
     <div class="box">
-        {{ form.errors }}
-        {{ form.as_p }}
-        <button type="submit"
-                class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
-        </button>
-        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-           class="button is-small is-dark is-fullwidth">Back</a>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.errors }}
+            {{ form.as_p }}
+            <button type='submit' class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+            </button>
+            <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+               class="button is-small is-dark is-fullwidth">Back</a>
+        </form>
     </div>
 
 {% endblock %}
