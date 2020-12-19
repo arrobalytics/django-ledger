@@ -10,26 +10,33 @@
             <th class="has-text-centered">Routing Number</th>
             <th class="has-text-centered">Type</th>
             <th class="has-text-centered">Cash Account</th>
+            <th class="has-text-centered">Active</th>
             <th class="has-text-centered">Actions</th>
         </tr>
         </thead>
         <tbody>
-        {% for bank_acc in bank_accounts %}
-            <tr  class="has-text-centered">
+        {% for bank_acc in bank_account_qs %}
+            <tr class="has-text-centered">
                 <td>{{ bank_acc.name }}</td>
                 <td>{{ bank_acc.account_number | last_four }}</td>
                 <td>{{ bank_acc.routing_number | last_four }}</td>
                 <td>{{ bank_acc.get_account_type_display }}</td>
                 <td>{{ bank_acc.cash_account }}</td>
                 <td>
-                    <div class="dropdown is-right" id="bank-action-{{ bank_acc.uuid }}">
-
+                    {% if bank_acc.active %}
+                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown is-right is-hoverable"
+                         id="bank-action-{{ bank_acc.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
-                                    onclick="djLedger.toggleDropdown('bank-action-{{ bank_acc.uuid }}')"
                                     aria-controls="dropdown-menu">
-                                <span>Actions</span>
+                                <span>{% trans 'Actions' %}</span>
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
@@ -38,9 +45,7 @@
                              id="dropdown-menu-{{ bank_acc.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-{#                                <a href=""#}
-{#                                   class="dropdown-item has-text-weight-bold has-text-success">{% trans 'View' %}</a>#}
-                                <a href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_acc.uuid %}"
+                                <a href="{% url 'django_ledger:bank-account-update' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
                             </div>
                         </div>

@@ -184,20 +184,11 @@ class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, De
         return EntityModel.objects.for_user(
             user_model=self.request.user).select_related('coa')
 
-    def get_digest_end_date(self):
-        return self.get_year_end_date()
-
-    def get_digest_start_date(self):
-        return self.get_year_start_date()
-
-    # def get_digest_end_date(self):
-    #     return get_end_date_from_session(entity_slug=self.object.slug, request=self.request)
-
     def get_entity_digest(self, context, end_date=None):
         by_period = self.request.GET.get('by_period')
         entity_model = self.object
         if not end_date:
-            end_date = self.get_digest_end_date()
+            end_date = self.get_to_date()
         digest = entity_model.digest(user_model=self.request.user,
                                      to_date=end_date,
                                      by_period=True if by_period else False,
@@ -213,8 +204,8 @@ class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, De
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).filter(
-            Q(date__gte=self.get_digest_start_date()) &
-            Q(date__lte=self.get_digest_end_date())
+            Q(date__gte=self.get_from_date()) &
+            Q(date__lte=self.get_to_date())
         ).select_related('customer').order_by('due_date')
 
     def get_unpaid_bills_qs(self):
@@ -222,26 +213,17 @@ class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, De
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).filter(
-            Q(date__gte=self.get_digest_start_date()) &
-            Q(date__lte=self.get_digest_end_date())
+            Q(date__gte=self.get_from_date()) &
+            Q(date__lte=self.get_to_date())
         ).select_related('vendor').order_by('due_date')
 
 
 class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
-
-    def get_digest_end_date(self):
-        return self.get_quarter_end_date()
-
-    def get_digest_start_date(self):
-        return self.get_quarter_start_date()
+    pass
 
 
 class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
-    def get_digest_end_date(self):
-        return self.get_month_end_date()
-
-    def get_digest_start_date(self):
-        return self.get_month_start_date()
+    pass
 
 
 class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):

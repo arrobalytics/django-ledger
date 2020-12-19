@@ -37,11 +37,11 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/year/<int:year>/',
          views.FiscalYearLedgerIncomeStatementView.as_view(),
          name='ledger-ic-year'),
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/quarter/<int:year>/<int:quarter>',
-         views.FiscalYearLedgerIncomeStatementView.as_view(),
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyLedgerIncomeStatementView.as_view(),
          name='ledger-ic-quarter'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/month/<int:year>/<str:month>/',
-         views.FiscalYearLedgerIncomeStatementView.as_view(),
+         views.MonthlyLedgerIncomeStatementView.as_view(),
          name='ledger-ic-month'),
 
 ]

@@ -17,7 +17,6 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
 from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
-from django_ledger.utils import get_end_date_from_session
 from django_ledger.utils import progressible_net_summary
 
 

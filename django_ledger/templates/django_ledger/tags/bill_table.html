@@ -40,11 +40,10 @@
                 </td>
 
                 <td>
-                    <div class="dropdown is-right" id="bill-action-{{ bill.uuid }}">
+                    <div class="dropdown is-right is-hoverable" id="bill-action-{{ bill.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
-                                    onclick="djLedger.toggleDropdown('bill-action-{{ bill.uuid }}')"
                                     aria-controls="dropdown-menu">
                                 <span>Actions</span>
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>

@@ -6,16 +6,16 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from datetime import timedelta
-
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
+from django.views.generic import RedirectView
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.utils import get_end_date_from_session
+from django_ledger.views.mixins import YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn
 
 
 # Account Views ----
@@ -75,42 +75,6 @@ class AccountModelUpdateView(UpdateView):
         )
 
 
-class AccountModelDetailView(DetailView):
-    context_object_name = 'account'
-    template_name = 'django_ledger/account_detail.html'
-    slug_url_kwarg = 'account_pk'
-    slug_field = 'uuid'
-    DEFAULT_TXS_DAYS = 30
-    extra_context = {
-        'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS
-    }
-
-    def get_context_data(self, **kwargs):
-        account = self.object
-        context = super().get_context_data(**kwargs)
-        context['header_title'] = f'Account {account.code} - {account.name}'
-        context['page_title'] = f'Account {account.code} - {account.name}'
-        to_date = get_end_date_from_session(
-            entity_slug=self.kwargs['entity_slug'],
-            request=self.request,
-        )
-        txs_qs = self.object.txs.order_by('-journal_entry__date').to_date(to_date)
-        txs_days = self.request.GET.get('txs_days')
-        if txs_days:
-            from_date = to_date - timedelta(days=int(txs_days))
-        else:
-            from_date = to_date - timedelta(days=self.DEFAULT_TXS_DAYS)
-        txs_qs = txs_qs.from_date(from_date)
-        context['transactions'] = txs_qs
-        return context
-
-    def get_queryset(self):
-        return AccountModel.on_coa.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-        ).prefetch_related('txs')
-
-
 class AccountModelCreateView(CreateView):
     template_name = 'django_ledger/account_create.html'
 
@@ -156,3 +120,53 @@ class AccountModelCreateView(CreateView):
                        kwargs={
                            'entity_slug': entity_slug,
                        })
+
+
+class AccountModelDetailView(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        loc_date = localdate()
+        return reverse('django_ledger:account-detail-month',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'account_pk': self.kwargs['account_pk'],
+                           'year': loc_date.year,
+                           'month': loc_date.month,
+                       })
+
+
+# todo: add header icon
+class AccountModelYearDetailView(YearlyReportMixIn, DetailView):
+    context_object_name = 'account'
+    template_name = 'django_ledger/account_detail.html'
+    slug_url_kwarg = 'account_pk'
+    slug_field = 'uuid'
+    DEFAULT_TXS_DAYS = 30
+    extra_context = {
+        'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS,
+    }
+
+    def get_context_data(self, **kwargs):
+        account = self.object
+        context = super().get_context_data(**kwargs)
+        context['header_title'] = f'Account {account.code} - {account.name}'
+        context['page_title'] = f'Account {account.code} - {account.name}'
+        txs_qs = self.object.txs.order_by('-journal_entry__date')
+        txs_qs = txs_qs.from_date(self.get_from_date())
+        txs_qs = txs_qs.to_date(self.get_to_date())
+        context['transactions'] = txs_qs
+        return context
+
+    def get_queryset(self):
+        return AccountModel.on_coa.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+        ).prefetch_related('txs')
+
+
+class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):
+    pass
+
+
+class AccountModelMonthDetailView(MonthlyReportMixIn, AccountModelYearDetailView):
+    pass

@@ -50,5 +50,4 @@ SCHEMA_DIGEST = {
         'group_balance_by_period': SCHEMA_GROUP_BALANCE_BY_PERIOD,
         'ratios': SCHEMA_RATIOS,
     }
-
 }

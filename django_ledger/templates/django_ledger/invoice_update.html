@@ -136,31 +136,34 @@
                                         ${{ invoice.amount_earned | currency_format }}</p>
                                 </div>
                                 <div class="column is-12">
-                                    <p>Ledger is Posted: {% if invoice.ledger.posted %}
-                                        <span class="icon has-text-success"><i
-                                                class="mdi mdi-18px mdi-check-circle"></i></span>
-                                    {% else %}
-                                        <span class="icon has-text-danger"><i
-                                                class="mdi mdi-18px mdi-do-not-disturb"></i></span>
-                                    {% endif %}
+                                    <p>Ledger is Posted:
+                                        {% if invoice.ledger.posted %}
+                                            <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                                        {% else %}
+                                            <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                                        {% endif %}
                                     </p>
-                                    <p>Ledger Locked: {% if invoice.ledger.locked %}
-                                        <span class="icon has-text-success"><i
-                                                class="mdi mdi-18px mdi-lock"></i></span>
-                                    {% else %}
-                                        <span class="icon has-text-danger"><i
-                                                class="mdi mdi-18px mdi-lock-open-variant"></i></span>
-                                    {% endif %}
+                                    <p>Ledger Locked:
+                                        {% if invoice.ledger.locked %}
+                                            <span class="icon has-text-success">{% icon 'bi:lock-fill' 24 %}</span>
+                                        {% else %}
+                                            <span class="icon has-text-danger">
+                                                {% icon 'bx:bx-lock-open-alt' 24 %}</span>
+                                        {% endif %}
                                     </p>
                                 </div>
+
+                                {% now "Y" as current_year %}
+                                {% now "m" as current_month %}
+
                                 <div class="column is-6">
                                     <a class="button is-outlined is-small is-primary is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-bs' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                       href="{% url 'django_ledger:ledger-bs-month' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
                                         {% trans 'Balance Sheet' %}</a>
                                 </div>
                                 <div class="column is-6">
                                     <a class="button is-outlined is-small is-info is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-ic' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                       href="{% url 'django_ledger:ledger-ic-month' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
                                         {% trans 'Income Statement' %}</a>
                                 </div>
                                 <div class="column is-12">
