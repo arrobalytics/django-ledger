@@ -70,7 +70,7 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs
-            form.fields['journal_entry'].initial = je_qs
+            form.fields['journal_entry'].queryset = je_qs
             form.fields['journal_entry'].initial = self.JE_PK
 
     def clean(self):
