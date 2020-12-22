@@ -6,6 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from calendar import month_abbr
 from random import randint
 
 from django import template
@@ -410,7 +411,11 @@ def period_navigation(context, base_url: str):
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):
         KWARGS['quarter'] = Q
-        quarter_urls.append(reverse(f'django_ledger:{base_url}-quarter', kwargs=KWARGS))
+        quarter_urls.append({
+            'url': reverse(f'django_ledger:{base_url}-quarter', kwargs=KWARGS),
+            'quarter': Q,
+            'quarter_name': f'Q{Q}'
+        })
     del KWARGS['quarter']
     ctx['quarter_urls'] = quarter_urls
 
@@ -418,7 +423,11 @@ def period_navigation(context, base_url: str):
     ctx['month'] = context.get('month')
     for M in range(1, 13):
         KWARGS['month'] = M
-        month_urls.append(reverse(f'django_ledger:{base_url}-month', kwargs=KWARGS))
+        month_urls.append({
+            'url': reverse(f'django_ledger:{base_url}-month', kwargs=KWARGS),
+            'month': M,
+            'month_abbr': month_abbr[M]
+        })
     ctx['month_urls'] = month_urls
 
     ctx['start_date'] = context['start_date']

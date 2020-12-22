@@ -17,12 +17,12 @@
 
         <p>Quarter:
             {% for q_url in quarter_urls %}
-                <a href="{{ q_url }}">Q{{ forloop.counter }}</a> {% if not forloop.last %}|{% endif %}
+                <a href="{{ q_url.url }}">{{ q_url.quarter_name }}</a> {% if not forloop.last %}|{% endif %}
             {% endfor %}
         </p>
         <p>Month:
             {% for m_url in month_urls %}
-                <a href="{{ m_url }}">M{{ forloop.counter }}</a> {% if not forloop.last %}|{% endif %}
+                <a href="{{ m_url.url }}">{{ m_url.month_abbr }}</a> {% if not forloop.last %}|{% endif %}
             {% endfor %}
         </p>
         <div class="has-text-centered">
