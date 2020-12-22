@@ -393,46 +393,37 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
 
 @register.inclusion_tag('django_ledger/tags/period_navigator.html', takes_context=True)
 def period_navigation(context, base_url: str):
-    entity_slug = context['view'].kwargs['entity_slug']
+    KWARGS = dict()
+    KWARGS['entity_slug'] = context['view'].kwargs['entity_slug']
+    KWARGS['year'] = context.get('year')
+    if context['view'].kwargs.get('ledger_pk'):
+        KWARGS['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
 
     ctx = dict()
-    ctx['entity_slug'] = entity_slug
-
     ctx['year'] = context['year']
     ctx['previous_year'] = context['previous_year']
-    ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs={
-        'entity_slug': entity_slug,
-        'year': context['previous_year']
-    })
+    ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
     ctx['next_year'] = context['next_year']
-    ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs={
-        'entity_slug': entity_slug,
-        'year': context['next_year']
-    })
+    ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
 
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):
-        quarter_urls.append(reverse(f'django_ledger:{base_url}-quarter',
-                                    kwargs={
-                                        'entity_slug': entity_slug,
-                                        'year': context['year'],
-                                        'quarter': Q
-                                    }))
+        KWARGS['quarter'] = Q
+        quarter_urls.append(reverse(f'django_ledger:{base_url}-quarter', kwargs=KWARGS))
+    del KWARGS['quarter']
     ctx['quarter_urls'] = quarter_urls
 
     month_urls = list()
     ctx['month'] = context.get('month')
     for M in range(1, 13):
-        month_urls.append(reverse(f'django_ledger:{base_url}-month',
-                                  kwargs={
-                                      'entity_slug': entity_slug,
-                                      'year': context['year'],
-                                      'month': M
-                                  }))
+        KWARGS['month'] = M
+        month_urls.append(reverse(f'django_ledger:{base_url}-month', kwargs=KWARGS))
     ctx['month_urls'] = month_urls
 
     ctx['start_date'] = context['start_date']
     ctx['end_date'] = context['end_date']
+
+    ctx.update(KWARGS)
 
     return ctx
