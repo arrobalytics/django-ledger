@@ -145,7 +145,7 @@ class PnLChart extends BaseChart {
                     text: `${entityName} - Income & Expenses`,
                     fontSize: 20
                 },
-                // aspectRatio: 1,
+                aspectRatio: 1.0,
                 tooltips: tooltipOptions,
                 scales: {
                     yAxes: [{
@@ -233,6 +233,7 @@ class NetPayablesChart extends BaseChart {
                     text: "Net Payables 0-90+ Days",
                     fontSize: 20
                 },
+                aspectRatio: 1,
                 tooltips: tooltipOptions,
                 legend: {
                     position: "right"
@@ -313,6 +314,7 @@ class NetReceivablesChart extends BaseChart {
                     text: "Net Receivables 0-90+ Days",
                     fontSize: 20
                 },
+                aspectRatio: 1.0,
                 tooltips: tooltipOptions,
                 legend: {
                     position: "right"

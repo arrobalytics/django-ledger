@@ -9,6 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from random import randint
 
 from django import template
+from django.urls import reverse
 from django.utils.formats import number_format
 
 from django_ledger import __version__
@@ -388,3 +389,50 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
         'feature_form': feature_form,
         'next_url': next_url
     }
+
+
+@register.inclusion_tag('django_ledger/tags/period_navigator.html', takes_context=True)
+def period_navigation(context, base_url: str):
+    entity_slug = context['view'].kwargs['entity_slug']
+
+    ctx = dict()
+    ctx['entity_slug'] = entity_slug
+
+    ctx['year'] = context['year']
+    ctx['previous_year'] = context['previous_year']
+    ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs={
+        'entity_slug': entity_slug,
+        'year': context['previous_year']
+    })
+    ctx['next_year'] = context['next_year']
+    ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs={
+        'entity_slug': entity_slug,
+        'year': context['next_year']
+    })
+
+    quarter_urls = list()
+    ctx['quarter'] = context.get('quarter')
+    for Q in range(1, 5):
+        quarter_urls.append(reverse(f'django_ledger:{base_url}-quarter',
+                                    kwargs={
+                                        'entity_slug': entity_slug,
+                                        'year': context['year'],
+                                        'quarter': Q
+                                    }))
+    ctx['quarter_urls'] = quarter_urls
+
+    month_urls = list()
+    ctx['month'] = context.get('month')
+    for M in range(1, 13):
+        month_urls.append(reverse(f'django_ledger:{base_url}-month',
+                                  kwargs={
+                                      'entity_slug': entity_slug,
+                                      'year': context['year'],
+                                      'month': M
+                                  }))
+    ctx['month_urls'] = month_urls
+
+    ctx['start_date'] = context['start_date']
+    ctx['end_date'] = context['end_date']
+
+    return ctx
