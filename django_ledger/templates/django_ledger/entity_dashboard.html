@@ -8,8 +8,16 @@
         <div class="container is-fluid p-0">
             <div class="columns">
                 <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
-                    {% period_navigation 'entity-dashboard' %}
-                    {% include 'django_ledger/includes/menu.html' %}
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% period_navigation 'entity-dashboard' %}
+                        </div>
+                        <div class="column is-12">
+                            {% navigation_menu 'desktop' %}
+                        </div>
+                    </div>
+
+
                 </div>
                 <div class="column">
                     <div class="columns is-multiline is-centered">

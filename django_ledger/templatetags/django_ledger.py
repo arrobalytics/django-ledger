@@ -272,9 +272,11 @@ def default_entity(context):
 
 
 @register.simple_tag(takes_context=True)
-def session_entity_name(context):
+def session_entity_name(context, request=None):
     session_key = get_default_entity_session_key()
-    session = context['request'].session
+    if not request:
+        request = context['request']
+    session = request.session
     return session.get(session_key)['entity_name']
 
 
@@ -436,3 +438,114 @@ def period_navigation(context, base_url: str):
     ctx.update(KWARGS)
 
     return ctx
+
+
+@register.inclusion_tag('django_ledger/tags/menu.html', takes_context=True)
+def navigation_menu(context, style):
+    ENTITY_SLUG = context['view'].kwargs.get('entity_slug')
+
+    ctx = dict()
+    ctx['style'] = style
+    if ENTITY_SLUG:
+        ctx['entity_slug'] = ENTITY_SLUG
+        links = [
+            {
+                'type': 'link',
+                'title': 'entity_dashboard',
+                'url': reverse('django_ledger:entity-dashboard', kwargs={'entity_slug': ENTITY_SLUG})
+            },
+            {
+                'type': 'links',
+                'title': 'manage_your_lists',
+                'links': [
+                    {
+                        'type': 'link',
+                        'title': 'vendors',
+                        'url': reverse('django_ledger:vendor-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'customers',
+                        'url': reverse('django_ledger:customer-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'bank_accounts',
+                        'url': reverse('django_ledger:bank-account-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'bills',
+                        'url': reverse('django_ledger:bill-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'invoices',
+                        'url': reverse('django_ledger:invoice-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    }
+                ]
+
+            },
+            {
+                'type': 'links',
+                'title': 'reports',
+                'links': [
+                    {
+                        'type': 'link',
+                        'title': 'balance_sheet',
+                        'url': reverse('django_ledger:entity-bs', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'income_statement',
+                        'url': reverse('django_ledger:entity-ic', kwargs={'entity_slug': ENTITY_SLUG})
+                    }
+                ]
+            },
+            {
+                'type': 'links',
+                'title': 'accounting',
+                'links': [
+                    {
+                        'type': 'link',
+                        'title': 'chart_of_accounts',
+                        'url': reverse('django_ledger:account-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'ledgers',
+                        'url': reverse('django_ledger:ledger-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'import',
+                        'url': reverse('django_ledger:data-import-jobs-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    }
+                ]
+            },
+            {
+                'type': 'links',
+                'title': 'administration',
+                'links': [
+                    {
+                        'type': 'link',
+                        'title': 'my_entities',
+                        'url': reverse('django_ledger:home')
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'entity_settings',
+                        'url': reverse('django_ledger:entity-update', kwargs={'entity_slug': ENTITY_SLUG})
+                    }
+                ]
+            }
+        ]
+        ctx['links'] = links
+        ctx['request'] = context['request']
+    return ctx
+
+
+@register.filter(name='str_replace')
+def str_replace(value, args):
+    target, replace = args.split(',')
+    return value.replace(target, replace)

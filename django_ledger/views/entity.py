@@ -230,6 +230,17 @@ class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
     pass
 
 
+class EntityModelBalanceSheetView(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:entity-bs-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': year
+                       })
+
+
 class FiscalYearEntityModelBalanceSheetView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -260,6 +271,16 @@ class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityMod
     """
     Monthly Balance Sheet View.
     """
+
+
+class EntityModelIncomeStatementView(RedirectView):
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:entity-ic-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': year
+                       })
 
 
 class FiscalYearEntityModelIncomeStatementView(YearlyReportMixIn, DetailView):

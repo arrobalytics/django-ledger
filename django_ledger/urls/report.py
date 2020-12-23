@@ -5,6 +5,9 @@ from django_ledger import views
 urlpatterns = [
 
     # Entity reports...
+    path('entity/<slug:entity_slug>/balance-sheet/',
+         views.EntityModelBalanceSheetView.as_view(),
+         name='entity-bs'),
     path('entity/<slug:entity_slug>/balance-sheet/year/<int:year>/',
          views.FiscalYearEntityModelBalanceSheetView.as_view(),
          name='entity-bs-year'),
@@ -14,6 +17,10 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/balance-sheet/month/<int:year>/<str:month>/',
          views.MonthlyEntityModelBalanceSheetView.as_view(),
          name='entity-bs-month'),
+
+    path('entity/<slug:entity_slug>/income-statement/',
+         views.EntityModelIncomeStatementView.as_view(),
+         name='entity-ic'),
     path('entity/<slug:entity_slug>/income-statement/year/<int:year>/',
          views.FiscalYearEntityModelIncomeStatementView.as_view(),
          name='entity-ic-year'),
