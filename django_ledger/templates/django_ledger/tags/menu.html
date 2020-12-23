@@ -10,15 +10,15 @@
                 {% for link in links %}
                     {% if link.type == 'link' %}
                         <li>
-                            <a href="{{ link.url }}">{{ link.title | str_replace:"_, " | title }}</a>
+                            <a href="{{ link.url }}">{{ link.title }}</a>
                         </li>
                     {% elif link.type == 'links' %}
                         <li>
-                            <a>{{ link.title | str_replace:"_, " | title }}</a>
+                            <a>{{ link.title }}</a>
                             <ul>
                                 {% for l in link.links %}
                                     <li>
-                                        <a href="{{ l.url }}">{{ l.title | str_replace:"_, " | title }}</a>
+                                        <a href="{{ l.url }}">{{ l.title }}</a>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -37,16 +37,16 @@
 
                 {% if link.type == 'link' %}
                     <a class="navbar-item is-hidden-desktop"
-                       href="{{ link.url }}">{{ link.title | str_replace:"_, " | title }}</a>
+                       href="{{ link.url }}">{{ link.title }}</a>
 
                 {% elif link.type == 'links' %}
                     <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
-                        <a class="navbar-link">{{ link.title | str_replace:"_, " | title }}</a>
+                        <a class="navbar-link">{{ link.title }}</a>
                         <div class="navbar-dropdown">
 
                             {% for l in link.links %}
                                 <a class="navbar-item"
-                                   href="{{ l.url }}">{{ l.title | str_replace:"_, " | title }}</a>
+                                   href="{{ l.url }}">{{ l.title }}</a>
                             {% endfor %}
 
                         </div>
