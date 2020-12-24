@@ -12,6 +12,7 @@
 ### Version 0.4
 * Items, resources and & lists for bills & invoices itemization.
 * Entity internal organizations, department, branches, etc.
+* Custom Accounting Periods.
 * Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
@@ -28,13 +29,14 @@ relevant random data for testing.
 ### Version 0.5
 * Inventory tracking.
 * Cash flow statement.
+* Closing entries, snapshots & trial balance import.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.6
-* Customer jobs & project tracking.
-* Client proposals & estimates.
+* Credit Lines Models.
 * Time tracking.
+* Transaction tagging.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
@@ -48,6 +50,8 @@ relevant random data for testing.
 ### Version 0.8
 * User roles and permissions on views to support read/write permissions for assigned managers
 to entities.
+* Customer jobs & job tracking.
+* Client proposals & estimates.
 * User preferences and settings & account creation views.
 * Update package and code documentation.
 

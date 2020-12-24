@@ -1,0 +1,61 @@
+{% load django_ledger %}
+{% load trans from i18n %}
+
+{% if style == 'desktop' %}
+    <div class="box">
+        <aside class="menu">
+            <p class="menu-label">{% session_entity_name request %}</p>
+            <ul class="menu-list">
+
+                {% for link in links %}
+                    {% if link.type == 'link' %}
+                        <li>
+                            <a href="{{ link.url }}">{{ link.title }}</a>
+                        </li>
+                    {% elif link.type == 'links' %}
+                        <li>
+                            <a>{{ link.title }}</a>
+                            <ul>
+                                {% for l in link.links %}
+                                    <li>
+                                        <a href="{{ l.url }}">{{ l.title }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+            </ul>
+        </aside>
+    </div>
+
+{# A menu that renders only on mobile devices when the burger menu is opened #}
+{% elif style == 'mobile' %}
+    <div class="navbar-start">
+        <div class="navbar-item has-text-weight-bold is-hidden-desktop">{{ entity.name | upper }}</div>
+        {% for link in links %}
+
+            {% if link.type == 'link' %}
+                <a class="navbar-item is-hidden-desktop"
+                   href="{{ link.url }}">{{ link.title }}</a>
+
+            {% elif link.type == 'links' %}
+                <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
+                    <a class="navbar-link">{{ link.title }}</a>
+                    <div class="navbar-dropdown">
+
+                        {% for l in link.links %}
+                            <a class="navbar-item"
+                               href="{{ l.url }}">{{ l.title }}</a>
+                        {% endfor %}
+
+                    </div>
+                </div>
+            {% endif %}
+
+        {% endfor %}
+    </div>
+
+
+{% endif %}

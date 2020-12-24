@@ -134,7 +134,7 @@ def get_default_entity_from_session(request):
     return request.session.get(session_key)
 
 
-def set_end_date_filter(request, entity_slug: str, end_date: date):
+def set_session_date_filter(request, entity_slug: str, end_date: date):
     session_key = get_end_date_session_key(entity_slug)
     request.session[session_key] = end_date.isoformat()
 

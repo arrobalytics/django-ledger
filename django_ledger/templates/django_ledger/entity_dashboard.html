@@ -8,20 +8,29 @@
         <div class="container is-fluid p-0">
             <div class="columns">
                 <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
-                    {% include 'django_ledger/includes/menu.html' %}
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% period_navigation 'entity-dashboard' %}
+                        </div>
+                        <div class="column is-12">
+                            {% navigation_menu 'desktop' %}
+                        </div>
+                    </div>
+
+
                 </div>
                 <div class="column">
-                    <div class="columns is-multiline">
-                        <div class="column is-6-tablet">
+                    <div class="columns is-multiline is-centered">
+                        <div class="column is-half">
                             {% include 'django_ledger/includes/widget_bs.html' with tx_digest=tx_digest %}
                         </div>
-                        <div class="column is-6-tablet">
+                        <div class="column is-half">
                             {% include 'django_ledger/includes/widget_ic.html' with tx_digest=tx_digest %}
                         </div>
-                        <div class="column is-12">
+                        <div class="column is-three-fifths">
                             <div class="box">{% chart_container pnl_chart_id pnl_chart_endpoint %}</div>
                         </div>
-                        <div class="column is-12">
+                        <div class="column is-two-fifths">
                             {% include 'django_ledger/includes/widget_ratios.html' with tx_digest=tx_digest %}
                         </div>
                     </div>
@@ -44,7 +53,7 @@
         <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if invoices %}
-                    <div class="column is-12-tablet">
+                    <div class="column is-6-tablet is-4-desktop">
                         <div class="box">
                             {% chart_container receivables_chart_id receivables_chart_endpoint %}
                         </div>
@@ -77,7 +86,7 @@
         <div class="container">
             <div class="columns is-multiline is-centered">
                 {% if bills %}
-                    <div class="column is-12-tablet">
+                    <div class="column is-6-tablet is-4-desktop">
                         <div class="box">
                             {% chart_container payables_chart_id payables_chart_endpoint %}
                         </div>

@@ -33,7 +33,6 @@
                              id="dropdown-menu-{{ customer.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-                                {#                                <a href="" class="dropdown-item has-text-success">View</a>#}
                                 <a href="{% url 'django_ledger:customer-update' entity_slug=view.kwargs.entity_slug customer_pk=customer.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
                             </div>

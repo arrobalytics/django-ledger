@@ -3,6 +3,10 @@
 {% load static %}
 {% load django_ledger %}
 
+{% block aux_menu %}
+    {% period_navigation 'account-detail' %}
+{% endblock %}
+
 {% block view_content %}
     <div class="card">
         <div class="card-content has-text-centered">

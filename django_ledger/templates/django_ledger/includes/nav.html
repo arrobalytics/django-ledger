@@ -4,7 +4,7 @@
 {% load i18n %}
 {% now "Y" as current_year %}
 
-<nav class="navbar" role="navigation" aria-label="main navigation">
+<nav class="navbar is-light" role="navigation" aria-label="main navigation">
     <div class="container">
         <div class="navbar-brand">
             <a class="navbar-item" href="{% url 'django_ledger:home' %}">
@@ -19,57 +19,7 @@
         </div>
 
         <div id="djl-navbar-menu" class="navbar-menu">
-
-            {% if view.kwargs.entity_slug %}
-                <div class="navbar-start">
-                    <div class="navbar-item has-text-weight-bold is-hidden-desktop">{{ entity.name | upper }}</div>
-                    <a class="navbar-item is-hidden-desktop"
-                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Dashboard' %}</a>
-                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
-                        <a class="navbar-link">{% trans 'Lists' %}</a>
-                        <div class="navbar-dropdown">
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:customer-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Customers' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:vendor-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Vendors' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Bank Accounts' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Bills' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Invoices' %}</a>
-                        </div>
-                    </div>
-                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
-                        <a class="navbar-link">{% trans 'Reports' %}</a>
-                        <div class="navbar-dropdown">
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:entity-bs-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Balance Sheet' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:entity-ic-year' entity_slug=view.kwargs.entity_slug year=current_year %}">{% trans 'Income Statement' %}</a>
-                        </div>
-                    </div>
-                    <div class="navbar-item has-dropdown is-hoverable is-hidden-desktop">
-                        <a class="navbar-link">{% trans 'Manage' %}</a>
-                        <div class="navbar-dropdown">
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Chart of Accounts' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Ledger' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Import Transactions' %}</a>
-                            <a class="navbar-item"
-                               href="{% url 'django_ledger:entity-update' entity_slug=view.kwargs.entity_slug %}">{% trans 'Entity Settings' %}</a>
-                        </div>
-                    </div>
-                    <a class="navbar-item is-hidden-desktop"
-                       href="{% url 'django_ledger:home' %}">{% trans 'My Entities' %}</a>
-                    {% if user.is_superuser and user.is_authenticated %}
-                        <a class="navbar-item is-hidden-desktop" href="/admin">{% trans 'Admin' %}</a>
-                    {% endif %}
-                </div>
-            {% endif %}
-
+            {% navigation_menu 'mobile' %}
             <div class="navbar-end">
                 {% if view.kwargs.entity_slug %}
                     <div class="navbar-item">
@@ -80,7 +30,6 @@
                 {% endif %}
 
                 <div class="navbar-item">
-                    {# todo: nice tag to have but find a better way to reduce stress on the DB (qs on every page load) #}
                     {% default_entity %}
                 </div>
                 <div class="navbar-item">
@@ -89,11 +38,11 @@
                     </a>
                 </div>
                 <div class="navbar-item">
-                    {# FEEDBACK FORM MODAL #}
                     {% feedback_button %}
                 </div>
                 <div class="navbar-item">v{% current_version %}</div>
             </div>
         </div>
     </div>
+
 </nav>

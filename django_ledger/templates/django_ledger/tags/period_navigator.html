@@ -1,0 +1,35 @@
+{% load trans from i18n %}
+
+<div class="card">
+    <div class="card-content">
+        <div class="has-text-centered">
+            <h2 class="is-size-2 has-font-weight-medium">
+                {% if has_month %}{{ start_date | date:"F" }}{% endif %}
+                {% if has_quarter %}Q{{ quarter }}{% endif %}
+                {{ year }}
+            </h2>
+        </div>
+
+        <p>Year:
+            <a href="{{ previous_year_url }}"><< {{ previous_year }}</a> |
+            <a href="{{ next_year_url }}">{{ next_year }} >></a>
+        </p>
+
+        <p>Quarter:
+            {% for q_url in quarter_urls %}
+                <a href="{{ q_url.url }}">{{ q_url.quarter_name }}</a> {% if not forloop.last %}|{% endif %}
+            {% endfor %}
+        </p>
+        <p>Month:
+            {% for m_url in month_urls %}
+                <a href="{{ m_url.url }}">{{ m_url.month_abbr }}</a> {% if not forloop.last %}|{% endif %}
+            {% endfor %}
+        </p>
+        <div class="has-text-centered">
+            <p class="has-text-weight-bold is-italic mt-2">
+                {{ start_date | date:"m/d/Y" }}
+                {% trans 'thru' %}
+                {{ end_date | date:"m/d/Y" }}</p>
+        </div>
+    </div>
+</div>

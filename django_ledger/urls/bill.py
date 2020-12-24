@@ -3,13 +3,13 @@ from django.urls import path
 from django_ledger import views
 
 urlpatterns = [
-    path('<slug:entity_slug>/list/',
+    path('<slug:entity_slug>/latest/',
          views.BillModelListView.as_view(),
          name='bill-list'),
-    path('<slug:entity_slug>/list/<int:year>/',
+    path('<slug:entity_slug>/year/<int:year>/',
          views.BillModelYearListView.as_view(),
          name='bill-list-year'),
-    path('<slug:entity_slug>/list/<int:year>/<int:month>/',
+    path('<slug:entity_slug>/month/<int:year>/<int:month>/',
          views.BillModelMonthListView.as_view(),
          name='bill-list-month'),
     path('<slug:entity_slug>/create/',

@@ -23,7 +23,7 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
-    set_end_date_filter
+    set_session_date_filter
 )
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
@@ -230,6 +230,17 @@ class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
     pass
 
 
+class EntityModelBalanceSheetView(RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:entity-bs-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': year
+                       })
+
+
 class FiscalYearEntityModelBalanceSheetView(YearlyReportMixIn, DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -260,6 +271,16 @@ class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityMod
     """
     Monthly Balance Sheet View.
     """
+
+
+class EntityModelIncomeStatementView(RedirectView):
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:entity-ic-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': year
+                       })
 
 
 class FiscalYearEntityModelIncomeStatementView(YearlyReportMixIn, DetailView):
@@ -320,13 +341,19 @@ class SetSessionDate(RedirectView):
     def post(self, request, *args, **kwargs):
         entity_slug = kwargs['entity_slug']
         as_of_form = AsOfDateFilterForm(data=request.POST, form_id=None)
-        next_url = request.GET['next']
+        # next_url = request.GET['next']
 
         if as_of_form.is_valid():
             as_of_form.clean()
             end_date = as_of_form.cleaned_data['date']
-            set_end_date_filter(request, entity_slug, end_date)
-        self.url = next_url
+            set_session_date_filter(request, entity_slug, end_date)
+            self.url = reverse('django_ledger:entity-dashboard-date',
+                               kwargs={
+                                   'entity_slug': self.kwargs['entity_slug'],
+                                   'year': end_date.year,
+                                   'month': end_date.month,
+                                   'day': end_date.day,
+                               })
         return super().post(request, *args, **kwargs)
 
 

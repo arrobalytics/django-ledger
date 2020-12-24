@@ -13,7 +13,7 @@
                             <h1 class="is-size-1 has-text-weight-thin">{{ month | date:'F Y' }}</h1>
                         {% elif year %}
                             <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
-                                Invoices</h1>
+                                {% trans 'Invoices' %}</h1>
                         {% else %}
                             <h1 class="is-size-1 has-text-weight-thin">{% trans 'Latest Invoices' %}</h1>
                         {% endif %}

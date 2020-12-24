@@ -54,6 +54,7 @@ class YearlyReportMixIn(YearMixin):
         context['previous_year'] = year - 1
         context['start_date'] = self.get_year_start_date(year)
         context['end_date'] = self.get_year_end_date(year)
+        context['has_year'] = True
         return context
 
 
@@ -94,6 +95,7 @@ class QuarterlyReportMixIn(YearMixin):
         context['previous_quarter'] = self.get_previous_quarter(quarter)
         context['start_date'] = self.get_quarter_start_date(year=year, quarter=quarter)
         context['end_date'] = self.get_quarter_end_date(year=year, quarter=quarter)
+        context['has_quarter'] = True
         return context
 
     def validate_quarter(self, quarter) -> int:
@@ -160,6 +162,7 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         context['previous_month'] = self.get_previous_month(month)
         context['start_date'] = self.get_month_start_date(month, year)
         context['end_date'] = self.get_month_end_date(month, year)
+        context['has_month'] = True
         return context
 
     def get_next_month(self, month):
