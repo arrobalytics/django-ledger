@@ -12,5 +12,6 @@
     <h1 class="has-text-centered">
         {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</h1>
     <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
-    <h3 class="has-text-centered">{{ date_filter | date }}</h3>
+    <h3 class="has-text-centered">{{ start_date | date }} <span
+            class="is-italic">{% trans 'thru' %}</span> {{ end_date | date }}</h3>
 </div>

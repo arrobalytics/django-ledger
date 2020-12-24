@@ -17,13 +17,12 @@
                 <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{{ tx.description }}</td>
                 <td>
-                    <div class="dropdown is-right" id="tx-action-{{ tx.uuid }}">
+                    <div class="dropdown is-right is-hoverable" id="tx-action-{{ tx.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined"
                                     aria-haspopup="true"
-                                    onclick="djLedger.toggleDropdown('tx-action-{{ tx.uuid }}')"
                                     aria-controls="dropdown-menu">
-                                <span>Actions</span>
+                                <span>{% trans 'Actions' %}</span>
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>

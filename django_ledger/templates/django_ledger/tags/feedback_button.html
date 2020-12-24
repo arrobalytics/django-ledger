@@ -2,27 +2,19 @@
 {% load icon from django_ledger %}
 
 
-<div class="dropdown is-hoverable">
-    <div class="dropdown-trigger">
-        <button class="button {{ button_size_class }} {{ color_class }}" aria-haspopup="true"
-                aria-controls="dropdown-menu4">
-            <span class="icon">{% icon "topcoat:feedback" 24 %}</span>
-            <span>{% trans 'Feedback' %}</span>
-            <span class="icon is-small">{% icon 'bx:bx-chevron-down' 24 %}</span>
-        </button>
-    </div>
-    <div class="dropdown-menu" id="dropdown-menu4" role="menu">
-        <div class="dropdown-content">
-            <button class="button is-white is-fullwidth" onclick="djLedger.toggleDropdown('{{ bug_modal_html_id }}')">
-                Report a Bug
-            </button>
-            <button class="button is-white is-fullwidth"
-                    onclick="djLedger.toggleDropdown('{{ feature_modal_html_id }}')">Request a Feature
-            </button>
-        </div>
+<div class="navbar-item has-dropdown is-hoverable">
+
+    <a class="navbar-link">{% trans 'Feedback' %}</a>
+    <div class="navbar-dropdown">
+        <a href="javascript:djLedger.toggleDropdown('{{ bug_modal_html_id }}')"
+           class="navbar-item">{% trans 'Report a Bug' %}</a>
+        <a href="javascript:djLedger.toggleDropdown('{{ feature_modal_html_id }}')"
+           class="navbar-item">{% trans 'Request a Feature' %}</a>
     </div>
 </div>
 
+
+{# BUG MODAL #}
 <div class="modal" id="{{ bug_modal_html_id }}">
     <div class="modal-background"></div>
     <div class="modal-card">
@@ -54,6 +46,7 @@
     </div>
 </div>
 
+{# FEATURE MODAL #}
 <div class="modal" id="{{ feature_modal_html_id }}">
     <div class="modal-background"></div>
     <div class="modal-card">

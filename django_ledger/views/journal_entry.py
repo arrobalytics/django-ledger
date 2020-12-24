@@ -43,7 +43,9 @@ class JournalEntryDetailView(DetailView):
     slug_field = 'uuid'
     PAGE_TITLE = _('Journal Entry Detail')
     extra_context = {
-        'page_title': PAGE_TITLE
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'bi:journal-plus'
     }
 
     def get_queryset(self):

@@ -11,8 +11,10 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
-                                  ArchiveIndexView, YearArchiveView, DetailView)
+from django.views.generic import (
+    UpdateView, CreateView, DeleteView, MonthArchiveView,
+    ArchiveIndexView, YearArchiveView, DetailView
+)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
@@ -27,6 +29,7 @@ class InvoiceModelListView(ArchiveIndexView):
     date_field = 'date'
     paginate_by = 10
     paginate_orphans = 2
+    allow_empty = True
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE

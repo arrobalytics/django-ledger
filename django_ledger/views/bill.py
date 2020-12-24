@@ -28,6 +28,7 @@ class BillModelListView(ArchiveIndexView):
     date_field = 'date'
     paginate_by = 10
     paginate_orphans = 2
+    allow_empty = True
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,

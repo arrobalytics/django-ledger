@@ -4,8 +4,8 @@
     <div class="card-content">
         <div class="has-text-centered">
             <h2 class="is-size-2 has-font-weight-medium">
-                {% if month %}{{ start_date | date:"F" }}{% endif %}
-                {% if quarter %}Q{{ quarter }}{% endif %}
+                {% if has_month %}{{ start_date | date:"F" }}{% endif %}
+                {% if has_quarter %}Q{{ quarter }}{% endif %}
                 {{ year }}
             </h2>
         </div>

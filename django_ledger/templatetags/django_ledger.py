@@ -399,11 +399,18 @@ def period_navigation(context, base_url: str):
     KWARGS = dict()
     KWARGS['entity_slug'] = context['view'].kwargs['entity_slug']
     KWARGS['year'] = context.get('year')
+
     if context['view'].kwargs.get('ledger_pk'):
         KWARGS['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
 
+    if context['view'].kwargs.get('account_pk'):
+        KWARGS['account_pk'] = context['view'].kwargs.get('account_pk')
+
     ctx = dict()
     ctx['year'] = context['year']
+    ctx['has_year'] = context.get('has_year')
+    ctx['has_quarter'] = context.get('has_quarter')
+    ctx['has_month'] = context.get('has_month')
     ctx['previous_year'] = context['previous_year']
     ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
     ctx['next_year'] = context['next_year']
@@ -448,7 +455,7 @@ def navigation_menu(context, style):
     ctx['style'] = style
     if ENTITY_SLUG:
         ctx['entity_slug'] = ENTITY_SLUG
-        links = [
+        nav_menu_links = [
             {
                 'type': 'link',
                 'title': 'Entity Dashboard',
@@ -540,12 +547,6 @@ def navigation_menu(context, style):
                 ]
             }
         ]
-        ctx['links'] = links
+        ctx['links'] = nav_menu_links
         ctx['request'] = context['request']
     return ctx
-
-
-@register.filter(name='str_replace')
-def str_replace(value, args):
-    target, replace = args.split(',')
-    return value.replace(target, replace)
