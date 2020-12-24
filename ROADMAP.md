@@ -37,6 +37,7 @@ relevant random data for testing.
 * Customer jobs & project tracking.
 * Client proposals & estimates.
 * Time tracking.
+* Transaction tagging.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 

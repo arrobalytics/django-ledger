@@ -460,7 +460,7 @@ def navigation_menu(context, style):
                 'links': [
                     {
                         'type': 'link',
-                        'title': 'vendors',
+                        'title': 'Vendors',
                         'url': reverse('django_ledger:vendor-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
