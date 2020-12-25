@@ -93,7 +93,7 @@ class EntityModelCreateForm(ModelForm):
             }),
             'website': URLInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Entity website...')
+                'placeholder': _('http://www.mywebsite.com...')
             }),
             'default_coa': CheckboxInput(attrs={
                 'class': 'checkbox'
