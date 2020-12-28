@@ -28,13 +28,14 @@ relevant random data for testing.
 
 ### Version 0.5
 * Inventory tracking.
+* Purchase Order Model implementation.
 * Cash flow statement.
 * Closing entries, snapshots & trial balance import.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.6
-* Credit Lines Models.
+* Credit Line Models.
 * Time tracking.
 * Transaction tagging.
 * Update package and code documentation.

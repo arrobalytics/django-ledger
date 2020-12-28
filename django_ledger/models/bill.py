@@ -10,6 +10,7 @@ from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
@@ -80,21 +81,26 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
                                null=True)
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.CASCADE,
+                                     on_delete=models.PROTECT,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     receivable_account = models.ForeignKey('django_ledger.AccountModel',
-                                           on_delete=models.CASCADE,
+                                           on_delete=models.PROTECT,
                                            verbose_name=_('Receivable Account'),
                                            related_name=f'{REL_NAME_PREFIX}_receivable_account')
     payable_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.CASCADE,
+                                        on_delete=models.PROTECT,
                                         verbose_name=_('Payable Account'),
                                         related_name=f'{REL_NAME_PREFIX}_payable_account')
     earnings_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.CASCADE,
+                                         on_delete=models.PROTECT,
                                          verbose_name=_('Earnings Account'),
                                          related_name=f'{REL_NAME_PREFIX}_earnings_account')
+
+    additional_info = models.JSONField(default=dict, verbose_name=_('Bill Additional Info'))
+    bill_items = models.ManyToManyField('django_ledger.ItemModel',
+                                        through='django_ledger.BillModelItemsThroughModel',
+                                        verbose_name=_('Bill Items'))
 
     objects = BillModelManager()
 
@@ -108,8 +114,9 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
             models.Index(fields=['receivable_account']),
             models.Index(fields=['payable_account']),
             models.Index(fields=['earnings_account']),
-            models.Index(fields=['created']),
-            models.Index(fields=['updated']),
+            models.Index(fields=['date']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['paid']),
         ]
 
     def __str__(self):
@@ -152,9 +159,8 @@ class BillModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
 
 
 class BillModel(BillModelAbstract):
-    REL_NAME_PREFIX = 'bill'
     """
-    Bill Model
+    Base Bill Model from Abstract.
     """
 
 
@@ -163,3 +169,36 @@ def billmodel_predelete(instance: BillModel, **kwargs):
 
 
 post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
+
+
+class BillModelItemsThroughModelAbstract(models.Model):
+    bill_model = models.ForeignKey('django_ledger.BillModel',
+                                   on_delete=models.CASCADE,
+                                   verbose_name=_('Bill Model'))
+    item_model = models.ForeignKey('django_ledger.ItemModel',
+                                   on_delete=models.PROTECT,
+                                   verbose_name=_('Item Model'))
+    quantity = models.FloatField(default=0,
+                                 verbose_name=_('Quantity'),
+                                 validators=[MinValueValidator(0)])
+    unit_cost = models.DecimalField(max_digits=20,
+                                    decimal_places=2,
+                                    verbose_name=_('Cost Per Unit'),
+                                    validators=[MinValueValidator(0)])
+    total_amount = models.DecimalField(max_digits=20,
+                                       decimal_places=2,
+                                       verbose_name=_('Total Amount QTYxUnitCost'),
+                                       validators=[MinValueValidator(0)])
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['bill_model', 'item_model']),
+            models.Index(fields=['item_model', 'bill_model']),
+        ]
+
+
+class BillModelItemsThroughModel(BillModelItemsThroughModelAbstract):
+    """
+    Base Bill Items M2M Relationship Model from Abstract.
+    """
