@@ -12,6 +12,7 @@ jsonschema = "*"
 [dev-packages]
 sphinx = "~=3.2"
 faker = "*"
+behave = "*"
 
 [requires]
 python_version = "3.8"
