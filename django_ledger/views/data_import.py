@@ -23,6 +23,7 @@ from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.utils import new_bankaccount_protocol
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
@@ -46,7 +47,7 @@ def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
     ]
 
 
-class DataImportJobsListView(ListView):
+class DataImportJobsListView(LoginRequiredMixIn, ListView):
     PAGE_TITLE = _('Data Import Jobs')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -62,7 +63,7 @@ class DataImportJobsListView(ListView):
         )
 
 
-class DataImportOFXFileView(FormView):
+class DataImportOFXFileView(LoginRequiredMixIn, FormView):
     template_name = 'django_ledger/data_import_ofx.html'
     PAGE_TITLE = _('OFX File Import')
     extra_context = {
@@ -156,7 +157,7 @@ class DataImportOFXFileView(FormView):
         return super().form_valid(form=form)
 
 
-class DataImportJobDetailView(DetailView):
+class DataImportJobDetailView(LoginRequiredMixIn, DetailView):
     template_name = 'django_ledger/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'import_job'

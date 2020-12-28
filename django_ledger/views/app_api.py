@@ -18,9 +18,10 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
 from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
 from django_ledger.utils import progressible_net_summary
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
-class EntityProfitNLossAPIView(View):
+class EntityProfitNLossAPIView(LoginRequiredMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -69,7 +70,7 @@ class EntityProfitNLossAPIView(View):
         }, status=401)
 
 
-class EntityPayableNetAPIView(View):
+class EntityPayableNetAPIView(LoginRequiredMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -105,7 +106,7 @@ class EntityPayableNetAPIView(View):
         }, status=401)
 
 
-class EntityReceivableNetAPIView(View):
+class EntityReceivableNetAPIView(LoginRequiredMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):

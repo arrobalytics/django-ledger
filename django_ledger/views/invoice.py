@@ -20,9 +20,10 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import new_invoice_protocol, mark_progressible_paid
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
-class InvoiceModelListView(ArchiveIndexView):
+class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/invoice_list.html'
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
@@ -52,7 +53,7 @@ class InvoiceModelMonthlyListView(MonthArchiveView, InvoiceModelListView):
     month_format = '%m'
 
 
-class InvoiceModelCreateView(CreateView):
+class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/invoice_create.html'
     PAGE_TITLE = _('Create Invoice')
     extra_context = {
@@ -84,7 +85,7 @@ class InvoiceModelCreateView(CreateView):
                        })
 
 
-class InvoiceModelUpdateView(UpdateView):
+class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -145,7 +146,7 @@ class InvoiceModelUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class InvoiceModelDetailView(DetailView):
+class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -169,7 +170,7 @@ class InvoiceModelDetailView(DetailView):
         ).select_related('ledger', 'customer')
 
 
-class InvoiceModelDeleteView(DeleteView):
+class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     template_name = 'django_ledger/invoice_delete.html'
@@ -197,7 +198,9 @@ class InvoiceModelDeleteView(DeleteView):
         )
 
 
-class InvoiceModelMarkPaidView(View, SingleObjectMixin):
+class InvoiceModelMarkPaidView(LoginRequiredMixIn,
+                               View,
+                               SingleObjectMixin):
     http_method_names = ['post']
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'

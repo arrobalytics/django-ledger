@@ -13,9 +13,10 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.utils import new_bankaccount_protocol
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
-class BankAccountModelListView(ListView):
+class BankAccountModelListView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
@@ -32,7 +33,7 @@ class BankAccountModelListView(ListView):
         ).select_related('cash_account')
 
 
-class BankAccountModelCreateView(CreateView):
+class BankAccountModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/bank_account_create.html'
     form_class = BankAccountCreateForm
     PAGE_TITLE = _('Create Bank Account')
@@ -65,7 +66,7 @@ class BankAccountModelCreateView(CreateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-class BankAccountModelUpdateView(UpdateView):
+class BankAccountModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
