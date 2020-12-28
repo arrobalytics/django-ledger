@@ -10,7 +10,6 @@ from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
@@ -18,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ItemTotalCostMixIn
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -171,24 +170,10 @@ def billmodel_predelete(instance: BillModel, **kwargs):
 post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
 
 
-class BillModelItemsThroughModelAbstract(models.Model):
+class BillModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
     bill_model = models.ForeignKey('django_ledger.BillModel',
                                    on_delete=models.CASCADE,
                                    verbose_name=_('Bill Model'))
-    item_model = models.ForeignKey('django_ledger.ItemModel',
-                                   on_delete=models.PROTECT,
-                                   verbose_name=_('Item Model'))
-    quantity = models.FloatField(default=0,
-                                 verbose_name=_('Quantity'),
-                                 validators=[MinValueValidator(0)])
-    unit_cost = models.DecimalField(max_digits=20,
-                                    decimal_places=2,
-                                    verbose_name=_('Cost Per Unit'),
-                                    validators=[MinValueValidator(0)])
-    total_amount = models.DecimalField(max_digits=20,
-                                       decimal_places=2,
-                                       verbose_name=_('Total Amount QTYxUnitCost'),
-                                       validators=[MinValueValidator(0)])
 
     class Meta:
         abstract = True

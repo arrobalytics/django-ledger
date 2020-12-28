@@ -235,6 +235,7 @@ class IOMixIn:
             if isinstance(activity, str):
                 activity = [activity]
             txs_qs = txs_qs.for_activity(activity_list=activity)
+
         if role:
             if isinstance(role, str):
                 role = [role]
@@ -258,6 +259,7 @@ class IOMixIn:
             txs_qs = txs_qs.annotate(
                 balance=Sum('amount'),
             ).order_by('account__uuid')
+
         return txs_qs
 
     def get_jes(self,

@@ -22,7 +22,7 @@ ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=50, verbose_name=_('Unit of Measure Name'))
-    unit_abbr = models.CharField(max_length=10, verbose_name=_('Abbreviation'))
+    unit_abbr = models.CharField(max_length=10, verbose_name=_('UoM Abbreviation'))
 
     class Meta:
         abstract = True

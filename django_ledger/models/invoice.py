@@ -10,7 +10,6 @@ from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_delete
@@ -18,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ItemTotalCostMixIn
 
 
 class LazyLoader:
@@ -169,24 +168,10 @@ def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
 post_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
 
 
-class InvoiceModelItemsThroughModelAbstract(models.Model):
+class InvoiceModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
     invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
                                       on_delete=models.CASCADE,
                                       verbose_name=_('Invoice Model'))
-    item_model = models.ForeignKey('django_ledger.ItemModel',
-                                   on_delete=models.PROTECT,
-                                   verbose_name=_('Item Model'))
-    quantity = models.FloatField(default=0,
-                                 verbose_name=_('Quantity'),
-                                 validators=[MinValueValidator(0)])
-    unit_cost = models.DecimalField(max_digits=20,
-                                    decimal_places=2,
-                                    verbose_name=_('Cost Per Unit'),
-                                    validators=[MinValueValidator(0)])
-    total_amount = models.DecimalField(max_digits=20,
-                                       decimal_places=2,
-                                       verbose_name=_('Total Amount QTYxUnitCost'),
-                                       validators=[MinValueValidator(0)])
 
     class Meta:
         abstract = True
