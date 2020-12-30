@@ -1,4 +1,6 @@
-Django>=2.2
-ofxtools~=0.8.22
-django-mptt~=0.11.0
-setuptools~=45.2.0
+Django>=3.0
+ofxtools>=0.9.1
+django-mptt>=0.11.0
+setuptools>=50.3.2
+behave>=1.2.6
+jsonschema>=3.2.0

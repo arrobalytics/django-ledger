@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ContactInfoMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ItemTotalCostMixIn
 
 
 class LazyLoader:
@@ -72,27 +72,32 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
-                                 on_delete=models.CASCADE,
+                                 on_delete=models.PROTECT,
                                  verbose_name=_('Customer'),
                                  blank=True,
                                  null=True)
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.CASCADE,
+                                     on_delete=models.PROTECT,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     receivable_account = models.ForeignKey('django_ledger.AccountModel',
-                                           on_delete=models.CASCADE,
+                                           on_delete=models.PROTECT,
                                            verbose_name=_('Receivable Account'),
                                            related_name=f'{REL_NAME_PREFIX}_receivable_account')
     payable_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.CASCADE,
+                                        on_delete=models.PROTECT,
                                         verbose_name=_('Payable Account'),
                                         related_name=f'{REL_NAME_PREFIX}_payable_account')
     earnings_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.CASCADE,
+                                         on_delete=models.PROTECT,
                                          verbose_name=_('Earnings Account'),
                                          related_name=f'{REL_NAME_PREFIX}_earnings_account')
+
+    additional_info = models.JSONField(default=dict, verbose_name=_('Invoice Additional Info'))
+    invoice_items = models.ManyToManyField('django_ledger.ItemModel',
+                                           through='django_ledger.InvoiceModelItemsThroughModel',
+                                           verbose_name=_('Invoice Items'))
 
     objects = InvoiceModelManager()
 
@@ -106,8 +111,9 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
             models.Index(fields=['receivable_account']),
             models.Index(fields=['payable_account']),
             models.Index(fields=['earnings_account']),
-            models.Index(fields=['created']),
-            models.Index(fields=['updated']),
+            models.Index(fields=['date']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['paid']),
         ]
 
     def __str__(self):
@@ -151,7 +157,7 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
 
 class InvoiceModel(InvoiceModelAbstract):
     """
-    Base InvoiceModel from Abstract
+    Base Invoice Model from Abstract.
     """
 
 
@@ -160,3 +166,22 @@ def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
 
 
 post_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
+
+
+class InvoiceModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
+    invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
+                                      on_delete=models.CASCADE,
+                                      verbose_name=_('Invoice Model'))
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['invoice_model', 'item_model']),
+            models.Index(fields=['item_model', 'invoice_model']),
+        ]
+
+
+class InvoiceModelItemsThroughModel(InvoiceModelItemsThroughModelAbstract):
+    """
+    Base Invoice Items M2M Relationship Model from Abstract.
+    """

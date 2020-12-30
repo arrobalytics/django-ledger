@@ -18,10 +18,11 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_progressible_paid
+from django_ledger.views.mixins import LoginRequiredMixIn
 from django_ledger.views.transactions import TransactionModel
 
 
-class BillModelListView(ArchiveIndexView):
+class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
@@ -53,7 +54,7 @@ class BillModelMonthListView(MonthArchiveView, BillModelListView):
     date_list_period = 'year'
 
 
-class BillModelCreateView(CreateView):
+class BillModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/bill_create.html'
     PAGE_TITLE = _('Create Bill')
     extra_context = {
@@ -85,7 +86,7 @@ class BillModelCreateView(CreateView):
                        })
 
 
-class BillModelUpdateView(UpdateView):
+class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
@@ -133,7 +134,7 @@ class BillModelUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class BillModelDetailView(DetailView):
+class BillModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
@@ -163,7 +164,7 @@ class BillModelDetailView(DetailView):
         ).select_related('ledger', 'vendor')
 
 
-class BillModelDeleteView(DeleteView):
+class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
@@ -192,7 +193,9 @@ class BillModelDeleteView(DeleteView):
                        })
 
 
-class BillModelMarkPaidView(View, SingleObjectMixin):
+class BillModelMarkPaidView(LoginRequiredMixIn,
+                            View,
+                            SingleObjectMixin):
     http_method_names = ['post']
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'

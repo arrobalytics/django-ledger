@@ -13,9 +13,10 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django_ledger.forms.vendor import VendorModelForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.vendor import VendorModel
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
-class VendorModelListView(ListView):
+class VendorModelListView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/vendor_list.html'
     context_object_name = 'vendors'
     PAGE_TITLE = _('Vendor List')
@@ -32,7 +33,7 @@ class VendorModelListView(ListView):
         ).order_by('-updated')
 
 
-class VendorModelCreateView(CreateView):
+class VendorModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/vendor_create.html'
     PAGE_TITLE = _('Create New Vendor')
     form_class = VendorModelForm
@@ -65,7 +66,7 @@ class VendorModelCreateView(CreateView):
         return super().form_valid(form)
 
 
-class VendorModelUpdateView(UpdateView):
+class VendorModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/vendor_update.html'
     PAGE_TITLE = _('Vendor Update')
     context_object_name = 'vendor'

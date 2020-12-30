@@ -13,10 +13,11 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 # JE Views ---
-class JournalEntryListView(ListView):
+class JournalEntryListView(LoginRequiredMixIn, ListView):
     context_object_name = 'journal_entries'
     template_name = 'django_ledger/je_list.html'
     PAGE_TITLE = _('Journal Entries')
@@ -36,7 +37,7 @@ class JournalEntryListView(ListView):
         ).order_by(sort)
 
 
-class JournalEntryDetailView(DetailView):
+class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_detail.html'
     slug_url_kwarg = 'je_pk'
@@ -56,7 +57,7 @@ class JournalEntryDetailView(DetailView):
         ).prefetch_related('txs', 'txs__account')
 
 
-class JournalEntryUpdateView(UpdateView):
+class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
     slug_url_kwarg = 'je_pk'
@@ -91,7 +92,7 @@ class JournalEntryUpdateView(UpdateView):
         ).prefetch_related('txs', 'txs__account')
 
 
-class JournalEntryCreateView(CreateView):
+class JournalEntryCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
     extra_context = {

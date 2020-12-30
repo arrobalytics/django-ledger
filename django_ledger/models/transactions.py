@@ -165,18 +165,23 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     journal_entry = models.ForeignKey('django_ledger.JournalEntryModel',
                                       related_name='txs',
                                       verbose_name=_('Journal Entry'),
+                                      help_text=_('Journal Entry to be associated with this transaction.'),
                                       on_delete=models.CASCADE)
     account = models.ForeignKey('django_ledger.AccountModel',
                                 related_name='txs',
                                 verbose_name=_('Account'),
+                                help_text=_('Account from Chart of Accounts to be associated with this transaction.'),
                                 on_delete=models.CASCADE)
     amount = models.DecimalField(decimal_places=2,
                                  max_digits=20,
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Amount'),
+                                 help_text=_('Account of the transaction.'),
                                  validators=[MinValueValidator(0)])
-    description = models.CharField(max_length=100, null=True, blank=True, verbose_name=_('Tx Description'))
+    description = models.CharField(max_length=100, null=True, blank=True,
+                                   verbose_name=_('Tx Description'),
+                                   help_text=_('A description to be included with this individual transaction'))
     objects = TransactionModelAdmin()
 
     class Meta:

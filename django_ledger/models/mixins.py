@@ -458,3 +458,27 @@ class ProgressibleMixIn(models.Model):
 
         if self.migrate_allowed():
             self.update_state()
+
+
+class ItemTotalCostMixIn(models.Model):
+    item_model = models.ForeignKey('django_ledger.ItemModel',
+                                   on_delete=models.PROTECT,
+                                   verbose_name=_('Item Model'))
+    quantity = models.FloatField(default=0,
+                                 verbose_name=_('Quantity'),
+                                 validators=[MinValueValidator(0)])
+    unit_cost = models.FloatField(verbose_name=_('Cost Per Unit'),
+                                  validators=[MinValueValidator(0)])
+    total_amount = models.DecimalField(max_digits=20,
+                                       decimal_places=2,
+                                       verbose_name=_('Total Amount QTY x UnitCost'),
+                                       validators=[MinValueValidator(0)])
+
+    class Meta:
+        abstract = True
+
+    def update_total_amount(self):
+        self.total_amount = self.quantity * self.unit_cost
+
+    def clean(self):
+        self.update_total_amount()
