@@ -10,17 +10,16 @@
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.4
-* Items, resources and & lists for bills & invoices itemization.
-* Entity internal organizations, department, branches, etc.
-* Custom Accounting Periods.
-* Testing framework implementation that will include:
+* __0.4.0__: Items, resources and & lists for bills & invoices itemization:
+* __0.4.0__: Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
-* Work with Accountants, Subject Matter Experts and Developers to develop a comprehensive 
-list of Unit Tests to validate accounting engine output.
-* Enhance and optimize Django Ledger the random data generation functionality to properly populate
+* __0.4.0__: Enhance and optimize Django Ledger the random data generation functionality to properly populate
 relevant random data for testing.
-* Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
+* __0.4.1__: Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output.
+* __0.4.2__: Entity internal organizations, department, branches, etc.
+* __0.4.3__: Custom Accounting Periods.
+* __0.4.4__: Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.  
 * Update package and code documentation.
