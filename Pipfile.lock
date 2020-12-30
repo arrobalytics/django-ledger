@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "a0185a6024715dcf66790ebfe58bad58faf462eefc052bd2fef851762efe8aec"
+            "sha256": "1b4eb14759a42045c4dc4ac09b41b3e28db7b7af534a9f2c5d65e7e2f24a84a0"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -65,10 +65,10 @@
         },
         "ofxtools": {
             "hashes": [
-                "sha256:fbf0cd4aa3d4f4798b93f9a02345dde87b221571ce47e95d7d0fddb93834676e"
+                "sha256:b554807ff8692b518aa06669038ca0f00460a8ea898de2821654767b7a2019b7"
             ],
             "index": "pypi",
-            "version": "==0.8.22"
+            "version": "==0.9.1"
         },
         "pyrsistent": {
             "hashes": [
@@ -150,11 +150,11 @@
         },
         "faker": {
             "hashes": [
-                "sha256:00ce4342c221b1931b2f35d46f5027d35bc62a4ca3a34628b2c5b514b4ca958a",
-                "sha256:5b17c95cfb013a22b062b8df18286f08ce4ea880f9948ec74295e5a42dbb2e44"
+                "sha256:4985c4ad9c043a9c5ddb71ae9d57a1780158d6aecdd02a0e36c633be664ea110",
+                "sha256:9c595df9365860746dbc90ddb77dbffb1f3d87eac677a372fda2b68c259d1755"
             ],
             "index": "pypi",
-            "version": "==5.0.2"
+            "version": "==5.1.0"
         },
         "idna": {
             "hashes": [
