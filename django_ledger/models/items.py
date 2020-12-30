@@ -9,12 +9,12 @@ Miguel Sanda <msanda@arrobalytics.com>
 from string import ascii_lowercase, digits
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
-from django.core.exceptions import ValidationError
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -90,6 +90,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
         on_delete=models.PROTECT)
 
     additional_info = models.JSONField(default=dict, verbose_name=_('Item Additional Info'))
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Item Entity'))
 
     class Meta:
         abstract = True
