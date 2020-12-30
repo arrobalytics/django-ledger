@@ -11,6 +11,7 @@ from django.utils.translation import gettext as _
 from django.views.generic import RedirectView, ListView
 
 from django_ledger.models.entity import EntityModel
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 class RootUrlView(RedirectView):
@@ -21,7 +22,7 @@ class RootUrlView(RedirectView):
         return reverse('django_ledger:home')
 
 
-class HomeView(ListView):
+class HomeView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/home.html'
     PAGE_TITLE = _('My Entities')
     context_object_name = 'entities'

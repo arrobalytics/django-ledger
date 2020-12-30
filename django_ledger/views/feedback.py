@@ -6,15 +6,17 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from django.core.mail import send_mail
 from django.views.generic import FormView
 
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.views.mixins import SuccessUrlNextMixIn
 from django_ledger.settings import DJANGO_LEDGER_FEEDBACK_EMAIL_LIST, DJANGO_LEDGER_FEEDBACK_FROM_EMAIL
-from django.core.mail import send_mail
+from django_ledger.views.mixins import LoginRequiredMixIn, SuccessUrlNextMixIn
 
 
-class BugReportView(SuccessUrlNextMixIn, FormView):
+class BugReportView(LoginRequiredMixIn,
+                    SuccessUrlNextMixIn,
+                    FormView):
     http_method_names = ['post']
     form_class = BugReportForm
 
@@ -35,7 +37,9 @@ class BugReportView(SuccessUrlNextMixIn, FormView):
         return super().form_valid(form)
 
 
-class RequestNewFeatureView(SuccessUrlNextMixIn, FormView):
+class RequestNewFeatureView(LoginRequiredMixIn,
+                            SuccessUrlNextMixIn,
+                            FormView):
     http_method_names = ['post']
     form_class = RequestNewFeatureForm
 

@@ -15,11 +15,13 @@ from django.views.generic import RedirectView
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.views.mixins import YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn
+from django_ledger.views.mixins import (
+    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, LoginRequiredMixIn
+)
 
 
 # Account Views ----
-class AccountModelListView(ListView):
+class AccountModelListView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/account_list.html'
     context_object_name = 'accounts'
     extra_context = {
@@ -42,7 +44,7 @@ class AccountModelListView(ListView):
         ).order_by('code')
 
 
-class AccountModelUpdateView(UpdateView):
+class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'account'
     template_name = 'django_ledger/account_update.html'
     slug_url_kwarg = 'account_pk'
@@ -75,7 +77,7 @@ class AccountModelUpdateView(UpdateView):
         )
 
 
-class AccountModelCreateView(CreateView):
+class AccountModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/account_create.html'
 
     def get_context_data(self, **kwargs):
@@ -115,14 +117,13 @@ class AccountModelCreateView(CreateView):
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
-        coa_slug = self.kwargs.get('coa_slug')
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': entity_slug,
                        })
 
 
-class AccountModelDetailView(RedirectView):
+class AccountModelDetailView(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -135,8 +136,9 @@ class AccountModelDetailView(RedirectView):
                        })
 
 
-# todo: add header icon
-class AccountModelYearDetailView(YearlyReportMixIn, DetailView):
+class AccountModelYearDetailView(LoginRequiredMixIn,
+                                 YearlyReportMixIn,
+                                 DetailView):
     context_object_name = 'account'
     template_name = 'django_ledger/account_detail.html'
     slug_url_kwarg = 'account_pk'
@@ -144,6 +146,7 @@ class AccountModelYearDetailView(YearlyReportMixIn, DetailView):
     DEFAULT_TXS_DAYS = 30
     extra_context = {
         'DEFAULT_TXS_DAYS': DEFAULT_TXS_DAYS,
+        'header_subtitle_icon': 'ic:round-account-tree'
     }
 
     def get_context_data(self, **kwargs):
@@ -165,8 +168,12 @@ class AccountModelYearDetailView(YearlyReportMixIn, DetailView):
 
 
 class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):
-    pass
+    """
+    Account Model Quarter Detail View
+    """
 
 
 class AccountModelMonthDetailView(MonthlyReportMixIn, AccountModelYearDetailView):
-    pass
+    """
+    Account Model Month Detail View
+    """

@@ -13,10 +13,12 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.views.mixins import YearlyReportMixIn, QuarterlyReportMixIn, MonthlyReportMixIn
+from django_ledger.views.mixins import (
+    YearlyReportMixIn, QuarterlyReportMixIn,
+    MonthlyReportMixIn, LoginRequiredMixIn)
 
 
-class LedgerModelListView(ListView):
+class LedgerModelListView(LoginRequiredMixIn, ListView):
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
@@ -36,7 +38,7 @@ class LedgerModelListView(ListView):
         ).order_by(sort)
 
 
-class LedgerModelCreateView(CreateView):
+class LedgerModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/ledger_create.html'
     form_class = LedgerModelCreateForm
     PAGE_TITLE = _('Create Ledger')
@@ -60,7 +62,7 @@ class LedgerModelCreateView(CreateView):
                        })
 
 
-class LedgerModelUpdateView(UpdateView):
+class LedgerModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/ledger_update.html'
     form_class = LedgerModelUpdateForm
     context_object_name = 'ledger'
@@ -87,7 +89,9 @@ class LedgerModelUpdateView(UpdateView):
                        })
 
 
-class FiscalYearLedgerBalanceSheetView(YearlyReportMixIn, DetailView):
+class FiscalYearLedgerBalanceSheetView(LoginRequiredMixIn,
+                                       YearlyReportMixIn,
+                                       DetailView):
     context_object_name = 'ledger'
     template_name = 'django_ledger/balance_sheet.html'
     slug_url_kwarg = 'ledger_pk'
@@ -118,7 +122,9 @@ class MonthlyLedgerBalanceSheetView(MonthlyReportMixIn, FiscalYearLedgerBalanceS
     """
 
 
-class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn, DetailView):
+class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn,
+                                          DetailView,
+                                          LoginRequiredMixIn):
     context_object_name = 'ledger'
     template_name = 'django_ledger/income_statement.html'
     slug_url_kwarg = 'ledger_pk'

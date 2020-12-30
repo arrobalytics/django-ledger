@@ -8,12 +8,14 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import monthrange
 from datetime import datetime, timedelta
+from django.urls import reverse_lazy
 
 from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 from django.utils.dateparse import parse_date
+from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 
 
 class SuccessUrlNextMixIn:
@@ -224,3 +226,8 @@ class FromToDatesMixIn:
                 raise Http404(_(f'Invalid {query_param} {param_date} provided'))
             param_date = parsed_date
         return param_date
+
+
+class LoginRequiredMixIn(DJLoginRequiredMixIn):
+    login_url = reverse_lazy('django_ledger:login')
+    redirect_field_name = 'next'

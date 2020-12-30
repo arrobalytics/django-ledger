@@ -27,12 +27,13 @@ from django_ledger.utils import (
 )
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn
+    MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn,
+    LoginRequiredMixIn
 )
 
 
 # Entity CRUD Views ----
-class EntityModelListView(ListView):
+class EntityModelListView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
@@ -46,7 +47,7 @@ class EntityModelListView(ListView):
             user_model=self.request.user)
 
 
-class EntityModelCreateView(CreateView):
+class EntityModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
@@ -80,7 +81,7 @@ class EntityModelCreateView(CreateView):
         return super().form_valid(form)
 
 
-class EntityModelUpdateView(UpdateView):
+class EntityModelUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -99,7 +100,7 @@ class EntityModelUpdateView(UpdateView):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 
-class EntityDeleteView(DeleteView):
+class EntityDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_delete.html'
@@ -120,7 +121,7 @@ class EntityDeleteView(DeleteView):
 
 
 # DASHBOARD VIEWS START ----
-class EntityDashboardView(RedirectView):
+class EntityDashboardView(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -132,7 +133,10 @@ class EntityDashboardView(RedirectView):
                        })
 
 
-class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, DetailView):
+class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
+                                         YearlyReportMixIn,
+                                         FromToDatesMixIn,
+                                         DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity_dashboard.html'
@@ -219,18 +223,24 @@ class FiscalYearEntityModelDashboardView(YearlyReportMixIn, FromToDatesMixIn, De
 
 
 class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
-    pass
+    """
+    Entity Quarterly Dashboard View.
+    """
 
 
 class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
-    pass
+    """
+    Monthly Entity Dashboard View.
+    """
 
 
 class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
-    pass
+    """
+    Date-specific Entity Dashboard View.
+    """
 
 
-class EntityModelBalanceSheetView(RedirectView):
+class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -241,7 +251,9 @@ class EntityModelBalanceSheetView(RedirectView):
                        })
 
 
-class FiscalYearEntityModelBalanceSheetView(YearlyReportMixIn, DetailView):
+class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
+                                            YearlyReportMixIn,
+                                            DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/balance_sheet.html'
@@ -273,7 +285,7 @@ class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityMod
     """
 
 
-class EntityModelIncomeStatementView(RedirectView):
+class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
         return reverse('django_ledger:entity-ic-year',
@@ -283,7 +295,9 @@ class EntityModelIncomeStatementView(RedirectView):
                        })
 
 
-class FiscalYearEntityModelIncomeStatementView(YearlyReportMixIn, DetailView):
+class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
+                                               YearlyReportMixIn,
+                                               DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/income_statement.html'
@@ -304,14 +318,16 @@ class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEn
     """
 
 
-class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn,
+                                            FiscalYearEntityModelIncomeStatementView,
+                                            LoginRequiredMixIn):
     """
     Monthly Income Statement View.
     """
 
 
 # ENTITY MISC VIEWS ---
-class SetDefaultEntityView(RedirectView):
+class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):
     http_method_names = ['post']
 
     def post(self, request, *args, **kwargs):
@@ -332,7 +348,7 @@ class SetDefaultEntityView(RedirectView):
         return super().post(request, *args, **kwargs)
 
 
-class SetSessionDate(RedirectView):
+class SetSessionDate(LoginRequiredMixIn, RedirectView):
     """
     Sets the date filter on the session for a given entity.
     """
@@ -357,7 +373,7 @@ class SetSessionDate(RedirectView):
         return super().post(request, *args, **kwargs)
 
 
-class GenerateSampleData(RedirectView):
+class GenerateSampleData(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:entity-dashboard',
