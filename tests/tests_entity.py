@@ -11,14 +11,9 @@ from urllib.parse import urlparse
 from django_ledger.models.entity import EntityModel
 from django_ledger.utils import generate_sample_data, populate_default_coa
 from django_ledger.urls.entity import urlpatterns
+from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 
 UserModel = get_user_model()
-
-USERNAME = 'testuser'
-PASSWORD = 'TestingDJL1234'
-ENTITY_NAME = 'My Test Corp'
-START_YEAR = choice(range(1990, 2020))
-DAYS_FWD = randint(180, 180 * 3)
 
 
 class EntityModelTests(TestCase):
@@ -74,10 +69,9 @@ class EntityModelTests(TestCase):
             admin=self.user_model
         )
 
-        # amongst others things, makes sure the entity has a slug...
+        # Saves and makes sure the entity has a slug...
         self.entity_model.clean()
         self.entity_model.save()
-
         self.ENTITY_SLUG = self.entity_model.slug
 
         # populates accounts with DJL default CoA.
@@ -107,6 +101,11 @@ class EntityModelTests(TestCase):
         self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
 
     def test_protected_views(self, test_date: date = None):
+        """
+        All Entity Model views must have user authenticated.
+        If not, user mut be redirected to login page.
+        @param test_date: Optional test date. If None, will generate random date.
+        """
         for path, kwargs in self.ENTITY_URL_PATTERN.items():
             url_kwargs = dict()
             if 'entity_slug' in kwargs:
@@ -125,6 +124,7 @@ class EntityModelTests(TestCase):
             response = self.CLIENT.get(url, follow=False)
             redirect_url = urlparse(response.url)
             redirect_path = redirect_url.path
-            login_path = reverse('django_ledger:login')
+            login_path = DJANGO_LEDGER_LOGIN_URL
+
             self.assertEqual(response.status_code, 302, msg='EntityModelListView is not protected.')
             self.assertEqual(redirect_path, login_path, msg='EntityModelListView not redirecting to correct auth URL.')
