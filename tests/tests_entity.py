@@ -1,17 +1,17 @@
 from datetime import datetime, date
 from random import choice, randint
+from urllib.parse import urlparse
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from django.test.client import Client
 from django.urls import reverse
 from django.utils.timezone import get_default_timezone
-from urllib.parse import urlparse
 
-from django_ledger.models.entity import EntityModel
-from django_ledger.utils import generate_sample_data, populate_default_coa
-from django_ledger.urls.entity import urlpatterns
+from django_ledger.models import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
+from django_ledger.urls.entity import urlpatterns
 
 UserModel = get_user_model()
 
@@ -49,47 +49,68 @@ class EntityModelTests(TestCase):
         self.ENTITY_URL_PATTERN = {
             p.name: set(p.pattern.converters.keys()) for p in urlpatterns
         }
-        self.USERNAME = 'testuser'
-        self.PASSWORD = 'TestingDJL1234'
-        self.ENTITY_NAME = 'My Test Corp'
-        self.DAYS_FWD = randint(180, 180 * 3)
+        self.USERNAME: str = 'testuser'
+        self.PASSWORD: str = 'TestingDJL1234'
+        self.USER_EMAIL: str = 'testuser@djangoledger.com'
+        self.N: int = 5
 
+        self.DAYS_FWD: int = randint(180, 180 * 3)
         self.TZ = get_default_timezone()
         self.START_DATE = self.get_random_date()
 
-        self.CLIENT = Client(enforce_csrf_checks=True)
+        self.CLIENT = Client()
 
-        self.user_model = UserModel.objects.create(
-            username=self.USERNAME,
-            password=self.PASSWORD
-        )
+        try:
+            self.user_model = UserModel.objects.get(username=self.USERNAME)
+        except ObjectDoesNotExist:
+            self.user_model = UserModel.objects.create_user(
+                username=self.USERNAME,
+                password=self.PASSWORD,
+                email=self.USER_EMAIL,
+            )
 
-        self.entity_model: EntityModel = EntityModel(
-            name=self.ENTITY_NAME,
-            admin=self.user_model
-        )
+        self.TEST_DATA = [self.get_random_entity_data() for _ in range(self.N)]
+
+        # self.entity_model: EntityModel = EntityModel(
+        #     name=self.ENTITY_NAME,
+        #     admin=self.user_model
+        # )
 
         # Saves and makes sure the entity has a slug...
-        self.entity_model.clean()
-        self.entity_model.save()
-        self.ENTITY_SLUG = self.entity_model.slug
+        # self.entity_model.clean()
+        # self.entity_model.save()
+        # self.ENTITY_SLUG = self.entity_model.slug
 
         # populates accounts with DJL default CoA.
-        populate_default_coa(
-            entity_model=self.entity_model,
-            activate_accounts=True
-        )
+        # populate_default_coa(
+        #     entity_model=self.entity_model,
+        #     activate_accounts=True
+        # )
 
         # generates sample data to perform tests.
-        generate_sample_data(
-            entity=self.entity_model,
-            user_model=self.user_model,
-            start_dt=self.START_DATE,
-            days_fw=self.DAYS_FWD,
-            tx_quantity=int(self.DAYS_FWD * 0.5)
-        )
+        # generate_sample_data(
+        #     entity=self.entity_model,
+        #     user_model=self.user_model,
+        #     start_dt=self.START_DATE,
+        #     days_fw=self.DAYS_FWD,
+        #     tx_quantity=int(self.DAYS_FWD * 0.5)
+        # )
 
-    def get_random_date(self):
+    @staticmethod
+    def get_random_entity_data() -> dict:
+        return {
+            'name': f'Testing Inc-{randint(1000, 9999)}',
+            'address_1': f'{randint(1000, 9999)} Main St',
+            'address_2': f'Suite {randint(100, 999)}',
+            'city': 'Charlotte',
+            'state': 'NC',
+            'zip_code': '28202',
+            'country': 'US',
+            'email': 'mytest@testinginc.com',
+            'website': 'http://www.mytestingco.com',
+        }
+
+    def get_random_date(self) -> datetime:
         return datetime(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),
@@ -98,33 +119,72 @@ class EntityModelTests(TestCase):
         )
 
     def login_client(self):
-        self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
+        return self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
+
+    def test_entity_create_view(self):
+
+        entity_create_url = reverse('django_ledger:entity-create')
+        response = self.CLIENT.get(entity_create_url, follow=False)
+
+        # making sure user is logged in...
+        if response.status_code == 302:
+            self.login_client()
+            response = self.CLIENT.get(entity_create_url)
+            self.assertContains(response, status_code=200, text='New Entity Information')
+
+        # creating a number of entities...
+        for ent_data in self.TEST_DATA:
+            response = self.CLIENT.post(entity_create_url, data=ent_data, follow=True)
+            # user must be redirected if success...
+            self.assertContains(response, status_code=200, text='My Entities')
+
+        entity_must_have_all = ['city', 'state', 'zip_code', 'country']
+        for ent_data in self.TEST_DATA:
+            while entity_must_have_all:
+                ent_copy = ent_data.copy()
+                del ent_copy[entity_must_have_all.pop()]
+                response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+                self.assertContains(response, status_code=200, text='New Entity Information')
+                self.assertFormError(response, form='form', field=None,
+                                     errors='Must provide all City/State/Zip/Country')
+
+    def test_entity_list_view(self):
+        entity_list_url = reverse('django_ledger:entity-list')
+        self.login_client()
+        response = self.CLIENT.get(entity_list_url)
+
 
     def test_protected_views(self, test_date: date = None):
         """
         All Entity Model views must have user authenticated.
-        If not, user mut be redirected to login page.
+        If not, user must be redirected to login page.
         @param test_date: Optional test date. If None, will generate random date.
         """
-        for path, kwargs in self.ENTITY_URL_PATTERN.items():
-            url_kwargs = dict()
-            if 'entity_slug' in kwargs:
-                url_kwargs['entity_slug'] = self.ENTITY_SLUG
-            if 'year' in kwargs:
-                test_date = self.get_random_date()
-                url_kwargs['year'] = test_date.year
-            if 'month' in kwargs:
-                url_kwargs['month'] = test_date.month
-            if 'quarter' in kwargs:
-                url_kwargs['quarter'] = choice(range(1, 5))
-            if 'day' in kwargs:
-                url_kwargs['day'] = test_date.day
+        self.CLIENT.logout()
+        entity_model_qs = EntityModel.objects.for_user(self.user_model)
 
-            url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
-            response = self.CLIENT.get(url, follow=False)
-            redirect_url = urlparse(response.url)
-            redirect_path = redirect_url.path
-            login_path = DJANGO_LEDGER_LOGIN_URL
+        for entity_model in entity_model_qs:
+            for path, kwargs in self.ENTITY_URL_PATTERN.items():
+                url_kwargs = dict()
+                if 'entity_slug' in kwargs:
+                    url_kwargs['entity_slug'] = entity_model.slug
+                if 'year' in kwargs:
+                    test_date = self.get_random_date()
+                    url_kwargs['year'] = test_date.year
+                if 'month' in kwargs:
+                    url_kwargs['month'] = test_date.month
+                if 'quarter' in kwargs:
+                    url_kwargs['quarter'] = choice(range(1, 5))
+                if 'day' in kwargs:
+                    url_kwargs['day'] = test_date.day
 
-            self.assertEqual(response.status_code, 302, msg='EntityModelListView is not protected.')
-            self.assertEqual(redirect_path, login_path, msg='EntityModelListView not redirecting to correct auth URL.')
+                url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
+                response = self.CLIENT.get(url, follow=False)
+                redirect_url = urlparse(response.url)
+                redirect_path = redirect_url.path
+                login_path = DJANGO_LEDGER_LOGIN_URL
+
+                self.assertEqual(response.status_code, 302,
+                                 msg='EntityModelListView is not protected.')
+                self.assertEqual(redirect_path, login_path,
+                                 msg='EntityModelListView not redirecting to correct auth URL.')
