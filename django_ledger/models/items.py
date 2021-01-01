@@ -99,7 +99,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['earnings_account']),
             models.Index(fields=['expense_account']),
             models.Index(fields=['for_inventory']),
-            models.Index(fields=['is_active'])
+            models.Index(fields=['is_active']),
+            models.Index(fields=['entity'])
         ]
 
     def __str__(self):
