@@ -17,14 +17,14 @@
                                 {% for entity in entities %}
                                     <li>{{ entity.name }}
                                         <a href="{{ entity.get_absolute_url }}"
-                                           class="button is-small is-primary is-outlined">View</a>
-                                        <a href="{% url 'django_ledger:entity-update' entity_slug=entity.slug %}"
-                                           class="button is-small is-dark">Settings</a>
+                                           class="button is-small is-primary is-outlined">{% trans 'View' %}</a>
+                                        <a href="{{ entity.get_manage_url }}"
+                                           class="button is-small is-dark">{% trans 'Settings' %}</a>
                                     </li>
                                 {% endfor %}
                             </ul>
                             <a href="{% url 'django_ledger:entity-create' %}"
-                               class="button is-fullwidth is-primary is-outlined djetler_my_1">New Entity</a>
+                               class="button is-fullwidth is-primary is-outlined djetler_my_1">{% trans 'New Entity' %}</a>
                         </div>
                     </div>
                 </div>

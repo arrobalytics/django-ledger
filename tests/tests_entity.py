@@ -121,39 +121,6 @@ class EntityModelTests(TestCase):
     def login_client(self):
         return self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
 
-    def test_entity_create_view(self):
-
-        entity_create_url = reverse('django_ledger:entity-create')
-        response = self.CLIENT.get(entity_create_url, follow=False)
-
-        # making sure user is logged in...
-        if response.status_code == 302:
-            self.login_client()
-            response = self.CLIENT.get(entity_create_url)
-            self.assertContains(response, status_code=200, text='New Entity Information')
-
-        # creating a number of entities...
-        for ent_data in self.TEST_DATA:
-            response = self.CLIENT.post(entity_create_url, data=ent_data, follow=True)
-            # user must be redirected if success...
-            self.assertContains(response, status_code=200, text='My Entities')
-
-        entity_must_have_all = ['city', 'state', 'zip_code', 'country']
-        for ent_data in self.TEST_DATA:
-            while entity_must_have_all:
-                ent_copy = ent_data.copy()
-                del ent_copy[entity_must_have_all.pop()]
-                response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
-                self.assertContains(response, status_code=200, text='New Entity Information')
-                self.assertFormError(response, form='form', field=None,
-                                     errors='Must provide all City/State/Zip/Country')
-
-    def test_entity_list_view(self):
-        entity_list_url = reverse('django_ledger:entity-list')
-        self.login_client()
-        response = self.CLIENT.get(entity_list_url)
-
-
     def test_protected_views(self, test_date: date = None):
         """
         All Entity Model views must have user authenticated.
@@ -188,3 +155,79 @@ class EntityModelTests(TestCase):
                                  msg='EntityModelListView is not protected.')
                 self.assertEqual(redirect_path, login_path,
                                  msg='EntityModelListView not redirecting to correct auth URL.')
+
+    def test_entity_views(self):
+        """
+        Testing the creation of a number of entities.
+        """
+        # ENTITY-CREATE VIEW...
+        entity_create_url = reverse('django_ledger:entity-create')
+        response = self.CLIENT.get(entity_create_url, follow=False)
+
+        # making sure user is logged in...
+        if response.status_code == 302:
+            self.login_client()
+            response = self.CLIENT.get(entity_create_url)
+            self.assertContains(response, status_code=200, text='New Entity Information')
+
+        # checks that form throws Validation Error if any value is missing...
+        entity_must_have_all = ['city', 'state', 'zip_code', 'country']
+        for ent_data in self.TEST_DATA:
+            while entity_must_have_all:
+                ent_copy = ent_data.copy()
+                del ent_copy[entity_must_have_all.pop()]
+                response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+                self.assertContains(response, status_code=200, text='New Entity Information')
+                self.assertFormError(response, form='form', field=None,
+                                     errors='Must provide all City/State/Zip/Country')
+
+        # checks that valid url is provided...
+        ent_copy = choice(self.TEST_DATA).copy()
+        ent_copy['website'] = ent_copy['website'][1:]
+        response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+        self.assertFormError(response, form='form', field='website', errors='Enter a valid URL.')
+
+        # creating a number of entities...
+        for ent_data in self.TEST_DATA:
+            response = self.CLIENT.post(entity_create_url, data=ent_data, follow=True)
+            # user must be redirected if success...
+            self.assertContains(response, status_code=200, text='My Entities')
+            self.assertContains(response, status_code=200, text=ent_data['name'])
+
+        # ENTITY-LIST VIEW...
+        with self.assertNumQueries(3):
+            entity_list_url = reverse('django_ledger:entity-list')
+            response = self.CLIENT.get(entity_list_url)
+
+            # checks if it was able to render template...
+            self.assertContains(response, status_code=200, text='My Entities')
+
+            # checks if all entities where rendered...
+            for ent_data in self.TEST_DATA:
+                self.assertContains(response, status_code=200, text=ent_data['name'])
+
+            # checks if all entities have proper anchor tags to dashboard and update views...
+            entity_qs = response.context['entities']
+            for entity_model in entity_qs:
+                # checks if entity shows up in the list...
+                self.assertContains(response,
+                                    status_code=200,
+                                    text=entity_model.name,
+                                    msg_prefix=f'Entity {entity_model.name} not in the view!')
+
+                # checks if there is a button with a link to the dashboard...
+                self.assertContains(response,
+                                    status_code=200,
+                                    text=reverse('django_ledger:entity-dashboard',
+                                                 kwargs={
+                                                     'entity_slug': entity_model.slug
+                                                 }))
+                # checks if there is a button with a link to the update view...
+                self.assertContains(response,
+                                    status_code=200,
+                                    text=reverse('django_ledger:entity-update',
+                                                 kwargs={
+                                                     'entity_slug': entity_model.slug
+                                                 }))
+
+        # ENTITY-UPDATE VIEW...

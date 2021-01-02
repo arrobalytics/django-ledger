@@ -29,9 +29,7 @@
                     {% date_filter_form %}
                 {% endif %}
 
-                <div class="navbar-item">
-                    {% default_entity %}
-                </div>
+{#                <div class="navbar-item">{% default_entity %}</div>#}
                 <div class="navbar-item">
                     <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">
                         {% trans 'Logout' %}
