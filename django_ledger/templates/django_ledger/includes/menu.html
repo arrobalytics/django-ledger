@@ -7,7 +7,7 @@
         <p class="menu-label">{% session_entity_name %}</p>
         <ul class="menu-list">
             <li>
-                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
+                <a href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">
                     {% trans 'Dashboard' %}
                 </a>
             </li>

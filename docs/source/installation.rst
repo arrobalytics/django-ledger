@@ -17,7 +17,6 @@ Add **mptt** and **django_ledger** to your installed apps.
 
     INSTALLED_APPS = [
         ...
-        'mptt',
         'django_ledger',
         ...
     ]
@@ -28,10 +27,10 @@ Include Djetler's URLs in your project.
 
     urlpatterns = [
         ...
-        path('', include('django_ledger.urls')),
+        path('', include('django_ledger.urls', namespace='django_ledger')),
         ...
     ]
 
-Now run Djetler's migrations.
+Now run Django Ledger's migrations.
 
     >>> python manage.py migrate django_ledger

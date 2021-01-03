@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Manager, Q
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -86,7 +86,7 @@ class EntityModelAbstract(MPTTModel,
         return self.name
 
     def get_absolute_url(self):
-        return reverse('django_ledger:entity-dashboard',
+        return reverse('django_ledger:entity-detail',
                        kwargs={
                            'entity_slug': self.slug
                        })
@@ -212,16 +212,8 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-def entitymodel_presave(instance: EntityModelAbstract, **kwargs):
-    if not instance.uuid:
-        instance.NEW_MODEL = True
-
-
-pre_save.connect(entitymodel_presave, EntityModel)
-
-
-def entitymodel_postsave(instance: EntityModelAbstract, **kwargs):
-    if instance.NEW_MODEL:
+def entitymodel_postsave(instance, **kwargs):
+    if not getattr(instance, 'coa', None):
         ChartOfAccountModel.objects.create(
             slug=instance.slug + '-coa',
             name=instance.name + ' CoA',

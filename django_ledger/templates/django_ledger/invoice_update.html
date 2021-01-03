@@ -96,7 +96,7 @@
                                 </button>
                                 <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-fullwidth">{% trans 'Invoice List' %}</a>
-                                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                <a href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                             </form>
 

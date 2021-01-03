@@ -7,7 +7,7 @@
     <div class="box">
         <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
            class="button is-primary is-outlined">Create Account</a>
-        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+        <a href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}"
            class="button is-dark">Back</a>
         {% accounts_table asset_accounts 'Asset Accounts' %}
         {% accounts_table liability_accounts 'Liability Accounts' %}

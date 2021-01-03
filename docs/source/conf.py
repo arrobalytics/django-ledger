@@ -19,7 +19,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, here)
 sys.path.insert(0, '../../')
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "djltest.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "tests.settings"
 django.setup()
 
 # sys.path.insert(0, os.path.abspath('.'))
@@ -27,8 +27,8 @@ django.setup()
 
 # -- Project information -----------------------------------------------------
 
-project = 'Djetler'
-copyright = '2020, Miguel Sanda'
+project = 'Django Ledger'
+copyright = '2021, EDMA Group Inc'
 author = 'Miguel Sanda'
 
 # -- General configuration ---------------------------------------------------

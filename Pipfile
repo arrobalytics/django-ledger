@@ -10,7 +10,7 @@ ofxtools = ">=0.8.21"
 jsonschema = ">=3.2.0"
 
 [dev-packages]
-sphinx = "~=3.2"
+sphinx = "~=3.4.1"
 faker = "~=5.1"
 behave = "~=1.2.6"
 

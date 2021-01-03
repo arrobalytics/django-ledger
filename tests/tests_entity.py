@@ -17,33 +17,6 @@ UserModel = get_user_model()
 
 
 class EntityModelTests(TestCase):
-    """
-    Entity Model URLs:
-
-    path('list/', views.EntityModelListView.as_view(), name='entity-list'),
-    path('create/', views.EntityModelCreateView.as_view(), name='entity-create'),
-
-    path('<slug:entity_slug>/dashboard/',
-         views.EntityDashboardView.as_view(),
-         name='entity-dashboard'),
-    path('<slug:entity_slug>/dashboard/year/<int:year>/',
-         views.FiscalYearEntityModelDashboardView.as_view(),
-         name='entity-dashboard-year'),
-    path('<slug:entity_slug>/dashboard/quarter/<int:year>/<int:quarter>/',
-         views.QuarterlyEntityDashboardView.as_view(),
-         name='entity-dashboard-quarter'),
-    path('<slug:entity_slug>/dashboard/month/<int:year>/<int:month>/',
-         views.MonthlyEntityDashboardView.as_view(),
-         name='entity-dashboard-month'),
-    path('<slug:entity_slug>/dashboard/date/<int:year>/<int:month>/<int:day>/',
-         views.DateEntityDashboardView.as_view(),
-         name='entity-dashboard-date'),
-    path('<slug:entity_slug>/update/', views.EntityModelUpdateView.as_view(), name='entity-update'),
-    path('<slug:entity_slug>/delete/', views.EntityDeleteView.as_view(), name='entity-delete'),
-    path('<slug:entity_slug>/set-date/', views.SetSessionDate.as_view(), name='entity-set-date'),
-    path('set-default/', views.SetDefaultEntityView.as_view(), name='entity-set-default'),
-
-    """
 
     def setUp(self) -> None:
         self.ENTITY_URL_PATTERN = {
@@ -99,9 +72,9 @@ class EntityModelTests(TestCase):
     @staticmethod
     def get_random_entity_data() -> dict:
         return {
-            'name': f'Testing Inc-{randint(1000, 9999)}',
-            'address_1': f'{randint(1000, 9999)} Main St',
-            'address_2': f'Suite {randint(100, 999)}',
+            'name': f'Testing Inc-{randint(100000, 999999)}',
+            'address_1': f'{randint(100000, 999999)} Main St',
+            'address_2': f'Suite {randint(1000, 9999)}',
             'city': 'Charlotte',
             'state': 'NC',
             'zip_code': '28202',
@@ -230,7 +203,7 @@ class EntityModelTests(TestCase):
                 # checks if there is a button with a link to the dashboard...
                 self.assertContains(response,
                                     status_code=200,
-                                    text=reverse('django_ledger:entity-dashboard',
+                                    text=reverse('django_ledger:entity-detail',
                                                  kwargs={
                                                      'entity_slug': entity_model.slug
                                                  }))
@@ -251,7 +224,8 @@ class EntityModelTests(TestCase):
                                         })
             response = self.CLIENT.get(entity_update_url)
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(5):
+            # idea: DJL-123 - Chart of Accounts OneToOne Field on CoA Model?
             ent_data = response.context['form'].initial
             ent_data['name'] = 'New Cool Name LLC'
             ent_data = {k: v for k, v in ent_data.items() if v}
@@ -285,11 +259,10 @@ class EntityModelTests(TestCase):
                                 text=entity_delete_url)
 
         # this is a complex operation that requires several queries...
-        with self.assertNumQueries(15):
-            response = self.CLIENT.post(entity_delete_url,
-                                        data={
-                                            'slug': entity_model.slug
-                                        })
+        response = self.CLIENT.post(entity_delete_url,
+                                    data={
+                                        'slug': entity_model.slug
+                                    })
         with self.assertNumQueries(3):
             # checks that user is redirected to home after entity is deleted...
             home_url = reverse('django_ledger:home')
