@@ -21,9 +21,10 @@ Add **mptt** and **django_ledger** to your installed apps.
         ...
     ]
 
-Include Djetler's URLs in your project.
+Include Django Ledger's URLs in your project.
 
 .. code-block:: python
+    from django.urls import path, include
 
     urlpatterns = [
         ...
