@@ -284,15 +284,18 @@ class EntityModelTests(TestCase):
                                 status_code=200,
                                 text=entity_delete_url)
 
+        # this is a complex operation that requires several queries...
         with self.assertNumQueries(15):
             response = self.CLIENT.post(entity_delete_url,
                                         data={
                                             'slug': entity_model.slug
                                         })
         with self.assertNumQueries(3):
+            # checks that user is redirected to home after entity is deleted...
             home_url = reverse('django_ledger:home')
             self.assertRedirects(response, home_url)
 
         with self.assertNumQueries(3):
+            # checks that entity no longer shows in entity list...
             response = self.CLIENT.get(entity_list_url)
             self.assertNotContains(response, text=entity_model.name)

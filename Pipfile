@@ -15,4 +15,4 @@ faker = "~=5.1"
 behave = "~=1.2.6"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
