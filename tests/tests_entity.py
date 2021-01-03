@@ -182,10 +182,22 @@ class EntityModelTests(TestCase):
                                      errors='Must provide all City/State/Zip/Country')
 
         # checks that valid url is provided...
-        ent_copy = choice(self.TEST_DATA).copy()
+        ent_copy = self.get_random_entity_data()
         ent_copy['website'] = ent_copy['website'][1:]
-        response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+        response = self.CLIENT.post(entity_create_url, data=ent_copy)
         self.assertFormError(response, form='form', field='website', errors='Enter a valid URL.')
+
+        # checks that a valid entity name is provided...
+        ent_copy = self.get_random_entity_data()
+        ent_copy['name'] = ''
+        response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+        self.assertFormError(response, form='form', field='name', errors='Please provide a valid name for new Entity.')
+
+        # checks for valid entity name length....
+        ent_copy = self.get_random_entity_data()
+        ent_copy['name'] = 'In'
+        response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
+        self.assertFormError(response, form='form', field='name', errors='Looks like this entity name is too short...')
 
         # creating a number of entities...
         for ent_data in self.TEST_DATA:
@@ -231,3 +243,56 @@ class EntityModelTests(TestCase):
                                                  }))
 
         # ENTITY-UPDATE VIEW...
+        with self.assertNumQueries(3):
+            entity_model = entity_qs.first()
+            entity_update_url = reverse('django_ledger:entity-update',
+                                        kwargs={
+                                            'entity_slug': entity_model.slug
+                                        })
+            response = self.CLIENT.get(entity_update_url)
+
+        with self.assertNumQueries(4):
+            ent_data = response.context['form'].initial
+            ent_data['name'] = 'New Cool Name LLC'
+            ent_data = {k: v for k, v in ent_data.items() if v}
+            response = self.CLIENT.post(entity_update_url, data=ent_data)
+
+        with self.assertNumQueries(3):
+            # redirects to entity list
+            self.assertRedirects(response, expected_url=entity_list_url)
+
+        with self.assertNumQueries(3):
+            response = self.CLIENT.get(entity_list_url)
+            # checks if updated entity is in list...
+            self.assertContains(response, status_code=200, text=ent_data['name'])
+
+        # ENTITY-DELETE VIEW...
+        entity_model = entity_model.get_previous_by_created()
+        with self.assertNumQueries(3):
+            entity_delete_url = reverse('django_ledger:entity-delete',
+                                        kwargs={
+                                            'entity_slug': entity_model.slug
+                                        })
+            response = self.CLIENT.get(entity_delete_url)
+            self.assertContains(response,
+                                status_code=200,
+                                text=entity_model.name)
+            self.assertContains(response,
+                                status_code=200,
+                                text=f'Are you sure you want to delete')
+            self.assertContains(response,
+                                status_code=200,
+                                text=entity_delete_url)
+
+        with self.assertNumQueries(15):
+            response = self.CLIENT.post(entity_delete_url,
+                                        data={
+                                            'slug': entity_model.slug
+                                        })
+        with self.assertNumQueries(3):
+            home_url = reverse('django_ledger:home')
+            self.assertRedirects(response, home_url)
+
+        with self.assertNumQueries(3):
+            response = self.CLIENT.get(entity_list_url)
+            self.assertNotContains(response, text=entity_model.name)

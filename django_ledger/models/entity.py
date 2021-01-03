@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Manager, Q
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -73,6 +73,14 @@ class EntityModelAbstract(MPTTModel,
 
     class MPTTMeta:
         order_insertion_by = ['created']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # used for pre/post save signals coordination.
+        # avoids DB query of CoA Model on every EntityModel save().
+        # may be a better option...?
+        # todo: find alternative, if any..
+        self.NEW_MODEL: bool = False
 
     def __str__(self):
         return self.name
@@ -204,8 +212,16 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-def entitymodel_postsave(sender, instance, **kwargs):
-    if not getattr(instance, 'coa', None):
+def entitymodel_presave(instance: EntityModelAbstract, **kwargs):
+    if not instance.uuid:
+        instance.NEW_MODEL = True
+
+
+pre_save.connect(entitymodel_presave, EntityModel)
+
+
+def entitymodel_postsave(instance: EntityModelAbstract, **kwargs):
+    if instance.NEW_MODEL:
         ChartOfAccountModel.objects.create(
             slug=instance.slug + '-coa',
             name=instance.name + ' CoA',

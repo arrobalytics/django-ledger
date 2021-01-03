@@ -9,6 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import timedelta
 from random import randint
 
+from django.contrib.messages import add_message, ERROR
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.timezone import localtime, localdate
@@ -118,6 +119,17 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
     def get_success_url(self):
         return reverse('django_ledger:home')
+
+    def delete(self, request, *args, **kwargs):
+        entity = self.get_object()
+        c = entity.children.count()
+        if c != 0:
+            add_message(request,
+                        level=ERROR,
+                        extra_tags='is-danger',
+                        message=_('Entity has %s children. Must delete children first.' % c))
+            return self.get(request, *args, **kwargs)
+        return super().delete(request, *args, **kwargs)
 
 
 # DASHBOARD VIEWS START ----
