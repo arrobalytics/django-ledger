@@ -18,9 +18,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.models.bill import BillModel
-from django_ledger.models.entity import EntityModel
-from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models import BillModel, EntityModel, InvoiceModel, LedgerModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
@@ -121,14 +119,16 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
         return reverse('django_ledger:home')
 
     def delete(self, request, *args, **kwargs):
-        entity = self.get_object()
-        c = entity.children.count()
+        entity_model = self.get_object()
+        c = entity_model.children.count()
+        # todo: this will need to be changed once hierarchical support is enabled.
         if c != 0:
             add_message(request,
                         level=ERROR,
                         extra_tags='is-danger',
                         message=_('Entity has %s children. Must delete children first.' % c))
             return self.get(request, *args, **kwargs)
+        entity_model.ledgers.all().delete()
         return super().delete(request, *args, **kwargs)
 
 

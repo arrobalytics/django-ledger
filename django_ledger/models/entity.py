@@ -74,14 +74,6 @@ class EntityModelAbstract(MPTTModel,
     class MPTTMeta:
         order_insertion_by = ['created']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # used for pre/post save signals coordination.
-        # avoids DB query of CoA Model on every EntityModel save().
-        # may be a better option...?
-        # todo: find alternative, if any..
-        self.NEW_MODEL: bool = False
-
     def __str__(self):
         return self.name
 
