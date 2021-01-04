@@ -15,11 +15,11 @@ import sys
 
 import django
 
-here = os.path.abspath(os.path.dirname(__file__))
-sys.path.insert(0, here)
-sys.path.insert(0, '../../')
+HERE = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, HERE)
+sys.path.insert(0, '../../django_ledger')
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "djltest.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "tests.settings"
 django.setup()
 
 # sys.path.insert(0, os.path.abspath('.'))
@@ -27,8 +27,8 @@ django.setup()
 
 # -- Project information -----------------------------------------------------
 
-project = 'Djetler'
-copyright = '2020, Miguel Sanda'
+project = 'Django Ledger'
+copyright = '2021, EDMA Group Inc'
 author = 'Miguel Sanda'
 
 # -- General configuration ---------------------------------------------------
@@ -58,4 +58,4 @@ html_theme = 'alabaster'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['assets']

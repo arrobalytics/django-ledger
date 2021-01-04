@@ -7,7 +7,7 @@
         <a class="button is-primary is-outlined"
            href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
         <a class="button is-dark"
-           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Back</a>
+           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Back</a>
         {% ledgers_table %}
     </div>
 {% endblock %}

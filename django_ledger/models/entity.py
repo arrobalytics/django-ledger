@@ -78,7 +78,7 @@ class EntityModelAbstract(MPTTModel,
         return self.name
 
     def get_absolute_url(self):
-        return reverse('django_ledger:entity-dashboard',
+        return reverse('django_ledger:entity-detail',
                        kwargs={
                            'entity_slug': self.slug
                        })
@@ -204,7 +204,7 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-def entitymodel_postsave(sender, instance, **kwargs):
+def entitymodel_postsave(instance, **kwargs):
     if not getattr(instance, 'coa', None):
         ChartOfAccountModel.objects.create(
             slug=instance.slug + '-coa',

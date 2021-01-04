@@ -186,7 +186,7 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
         return context
 
     def get_success_url(self):
-        return reverse('django_ledger:entity-dashboard',
+        return reverse('django_ledger:entity-detail',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
@@ -222,7 +222,7 @@ class InvoiceModelMarkPaidView(LoginRequiredMixIn,
                              messages.SUCCESS,
                              f'Successfully marked bill {invoice.invoice_number} as Paid.',
                              extra_tags='is-success')
-        redirect_url = reverse('django_ledger:entity-dashboard',
+        redirect_url = reverse('django_ledger:entity-detail',
                                kwargs={
                                    'entity_slug': self.kwargs['entity_slug']
                                })

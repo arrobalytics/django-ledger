@@ -9,6 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import timedelta
 from random import randint
 
+from django.contrib.messages import add_message, ERROR
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.timezone import localtime, localdate
@@ -17,9 +18,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.models.bill import BillModel
-from django_ledger.models.entity import EntityModel
-from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models import BillModel, EntityModel, InvoiceModel, LedgerModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
@@ -119,13 +118,26 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
     def get_success_url(self):
         return reverse('django_ledger:home')
 
+    def delete(self, request, *args, **kwargs):
+        entity_model = self.get_object()
+        c = entity_model.children.count()
+        # todo: this will need to be changed once hierarchical support is enabled.
+        if c != 0:
+            add_message(request,
+                        level=ERROR,
+                        extra_tags='is-danger',
+                        message=_('Entity has %s children. Must delete children first.' % c))
+            return self.get(request, *args, **kwargs)
+        entity_model.ledgers.all().delete()
+        return super().delete(request, *args, **kwargs)
+
 
 # DASHBOARD VIEWS START ----
-class EntityDashboardView(LoginRequiredMixIn, RedirectView):
+class EntityModelDetailView(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
-        return reverse('django_ledger:entity-dashboard-month',
+        return reverse('django_ledger:entity-detail-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
                            'year': loc_date.year,
@@ -133,10 +145,10 @@ class EntityDashboardView(LoginRequiredMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
-                                         YearlyReportMixIn,
-                                         FromToDatesMixIn,
-                                         DetailView):
+class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
+                                      YearlyReportMixIn,
+                                      FromToDatesMixIn,
+                                      DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity_dashboard.html'
@@ -222,19 +234,19 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
         ).select_related('vendor').order_by('due_date')
 
 
-class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
+class QuarterlyEntityDetailView(QuarterlyReportMixIn, FiscalYearEntityModelDetailView):
     """
     Entity Quarterly Dashboard View.
     """
 
 
-class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
+class MonthlyEntityDetailView(MonthlyReportMixIn, FiscalYearEntityModelDetailView):
     """
     Monthly Entity Dashboard View.
     """
 
 
-class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
+class DateEntityDetailView(DateReportMixIn, MonthlyEntityDetailView):
     """
     Date-specific Entity Dashboard View.
     """
@@ -335,7 +347,7 @@ class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):
         session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
-            self.url = reverse('django_ledger:entity-dashboard',
+            self.url = reverse('django_ledger:entity-detail',
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
@@ -363,7 +375,7 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
             as_of_form.clean()
             end_date = as_of_form.cleaned_data['date']
             set_session_date_filter(request, entity_slug, end_date)
-            self.url = reverse('django_ledger:entity-dashboard-date',
+            self.url = reverse('django_ledger:entity-detail-date',
                                kwargs={
                                    'entity_slug': self.kwargs['entity_slug'],
                                    'year': end_date.year,
@@ -376,7 +388,7 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
 class GenerateSampleData(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:entity-dashboard',
+        return reverse('django_ledger:entity-detail',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })

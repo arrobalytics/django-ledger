@@ -1,4 +1,4 @@
 Views
 =====
-.. automodule:: django_ledger.views.entity
+.. automodule:: django_ledger.views
     :members:

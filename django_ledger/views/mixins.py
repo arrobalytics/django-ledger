@@ -8,14 +8,15 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import monthrange
 from datetime import datetime, timedelta
-from django.urls import reverse_lazy
 
+from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.http import Http404
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
-from django.utils.dateparse import parse_date
-from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
+
+from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 
 
 class SuccessUrlNextMixIn:
@@ -24,9 +25,10 @@ class SuccessUrlNextMixIn:
         if next:
             return next
         elif self.kwargs.get('entity_slug'):
-            return reverse('django_ledger:entity-dashboard', kwargs={
-                'entity_slug': self.kwargs['entity_slug']
-            })
+            return reverse('django_ledger:entity-detail',
+                           kwargs={
+                               'entity_slug': self.kwargs['entity_slug']
+                           })
         return reverse('django_ledger:home')
 
 
@@ -229,5 +231,5 @@ class FromToDatesMixIn:
 
 
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
-    login_url = reverse_lazy('django_ledger:login')
+    login_url = DJANGO_LEDGER_LOGIN_URL
     redirect_field_name = 'next'
