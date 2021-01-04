@@ -53,8 +53,12 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                          validators=[MinValueValidator(0)])
 
     for_inventory = models.BooleanField(
-        verbose_name=_('Is item for inventory'),
-        help_text=_('Is an item or service you sell'))
+        verbose_name=_('Is an item for inventory'),
+        help_text=_('Is is an item you require '))
+
+    is_product_or_service = models.BooleanField(
+        verbose_name=_('Is a product or service.'),
+        help_text=_('Is a product or service you sell or provide to customers.'))
 
     inventory_account = models.ForeignKey(
         'django_ledger.AccountModel',
