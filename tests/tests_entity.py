@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from logging import getLogger, INFO
 from random import choice, randint
 from urllib.parse import urlparse
 
@@ -7,13 +8,17 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from django.test.client import Client
 from django.urls import reverse
-from django.utils.timezone import get_default_timezone
+from django.utils.timezone import get_default_timezone, localdate
 
 from django_ledger.models import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.urls.entity import urlpatterns
+from django_ledger.utils import populate_default_coa, generate_sample_data
 
 UserModel = get_user_model()
+
+logger = getLogger(__name__)
+logger.setLevel(level=INFO)
 
 
 class EntityModelTests(TestCase):
@@ -43,31 +48,6 @@ class EntityModelTests(TestCase):
             )
 
         self.TEST_DATA = [self.get_random_entity_data() for _ in range(self.N)]
-
-        # self.entity_model: EntityModel = EntityModel(
-        #     name=self.ENTITY_NAME,
-        #     admin=self.user_model
-        # )
-
-        # Saves and makes sure the entity has a slug...
-        # self.entity_model.clean()
-        # self.entity_model.save()
-        # self.ENTITY_SLUG = self.entity_model.slug
-
-        # populates accounts with DJL default CoA.
-        # populate_default_coa(
-        #     entity_model=self.entity_model,
-        #     activate_accounts=True
-        # )
-
-        # generates sample data to perform tests.
-        # generate_sample_data(
-        #     entity=self.entity_model,
-        #     user_model=self.user_model,
-        #     start_dt=self.START_DATE,
-        #     days_fw=self.DAYS_FWD,
-        #     tx_quantity=int(self.DAYS_FWD * 0.5)
-        # )
 
     @staticmethod
     def get_random_entity_data() -> dict:
@@ -240,8 +220,51 @@ class EntityModelTests(TestCase):
             # checks if updated entity is in list...
             self.assertContains(response, status_code=200, text=ent_data['name'])
 
-        # ENTITY-DELETE VIEW...
+        # ENTITY-DETAIL VIEW...
         entity_model = entity_model.get_previous_by_created()
+        logger.warning(f'Populating CoA for {entity_model.name}...')
+        # populates accounts with DJL default CoA.
+        populate_default_coa(
+            entity_model=entity_model,
+            activate_accounts=True
+        )
+
+        logger.warning(f'Generating sample data for {entity_model.name}...')
+        # generates sample data to perform tests.
+        generate_sample_data(
+            entity=entity_model,
+            user_model=self.user_model,
+            start_dt=self.START_DATE,
+            days_fw=self.DAYS_FWD,
+            tx_quantity=int(self.DAYS_FWD * 0.5)
+        )
+
+        with self.assertNumQueries(2):
+            # this will redirect to entity-detail-month...
+            entity_detail_url = reverse('django_ledger:entity-detail',
+                                        kwargs={
+                                            'entity_slug': entity_model.slug
+                                        })
+            response = self.CLIENT.get(entity_detail_url)
+
+        with self.assertNumQueries(9):
+            local_dt = localdate()
+            entity_month_detail_url = reverse('django_ledger:entity-detail-month',
+                                              kwargs={
+                                                  'entity_slug': entity_model.slug,
+                                                  'year': local_dt.year,
+                                                  'month': local_dt.month
+                                              })
+            self.assertRedirects(response, entity_month_detail_url)
+
+        with self.assertNumQueries(6):
+            # same as before, but this time the session must not be update because user has not suited entities...
+            response = self.CLIENT.get(entity_month_detail_url)
+            self.assertContains(response, text=entity_model.name)
+            self.assertTrue(response.context['bills'].count() >= 0)
+            self.assertTrue(response.context['invoices'].count() >= 0)
+
+        # ENTITY-DELETE VIEW...
         with self.assertNumQueries(3):
             entity_delete_url = reverse('django_ledger:entity-delete',
                                         kwargs={
@@ -259,16 +282,17 @@ class EntityModelTests(TestCase):
                                 text=entity_delete_url)
 
         # this is a complex operation that requires several queries...
-        response = self.CLIENT.post(entity_delete_url,
-                                    data={
-                                        'slug': entity_model.slug
-                                    })
-        with self.assertNumQueries(3):
-            # checks that user is redirected to home after entity is deleted...
-            home_url = reverse('django_ledger:home')
-            self.assertRedirects(response, home_url)
+        with self.assertNumQueries(29):
+            response = self.CLIENT.post(entity_delete_url,
+                                        data={
+                                            'slug': entity_model.slug
+                                        })
+            with self.assertNumQueries(3):
+                # checks that user is redirected to home after entity is deleted...
+                home_url = reverse('django_ledger:home')
+                self.assertRedirects(response, home_url)
 
-        with self.assertNumQueries(3):
-            # checks that entity no longer shows in entity list...
-            response = self.CLIENT.get(entity_list_url)
-            self.assertNotContains(response, text=entity_model.name)
+            with self.assertNumQueries(3):
+                # checks that entity no longer shows in entity list...
+                response = self.CLIENT.get(entity_list_url)
+                self.assertNotContains(response, text=entity_model.name)
