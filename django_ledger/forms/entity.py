@@ -29,8 +29,16 @@ class EntityModelCreateForm(ModelForm):
         return name
 
     def clean(self):
-        validate_cszc(self.cleaned_data)
+        populate_coa = self.cleaned_data['default_coa']
+        activate_all_accounts = self.cleaned_data['activate_all_accounts']
+        sample_data = self.cleaned_data['generate_sample_data']
 
+        if sample_data and not all([
+            populate_coa,
+            activate_all_accounts
+        ]):
+            raise ValidationError(f'Filling sample data requires using default CoA and activate all accounts.')
+        validate_cszc(self.cleaned_data)
 
     class Meta:
         model = EntityModel
