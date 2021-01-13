@@ -6,13 +6,12 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, DateInput, TextInput, Select, EmailInput, URLInput, CheckboxInput
+from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory
+from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
-from django_ledger.models.accounts import AccountModel
-from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.customer import CustomerModel
+from django_ledger.models import AccountModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel, ItemModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -89,14 +88,6 @@ class InvoiceModelUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-    def save(self, commit=True):
-        if commit:
-            self.instance.migrate_state(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
-            )
-        super().save(commit=commit)
-
     class Meta:
         model = InvoiceModel
         fields = [
@@ -129,3 +120,53 @@ class InvoiceModelUpdateForm(ModelForm):
             'paid': CheckboxInput(attrs={'type': 'checkbox'}),
 
         }
+
+
+class InvoiceItemForm(ModelForm):
+    class Meta:
+        model = InvoiceModelItemsThroughModel
+        fields = [
+            'item_model',
+            'unit_cost',
+            'quantity'
+        ]
+        widgets = {
+            'item_model': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+            }),
+            'unit_cost': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'onchange': 'djLedger.onChangeItem(this)'
+            }),
+            'quantity': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'onchange': 'djLedger.onChangeItem(this)'
+            })
+        }
+
+
+class BaseInvoiceItemFormset(BaseModelFormSet):
+
+    def __init__(self, *args, entity_slug, invoice_pk, user_model, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.USER_MODEL = user_model
+        self.INVOICE_PK = invoice_pk
+        self.ENTITY_SLUG = entity_slug
+
+        items_qs = ItemModel.objects.for_entity_active(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
+        self.LN = len(items_qs)  # evaluate the QS and cache results...
+        for form in self.forms:
+            form.fields['item_model'].queryset = items_qs
+
+
+InvoiceItemFormset = modelformset_factory(
+    model=InvoiceModelItemsThroughModel,
+    form=InvoiceItemForm,
+    formset=BaseInvoiceItemFormset,
+    can_delete=True,
+    extra=5
+)

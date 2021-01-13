@@ -1,0 +1,45 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>SKU</th>
+            <th>UPC</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in item_list %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.sku }}</td>
+                <td>{{ item.upc }}</td>
+                <td>
+                    <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu" id="dropdown-menu-{{ item.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:product-update' entity_slug=entity_slug item_pk=item.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

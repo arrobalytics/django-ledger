@@ -7,7 +7,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views import View
@@ -17,7 +18,8 @@ from django.views.generic import (
 )
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm
+from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, InvoiceItemFormset
+from django_ledger.models import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import new_invoice_protocol, mark_progressible_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -120,6 +122,15 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  f'This Invoice has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
+        invoice_model: InvoiceModel = self.object
+        invoice_item_queryset, item_data = invoice_model.get_invoice_item_data()
+        context['item_formset'] = InvoiceItemFormset(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            invoice_pk=self.object.uuid,
+            queryset=invoice_item_queryset
+        )
+        context['total_amount_due'] = item_data['amount_due']
         return context
 
     def get_success_url(self):
@@ -135,15 +146,76 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('ledger', 'customer')
+        ).prefetch_related('invoicemodelitemsthroughmodel_set').select_related('ledger', 'customer')
 
     def form_valid(self, form):
-        form.save(commit=False)
+        invoice_model: InvoiceModel = form.save(commit=False)
+        invoice_model.migrate_state(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        )
         messages.add_message(self.request,
                              messages.SUCCESS,
                              f'Invoice {self.object.invoice_number} successfully updated.',
                              extra_tags='is-success')
         return super().form_valid(form)
+
+
+class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
+    http_method_names = ['post']
+
+    def post(self, request, entity_slug, invoice_pk, **kwargs):
+        item_formset = InvoiceItemFormset(request.POST,
+                                          user_model=self.request.user,
+                                          invoice_pk=invoice_pk,
+                                          entity_slug=entity_slug)
+
+        if item_formset.is_valid():
+            invoice_items = item_formset.save(commit=False)
+
+            if invoice_items:
+                try:
+                    entity_model: EntityModel = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    ).get(slug__exact=entity_slug)
+
+                except ObjectDoesNotExist:
+                    return HttpResponseNotFound(f'Entity Model {entity_slug} not found.')
+
+                try:
+                    invoice_model: InvoiceModel = InvoiceModel.objects.for_entity(
+                        user_model=self.request.user,
+                        entity_slug=entity_slug
+                    ).get(uuid__exact=invoice_pk)
+
+                except ObjectDoesNotExist:
+                    return HttpResponseNotFound(f'Invoice Model ID {invoice_pk} not found.')
+
+                for item in invoice_items:
+                    item.entity = entity_model
+                    item.invoice_model = invoice_model
+
+                item_formset.save()
+
+                invoice_model.update_amount_due()
+                invoice_model.new_state(commit=True)
+                invoice_model.clean()
+                invoice_model.save(update_fields=['amount_due',
+                                                  'amount_receivable',
+                                                  'amount_unearned',
+                                                  'amount_earned',
+                                                  'updated'])
+
+                invoice_model.migrate_state(
+                    entity_slug=entity_slug,
+                    user_model=self.request.user
+                )
+
+        return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                            kwargs={
+                                                'entity_slug': entity_slug,
+                                                'invoice_pk': invoice_pk
+                                            }))
 
 
 class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):

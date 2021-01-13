@@ -489,7 +489,17 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Invoices',
                         'url': reverse('django_ledger:invoice-list', kwargs={'entity_slug': ENTITY_SLUG})
-                    }
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Items',
+                        'url': reverse('django_ledger:item-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Unit of Measures',
+                        'url': reverse('django_ledger:uom-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
                 ]
 
             },
@@ -550,3 +560,22 @@ def navigation_menu(context, style):
         ctx['links'] = nav_menu_links
         ctx['request'] = context['request']
     return ctx
+
+
+@register.inclusion_tag('django_ledger/tags/item_table.html', takes_context=True)
+def items_table(context, queryset):
+    entity_slug = context['view'].kwargs['entity_slug']
+    return {
+        'entity_slug': entity_slug,
+        'item_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/items_formset.html', takes_context=True)
+def item_formset_table(context, item_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'invoice_pk': context['view'].kwargs['invoice_pk'],
+        'total_amount_due': context['total_amount_due'],
+        'item_formset': item_formset,
+    }

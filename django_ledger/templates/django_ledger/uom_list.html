@@ -1,0 +1,32 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-content">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h1 class="is-size-1 has-text-weight-thin">{% trans 'Unit of Measures List' %}</h1></div>
+                    <div class="level-item">
+                        <a href="{% url 'django_ledger:uom-create' entity_slug=view.kwargs.entity_slug %}">
+                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                    </div>
+                </div>
+            </div>
+
+            {% for uom in uom_list %}
+                <p>{{ uom }} <a
+                        href="{% url 'django_ledger:uom-update' entity_slug=view.kwargs.entity_slug uom_pk=uom.uuid %}"
+                        class="button">{% trans 'Update' %}</a></p>
+            {% endfor %}
+
+
+            {#            {% bill_table %}#}
+
+        </div>
+    </div>
+{% endblock %}
+

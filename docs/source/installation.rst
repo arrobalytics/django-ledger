@@ -1,17 +1,12 @@
 Installation
 =============
 
-Django Ledger has only one dependency to implement the tree-like structure of Entities,
-Accounts and Journal Entries. Django MPTT does not provide any models, but provides a
-versatile Model Admin that implements hierarchy between objects.
+The easiest way to install the latest Django Ledger version is to install it directly
+from the repository.
 
->>> pip install django-mptt
+>>> pip install git+https://github.com/arrobalytics/django-ledger.git
 
-Or if using Pipenv:
-
->>> pipenv install
-
-Add **mptt** and **django_ledger** to your installed apps.
+Add **django_ledger** to your installed apps.
 
 .. code-block:: python
 
@@ -22,13 +17,15 @@ Add **mptt** and **django_ledger** to your installed apps.
     ]
 
 Include Django Ledger's URLs in your project.
+.. code-block:: python
+
+    from django.urls import path, include
 
 .. code-block:: python
-    from django.urls import path, include
 
     urlpatterns = [
         ...
-        path('', include('django_ledger.urls', namespace='django_ledger')),
+        path('ledger/', include('django_ledger.urls', namespace='django_ledger')),
         ...
     ]
 

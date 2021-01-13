@@ -1,0 +1,38 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="columns is-multiline is-centered">
+        <div class="column is-6">
+            <div class="card">
+
+                <form action="{% url 'django_ledger:product-create' entity_slug=view.kwargs.entity_slug %}"
+                      method="post">
+                    {% csrf_token %}
+                    <div class="card-header">
+                        <h2 class="card-header-title">
+                                    <span class="icon is-medium">
+                                        {% icon 'ic:baseline-production-quantity-limits' 36 %}
+                                    </span>{{ page_title }}</h2>
+                    </div>
+                    <div class="card-content">
+                        {{ form.as_p }}
+                        <button type="submit"
+                                class="button is-primary is-outlined is-fullwidth djetler_my_1">
+                            {% trans 'Create' %}
+                        </button>
+                        <a href="{% url 'django_ledger:item-list' entity_slug=view.kwargs.entity_slug %}"
+                           class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+
+

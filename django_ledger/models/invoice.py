@@ -11,7 +11,7 @@ from string import ascii_uppercase, digits
 from uuid import uuid4
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -146,8 +146,22 @@ class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
         """
         Must be implemented.
         :return:
+        :return:
         """
         return f'Invoice {self.invoice_number} account adjustment.'
+
+    def get_invoice_item_data(self, queryset=None) -> tuple:
+        if not queryset:
+            queryset = self.invoicemodelitemsthroughmodel_set.all()
+        return queryset, queryset.aggregate(
+            amount_due=Sum('total_amount'),
+            total_items=Count('uuid')
+        )
+
+    def update_amount_due(self, queryset=None) -> dict:
+        queryset, item_data = self.get_invoice_item_data(queryset=queryset)
+        self.amount_due = item_data['amount_due']
+        return item_data
 
     def clean(self):
         if not self.invoice_number:
@@ -168,10 +182,28 @@ def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
 post_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
 
 
+class InvoiceModelItemsThroughManager(models.Manager):
+
+    def for_entity(self, entity_slug: str, user_model):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(entity__slug__exact=entity_slug) &
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
+
+    def for_invoice(self, entity_slug: str, invoice_pk, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(invoice__uuid__exact=invoice_pk)
+
+
 class InvoiceModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
                                       on_delete=models.CASCADE,
                                       verbose_name=_('Invoice Model'))
+
+    objects = InvoiceModelItemsThroughManager()
 
     class Meta:
         abstract = True
@@ -179,6 +211,15 @@ class InvoiceModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixI
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['item_model', 'invoice_model']),
         ]
+
+    def html_id_total_amount(self):
+        return f'invoice-item-total-{self.uuid}'
+
+    def html_id_quantity(self):
+        return f'invoice-item-quantity-{self.uuid}'
+
+    def html_id_unit_cost(self):
+        return f'invoice-item-unit-{self.uuid}'
 
 
 class InvoiceModelItemsThroughModel(InvoiceModelItemsThroughModelAbstract):

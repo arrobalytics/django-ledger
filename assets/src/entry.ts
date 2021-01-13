@@ -1,5 +1,5 @@
 import {DjangoLedgerApp} from "./DjangoLedgerApp";
-import {NetPayablesChart, PnLChart, NetReceivablesChart} from "./AppCharts";
+import {NetPayablesChart, NetReceivablesChart, PnLChart} from "./AppCharts";
 import Iconify from '@iconify/iconify';
 
 let app = new DjangoLedgerApp();
@@ -57,5 +57,25 @@ export function toggleDropdown(buttonId: string) {
     }
 }
 
+export function calculateItemTotal(
+    totalItemId: string,
+    quantityItemId: string,
+    unitCostId: string) {
+
+    let quantityItemElement: HTMLElement | null = document.getElementById(quantityItemId)
+    let unitCostElement: HTMLElement | null = document.getElementById(unitCostId)
+    let totalItemCostElement: HTMLElement | null = document.getElementById(totalItemId)
+
+    if (totalItemCostElement && quantityItemElement && unitCostElement) {
+        let unitCost = unitCostElement
+        let quantity = quantityItemElement
+        console.log(unitCost, quantity);
+        // totalItemCostElement.innerHTML = String(unitCost * quantity);
+    }
+}
+
+export function onChangeItem(htmlInput: HTMLInputElement) {
+    console.log(+htmlInput.value)
+}
 
 export {Iconify};

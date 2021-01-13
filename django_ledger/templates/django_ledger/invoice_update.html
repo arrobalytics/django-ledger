@@ -115,7 +115,7 @@
                         <div class="card-content">
                             <div class="columns is-multiline">
                                 <div class="column is-12">
-                                    <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
+                                    <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
                                     <p>{{ invoice.cash_account }}:
                                         ${{ invoice.get_amount_cash | currency_format }}</p>
                                     <p>{{ invoice.receivable_account }}:
@@ -126,7 +126,7 @@
                                         ${{ invoice.get_amount_earned | currency_format }}</p>
                                 </div>
                                 <div class="column is-12">
-                                    <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
+                                    <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
                                     <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | currency_format }}</p>
                                     <p>{{ invoice.receivable_account }}:
                                         ${{ invoice.amount_receivable | currency_format }}</p>
@@ -185,8 +185,10 @@
 
             </div>
         </div>
-
-
     </form>
+
+
+    {% item_formset_table item_formset %}
+
 
 {% endblock %}
