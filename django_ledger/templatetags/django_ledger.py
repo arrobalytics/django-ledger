@@ -579,3 +579,11 @@ def item_formset_table(context, item_formset):
         'total_amount_due': context['total_amount_due'],
         'item_formset': item_formset,
     }
+
+
+@register.inclusion_tag('django_ledger/tags/uom_table.html', takes_context=True)
+def uom_table(context, uom_queryset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'uom_list': uom_queryset
+    }

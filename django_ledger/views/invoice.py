@@ -165,22 +165,15 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
     http_method_names = ['post']
 
     def post(self, request, entity_slug, invoice_pk, **kwargs):
-        item_formset = InvoiceItemFormset(request.POST,
-                                          user_model=self.request.user,
-                                          invoice_pk=invoice_pk,
-                                          entity_slug=entity_slug)
+        item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
+                                                              user_model=self.request.user,
+                                                              invoice_pk=invoice_pk,
+                                                              entity_slug=entity_slug)
 
         if item_formset.is_valid():
             invoice_items = item_formset.save(commit=False)
 
-            if invoice_items:
-                try:
-                    entity_model: EntityModel = EntityModel.objects.for_user(
-                        user_model=self.request.user
-                    ).get(slug__exact=entity_slug)
-
-                except ObjectDoesNotExist:
-                    return HttpResponseNotFound(f'Entity Model {entity_slug} not found.')
+            if item_formset.has_changed():
 
                 try:
                     invoice_model: InvoiceModel = InvoiceModel.objects.for_entity(
@@ -191,12 +184,19 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
                 except ObjectDoesNotExist:
                     return HttpResponseNotFound(f'Invoice Model ID {invoice_pk} not found.')
 
+                try:
+                    entity_model: EntityModel = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    ).get(slug__exact=entity_slug)
+
+                except ObjectDoesNotExist:
+                    return HttpResponseNotFound(f'Entity Model {entity_slug} not found.')
+
                 for item in invoice_items:
                     item.entity = entity_model
                     item.invoice_model = invoice_model
 
                 item_formset.save()
-
                 invoice_model.update_amount_due()
                 invoice_model.new_state(commit=True)
                 invoice_model.clean()

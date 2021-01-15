@@ -30,7 +30,8 @@
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
                     {% else %}
                         <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                    {% endif %} </td>
+                    {% endif %}
+                </td>
                 <td class="has-text-centered">
                     {% if bill.is_past_due %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
@@ -39,7 +40,7 @@
                     {% endif %}
                 </td>
 
-                <td>
+                <td class="has-text-centered">
                     <div class="dropdown is-right is-hoverable" id="bill-action-{{ bill.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"

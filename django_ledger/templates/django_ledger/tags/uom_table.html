@@ -1,0 +1,51 @@
+{% load trans from i18n %}
+{% load icon from django_ledger %}
+
+<div class="table-container">
+    <table class="table is-narrow is-striped is-bordered is-fullwidth django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr class="has-text-centered has-text-weight-bold">
+            <td>{% trans 'UOM' %}</td>
+            <td>{% trans 'Abbreviation' %}</td>
+            <td>{% trans 'Active' %}</td>
+            <td>{% trans 'Actions' %}</td>
+        </tr>
+        </thead>
+        <tbody>
+
+        {% for uom in uom_list %}
+            <tr class="has-text-centered">
+                <td>{{ uom.name }}</td>
+                <td>{{ uom.unit_abbr }}</td>
+                <td class="has-text-centered">
+                    {% if uom.is_active %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown is-right is-hoverable" id="uom-action-{{ invoice.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>{% trans 'Actions' %}</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu" id="dropdown-menu-{{ invoice.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:uom-update' entity_slug=entity_slug uom_pk=uom.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+</div>

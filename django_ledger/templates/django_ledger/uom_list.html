@@ -6,6 +6,7 @@
 {% block view_content %}
     <div class="card">
         <div class="card-content">
+
             <div class="level">
                 <div class="level-left">
                     <div class="level-item">
@@ -17,14 +18,7 @@
                 </div>
             </div>
 
-            {% for uom in uom_list %}
-                <p>{{ uom }} <a
-                        href="{% url 'django_ledger:uom-update' entity_slug=view.kwargs.entity_slug uom_pk=uom.uuid %}"
-                        class="button">{% trans 'Update' %}</a></p>
-            {% endfor %}
-
-
-            {#            {% bill_table %}#}
+            {% uom_table uom_list %}
 
         </div>
     </div>

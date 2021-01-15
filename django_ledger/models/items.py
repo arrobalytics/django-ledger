@@ -37,6 +37,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=50, verbose_name=_('Unit of Measure Name'))
     unit_abbr = models.SlugField(max_length=10, verbose_name=_('UoM Abbreviation'))
+    is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,

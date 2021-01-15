@@ -16,7 +16,8 @@ class UnitOfMeasureModelCreateForm(ModelForm):
         model = UnitOfMeasureModel
         fields = [
             'name',
-            'unit_abbr'
+            'unit_abbr',
+            'is_active'
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -45,7 +46,13 @@ class ProductOrServiceCreateForm(ModelForm):
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL)
 
+        uom_qs = UnitOfMeasureModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
         self.fields['earnings_account'].queryset = accounts_qs.filter(role__iexact=INCOME_SALES)
+        self.fields['uom'].queryset = uom_qs
         self.fields['is_product_or_service'].initial = True
 
     def clean_is_product_or_service(self):

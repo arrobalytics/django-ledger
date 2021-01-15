@@ -23,7 +23,7 @@
                                 class="button is-primary is-outlined is-fullwidth djetler_my_1">
                             {% trans 'Update' %}
                         </button>
-                        <a href="{% url 'django_ledger:home' %}"
+                        <a href="{% url 'django_ledger:uom-list' entity_slug=view.kwargs.entity_slug %}"
                            class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
                     </div>
                 </form>

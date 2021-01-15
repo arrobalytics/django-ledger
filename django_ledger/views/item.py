@@ -31,6 +31,11 @@ class UnitOfMeasureModelListView(ListView):
     template_name = 'django_ledger/uom_list.html'
     PAGE_TITLE = _('Unit of Measures')
     context_object_name = 'uom_list'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'carbon:circle-measurement'
+    }
 
     def get_queryset(self):
         return UnitOfMeasureModel.objects.for_entity(
@@ -44,7 +49,8 @@ class UnitOfMeasureModelCreateView(CreateView):
     PAGE_TITLE = _('Create Unit of Measure')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'carbon:circle-measurement'
     }
 
     def get_success_url(self):
@@ -95,7 +101,8 @@ class UnitOfMeasureModelUpdateView(UpdateView):
     slug_field = 'uuid'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'carbon:circle-measurement'
     }
 
     def get_queryset(self):
