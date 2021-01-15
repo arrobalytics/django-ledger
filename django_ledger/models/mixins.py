@@ -93,6 +93,7 @@ class ProgressibleMixIn(models.Model):
                              choices=TERMS,
                              verbose_name=_('Terms'))
 
+    # todo: switch this to editable=False once itemization is implemented...
     amount_due = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
     amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Paid'))
 
@@ -164,7 +165,7 @@ class ProgressibleMixIn(models.Model):
         else:
             return self.amount_paid or 0
 
-    def get_amount_receivable(self):
+    def get_amount_prepaid(self):
         payments = self.amount_paid or 0
         if self.progressible:
             amt_earned = self.get_amount_earned()
@@ -176,7 +177,7 @@ class ProgressibleMixIn(models.Model):
                 return payments - self.get_amount_earned()
         return 0
 
-    def get_amount_payable(self):
+    def get_amount_unearned(self):
         if self.progressible:
             amt_earned = self.get_amount_earned()
             if all([self.IS_DEBIT_BALANCE,
@@ -363,15 +364,13 @@ class ProgressibleMixIn(models.Model):
                     je_desc=self.get_migrate_state_desc()
                 )
         else:
-            pass
-            # raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+            raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
     def new_state(self, commit: bool = False):
         new_state = {
             'amount_paid': self.get_amount_cash(),
-            'amount_receivable': self.get_amount_receivable(),
-            # todo: rename this to amount_payable for consistency with model field.
-            'amount_unearned': self.get_amount_payable(),
+            'amount_receivable': self.get_amount_prepaid(),
+            'amount_unearned': self.get_amount_unearned(),
             'amount_earned': self.get_amount_earned()
         }
         if commit:
@@ -464,12 +463,14 @@ class ItemTotalCostMixIn(models.Model):
     item_model = models.ForeignKey('django_ledger.ItemModel',
                                    on_delete=models.PROTECT,
                                    verbose_name=_('Item Model'))
-    quantity = models.FloatField(default=0,
+    quantity = models.FloatField(default=0.0,
                                  verbose_name=_('Quantity'),
                                  validators=[MinValueValidator(0)])
-    unit_cost = models.FloatField(verbose_name=_('Cost Per Unit'),
+    unit_cost = models.FloatField(default=0.0,
+                                  verbose_name=_('Cost Per Unit'),
                                   validators=[MinValueValidator(0)])
     total_amount = models.DecimalField(max_digits=20,
+                                       editable=False,
                                        decimal_places=2,
                                        verbose_name=_('Total Amount QTY x UnitCost'),
                                        validators=[MinValueValidator(0)])

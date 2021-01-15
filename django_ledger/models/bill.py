@@ -171,6 +171,8 @@ post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
 
 
 class BillModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_model = models.ForeignKey('django_ledger.BillModel',
                                    on_delete=models.CASCADE,
                                    verbose_name=_('Bill Model'))

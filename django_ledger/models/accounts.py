@@ -36,6 +36,10 @@ class AccountModelManager(models.Manager):
             qs = qs.filter(coa__slug__iexact=coa_slug)
         return qs
 
+    def with_roles(self, roles: list, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(role__in=roles)
+
     def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
         qs = self.for_entity(
             user_model=user_model,

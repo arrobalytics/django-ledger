@@ -1,4 +1,5 @@
 {% extends 'django_ledger/base.html' %}
+{% load navigation_menu from django_ledger %}
 
 {% block content %}
     <section class="section">
@@ -11,7 +12,7 @@
                         <div class="columns is-multiline">
                             {% block aux_menu %}{% endblock %}
                             <div class="column is-12">
-                                {% include 'django_ledger/includes/menu.html' %}
+                                {% navigation_menu 'desktop' %}
                             </div>
                         </div>
                     </div>
