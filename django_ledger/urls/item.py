@@ -1,11 +1,11 @@
 from django.urls import path
 
 from django_ledger.views import (
-    ItemModelListViewList, ProductOrServiceCreateView, UnitOfMeasureModelCreateView,
+    ProductsAndServicesListView, ProductOrServiceCreateView, UnitOfMeasureModelCreateView,
     UnitOfMeasureModelListView, UnitOfMeasureModelUpdateView, ProductOrServiceUpdateView)
 
 urlpatterns = [
-    path('<str:entity_slug>/list/items/', ItemModelListViewList.as_view(), name='item-list'),
+    path('<str:entity_slug>/list/items/', ProductsAndServicesListView.as_view(), name='item-list'),
     path('<str:entity_slug>/list/uom/', UnitOfMeasureModelListView.as_view(), name='uom-list'),
 
     path('<str:entity_slug>/create/product/', ProductOrServiceCreateView.as_view(), name='product-create'),

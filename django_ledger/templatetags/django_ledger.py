@@ -491,8 +491,8 @@ def navigation_menu(context, style):
                         'url': reverse('django_ledger:invoice-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
-                        'type': 'link',
-                        'title': 'Items',
+                        'type': 'products_services',
+                        'title': 'Products & Services',
                         'url': reverse('django_ledger:item-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {

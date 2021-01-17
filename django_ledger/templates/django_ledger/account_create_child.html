@@ -8,6 +8,8 @@
     <div class="columns is-centered">
         <div class="column is-8-tablet is-6-desktop">
             <div class="box">
+                <h3 class="is-size-3 has-text-centered">{{ page_title }}</h3>
+                <p class="has-text-weight-bold has-text-centered">{{ account }}</p>
                 <form action="{% url "django_ledger:account-create" entity_slug=view.kwargs.entity_slug %}"
                       method="post">
                     {% csrf_token %}
