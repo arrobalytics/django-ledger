@@ -19,7 +19,7 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel, generate_invoice_number, InvoiceModelItemsThroughModel
 from django_ledger.models.items import UnitOfMeasureModel, ItemModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.models.mixins import ProgressibleMixIn
+from django_ledger.models.mixins import AccruableItemMixIn
 from django_ledger.models.vendor import VendorModel
 
 UserModel = get_user_model()
@@ -74,7 +74,8 @@ def new_invoice_protocol(invoice_model: InvoiceModel,
     else:
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-    invoice_model.invoice_number = generate_invoice_number()
+    if not invoice_model.invoice_number:
+        invoice_model.invoice_number = generate_invoice_number()
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
@@ -162,7 +163,67 @@ def set_session_date_filter(request, entity_slug: str, end_date: date):
     request.session[session_key] = end_date.isoformat()
 
 
-def generate_sample_data(entity: str or EntityModel,
+def generate_random_invoice(
+        entity_model: EntityModel,
+        customer_models,
+        is_progressible: bool,
+        progress: float,
+        accounts_gb: dict,
+        issue_dt: date,
+        is_paid: bool,
+        paid_dt: date,
+        user_model,
+        item_models_products):
+
+    invoice_model = InvoiceModel(
+        customer=choice(customer_models),
+        progressible=is_progressible,
+        progress=progress,
+        terms=choice(InvoiceModel.TERMS)[0],
+        invoice_number=generate_invoice_number(),
+        amount_due=0,
+        cash_account=choice(accounts_gb['asset_ca_cash']),
+        receivable_account=choice(accounts_gb['asset_ca_recv']),
+        payable_account=choice(accounts_gb['lia_cl_acc_pay']),
+        earnings_account=choice(accounts_gb['in_sales']),
+        date=issue_dt,
+        paid=is_paid,
+        paid_date=paid_dt
+    )
+
+    invoice_model = new_invoice_protocol(
+        invoice_model=invoice_model,
+        entity_slug=entity_model,
+        user_model=user_model)
+
+    invoice_model.clean()
+    invoice_model.save()
+
+    invoice_items = [
+        InvoiceModelItemsThroughModel(
+            invoice_model=invoice_model,
+            item_model=choice(item_models_products),
+            quantity=random() * randint(1, 5),
+            unit_cost=random() * randint(100, 999)
+        ) for _ in range(randint(1, 10))
+    ]
+
+    for ii in invoice_items:
+        ii.clean()
+
+    invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
+    invoice_model.update_amount_due()
+    invoice_model.amount_paid = Decimal(random()) * invoice_model.amount_due
+    invoice_model.new_state(commit=True)
+    invoice_model.clean()
+    invoice_model.save()
+    invoice_model.migrate_state(
+        user_model=user_model,
+        entity_slug=entity_model.slug,
+        je_date=paid_dt)
+
+
+def generate_sample_data(entity_model: str or EntityModel,
                          user_model,
                          start_dt: datetime,
                          days_fw: int,
@@ -171,28 +232,7 @@ def generate_sample_data(entity: str or EntityModel,
                          expense_tx_avg: float or int = 1000,
                          tx_quantity: int = 100,
                          is_progressible_probability: float = 0.2,
-                         is_paid_probability: float = 0.97):
-    """
-    TXS = List[{
-            'account_id': Account Database UUID
-            'tx_type': credit/debit,
-            'amount': Decimal/Float/Integer,
-            'description': string,
-            'staged_tx_model': StagedTransactionModel or None
-        }]
-    :param is_paid_probability:
-    :param is_progressible_probability:
-    :param tx_quantity:
-    :param expense_tx_avg:
-    :param income_tx_avg:
-    :param cap_contribution:
-    :param days_fw:
-    :param start_dt:
-    :param user_model:
-    :param entity:
-    :return:
-    """
-
+                         is_paid_probability: float = 0.90):
     try:
         from faker import Faker
         from faker.providers import company, address, phone_number
@@ -208,19 +248,20 @@ def generate_sample_data(entity: str or EntityModel,
     except ImportError:
         return False
 
-    if not isinstance(entity, EntityModel):
-        entity: EntityModel = EntityModel.objects.get(slug__exact=entity)
+    if not isinstance(entity_model, EntityModel):
+        entity_model: EntityModel = EntityModel.objects.get(slug__exact=entity_model)
 
-    entity.ledgers.all().delete()
-    entity.customers.all().delete()
-    entity.vendors.all().delete()
-    entity.items.all().delete()
+    entity_model.ledgers.all().delete()
+    entity_model.customers.all().delete()
+    entity_model.vendors.all().delete()
+    entity_model.items.all().delete()
 
-    vendor_count = randint(40, 60)
+    # VENDOR GENERATION...
+    vendor_count = randint(10, 20)
     vendor_models = [
         VendorModel(
             vendor_name=fk.name() if random() > .7 else fk.company(),
-            entity=entity,
+            entity=entity_model,
             address_1=fk.street_address(),
             address_2=fk.building_number() if random() < .2 else None,
             city=fk.city(),
@@ -237,14 +278,14 @@ def generate_sample_data(entity: str or EntityModel,
 
     for vendor in vendor_models:
         vendor.clean()
-
     vendor_models = VendorModel.objects.bulk_create(vendor_models)
 
-    customer_count = randint(40, 60)
+    # CUSTOMER GENERATION...
+    customer_count = randint(10, 20)
     customer_models = [
         CustomerModel(
             customer_name=fk.name() if random() > .2 else fk.company(),
-            entity=entity,
+            entity=entity_model,
             address_1=fk.street_address() + fk.street_suffix(),
             address_2=fk.building_number() if random() > .2 else None,
             city=fk.city(),
@@ -261,21 +302,19 @@ def generate_sample_data(entity: str or EntityModel,
 
     for customer in customer_models:
         customer.clean()
-
     customer_models = CustomerModel.objects.bulk_create(customer_models)
 
     # todo: create bank account models...
 
-    ledger, created = entity.ledgers.get_or_create(
+    ledger, created = entity_model.ledgers.get_or_create(
         name='Business Funding Ledger',
         posted=True
     )
 
     accounts = AccountModel.on_coa.for_entity_available(
-        entity_slug=entity.slug,
+        entity_slug=entity_model.slug,
         user_model=user_model
     ).order_by('role')
-
     accounts_gb = {
         g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
     }
@@ -284,21 +323,20 @@ def generate_sample_data(entity: str or EntityModel,
     cash_acc = choice(accounts_gb['asset_ca_cash'])
 
     txs = list()
-
     txs.append({
         'account_id': cash_acc.uuid,
         'tx_type': 'debit',
         'amount': cap_contribution,
-        'description': f'Sample data for {entity.name}'
+        'description': f'Sample data for {entity_model.name}'
     })
     txs.append({
         'account_id': capital_acc.uuid,
         'tx_type': 'credit',
         'amount': cap_contribution,
-        'description': f'Sample data for {entity.name}'
+        'description': f'Sample data for {entity_model.name}'
     })
 
-    entity.commit_txs(
+    entity_model.commit_txs(
         je_date=start_dt,
         je_txs=txs,
         je_activity='op',
@@ -314,25 +352,27 @@ def generate_sample_data(entity: str or EntityModel,
         'pallet': 'Pallet'
     }
 
-    uom_models = [UnitOfMeasureModel(unit_abbr=abbr,
-                                     entity=entity,
-                                     name=name) for abbr, name in UOMs.items()]
+    uom_models = [
+        UnitOfMeasureModel(unit_abbr=abbr,
+                           entity=entity_model,
+                           name=name) for abbr, name in UOMs.items()
+    ]
     uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
 
-    item_count = randint(30, 50)
+    item_count = randint(20, 40)
     item_models = [
         ItemModel(name=f'Product or Service {randint(1000, 9999)}',
                   uom=choice(uom_models),
                   sku=generate_random_sku(),
                   upc=generate_random_upc(),
                   item_id=generate_random_item_id(),
-                  entity=entity,
+                  entity=entity_model,
                   is_product_or_service=True,
                   earnings_account=choice(accounts_gb['in_sales']),
                   ) for _ in range(item_count)
     ]
 
-    item_models = entity.items.bulk_create(item_models)
+    item_models = entity_model.items.bulk_create(item_models)
     for im in item_models:
         im.clean()
 
@@ -382,66 +422,25 @@ def generate_sample_data(entity: str or EntityModel,
                 paid_date=paid_dt
             )
 
-            bill = new_bill_protocol(bill_model=bill, entity_slug=entity.slug, user_model=user_model)
+            bill = new_bill_protocol(bill_model=bill, entity_slug=entity_model.slug, user_model=user_model)
             bill.clean()
-            bill.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
+            bill.migrate_state(user_model=user_model, entity_slug=entity_model.slug, je_date=paid_dt)
             bill.save()
 
         else:
 
-            # amt = income_tx_avg if not switch_amt else expense_tx_avg
-            # inv_amt = Decimal(round(random() * amt, 2))
-            # inv_amt_paid = Decimal(round(Decimal(random()) * inv_amt, 2))
-
-            # inv_amt = sum(i.total_amoumt for i in invoice_items)
-
-            invoice = InvoiceModel(
-                customer=choice(customer_models),
-                progressible=is_progressible,
+            generate_random_invoice(
+                entity_model=entity_model,
+                customer_models=customer_models,
+                is_progressible=is_progressible,
                 progress=progress,
-                terms=choice(InvoiceModel.TERMS)[0],
-                invoice_number=generate_invoice_number(),
-                cash_account=choice(accounts_gb['asset_ca_cash']),
-                receivable_account=choice(accounts_gb['asset_ca_recv']),
-                payable_account=choice(accounts_gb['lia_cl_acc_pay']),
-                earnings_account=choice(accounts_gb['in_sales']),
-                # amount_due=inv_amt,b
-                # amount_paid=inv_amt_paid,
-                date=issue_dt,
-                paid=is_paid,
-                paid_date=paid_dt
-            )
-
-            invoice = new_invoice_protocol(
-                invoice_model=invoice,
-                entity_slug=entity,
-                user_model=user_model)
-
-            invoice.clean()
-            invoice.save()
-
-            invoice_items = [
-                InvoiceModelItemsThroughModel(
-                    # invoice_model=invoice,
-                    item_model=choice(item_models_products),
-                    quantity=random() * randint(1, 5),
-                    unit_cost=random() * randint(100, 999)
-                ) for _ in range(randint(1, 10))
-            ]
-
-            for ii in invoice_items:
-                ii.clean()
-
-            invoice_items = invoice.invoice_items.bulk_create(invoice_items)
-            invoice.update_amount_due(queryset=invoice_items)
-            invoice.amount_paid = random() * invoice.amount_due
-            invoice.new_state(commit=True)
-            invoice.clean()
-
-            invoice.migrate_state(
+                accounts_gb=accounts_gb,
+                issue_dt=issue_dt,
+                is_paid=is_paid,
+                paid_dt=paid_dt,
                 user_model=user_model,
-                entity_slug=entity.slug,
-                je_date=paid_dt)
+                item_models_products=item_models_products
+            )
 
 
 def progressible_net_summary(queryset: QuerySet) -> dict:
@@ -472,7 +471,7 @@ def progressible_net_summary(queryset: QuerySet) -> dict:
     return nets
 
 
-def mark_progressible_paid(progressible_model: ProgressibleMixIn, user_model, entity_slug: str):
+def mark_progressible_paid(progressible_model: AccruableItemMixIn, user_model, entity_slug: str):
     progressible_model.paid = True
     progressible_model.clean()
     progressible_model.save()
