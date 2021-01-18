@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 
-from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
+from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm, AccountModelCreateChildForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import (
@@ -77,7 +77,7 @@ class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        )
+        ).select_related('parent')
 
 
 class AccountModelCreateView(LoginRequiredMixIn, CreateView):
@@ -111,6 +111,7 @@ class AccountModelCreateView(LoginRequiredMixIn, CreateView):
             account_qs = self.get_queryset()
             parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
             account.parent = parent_account_model
+            account.role = parent_account_model.role
 
         coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
                                                         entity_slug=entity_slug)
@@ -141,6 +142,13 @@ class AccountModelCreateChildView(AccountModelCreateView):
         context['header_subtitle_icon'] = 'ic:twotone-account-tree'
         context['account'] = obj
         return context
+
+    def get_form(self, form_class=None):
+        return AccountModelCreateChildForm(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+            **self.get_form_kwargs()
+        )
 
 
 class AccountModelDetailView(LoginRequiredMixIn, RedirectView):
