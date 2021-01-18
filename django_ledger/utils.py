@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
+from string import ascii_uppercase, ascii_lowercase, digits
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -15,14 +16,29 @@ from django_ledger.models.bill import BillModel, generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.invoice import generate_invoice_number
+from django_ledger.models.invoice import InvoiceModel, generate_invoice_number, InvoiceModelItemsThroughModel
+from django_ledger.models.items import UnitOfMeasureModel, ItemModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import ProgressibleMixIn
 from django_ledger.models.vendor import VendorModel
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
+
+SKU_UPC_CHARS = ascii_uppercase + digits
+ITEM_ID_CHARS = ascii_uppercase + ascii_lowercase + digits
+
+
+def generate_random_sku(length=12):
+    return ''.join(choice(SKU_UPC_CHARS) for _ in range(length))
+
+
+def generate_random_upc(length=10):
+    return ''.join(choice(SKU_UPC_CHARS) for _ in range(length))
+
+
+def generate_random_item_id(length=20):
+    return ''.join(choice(ITEM_ID_CHARS) for _ in range(length))
 
 
 def new_bill_protocol(bill_model: BillModel, entity_slug: str or EntityModel, user_model: UserModel) -> BillModel:
@@ -193,11 +209,12 @@ def generate_sample_data(entity: str or EntityModel,
         return False
 
     if not isinstance(entity, EntityModel):
-        entity = EntityModel.objects.get(slug__exact=entity)
+        entity: EntityModel = EntityModel.objects.get(slug__exact=entity)
 
     entity.ledgers.all().delete()
     entity.customers.all().delete()
     entity.vendors.all().delete()
+    entity.items.all().delete()
 
     vendor_count = randint(40, 60)
     vendor_models = [
@@ -289,6 +306,38 @@ def generate_sample_data(entity: str or EntityModel,
         je_ledger=ledger
     )
 
+    UOMs = {
+        'unit': 'Unit',
+        'ln.ft': 'Linear Feet',
+        'sq.ft': 'Square Feet',
+        'lb': 'Pound',
+        'pallet': 'Pallet'
+    }
+
+    uom_models = [UnitOfMeasureModel(unit_abbr=abbr,
+                                     entity=entity,
+                                     name=name) for abbr, name in UOMs.items()]
+    uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
+
+    item_count = randint(30, 50)
+    item_models = [
+        ItemModel(name=f'Product or Service {randint(1000, 9999)}',
+                  uom=choice(uom_models),
+                  sku=generate_random_sku(),
+                  upc=generate_random_upc(),
+                  item_id=generate_random_item_id(),
+                  entity=entity,
+                  is_product_or_service=True,
+                  earnings_account=choice(accounts_gb['in_sales']),
+                  ) for _ in range(item_count)
+    ]
+
+    item_models = entity.items.bulk_create(item_models)
+    for im in item_models:
+        im.clean()
+
+    item_models_products = [i for i in item_models if i.is_product_or_service]
+
     loc_time = localtime()
     rng = tx_quantity
     for i in range(rng):
@@ -340,9 +389,11 @@ def generate_sample_data(entity: str or EntityModel,
 
         else:
 
-            amt = income_tx_avg if not switch_amt else expense_tx_avg
-            inv_amt = Decimal(round(random() * amt, 2))
-            inv_amt_paid = Decimal(round(Decimal(random()) * inv_amt, 2))
+            # amt = income_tx_avg if not switch_amt else expense_tx_avg
+            # inv_amt = Decimal(round(random() * amt, 2))
+            # inv_amt_paid = Decimal(round(Decimal(random()) * inv_amt, 2))
+
+            # inv_amt = sum(i.total_amoumt for i in invoice_items)
 
             invoice = InvoiceModel(
                 customer=choice(customer_models),
@@ -354,8 +405,8 @@ def generate_sample_data(entity: str or EntityModel,
                 receivable_account=choice(accounts_gb['asset_ca_recv']),
                 payable_account=choice(accounts_gb['lia_cl_acc_pay']),
                 earnings_account=choice(accounts_gb['in_sales']),
-                amount_due=inv_amt,
-                amount_paid=inv_amt_paid,
+                # amount_due=inv_amt,b
+                # amount_paid=inv_amt_paid,
                 date=issue_dt,
                 paid=is_paid,
                 paid_date=paid_dt
@@ -363,12 +414,34 @@ def generate_sample_data(entity: str or EntityModel,
 
             invoice = new_invoice_protocol(
                 invoice_model=invoice,
-                entity_slug=entity.slug,
+                entity_slug=entity,
                 user_model=user_model)
 
             invoice.clean()
-            invoice.migrate_state(user_model=user_model, entity_slug=entity.slug, je_date=paid_dt)
             invoice.save()
+
+            invoice_items = [
+                InvoiceModelItemsThroughModel(
+                    # invoice_model=invoice,
+                    item_model=choice(item_models_products),
+                    quantity=random() * randint(1, 5),
+                    unit_cost=random() * randint(100, 999)
+                ) for _ in range(randint(1, 10))
+            ]
+
+            for ii in invoice_items:
+                ii.clean()
+
+            invoice_items = invoice.invoice_items.bulk_create(invoice_items)
+            invoice.update_amount_due(queryset=invoice_items)
+            invoice.amount_paid = random() * invoice.amount_due
+            invoice.new_state(commit=True)
+            invoice.clean()
+
+            invoice.migrate_state(
+                user_model=user_model,
+                entity_slug=entity.slug,
+                je_date=paid_dt)
 
 
 def progressible_net_summary(queryset: QuerySet) -> dict:
