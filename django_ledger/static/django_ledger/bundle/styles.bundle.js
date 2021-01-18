@@ -174,7 +174,7 @@ eval("var api = __webpack_require__(/*! ../node_modules/style-loader/dist/runtim
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _djetler_scss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./djetler.scss */ \"./src/djetler.scss\");\n/* harmony import */ var _djetler_scss__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_djetler_scss__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _djetler_styles_less__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./djetler_styles.less */ \"./src/djetler_styles.less\");\n/* harmony import */ var _djetler_styles_less__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_djetler_styles_less__WEBPACK_IMPORTED_MODULE_1__);\n\r\n\r\n// import 'animate.css/animate.min.css'\n\n//# sourceURL=webpack://djLedger/./src/styles.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _djetler_scss__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./djetler.scss */ \"./src/djetler.scss\");\n/* harmony import */ var _djetler_scss__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_djetler_scss__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var _djetler_styles_less__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./djetler_styles.less */ \"./src/djetler_styles.less\");\n/* harmony import */ var _djetler_styles_less__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_djetler_styles_less__WEBPACK_IMPORTED_MODULE_1__);\n\n\n// import 'animate.css/animate.min.css'\n\n//# sourceURL=webpack://djLedger/./src/styles.js?");
 
 /***/ })
 
