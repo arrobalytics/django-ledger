@@ -128,7 +128,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         blank=True,
         verbose_name=_('Earnings Account'),
         related_name=f'{REL_NAME_PREFIX}_earnings_account',
-        help_text=_('COGS account where revenue will be recognized on Income Statement.'),
+        help_text=_('Earnings account where revenue will be recognized on Income Statement.'),
         on_delete=models.PROTECT)
     expense_account = models.ForeignKey(
         'django_ledger.AccountModel',
