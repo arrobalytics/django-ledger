@@ -7,12 +7,14 @@
     <div class="columns is-centered">
         <div class="column is-8-tablet is-6-desktop">
             <div class="box">
-                <form action="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
+                <h3 class="is-size-3 has-text-centered">{{ page_title }}</h3>
+                <p class="has-text-weight-bold has-text-centered">{{ account }}</p>
+                <form action="{% url 'django_ledger:account-create-child' entity_slug=view.kwargs.entity_slug parent_account_pk=view.kwargs.parent_account_pk %}"
                       method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
                     <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
-                    <a class="button is-dark is-small is-fullwidth"
+                    <a class="button is-dark is-small is-fullwidth djetler_my_1"
                        href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
                 </form>
             </div>

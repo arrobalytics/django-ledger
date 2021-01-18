@@ -40,6 +40,10 @@ class AccountModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
 
+    def with_roles_available(self, roles: list, entity_slug: str, user_model):
+        qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(role__in=roles)
+
     def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
         qs = self.for_entity(
             user_model=user_model,

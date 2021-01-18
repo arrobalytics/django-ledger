@@ -128,7 +128,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         blank=True,
         verbose_name=_('Earnings Account'),
         related_name=f'{REL_NAME_PREFIX}_earnings_account',
-        help_text=_('COGS account where revenue will be recognized on Income Statement.'),
+        help_text=_('Earnings account where revenue will be recognized on Income Statement.'),
         on_delete=models.PROTECT)
     expense_account = models.ForeignKey(
         'django_ledger.AccountModel',
@@ -142,6 +142,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     additional_info = models.JSONField(default=dict, verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
+                               related_name='items',
                                on_delete=models.CASCADE,
                                verbose_name=_('Item Entity'))
 
@@ -180,7 +181,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 self.earnings_account = None
             if self.is_product_or_service:
                 if not self.earnings_account:
-                    raise ValidationError(_('Products & Services must have an Earning Account'))
+                    raise ValidationError(_('Products & Services must have an Earnings Account'))
                 self.expense_account = None
                 self.inventory_account = None
                 self.cogs_account = None

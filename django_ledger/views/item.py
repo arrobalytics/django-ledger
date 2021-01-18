@@ -11,22 +11,6 @@ from django_ledger.forms.item import (
 from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel
 
 
-class ItemModelListViewList(ListView):
-    template_name = 'django_ledger/item_list.html'
-    PAGE_TITLE = _('Item List')
-    context_object_name = 'item_list'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-
-    def get_queryset(self, **kwargs):
-        return ItemModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
-
-
 class UnitOfMeasureModelListView(ListView):
     template_name = 'django_ledger/uom_list.html'
     PAGE_TITLE = _('Unit of Measures')
@@ -125,13 +109,31 @@ class UnitOfMeasureModelUpdateView(UpdateView):
         )
 
 
+class ProductsAndServicesListView(ListView):
+    template_name = 'django_ledger/pns_list.html'
+    PAGE_TITLE = _('Products & Services')
+    context_object_name = 'pns_list'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_queryset(self, **kwargs):
+        return ItemModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+
 class ProductOrServiceCreateView(CreateView):
     template_name = 'django_ledger/product_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Product or Service')
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
     }
 
     def get_success_url(self):
@@ -172,7 +174,8 @@ class ProductOrServiceUpdateView(UpdateView):
     slug_url_kwarg = 'item_pk'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
     }
 
     def get_queryset(self):

@@ -106,10 +106,6 @@ venv.bak/
 .mypy_cache/
 
 .idea/
-djltest/
-dj_dev/
-djl_dev/
-manage.py
 
 node_modules
 yarn.lock

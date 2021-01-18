@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ProgressibleMixIn, ItemTotalCostMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn, ItemTotalCostMixIn
 
 
 class LazyLoader:
@@ -65,7 +65,7 @@ class InvoiceModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class InvoiceModelAbstract(ProgressibleMixIn, CreateUpdateMixIn):
+class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 

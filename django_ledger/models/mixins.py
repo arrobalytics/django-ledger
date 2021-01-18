@@ -76,7 +76,7 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
 
-class ProgressibleMixIn(models.Model):
+class AccruableItemMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -146,6 +146,8 @@ class ProgressibleMixIn(models.Model):
     def get_progress(self):
         if self.progressible:
             return self.progress
+        if not self.amount_due:
+            return 0
         return (self.amount_paid or 0) / self.amount_due
         # return Decimal(round(((self.amount_paid or 0) / self.amount_due), 2))
 
@@ -436,7 +438,7 @@ class ProgressibleMixIn(models.Model):
         else:
             self.due_date = self.date
 
-        if self.amount_paid == self.amount_due:
+        if self.amount_due and self.amount_paid == self.amount_due:
             self.paid = True
         elif self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')

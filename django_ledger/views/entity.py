@@ -70,7 +70,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
         sample_data = form.cleaned_data.get('generate_sample_data')
         if sample_data:
             generate_sample_data(
-                entity=entity.slug,
+                entity_model=entity.slug,
                 user_model=self.request.user,
                 start_dt=localtime() - timedelta(days=30 * 6),
                 days_fw=30 * 9,
@@ -129,6 +129,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
                         message=_('Entity has %s children. Must delete children first.' % c))
             return self.get(request, *args, **kwargs)
         entity_model.ledgers.all().delete()
+        entity_model.items.all().delete()
         return super().delete(request, *args, **kwargs)
 
 
@@ -396,7 +397,7 @@ class GenerateSampleData(LoginRequiredMixIn, RedirectView):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             generate_sample_data(
-                entity=self.kwargs['entity_slug'],
+                entity_model=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 start_dt=localtime() - timedelta(days=30 * 6),
                 days_fw=30 * 9,

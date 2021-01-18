@@ -6,13 +6,14 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 
-from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
+from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm, AccountModelCreateChildForm
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import (
@@ -24,9 +25,10 @@ from django_ledger.views.mixins import (
 class AccountModelListView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/account_list.html'
     context_object_name = 'accounts'
+    PAGE_TITLE = _('Entity Accounts')
     extra_context = {
-        'page_title': _('Entity Accounts'),
-        'header_title': _('Entity Accounts')
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
     }
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -41,7 +43,7 @@ class AccountModelListView(LoginRequiredMixIn, ListView):
         return AccountModel.on_coa.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).order_by('code')
+        ).select_related('parent').order_by('code')
 
 
 class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
@@ -54,6 +56,7 @@ class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Update Account')
         context['header_title'] = _(f'Update Account: {self.object.code} - {self.object.name}')
+        context['header_subtitle_icon'] = 'ic:twotone-account-tree'
         return context
 
     def get_form(self, form_class=None):
@@ -74,25 +77,24 @@ class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        )
+        ).select_related('parent')
 
 
 class AccountModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/account_create.html'
+    PAGE_TITLE = _('Create Account')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'ic:twotone-account-tree'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['page_title'] = _('Create Account')
-        context['header_title'] = _('Create Account')
-        return context
+    }
 
-    def get_initial(self):
-        return {
-            'coa': ChartOfAccountModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).get(entity__slug__exact=self.kwargs['entity_slug'])
-        }
+    def get_queryset(self):
+        return AccountModel.on_coa.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
 
     def get_form(self, form_class=None):
         return AccountModelCreateForm(
@@ -102,18 +104,20 @@ class AccountModelCreateView(LoginRequiredMixIn, CreateView):
         )
 
     def form_valid(self, form):
-        coa_model = ChartOfAccountModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).get(entity__slug__exact=self.kwargs['entity_slug'])
-        form.instance.coa = coa_model
-        self.object = form.save()
-        return super().form_valid(form)
+        entity_slug = self.kwargs['entity_slug']
+        parent_account_pk = self.kwargs.get('parent_account_pk')
+        account: AccountModel = form.save(commit=False)
+        if parent_account_pk:
+            account_qs = self.get_queryset()
+            parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
+            account.parent = parent_account_model
+            account.role = parent_account_model.role
 
-    def get_queryset(self):
-        return AccountModel.on_coa.for_user(
-            user_model=self.request.user
-        )
+        coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
+                                                        entity_slug=entity_slug)
+        coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
+        account.coa = coa_model
+        return super().form_valid(form)
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -121,6 +125,30 @@ class AccountModelCreateView(LoginRequiredMixIn, CreateView):
                        kwargs={
                            'entity_slug': entity_slug,
                        })
+
+
+class AccountModelCreateChildView(AccountModelCreateView):
+    template_name = 'django_ledger/account_create_child.html'
+    slug_url_kwarg = 'parent_account_pk'
+    slug_field = 'uuid'
+    PAGE_TITLE = _('Create Child Account')
+    context_object_name = 'account'
+
+    def get_context_data(self, **kwargs):
+        context = super(AccountModelCreateChildView, self).get_context_data()
+        obj: AccountModel = self.get_object()
+        context['page_title'] = _('Create Child Account')
+        context['header_title'] = _('Create Child Account - %s' % obj)
+        context['header_subtitle_icon'] = 'ic:twotone-account-tree'
+        context['account'] = obj
+        return context
+
+    def get_form(self, form_class=None):
+        return AccountModelCreateChildForm(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+            **self.get_form_kwargs()
+        )
 
 
 class AccountModelDetailView(LoginRequiredMixIn, RedirectView):

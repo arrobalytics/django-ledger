@@ -232,7 +232,7 @@ class EntityModelTests(TestCase):
         logger.warning(f'Generating sample data for {entity_model.name}...')
         # generates sample data to perform tests.
         generate_sample_data(
-            entity=entity_model,
+            entity_model=entity_model,
             user_model=self.user_model,
             start_dt=self.START_DATE,
             days_fw=self.DAYS_FWD,
