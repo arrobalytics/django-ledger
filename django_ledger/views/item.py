@@ -6,7 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView
 
 from django_ledger.forms.item import (
-    ProductOrServiceCreateForm, UnitOfMeasureModelCreateForm, UnitOfMeasureModelUpdateForm, ProductOrServiceUpdateForm
+    ProductOrServiceCreateForm, UnitOfMeasureModelCreateForm, UnitOfMeasureModelUpdateForm, ProductOrServiceUpdateForm,
+    ExpenseItemCreateForm, ExpenseItemUpdateForm
 )
 from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel
 
@@ -110,7 +111,7 @@ class UnitOfMeasureModelUpdateView(UpdateView):
 
 
 class ProductsAndServicesListView(ListView):
-    template_name = 'django_ledger/pns_list.html'
+    template_name = 'django_ledger/product_list.html'
     PAGE_TITLE = _('Products & Services')
     context_object_name = 'pns_list'
     extra_context = {
@@ -120,10 +121,10 @@ class ProductsAndServicesListView(ListView):
     }
 
     def get_queryset(self, **kwargs):
-        return ItemModel.objects.for_entity(
+        return ItemModel.objects.products_and_services(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('earnings_account', 'uom').order_by('-updated')
 
 
 class ProductOrServiceCreateView(CreateView):
@@ -137,7 +138,7 @@ class ProductOrServiceCreateView(CreateView):
     }
 
     def get_success_url(self):
-        return reverse('django_ledger:item-list',
+        return reverse('django_ledger:product-list',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
@@ -162,6 +163,7 @@ class ProductOrServiceCreateView(CreateView):
                         level=ERROR,
                         message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
                         extra_tags='is-danger')
+        instance.is_product_or_service = True
         instance.save()
         return super().form_valid(form=form)
 
@@ -179,7 +181,7 @@ class ProductOrServiceUpdateView(UpdateView):
     }
 
     def get_queryset(self):
-        return ItemModel.objects.for_entity(
+        return ItemModel.objects.products_and_services(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
@@ -192,7 +194,96 @@ class ProductOrServiceUpdateView(UpdateView):
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:item-list',
+        return reverse('django_ledger:product-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+class ExpenseItemModelListView(ListView):
+    template_name = 'django_ledger/expense_list.html'
+    PAGE_TITLE = _('Expense Items')
+    context_object_name = 'expense_list'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_queryset(self, **kwargs):
+        return ItemModel.objects.expenses(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).select_related('expense_account', 'uom').order_by('-updated')
+
+
+class ExpenseItemCreateView(CreateView):
+    template_name = 'django_ledger/expense_create.html'
+    model = ItemModel
+    PAGE_TITLE = _('Create New Expense Item')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_success_url(self):
+        return reverse('django_ledger:expense-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+    def get_form(self, form_class=None):
+        return ExpenseItemCreateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def form_valid(self, form):
+        instance: ItemModel = form.save(commit=False)
+        entity_slug = self.kwargs['entity_slug']
+        try:
+            entity_model: EntityModel = EntityModel.objects.for_user(
+                user_model=self.request.user
+            ).get(slug__iexact=entity_slug)
+            instance.entity = entity_model
+        except ObjectDoesNotExist:
+            add_message(self.request,
+                        level=ERROR,
+                        message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
+                        extra_tags='is-danger')
+        instance.save()
+        return super().form_valid(form=form)
+
+
+class ExpenseItemUpdateView(UpdateView):
+    template_name = 'django_ledger/expense_update.html'
+    PAGE_TITLE = _('Update Expense Item')
+    context_object_name = 'item'
+    slug_field = 'uuid'
+    slug_url_kwarg = 'item_pk'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_queryset(self):
+        return ItemModel.objects.expenses(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_form(self, form_class=None):
+        return ExpenseItemUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:expense-list',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })

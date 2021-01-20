@@ -203,8 +203,8 @@ def generate_random_invoice(
         InvoiceModelItemsThroughModel(
             invoice_model=invoice_model,
             item_model=choice(item_models_products),
-            quantity=random() * randint(1, 5),
-            unit_cost=random() * randint(100, 999)
+            quantity=round(random() * randint(1, 5), 2),
+            unit_cost=round(random() * randint(100, 999), 2)
         ) for _ in range(randint(1, 10))
     ]
 
@@ -349,7 +349,8 @@ def generate_sample_data(entity_model: str or EntityModel,
         'ln.ft': 'Linear Feet',
         'sq.ft': 'Square Feet',
         'lb': 'Pound',
-        'pallet': 'Pallet'
+        'pallet': 'Pallet',
+        'man-hour': 'Man Hour'
     }
 
     uom_models = [
@@ -358,18 +359,23 @@ def generate_sample_data(entity_model: str or EntityModel,
                            name=name) for abbr, name in UOMs.items()
     ]
     uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
+    # uom_models = UnitOfMeasureModel.objects.for_entity(
+    #     entity_slug=entity_model.slug,
+    #     user_model=user_model
+    # )
 
     item_count = randint(20, 40)
     item_models = [
-        ItemModel(name=f'Product or Service {randint(1000, 9999)}',
-                  uom=choice(uom_models),
-                  sku=generate_random_sku(),
-                  upc=generate_random_upc(),
-                  item_id=generate_random_item_id(),
-                  entity=entity_model,
-                  is_product_or_service=True,
-                  earnings_account=choice(accounts_gb['in_sales']),
-                  ) for _ in range(item_count)
+        ItemModel(
+            name=f'Product or Service {randint(1000, 9999)}',
+            uom=choice(uom_models),
+            sku=generate_random_sku(),
+            upc=generate_random_upc(),
+            item_id=generate_random_item_id(),
+            entity=entity_model,
+            is_product_or_service=True,
+            earnings_account=choice(accounts_gb['in_sales']),
+        ) for _ in range(item_count)
     ]
 
     item_models = entity_model.items.bulk_create(item_models)
