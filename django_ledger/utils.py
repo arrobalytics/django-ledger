@@ -173,8 +173,7 @@ def generate_random_invoice(
         is_paid: bool,
         paid_dt: date,
         user_model,
-        item_models_products):
-
+        product_models):
     invoice_model = InvoiceModel(
         customer=choice(customer_models),
         progressible=is_progressible,
@@ -202,7 +201,7 @@ def generate_random_invoice(
     invoice_items = [
         InvoiceModelItemsThroughModel(
             invoice_model=invoice_model,
-            item_model=choice(item_models_products),
+            item_model=choice(product_models),
             quantity=round(random() * randint(1, 5), 2),
             unit_cost=round(random() * randint(100, 999), 2)
         ) for _ in range(randint(1, 10))
@@ -213,7 +212,7 @@ def generate_random_invoice(
 
     invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
     invoice_model.update_amount_due()
-    invoice_model.amount_paid = Decimal(random()) * invoice_model.amount_due
+    invoice_model.amount_paid = Decimal(round(random() * float(invoice_model.amount_due), 2))
     invoice_model.new_state(commit=True)
     invoice_model.clean()
     invoice_model.save()
@@ -221,6 +220,133 @@ def generate_random_invoice(
         user_model=user_model,
         entity_slug=entity_model.slug,
         je_date=paid_dt)
+
+
+def generate_random_vendors(entity_model: EntityModel, fk):
+    vendor_count = randint(10, 20)
+    vendor_models = [
+        VendorModel(
+            vendor_name=fk.name() if random() > .7 else fk.company(),
+            entity=entity_model,
+            address_1=fk.street_address(),
+            address_2=fk.building_number() if random() < .2 else None,
+            city=fk.city(),
+            state=fk.state_abbr(),
+            zip_code=fk.postcode(),
+            phone=fk.phone_number(),
+            country='USA',
+            email=fk.email(),
+            website=fk.url(),
+            active=True,
+            hidden=False
+        ) for _ in range(vendor_count)
+    ]
+
+    for vendor in vendor_models:
+        vendor.clean()
+
+    return VendorModel.objects.bulk_create(vendor_models, ignore_conflicts=True)
+
+
+def generate_random_customers(entity_model: EntityModel, fk):
+    customer_count = randint(10, 20)
+    customer_models = [
+        CustomerModel(
+            customer_name=fk.name() if random() > .2 else fk.company(),
+            entity=entity_model,
+            address_1=fk.street_address() + fk.street_suffix(),
+            address_2=fk.building_number() if random() > .2 else None,
+            city=fk.city(),
+            state=fk.state_abbr(),
+            zip_code=fk.postcode(),
+            country='USA',
+            phone=fk.phone_number(),
+            email=fk.email(),
+            website=fk.url(),
+            active=True,
+            hidden=False
+        ) for _ in range(customer_count)
+    ]
+
+    for customer in customer_models:
+        customer.clean()
+
+    return CustomerModel.objects.bulk_create(customer_models, ignore_conflicts=True)
+
+
+def fund_entity(entity_model: EntityModel,
+                start_dt: date,
+                accounts_gb: dict,
+                cap_contribution: float or int):
+    capital_acc = choice(accounts_gb['eq_capital'])
+    cash_acc = choice(accounts_gb['asset_ca_cash'])
+
+    txs = list()
+    txs.append({
+        'account_id': cash_acc.uuid,
+        'tx_type': 'debit',
+        'amount': cap_contribution,
+        'description': f'Sample data for {entity_model.name}'
+    })
+    txs.append({
+        'account_id': capital_acc.uuid,
+        'tx_type': 'credit',
+        'amount': cap_contribution,
+        'description': f'Sample data for {entity_model.name}'
+    })
+
+    ledger, created = entity_model.ledgers.get_or_create(
+        name='Business Funding Ledger',
+        posted=True
+    )
+    entity_model.commit_txs(
+        je_date=start_dt,
+        je_txs=txs,
+        je_activity='op',
+        je_posted=True,
+        je_ledger=ledger
+    )
+
+
+def create_uom_models(entity_model: EntityModel):
+    UOMs = {
+        'unit': 'Unit',
+        'ln.ft': 'Linear Feet',
+        'sq.ft': 'Square Feet',
+        'lb': 'Pound',
+        'pallet': 'Pallet',
+        'man-hour': 'Man Hour'
+    }
+
+    uom_models = [
+        UnitOfMeasureModel(unit_abbr=abbr,
+                           entity=entity_model,
+                           name=name) for abbr, name in UOMs.items()
+    ]
+    return UnitOfMeasureModel.objects.bulk_create(uom_models)
+
+
+def generate_random_products(entity_model: EntityModel, uom_models, accounts_gb):
+    product_count = randint(20, 40)
+    product_models = [
+        ItemModel(
+            name=f'Product or Service {randint(1000, 9999)}',
+            uom=choice(uom_models),
+            sku=generate_random_sku(),
+            upc=generate_random_upc(),
+            item_id=generate_random_item_id(),
+            entity=entity_model,
+            is_product_or_service=True,
+            earnings_account=choice(accounts_gb['in_sales']),
+        ) for _ in range(product_count)
+    ]
+
+    product_models = entity_model.items.bulk_create(product_models)
+
+    for im in product_models:
+        im.clean()
+
+    return product_models
 
 
 def generate_sample_data(entity_model: str or EntityModel,
@@ -256,61 +382,6 @@ def generate_sample_data(entity_model: str or EntityModel,
     entity_model.vendors.all().delete()
     entity_model.items.all().delete()
 
-    # VENDOR GENERATION...
-    vendor_count = randint(10, 20)
-    vendor_models = [
-        VendorModel(
-            vendor_name=fk.name() if random() > .7 else fk.company(),
-            entity=entity_model,
-            address_1=fk.street_address(),
-            address_2=fk.building_number() if random() < .2 else None,
-            city=fk.city(),
-            state=fk.state_abbr(),
-            zip_code=fk.postcode(),
-            phone=fk.phone_number(),
-            country='USA',
-            email=fk.email(),
-            website=fk.url(),
-            active=True,
-            hidden=False
-        ) for _ in range(vendor_count)
-    ]
-
-    for vendor in vendor_models:
-        vendor.clean()
-    vendor_models = VendorModel.objects.bulk_create(vendor_models)
-
-    # CUSTOMER GENERATION...
-    customer_count = randint(10, 20)
-    customer_models = [
-        CustomerModel(
-            customer_name=fk.name() if random() > .2 else fk.company(),
-            entity=entity_model,
-            address_1=fk.street_address() + fk.street_suffix(),
-            address_2=fk.building_number() if random() > .2 else None,
-            city=fk.city(),
-            state=fk.state_abbr(),
-            zip_code=fk.postcode(),
-            country='USA',
-            phone=fk.phone_number(),
-            email=fk.email(),
-            website=fk.url(),
-            active=True,
-            hidden=False
-        ) for _ in range(customer_count)
-    ]
-
-    for customer in customer_models:
-        customer.clean()
-    customer_models = CustomerModel.objects.bulk_create(customer_models)
-
-    # todo: create bank account models...
-
-    ledger, created = entity_model.ledgers.get_or_create(
-        name='Business Funding Ledger',
-        posted=True
-    )
-
     accounts = AccountModel.on_coa.for_entity_available(
         entity_slug=entity_model.slug,
         user_model=user_model
@@ -319,70 +390,16 @@ def generate_sample_data(entity_model: str or EntityModel,
         g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
     }
 
-    capital_acc = choice(accounts_gb['eq_capital'])
-    cash_acc = choice(accounts_gb['asset_ca_cash'])
+    vendor_models = generate_random_vendors(entity_model, fk)
+    customer_models = generate_random_customers(entity_model, fk)
+    # todo: create bank account models...
+    fund_entity(entity_model=entity_model,
+                start_dt=start_dt,
+                accounts_gb=accounts_gb,
+                cap_contribution=cap_contribution)
 
-    txs = list()
-    txs.append({
-        'account_id': cash_acc.uuid,
-        'tx_type': 'debit',
-        'amount': cap_contribution,
-        'description': f'Sample data for {entity_model.name}'
-    })
-    txs.append({
-        'account_id': capital_acc.uuid,
-        'tx_type': 'credit',
-        'amount': cap_contribution,
-        'description': f'Sample data for {entity_model.name}'
-    })
-
-    entity_model.commit_txs(
-        je_date=start_dt,
-        je_txs=txs,
-        je_activity='op',
-        je_posted=True,
-        je_ledger=ledger
-    )
-
-    UOMs = {
-        'unit': 'Unit',
-        'ln.ft': 'Linear Feet',
-        'sq.ft': 'Square Feet',
-        'lb': 'Pound',
-        'pallet': 'Pallet',
-        'man-hour': 'Man Hour'
-    }
-
-    uom_models = [
-        UnitOfMeasureModel(unit_abbr=abbr,
-                           entity=entity_model,
-                           name=name) for abbr, name in UOMs.items()
-    ]
-    uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
-    # uom_models = UnitOfMeasureModel.objects.for_entity(
-    #     entity_slug=entity_model.slug,
-    #     user_model=user_model
-    # )
-
-    item_count = randint(20, 40)
-    item_models = [
-        ItemModel(
-            name=f'Product or Service {randint(1000, 9999)}',
-            uom=choice(uom_models),
-            sku=generate_random_sku(),
-            upc=generate_random_upc(),
-            item_id=generate_random_item_id(),
-            entity=entity_model,
-            is_product_or_service=True,
-            earnings_account=choice(accounts_gb['in_sales']),
-        ) for _ in range(item_count)
-    ]
-
-    item_models = entity_model.items.bulk_create(item_models)
-    for im in item_models:
-        im.clean()
-
-    item_models_products = [i for i in item_models if i.is_product_or_service]
+    uom_models = create_uom_models(entity_model=entity_model)
+    product_models = generate_random_products(entity_model=entity_model, uom_models=uom_models, accounts_gb=accounts_gb)
 
     loc_time = localtime()
     rng = tx_quantity
@@ -445,7 +462,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                 is_paid=is_paid,
                 paid_dt=paid_dt,
                 user_model=user_model,
-                item_models_products=item_models_products
+                product_models=product_models
             )
 
 

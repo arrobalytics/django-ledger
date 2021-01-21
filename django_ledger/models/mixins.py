@@ -481,7 +481,7 @@ class ItemTotalCostMixIn(models.Model):
         abstract = True
 
     def update_total_amount(self):
-        self.total_amount = self.quantity * self.unit_cost
+        self.total_amount = round(self.quantity * self.unit_cost, 2)
 
     def clean(self):
         self.update_total_amount()
