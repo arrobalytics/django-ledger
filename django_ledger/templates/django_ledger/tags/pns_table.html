@@ -6,17 +6,21 @@
         <thead>
         <tr>
             <th>Item</th>
+            <th>UOM</th>
             <th>SKU</th>
             <th>UPC</th>
+            <th>Earnings Account</th>
             <th>Actions</th>
         </tr>
         </thead>
         <tbody>
-        {% for item in item_list %}
+        {% for pns in pns_list %}
             <tr>
-                <td>{{ item.name }}</td>
-                <td>{{ item.sku }}</td>
-                <td>{{ item.upc }}</td>
+                <td>{{ pns.name }}</td>
+                <td>{{ pns.uom }}</td>
+                <td>{{ pns.sku }}</td>
+                <td>{{ pns.upc }}</td>
+                <td>{{ pns.earnings_account }}</td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
                         <div class="dropdown-trigger">
@@ -28,9 +32,9 @@
                             </button>
                         </div>
 
-                        <div class="dropdown-menu" id="dropdown-menu-{{ item.uuid }}" role="menu">
+                        <div class="dropdown-menu" id="dropdown-menu-{{ pns.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:product-update' entity_slug=entity_slug item_pk=item.uuid %}"
+                                <a href="{% url 'django_ledger:product-update' entity_slug=entity_slug item_pk=pns.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Update' %}</a>
                             </div>
                         </div>

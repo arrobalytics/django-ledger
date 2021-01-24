@@ -7,8 +7,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
-from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views import View
@@ -123,7 +123,9 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  extra_tags='is-info')
 
         invoice_model: InvoiceModel = self.object
-        invoice_item_queryset, item_data = invoice_model.get_invoice_item_data()
+        invoice_item_queryset, item_data = invoice_model.get_invoice_item_data(
+            queryset=invoice_model.invoicemodelitemsthroughmodel_set.all()
+        )
         context['item_formset'] = InvoiceItemFormset(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
@@ -174,23 +176,16 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
             invoice_items = item_formset.save(commit=False)
 
             if item_formset.has_changed():
+                invoice_qs = InvoiceModel.objects.for_entity(
+                    user_model=self.request.user,
+                    entity_slug=entity_slug
+                )
+                invoice_model: InvoiceModel = get_object_or_404(invoice_qs, uuid__exact=invoice_pk)
 
-                try:
-                    invoice_model: InvoiceModel = InvoiceModel.objects.for_entity(
-                        user_model=self.request.user,
-                        entity_slug=entity_slug
-                    ).get(uuid__exact=invoice_pk)
-
-                except ObjectDoesNotExist:
-                    return HttpResponseNotFound(f'Invoice Model ID {invoice_pk} not found.')
-
-                try:
-                    entity_model: EntityModel = EntityModel.objects.for_user(
-                        user_model=self.request.user
-                    ).get(slug__exact=entity_slug)
-
-                except ObjectDoesNotExist:
-                    return HttpResponseNotFound(f'Entity Model {entity_slug} not found.')
+                entity_qs = EntityModel.objects.for_user(
+                    user_model=self.request.user
+                )
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
                 for item in invoice_items:
                     item.entity = entity_model

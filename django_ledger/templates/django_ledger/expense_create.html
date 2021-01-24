@@ -7,7 +7,7 @@
     <div class="columns is-multiline is-centered">
         <div class="column is-6">
             <div class="card">
-                <form action="{% url 'django_ledger:product-update' entity_slug=view.kwargs.entity_slug item_pk=item.uuid %}"
+                <form action="{% url 'django_ledger:expense-create' entity_slug=view.kwargs.entity_slug %}"
                       method="post">
                     {% csrf_token %}
                     <div class="card-header">
@@ -17,18 +17,16 @@
                                     </span>{{ page_title }}</h2>
                     </div>
                     <div class="card-content">
-                        {{ form }}
+                        {{ form.as_p }}
                         <button type="submit"
                                 class="button is-primary is-outlined is-fullwidth djetler_my_1">
-                            {% trans 'Update' %}
+                            {% trans 'Create' %}
                         </button>
-                        <a href="{% url 'django_ledger:product-list' entity_slug=view.kwargs.entity_slug %}"
+                        <a href="{% url 'django_ledger:expense-list' entity_slug=view.kwargs.entity_slug %}"
                            class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
 {% endblock %}
-

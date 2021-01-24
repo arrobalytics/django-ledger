@@ -11,7 +11,7 @@ from string import ascii_uppercase, digits
 from uuid import uuid4
 
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -151,6 +151,19 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
                            'bill_pk': self.uuid
                        })
 
+    def get_bill_item_data(self, queryset=None) -> tuple:
+        if not queryset:
+            queryset = self.billmodelitemsthroughmodel_set.all()
+        return queryset, queryset.aggregate(
+            amount_due=Sum('total_amount'),
+            total_items=Count('uuid')
+        )
+
+    def update_amount_due(self, queryset=None) -> tuple:
+        queryset, item_data = self.get_bill_item_data(queryset=queryset)
+        self.amount_due = item_data['amount_due']
+        return queryset, item_data
+
     def clean(self):
         if not self.bill_number:
             self.bill_number = generate_bill_number()
@@ -171,7 +184,6 @@ post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
 
 
 class BillModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_model = models.ForeignKey('django_ledger.BillModel',
                                    on_delete=models.CASCADE,

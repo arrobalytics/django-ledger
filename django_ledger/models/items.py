@@ -32,6 +32,10 @@ class UnitOfMeasureModelManager(models.Manager):
             )
         )
 
+    def for_entity_active(self, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(is_active=True)
+
 
 class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -58,7 +62,22 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
         return f'{self.name} ({self.unit_abbr})'
 
 
+class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
+    """
+    Base Unit of Measure Model from Abstract.
+    """
+
+
+class ItemModelMQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(active=True)
+
+
 class ItemModelManager(models.Manager):
+
+    def get_queryset(self):
+        return ItemModelMQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -73,6 +92,17 @@ class ItemModelManager(models.Manager):
     def for_entity_active(self, entity_slug: str, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
+
+    def products_and_services(self, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(is_product_or_service=True)
+
+    def expenses(self, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            is_product_or_service=False,
+            for_inventory=False
+        )
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -192,12 +222,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.inventory_account = None
             self.earnings_account = None
             self.cogs_account = None
-
-
-class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
-    """
-    Base Unit of Measure Model from Abstract.
-    """
 
 
 class ItemModel(ItemModelAbstract):

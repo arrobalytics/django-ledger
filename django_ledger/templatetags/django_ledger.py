@@ -492,8 +492,13 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'products_services',
-                        'title': 'Products & Services',
-                        'url': reverse('django_ledger:item-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'title': 'My Products & Services',
+                        'url': reverse('django_ledger:product-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'expenses',
+                        'title': 'Things I Pay For',
+                        'url': reverse('django_ledger:expense-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',
@@ -562,20 +567,39 @@ def navigation_menu(context, style):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/tags/item_table.html', takes_context=True)
-def items_table(context, queryset):
+@register.inclusion_tag('django_ledger/tags/pns_table.html', takes_context=True)
+def pns_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {
         'entity_slug': entity_slug,
-        'item_list': queryset
+        'pns_list': queryset
     }
 
 
-@register.inclusion_tag('django_ledger/tags/items_formset.html', takes_context=True)
-def item_formset_table(context, item_formset):
+@register.inclusion_tag('django_ledger/tags/expense_table.html', takes_context=True)
+def expense_table(context, queryset):
+    entity_slug = context['view'].kwargs['entity_slug']
+    return {
+        'entity_slug': entity_slug,
+        'expense_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/invoice_item_formset.html', takes_context=True)
+def invoice_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'invoice_pk': context['view'].kwargs['invoice_pk'],
+        'total_amount_due': context['total_amount_due'],
+        'item_formset': item_formset,
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/bill_item_formset.html', takes_context=True)
+def bill_item_formset_table(context, item_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'bill_pk': context['view'].kwargs['bill_pk'],
         'total_amount_due': context['total_amount_due'],
         'item_formset': item_formset,
     }
