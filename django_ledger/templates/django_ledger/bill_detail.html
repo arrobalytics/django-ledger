@@ -23,18 +23,75 @@
             </div>
         </div>
         <div class="column is-8">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-header-title has-text-weight-light is-size-3">
-                        <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
-                        {% trans 'Bill Transactions' %}
-                    </h2>
+            <div class="columns is-multiline">
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Bill Transactions' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            {% bill_txs_table bill %}
+                        </div>
+                    </div>
+
                 </div>
-                <div class="card-content">
-                    {% bill_txs_table bill %}
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Bill Items' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="table-container">
+                                <table class="table is-fullwidth is-narrow">
+
+                                    <thead>
+                                    <tr>
+                                        <th>{% trans 'Item' %}</th>
+                                        <th>{% trans 'Unit Cost' %}</th>
+                                        <th>{% trans 'Quantity' %}</th>
+                                        <th>{% trans 'Total' %}</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+                                    {% for bill_item in bill_items %}
+                                        <tr>
+                                            <td>{{ bill_item.item_model }}</td>
+                                            <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>
+                                            <td>{{ bill_item.quantity }}</td>
+                                            <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+
+                                    <tfoot>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        <th>{% trans 'Total' %}</th>
+                                        <th>
+                                            {% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                                        <th></th>
+                                    </tr>
+                                    </tfoot>
+
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+
             </div>
         </div>
     </div>
+
+
 
 {% endblock %}

@@ -21,7 +21,6 @@ from django_ledger.models import EntityModel
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_progressible_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
-from django_ledger.views.transactions import TransactionModel
 
 
 class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
@@ -228,11 +227,13 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
         title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
         context['header_title'] = title
-        context['transactions'] = TransactionModel.objects.for_bill(
-            bill_pk=bill_model.uuid,
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).select_related('journal_entry').order_by('-journal_entry__date')
+
+        bill_model: BillModel = self.object
+        bill_items_qs, item_data = bill_model.get_bill_item_data(
+            queryset=bill_model.billmodelitemsthroughmodel_set.all()
+        )
+        context['bill_items'] = bill_items_qs
+        context['total_amount_due'] = item_data['amount_due']
         return context
 
     def get_queryset(self):
