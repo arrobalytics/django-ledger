@@ -1,0 +1,66 @@
+{% load trans from i18n %}
+{% load django_ledger %}
+
+<form action="{% url 'django_ledger:bill-update-items' entity_slug=entity_slug bill_pk=bill_pk %}"
+      method="post">
+    <div class="columns is-multiline">
+        <div class="column is-12">
+            <h1 class="is-size-1">{% trans 'Bill Items' %}</h1>
+        </div>
+        <div class="column is-12">
+            <div class="table-container">
+                {% csrf_token %}
+                {{ item_formset.non_form_errors }}
+                {{ item_formset.management_form }}
+                <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                    <thead>
+                    <tr>
+                        <th>{% trans 'Item' %}</th>
+                        <th>{% trans 'Unit Cost' %}</th>
+                        <th>{% trans 'Quantity' %}</th>
+                        <th>{% trans 'Total' %}</th>
+                        <th>{% trans 'Delete' %}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for f in item_formset %}
+                        <tr>
+                            <td>
+                                {% for hidden_field in f.hidden_fields %}
+                                    {{ hidden_field }}
+                                {% endfor %}
+                                {{ f.item_model }}
+                            </td>
+
+                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
+                            <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
+                            <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
+                                {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
+                            <td class="has-text-centered">
+                                {% if item_formset.can_delete %}
+                                    {{ f.DELETE }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th class="has-text-right">{% trans 'Total' %}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                        <th></th>
+                    </tr>
+                    </tfoot>
+
+                </table>
+            </div>
+        </div>
+        <div class="column is-12">
+            <a href="{% url 'django_ledger:product-create' entity_slug=entity_slug %}"
+               class="button is-primary">{% trans 'New Item' %}</a>
+            <button class="button is-primary">{% trans 'Save' %}</button>
+        </div>
+    </div>
+</form>

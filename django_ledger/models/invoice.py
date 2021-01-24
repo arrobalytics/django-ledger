@@ -146,7 +146,6 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
         """
         Must be implemented.
         :return:
-        :return:
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
@@ -158,10 +157,10 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
-    def update_amount_due(self, queryset=None) -> dict:
+    def update_amount_due(self, queryset=None) -> tuple:
         queryset, item_data = self.get_invoice_item_data(queryset=queryset)
         self.amount_due = item_data['amount_due']
-        return item_data
+        return queryset, item_data
 
     def clean(self):
         if not self.invoice_number:

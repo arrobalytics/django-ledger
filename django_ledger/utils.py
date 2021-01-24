@@ -12,7 +12,7 @@ from django.utils.timezone import localtime, localdate
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.models.bill import BillModel, generate_bill_number
+from django_ledger.models.bill import BillModel, generate_bill_number, BillModelItemsThroughModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel
@@ -163,65 +163,6 @@ def set_session_date_filter(request, entity_slug: str, end_date: date):
     request.session[session_key] = end_date.isoformat()
 
 
-def generate_random_invoice(
-        entity_model: EntityModel,
-        customer_models,
-        is_progressible: bool,
-        progress: float,
-        accounts_gb: dict,
-        issue_dt: date,
-        is_paid: bool,
-        paid_dt: date,
-        user_model,
-        product_models):
-    invoice_model = InvoiceModel(
-        customer=choice(customer_models),
-        progressible=is_progressible,
-        progress=progress,
-        terms=choice(InvoiceModel.TERMS)[0],
-        invoice_number=generate_invoice_number(),
-        amount_due=0,
-        cash_account=choice(accounts_gb['asset_ca_cash']),
-        receivable_account=choice(accounts_gb['asset_ca_recv']),
-        payable_account=choice(accounts_gb['lia_cl_acc_pay']),
-        earnings_account=choice(accounts_gb['in_sales']),
-        date=issue_dt,
-        paid=is_paid,
-        paid_date=paid_dt
-    )
-
-    invoice_model = new_invoice_protocol(
-        invoice_model=invoice_model,
-        entity_slug=entity_model,
-        user_model=user_model)
-
-    invoice_model.clean()
-    invoice_model.save()
-
-    invoice_items = [
-        InvoiceModelItemsThroughModel(
-            invoice_model=invoice_model,
-            item_model=choice(product_models),
-            quantity=round(random() * randint(1, 5), 2),
-            unit_cost=round(random() * randint(100, 999), 2)
-        ) for _ in range(randint(1, 10))
-    ]
-
-    for ii in invoice_items:
-        ii.clean()
-
-    invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
-    invoice_model.update_amount_due()
-    invoice_model.amount_paid = Decimal(round(random() * float(invoice_model.amount_due), 2))
-    invoice_model.new_state(commit=True)
-    invoice_model.clean()
-    invoice_model.save()
-    invoice_model.migrate_state(
-        user_model=user_model,
-        entity_slug=entity_model.slug,
-        je_date=paid_dt)
-
-
 def generate_random_vendors(entity_model: EntityModel, fk):
     vendor_count = randint(10, 20)
     vendor_models = [
@@ -349,13 +290,155 @@ def generate_random_products(entity_model: EntityModel, uom_models, accounts_gb)
     return product_models
 
 
+def generate_random_expenses(entity_model: EntityModel, uom_models, accounts_gb):
+    expense_count = randint(20, 40)
+    expense_models = [
+        ItemModel(
+            name=f'Expense Item {randint(1000, 9999)}',
+            uom=choice(uom_models),
+            sku=generate_random_sku(),
+            upc=generate_random_upc(),
+            item_id=generate_random_item_id(),
+            entity=entity_model,
+            is_product_or_service=False,
+            for_inventory=False,
+            expense_account=choice(accounts_gb['ex_op']),
+        ) for _ in range(expense_count)
+    ]
+
+    expense_models = entity_model.items.bulk_create(expense_models)
+
+    for em in expense_models:
+        em.clean()
+
+    return expense_models
+
+
+def generate_random_invoice(
+        entity_model: EntityModel,
+        customer_models,
+        user_model,
+        is_progressible: bool,
+        progress: float,
+        accounts_by_role: dict,
+        issue_dt: date,
+        is_paid: bool,
+        paid_dt: date,
+        product_models):
+    invoice_model = InvoiceModel(
+        customer=choice(customer_models),
+        progressible=is_progressible,
+        progress=progress,
+        terms=choice(InvoiceModel.TERMS)[0],
+        invoice_number=generate_invoice_number(),
+        amount_due=0,
+        cash_account=choice(accounts_by_role['asset_ca_cash']),
+        receivable_account=choice(accounts_by_role['asset_ca_recv']),
+        payable_account=choice(accounts_by_role['lia_cl_acc_pay']),
+        earnings_account=choice(accounts_by_role['in_sales']),
+        date=issue_dt,
+        paid=is_paid,
+        paid_date=paid_dt
+    )
+
+    invoice_model = new_invoice_protocol(
+        invoice_model=invoice_model,
+        entity_slug=entity_model,
+        user_model=user_model)
+
+    invoice_model.clean()
+    invoice_model.save()
+
+    invoice_items = [
+        InvoiceModelItemsThroughModel(
+            invoice_model=invoice_model,
+            item_model=choice(product_models),
+            quantity=round(random() * randint(1, 5), 2),
+            unit_cost=round(random() * randint(100, 999), 2)
+        ) for _ in range(randint(1, 10))
+    ]
+
+    for ii in invoice_items:
+        ii.clean()
+
+    invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
+    invoice_model.update_amount_due()
+    invoice_model.amount_paid = Decimal(round(random() * float(invoice_model.amount_due), 2))
+    invoice_model.new_state(commit=True)
+    invoice_model.clean()
+    invoice_model.save()
+    invoice_model.migrate_state(
+        user_model=user_model,
+        entity_slug=entity_model.slug,
+        je_date=paid_dt)
+
+
+def generate_random_bill(
+        entity_model: EntityModel,
+        user_model,
+        vendor_models: list,
+        expense_models: list,
+        is_progressible: bool,
+        progress: float,
+        accounts_by_role: dict,
+        issue_dt: date,
+        is_paid: bool,
+        paid_dt: date):
+    bill_model = BillModel(
+        vendor=choice(vendor_models),
+        progressible=is_progressible,
+        progress=progress,
+        terms=choice(BillModel.TERMS)[0],
+        bill_number=generate_bill_number(),
+        amount_due=0,
+        cash_account=choice(accounts_by_role['asset_ca_cash']),
+        receivable_account=choice(accounts_by_role['asset_ca_recv']),
+        payable_account=choice(accounts_by_role['lia_cl_acc_pay']),
+        earnings_account=choice(accounts_by_role['ex_op']),
+        date=issue_dt,
+        paid=is_paid,
+        paid_date=paid_dt
+    )
+
+    bill_model = new_bill_protocol(
+        bill_model=bill_model,
+        entity_slug=entity_model,
+        user_model=user_model)
+
+    bill_model.clean()
+    bill_model.save()
+
+    bill_items = [
+        BillModelItemsThroughModel(
+            bill_model=bill_model,
+            item_model=choice(expense_models),
+            quantity=round(random() * randint(1, 5), 2),
+            unit_cost=round(random() * randint(100, 800), 2)
+        ) for _ in range(randint(1, 10))
+    ]
+
+    for ii in bill_items:
+        ii.clean()
+
+    bill_model.billmodelitemsthroughmodel_set.bulk_create(bill_items)
+    bill_model.update_amount_due()
+    bill_model.amount_paid = Decimal(round(random() * float(bill_model.amount_due), 2))
+    bill_model.new_state(commit=True)
+    bill_model.clean()
+    bill_model.save()
+    bill_model.migrate_state(
+        user_model=user_model,
+        entity_slug=entity_model.slug,
+        je_date=paid_dt)
+
+
 def generate_sample_data(entity_model: str or EntityModel,
                          user_model,
                          start_dt: datetime,
                          days_fw: int,
                          cap_contribution: float or int = 20000,
-                         income_tx_avg: float or int = 2000,
-                         expense_tx_avg: float or int = 1000,
+                         # income_tx_avg: float or int = 2000,
+                         # expense_tx_avg: float or int = 1000,
                          tx_quantity: int = 100,
                          is_progressible_probability: float = 0.2,
                          is_paid_probability: float = 0.90):
@@ -386,24 +469,30 @@ def generate_sample_data(entity_model: str or EntityModel,
         entity_slug=entity_model.slug,
         user_model=user_model
     ).order_by('role')
-    accounts_gb = {
+    accounts_by_role = {
         g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
     }
 
     vendor_models = generate_random_vendors(entity_model, fk)
     customer_models = generate_random_customers(entity_model, fk)
+
     # todo: create bank account models...
     fund_entity(entity_model=entity_model,
                 start_dt=start_dt,
-                accounts_gb=accounts_gb,
+                accounts_gb=accounts_by_role,
                 cap_contribution=cap_contribution)
 
     uom_models = create_uom_models(entity_model=entity_model)
-    product_models = generate_random_products(entity_model=entity_model, uom_models=uom_models, accounts_gb=accounts_gb)
+    product_models = generate_random_products(entity_model=entity_model,
+                                              uom_models=uom_models,
+                                              accounts_gb=accounts_by_role)
+
+    expense_models = generate_random_expenses(entity_model=entity_model,
+                                              uom_models=uom_models,
+                                              accounts_gb=accounts_by_role)
 
     loc_time = localtime()
-    rng = tx_quantity
-    for i in range(rng):
+    for i in range(tx_quantity):
 
         issue_dttm = start_dt + timedelta(days=randint(0, days_fw))
         if issue_dttm > loc_time:
@@ -420,35 +509,23 @@ def generate_sample_data(entity_model: str or EntityModel,
 
         issue_dt = issue_dttm.date()
         paid_dt = paid_dttm.date() if paid_dttm else None
-        switch_amt = random() > 0.75
+        # switch_amt = random() > 0.75
 
         if i % 2 == 0:
 
-            amt = expense_tx_avg if not switch_amt else income_tx_avg
-            bill_amt = Decimal(round(random() * amt, 2))
-            bill_amt_paid = Decimal(round(Decimal(random()) * bill_amt, 2))
-
-            bill = BillModel(
-                vendor=choice(vendor_models),
-                progressible=is_progressible,
+            generate_random_bill(
+                entity_model=entity_model,
+                vendor_models=vendor_models,
+                is_progressible=is_progressible,
                 progress=progress,
-                terms=choice(BillModel.TERMS)[0],
-                xref=generate_bill_number(length=15, prefix=False),
-                cash_account=choice(accounts_gb['asset_ca_cash']),
-                receivable_account=choice(accounts_gb['asset_ca_recv']),
-                payable_account=choice(accounts_gb['lia_cl_acc_pay']),
-                earnings_account=choice(accounts_gb['ex_op']),
-                amount_due=bill_amt,
-                amount_paid=bill_amt_paid,
-                date=issue_dt,
-                paid=is_paid,
-                paid_date=paid_dt
+                accounts_by_role=accounts_by_role,
+                issue_dt=issue_dt,
+                is_paid=is_paid,
+                paid_dt=paid_dt,
+                user_model=user_model,
+                expense_models=expense_models
             )
 
-            bill = new_bill_protocol(bill_model=bill, entity_slug=entity_model.slug, user_model=user_model)
-            bill.clean()
-            bill.migrate_state(user_model=user_model, entity_slug=entity_model.slug, je_date=paid_dt)
-            bill.save()
 
         else:
 
@@ -457,7 +534,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                 customer_models=customer_models,
                 is_progressible=is_progressible,
                 progress=progress,
-                accounts_gb=accounts_gb,
+                accounts_by_role=accounts_by_role,
                 issue_dt=issue_dt,
                 is_paid=is_paid,
                 paid_dt=paid_dt,

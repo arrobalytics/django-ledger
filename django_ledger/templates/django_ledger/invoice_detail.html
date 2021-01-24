@@ -17,7 +17,7 @@
                 <div class="column is-12">
                     <a class="button is-info is-fullwidth is-outlined"
                        href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}">
-                        Invoice List
+                        {% trans 'Invoice List' %}
                     </a>
                 </div>
             </div>

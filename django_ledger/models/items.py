@@ -68,7 +68,16 @@ class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
 
 
+class ItemModelMQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(active=True)
+
+
 class ItemModelManager(models.Manager):
+
+    def get_queryset(self):
+        return ItemModelMQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()

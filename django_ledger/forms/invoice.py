@@ -136,11 +136,9 @@ class InvoiceItemForm(ModelForm):
             }),
             'unit_cost': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'onchange': 'djLedger.onChangeItem(this)'
             }),
             'quantity': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'onchange': 'djLedger.onChangeItem(this)'
             })
         }
 
@@ -153,7 +151,7 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
         self.INVOICE_PK = invoice_pk
         self.ENTITY_SLUG = entity_slug
 
-        items_qs = ItemModel.objects.for_entity_active(
+        items_qs = ItemModel.objects.products_and_services(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )

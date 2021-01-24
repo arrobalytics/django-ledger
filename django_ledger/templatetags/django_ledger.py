@@ -585,11 +585,21 @@ def expense_table(context, queryset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/items_formset.html', takes_context=True)
-def item_formset_table(context, item_formset):
+@register.inclusion_tag('django_ledger/tags/invoice_item_formset.html', takes_context=True)
+def invoice_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'invoice_pk': context['view'].kwargs['invoice_pk'],
+        'total_amount_due': context['total_amount_due'],
+        'item_formset': item_formset,
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/bill_item_formset.html', takes_context=True)
+def bill_item_formset_table(context, item_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'bill_pk': context['view'].kwargs['bill_pk'],
         'total_amount_due': context['total_amount_due'],
         'item_formset': item_formset,
     }
