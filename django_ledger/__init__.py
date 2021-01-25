@@ -9,7 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 default_app_config = 'django_ledger.apps.DjangoLedgerConfig'
 
 """Django Ledger"""
-__version__ = '0.4.0.4'
+__version__ = '0.4.0.5'
 __license__ = 'GPLv3 License'
 
 __author__ = 'Miguel Sanda'

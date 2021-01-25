@@ -6,6 +6,7 @@
 {% block view_content %}
 
     <div class="columns">
+
         <div class="column is-4">
             <div class="columns is-multiline">
                 <div class="column is-12">
@@ -22,17 +23,71 @@
                 </div>
             </div>
         </div>
+
         <div class="column is-8">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-header-title has-text-weight-light is-size-3">
-                        <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
-                        {% trans 'Invoice Transactions' %}
-                    </h2>
+            <div class="columns is-multiline">
+
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Invoice Transactions' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            {% invoice_txs_table invoice %}
+                        </div>
+                    </div>
                 </div>
-                <div class="card-content">
-                    {% invoice_txs_table invoice %}
+
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Invoice Items' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="table-container">
+                                <table class="table is-fullwidth is-narrow">
+
+                                    <thead>
+                                    <tr>
+                                        <th>{% trans 'Item' %}</th>
+                                        <th>{% trans 'Unit Cost' %}</th>
+                                        <th>{% trans 'Quantity' %}</th>
+                                        <th>{% trans 'Total' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for invoice_item in invoice_items %}
+                                        <tr>
+                                            <td>{{ invoice_item.item_model }}</td>
+                                            <td>{% currency_symbol %}{{ invoice_item.unit_cost | currency_format }}</td>
+                                            <td>{{ invoice_item.quantity }}</td>
+                                            <td>
+                                                {% currency_symbol %}{{ invoice_item.total_amount | currency_format }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        <th>{% trans 'Total' %}</th>
+                                        <th>
+                                            {% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                                        <th></th>
+                                    </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
