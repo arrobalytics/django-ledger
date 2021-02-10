@@ -467,6 +467,11 @@ def navigation_menu(context, style):
                 'links': [
                     {
                         'type': 'link',
+                        'title': 'Entity Units',
+                        'url': reverse('django_ledger:unit-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
                         'title': 'Vendors',
                         'url': reverse('django_ledger:vendor-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },

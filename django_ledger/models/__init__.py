@@ -19,3 +19,4 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.vendor import VendorModel
+from django_ledger.models.unit import EntityUnitModel

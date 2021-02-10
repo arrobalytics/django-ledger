@@ -27,7 +27,7 @@ from django_ledger.utils import (
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn,
-    LoginRequiredMixIn
+    LoginRequiredMixIn, SessionConfigurationMixIn
 )
 
 
@@ -149,12 +149,15 @@ class EntityModelDetailView(LoginRequiredMixIn, RedirectView):
 class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
                                       YearlyReportMixIn,
                                       FromToDatesMixIn,
+                                      SessionConfigurationMixIn,
                                       DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity_dashboard.html'
     DJL_NO_FROM_DATE_RAISE_404 = False
     DJL_NO_TO_DATE_RAISE_404 = False
+
+    # def get(self):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -182,7 +185,6 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
 
         context['from_date'] = self.get_from_date()
         context['to_date'] = self.get_to_date()
-        set_default_entity(self.request, entity_model)
         context = self.get_entity_digest(context)
 
         # Unpaid Bills for Dashboard
@@ -266,6 +268,7 @@ class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
 
 class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
                                             YearlyReportMixIn,
+                                            SessionConfigurationMixIn,
                                             DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -310,6 +313,7 @@ class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
 
 class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
                                                YearlyReportMixIn,
+                                               SessionConfigurationMixIn,
                                                DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -331,9 +335,7 @@ class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEn
     """
 
 
-class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn,
-                                            FiscalYearEntityModelIncomeStatementView,
-                                            LoginRequiredMixIn):
+class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
     """
     Monthly Income Statement View.
     """
