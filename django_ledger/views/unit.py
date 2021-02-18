@@ -1,11 +1,13 @@
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, RedirectView
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.models import EntityUnitModel, EntityModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.entity import FiscalYearEntityModelBalanceSheetView
+from django_ledger.views.mixins import LoginRequiredMixIn, QuarterlyReportMixIn, MonthlyReportMixIn
 
 
 class EntityUnitModelListView(LoginRequiredMixIn, ListView):
@@ -109,3 +111,47 @@ class EntityUnitUpdateView(LoginRequiredMixIn, UpdateView):
         instance.full_clean()
         form.save()
         return super().form_valid(form=form)
+
+
+class EntityUnitModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:unit-bs-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'unit_slug': self.kwargs['unit_slug'],
+                           'year': year
+                       })
+
+
+class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceSheetView):
+    """
+    Entity Unit Fiscal Year Balance Sheet View Class
+    """
+
+    context_object_name = 'unit_model'
+    slug_url_kwarg = 'unit_slug'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['entity_model'] = self.object.entity
+        return context
+
+    def get_queryset(self):
+        return EntityUnitModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).prefetch_related('entity')
+
+
+class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
+    """
+    Entity Unit Fiscal Quarter Balance Sheet View Class
+    """
+
+
+class MonthlyEntityUnitModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
+    """
+    Entity Unit Fiscal Month Balance Sheet View Class
+    """

@@ -8,6 +8,8 @@
         <div class="column is-12">{% period_navigation 'entity-bs' %}</div>
     {% elif ledger %}
         <div class="column is-12">{% period_navigation 'ledger-bs' %}</div>
+    {% elif unit_model %}
+        <div class="column is-12">{% period_navigation 'unit-bs' %}</div>
     {% endif %}
 {% endblock %}
 
@@ -21,12 +23,15 @@
                             <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
+                        {% elif unit_model %}
+                            <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% endif %}
-                        <h1 class="is-size-2 has-text-weight-bold">{% trans 'Balance Sheet' %}</h1>
+                        <h1 class="is-size-2 has-text-weight-bold">{% session_entity_name %}</h1>
+                        <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}
-                            {% else %}Fiscal Year {{ year }}
+                                {% else %}{% trans 'Fiscal Year' %} {{ year }}
                             {% endif %}</h2>
                         <h3 class="is-size-4 is-italic has-font-weight-light">As Of {{ end_date | date:'m/d/Y' }}</h3>
                     </div>
@@ -35,10 +40,10 @@
             {% balance_sheet_table object end_date %}
             {% if entity %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% elif ledger %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                   href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go Back</a>
+                   href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
         </div>
     </div>

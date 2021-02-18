@@ -19,6 +19,7 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.unit import EntityUnitModel
 
 
 class TransactionQuerySet(models.QuerySet):
@@ -43,6 +44,9 @@ class TransactionQuerySet(models.QuerySet):
     def for_roles(self, role_list: List[str]):
         return self.filter(account__role__in=role_list)
 
+    def for_unit(self, unit_slug: str):
+        return self.filter(journal_entry__ledger__unit__slug__exact=unit_slug)
+
     def for_activity(self, activity_list: List[str]):
         return self.filter(journal_entry__activity__in=activity_list)
 
@@ -51,9 +55,6 @@ class TransactionQuerySet(models.QuerySet):
 
     def from_date(self, from_date: str or datetime):
         return self.filter(journal_entry__date__gte=from_date)
-
-    def for_year(self, year):
-        return self.filter(journal_entry__date__year__exact=year)
 
 
 class TransactionModelAdmin(models.Manager):
@@ -99,6 +100,23 @@ class TransactionModelAdmin(models.Manager):
             return qs.filter(journal_entry__ledger=ledger_model)
         elif ledger_pk and isinstance(ledger_pk, str):
             return qs.filter(journal_entry__ledger__uuid__exact=ledger_pk)
+
+    def for_unit(self,
+                 user_model,
+                 entity_slug: str,
+                 unit_model: EntityUnitModel = None,
+                 unit_slug: str = None):
+
+        if not unit_model and not unit_slug:
+            raise ValueError(f'None unit_model or unit_slug were provided.')
+        elif unit_model and unit_slug:
+            raise ValueError(f'Must pass either unit_model or unit_slug, not both.')
+
+        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
+        if unit_model and isinstance(unit_model, EntityUnitModel):
+            return qs.filter(journal_entry__ledger__unit=unit_model)
+        elif unit_slug and isinstance(unit_slug, str):
+            return qs.filter(journal_entry__ledger__unit__uuid__exact=unit_slug)
 
     def for_journal_entry(self,
                           user_model,

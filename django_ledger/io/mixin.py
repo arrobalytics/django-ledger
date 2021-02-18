@@ -36,6 +36,7 @@ class LazyImporter:
     This class eliminates the circle dependency between models.
     """
     ENTITY_MODEL = None
+    UNIT_MODEL = None
     LEDGER_MODEL = None
     TXS_MODEL = None
 
@@ -56,6 +57,12 @@ class LazyImporter:
             from django_ledger.models.ledger import LedgerModel
             self.LEDGER_MODEL = LedgerModel
         return self.LEDGER_MODEL
+
+    def get_unit_model(self):
+        if not self.UNIT_MODEL:
+            from django_ledger.models.unit import EntityUnitModel
+            self.UNIT_MODEL = EntityUnitModel
+        return self.UNIT_MODEL
 
 
 lazy_importer = LazyImporter()
@@ -181,9 +188,9 @@ class IOMixIn:
                          user_model: UserModel,
                          to_date: str or datetime = None,
                          from_date: str or datetime = None,
-                         year: int = None,
                          activity: str = None,
                          role: str = None,
+                         entity_slug: str = None,
                          accounts: str or List[str] or Set[str] = None,
                          posted: bool = True,
                          exclude_zero_bal: bool = True,
@@ -208,6 +215,14 @@ class IOMixIn:
                 user_model=user_model,
                 ledger_model=self
             )
+        elif isinstance(self, lazy_importer.get_unit_model()):
+            if not entity_slug:
+                raise ValidationError('Calling digest from Entity Unit requires entity_slug')
+            txs_qs = TransactionModel.objects.for_unit(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                unit_model=self
+            )
         else:
             txs_qs = TransactionModel.objects.none()
 
@@ -222,9 +237,6 @@ class IOMixIn:
 
         if to_date:
             txs_qs = txs_qs.to_date(to_date=to_date)
-
-        if year:
-            txs_qs = txs_qs.for_year(year)
 
         if accounts:
             if not isinstance(accounts, str):
@@ -266,9 +278,9 @@ class IOMixIn:
                 user: UserModel,
                 to_date: str = None,
                 from_date: str = None,
-                year: str = None,
                 equity_only: bool = False,
                 activity: str = None,
+                entity_slug: str = None,
                 role: str = None,
                 accounts: set = None,
                 signs: bool = False,
@@ -281,7 +293,7 @@ class IOMixIn:
             user_model=user,
             to_date=to_date,
             from_date=from_date,
-            year=year,
+            entity_slug=entity_slug,
             activity=activity,
             role=role,
             accounts=accounts,
@@ -329,10 +341,10 @@ class IOMixIn:
                user_model: UserModel,
                accounts: set = None,
                activity: str = None,
+               entity_slug: str = None,
                signs: bool = True,
                to_date: str = None,
                from_date: str = None,
-               year: int = None,
                process_roles: bool = True,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -343,9 +355,9 @@ class IOMixIn:
             user=user_model,
             accounts=accounts,
             activity=activity,
+            entity_slug=entity_slug,
             to_date=to_date,
             from_date=from_date,
-            year=year,
             signs=signs,
             equity_only=equity_only,
             by_period=by_period

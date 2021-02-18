@@ -35,17 +35,23 @@ class LedgerModelListView(LoginRequiredMixIn, ListView):
         return LedgerModel.objects.for_entity(
             entity_slug=entity_slug,
             user_model=self.request.user
-        ).order_by(sort)
+        ).select_related('unit').order_by(sort)
 
 
 class LedgerModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/ledger_create.html'
-    form_class = LedgerModelCreateForm
     PAGE_TITLE = _('Create Ledger')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+
+    def get_form(self, form_class=None):
+        return LedgerModelCreateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
 
     def form_valid(self, form):
         entity = EntityModel.objects.for_user(
@@ -64,10 +70,16 @@ class LedgerModelCreateView(LoginRequiredMixIn, CreateView):
 
 class LedgerModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/ledger_update.html'
-    form_class = LedgerModelUpdateForm
     context_object_name = 'ledger'
     slug_url_kwarg = 'ledger_pk'
     slug_field = 'uuid'
+
+    def get_form(self, form_class=None):
+        return LedgerModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
