@@ -19,6 +19,7 @@ urlpatterns = [
     # todo: rename to api/v1/
     # Entity JSON Data Layer ----
     path('entity/', include('django_ledger.urls.api')),
+    path('unit/', include('django_ledger.urls.unit')),
     path('report/', include('django_ledger.urls.report')),
     path('chart-of-accounts/', include('django_ledger.urls.chart_of_accounts')),
     path('account/', include('django_ledger.urls.account')),

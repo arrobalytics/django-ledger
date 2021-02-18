@@ -45,15 +45,22 @@ class LedgerModelManager(models.Manager):
 
 class LedgerModelAbstract(CreateUpdateMixIn,
                           IOMixIn):
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    name = models.CharField(max_length=150, null=True, blank=True)
+    name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
-                               verbose_name=_('Entity'),
+                               verbose_name=_('Ledger Entity'),
                                related_name='ledgers')
-    posted = models.BooleanField(default=False, verbose_name=_('Posted'))
-    locked = models.BooleanField(default=False, verbose_name=_('Locked'))
+
+    unit = models.ForeignKey('django_ledger.EntityUnitModel',
+                             on_delete=models.PROTECT,
+                             blank=True,
+                             null=True,
+                             verbose_name=_('Associated Entity Unit'))
+
+    posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
+    locked = models.BooleanField(default=False, verbose_name=_('Locked Ledger'))
+    hidden = models.BooleanField(default=False, verbose_name=_('Hidden Ledger'))
 
     objects = LedgerModelManager()
 
@@ -66,6 +73,7 @@ class LedgerModelAbstract(CreateUpdateMixIn,
             models.Index(fields=['entity']),
             models.Index(fields=['entity', 'posted']),
             models.Index(fields=['entity', 'locked']),
+            models.Index(fields=['unit'])
         ]
 
     def __str__(self):
@@ -85,23 +93,23 @@ class LedgerModelAbstract(CreateUpdateMixIn,
                            'ledger_pk': self.uuid
                        })
 
-    def get_coa(self):
-        return self.entity.coa
+    # def get_coa(self):
+    #     return self.entity.coa
+    #
+    # def get_accounts(self):
+    #     return AccountModel.on_coa.available(coa=self.get_coa())
 
-    def get_accounts(self):
-        return AccountModel.on_coa.available(coa=self.get_coa())
+    # def get_account(self, code):
+    #     """
+    #     Convenience method to get an account model instance from the ledger entity Chart of Accounts.
+    #     :param code: Account code.
+    #     :return:
+    #     """
+    #     return get_coa_account(coa_model=self.get_coa(),
+    #                            code=code)
 
-    def get_account(self, code):
-        """
-        Convenience method to get an account model instance from the ledger entity Chart of Accounts.
-        :param code: Account code.
-        :return:
-        """
-        return get_coa_account(coa_model=self.get_coa(),
-                               code=code)
-
-    def get_account_balance(self, account_code: str, as_of: str = None):
-        return self.get_jes(accounts=account_code, to_date=as_of)
+    # def get_account_balance(self, account_code: str, as_of: str = None):
+    #     return self.get_jes(accounts=account_code, to_date=as_of)
 
     # def clean(self):
     #     if not self.slug:

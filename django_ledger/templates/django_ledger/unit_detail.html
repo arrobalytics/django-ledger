@@ -1,0 +1,37 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-content">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h1 class="is-size-1 has-text-weight-thin">{{ unit.name }}</h1></div>
+
+                </div>
+            </div>
+
+            <div class="columns is-multiline">
+
+                <div class="column is-12">{{ unit }}</div>
+                <div class="column is-12">
+                    <a href="{% url 'django_ledger:unit-bs' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
+                       class="button is-medium is-info">
+                        {% trans 'Balance Sheet' %}
+                    </a>
+{#                    <a href=""#}
+{#                       class="button is-medium is-primary">#}
+{#                        {% trans 'Income Statement' %}#}
+{#                    </a>#}
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+{% endblock %}
+

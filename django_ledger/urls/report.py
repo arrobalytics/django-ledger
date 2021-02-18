@@ -4,7 +4,8 @@ from django_ledger import views
 
 urlpatterns = [
 
-    # Entity reports...
+    # BALANCE SHEET Reports...
+    # Entities...
     path('entity/<slug:entity_slug>/balance-sheet/',
          views.EntityModelBalanceSheetView.as_view(),
          name='entity-bs'),
@@ -18,6 +19,32 @@ urlpatterns = [
          views.MonthlyEntityModelBalanceSheetView.as_view(),
          name='entity-bs-month'),
 
+    # Ledgers....
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/year/<int:year>/',
+         views.FiscalYearLedgerBalanceSheetView.as_view(),
+         name='ledger-bs-year'),
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyLedgerBalanceSheetView.as_view(),
+         name='ledger-bs-quarter'),
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/month/<int:year>/<str:month>/',
+         views.MonthlyLedgerBalanceSheetView.as_view(),
+         name='ledger-bs-month'),
+
+    # Units...
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/',
+         views.EntityUnitModelBalanceSheetView.as_view(),
+         name='unit-bs'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/year/<int:year>/',
+         views.FiscalYearEntityUnitModelBalanceSheetView.as_view(),
+         name='unit-bs-year'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyEntityUnitModelBalanceSheetView.as_view(),
+         name='unit-bs-quarter'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/month/<int:year>/<str:month>/',
+         views.MonthlyEntityUnitModelBalanceSheetView.as_view(),
+         name='unit-bs-month'),
+
+    # Income Statement Reports ----
     path('entity/<slug:entity_slug>/income-statement/',
          views.EntityModelIncomeStatementView.as_view(),
          name='entity-ic'),
@@ -31,16 +58,6 @@ urlpatterns = [
          views.MonthlyEntityModelIncomeStatementView.as_view(),
          name='entity-ic-month'),
 
-    # Ledger Reports...
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/year/<int:year>/',
-         views.FiscalYearLedgerBalanceSheetView.as_view(),
-         name='ledger-bs-year'),
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/quarter/<int:year>/<int:quarter>/',
-         views.QuarterlyLedgerBalanceSheetView.as_view(),
-         name='ledger-bs-quarter'),
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/month/<int:year>/<str:month>/',
-         views.MonthlyLedgerBalanceSheetView.as_view(),
-         name='ledger-bs-month'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/year/<int:year>/',
          views.FiscalYearLedgerIncomeStatementView.as_view(),
          name='ledger-ic-year'),

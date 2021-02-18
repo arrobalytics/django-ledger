@@ -134,7 +134,11 @@ def get_end_date_session_key(entity_slug: str):
 
 
 def get_default_entity_session_key():
-    return 'djl_default_entity_id'
+    return 'djl_default_entity_model'
+
+
+def get_default_unit_session_key():
+    return 'djl_default_unit_model'
 
 
 def set_default_entity(request, entity_model: EntityModel):
@@ -151,6 +155,10 @@ def set_default_entity(request, entity_model: EntityModel):
             'entity_slug': entity_model.slug,
             'entity_name': entity_model.name,
         }
+
+
+def set_default_unit(request, entity_model: EntityModel):
+    pass
 
 
 def get_default_entity_from_session(request):

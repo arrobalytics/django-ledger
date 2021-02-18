@@ -1,0 +1,32 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-content">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h1 class="is-size-1 has-text-weight-thin">{% trans 'Update Entity Unit' %}</h1></div>
+                </div>
+            </div>
+
+            <div class="columns is-mobile is-centered">
+                <div class="column is-6">
+                    <form action="{% url 'django_ledger:unit-update' entity_slug=view.kwargs.entity_slug unit_slug=unit.slug %}"
+                          method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button class="button is-primary mt-2">{% trans 'Update' %}</button>
+                        <a class="button is-dark mt-2"
+                           href="{% url 'django_ledger:unit-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Back' %}</a>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+

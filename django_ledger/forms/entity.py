@@ -15,6 +15,9 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
+# def create_default_entity_unit(instance: EntityModel):
+#     if not instance.
+
 class EntityModelCreateForm(ModelForm):
     default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
     activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))

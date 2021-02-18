@@ -1,0 +1,49 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-content">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        <h1 class="is-size-1 has-text-weight-thin">{% trans 'Entity Units List' %}</h1></div>
+                    <div class="level-item">
+                        <a href="{% url 'django_ledger:unit-create' entity_slug=view.kwargs.entity_slug %}">
+                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="columns is-multiline">
+                {% for unit in unit_list %}
+                    <div class="column is-4">
+                        <div class="card">
+                            <div class="card-content">
+{#                                <p class="subtitle has-text-grey has-text-right">#}
+{#                                    <span class="icon">{% icon "bi:cash-stack" 16 %}</span>#}
+{#                                    {% trans 'Unit' %}</p>#}
+                                <p class="title">{{ unit.name }}</p>
+                            </div>
+                            <footer class="card-footer">
+                                <a href="{% url 'django_ledger:unit-detail' entity_slug=view.kwargs.entity_slug unit_slug=unit.slug %}"
+                                   class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
+                                <a href="{% url 'django_ledger:unit-update' entity_slug=view.kwargs.entity_slug unit_slug=unit.slug %}"
+                                   class="card-footer-item has-text-warning-dark has-text-centered">{% trans 'Update' %}</a>
+                                {#                                <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"#}
+                                {#                                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>#}
+                            </footer>
+
+                        </div>
+                    </div>
+                {% endfor %}
+
+            </div>
+
+
+        </div>
+    </div>
+{% endblock %}
+

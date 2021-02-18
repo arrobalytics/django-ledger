@@ -78,10 +78,12 @@ def balance_sheet_table(context, ledger_or_entity, end_date):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
+    entity_slug = context['view'].kwargs.get('entity_slug')
     return ledger_or_entity.digest(
         activity=activity,
         user_model=user_model,
         equity_only=False,
+        entity_slug=entity_slug,
         to_date=end_date,
         process_groups=True)
 
@@ -398,7 +400,6 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
 def period_navigation(context, base_url: str):
     KWARGS = dict()
     KWARGS['entity_slug'] = context['view'].kwargs['entity_slug']
-    KWARGS['year'] = context.get('year')
 
     if context['view'].kwargs.get('ledger_pk'):
         KWARGS['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
@@ -406,16 +407,24 @@ def period_navigation(context, base_url: str):
     if context['view'].kwargs.get('account_pk'):
         KWARGS['account_pk'] = context['view'].kwargs.get('account_pk')
 
+    if context['view'].kwargs.get('unit_slug'):
+        KWARGS['unit_slug'] = context['view'].kwargs.get('unit_slug')
+
     ctx = dict()
     ctx['year'] = context['year']
     ctx['has_year'] = context.get('has_year')
     ctx['has_quarter'] = context.get('has_quarter')
     ctx['has_month'] = context.get('has_month')
     ctx['previous_year'] = context['previous_year']
+
+    KWARGS['year'] = context['previous_year']
     ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
     ctx['next_year'] = context['next_year']
+
+    KWARGS['year'] = context['next_year']
     ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
 
+    KWARGS['year'] = context['year']
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):
@@ -477,6 +486,11 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
+                        'title': 'Entity Units',
+                        'url': reverse('django_ledger:unit-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
                         'title': 'Bank Accounts',
                         'url': reverse('django_ledger:bank-account-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
@@ -506,7 +520,6 @@ def navigation_menu(context, style):
                         'url': reverse('django_ledger:uom-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                 ]
-
             },
             {
                 'type': 'links',
