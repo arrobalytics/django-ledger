@@ -108,6 +108,5 @@ venv.bak/
 .idea/
 
 node_modules
-yarn.lock
 notebooks/
 data/
