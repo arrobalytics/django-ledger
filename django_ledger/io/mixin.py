@@ -191,6 +191,7 @@ class IOMixIn:
                          activity: str = None,
                          role: str = None,
                          entity_slug: str = None,
+                         unit_slug: str = None,
                          accounts: str or List[str] or Set[str] = None,
                          posted: bool = True,
                          exclude_zero_bal: bool = True,
@@ -204,10 +205,17 @@ class IOMixIn:
 
         # If IO is on entity model....
         if isinstance(self, lazy_importer.get_entity_model()):
-            txs_qs = TransactionModel.objects.for_entity(
-                user_model=user_model,
-                entity_model=self
-            )
+            if unit_slug:
+                txs_qs = TransactionModel.objects.for_unit(
+                    user_model=user_model,
+                    entity_slug=entity_slug or self.slug,
+                    unit_slug=unit_slug
+                )
+            else:
+                txs_qs = TransactionModel.objects.for_entity(
+                    user_model=user_model,
+                    entity_model=self
+                )
 
         # If IO is on ledger model....
         elif isinstance(self, lazy_importer.get_ledger_model()):
@@ -281,6 +289,7 @@ class IOMixIn:
                 equity_only: bool = False,
                 activity: str = None,
                 entity_slug: str = None,
+                unit_slug: str = None,
                 role: str = None,
                 accounts: set = None,
                 signs: bool = False,
@@ -294,6 +303,7 @@ class IOMixIn:
             to_date=to_date,
             from_date=from_date,
             entity_slug=entity_slug,
+            unit_slug=unit_slug,
             activity=activity,
             role=role,
             accounts=accounts,
@@ -342,6 +352,7 @@ class IOMixIn:
                accounts: set = None,
                activity: str = None,
                entity_slug: str = None,
+               unit_slug: str = None,
                signs: bool = True,
                to_date: str = None,
                from_date: str = None,
@@ -356,6 +367,7 @@ class IOMixIn:
             accounts=accounts,
             activity=activity,
             entity_slug=entity_slug,
+            unit_slug=unit_slug,
             to_date=to_date,
             from_date=from_date,
             signs=signs,

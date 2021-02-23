@@ -11,6 +11,7 @@ from random import randint
 
 from django.contrib.messages import add_message, ERROR
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
@@ -18,7 +19,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.models import BillModel, EntityModel, InvoiceModel
+from django_ledger.models import BillModel, EntityModel, InvoiceModel, EntityUnitModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
@@ -157,8 +158,6 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
     DJL_NO_FROM_DATE_RAISE_404 = False
     DJL_NO_TO_DATE_RAISE_404 = False
 
-    # def get(self):
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         entity_model = self.object
@@ -203,13 +202,21 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         return EntityModel.objects.for_user(
             user_model=self.request.user).select_related('coa')
 
+    def get_entity_unit(self):
+        unit_slug = self.kwargs.get('unit')
+        if not unit_slug:
+            unit_slug = self.request.GET.get('unit')
+        return unit_slug
+
     def get_entity_digest(self, context, end_date=None):
         by_period = self.request.GET.get('by_period')
         entity_model = self.object
         if not end_date:
             end_date = self.get_to_date()
+        unit_slug = self.get_entity_unit()
         digest = entity_model.digest(user_model=self.request.user,
                                      to_date=end_date,
+                                     unit_slug=unit_slug,
                                      by_period=True if by_period else False,
                                      process_ratios=True,
                                      process_roles=True,
@@ -219,22 +226,30 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         return context
 
     def get_unpaid_invoices_qs(self):
-        return InvoiceModel.objects.for_entity(
+        qs = InvoiceModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).filter(
             Q(date__gte=self.get_from_date()) &
             Q(date__lte=self.get_to_date())
         ).select_related('customer').order_by('due_date')
+        unit_slug = self.get_entity_unit()
+        if unit_slug:
+            qs = qs.filter(ledger__unit__slug__exact=unit_slug)
+        return qs
 
     def get_unpaid_bills_qs(self):
-        return BillModel.objects.for_entity(
+        qs = BillModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).filter(
             Q(date__gte=self.get_from_date()) &
             Q(date__lte=self.get_to_date())
         ).select_related('vendor').order_by('due_date')
+        unit_slug = self.get_entity_unit()
+        if unit_slug:
+            qs = qs.filter(ledger__unit__slug__exact=unit_slug)
+        return qs
 
 
 class QuarterlyEntityDetailView(QuarterlyReportMixIn, FiscalYearEntityModelDetailView):
@@ -255,6 +270,7 @@ class DateEntityDetailView(DateReportMixIn, MonthlyEntityDetailView):
     """
 
 
+# BALANCE SHEET -----------
 class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
@@ -278,6 +294,11 @@ class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
         context['header_title'] = context['page_title']
+        unit_slug = self.request.GET.get('unit')
+        if unit_slug:
+            context['unit_model'] = get_object_or_404(EntityUnitModel,
+                                                      slug=unit_slug,
+                                                      entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
     def get_queryset(self):
@@ -301,6 +322,7 @@ class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityMod
     """
 
 
+# INCOME STATEMENT ------------
 class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -323,6 +345,11 @@ class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Income Statement: ') + self.object.name
         context['header_title'] = _('Income Statement: ') + self.object.name
+        unit_slug = self.request.GET.get('unit')
+        if unit_slug:
+            context['unit_model'] = get_object_or_404(EntityUnitModel,
+                                                      slug=unit_slug,
+                                                      entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
     def get_queryset(self):
