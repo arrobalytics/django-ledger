@@ -41,7 +41,7 @@ class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('vendor').order_by('-date')
+        ).select_related('vendor', 'ledger__unit').order_by('-date')
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):

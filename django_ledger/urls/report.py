@@ -44,7 +44,8 @@ urlpatterns = [
          views.MonthlyEntityUnitModelBalanceSheetView.as_view(),
          name='unit-bs-month'),
 
-    # Income Statement Reports ----
+    # INCOME STATEMENT Reports ----
+    # Entity .....
     path('entity/<slug:entity_slug>/income-statement/',
          views.EntityModelIncomeStatementView.as_view(),
          name='entity-ic'),
@@ -58,6 +59,7 @@ urlpatterns = [
          views.MonthlyEntityModelIncomeStatementView.as_view(),
          name='entity-ic-month'),
 
+    # Ledgers ....
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/year/<int:year>/',
          views.FiscalYearLedgerIncomeStatementView.as_view(),
          name='ledger-ic-year'),
@@ -67,5 +69,19 @@ urlpatterns = [
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/month/<int:year>/<str:month>/',
          views.MonthlyLedgerIncomeStatementView.as_view(),
          name='ledger-ic-month'),
+
+    # Entity Units...
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/',
+         views.EntityUnitModelIncomeStatementView.as_view(),
+         name='unit-ic'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/year/<int:year>/',
+         views.FiscalYearEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-ic-year'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-ic-quarter'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/month/<int:year>/<str:month>/',
+         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-ic-month'),
 
 ]

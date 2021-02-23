@@ -22,10 +22,10 @@
                        class="button is-medium is-info">
                         {% trans 'Balance Sheet' %}
                     </a>
-{#                    <a href=""#}
-{#                       class="button is-medium is-primary">#}
-{#                        {% trans 'Income Statement' %}#}
-{#                    </a>#}
+                    <a href="{% url 'django_ledger:unit-ic' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
+                       class="button is-medium is-primary">
+                        {% trans 'Income Statement' %}
+                    </a>
                 </div>
 
             </div>

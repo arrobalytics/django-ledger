@@ -74,28 +74,38 @@ def icon(icon_name, size):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
-def balance_sheet_table(context, ledger_or_entity, end_date):
+def balance_sheet_table(context, io_model, end_date):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
-    return ledger_or_entity.digest(
+    unit_slug = context['view'].kwargs.get('unit')
+    if not unit_slug:
+        unit_slug = context['request'].GET.get('unit')
+    return io_model.digest(
         activity=activity,
         user_model=user_model,
         equity_only=False,
         entity_slug=entity_slug,
+        unit_slug=unit_slug,
         to_date=end_date,
         process_groups=True)
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement_table(context, ledger_or_entity, start_date, end_date):
+def income_statement_table(context, io_model, start_date, end_date):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
-    return ledger_or_entity.digest(
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    unit_slug = context['view'].kwargs.get('unit')
+    if not unit_slug:
+        unit_slug = context['request'].GET.get('unit')
+    return io_model.digest(
         activity=activity,
         user_model=user_model,
+        entity_slug=entity_slug,
+        unit_slug=unit_slug,
         from_date=start_date,
         to_date=end_date,
         equity_only=True,

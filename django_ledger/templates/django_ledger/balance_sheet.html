@@ -26,8 +26,10 @@
                         {% elif unit_model %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% endif %}
-                        <h1 class="is-size-2 has-text-weight-bold">{% session_entity_name %}</h1>
-                        <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
+                        <h1 class="is-size-2 has-text-weight-bold">{% trans 'Balance Sheet' %}</h1>
+                       {% if unit_model %}
+                           <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
+                       {% endif %}
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}
@@ -37,7 +39,7 @@
                     </div>
                 </div>
             </div>
-            {% balance_sheet_table object end_date %}
+            {% balance_sheet_table io_model=object end_date=end_date %}
             {% if entity %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>

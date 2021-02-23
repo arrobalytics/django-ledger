@@ -116,7 +116,7 @@ class TransactionModelAdmin(models.Manager):
         if unit_model and isinstance(unit_model, EntityUnitModel):
             return qs.filter(journal_entry__ledger__unit=unit_model)
         elif unit_slug and isinstance(unit_slug, str):
-            return qs.filter(journal_entry__ledger__unit__uuid__exact=unit_slug)
+            return qs.filter(journal_entry__ledger__unit__slug__exact=unit_slug)
 
     def for_journal_entry(self,
                           user_model,

@@ -22,6 +22,10 @@
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% endif %}
+                        {% if unit_model %}
+                            <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
+                        {% endif %}
+
                         <h1 class="is-size-2 has-text-weight-bold">{% trans 'Income Statement' %}</h1>
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
@@ -34,7 +38,7 @@
                     </div>
                 </div>
             </div>
-            {% income_statement_table ledger_or_entity=object start_date=start_date end_date=end_date %}
+            {% income_statement_table io_model=object start_date=start_date end_date=end_date %}
             {% if ledger %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
