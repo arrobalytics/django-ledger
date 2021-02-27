@@ -187,7 +187,7 @@ def set_session_date_filter(request, entity_slug: str, end_date: date):
     request.session[session_key] = end_date.isoformat()
 
 
-def generate_random_vendors(entity_model: EntityModel, fk):
+def create_random_vendors(entity_model: EntityModel, fk):
     vendor_count = randint(10, 20)
     vendor_models = [
         VendorModel(
@@ -213,7 +213,7 @@ def generate_random_vendors(entity_model: EntityModel, fk):
     return VendorModel.objects.bulk_create(vendor_models, ignore_conflicts=True)
 
 
-def generate_random_customers(entity_model: EntityModel, fk):
+def create_random_customers(entity_model: EntityModel, fk):
     customer_count = randint(10, 20)
     customer_models = [
         CustomerModel(
@@ -240,11 +240,12 @@ def generate_random_customers(entity_model: EntityModel, fk):
 
 
 def fund_entity(entity_model: EntityModel,
+                bank_accounts: QuerySet,
                 start_dt: date,
                 accounts_gb: dict,
                 cap_contribution: float or int):
     capital_acc = choice(accounts_gb['eq_capital'])
-    cash_acc = choice(accounts_gb['asset_ca_cash'])
+    cash_acc = choice(bank_accounts).cash_account
 
     txs = list()
     txs.append({
@@ -291,8 +292,12 @@ def create_uom_models(entity_model: EntityModel):
     return UnitOfMeasureModel.objects.bulk_create(uom_models)
 
 
-def generate_random_products(entity_model: EntityModel, uom_models, accounts_gb):
-    product_count = randint(20, 40)
+def generate_random_products(entity_model: EntityModel,
+                             uom_models,
+                             accounts_gb,
+                             min_products: int = 20,
+                             max_products: int = 40):
+    product_count = randint(min_products, max_products)
     product_models = [
         ItemModel(
             name=f'Product or Service {randint(1000, 9999)}',
@@ -456,6 +461,36 @@ def generate_random_bill(
         je_date=paid_dt)
 
 
+def create_bank_accounts(entity_model: EntityModel, fk, accounts_by_role):
+    bank_account_models = [
+        BankAccountModel(name=f'{entity_model.name} Checking Account',
+                         account_number=fk.bban(),
+                         routing_number=fk.swift11(),
+                         aba_number=fk.swift(),
+                         account_type='checking',
+                         cash_account=choice(accounts_by_role['asset_ca_cash']),
+                         ledger=LedgerModel.objects.create(
+                             entity=entity_model,
+                             name=f'{entity_model.name} Checking Account',
+                             posted=True
+                         )),
+        BankAccountModel(name=f'{entity_model.name} Savings Account',
+                         account_number=fk.bban(),
+                         routing_number=fk.swift11(),
+                         aba_number=fk.swift(),
+                         account_type='savings',
+                         cash_account=choice(accounts_by_role['asset_ca_cash']),
+                         ledger=LedgerModel.objects.create(
+                             entity=entity_model,
+                             name=f'{entity_model.name} Savings Account',
+                             posted=True
+                         )),
+    ]
+    for ba in bank_account_models:
+        ba.clean()
+    return BankAccountModel.objects.bulk_create(bank_account_models)
+
+
 def generate_sample_data(entity_model: str or EntityModel,
                          user_model,
                          start_dt: datetime,
@@ -468,7 +503,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                          is_paid_probability: float = 0.90):
     try:
         from faker import Faker
-        from faker.providers import company, address, phone_number
+        from faker.providers import company, address, phone_number, bank
 
         global FAKER_IMPORTED
         FAKER_IMPORTED = True
@@ -477,6 +512,7 @@ def generate_sample_data(entity_model: str or EntityModel,
         fk.add_provider(company)
         fk.add_provider(address)
         fk.add_provider(phone_number)
+        fk.add_provider(bank)
 
     except ImportError:
         return False
@@ -497,11 +533,14 @@ def generate_sample_data(entity_model: str or EntityModel,
         g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
     }
 
-    vendor_models = generate_random_vendors(entity_model, fk)
-    customer_models = generate_random_customers(entity_model, fk)
+    vendor_models = create_random_vendors(entity_model, fk)
+    customer_models = create_random_customers(entity_model, fk)
+
+    bank_accounts = create_bank_accounts(entity_model, fk, accounts_by_role)
 
     # todo: create bank account models...
     fund_entity(entity_model=entity_model,
+                bank_accounts=bank_accounts,
                 start_dt=start_dt,
                 accounts_gb=accounts_by_role,
                 cap_contribution=cap_contribution)
@@ -533,7 +572,6 @@ def generate_sample_data(entity_model: str or EntityModel,
 
         issue_dt = issue_dttm.date()
         paid_dt = paid_dttm.date() if paid_dttm else None
-        # switch_amt = random() > 0.75
 
         if i % 2 == 0:
 

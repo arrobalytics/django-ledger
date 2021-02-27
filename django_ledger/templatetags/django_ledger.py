@@ -12,6 +12,7 @@ from random import randint
 from django import template
 from django.urls import reverse
 from django.utils.formats import number_format
+from django.utils.timezone import localdate
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
@@ -435,6 +436,15 @@ def period_navigation(context, base_url: str):
     ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
 
     KWARGS['year'] = context['year']
+    ctx['current_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
+
+    dt = localdate()
+    ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month', kwargs={
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'year': dt.year,
+        'month': dt.month
+    })
+
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):

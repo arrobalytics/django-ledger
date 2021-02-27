@@ -12,6 +12,7 @@
 
         <p>Year:
             <a href="{{ previous_year_url }}"><< {{ previous_year }}</a> |
+            <a href="{{ current_year_url }}">{{ year }}</a> |
             <a href="{{ next_year_url }}">{{ next_year }} >></a>
         </p>
 
@@ -30,6 +31,7 @@
                 {{ start_date | date:"m/d/Y" }}
                 {% trans 'thru' %}
                 {{ end_date | date:"m/d/Y" }}</p>
+            <a href="{{ current_month_url }}">{% trans 'Go To Current Month' %}</a>
         </div>
     </div>
 </div>

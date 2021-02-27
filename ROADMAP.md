@@ -11,9 +11,9 @@
 * __0.4.0__: Enhance and optimize Django Ledger the random data generation functionality to properly populate relevant
   random data for testing.
 * __0.4.1__: Entity internal organizations, department, branches, etc.
-* __0.4.2__: Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
+* __0.4.2__: Custom Accounting Periods.
+* __0.4.3__: Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
   output.
-* __0.4.3__: Custom Accounting Periods.
 * __0.4.4__: Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
