@@ -1,20 +1,27 @@
-from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet, modelformset_factory
+from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet,
+                          modelformset_factory, ChoiceField)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
-from django_ledger.models import ItemModel
-from django_ledger.models.accounts import AccountModel
-from django_ledger.models.bill import BillModel, BillModelItemsThroughModel
-from django_ledger.models.vendor import VendorModel
+from django_ledger.models import (ItemModel, EntityUnitModel, AccountModel, BillModel, BillModelItemsThroughModel,
+                                  VendorModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class BillModelCreateForm(ModelForm):
+    entity_unit = ChoiceField(required=False, initial=None, widget=Select(attrs={
+        'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large'
+    }))
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
+        self.fields['entity_unit'].choices = [('', '')] + [
+            (u.slug, u.name) for u in EntityUnitModel.objects.for_entity(
+                entity_slug=self.ENTITY_SLUG, user_model=self.USER_MODEL
+            )
+        ]
 
         account_qs = AccountModel.on_coa.for_entity_available(
             user_model=self.USER_MODEL,

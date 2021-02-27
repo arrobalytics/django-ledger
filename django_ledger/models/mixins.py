@@ -93,7 +93,6 @@ class AccruableItemMixIn(models.Model):
                              choices=TERMS,
                              verbose_name=_('Terms'))
 
-    # todo: switch this to editable=False once itemization is implemented...
     amount_due = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
     amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Paid'))
 

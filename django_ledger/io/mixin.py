@@ -13,7 +13,7 @@ from typing import Tuple
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
+from django.db.models import Sum, QuerySet
 from django.db.models.functions import TruncMonth
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import localdate
@@ -184,55 +184,75 @@ class IOMixIn:
         txs_models = TransactionModel.objects.bulk_create(txs_models)
         return je_model, txs_models
 
-    def get_txs_queryset(self,
-                         user_model: UserModel,
-                         to_date: str or datetime = None,
-                         from_date: str or datetime = None,
-                         activity: str = None,
-                         role: str = None,
-                         entity_slug: str = None,
-                         unit_slug: str = None,
-                         accounts: str or List[str] or Set[str] = None,
-                         posted: bool = True,
-                         exclude_zero_bal: bool = True,
-                         by_period: bool = False):
+    @staticmethod
+    def digest_gb_accounts(k, g):
+        gl = list(g)
+        return {
+            'account_uuid': k[0],
+            'period_year': k[1],
+            'period_month': k[2],
+            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
+            'role': gl[0]['account__role'],
+            'code': gl[0]['account__code'],
+            'name': gl[0]['account__name'],
+            'balance_type': gl[0]['account__balance_type'],
+            'balance': sum(a['balance'] for a in gl),
+            'account_list': gl
+        }
+
+    def database_digest(self,
+                        user_model: UserModel,
+                        queryset: QuerySet,
+                        from_date: str or datetime = None,
+                        to_date: str or datetime = None,
+                        activity: str = None,
+                        role: str = None,
+                        entity_slug: str = None,
+                        unit_slug: str = None,
+                        accounts: str or List[str] or Set[str] = None,
+                        posted: bool = True,
+                        exclude_zero_bal: bool = True,
+                        by_period: bool = False):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
         from_date, to_date = validate_dates(from_date, to_date)
 
-        TransactionModel = lazy_importer.get_txs_model()
+        if not queryset:
+            TransactionModel = lazy_importer.get_txs_model()
 
-        # If IO is on entity model....
-        if isinstance(self, lazy_importer.get_entity_model()):
-            if unit_slug:
+            # If IO is on entity model....
+            if isinstance(self, lazy_importer.get_entity_model()):
+                if unit_slug:
+                    txs_qs = TransactionModel.objects.for_unit(
+                        user_model=user_model,
+                        entity_slug=entity_slug or self.slug,
+                        unit_slug=unit_slug
+                    )
+                else:
+                    txs_qs = TransactionModel.objects.for_entity(
+                        user_model=user_model,
+                        entity_model=self
+                    )
+
+            # If IO is on ledger model....
+            elif isinstance(self, lazy_importer.get_ledger_model()):
+                txs_qs = TransactionModel.objects.for_ledger(
+                    user_model=user_model,
+                    ledger_model=self
+                )
+            elif isinstance(self, lazy_importer.get_unit_model()):
+                if not entity_slug:
+                    raise ValidationError('Calling digest from Entity Unit requires entity_slug')
                 txs_qs = TransactionModel.objects.for_unit(
                     user_model=user_model,
-                    entity_slug=entity_slug or self.slug,
-                    unit_slug=unit_slug
+                    entity_slug=entity_slug,
+                    unit_model=self
                 )
             else:
-                txs_qs = TransactionModel.objects.for_entity(
-                    user_model=user_model,
-                    entity_model=self
-                )
-
-        # If IO is on ledger model....
-        elif isinstance(self, lazy_importer.get_ledger_model()):
-            txs_qs = TransactionModel.objects.for_ledger(
-                user_model=user_model,
-                ledger_model=self
-            )
-        elif isinstance(self, lazy_importer.get_unit_model()):
-            if not entity_slug:
-                raise ValidationError('Calling digest from Entity Unit requires entity_slug')
-            txs_qs = TransactionModel.objects.for_unit(
-                user_model=user_model,
-                entity_slug=entity_slug,
-                unit_model=self
-            )
+                txs_qs = TransactionModel.objects.none()
         else:
-            txs_qs = TransactionModel.objects.none()
+            txs_qs = queryset
 
         if exclude_zero_bal:
             txs_qs = txs_qs.filter(amount__gt=0)
@@ -282,24 +302,26 @@ class IOMixIn:
 
         return txs_qs
 
-    def get_jes(self,
-                user: UserModel,
-                to_date: str = None,
-                from_date: str = None,
-                equity_only: bool = False,
-                activity: str = None,
-                entity_slug: str = None,
-                unit_slug: str = None,
-                role: str = None,
-                accounts: set = None,
-                signs: bool = False,
-                by_period: bool = False) -> list:
+    def python_digest(self,
+                      user_model: UserModel,
+                      queryset: QuerySet,
+                      to_date: str = None,
+                      from_date: str = None,
+                      equity_only: bool = False,
+                      activity: str = None,
+                      entity_slug: str = None,
+                      unit_slug: str = None,
+                      role: str = None,
+                      accounts: set = None,
+                      signs: bool = False,
+                      by_period: bool = False) -> list or tuple:
 
         if equity_only:
             role = roles.GROUP_EARNINGS
 
-        je_txs = self.get_txs_queryset(
-            user_model=user,
+        txs_qs = self.database_digest(
+            user_model=user_model,
+            queryset=queryset,
             to_date=to_date,
             from_date=from_date,
             entity_slug=entity_slug,
@@ -310,31 +332,28 @@ class IOMixIn:
             by_period=by_period)
 
         # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
-        for tx in je_txs:
+        for tx in txs_qs:
             if tx['account__balance_type'] != tx['tx_type']:
                 tx['balance'] = -tx['balance']
 
-        accounts_gb_code = groupby(je_txs, key=lambda a: (
-            a['account__uuid'],
-            a.get('dt_idx').year if by_period else None,
-            a.get('dt_idx').month if by_period else None,
-        ))
+        if by_period:
+            accounts_gb_code = groupby(txs_qs,
+                                       key=lambda a: (
+                                           a['account__uuid'],
+                                           a.get('dt_idx').year if by_period else None,
+                                           a.get('dt_idx').month if by_period else None,
+                                       ))
+        else:
+            accounts_gb_code = groupby(txs_qs,
+                                       key=lambda a: (
+                                           a['account__uuid'],
+                                           None,
+                                           None,
+                                       ))
 
-        gb_digest = list()
-        for k, g in accounts_gb_code:
-            gl = list(g)
-            gb_digest.append({
-                'account_uuid': k[0],
-                'period_year': k[1],
-                'period_month': k[2],
-                'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
-                'role': gl[0]['account__role'],
-                'code': gl[0]['account__code'],
-                'name': gl[0]['account__name'],
-                'balance_type': gl[0]['account__balance_type'],
-                'balance': sum(a['balance'] for a in gl),
-                'account_list': gl
-            })
+        gb_digest = [
+            self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
+        ]
 
         if signs:
             for acc in gb_digest:
@@ -345,7 +364,8 @@ class IOMixIn:
                          acc['balance_type'] == 'debit'])
                 ]):
                     acc['balance'] = -acc['balance']
-        return gb_digest
+
+        return txs_qs, gb_digest
 
     def digest(self,
                user_model: UserModel,
@@ -356,14 +376,19 @@ class IOMixIn:
                signs: bool = True,
                to_date: str = None,
                from_date: str = None,
+               queryset: QuerySet = None,
                process_roles: bool = True,
                process_groups: bool = False,
                process_ratios: bool = False,
                equity_only: bool = False,
-               by_period: bool = False) -> dict:
+               by_period: bool = False,
+               return_queryset: bool = False,
+               digest_name: str = None
+               ) -> dict or tuple:
 
-        accounts_digest = self.get_jes(
-            user=user_model,
+        txs_qs, accounts_digest = self.python_digest(
+            queryset=queryset,
+            user_model=user_model,
             accounts=accounts,
             activity=activity,
             entity_slug=entity_slug,
@@ -372,7 +397,7 @@ class IOMixIn:
             from_date=from_date,
             signs=signs,
             equity_only=equity_only,
-            by_period=by_period
+            by_period=by_period,
         )
 
         digest = dict(
@@ -394,6 +419,13 @@ class IOMixIn:
         if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
             validate(instance=digest, schema=SCHEMA_DIGEST)
 
-        return {
-            'tx_digest': digest,
+        if not digest_name:
+            digest_name = 'tx_digest'
+
+        digest_results = {
+            digest_name: digest,
         }
+
+        if return_queryset:
+            return txs_qs, digest_results
+        return digest_results

@@ -249,3 +249,14 @@ class FromToDatesMixIn:
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
     login_url = DJANGO_LEDGER_LOGIN_URL
     redirect_field_name = 'next'
+
+
+class EntityUnitMixIn:
+    UNIT_SLUG_KWARG = 'unit_slug'
+    UNIT_SLUG_QUERY_PARAM = 'unit'
+
+    def get_unit_slug(self):
+        unit_slug = self.kwargs.get(self.UNIT_SLUG_KWARG)
+        if not unit_slug:
+            unit_slug = self.request.GET.get(self.UNIT_SLUG_QUERY_PARAM)
+        return unit_slug

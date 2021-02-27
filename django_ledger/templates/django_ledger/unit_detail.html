@@ -10,7 +10,6 @@
                 <div class="level-left">
                     <div class="level-item">
                         <h1 class="is-size-1 has-text-weight-thin">{{ unit.name }}</h1></div>
-
                 </div>
             </div>
 
@@ -18,6 +17,10 @@
 
                 <div class="column is-12">{{ unit }}</div>
                 <div class="column is-12">
+                    <a href="{% url 'django_ledger:unit-detail' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
+                       class="button is-medium is-info">
+                        {% trans 'Dashboard' %}
+                    </a>
                     <a href="{% url 'django_ledger:unit-bs' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
                        class="button is-medium is-info">
                         {% trans 'Balance Sheet' %}

@@ -18,10 +18,10 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
 from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
 from django_ledger.utils import progressible_net_summary
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn, EntityUnitMixIn
 
 
-class EntityProfitNLossAPIView(LoginRequiredMixIn, View):
+class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -30,8 +30,11 @@ class EntityProfitNLossAPIView(LoginRequiredMixIn, View):
                 user_model=self.request.user).get(
                 slug__exact=self.kwargs['entity_slug'])
 
+            unit_slug = self.get_unit_slug()
+
             entity_digest = entity.digest(
                 user_model=self.request.user,
+                unit_slug=unit_slug,
                 equity_only=True,
                 signs=False,
                 by_period=True,
@@ -70,7 +73,7 @@ class EntityProfitNLossAPIView(LoginRequiredMixIn, View):
         }, status=401)
 
 
-class EntityPayableNetAPIView(LoginRequiredMixIn, View):
+class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -80,6 +83,10 @@ class EntityPayableNetAPIView(LoginRequiredMixIn, View):
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
             ).select_related('ledger__entity')
+
+            unit_slug = self.get_unit_slug()
+            if unit_slug:
+                bill_qs.filter(ledger__unit__slug__exact=unit_slug)
 
             net_summary = progressible_net_summary(bill_qs)
             entity_model = bill_qs.first().ledger.entity
@@ -106,7 +113,7 @@ class EntityPayableNetAPIView(LoginRequiredMixIn, View):
         }, status=401)
 
 
-class EntityReceivableNetAPIView(LoginRequiredMixIn, View):
+class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -115,6 +122,10 @@ class EntityReceivableNetAPIView(LoginRequiredMixIn, View):
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
             ).select_related('ledger__entity')
+
+            unit_slug = self.get_unit_slug()
+            if unit_slug:
+                invoice_qs.filter(ledger__unit__slug__exact=unit_slug)
 
             net_summary = progressible_net_summary(invoice_qs)
             entity_model = invoice_qs.first().ledger.entity

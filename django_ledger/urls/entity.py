@@ -6,6 +6,7 @@ urlpatterns = [
     # Entity Views ----
     path('list/', views.EntityModelListView.as_view(), name='entity-list'),
     path('create/', views.EntityModelCreateView.as_view(), name='entity-create'),
+
     path('<slug:entity_slug>/detail/',
          views.EntityModelDetailView.as_view(),
          name='entity-detail'),
@@ -21,6 +22,7 @@ urlpatterns = [
     path('<slug:entity_slug>/detail/date/<int:year>/<int:month>/<int:day>/',
          views.DateEntityDetailView.as_view(),
          name='entity-detail-date'),
+
     path('<slug:entity_slug>/update/', views.EntityModelUpdateView.as_view(), name='entity-update'),
     path('<slug:entity_slug>/delete/', views.EntityDeleteView.as_view(), name='entity-delete'),
     path('<slug:entity_slug>/set-date/', views.SetSessionDate.as_view(), name='entity-set-date'),
