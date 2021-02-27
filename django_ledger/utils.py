@@ -7,20 +7,18 @@ from string import ascii_uppercase, ascii_lowercase, digits
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
+from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localtime, localdate
 
+from django_ledger.models import (EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
+                                  UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel)
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.bill import BillModel, generate_bill_number, BillModelItemsThroughModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
-from django_ledger.models.customer import CustomerModel
-from django_ledger.models.entity import EntityModel
-from django_ledger.models.invoice import InvoiceModel, generate_invoice_number, InvoiceModelItemsThroughModel
-from django_ledger.models.items import UnitOfMeasureModel, ItemModel
-from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.mixins import AccruableItemMixIn
-from django_ledger.models.vendor import VendorModel
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -41,21 +39,31 @@ def generate_random_item_id(length=20):
     return ''.join(choice(ITEM_ID_CHARS) for _ in range(length))
 
 
-def new_bill_protocol(bill_model: BillModel, entity_slug: str or EntityModel, user_model: UserModel) -> BillModel:
+def new_bill_protocol(bill_model: BillModel,
+                      entity_slug: str or EntityModel,
+                      user_model: UserModel,
+                      unit_slug: str = None) -> BillModel:
     if isinstance(entity_slug, str):
-        entity_model = EntityModel.objects.for_user(
-            user_model=user_model).get(
-            slug__exact=entity_slug)
+        entity_qs = EntityModel.objects.for_user(
+            user_model=user_model)
+        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
     elif isinstance(entity_slug, EntityModel):
         entity_model = entity_slug
     else:
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
+    if unit_slug:
+        unit_model_qs = entity_model.entityunitmodel_set.all()
+        unit_model = get_object_or_404(unit_model_qs, slug__exact=unit_slug)
+    else:
+        unit_model = None
+
     bill_model.bill_number = generate_bill_number()
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
-        name=f'Bill {bill_model.bill_number}'
+        name=f'Bill {bill_model.bill_number}',
+        unit=unit_model
     )
     ledger_model.clean()
     bill_model.ledger = ledger_model
@@ -64,22 +72,30 @@ def new_bill_protocol(bill_model: BillModel, entity_slug: str or EntityModel, us
 
 def new_invoice_protocol(invoice_model: InvoiceModel,
                          entity_slug: str or EntityModel,
-                         user_model: UserModel) -> InvoiceModel:
+                         user_model: UserModel,
+                         unit_slug: str = None) -> InvoiceModel:
     if isinstance(entity_slug, str):
-        entity_model = EntityModel.objects.for_user(
-            user_model=user_model).get(
-            slug__exact=entity_slug)
+        entity_qs = EntityModel.objects.for_user(
+            user_model=user_model)
+        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
     elif isinstance(entity_slug, EntityModel):
         entity_model = entity_slug
     else:
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+    if unit_slug:
+        unit_model_qs = entity_model.entityunitmodel_set.all()
+        unit_model = get_object_or_404(unit_model_qs, slug__exact=unit_slug)
+    else:
+        unit_model = None
 
     if not invoice_model.invoice_number:
         invoice_model.invoice_number = generate_invoice_number()
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
-        name=f'Invoice {invoice_model.invoice_number}'
+        name=f'Invoice {invoice_model.invoice_number}',
+        unit=unit_model
     )
     ledger_model.clean()
     invoice_model.ledger = ledger_model

@@ -28,7 +28,7 @@ from django_ledger.utils import (
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn,
-    LoginRequiredMixIn, SessionConfigurationMixIn
+    LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn
 )
 
 
@@ -135,10 +135,19 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(LoginRequiredMixIn, RedirectView):
+class EntityModelDetailView(EntityUnitMixIn, LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
+        unit_slug = self.get_unit_slug()
+        if unit_slug:
+            return reverse('django_ledger:unit-detail-month',
+                           kwargs={
+                               'entity_slug': self.kwargs['entity_slug'],
+                               'unit_slug': unit_slug,
+                               'year': loc_date.year,
+                               'month': loc_date.month,
+                           })
         return reverse('django_ledger:entity-detail-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -148,6 +157,7 @@ class EntityModelDetailView(LoginRequiredMixIn, RedirectView):
 
 
 class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
+                                      EntityUnitMixIn,
                                       YearlyReportMixIn,
                                       FromToDatesMixIn,
                                       SessionConfigurationMixIn,
@@ -166,21 +176,20 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         context['header_subtitle'] = _('Dashboard')
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
+        unit_slug = self.get_unit_slug()
+        url_pointer = 'entity' if not unit_slug else 'unit'
+        KWARGS = dict(entity_slug=self.kwargs['entity_slug'])
+        if unit_slug:
+            KWARGS['unit_slug'] = unit_slug
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
-        context['pnl_chart_endpoint'] = reverse('django_ledger:entity-json-pnl',
-                                                kwargs={
-                                                    'entity_slug': self.kwargs['entity_slug']
-                                                })
+        context['pnl_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-pnl',
+                                                kwargs=KWARGS)
         context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
-        context['payables_chart_endpoint'] = reverse('django_ledger:entity-json-net-payables',
-                                                     kwargs={
-                                                         'entity_slug': self.kwargs['entity_slug']
-                                                     })
+        context['payables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-payables',
+                                                     kwargs=KWARGS)
         context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
-        context['receivables_chart_endpoint'] = reverse('django_ledger:entity-json-net-receivables',
-                                                        kwargs={
-                                                            'entity_slug': self.kwargs['entity_slug']
-                                                        })
+        context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
+                                                        kwargs=KWARGS)
 
         context['from_date'] = self.get_from_date()
         context['to_date'] = self.get_to_date()
@@ -202,26 +211,35 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         return EntityModel.objects.for_user(
             user_model=self.request.user).select_related('coa')
 
-    def get_entity_unit(self):
-        unit_slug = self.kwargs.get('unit')
-        if not unit_slug:
-            unit_slug = self.request.GET.get('unit')
-        return unit_slug
-
-    def get_entity_digest(self, context, end_date=None):
+    def get_entity_digest(self, context, from_date=None, end_date=None):
         by_period = self.request.GET.get('by_period')
         entity_model = self.object
         if not end_date:
             end_date = self.get_to_date()
-        unit_slug = self.get_entity_unit()
-        digest = entity_model.digest(user_model=self.request.user,
-                                     to_date=end_date,
-                                     unit_slug=unit_slug,
-                                     by_period=True if by_period else False,
-                                     process_ratios=True,
-                                     process_roles=True,
-                                     process_groups=True)
+        if not from_date:
+            from_date = self.get_from_date()
+        unit_slug = self.get_unit_slug()
+        txs_qs, digest = entity_model.digest(user_model=self.request.user,
+                                             to_date=end_date,
+                                             unit_slug=unit_slug,
+                                             by_period=True if by_period else False,
+                                             process_ratios=True,
+                                             process_roles=True,
+                                             process_groups=True,
+                                             return_queryset=True)
+
+        equity_digest = entity_model.digest(user_model=self.request.user,
+                                            queryset=txs_qs,
+                                            digest_name='equity_digest',
+                                            to_date=end_date,
+                                            from_date=from_date,
+                                            unit_slug=unit_slug,
+                                            by_period=True if by_period else False,
+                                            process_ratios=False,
+                                            process_roles=True,
+                                            process_groups=True)
         context.update(digest)
+        context.update(equity_digest)
         context['date_filter'] = end_date
         return context
 
@@ -233,7 +251,7 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
             Q(date__gte=self.get_from_date()) &
             Q(date__lte=self.get_to_date())
         ).select_related('customer').order_by('due_date')
-        unit_slug = self.get_entity_unit()
+        unit_slug = self.get_unit_slug()
         if unit_slug:
             qs = qs.filter(ledger__unit__slug__exact=unit_slug)
         return qs
@@ -246,7 +264,7 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
             Q(date__gte=self.get_from_date()) &
             Q(date__lte=self.get_to_date())
         ).select_related('vendor').order_by('due_date')
-        unit_slug = self.get_entity_unit()
+        unit_slug = self.get_unit_slug()
         if unit_slug:
             qs = qs.filter(ledger__unit__slug__exact=unit_slug)
         return qs

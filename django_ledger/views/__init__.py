@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django_ledger.views.account import *
-from django_ledger.views.app_api import *
+from django_ledger.views.djl_api import *
 from django_ledger.views.auth import *
 from django_ledger.views.bank_account import *
 from django_ledger.views.base import *

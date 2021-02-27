@@ -10,7 +10,11 @@
                 <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
                     <div class="columns is-multiline">
                         <div class="column is-12">
-                            {% period_navigation 'entity-detail' %}
+                            {% if view.kwargs.unit_slug or request.GET.unit %}
+                                {% period_navigation 'unit-detail' %}
+                            {% else %}
+                                {% period_navigation 'entity-detail' %}
+                            {% endif %}
                         </div>
                         <div class="column is-12">
                             {% navigation_menu 'desktop' %}
@@ -25,7 +29,7 @@
                             {% include 'django_ledger/includes/widget_bs.html' with tx_digest=tx_digest %}
                         </div>
                         <div class="column is-half">
-                            {% include 'django_ledger/includes/widget_ic.html' with tx_digest=tx_digest %}
+                            {% include 'django_ledger/includes/widget_ic.html' with tx_digest=equity_digest %}
                         </div>
                         <div class="column is-three-fifths">
                             <div class="box">{% chart_container pnl_chart_id pnl_chart_endpoint %}</div>

@@ -15,10 +15,6 @@ app_name = 'django_ledger'
 urlpatterns = [
 
     path('entity/', include('django_ledger.urls.entity')),
-
-    # todo: rename to api/v1/
-    # Entity JSON Data Layer ----
-    path('entity/', include('django_ledger.urls.api')),
     path('unit/', include('django_ledger.urls.unit')),
     path('report/', include('django_ledger.urls.report')),
     path('chart-of-accounts/', include('django_ledger.urls.chart_of_accounts')),
@@ -37,7 +33,8 @@ urlpatterns = [
     path('feedback/', include('django_ledger.urls.feedback')),
     path('', include('django_ledger.urls.home')),
 
-
     path('', views.RootUrlView.as_view(), name='root-url'),
+
+    path('djl-api/v1/', include('django_ledger.urls.djl_api')),
 
 ]
