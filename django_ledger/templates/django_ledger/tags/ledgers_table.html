@@ -9,7 +9,6 @@
             <th>Detail</th>
             <th>Balance Sheet</th>
             <th>Income Statement</th>
-            <th>Unit</th>
             <th>Posted</th>
             <th>Locked</th>
             <th>Actions</th>
@@ -28,7 +27,6 @@
                 <td><a class="button is-info is-small is-outlined"
                        href="{% url 'django_ledger:ledger-ic-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">Income
                     Statement</a></td>
-                <td>{{ ledger.unit.name }}</td>
                 <td>
                     {% if ledger.posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>

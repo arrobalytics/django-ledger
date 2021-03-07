@@ -28,7 +28,7 @@ class FinancialRatioManager:
         self.gross_profit = tx_digest['group_balance']['GROUP_GROSS_PROFIT']
         self.RATIOS = dict()
 
-    def generate(self):
+    def digest(self):
         self.quick_ratio()
         self.current_ratio()
         self.debt_to_equity()

@@ -6,6 +6,7 @@
             <th>Date</th>
             <th>Account</th>
             <th>Account Name</th>
+            <th>Unit</th>
             <th>Credit</th>
             <th>Debit</th>
             <th>Description</th>
@@ -15,15 +16,17 @@
                 <td>{{ tx.journal_entry.date }}</td>
                 <td>{{ tx.account.code }}</td>
                 <td>{{ tx.account.name }}</td>
+                <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit }}{% endif %}</td>
                 <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{{ tx.description }}</td>
             </tr>
         {% endfor %}
         <tr class="has-text-weight-bold">
-            <td>Total</td>
             <td></td>
             <td></td>
+            <td></td>
+            <td class="has-text-right">Total</td>
             <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
             <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
             <td></td>

@@ -5,16 +5,19 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
 from datetime import timedelta
 from decimal import Decimal
+from itertools import groupby
+from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.db.models import QuerySet
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import validate_tx_data
 from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
                                     ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE,
                                     ASSET_CA_RECEIVABLES)
@@ -22,12 +25,33 @@ from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
 
 class LazyLoader:
     ACCOUNT_MODEL = None
+    BILL_MODEL = None
+    JOURNAL_ENTRY_MODEL = None
+    TXS_MODEL = None
 
     def get_account_model(self):
         if not self.ACCOUNT_MODEL:
             from django_ledger.models.accounts import AccountModel
             self.ACCOUNT_MODEL = AccountModel
         return self.ACCOUNT_MODEL
+
+    def get_bill_model(self):
+        if not self.BILL_MODEL:
+            from django_ledger.models import BillModel
+            self.BILL_MODEL = BillModel
+        return self.BILL_MODEL
+
+    def get_journal_entry_model(self):
+        if not self.JOURNAL_ENTRY_MODEL:
+            from django_ledger.models import JournalEntryModel
+            self.JOURNAL_ENTRY_MODEL = JournalEntryModel
+        return self.JOURNAL_ENTRY_MODEL
+
+    def get_transaction_model(self):
+        if not self.TXS_MODEL:
+            from django_ledger.models import TransactionModel
+            self.TXS_MODEL = TransactionModel
+        return self.TXS_MODEL
 
 
 lazy_loader = LazyLoader()
@@ -93,7 +117,7 @@ class AccruableItemMixIn(models.Model):
                              choices=TERMS,
                              verbose_name=_('Terms'))
 
-    amount_due = models.DecimalField(max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
+    amount_due = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
     amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Paid'))
 
     amount_receivable = models.DecimalField(default=0, max_digits=20, decimal_places=2,
@@ -231,7 +255,7 @@ class AccruableItemMixIn(models.Model):
         return self.ALLOW_MIGRATE
 
     def get_tx_type(self,
-                    acc_digest: dict,
+                    acc_bal_type: dict,
                     adjustment_amount: Decimal):
 
         if adjustment_amount:
@@ -243,13 +267,28 @@ class AccruableItemMixIn(models.Model):
                 'di': 'debit',
             }
 
-            acc_bal_type = acc_digest['balance_type'][0]
+            acc_bal_type = acc_bal_type[0]
             d_or_i = 'd' if adjustment_amount < 0 else 'i'
             return tx_types[acc_bal_type + d_or_i]
         return 'debit'
 
-    def migrate_state(self, user_model,
+    def split_amount(self, amount: float, unit_split: dict, account_uuid, account_balance_type) -> dict:
+        running_alloc = 0
+        SPLIT_LEN = len(unit_split) - 1
+        split_results = dict()
+        for i, (u, p) in enumerate(unit_split.items()):
+            if i == SPLIT_LEN:
+                split_results[(account_uuid, u, account_balance_type)] = amount - running_alloc
+            else:
+                alloc = round(p * amount, 2)
+                split_results[(account_uuid, u, account_balance_type)] = alloc
+                running_alloc += alloc
+        return split_results
+
+    def migrate_state(self,
+                      user_model,
                       entity_slug: str,
+                      item_models: QuerySet or list = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       je_date: date = None):
@@ -257,113 +296,98 @@ class AccruableItemMixIn(models.Model):
         if self.migrate_allowed() or force_migrate:
             txs_digest = self.ledger.digest(
                 user_model=user_model,
-                process_groups=False,
+                process_groups=True,
                 process_roles=False,
-                process_ratios=False
+                process_ratios=False,
+                by_unit=True
             )
 
-            account_data = txs_digest['tx_digest']['accounts']
-            cash_acc_db = next(
-                iter(acc for acc in account_data if acc['account_uuid'] == self.cash_account_id), None
-            )
-            rcv_acc_db = next(
-                iter(acc for acc in account_data if acc['account_uuid'] == self.receivable_account_id), None
-            )
-            pay_acc_db = next(
-                iter(acc for acc in account_data if acc['account_uuid'] == self.payable_account_id), None
-            )
-            earn_acc_db = next(
-                iter(acc for acc in account_data if acc['account_uuid'] == self.earnings_account_id), None
-            )
+            digest_data = txs_digest['tx_digest']['accounts']
 
-            new_state = self.new_state(commit=commit)
-
-            diff = {
-                'amount_paid': round(
-                    new_state['amount_paid'] - (cash_acc_db['balance'] if cash_acc_db else 0), 2),
-                'amount_receivable': round(
-                    new_state['amount_receivable'] - (rcv_acc_db['balance'] if rcv_acc_db else 0), 2),
-                'amount_payable': round(
-                    new_state['amount_unearned'] - (pay_acc_db['balance'] if pay_acc_db else 0), 2),
-                # todo: chunk this down and figure out a cleaner way to deal with the earnings account.
-                # todo: absolute is used here because amount earned can come from an income account or expense account.
-                'amount_earned': round(
-                    new_state['amount_earned'] - abs(earn_acc_db['balance'] if earn_acc_db else 0), 2)
+            ledger_state = {
+                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            je_txs = list()
+            new_state = self.new_state(commit=commit)
+            account_balance_data = self.get_account_balance_data()
+            account_balance_data_gb = groupby(account_balance_data,
+                                              key=lambda a: (a['item_model__expense_account__uuid'],
+                                                             a['entity_unit__uuid'],
+                                                             a['item_model__expense_account__balance_type']))
+            progress = self.get_progress()
+            account_balance_data_idx = {
+                g: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for g, ad in account_balance_data_gb
+            }
+            ua_gen = sorted(((k[1], v) for k, v in account_balance_data_idx.items()),
+                            key=lambda a: a[0] if a[0] else uuid4())
+            unit_amounts = {
+                u: sum(a[1] for a in l) for u, l in groupby(ua_gen, key=lambda x: x[0])
+            }
+            total_amount = sum(unit_amounts.values())
+            unit_percents = {
+                k: (v / total_amount) for k, v in unit_amounts.items()
+            }
 
-            # todo: there may be a more efficient way of pulling all missing balance_types al once instead of 1-by-1.
+            current_state = dict()
+            current_state.update(self.split_amount(
+                amount=new_state['amount_paid'],
+                unit_split=unit_percents,
+                account_uuid=self.cash_account_id,
+                account_balance_type='debit'
+            ))
+            current_state.update(self.split_amount(
+                amount=new_state['amount_receivable'],
+                unit_split=unit_percents,
+                account_uuid=self.receivable_account_id,
+                account_balance_type='debit'
+            ))
+            current_state.update(self.split_amount(
+                amount=new_state['amount_unearned'],
+                unit_split=unit_percents,
+                account_uuid=self.payable_account_id,
+                account_balance_type='credit'
+            ))
+            current_state.update(account_balance_data_idx)
 
-            if diff['amount_paid'] != 0:
-                if not cash_acc_db:
-                    cash_acc_db = self.get_account_bt(
-                        account_id=self.cash_account_id,
-                        entity_slug=entity_slug,
-                        user_model=user_model
-                    )
-                cash_tx = {
-                    'account_id': self.cash_account_id,
-                    'tx_type': self.get_tx_type(acc_digest=cash_acc_db, adjustment_amount=diff['amount_paid']),
-                    'amount': abs(diff['amount_paid']),
-                    'description': self.get_migrate_state_desc()
-                }
-                je_txs.append(cash_tx)
+            idx_keys = set(list(ledger_state) + list(current_state))
+            unit_uuids = list(set(k[1] for k in idx_keys))
+            diff_idx = {
+                k: current_state.get(k, 0) - ledger_state.get(k, 0) for k in idx_keys
+            }
 
-            if diff['amount_receivable'] != 0:
-                if not rcv_acc_db:
-                    rcv_acc_db = self.get_account_bt(
-                        account_id=self.receivable_account_id,
-                        entity_slug=entity_slug,
-                        user_model=user_model
-                    )
-                receivable_tx = {
-                    'account_id': self.receivable_account_id,
-                    'tx_type': self.get_tx_type(acc_digest=rcv_acc_db, adjustment_amount=diff['amount_receivable']),
-                    'amount': abs(diff['amount_receivable']),
-                    'description': self.get_migrate_state_desc()
-                }
-                je_txs.append(receivable_tx)
+            JournalEntryModel = lazy_loader.get_journal_entry_model()
+            TransactionModel = lazy_loader.get_transaction_model()
 
-            if diff['amount_payable'] != 0:
-                if not pay_acc_db:
-                    pay_acc_db = self.get_account_bt(
-                        account_id=self.payable_account_id,
-                        entity_slug=entity_slug,
-                        user_model=user_model
-                    )
+            now_date = localdate() if not je_date else je_date
+            je_list = {
+                u: JournalEntryModel.objects.create(
+                    entity_unit_id=u,
+                    date=now_date,
+                    description=self.get_migrate_state_desc(),
+                    activity='op',
+                    origin='migration',
+                    locked=True,
+                    ledger_id=self.ledger_id
+                ) for u in list(unit_uuids)
+            }
 
-                payable_tx = {
-                    'account_id': self.payable_account_id,
-                    'tx_type': self.get_tx_type(acc_digest=pay_acc_db, adjustment_amount=diff['amount_payable']),
-                    'amount': abs(diff['amount_payable']),
-                    'description': self.get_migrate_state_desc()
-                }
-                je_txs.append(payable_tx)
+            txs_list = [
+                TransactionModel(
+                    journal_entry=je_list.get(unit_uuid),
+                    amount=abs(amt),
+                    tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
+                    account_id=acc_uuid,
+                    description=self.get_migrate_state_desc()
+                ) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+            ]
 
-            if diff['amount_earned'] != 0:
-                if not earn_acc_db:
-                    earn_acc_db = self.get_account_bt(
-                        account_id=self.earnings_account_id,
-                        entity_slug=entity_slug,
-                        user_model=user_model
-                    )
-                earnings_tx = {
-                    'account_id': self.earnings_account_id,
-                    'tx_type': self.get_tx_type(acc_digest=earn_acc_db, adjustment_amount=diff['amount_earned']),
-                    'amount': abs(diff['amount_earned']),
-                    'description': self.get_migrate_state_desc()
-                }
-                je_txs.append(earnings_tx)
+            for tx in txs_list:
+                tx.full_clean()
 
-            if len(je_txs) > 0:
-                self.ledger.commit_txs(
-                    je_date=localdate() if not je_date else je_date,
-                    je_txs=je_txs,
-                    je_activity='op',
-                    je_posted=True,
-                    je_desc=self.get_migrate_state_desc()
-                )
+            validate_tx_data(tx_data=txs_list)
+
+            TransactionModel.objects.bulk_create(txs_list)
+
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
@@ -461,6 +485,11 @@ class AccruableItemMixIn(models.Model):
 
 
 class ItemTotalCostMixIn(models.Model):
+    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
+                                    on_delete=models.SET_NULL,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name=_('Associated Entity Unit'))
     item_model = models.ForeignKey('django_ledger.ItemModel',
                                    on_delete=models.PROTECT,
                                    verbose_name=_('Item Model'))

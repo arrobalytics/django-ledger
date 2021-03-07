@@ -127,12 +127,10 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                          validators=[MinValueValidator(0)])
 
     for_inventory = models.BooleanField(
-        default=False,
         verbose_name=_('Is an item for inventory'),
         help_text=_('It is an item you require for your inventory.'))
 
     is_product_or_service = models.BooleanField(
-        default=False,
         verbose_name=_('Is a product or service.'),
         help_text=_('Is a product or service you sell or provide to customers.'))
 
@@ -152,6 +150,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         related_name=f'{REL_NAME_PREFIX}_cogs_account',
         help_text=_('COGS account where cost will be recognized on Income Statement.'),
         on_delete=models.PROTECT)
+    # todo: rename to income account... ?
     earnings_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -194,7 +193,12 @@ class ItemModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
+        if self.is_expense():
+            return f'Expense Item: {self.name}'
         return f'Item Model: {self.name} - {self.sku}'
+
+    def is_expense(self):
+        return not self.is_product_or_service and not self.for_inventory
 
     def clean(self):
         if any([

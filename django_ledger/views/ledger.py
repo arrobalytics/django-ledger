@@ -35,7 +35,7 @@ class LedgerModelListView(LoginRequiredMixIn, ListView):
         return LedgerModel.objects.for_entity(
             entity_slug=entity_slug,
             user_model=self.request.user
-        ).select_related('unit').order_by(sort)
+        ).order_by(sort)
 
 
 class LedgerModelCreateView(LoginRequiredMixIn, CreateView):

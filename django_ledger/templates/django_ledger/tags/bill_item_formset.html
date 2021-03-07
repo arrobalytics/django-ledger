@@ -18,6 +18,7 @@
                         <th>{% trans 'Item' %}</th>
                         <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Quantity' %}</th>
+                        <th>{% trans 'Unit' %}</th>
                         <th>{% trans 'Total' %}</th>
                         <th>{% trans 'Delete' %}</th>
                     </tr>
@@ -34,6 +35,7 @@
 
                             <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
+                            <td>{{ f.entity_unit }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
                             <td class="has-text-centered">
@@ -46,6 +48,7 @@
                     </tbody>
                     <tfoot>
                     <tr>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>

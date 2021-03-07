@@ -41,8 +41,7 @@ def generate_random_item_id(length=20):
 
 def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
-                      user_model: UserModel,
-                      unit_slug: str = None) -> BillModel:
+                      user_model: UserModel) -> BillModel:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -52,18 +51,11 @@ def new_bill_protocol(bill_model: BillModel,
     else:
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-    if unit_slug:
-        unit_model_qs = entity_model.entityunitmodel_set.all()
-        unit_model = get_object_or_404(unit_model_qs, slug__exact=unit_slug)
-    else:
-        unit_model = None
-
     bill_model.bill_number = generate_bill_number()
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
         name=f'Bill {bill_model.bill_number}',
-        unit=unit_model
     )
     ledger_model.clean()
     bill_model.ledger = ledger_model
@@ -72,8 +64,7 @@ def new_bill_protocol(bill_model: BillModel,
 
 def new_invoice_protocol(invoice_model: InvoiceModel,
                          entity_slug: str or EntityModel,
-                         user_model: UserModel,
-                         unit_slug: str = None) -> InvoiceModel:
+                         user_model: UserModel) -> InvoiceModel:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -83,19 +74,12 @@ def new_invoice_protocol(invoice_model: InvoiceModel,
     else:
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-    if unit_slug:
-        unit_model_qs = entity_model.entityunitmodel_set.all()
-        unit_model = get_object_or_404(unit_model_qs, slug__exact=unit_slug)
-    else:
-        unit_model = None
-
     if not invoice_model.invoice_number:
         invoice_model.invoice_number = generate_invoice_number()
     ledger_model = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
         name=f'Invoice {invoice_model.invoice_number}',
-        unit=unit_model
     )
     ledger_model.clean()
     invoice_model.ledger = ledger_model

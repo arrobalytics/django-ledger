@@ -73,9 +73,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
                                  on_delete=models.PROTECT,
-                                 verbose_name=_('Customer'),
-                                 blank=True,
-                                 null=True)
+                                 verbose_name=_('Customer'))
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.PROTECT,

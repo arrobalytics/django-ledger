@@ -134,6 +134,14 @@ GROUP_EXPENSES = [
     EXPENSE_OTHER
 ]
 
+GROUP_EXPENSES_NO_COGS = [
+    EXPENSE_OP,
+    EXPENSE_INTEREST,
+    EXPENSE_TAXES,
+    EXPENSE_CAPITAL,
+    EXPENSE_OTHER
+]
+
 GROUP_NET_PROFIT = [
     INCOME_SALES,
     INCOME_PASSIVE,
@@ -255,31 +263,28 @@ for group in ROLES_GROUPS:
     GROUPS_DIRECTORY[group] = getattr(mod, group)
 
 
-class RolesManager:
+class RoleManager:
 
     def __init__(self,
                  tx_digest: dict,
-                 roles: bool = False,
-                 groups: bool = False,
-                 by_period: bool = False):
+                 by_period: bool = False,
+                 by_unit: bool = False):
 
         self.BY_PERIOD = by_period
-
-        self.PROCESS_ROLES = roles
-        self.PROCESS_GROUPS = groups
+        self.BY_UNIT = by_unit
 
         self.DIGEST = tx_digest
         self.ACCOUNTS = tx_digest['accounts']
 
         self.ROLES_ACCOUNTS = dict()
         self.ROLES_BALANCES = dict()
+
         if self.BY_PERIOD:
             self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
-
-        self.GROUPS_ACCOUNTS = dict()
-        self.GROUPS_BALANCES = dict()
-        if self.BY_PERIOD:
-            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
+        if self.BY_UNIT:
+            self.ROLES_BALANCES_BY_UNIT = defaultdict(lambda: dict())
+        if self.BY_PERIOD and self.BY_UNIT:
+            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
 
         self.DIGEST['role_account'] = None
         self.DIGEST['role_balance'] = None
@@ -288,22 +293,21 @@ class RolesManager:
         self.DIGEST['group_account'] = None
         self.DIGEST['group_balance'] = None
         self.DIGEST['group_balance_by_period'] = None
+        self.DIGEST['group_balance_by_unit'] = None
+        self.DIGEST['group_balance_by_period_and_unit'] = None
 
-    def generate(self):
+    def digest(self):
 
-        if self.PROCESS_ROLES:
-            self.process_roles()
-            self.DIGEST['role_account'] = self.ROLES_ACCOUNTS
-            self.DIGEST['role_balance'] = self.ROLES_BALANCES
-            if self.BY_PERIOD:
-                self.DIGEST['role_balance_by_period'] = self.ROLES_BALANCES_BY_PERIOD
+        self.process_roles()
+        self.DIGEST['role_account'] = self.ROLES_ACCOUNTS
+        self.DIGEST['role_balance'] = self.ROLES_BALANCES
 
-        if self.PROCESS_GROUPS:
-            self.process_groups()
-            self.DIGEST['group_account'] = self.GROUPS_ACCOUNTS
-            self.DIGEST['group_balance'] = self.GROUPS_BALANCES
-            if self.BY_PERIOD:
-                self.DIGEST['group_balance_by_period'] = self.GROUPS_BALANCES_BY_PERIOD
+        if self.BY_PERIOD:
+            self.DIGEST['role_balance_by_period'] = self.ROLES_BALANCES_BY_PERIOD
+        if self.BY_UNIT:
+            self.DIGEST['role_balance_by_unit'] = self.ROLES_BALANCES_BY_UNIT
+        if self.BY_PERIOD and self.BY_UNIT:
+            self.DIGEST['role_balance_by_period_and_unit'] = self.ROLES_BALANCES_BY_PERIOD_AND_UNIT
 
         return self.DIGEST
 
@@ -311,7 +315,7 @@ class RolesManager:
 
         for c, l in ROLES_DIRECTORY.items():
             for r in l:
-                acc_list = [acc for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r)]
+                acc_list = (acc for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r))
                 self.ROLES_ACCOUNTS[r] = acc_list
                 self.ROLES_BALANCES[r] = sum(acc['balance'] for acc in acc_list)
 
@@ -325,18 +329,73 @@ class RolesManager:
                         )
                                                                         )
 
+
+class GroupManager:
+
+    def __init__(self,
+                 tx_digest: dict,
+                 by_period: bool = False,
+                 by_unit: bool = False):
+
+        self.BY_PERIOD = by_period
+        self.BY_UNIT = by_unit
+        self.DIGEST = tx_digest
+        self.ACCOUNTS = tx_digest['accounts']
+
+        self.GROUPS_ACCOUNTS = dict()
+        self.GROUPS_BALANCES = dict()
+        if self.BY_PERIOD:
+            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
+
+        if self.BY_UNIT:
+            self.GROUPS_BALANCES_BY_UNIT = defaultdict(lambda: dict())
+
+        if self.BY_PERIOD and self.BY_UNIT:
+            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
+
+        self.DIGEST['group_account'] = None
+        self.DIGEST['group_balance'] = None
+        self.DIGEST['group_balance_by_period'] = None
+        self.DIGEST['group_balance_by_unit'] = None
+        self.DIGEST['group_balance_by_period_and_unit'] = None
+
+    def digest(self):
+
+        self.process_groups()
+        self.DIGEST['group_account'] = self.GROUPS_ACCOUNTS
+        self.DIGEST['group_balance'] = self.GROUPS_BALANCES
+
+        if self.BY_PERIOD:
+            self.DIGEST['group_balance_by_period'] = self.GROUPS_BALANCES_BY_PERIOD
+        if self.BY_UNIT:
+            self.DIGEST['group_balance_by_unit'] = self.GROUPS_BALANCES_BY_UNIT
+        if self.BY_PERIOD and self.BY_PERIOD:
+            self.DIGEST['group_balance_by_period_and_unit'] = self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT
+        return self.DIGEST
+
+    def get_accounts_generator(self, mod, g):
+        return (acc for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g))
+
     def process_groups(self):
         for g in ROLES_GROUPS:
-            acc_list = [acc for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g)]
-            self.GROUPS_ACCOUNTS[g] = acc_list
-            self.GROUPS_BALANCES[g] = sum([acc['balance'] for acc in acc_list])
+            acc_list = self.get_accounts_generator(mod, g)
+            self.GROUPS_ACCOUNTS[g] = list(acc_list)
+            self.GROUPS_BALANCES[g] = sum(acc['balance'] for acc in self.get_accounts_generator(mod, g))
 
             if self.BY_PERIOD:
+                acc_list = self.get_accounts_generator(mod, g)
                 for acc in acc_list:
                     per_key = (acc['period_year'], acc['period_month'])
-
                     self.GROUPS_BALANCES_BY_PERIOD[per_key][g] = sum(
                         acc['balance'] for acc in acc_list if all([
                             acc['period_year'] == per_key[0],
                             acc['period_month'] == per_key[1]]
                         ))
+
+            if self.BY_UNIT:
+                acc_list = self.get_accounts_generator(mod, g)
+                for acc in acc_list:
+                    per_key = (acc['unit_uuid'],)
+                    self.GROUPS_BALANCES_BY_UNIT[per_key][g] = sum(
+                        acc['balance'] for acc in acc_list if acc['unit_uuid'] == per_key[0]
+                    )

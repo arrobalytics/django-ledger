@@ -41,7 +41,18 @@ class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('vendor', 'ledger__unit').order_by('-date')
+        ).select_related('vendor').order_by('-date')
+
+    def get_allow_future(self):
+        allow_future = self.request.GET.get('allow_future')
+        if allow_future:
+            try:
+                allow_future = int(allow_future)
+                if allow_future in (0, 1):
+                    return bool(allow_future)
+            except ValueError:
+                pass
+        return False
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):
@@ -72,12 +83,10 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        unit_slug = form.cleaned_data.get('entity_unit')
         form.instance = new_bill_protocol(
             bill_model=form.instance,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            unit_slug=unit_slug
         )
         return super().form_valid(form=form)
 
@@ -152,7 +161,9 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related('billmodelitemsthroughmodel_set').select_related('ledger', 'vendor')
+        ).prefetch_related(
+            'billmodelitemsthroughmodel_set'
+        ).select_related('ledger', 'vendor')
 
     def form_valid(self, form):
         form.save(commit=False)
@@ -189,9 +200,9 @@ class BillModelItemsUpdateView(LoginRequiredMixIn, View):
 
                 for item in invoice_items:
                     item.entity = entity_model
-                    item.invoice_model = bill_model
+                    item.bill_model = bill_model
 
-                bill_item_formset.save()
+                bill_item_list = bill_item_formset.save()
                 bill_model.update_amount_due()
                 bill_model.new_state(commit=True)
                 bill_model.clean()
@@ -203,7 +214,9 @@ class BillModelItemsUpdateView(LoginRequiredMixIn, View):
 
                 bill_model.migrate_state(
                     entity_slug=entity_slug,
-                    user_model=self.request.user
+                    user_model=self.request.user,
+                    item_models=bill_item_list,
+                    force_migrate=True
                 )
 
         return HttpResponseRedirect(reverse('django_ledger:bill-update',
@@ -242,6 +255,8 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
+        ).prefetch_related(
+            'billmodelitemsthroughmodel_set', 'ledger__journal_entries__entity_unit'
         ).select_related('ledger', 'vendor')
 
 

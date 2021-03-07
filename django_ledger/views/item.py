@@ -242,7 +242,10 @@ class ExpenseItemCreateView(CreateView):
 
     def form_valid(self, form):
         instance: ItemModel = form.save(commit=False)
+        instance.is_product_or_service = False
+        instance.for_inventory = False
         entity_slug = self.kwargs['entity_slug']
+
         try:
             entity_model: EntityModel = EntityModel.objects.for_user(
                 user_model=self.request.user
@@ -253,6 +256,7 @@ class ExpenseItemCreateView(CreateView):
                         level=ERROR,
                         message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
                         extra_tags='is-danger')
+
         instance.save()
         return super().form_valid(form=form)
 

@@ -439,11 +439,15 @@ def period_navigation(context, base_url: str):
     ctx['current_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
 
     dt = localdate()
-    ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month', kwargs={
+    KWARGS_CURRENT_MONTH = {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'year': dt.year,
         'month': dt.month
-    })
+    }
+    if 'unit_slug' in KWARGS:
+        KWARGS_CURRENT_MONTH['unit_slug'] = KWARGS['unit_slug']
+    ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month',
+                                       kwargs=KWARGS_CURRENT_MONTH)
 
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')

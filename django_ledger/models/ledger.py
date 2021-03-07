@@ -51,13 +51,6 @@ class LedgerModelAbstract(CreateUpdateMixIn,
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger Entity'),
                                related_name='ledgers')
-
-    unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                             on_delete=models.PROTECT,
-                             blank=True,
-                             null=True,
-                             verbose_name=_('Associated Entity Unit'))
-
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked Ledger'))
     hidden = models.BooleanField(default=False, verbose_name=_('Hidden Ledger'))
@@ -73,7 +66,6 @@ class LedgerModelAbstract(CreateUpdateMixIn,
             models.Index(fields=['entity']),
             models.Index(fields=['entity', 'posted']),
             models.Index(fields=['entity', 'locked']),
-            models.Index(fields=['unit'])
         ]
 
     def __str__(self):

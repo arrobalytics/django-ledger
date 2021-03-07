@@ -12,7 +12,6 @@
             <th>Payments</th>
             <th>Is Paid?</th>
             <th>Past Due?</th>
-            <th>Unit</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -35,7 +34,6 @@
                     <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
                 {% endif %}
                 </td>
-                <td>{% if  invoice.ledger.unit %}{{ invoice.ledger.unit }}{% endif %}</td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
 

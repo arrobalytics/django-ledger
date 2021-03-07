@@ -81,6 +81,11 @@ class JournalEntryModelAbstract(MPTTModel):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     date = models.DateField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
+    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
+                                    on_delete=models.PROTECT,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name=_('Associated Entity Unit'))
     activity = models.CharField(choices=ACTIVITIES, max_length=5, verbose_name=_('Activity'))
     origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_('Origin'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted'))
@@ -103,10 +108,11 @@ class JournalEntryModelAbstract(MPTTModel):
         verbose_name_plural = _('Journal Entries')
         indexes = [
             models.Index(fields=['date']),
-            models.Index(fields=['parent']),
             models.Index(fields=['activity']),
-            models.Index(fields=['ledger', 'parent']),
-            models.Index(fields=['ledger', 'posted', 'locked']),
+            models.Index(fields=['parent']),
+            models.Index(fields=['entity_unit']),
+            models.Index(fields=['ledger', 'posted']),
+            models.Index(fields=['locked']),
         ]
 
     class MPTTMeta:
@@ -146,9 +152,9 @@ class JournalEntryModelAbstract(MPTTModel):
         try:
             self.clean_fields()
             self.clean()
-        except ValidationError:
+        except ValidationError as e:
             self.txs.all().delete()
-            raise ValidationError('Something went wrong cleaning journal entry ID: {x1}'.format(x1=self.id))
+            raise ValidationError(f'Something went wrong cleaning journal entry ID: {self.uuid}: {e}')
         super().save(*args, **kwargs)
 
 

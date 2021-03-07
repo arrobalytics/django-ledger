@@ -75,10 +75,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
     vendor = models.ForeignKey('django_ledger.VendorModel',
                                on_delete=models.CASCADE,
-                               verbose_name=_('Vendor'),
-                               blank=True,
-                               null=True)
-
+                               verbose_name=_('Vendor'))
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.PROTECT,
                                      verbose_name=_('Cash Account'),
@@ -159,6 +156,19 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
+    def get_account_balance_data(self, queryset=None):
+        if not queryset:
+            queryset = self.billmodelitemsthroughmodel_set.all()
+        return queryset.order_by('item_model__expense_account__uuid',
+                                 'entity_unit__uuid',
+                                 'item_model__expense_account__balance_type').values(
+            'item_model__expense_account__uuid',
+            'item_model__expense_account__balance_type',
+            'entity_unit__slug',
+            'entity_unit__uuid',
+            'total_amount').annotate(
+            account_unit_total=Sum('total_amount'))
+
     def update_amount_due(self, queryset=None) -> tuple:
         queryset, item_data = self.get_bill_item_data(queryset=queryset)
         self.amount_due = item_data['amount_due']
@@ -183,11 +193,32 @@ def billmodel_predelete(instance: BillModel, **kwargs):
 post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
 
 
+class BillModelItemsThroughModelManager(models.Manager):
+
+    def for_entity(self, user_model, entity_slug):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(bill_model__ledger__entity_model__slug__exact=entity_slug) &
+            (
+                    Q(bill_model__ledger__entity_model__admin=user_model) |
+                    Q(bill_model__ledger__entity_model__managers__in=[user_model])
+            )
+        )
+
+    def for_bill(self, user_model, entity_slug, bill_pk):
+        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
+        return qs.filter(
+            bill_model__uuid__exact=bill_pk
+        )
+
+
 class BillModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_model = models.ForeignKey('django_ledger.BillModel',
                                    on_delete=models.CASCADE,
                                    verbose_name=_('Bill Model'))
+
+    objects = BillModelItemsThroughModelManager()
 
     class Meta:
         abstract = True

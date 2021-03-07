@@ -53,6 +53,7 @@
                                     <thead>
                                     <tr>
                                         <th>{% trans 'Item' %}</th>
+                                        <th>{% trans 'Entity Unit' %}</th>
                                         <th>{% trans 'Unit Cost' %}</th>
                                         <th>{% trans 'Quantity' %}</th>
                                         <th>{% trans 'Total' %}</th>
@@ -63,6 +64,7 @@
                                     {% for bill_item in bill_items %}
                                         <tr>
                                             <td>{{ bill_item.item_model }}</td>
+                                            <td>{{ bill_item.entity_unit }}</td>
                                             <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>
                                             <td>{{ bill_item.quantity }}</td>
                                             <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>
@@ -72,6 +74,7 @@
 
                                     <tfoot>
                                     <tr>
+                                        <th></th>
                                         <th></th>
                                         <th></th>
                                         <th>{% trans 'Total' %}</th>

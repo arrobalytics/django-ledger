@@ -42,7 +42,7 @@ class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('customer', 'ledger__unit').order_by('-date')
+        ).select_related('customer').order_by('-date')
 
 
 class InvoiceModelYearlyListView(YearArchiveView, InvoiceModelListView):
@@ -72,12 +72,10 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        unit_slug = form.cleaned_data.get('entity_unit')
         form.instance = new_invoice_protocol(
             invoice_model=form.instance,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            unit_slug=unit_slug
         )
         return super().form_valid(form=form)
 

@@ -11,7 +11,7 @@ class LedgerModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG: str = entity_slug
         self.USER_MODEL = user_model
-        self.fields['unit'].queryset = EntityUnitModel.objects.for_entity(
+        self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
@@ -20,7 +20,7 @@ class LedgerModelCreateForm(ModelForm):
         model = LedgerModel
         fields = [
             'name',
-            'unit'
+            # 'unit'
         ]
         widgets = {
             'name': TextInput(
@@ -28,7 +28,7 @@ class LedgerModelCreateForm(ModelForm):
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                 }
             ),
-            'unit': Select(attrs={
+            'entity_unit': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
@@ -39,7 +39,7 @@ class LedgerModelUpdateForm(LedgerModelCreateForm):
         model = LedgerModel
         fields = [
             'name',
-            'unit',
+            # 'unit',
             'posted',
             'locked',
         ]
@@ -47,7 +47,7 @@ class LedgerModelUpdateForm(LedgerModelCreateForm):
             'name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'unit': Select(attrs={
+            'entity_unit': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }

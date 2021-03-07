@@ -113,10 +113,11 @@ class TransactionModelAdmin(models.Manager):
             raise ValueError(f'Must pass either unit_model or unit_slug, not both.')
 
         qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
+
         if unit_model and isinstance(unit_model, EntityUnitModel):
-            return qs.filter(journal_entry__ledger__unit=unit_model)
+            return qs.filter(journal_entry__entity_unit=unit_model)
         elif unit_slug and isinstance(unit_slug, str):
-            return qs.filter(journal_entry__ledger__unit__slug__exact=unit_slug)
+            return qs.filter(journal_entry__entity_unit__slug__exact=unit_slug)
 
     def for_journal_entry(self,
                           user_model,

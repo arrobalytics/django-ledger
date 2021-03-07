@@ -23,7 +23,7 @@ from jsonschema import validate
 from django_ledger.exceptions import InvalidDateInputException
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
-from django_ledger.io.roles import RolesManager
+from django_ledger.io.roles import RoleManager, GroupManager
 from django_ledger.models.journalentry import JournalEntryModel, validate_activity
 from django_ledger.models.schemas import SCHEMA_DIGEST
 from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
@@ -69,12 +69,21 @@ lazy_importer = LazyImporter()
 
 
 def validate_tx_data(tx_data: list):
-    credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
-    debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
-    is_valid = credits == debits
-    if not is_valid:
-        raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
-    return is_valid
+    if tx_data:
+        TransactionModel = lazy_importer.get_txs_model()
+        if isinstance(tx_data[0], TransactionModel):
+            credits = sum(tx.amount for tx in tx_data if tx.tx_type == 'credit')
+            debits = sum(tx.amount for tx in tx_data if tx.tx_type == 'debit')
+        else:
+            credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
+            debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
+
+        is_valid = credits == debits
+
+        if not is_valid:
+            raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
+        return is_valid
+    return True
 
 
 def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True):
@@ -189,8 +198,9 @@ class IOMixIn:
         gl = list(g)
         return {
             'account_uuid': k[0],
-            'period_year': k[1],
-            'period_month': k[2],
+            'unit_uuid': k[1],
+            'period_year': k[2],
+            'period_month': k[3],
             'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
             'role': gl[0]['account__role'],
             'code': gl[0]['account__code'],
@@ -212,7 +222,8 @@ class IOMixIn:
                         accounts: str or List[str] or Set[str] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
-                        by_period: bool = False):
+                        by_period: bool = False,
+                        by_unit: bool = False):
 
         activity = validate_activity(activity)
         role = roles.validate_roles(role)
@@ -241,6 +252,7 @@ class IOMixIn:
                     user_model=user_model,
                     ledger_model=self
                 )
+            # If IO is on unit model....
             elif isinstance(self, lazy_importer.get_unit_model()):
                 if not entity_slug:
                     raise ValidationError('Calling digest from Entity Unit requires entity_slug')
@@ -281,20 +293,29 @@ class IOMixIn:
                 role = [role]
             txs_qs = txs_qs.for_roles(role_list=role)
 
-        txs_qs = txs_qs.values(
+        VALUES = [
             'account__uuid',
             'account__balance_type',
             'tx_type',
             'account__code',
             'account__name',
             'account__role',
-        )
+            'journal_entry__entity_unit__uuid'
+        ]
+
+        txs_qs = txs_qs.values(*VALUES)
 
         if by_period:
             txs_qs = txs_qs.annotate(
                 balance=Sum('amount'),
                 dt_idx=TruncMonth('journal_entry__date'),
             ).order_by('journal_entry__date', 'account__uuid')
+            if by_unit:
+                txs_qs.order_by('journal_entry__date', 'account__uuid', 'journal_entry__entity_unit__uuid')
+        elif by_unit:
+            txs_qs = txs_qs.annotate(
+                balance=Sum('amount'),
+            ).order_by('account__uuid', 'journal_entry__entity_unit__uuid')
         else:
             txs_qs = txs_qs.annotate(
                 balance=Sum('amount'),
@@ -314,6 +335,7 @@ class IOMixIn:
                       role: str = None,
                       accounts: set = None,
                       signs: bool = False,
+                      by_unit: bool = False,
                       by_period: bool = False) -> list or tuple:
 
         if equity_only:
@@ -329,6 +351,7 @@ class IOMixIn:
             activity=activity,
             role=role,
             accounts=accounts,
+            by_unit=by_unit,
             by_period=by_period)
 
         # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
@@ -336,20 +359,13 @@ class IOMixIn:
             if tx['account__balance_type'] != tx['tx_type']:
                 tx['balance'] = -tx['balance']
 
-        if by_period:
-            accounts_gb_code = groupby(txs_qs,
-                                       key=lambda a: (
-                                           a['account__uuid'],
-                                           a.get('dt_idx').year if by_period else None,
-                                           a.get('dt_idx').month if by_period else None,
-                                       ))
-        else:
-            accounts_gb_code = groupby(txs_qs,
-                                       key=lambda a: (
-                                           a['account__uuid'],
-                                           None,
-                                           None,
-                                       ))
+        accounts_gb_code = groupby(txs_qs,
+                                   key=lambda a: (
+                                       a['account__uuid'],
+                                       a['journal_entry__entity_unit__uuid'] if by_unit else None,
+                                       a.get('dt_idx').year if by_period else None,
+                                       a.get('dt_idx').month if by_period else None,
+                                   ))
 
         gb_digest = [
             self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
@@ -369,7 +385,7 @@ class IOMixIn:
 
     def digest(self,
                user_model: UserModel,
-               accounts: set = None,
+               accounts: set or list = None,
                activity: str = None,
                entity_slug: str = None,
                unit_slug: str = None,
@@ -382,6 +398,7 @@ class IOMixIn:
                process_ratios: bool = False,
                equity_only: bool = False,
                by_period: bool = False,
+               by_unit: bool = True,
                return_queryset: bool = False,
                digest_name: str = None
                ) -> dict or tuple:
@@ -398,23 +415,32 @@ class IOMixIn:
             signs=signs,
             equity_only=equity_only,
             by_period=by_period,
+            by_unit=by_unit,
         )
 
         digest = dict(
             accounts=accounts_digest
         )
 
-        if process_roles or process_groups:
-            roles_mgr = RolesManager(
+        if process_roles:
+            roles_mgr = RoleManager(
                 tx_digest=digest,
-                roles=process_roles,
-                groups=process_groups,
-                by_period=by_period)
-            digest = roles_mgr.generate()
+                by_period=by_period,
+                by_unit=by_unit
+            )
+            digest = roles_mgr.digest()
+
+        if process_groups:
+            group_mgr = GroupManager(
+                tx_digest=digest,
+                by_period=by_period,
+                by_unit=by_unit
+            )
+            digest = group_mgr.digest()
 
         if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=digest)
-            digest = ratio_gen.generate()
+            digest = ratio_gen.digest()
 
         if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
             validate(instance=digest, schema=SCHEMA_DIGEST)

@@ -6,30 +6,21 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, DateInput, ChoiceField, TextInput, Select, CheckboxInput, modelformset_factory
+from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
-from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel, ItemModel,
-                                  EntityUnitModel)
+from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class InvoiceModelCreateForm(ModelForm):
-    entity_unit = ChoiceField(required=False, initial=None, widget=Select(attrs={
-        'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large'
-    }))
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        self.fields['entity_unit'].choices = [('', '')] + [
-            (u.slug, u.name) for u in EntityUnitModel.objects.for_entity(
-                entity_slug=self.ENTITY_SLUG, user_model=self.USER_MODEL
-            )
-        ]
 
         account_qs = AccountModel.on_coa.for_create_invoice(
             user_model=self.USER_MODEL,
