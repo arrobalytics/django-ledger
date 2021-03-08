@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from decimal import Decimal
 
 from django.conf import settings
 
@@ -18,6 +19,14 @@ DJANGO_LEDGER_FEEDBACK_EMAIL_LIST = getattr(settings, 'DJANGO_LEDGER_FEEDBACK_EM
 DJANGO_LEDGER_FEEDBACK_FROM_EMAIL = getattr(settings, 'DJANGO_LEDGER_FEEDBACK_FROM_EMAIL', None)
 DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME = getattr(settings, 'DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME', False)
 DJANGO_LEDGER_LOGIN_URL = getattr(settings, 'DJANGO_LEDGER_LOGIN_URL', settings.LOGIN_URL)
+
+DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE = getattr(settings,
+                                                  'DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE',
+                                                  Decimal('0.02'))
+
+DJANGO_LEDGER_TRANSACTION_CORRECTION = getattr(settings,
+                                               'DJANGO_LEDGER_TRANSACTION_CORRECTION',
+                                               Decimal('0.01'))
 
 DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
     'ratios': {

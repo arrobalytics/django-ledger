@@ -26,6 +26,7 @@ from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
 class LazyLoader:
     ACCOUNT_MODEL = None
     BILL_MODEL = None
+    INVOICE_MODEL = None
     JOURNAL_ENTRY_MODEL = None
     TXS_MODEL = None
 
@@ -40,6 +41,12 @@ class LazyLoader:
             from django_ledger.models import BillModel
             self.BILL_MODEL = BillModel
         return self.BILL_MODEL
+
+    def get_invoice_model(self):
+        if not self.INVOICE_MODEL:
+            from django_ledger.models import InvoiceModel
+            self.INVOICE_MODEL = InvoiceModel
+        return self.INVOICE_MODEL
 
     def get_journal_entry_model(self):
         if not self.JOURNAL_ENTRY_MODEL:
@@ -299,6 +306,7 @@ class AccruableItemMixIn(models.Model):
                 process_groups=True,
                 process_roles=False,
                 process_ratios=False,
+                signs=False,
                 by_unit=True
             )
 
@@ -309,11 +317,21 @@ class AccruableItemMixIn(models.Model):
             }
 
             new_state = self.new_state(commit=commit)
+
+            # todo: use entity_slug here for safety...
             account_balance_data = self.get_account_balance_data()
-            account_balance_data_gb = groupby(account_balance_data,
-                                              key=lambda a: (a['item_model__expense_account__uuid'],
-                                                             a['entity_unit__uuid'],
-                                                             a['item_model__expense_account__balance_type']))
+
+            if isinstance(self, lazy_loader.get_bill_model()):
+                account_balance_data_gb = groupby(account_balance_data,
+                                                  key=lambda a: (a['item_model__expense_account__uuid'],
+                                                                 a['entity_unit__uuid'],
+                                                                 a['item_model__expense_account__balance_type']))
+            elif isinstance(self, lazy_loader.get_invoice_model()):
+                account_balance_data_gb = groupby(account_balance_data,
+                                                  key=lambda a: (a['item_model__earnings_account__uuid'],
+                                                                 a['entity_unit__uuid'],
+                                                                 a['item_model__earnings_account__balance_type']))
+
             progress = self.get_progress()
             account_balance_data_idx = {
                 g: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for g, ad in account_balance_data_gb
@@ -367,6 +385,7 @@ class AccruableItemMixIn(models.Model):
                     activity='op',
                     origin='migration',
                     locked=True,
+                    posted=True,
                     ledger_id=self.ledger_id
                 ) for u in list(unit_uuids)
             }
@@ -374,7 +393,7 @@ class AccruableItemMixIn(models.Model):
             txs_list = [
                 TransactionModel(
                     journal_entry=je_list.get(unit_uuid),
-                    amount=abs(amt),
+                    amount=abs(round(amt, 2)),
                     tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
                     account_id=acc_uuid,
                     description=self.get_migrate_state_desc()
@@ -382,7 +401,7 @@ class AccruableItemMixIn(models.Model):
             ]
 
             for tx in txs_list:
-                tx.full_clean()
+                tx.clean()
 
             validate_tx_data(tx_data=txs_list)
 

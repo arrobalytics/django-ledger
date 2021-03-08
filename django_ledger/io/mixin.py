@@ -8,6 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from datetime import datetime, date
 from itertools import groupby
+from random import choice
 from typing import List, Set
 from typing import Tuple
 
@@ -20,13 +21,15 @@ from django.utils.timezone import localdate
 from django.utils.timezone import make_aware, is_naive
 from jsonschema import validate
 
-from django_ledger.exceptions import InvalidDateInputException
+from django_ledger.exceptions import InvalidDateInputException, TransactionNotInBalanceException
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RoleManager, GroupManager
 from django_ledger.models.journalentry import JournalEntryModel, validate_activity
 from django_ledger.models.schemas import SCHEMA_DIGEST
-from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
+from django_ledger.settings import (DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME,
+                                    DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
+                                    DJANGO_LEDGER_TRANSACTION_CORRECTION)
 
 UserModel = get_user_model()
 
@@ -68,21 +71,59 @@ class LazyImporter:
 lazy_importer = LazyImporter()
 
 
+def diff_tx_data(tx_data: list):
+    IS_TX_MODEL = False
+    TransactionModel = lazy_importer.get_txs_model()
+
+    if isinstance(tx_data[0], TransactionModel):
+        CREDITS = sum(tx.amount for tx in tx_data if tx.tx_type == 'credit')
+        DEBITS = sum(tx.amount for tx in tx_data if tx.tx_type == 'debit')
+        IS_TX_MODEL = True
+    elif isinstance(tx_data[0], dict):
+        CREDITS = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
+        DEBITS = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
+    else:
+        raise ValidationError('Only Dictionary or TransactionModel allowed.')
+
+    is_valid = (CREDITS == DEBITS)
+    diff = CREDITS - DEBITS
+
+    if not is_valid and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+        raise TransactionNotInBalanceException(
+            f'Invalid tx data. Credits and debits must match. Currently cr: {CREDITS}, db {DEBITS}.'
+            f'Max Tolerance {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+        )
+
+    return IS_TX_MODEL, is_valid, diff
+
+
 def validate_tx_data(tx_data: list):
     if tx_data:
-        TransactionModel = lazy_importer.get_txs_model()
-        if isinstance(tx_data[0], TransactionModel):
-            credits = sum(tx.amount for tx in tx_data if tx.tx_type == 'credit')
-            debits = sum(tx.amount for tx in tx_data if tx.tx_type == 'debit')
-        else:
-            credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'credit')
-            debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == 'debit')
 
-        is_valid = credits == debits
+        IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
 
-        if not is_valid:
-            raise ValidationError(f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.')
-        return is_valid
+        while not is_valid:
+            # if not is_valid and abs(diff) <= DJANGO_LEDGER_TRANSACTION_TOLERANCE_CORRECTION:
+
+            tx_choice = choice(['debit', 'credit'])
+            tx = choice(list(tx for tx in tx_data if tx.tx_type == tx_choice))
+
+            if any([diff > 0 and tx_choice == 'debit',
+                    diff < 0 and tx_choice == 'credit']):
+                if IS_TX_MODEL:
+                    tx.amount += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                else:
+                    tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+
+            elif any([diff < 0 and tx_choice == 'debit',
+                      diff > 0 and tx_choice == 'credit']):
+                if IS_TX_MODEL:
+                    tx.amount -= DJANGO_LEDGER_TRANSACTION_CORRECTION
+                else:
+                    tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+
+            IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
+
     return True
 
 

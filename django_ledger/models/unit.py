@@ -14,6 +14,13 @@ from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
+def create_entity_unit_slug(name):
+    slug = slugify(name)
+    suffix = ''.join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=5))
+    unit_slug = f'{slug}-{suffix}'
+    return unit_slug
+
+
 class EntityUnitModelManager(models.Manager):
 
     def for_entity(self, entity_slug: str, user_model):
@@ -62,10 +69,7 @@ class EntityUnitModelAbstract(IOMixIn, MPTTModel, SlugNameMixIn, CreateUpdateMix
 
     def clean(self):
         if not self.slug:
-            slug = slugify(self.name)
-            suffix = ''.join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=5))
-            unit_slug = f'{slug}-{suffix}'
-            self.slug = unit_slug
+            self.slug = create_entity_unit_slug(self.name)
 
 
 class EntityUnitModel(EntityUnitModelAbstract):

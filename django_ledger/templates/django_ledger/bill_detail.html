@@ -64,7 +64,8 @@
                                     {% for bill_item in bill_items %}
                                         <tr>
                                             <td>{{ bill_item.item_model }}</td>
-                                            <td>{{ bill_item.entity_unit }}</td>
+                                            <td>{% if bill_item.entity_unit %}
+                                                {{ bill_item.entity_unit }}{% endif %}</td>
                                             <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>
                                             <td>{{ bill_item.quantity }}</td>
                                             <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>

@@ -283,7 +283,7 @@ class InvoiceModelMarkPaidView(LoginRequiredMixIn,
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('ledger')
 
     def post(self, request, *args, **kwargs):
         invoice: InvoiceModel = self.get_object()
@@ -296,8 +296,9 @@ class InvoiceModelMarkPaidView(LoginRequiredMixIn,
                              messages.SUCCESS,
                              f'Successfully marked bill {invoice.invoice_number} as Paid.',
                              extra_tags='is-success')
-        redirect_url = reverse('django_ledger:entity-detail',
+        redirect_url = reverse('django_ledger:invoice-detail',
                                kwargs={
-                                   'entity_slug': self.kwargs['entity_slug']
+                                   'entity_slug': self.kwargs['entity_slug'],
+                                   'invoice_pk': invoice.uuid
                                })
         return HttpResponseRedirect(redirect_url)

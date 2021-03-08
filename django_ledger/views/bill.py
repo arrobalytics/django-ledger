@@ -300,10 +300,10 @@ class BillModelMarkPaidView(LoginRequiredMixIn,
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('ledger')
 
     def post(self, request, *args, **kwargs):
-        bill = self.get_object()
+        bill: BillModel = self.get_object()
         mark_progressible_paid(
             progressible_model=bill,
             entity_slug=self.kwargs['entity_slug'],
@@ -313,8 +313,9 @@ class BillModelMarkPaidView(LoginRequiredMixIn,
                              messages.SUCCESS,
                              f'Successfully marked bill {bill.bill_number} as Paid.',
                              extra_tags='is-success')
-        redirect_url = reverse('django_ledger:entity-detail',
+        redirect_url = reverse('django_ledger:bill-detail',
                                kwargs={
-                                   'entity_slug': self.kwargs['entity_slug']
+                                   'entity_slug': self.kwargs['entity_slug'],
+                                   'bill_pk': bill.uuid
                                })
         return HttpResponseRedirect(redirect_url)

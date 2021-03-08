@@ -446,6 +446,11 @@ def period_navigation(context, base_url: str):
     }
     if 'unit_slug' in KWARGS:
         KWARGS_CURRENT_MONTH['unit_slug'] = KWARGS['unit_slug']
+    if 'account_pk' in KWARGS:
+        KWARGS_CURRENT_MONTH['account_pk'] = KWARGS['account_pk']
+    if 'ledger_pk' in KWARGS:
+        KWARGS_CURRENT_MONTH['ledger_pk'] = KWARGS['ledger_pk']
+
     ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month',
                                        kwargs=KWARGS_CURRENT_MONTH)
 

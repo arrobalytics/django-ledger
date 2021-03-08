@@ -12,13 +12,15 @@ from django.utils.dateparse import parse_date
 from django.utils.timezone import localtime, localdate
 
 from django_ledger.models import (EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
-                                  UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel)
+                                  UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel,
+                                  EntityUnitModel)
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.bill import BillModel, generate_bill_number, BillModelItemsThroughModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.mixins import AccruableItemMixIn
+from django_ledger.models.unit import create_entity_unit_slug
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -290,6 +292,7 @@ def generate_random_products(entity_model: EntityModel,
             upc=generate_random_upc(),
             item_id=generate_random_item_id(),
             entity=entity_model,
+            for_inventory=False,
             is_product_or_service=True,
             earnings_account=choice(accounts_gb['in_sales']),
         ) for _ in range(product_count)
@@ -329,6 +332,7 @@ def generate_random_expenses(entity_model: EntityModel, uom_models, accounts_gb)
 
 def generate_random_invoice(
         entity_model: EntityModel,
+        unit_models: list,
         customer_models,
         user_model,
         is_progressible: bool,
@@ -367,7 +371,8 @@ def generate_random_invoice(
             invoice_model=invoice_model,
             item_model=choice(product_models),
             quantity=round(random() * randint(1, 5), 2),
-            unit_cost=round(random() * randint(100, 999), 2)
+            unit_cost=round(random() * randint(100, 999), 2),
+            entity_unit=choice(unit_models) if random() > .5 else None
         ) for _ in range(randint(1, 10))
     ]
 
@@ -388,6 +393,7 @@ def generate_random_invoice(
 
 def generate_random_bill(
         entity_model: EntityModel,
+        unit_models: list,
         user_model,
         vendor_models: list,
         expense_models: list,
@@ -426,7 +432,8 @@ def generate_random_bill(
             bill_model=bill_model,
             item_model=choice(expense_models),
             quantity=round(random() * randint(1, 5), 2),
-            unit_cost=round(random() * randint(100, 800), 2)
+            unit_cost=round(random() * randint(100, 800), 2),
+            entity_unit=choice(unit_models) if random() > .5 else None
         ) for _ in range(randint(1, 10))
     ]
 
@@ -441,6 +448,7 @@ def generate_random_bill(
     bill_model.save()
     bill_model.migrate_state(
         user_model=user_model,
+        item_models=bill_items,
         entity_slug=entity_model.slug,
         je_date=paid_dt)
 
@@ -475,6 +483,16 @@ def create_bank_accounts(entity_model: EntityModel, fk, accounts_by_role):
     return BankAccountModel.objects.bulk_create(bank_account_models)
 
 
+def create_random_entity_unit_models(entity_model, nb_units: int = 4):
+    return [
+        EntityUnitModel.objects.create(
+            name=f'Unit {u}',
+            slug=create_entity_unit_slug(f'{entity_model.name}-Unit {u}'),
+            entity=entity_model
+        ) for u in range(nb_units)
+    ]
+
+
 def generate_sample_data(entity_model: str or EntityModel,
                          user_model,
                          start_dt: datetime,
@@ -504,10 +522,14 @@ def generate_sample_data(entity_model: str or EntityModel,
     if not isinstance(entity_model, EntityModel):
         entity_model: EntityModel = EntityModel.objects.get(slug__exact=entity_model)
 
-    entity_model.ledgers.all().delete()
-    entity_model.customers.all().delete()
-    entity_model.vendors.all().delete()
-    entity_model.items.all().delete()
+    txs_qs = TransactionModel.objects.for_entity(
+        user_model=user_model,
+        entity_model=entity_model
+    )
+
+    if txs_qs.count() > 0:
+        raise ValidationError(
+            f'Cannot populate random data on {entity_model.name} because it already has existing Transactions')
 
     accounts = AccountModel.on_coa.for_entity_available(
         entity_slug=entity_model.slug,
@@ -519,6 +541,7 @@ def generate_sample_data(entity_model: str or EntityModel,
 
     vendor_models = create_random_vendors(entity_model, fk)
     customer_models = create_random_customers(entity_model, fk)
+    unit_models = create_random_entity_unit_models(entity_model)
 
     bank_accounts = create_bank_accounts(entity_model, fk, accounts_by_role)
 
@@ -561,6 +584,7 @@ def generate_sample_data(entity_model: str or EntityModel,
 
             generate_random_bill(
                 entity_model=entity_model,
+                unit_models=unit_models,
                 vendor_models=vendor_models,
                 is_progressible=is_progressible,
                 progress=progress,
@@ -577,6 +601,7 @@ def generate_sample_data(entity_model: str or EntityModel,
 
             generate_random_invoice(
                 entity_model=entity_model,
+                unit_models=unit_models,
                 customer_models=customer_models,
                 is_progressible=is_progressible,
                 progress=progress,
@@ -625,6 +650,10 @@ def mark_progressible_paid(progressible_model: AccruableItemMixIn, user_model, e
         user_model=user_model,
         entity_slug=entity_slug
     )
+
+    ledger = progressible_model.ledger
+    ledger.locked = True
+    ledger.save(update_fields=['locked'])
 
 
 def get_end_date_from_session(entity_slug: str, request) -> date:
