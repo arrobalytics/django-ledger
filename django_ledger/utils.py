@@ -454,6 +454,10 @@ def generate_random_bill(
         entity_slug=entity_model.slug,
         je_date=issue_dt)
 
+    if is_paid:
+        ledger_model.locked = True
+        ledger_model.save(update_fields=['locked'])
+
 
 def create_bank_accounts(entity_model: EntityModel, fk, accounts_by_role):
     bank_account_models = [
