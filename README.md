@@ -17,9 +17,9 @@ Django Ledger supports:
 - Entity administration & entity manager support.
 - Bank Accounts.
 
-__WARNING__: Currently this project is under active development and is not recommended for production environments.
-Breaking changes may occur in future releases. The author is actively working to provide a stable release as soon as
-possible and to incorporate the following functionality:
+__WARNING__: Currently this project is under active development, it is not stable and is not recommended for production 
+environments. Breaking changes may occur in future releases. The author is actively working to provide a stable release 
+as soon as possible and to incorporate the following functionality:
 
 ## High Level Road Map
 
