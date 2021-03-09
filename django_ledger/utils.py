@@ -43,7 +43,7 @@ def generate_random_item_id(length=20):
 
 def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
-                      user_model: UserModel) -> BillModel:
+                      user_model: UserModel) -> tuple[LedgerModel, InvoiceModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -61,12 +61,12 @@ def new_bill_protocol(bill_model: BillModel,
     )
     ledger_model.clean()
     bill_model.ledger = ledger_model
-    return bill_model
+    return ledger_model, bill_model
 
 
 def new_invoice_protocol(invoice_model: InvoiceModel,
                          entity_slug: str or EntityModel,
-                         user_model: UserModel) -> InvoiceModel:
+                         user_model: UserModel) -> tuple[LedgerModel, InvoiceModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -85,7 +85,7 @@ def new_invoice_protocol(invoice_model: InvoiceModel,
     )
     ledger_model.clean()
     invoice_model.ledger = ledger_model
-    return invoice_model
+    return ledger_model, invoice_model
 
 
 def new_bankaccount_protocol(bank_account_model: BankAccountModel,
@@ -358,13 +358,10 @@ def generate_random_invoice(
         paid_date=paid_dt
     )
 
-    invoice_model = new_invoice_protocol(
+    ledger_model, invoice_model = new_invoice_protocol(
         invoice_model=invoice_model,
         entity_slug=entity_model,
         user_model=user_model)
-
-    invoice_model.clean()
-    invoice_model.save()
 
     invoice_items = [
         InvoiceModelItemsThroughModel(
@@ -379,16 +376,21 @@ def generate_random_invoice(
     for ii in invoice_items:
         ii.clean()
 
-    invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
-    invoice_model.update_amount_due()
-    invoice_model.amount_paid = Decimal(round(random() * float(invoice_model.amount_due), 2))
+    invoice_model.update_amount_due(item_list=invoice_items)
+    invoice_model.amount_paid = Decimal.from_float(round(random() * float(invoice_model.amount_due), 2))
     invoice_model.new_state(commit=True)
     invoice_model.clean()
     invoice_model.save()
+    invoice_items = invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
     invoice_model.migrate_state(
         user_model=user_model,
+        item_models=invoice_items,
         entity_slug=entity_model.slug,
-        je_date=paid_dt)
+        je_date=issue_dt)
+
+    if is_paid:
+        ledger_model.locked = True
+        ledger_model.save(update_fields=['locked'])
 
 
 def generate_random_bill(
@@ -419,14 +421,14 @@ def generate_random_bill(
         paid_date=paid_dt
     )
 
-    bill_model = new_bill_protocol(
+    ledger_model, bill_model = new_bill_protocol(
         bill_model=bill_model,
         entity_slug=entity_model,
         user_model=user_model)
 
-    bill_model.clean()
-    bill_model.save()
-
+    # bill_model.clean()
+    # bill_model.save()
+    #
     bill_items = [
         BillModelItemsThroughModel(
             bill_model=bill_model,
@@ -437,20 +439,20 @@ def generate_random_bill(
         ) for _ in range(randint(1, 10))
     ]
 
-    for ii in bill_items:
-        ii.clean()
+    for bi in bill_items:
+        bi.clean()
 
-    bill_model.billmodelitemsthroughmodel_set.bulk_create(bill_items)
-    bill_model.update_amount_due()
-    bill_model.amount_paid = Decimal(round(random() * float(bill_model.amount_due), 2))
+    bill_model.update_amount_due(item_list=bill_items)
+    bill_model.amount_paid = Decimal.from_float(round(random() * float(bill_model.amount_due), 2))
     bill_model.new_state(commit=True)
     bill_model.clean()
     bill_model.save()
+    bill_items = bill_model.billmodelitemsthroughmodel_set.bulk_create(bill_items)
     bill_model.migrate_state(
         user_model=user_model,
         item_models=bill_items,
         entity_slug=entity_model.slug,
-        je_date=paid_dt)
+        je_date=issue_dt)
 
 
 def create_bank_accounts(entity_model: EntityModel, fk, accounts_by_role):
@@ -542,10 +544,8 @@ def generate_sample_data(entity_model: str or EntityModel,
     vendor_models = create_random_vendors(entity_model, fk)
     customer_models = create_random_customers(entity_model, fk)
     unit_models = create_random_entity_unit_models(entity_model)
-
     bank_accounts = create_bank_accounts(entity_model, fk, accounts_by_role)
 
-    # todo: create bank account models...
     fund_entity(entity_model=entity_model,
                 bank_accounts=bank_accounts,
                 start_dt=start_dt,
@@ -581,7 +581,6 @@ def generate_sample_data(entity_model: str or EntityModel,
         paid_dt = paid_dttm.date() if paid_dttm else None
 
         if i % 2 == 0:
-
             generate_random_bill(
                 entity_model=entity_model,
                 unit_models=unit_models,
@@ -596,9 +595,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                 expense_models=expense_models
             )
 
-
         else:
-
             generate_random_invoice(
                 entity_model=entity_model,
                 unit_models=unit_models,

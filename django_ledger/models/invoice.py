@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
@@ -168,8 +168,10 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-
-    def update_amount_due(self, queryset=None) -> tuple:
+    def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
+        if item_list:
+            self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            return
         queryset, item_data = self.get_invoice_item_data(queryset=queryset)
         self.amount_due = item_data['amount_due']
         return queryset, item_data

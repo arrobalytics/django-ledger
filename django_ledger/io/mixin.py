@@ -103,7 +103,6 @@ def validate_tx_data(tx_data: list):
         IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
 
         while not is_valid:
-            # if not is_valid and abs(diff) <= DJANGO_LEDGER_TRANSACTION_TOLERANCE_CORRECTION:
 
             tx_choice = choice(['debit', 'credit'])
             tx = choice(list(tx for tx in tx_data if tx.tx_type == tx_choice))
