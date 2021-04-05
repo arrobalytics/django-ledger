@@ -21,6 +21,7 @@ from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.mixins import AccruableItemMixIn
 from django_ledger.models.unit import create_entity_unit_slug
+from typing import Tuple
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -43,7 +44,7 @@ def generate_random_item_id(length=20):
 
 def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
-                      user_model: UserModel) -> tuple[LedgerModel, InvoiceModel]:
+                      user_model: UserModel) -> Tuple[LedgerModel, InvoiceModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -66,7 +67,7 @@ def new_bill_protocol(bill_model: BillModel,
 
 def new_invoice_protocol(invoice_model: InvoiceModel,
                          entity_slug: str or EntityModel,
-                         user_model: UserModel) -> tuple[LedgerModel, InvoiceModel]:
+                         user_model: UserModel) -> Tuple[LedgerModel, InvoiceModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)

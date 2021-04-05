@@ -12,20 +12,20 @@
   random data for testing.
 * __0.4.1__: Entity internal organizations, department, branches, etc.
 * __0.4.2__: Custom Accounting Periods.
-* __0.4.3__: Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
-  output.
-* __0.4.4__: Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
-    * Document code and functions within code base.
-    * Generate HTML documentation.
-* Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.5
+
 
 * Inventory tracking.
 * Purchase Order Model implementation.
 * Cash flow statement.
 * Closing entries, snapshots & trial balance import.
+* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
+  output __(help needed)__.
+* Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
+    * Document code and functions within code base.
+    * Generate HTML documentation.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
