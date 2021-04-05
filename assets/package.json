@@ -1,29 +1,29 @@
 {
   "dependencies": {
     "@iconify/iconify": "^1.0.7",
-    "@types/chart.js": "^2.9.24",
-    "@types/lodash": "^4.14.149",
+    "@types/chart.js": "^2.9.31",
+    "@types/lodash": "^4.14.168",
     "animate.css": "^4.1.1",
     "axios": "^0.21.1",
     "bulma": "^0.9.2",
     "bulmaswatch": "^0.8.1",
-    "chart.js": "^2.9.3",
-    "flatpickr": "^4.6.3",
-    "vue": "^2.6.11"
+    "chart.js": "^2.9.4",
+    "flatpickr": "^4.6.9",
+    "vue": "^2.6.12"
   },
   "devDependencies": {
-    "css-loader": "^3.5.2",
-    "file-loader": "^5.1.0",
-    "less": "^3.10.3",
-    "less-loader": "^5.0.0",
-    "node-sass": "^4.14.1",
-    "sass-loader": "^8.0.2",
-    "style-loader": "^1.1.4",
-    "ts-loader": "^6.2.2",
+    "css-loader": "^5.2.0",
+    "file-loader": "^6.2.0",
+    "less": "^4.1.1",
+    "less-loader": "^8.0.0",
+    "node-sass": "^5.0.0",
+    "sass-loader": "^11.0.1",
+    "style-loader": "^2.0.0",
+    "ts-loader": "^8.1.0",
     "typescript": "^3.9.6",
-    "url-loader": "^3.0.0",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11"
+    "url-loader": "^4.1.1",
+    "webpack": "^5.30.0",
+    "webpack-cli": "^4.6.0"
   },
   "scripts": {
     "build": "webpack",
