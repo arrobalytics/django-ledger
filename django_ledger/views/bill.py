@@ -257,7 +257,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
             user_model=self.request.user
         ).prefetch_related(
             'billmodelitemsthroughmodel_set', 'ledger__journal_entries__entity_unit'
-        ).select_related('ledger', 'vendor')
+        ).select_related('ledger', 'vendor', 'cash_account', 'receivable_account', 'payable_account')
 
 
 class BillModelDeleteView(LoginRequiredMixIn, DeleteView):

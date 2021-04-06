@@ -6,4 +6,4 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django_ledger.io.mixin import IOMixIn, validate_tx_data
+from django_ledger.io.io_mixin import IOMixIn, validate_tx_data

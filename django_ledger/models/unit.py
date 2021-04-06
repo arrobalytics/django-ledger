@@ -8,7 +8,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel, TreeForeignKey
 
-from django_ledger.io.mixin import IOMixIn
+from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits

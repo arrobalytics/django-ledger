@@ -241,8 +241,9 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related('invoicemodelitemsthroughmodel_set').select_related('ledger', 'customer')
-
+        ).prefetch_related(
+            'invoicemodelitemsthroughmodel_set'
+        ).select_related('ledger', 'customer', 'cash_account', 'receivable_account', 'payable_account')
 
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
@@ -270,7 +271,6 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
-
 
 class InvoiceModelMarkPaidView(LoginRequiredMixIn,
                                View,

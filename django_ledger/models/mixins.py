@@ -248,6 +248,9 @@ class AccruableItemMixIn(models.Model):
             'balance_type': account.balance_type
         }
 
+    def get_account_balance_data(self, queryset=None):
+        raise NotImplementedError('Must implement get_account_balance_data method.')
+
     def get_migrate_state_desc(self, *args, **kwargs):
         """
         Must be implemented.
@@ -343,7 +346,7 @@ class AccruableItemMixIn(models.Model):
             }
             total_amount = sum(unit_amounts.values())
             unit_percents = {
-                k: (v / total_amount) for k, v in unit_amounts.items()
+                k: (v / total_amount) if progress else Decimal('0.00') for k, v in unit_amounts.items()
             }
 
             current_state = dict()
@@ -404,7 +407,6 @@ class AccruableItemMixIn(models.Model):
                 tx.clean()
 
             validate_tx_data(tx_data=txs_list)
-
             TransactionModel.objects.bulk_create(txs_list)
 
         else:

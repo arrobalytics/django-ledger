@@ -5,7 +5,7 @@ import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
 import django.db.models.manager
-import django_ledger.io.mixin
+import django_ledger.io.io_mixin
 import mptt.fields
 import re
 import uuid
@@ -144,7 +144,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-created'],
                 'abstract': False,
             },
-            bases=(models.Model, django_ledger.io.mixin.IOMixIn),
+            bases=(models.Model, django_ledger.io.io_mixin.IOMixIn),
             managers=[
                 ('_tree_manager', django.db.models.manager.Manager()),
             ],
@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-created'],
                 'abstract': False,
             },
-            bases=(django_ledger.io.mixin.IOMixIn, models.Model),
+            bases=(django_ledger.io.io_mixin.IOMixIn, models.Model),
             managers=[
                 ('_tree_manager', django.db.models.manager.Manager()),
             ],
@@ -346,7 +346,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-created'],
                 'abstract': False,
             },
-            bases=(models.Model, django_ledger.io.mixin.IOMixIn),
+            bases=(models.Model, django_ledger.io.io_mixin.IOMixIn),
         ),
         migrations.AddField(
             model_name='journalentrymodel',

@@ -673,8 +673,11 @@ def prepare_context_by_unit(context: dict):
         if not unit_slug:
             unit_slug = context['request'].GET.get('unit_slug')
             try:
-                by_unit = bool(int(context['request'].GET.get('by_unit')))
+                by_unit = context['request'].GET.get('by_unit')
+                by_unit = bool(int(by_unit))
             except ValueError:
+                by_unit = False
+            except TypeError:
                 by_unit = False
             context['by_unit'] = by_unit
         else:

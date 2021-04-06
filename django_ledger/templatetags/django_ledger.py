@@ -88,7 +88,7 @@ def balance_sheet_table(context, io_model, end_date):
         user_model=user_model,
         equity_only=False,
         entity_slug=entity_slug,
-        unit_slug=context['by_unit'],
+        unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
         to_date=end_date,
         process_groups=True)
@@ -112,7 +112,7 @@ def income_statement_table(context, io_model, start_date, end_date):
         activity=activity,
         user_model=user_model,
         entity_slug=entity_slug,
-        unit_slug=context['by_unit'],
+        unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
         from_date=start_date,
         to_date=end_date,
