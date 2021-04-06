@@ -183,7 +183,7 @@ class EntityModelTests(TestCase):
                 # checks if there is a button with a link to the dashboard...
                 self.assertContains(response,
                                     status_code=200,
-                                    text=reverse('django_ledger:entity-detail',
+                                    text=reverse('django_ledger:entity-dashboard',
                                                  kwargs={
                                                      'entity_slug': entity_model.slug
                                                  }))
@@ -241,7 +241,7 @@ class EntityModelTests(TestCase):
 
         with self.assertNumQueries(2):
             # this will redirect to entity-detail-month...
-            entity_detail_url = reverse('django_ledger:entity-detail',
+            entity_detail_url = reverse('django_ledger:entity-dashboard',
                                         kwargs={
                                             'entity_slug': entity_model.slug
                                         })
@@ -249,7 +249,7 @@ class EntityModelTests(TestCase):
 
         with self.assertNumQueries(9):
             local_dt = localdate()
-            entity_month_detail_url = reverse('django_ledger:entity-detail-month',
+            entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
                                                   'entity_slug': entity_model.slug,
                                                   'year': local_dt.year,

@@ -9,7 +9,7 @@
            href="{% url 'django_ledger:data-import-ofx' entity_slug=view.kwargs.entity_slug %}">
             {% trans 'Import OFX File' %}</a>
         <a class="button is-dark"
-           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">
+           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
             {% trans 'Back' %}</a>
         {% data_import_job_list_table %}
     </div>

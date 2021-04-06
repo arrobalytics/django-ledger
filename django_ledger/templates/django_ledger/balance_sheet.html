@@ -45,7 +45,7 @@
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% elif ledger %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                   href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
         </div>
     </div>

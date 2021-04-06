@@ -41,7 +41,7 @@ class SuccessUrlNextMixIn:
         if next:
             return next
         elif self.kwargs.get('entity_slug'):
-            return reverse('django_ledger:entity-detail',
+            return reverse('django_ledger:entity-dashboard',
                            kwargs={
                                'entity_slug': self.kwargs['entity_slug']
                            })

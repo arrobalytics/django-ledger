@@ -11,9 +11,9 @@
                     <div class="columns is-multiline">
                         <div class="column is-12">
                             {% if view.kwargs.unit_slug or request.GET.unit %}
-                                {% period_navigation 'unit-detail' %}
+                                {% period_navigation 'unit-dashboard' %}
                             {% else %}
-                                {% period_navigation 'entity-detail' %}
+                                {% period_navigation 'entity-dashboard' %}
                             {% endif %}
                         </div>
                         <div class="column is-12">

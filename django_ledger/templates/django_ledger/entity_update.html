@@ -16,7 +16,7 @@
                                 type="submit">{% trans 'Update' %}
                         </button>
                         <a class="button is-small is-fullwidth is-dark"
-                           href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">
+                           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
                             {% trans 'Back' %}
                         </a>
                     </form>

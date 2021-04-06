@@ -29,7 +29,7 @@ class ChartOfAccountsUpdateView(LoginRequiredMixIn, UpdateView):
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
-        return reverse('django_ledger:entity-detail',
+        return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': entity_slug
                        })

@@ -4,7 +4,9 @@
 {% load django_ledger %}
 
 {% block aux_menu %}
-    {% if entity %}
+    {% if unit_model %}
+        <div class="column is-12">{% period_navigation 'unit-ic' %}</div>
+    {% elif entity %}
         <div class="column is-12">{% period_navigation 'entity-ic' %}</div>
     {% elif ledger %}
         <div class="column is-12">{% period_navigation 'ledger-ic' %}</div>
@@ -45,7 +47,7 @@
                     Back</a>
             {% elif entity %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"
-                   href="{% url 'django_ledger:entity-detail' entity_slug=view.kwargs.entity_slug %}">Go
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
                     Back</a>
             {% endif %}
         </div>

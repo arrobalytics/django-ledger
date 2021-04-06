@@ -77,8 +77,8 @@ class EntityModelAbstract(MPTTModel,
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self):
-        return reverse('django_ledger:entity-detail',
+    def get_dashboard_url(self):
+        return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.slug
                        })

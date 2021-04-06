@@ -260,7 +260,7 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
         return context
 
     def get_success_url(self):
-        return reverse('django_ledger:entity-detail',
+        return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })

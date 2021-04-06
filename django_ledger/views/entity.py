@@ -141,14 +141,14 @@ class EntityModelDetailView(EntityUnitMixIn, LoginRequiredMixIn, RedirectView):
         loc_date = localdate()
         unit_slug = self.get_unit_slug()
         if unit_slug:
-            return reverse('django_ledger:unit-detail-month',
+            return reverse('django_ledger:unit-dashboard-month',
                            kwargs={
                                'entity_slug': self.kwargs['entity_slug'],
                                'unit_slug': unit_slug,
                                'year': loc_date.year,
                                'month': loc_date.month,
                            })
-        return reverse('django_ledger:entity-detail-month',
+        return reverse('django_ledger:entity-dashboard-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
                            'year': loc_date.year,
@@ -253,7 +253,7 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         ).select_related('customer').order_by('due_date')
         unit_slug = self.get_unit_slug()
         if unit_slug:
-            qs = qs.filter(ledger__unit__slug__exact=unit_slug)
+            qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
         return qs
 
     def get_unpaid_bills_qs(self):
@@ -266,7 +266,7 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         ).select_related('vendor').order_by('due_date')
         unit_slug = self.get_unit_slug()
         if unit_slug:
-            qs = qs.filter(ledger__unit__slug__exact=unit_slug)
+            qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
         return qs
 
 
@@ -363,10 +363,10 @@ class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Income Statement: ') + self.object.name
         context['header_title'] = _('Income Statement: ') + self.object.name
-        unit_slug = self.request.GET.get('unit')
+        unit_slug = self.kwargs.get('unit_slug')
         if unit_slug:
             context['unit_model'] = get_object_or_404(EntityUnitModel,
-                                                      slug=unit_slug,
+                                                      slug__exact=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
@@ -395,7 +395,7 @@ class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):
         session_key = get_default_entity_session_key()
         if form.is_valid():
             entity_model = form.cleaned_data['entity_model']
-            self.url = reverse('django_ledger:entity-detail',
+            self.url = reverse('django_ledger:entity-dashboard',
                                kwargs={
                                    'entity_slug': entity_model.slug
                                })
@@ -423,7 +423,7 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
             as_of_form.clean()
             end_date = as_of_form.cleaned_data['date']
             set_session_date_filter(request, entity_slug, end_date)
-            self.url = reverse('django_ledger:entity-detail-date',
+            self.url = reverse('django_ledger:entity-dashboard-date',
                                kwargs={
                                    'entity_slug': self.kwargs['entity_slug'],
                                    'year': end_date.year,
@@ -436,7 +436,7 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
 class GenerateSampleData(LoginRequiredMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:entity-detail',
+        return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })

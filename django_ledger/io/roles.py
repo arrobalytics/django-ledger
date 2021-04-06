@@ -378,12 +378,11 @@ class GroupManager:
 
     def process_groups(self):
         for g in ROLES_GROUPS:
-            acc_list = self.get_accounts_generator(mod, g)
-            self.GROUPS_ACCOUNTS[g] = list(acc_list)
-            self.GROUPS_BALANCES[g] = sum(acc['balance'] for acc in self.get_accounts_generator(mod, g))
+            acc_list = list(self.get_accounts_generator(mod, g))
+            self.GROUPS_ACCOUNTS[g] = acc_list
+            self.GROUPS_BALANCES[g] = sum(acc['balance'] for acc in acc_list)
 
             if self.BY_PERIOD:
-                acc_list = self.get_accounts_generator(mod, g)
                 for acc in acc_list:
                     per_key = (acc['period_year'], acc['period_month'])
                     self.GROUPS_BALANCES_BY_PERIOD[per_key][g] = sum(
@@ -393,7 +392,6 @@ class GroupManager:
                         ))
 
             if self.BY_UNIT:
-                acc_list = self.get_accounts_generator(mod, g)
                 for acc in acc_list:
                     per_key = (acc['unit_uuid'],)
                     self.GROUPS_BALANCES_BY_UNIT[per_key][g] = sum(

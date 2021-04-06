@@ -169,7 +169,7 @@ class EntityUnitModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityUnitModelIncomeStatementView(FiscalYearEntityUnitModelBalanceSheetView):
+class FiscalYearEntityUnitModelIncomeStatementView(FiscalYearEntityModelIncomeStatementView):
     """
     Entity Unit Fiscal Quarter Income Statement View Class
     """
