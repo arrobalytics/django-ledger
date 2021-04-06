@@ -3,6 +3,7 @@ from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
 from string import ascii_uppercase, ascii_lowercase, digits
+from typing import Tuple
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -21,7 +22,6 @@ from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.invoice import generate_invoice_number
 from django_ledger.models.mixins import AccruableItemMixIn
 from django_ledger.models.unit import create_entity_unit_slug
-from typing import Tuple
 
 UserModel = get_user_model()
 FAKER_IMPORTED = False
@@ -370,7 +370,7 @@ def generate_random_invoice(
             item_model=choice(product_models),
             quantity=round(random() * randint(1, 5), 2),
             unit_cost=round(random() * randint(100, 999), 2),
-            entity_unit=choice(unit_models) if random() > .5 else None
+            entity_unit=choice(unit_models) if random() > .75 else None
         ) for _ in range(randint(1, 10))
     ]
 
@@ -427,16 +427,13 @@ def generate_random_bill(
         entity_slug=entity_model,
         user_model=user_model)
 
-    # bill_model.clean()
-    # bill_model.save()
-    #
     bill_items = [
         BillModelItemsThroughModel(
             bill_model=bill_model,
             item_model=choice(expense_models),
             quantity=round(random() * randint(1, 5), 2),
             unit_cost=round(random() * randint(100, 800), 2),
-            entity_unit=choice(unit_models) if random() > .5 else None
+            entity_unit=choice(unit_models) if random() > .75 else None
         ) for _ in range(randint(1, 10))
     ]
 
@@ -542,6 +539,7 @@ def generate_sample_data(entity_model: str or EntityModel,
         entity_slug=entity_model.slug,
         user_model=user_model
     ).order_by('role')
+
     accounts_by_role = {
         g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
     }
@@ -663,3 +661,24 @@ def get_end_date_from_session(entity_slug: str, request) -> date:
     end_date = request.session.get(session_end_date_filter)
     end_date = parse_date(end_date) if end_date else localdate()
     return end_date
+
+
+def prepare_context_by_unit(context: dict):
+    unit_model = context.get('unit_model')
+    if unit_model:
+        unit_slug = unit_model.slug
+        by_unit = True
+    else:
+        unit_slug = context['view'].kwargs.get('unit_slug')
+        if not unit_slug:
+            unit_slug = context['request'].GET.get('unit_slug')
+            try:
+                by_unit = bool(int(context['request'].GET.get('by_unit')))
+            except ValueError:
+                by_unit = False
+            context['by_unit'] = by_unit
+        else:
+            by_unit = False
+    context['unit_slug'] = unit_slug
+    context['unit_model'] = unit_model
+    context['by_unit'] = by_unit

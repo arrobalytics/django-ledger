@@ -16,6 +16,7 @@
 {% block view_content %}
     <div class="card">
         <div class="card-content has-text-centered">
+
             <div class="container mb-4">
                 <div class="columns">
                     <div class="column">
@@ -39,6 +40,7 @@
                     </div>
                 </div>
             </div>
+
             {% balance_sheet_table io_model=object end_date=end_date %}
             {% if entity %}
                 <a class="button is-fullwidth is-dark is-small djetler_my_1"

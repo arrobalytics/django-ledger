@@ -234,11 +234,12 @@ class IOMixIn:
         return je_model, txs_models
 
     @staticmethod
-    def digest_gb_accounts(k, g):
+    def digest_gb_accounts(k, g, by_unit: bool):
         gl = list(g)
         return {
             'account_uuid': k[0],
             'unit_uuid': k[1],
+            'unit_name': gl[0]['journal_entry__entity_unit__name'] if by_unit else None,
             'period_year': k[2],
             'period_month': k[3],
             'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
@@ -340,8 +341,10 @@ class IOMixIn:
             'account__code',
             'account__name',
             'account__role',
-            'journal_entry__entity_unit__uuid'
         ]
+
+        if by_unit:
+            VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
 
         txs_qs = txs_qs.values(*VALUES)
 
@@ -408,7 +411,7 @@ class IOMixIn:
                                    ))
 
         gb_digest = [
-            self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
+            self.digest_gb_accounts(k, g, by_unit) for k, g in accounts_gb_code
         ]
 
         if signs:

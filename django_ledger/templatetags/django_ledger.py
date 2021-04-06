@@ -17,12 +17,12 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.models import TransactionModel, BillModel, InvoiceModel
+from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.models.journalentry import validate_activity
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
-from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session
+from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session, prepare_context_by_unit
 
 register = template.Library()
 
@@ -80,37 +80,49 @@ def balance_sheet_table(context, io_model, end_date):
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
-    unit_slug = context['view'].kwargs.get('unit')
-    if not unit_slug:
-        unit_slug = context['request'].GET.get('unit')
-    return io_model.digest(
+
+    prepare_context_by_unit(context)
+
+    digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         equity_only=False,
         entity_slug=entity_slug,
-        unit_slug=unit_slug,
+        unit_slug=context['by_unit'],
+        by_unit=context['by_unit'],
         to_date=end_date,
         process_groups=True)
+
+    digest['by_unit'] = context['by_unit']
+    digest['unit_model'] = context['unit_model']
+    digest['unit_slug'] = context['unit_slug']
+    return digest
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, io_model, start_date, end_date):
-    user_model = context['user']
+    user_model: EntityUnitModel = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
-    unit_slug = context['view'].kwargs.get('unit')
-    if not unit_slug:
-        unit_slug = context['request'].GET.get('unit')
-    return io_model.digest(
+
+    prepare_context_by_unit(context)
+
+    digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         entity_slug=entity_slug,
-        unit_slug=unit_slug,
+        unit_slug=context['by_unit'],
+        by_unit=context['by_unit'],
         from_date=start_date,
         to_date=end_date,
         equity_only=True,
         process_groups=True)
+
+    digest['by_unit'] = context['by_unit']
+    digest['unit_model'] = context['unit_model']
+    digest['unit_slug'] = context['unit_slug']
+    return digest
 
 
 @register.inclusion_tag('django_ledger/tags/bank_accounts_table.html', takes_context=True)
