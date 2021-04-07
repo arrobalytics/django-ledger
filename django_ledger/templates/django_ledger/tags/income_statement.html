@@ -6,12 +6,18 @@
         <tr>
             <th>Account Number</th>
             <th>Description</th>
+            {% if by_unit %}
+                <th>Unit</th>
+            {% endif %}
             <th>Balance Type</th>
             <th>Balance</th>
         </tr>
         <tr>
             <td><h2 class="is-size-3">{% trans 'Income' %}</h2></td>
             <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
             <td></td>
             <td></td>
         </tr>
@@ -26,12 +32,18 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
+                {% if by_unit %}
+                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                {% endif %}
                 <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr class="has-text-weight-bold">
             <td>Total Income</td>
             <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_INCOME | currency_format }}</td>
         </tr>
@@ -41,6 +53,9 @@
             <td><h2 class="is-size-3">{% trans 'Expenses' %}</h2></td>
             <td></td>
             <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
             <td></td>
         </tr>
         {% for acc in tx_digest.group_account.GROUP_EXPENSES %}
@@ -54,20 +69,28 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
+                {% if by_unit %}
+                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                {% endif %}
                 <td>{% currency_symbol %}{{ acc.balance | reverse_sing | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr class="has-text-weight-bold">
             <td>Total Expenses</td>
             <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sing | currency_format }}</td>
         </tr>
 
-
         <tr class="has-text-weight-bold">
             <td>Total Income (Loss)</td>
             <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
         </tr>

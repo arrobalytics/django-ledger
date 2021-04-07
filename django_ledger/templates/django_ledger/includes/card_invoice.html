@@ -88,7 +88,7 @@
 
                     <p>Amount Paid: {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
 
-                    <p>Progressed: {{ invoice.get_progress | percentage }}</p><br>
+                    <p>Progressed: {{ invoice.get_progress_percent }}%</p><br>
                     <progress class="progress is-medium is-success"
                               value="{{ invoice.get_progress_percent }}"
                               max="100">

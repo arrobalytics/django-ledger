@@ -39,8 +39,7 @@
 
                             <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
                             <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
-                            <h4 class="has-text-weight-light">Make Invoice
-                                Progressible: {{ form.progressible }}</h4>
+                            <h4 class="has-text-weight-light">Accrue Invoice: {{ form.accrue }}</h4>
 
                         </div>
 
@@ -118,9 +117,9 @@
                                     <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
                                     <p>{{ invoice.cash_account }}:
                                         ${{ invoice.get_amount_cash | currency_format }}</p>
-                                    <p>{{ invoice.receivable_account }}:
+                                    <p>{{ invoice.prepaid_account }}:
                                         ${{ invoice.get_amount_receivable | currency_format }}</p>
-                                    <p>{{ invoice.payable_account }}:
+                                    <p>{{ invoice.unearned_account }}:
                                         ${{ invoice.get_amount_payable | currency_format }}</p>
                                     <p>{{ invoice.earnings_account }}:
                                         ${{ invoice.get_amount_earned | currency_format }}</p>
@@ -128,9 +127,9 @@
                                 <div class="column is-12">
                                     <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
                                     <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | currency_format }}</p>
-                                    <p>{{ invoice.receivable_account }}:
+                                    <p>{{ invoice.prepaid_account }}:
                                         ${{ invoice.amount_receivable | currency_format }}</p>
-                                    <p>{{ invoice.payable_account }}:
+                                    <p>{{ invoice.unearned_account }}:
                                         ${{ invoice.amount_unearned | currency_format }}</p>
                                     <p>{{ invoice.earnings_account }}:
                                         ${{ invoice.amount_earned | currency_format }}</p>

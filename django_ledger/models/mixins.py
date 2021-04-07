@@ -140,7 +140,7 @@ class AccruableItemMixIn(models.Model):
     void = models.BooleanField(default=False, verbose_name=_('Void'))
     void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
 
-    progressible = models.BooleanField(default=False, verbose_name=_('Progressible'))
+    accrue = models.BooleanField(default=False, verbose_name=_('Progressible'))
     progress = models.DecimalField(default=0,
                                    verbose_name=_('Progress Amount'),
                                    decimal_places=2,
@@ -157,32 +157,27 @@ class AccruableItemMixIn(models.Model):
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
-    receivable_account = models.ForeignKey('django_ledger.AccountModel',
-                                           on_delete=models.CASCADE,
-                                           verbose_name=_('Receivable Account'),
-                                           related_name=f'{REL_NAME_PREFIX}_receivable_account')
-    payable_account = models.ForeignKey('django_ledger.AccountModel',
+    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
                                         on_delete=models.CASCADE,
-                                        verbose_name=_('Payable Account'),
-                                        related_name=f'{REL_NAME_PREFIX}_payable_account')
-    earnings_account = models.ForeignKey('django_ledger.AccountModel',
+                                        verbose_name=_('Prepaid Account'),
+                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
+    unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.CASCADE,
-                                         verbose_name=_('Income Account'),
-                                         related_name=f'{REL_NAME_PREFIX}_income_account')
+                                         verbose_name=_('Unearned Account'),
+                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
 
     class Meta:
         abstract = True
 
     def get_progress(self):
-        if self.progressible:
+        if self.accrue:
             return self.progress
         if not self.amount_due:
             return 0
         return (self.amount_paid or 0) / self.amount_due
-        # return Decimal(round(((self.amount_paid or 0) / self.amount_due), 2))
 
     def get_progress_percent(self):
-        return self.get_progress() * 100
+        return round(self.get_progress() * 100, 2)
 
     def get_amount_cash(self):
         if self.IS_DEBIT_BALANCE:
@@ -191,7 +186,7 @@ class AccruableItemMixIn(models.Model):
             return -self.amount_paid
 
     def get_amount_earned(self):
-        if self.progressible:
+        if self.accrue:
             amount_due = self.amount_due or 0
             return self.get_progress() * amount_due
         else:
@@ -199,7 +194,7 @@ class AccruableItemMixIn(models.Model):
 
     def get_amount_prepaid(self):
         payments = self.amount_paid or 0
-        if self.progressible:
+        if self.accrue:
             amt_earned = self.get_amount_earned()
             if all([self.IS_DEBIT_BALANCE,
                     amt_earned >= payments]):
@@ -210,7 +205,7 @@ class AccruableItemMixIn(models.Model):
         return 0
 
     def get_amount_unearned(self):
-        if self.progressible:
+        if self.accrue:
             amt_earned = self.get_amount_earned()
             if all([self.IS_DEBIT_BALANCE,
                     amt_earned <= self.amount_paid]):
@@ -221,7 +216,7 @@ class AccruableItemMixIn(models.Model):
         return 0
 
     def get_amount_open(self):
-        if self.progressible:
+        if self.accrue:
             amount_due = self.amount_due or 0
             return amount_due - self.get_amount_earned()
         else:
@@ -359,13 +354,13 @@ class AccruableItemMixIn(models.Model):
             current_state.update(self.split_amount(
                 amount=new_state['amount_receivable'],
                 unit_split=unit_percents,
-                account_uuid=self.receivable_account_id,
+                account_uuid=self.prepaid_account_id,
                 account_balance_type='debit'
             ))
             current_state.update(self.split_amount(
                 amount=new_state['amount_unearned'],
                 unit_split=unit_percents,
-                account_uuid=self.payable_account_id,
+                account_uuid=self.unearned_account_id,
                 account_balance_type='credit'
             ))
             current_state.update(account_balance_data_idx)
@@ -458,23 +453,23 @@ class AccruableItemMixIn(models.Model):
             self.date = localdate()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
-        if self.receivable_account.role != ASSET_CA_RECEIVABLES:
-            raise ValidationError(f'Receivable account must be of role {ASSET_CA_RECEIVABLES}')
-        if self.payable_account.role != LIABILITY_CL_ACC_PAYABLE:
-            raise ValidationError(f'Payable account must be of role {LIABILITY_CL_ACC_PAYABLE}')
+        if self.prepaid_account.role != ASSET_CA_RECEIVABLES:
+            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}')
+        if self.unearned_account.role != LIABILITY_CL_ACC_PAYABLE:
+            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}')
 
-        if all([
-            self.IS_DEBIT_BALANCE,
-            self.earnings_account.role not in GROUP_INCOME
-        ]):
-            raise ValidationError(f'Earnings account must be of role {GROUP_INCOME}')
-        elif all([
-            not self.IS_DEBIT_BALANCE,
-            self.earnings_account.role not in GROUP_EXPENSES
-        ]):
-            raise ValidationError(f'Earnings account must be of role {GROUP_EXPENSES}')
+        # if all([
+        #     self.IS_DEBIT_BALANCE,
+        #     self.earnings_account.role not in GROUP_INCOME
+        # ]):
+        #     raise ValidationError(f'Earnings account must be of role {GROUP_INCOME}')
+        # elif all([
+        #     not self.IS_DEBIT_BALANCE,
+        #     self.earnings_account.role not in GROUP_EXPENSES
+        # ]):
+        #     raise ValidationError(f'Earnings account must be of role {GROUP_EXPENSES}')
 
-        if self.progressible and self.progress is None:
+        if self.accrue and self.progress is None:
             self.progress = 0
 
         if self.terms != 'on_receipt':

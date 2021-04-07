@@ -75,7 +75,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
                 user_model=self.request.user,
                 start_dt=localtime() - timedelta(days=30 * 6),
                 days_fw=30 * 9,
-                tx_quantity=50
+                tx_quantity=5
             )
         self.object = entity
         return super().form_valid(form)
@@ -448,6 +448,6 @@ class GenerateSampleData(LoginRequiredMixIn, RedirectView):
                 user_model=self.request.user,
                 start_dt=localtime() - timedelta(days=30 * 6),
                 days_fw=30 * 9,
-                tx_quantity=50
+                tx_quantity=5
             )
         return super().get(request, *args, **kwargs)

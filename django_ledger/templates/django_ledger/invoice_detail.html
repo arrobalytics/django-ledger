@@ -26,21 +26,59 @@
 
         <div class="column is-8">
             <div class="columns is-multiline">
-
                 <div class="column is-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h2 class="card-header-title has-text-weight-light is-size-3">
-                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
-                                {% trans 'Invoice Transactions' %}
-                            </h2>
+                    <nav class="level">
+                        <div class="level-item has-text-centered">
+                            <div>
+                                <p class="heading">Cash Account:
+                                    <a href="{% url 'django_ledger:account-detail' account_pk=invoice.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                       class="has-text-danger">{{ invoice.cash_account.code }}</a>
+                                <p class="title">
+                                    {% currency_symbol %}{{ invoice.get_amount_cash | absolute | currency_format }}</p>
+                            </div>
                         </div>
-                        <div class="card-content">
-                            {% invoice_txs_table invoice %}
-                        </div>
-                    </div>
-                </div>
 
+                        {% if invoice.progressible %}
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Prepaid Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=invoice.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ invoice.prepaid_account.code }}</a>
+                                    </p>
+                                    <p class="title has-text-success">
+                                        {% currency_symbol %}{{ invoice.get_amount_prepaid | currency_format }}</p>
+                                </div>
+                            </div>
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Unearned Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=invoice.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ invoice.unearned_account.code }}</a>
+
+                                    </p>
+                                    <p class="title has-text-danger">
+                                        {% currency_symbol %}{{ invoice.get_amount_unearned | currency_format }}</p>
+                                </div>
+                            </div>
+
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Accrued {{ invoice.get_progress_percent }}%</p>
+                                    <p class="title">
+                                        {% currency_symbol %}{{ invoice.get_amount_earned | currency_format }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">You Still Owe</p>
+                                    <p class="title has-text-danger">
+                                        {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </nav>
+                </div>
                 <div class="column is-12">
                     <div class="card">
                         <div class="card-header">
@@ -51,7 +89,7 @@
                         </div>
                         <div class="card-content">
                             <div class="table-container">
-                                <table class="table is-fullwidth is-narrow">
+                                <table class="table is-fullwidth is-narrow is-stripped is-bordered">
 
                                     <thead>
                                     <tr>
@@ -78,8 +116,9 @@
                                         <th></th>
                                         <th>{% trans 'Total' %}</th>
                                         <th>
-                                            {% currency_symbol %}{{ total_amount_due | currency_format }}</th>
-                                        <th></th>
+                                            {% currency_symbol %}{{ total_amount_due | currency_format }}
+                                        </th>
+
                                     </tr>
                                     </tfoot>
                                 </table>
@@ -87,6 +126,20 @@
                         </div>
                     </div>
                 </div>
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-header-title has-text-weight-light is-size-3">
+                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>
+                                {% trans 'Invoice Transactions' %}
+                            </h2>
+                        </div>
+                        <div class="card-content">
+                            {% invoice_txs_table invoice %}
+                        </div>
+                    </div>
+                </div>
+
 
             </div>
         </div>

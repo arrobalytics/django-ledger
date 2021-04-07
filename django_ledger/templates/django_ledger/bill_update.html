@@ -131,9 +131,9 @@
                                     <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
                                     <p>{{ bill.cash_account }}:
                                         ${{ bill.get_amount_cash | currency_format }}</p>
-                                    <p>{{ bill.receivable_account }}:
+                                    <p>{{ bill.prepaid_account }}:
                                         ${{ bill.get_amount_receivable | currency_format }}</p>
-                                    <p>{{ bill.payable_account }}:
+                                    <p>{{ bill.unearned_account }}:
                                         ${{ bill.get_amount_payable | currency_format }}</p>
                                     <p>{{ bill.earnings_account }}:
                                         ${{ bill.get_amount_earned | currency_format }}</p>
@@ -141,9 +141,9 @@
                                 <div class="column is-12">
                                     <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
                                     <p>{{ bill.cash_account }}: ${{ bill.amount_paid | currency_format }}</p>
-                                    <p>{{ bill.receivable_account }}:
+                                    <p>{{ bill.prepaid_account }}:
                                         ${{ bill.amount_receivable | currency_format }}</p>
-                                    <p>{{ bill.payable_account }}:
+                                    <p>{{ bill.unearned_account }}:
                                         ${{ bill.amount_unearned | currency_format }}</p>
                                     <p>{{ bill.earnings_account }}:
                                         ${{ bill.amount_earned | currency_format }}</p>

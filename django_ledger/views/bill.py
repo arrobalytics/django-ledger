@@ -19,7 +19,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset
 from django_ledger.models import EntityModel
 from django_ledger.models.bill import BillModel
-from django_ledger.utils import new_bill_protocol, mark_progressible_paid
+from django_ledger.utils import new_bill_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -257,7 +257,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
             user_model=self.request.user
         ).prefetch_related(
             'billmodelitemsthroughmodel_set', 'ledger__journal_entries__entity_unit'
-        ).select_related('ledger', 'vendor', 'cash_account', 'receivable_account', 'payable_account')
+        ).select_related('ledger', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
 
 
 class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
@@ -304,8 +304,8 @@ class BillModelMarkPaidView(LoginRequiredMixIn,
 
     def post(self, request, *args, **kwargs):
         bill: BillModel = self.get_object()
-        mark_progressible_paid(
-            progressible_model=bill,
+        mark_accruable_paid(
+            accruable_model=bill,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )

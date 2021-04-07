@@ -17,7 +17,7 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
 from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
-from django_ledger.utils import progressible_net_summary
+from django_ledger.utils import accruable_net_summary
 from django_ledger.views.mixins import LoginRequiredMixIn, EntityUnitMixIn
 
 
@@ -88,7 +88,7 @@ class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
             if unit_slug:
                 bill_qs.filter(ledger__unit__slug__exact=unit_slug)
 
-            net_summary = progressible_net_summary(bill_qs)
+            net_summary = accruable_net_summary(bill_qs)
             entity_model = bill_qs.first().ledger.entity
             net_payables = {
                 'entity_slug': self.kwargs['entity_slug'],
@@ -127,7 +127,7 @@ class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
             if unit_slug:
                 invoice_qs.filter(ledger__unit__slug__exact=unit_slug)
 
-            net_summary = progressible_net_summary(invoice_qs)
+            net_summary = accruable_net_summary(invoice_qs)
             entity_model = invoice_qs.first().ledger.entity
             net_receivable = {
                 'entity_slug': self.kwargs['entity_slug'],

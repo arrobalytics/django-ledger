@@ -28,9 +28,9 @@
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% endif %}
                         <h1 class="is-size-2 has-text-weight-bold">{% trans 'Balance Sheet' %}</h1>
-                       {% if unit_model %}
-                           <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
-                       {% endif %}
+                        {% if unit_model %}
+                            <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
+                        {% endif %}
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}
@@ -43,12 +43,15 @@
 
             {% balance_sheet_table io_model=object end_date=end_date %}
             {% if entity %}
-                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                <a class="button is-fullwidth is-dark is-small mb-1"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% elif ledger %}
-                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                <a class="button is-fullwidth is-dark is-small my-2"
                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
+            <a class="button is-fullwidth is-light is-small my-2"
+               href="?by_unit=1">{% trans 'By Unit' %}</a>
+
         </div>
     </div>
 {% endblock %}

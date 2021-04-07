@@ -336,7 +336,7 @@ def generate_random_invoice(
         unit_models: list,
         customer_models,
         user_model,
-        is_progressible: bool,
+        is_accruable: bool,
         progress: float,
         accounts_by_role: dict,
         issue_dt: date,
@@ -345,15 +345,14 @@ def generate_random_invoice(
         product_models):
     invoice_model = InvoiceModel(
         customer=choice(customer_models),
-        progressible=is_progressible,
+        accrue=is_accruable,
         progress=progress,
         terms=choice(InvoiceModel.TERMS)[0],
         invoice_number=generate_invoice_number(),
         amount_due=0,
         cash_account=choice(accounts_by_role['asset_ca_cash']),
-        receivable_account=choice(accounts_by_role['asset_ca_recv']),
-        payable_account=choice(accounts_by_role['lia_cl_acc_pay']),
-        earnings_account=choice(accounts_by_role['in_sales']),
+        prepaid_account=choice(accounts_by_role['asset_ca_recv']),
+        unearned_account=choice(accounts_by_role['lia_cl_acc_pay']),
         date=issue_dt,
         paid=is_paid,
         paid_date=paid_dt
@@ -400,23 +399,22 @@ def generate_random_bill(
         user_model,
         vendor_models: list,
         expense_models: list,
-        is_progressible: bool,
+        is_accruable: bool,
         progress: float,
         accounts_by_role: dict,
         issue_dt: date,
         is_paid: bool,
         paid_dt: date):
-    bill_model = BillModel(
+    bill_model: BillModel = BillModel(
         vendor=choice(vendor_models),
-        progressible=is_progressible,
+        accrue=is_accruable,
         progress=progress,
         terms=choice(BillModel.TERMS)[0],
         bill_number=generate_bill_number(),
         amount_due=0,
         cash_account=choice(accounts_by_role['asset_ca_cash']),
-        receivable_account=choice(accounts_by_role['asset_ca_recv']),
-        payable_account=choice(accounts_by_role['lia_cl_acc_pay']),
-        earnings_account=choice(accounts_by_role['ex_op']),
+        prepaid_account=choice(accounts_by_role['asset_ca_recv']),
+        unearned_account=choice(accounts_by_role['lia_cl_acc_pay']),
         date=issue_dt,
         paid=is_paid,
         paid_date=paid_dt
@@ -504,8 +502,8 @@ def generate_sample_data(entity_model: str or EntityModel,
                          cap_contribution: float or int = 20000,
                          # income_tx_avg: float or int = 2000,
                          # expense_tx_avg: float or int = 1000,
-                         tx_quantity: int = 100,
-                         is_progressible_probability: float = 0.2,
+                         tx_quantity: int = 5,
+                         is_accruable_probability: float = 0.2,
                          is_paid_probability: float = 0.90):
     try:
         from faker import Faker
@@ -571,8 +569,8 @@ def generate_sample_data(entity_model: str or EntityModel,
         if issue_dttm > loc_time:
             issue_dttm = loc_time
 
-        is_progressible = random() < is_progressible_probability
-        progress = Decimal(round(random(), 2)) if is_progressible else 0
+        is_accruable = random() < is_accruable_probability
+        progress = Decimal(round(random(), 2)) if is_accruable else 0
 
         is_paid = random() < is_paid_probability
         paid_dttm = issue_dttm + timedelta(days=randint(0, 60)) if is_paid else None
@@ -588,7 +586,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                 entity_model=entity_model,
                 unit_models=unit_models,
                 vendor_models=vendor_models,
-                is_progressible=is_progressible,
+                is_accruable=is_accruable,
                 progress=progress,
                 accounts_by_role=accounts_by_role,
                 issue_dt=issue_dt,
@@ -603,7 +601,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                 entity_model=entity_model,
                 unit_models=unit_models,
                 customer_models=customer_models,
-                is_progressible=is_progressible,
+                is_accruable=is_accruable,
                 progress=progress,
                 accounts_by_role=accounts_by_role,
                 issue_dt=issue_dt,
@@ -614,13 +612,13 @@ def generate_sample_data(entity_model: str or EntityModel,
             )
 
 
-def progressible_net_summary(queryset: QuerySet) -> dict:
+def accruable_net_summary(queryset: QuerySet) -> dict:
     """
-    A convenience function that computes current net summary of progressible models.
+    A convenience function that computes current net summary of accruable models.
     "net_30" group indicates the total amount is due in 30 days or less.
     "net_0" group indicates total past due amount.
 
-    :param queryset: Progressible Objects Queryset.
+    :param queryset: Accruable Objects Queryset.
     :return: A dictionary summarizing current net summary 0,30,60,90,90+ bill open amounts.
     """
     nets = {
@@ -642,16 +640,16 @@ def progressible_net_summary(queryset: QuerySet) -> dict:
     return nets
 
 
-def mark_progressible_paid(progressible_model: AccruableItemMixIn, user_model, entity_slug: str):
-    progressible_model.paid = True
-    progressible_model.clean()
-    progressible_model.save()
-    progressible_model.migrate_state(
+def mark_accruable_paid(accruable_model: AccruableItemMixIn, user_model, entity_slug: str):
+    accruable_model.paid = True
+    accruable_model.clean()
+    accruable_model.save()
+    accruable_model.migrate_state(
         user_model=user_model,
         entity_slug=entity_slug
     )
 
-    ledger = progressible_model.ledger
+    ledger = accruable_model.ledger
     ledger.locked = True
     ledger.save(update_fields=['locked'])
 

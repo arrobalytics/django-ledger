@@ -21,7 +21,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, InvoiceItemFormset
 from django_ledger.models import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import new_invoice_protocol, mark_progressible_paid
+from django_ledger.utils import new_invoice_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -138,7 +138,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         invoice_pk = self.kwargs['invoice_pk']
-        return reverse('django_ledger:invoice-update',
+        return reverse('django_ledger:invoice-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'invoice_pk': invoice_pk
@@ -243,7 +243,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
             user_model=self.request.user
         ).prefetch_related(
             'invoicemodelitemsthroughmodel_set'
-        ).select_related('ledger', 'customer', 'cash_account', 'receivable_account', 'payable_account')
+        ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
 
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
@@ -287,8 +287,8 @@ class InvoiceModelMarkPaidView(LoginRequiredMixIn,
 
     def post(self, request, *args, **kwargs):
         invoice: InvoiceModel = self.get_object()
-        mark_progressible_paid(
-            progressible_model=invoice,
+        mark_accruable_paid(
+            accruable_model=invoice,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )

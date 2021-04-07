@@ -23,9 +23,8 @@ class BillModelCreateForm(ModelForm):
         len(account_qs)
 
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
-        self.fields['receivable_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
-        self.fields['payable_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
-        self.fields['earnings_account'].queryset = account_qs.filter(role__in=GROUP_EXPENSES)
+        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
+        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
 
         vendor_qs = VendorModel.objects.for_entity(
             user_model=self.USER_MODEL,
@@ -43,9 +42,8 @@ class BillModelCreateForm(ModelForm):
             'terms',
 
             'cash_account',
-            'receivable_account',
-            'payable_account',
-            'earnings_account',
+            'prepaid_account',
+            'unearned_account',
 
         ]
         widgets = {
@@ -67,9 +65,8 @@ class BillModelCreateForm(ModelForm):
             }),
 
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'receivable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'payable_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'earnings_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'prepaid_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
         }
 
 
@@ -97,7 +94,7 @@ class BillModelUpdateForm(ModelForm):
             'paid',
             'paid_date',
             'progress',
-            'progressible'
+            'accrue'
         ]
         widgets = {
             'xref': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -115,7 +112,7 @@ class BillModelUpdateForm(ModelForm):
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 }),
             'progress': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'progressible': CheckboxInput(attrs={'type': 'checkbox'}),
+            'accrue': CheckboxInput(attrs={'type': 'checkbox'}),
             'paid': CheckboxInput(attrs={'type': 'checkbox'}),
         }
 

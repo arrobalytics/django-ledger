@@ -79,18 +79,14 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
                                      on_delete=models.PROTECT,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
-    receivable_account = models.ForeignKey('django_ledger.AccountModel',
-                                           on_delete=models.PROTECT,
-                                           verbose_name=_('Receivable Account'),
-                                           related_name=f'{REL_NAME_PREFIX}_receivable_account')
-    payable_account = models.ForeignKey('django_ledger.AccountModel',
+    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
                                         on_delete=models.PROTECT,
-                                        verbose_name=_('Payable Account'),
-                                        related_name=f'{REL_NAME_PREFIX}_payable_account')
-    earnings_account = models.ForeignKey('django_ledger.AccountModel',
+                                        verbose_name=_('Prepaid Account'),
+                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
+    unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.PROTECT,
-                                         verbose_name=_('Earnings Account'),
-                                         related_name=f'{REL_NAME_PREFIX}_earnings_account')
+                                         verbose_name=_('Unearned Account'),
+                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
 
     additional_info = models.JSONField(default=dict, verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
@@ -106,9 +102,8 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
         verbose_name_plural = _('Invoices')
         indexes = [
             models.Index(fields=['cash_account']),
-            models.Index(fields=['receivable_account']),
-            models.Index(fields=['payable_account']),
-            models.Index(fields=['earnings_account']),
+            models.Index(fields=['prepaid_account']),
+            models.Index(fields=['unearned_account']),
             models.Index(fields=['date']),
             models.Index(fields=['due_date']),
             models.Index(fields=['paid']),

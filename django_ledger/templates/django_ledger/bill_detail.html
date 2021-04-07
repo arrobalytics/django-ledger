@@ -33,7 +33,7 @@
                                     <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                        class="has-text-danger">{{ bill.cash_account.code }}</a>
                                 <p class="title">
-                                    {% currency_symbol %}{{ bill.get_amount_cash | currency_format | absolute }}</p>
+                                    {% currency_symbol %}{{ bill.get_amount_cash | absolute | currency_format }}</p>
                             </div>
                         </div>
 
@@ -41,8 +41,8 @@
                             <div class="level-item has-text-centered">
                                 <div>
                                     <p class="heading">Prepaid Account:
-                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.receivable_account.uuid entity_slug=view.kwargs.entity_slug %}"
-                                           class="has-text-danger">{{ bill.receivable_account.code }}</a>
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ bill.prepaid_account.code }}</a>
                                     </p>
                                     <p class="title has-text-success">
                                         {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
@@ -50,9 +50,9 @@
                             </div>
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">Payable Account:
-                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.payable_account.uuid entity_slug=view.kwargs.entity_slug %}"
-                                           class="has-text-danger">{{ bill.payable_account.code }}</a>
+                                    <p class="heading">Unearned Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ bill.unearned_account.code }}</a>
 
                                     </p>
                                     <p class="title has-text-danger">
@@ -78,8 +78,6 @@
                         {% endif %}
                     </nav>
                 </div>
-
-
                 <div class="column is-12">
                     <div class="card">
                         <div class="card-header">
@@ -146,7 +144,6 @@
                     </div>
 
                 </div>
-
             </div>
         </div>
     </div>

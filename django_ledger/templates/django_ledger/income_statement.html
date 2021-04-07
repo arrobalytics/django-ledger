@@ -42,14 +42,17 @@
             </div>
             {% income_statement_table io_model=object start_date=start_date end_date=end_date %}
             {% if ledger %}
-                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                <a class="button is-fullwidth is-dark is-small my-2"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
                     Back</a>
             {% elif entity %}
-                <a class="button is-fullwidth is-dark is-small djetler_my_1"
+                <a class="button is-fullwidth is-dark is-small my-2"
                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
                     Back</a>
             {% endif %}
+            <a class="button is-fullwidth is-light is-small my-2"
+               href="?by_unit=1">{% trans 'By Unit' %}</a>
+
         </div>
     </div>
 
