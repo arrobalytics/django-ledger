@@ -39,6 +39,14 @@ def currency_symbol(spaced: bool = False):
     return DJANGO_LEDGER_CURRENCY_SYMBOL
 
 
+@register.filter(name='absolute')
+def absolute(value):
+    if value:
+        if isinstance(value, str):
+            value = float(value)
+        return abs(value)
+
+
 @register.filter(name='currency_format')
 def currency_format(value):
     if value:

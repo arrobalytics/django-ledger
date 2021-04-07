@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
-/
 
 {% block view_content %}
 
@@ -27,40 +26,58 @@
         <div class="column is-8">
             <div class="columns is-multiline">
                 <div class="column is-12">
-
-
                     <nav class="level">
                         <div class="level-item has-text-centered">
                             <div>
-                                <p class="heading">Paid Account: {{ bill.cash_account.code }}</p>
-                                <p class="title has-text-danger">
-                                    {% currency_symbol %}{{ bill.get_amount_cash | currency_format }}</p>
-                            </div>
-                        </div>
-                        <div class="level-item has-text-centered">
-                            <div>
-                                <p class="heading">Prepaid Account: {{ bill.receivable_account.code }}</p>
-                                <p class="title has-text-success">
-                                    {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
-                            </div>
-                        </div>
-                        <div class="level-item has-text-centered">
-                            <div>
-                                <p class="heading">Payable Account: {{ bill.payable_account.code }}</p>
-                                <p class="title has-text-danger">
-                                    {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>
+                                <p class="heading">Cash Account:
+                                    <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                       class="has-text-danger">{{ bill.cash_account.code }}</a>
+                                <p class="title">
+                                    {% currency_symbol %}{{ bill.get_amount_cash | currency_format | absolute }}</p>
                             </div>
                         </div>
 
-                        <div class="level-item has-text-centered">
-                            <div>
-                                <p class="heading">{% if bill.progressible %}Accrued{% else %}Paid{% endif %} </p>
-                                <p class="title">{% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>
+                        {% if bill.progressible %}
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Prepaid Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.receivable_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ bill.receivable_account.code }}</a>
+                                    </p>
+                                    <p class="title has-text-success">
+                                        {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
+                                </div>
                             </div>
-                        </div>
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Payable Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.payable_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ bill.payable_account.code }}</a>
+
+                                    </p>
+                                    <p class="title has-text-danger">
+                                        {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>
+                                </div>
+                            </div>
+
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>
+                                    <p class="title">
+                                        {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">You Still Owe</p>
+                                    <p class="title has-text-danger">
+                                        {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
                     </nav>
                 </div>
-
 
 
                 <div class="column is-12">
@@ -73,7 +90,7 @@
                         </div>
                         <div class="card-content">
                             <div class="table-container">
-                                <table class="table is-fullwidth is-narrow">
+                                <table class="table is-fullwidth is-narrow is-striped is-bordered">
 
                                     <thead>
                                     <tr>
@@ -105,8 +122,8 @@
                                         <th></th>
                                         <th>{% trans 'Total' %}</th>
                                         <th>
-                                            {% currency_symbol %}{{ total_amount_due | currency_format }}</th>
-                                        <th></th>
+                                            {% currency_symbol %}{{ total_amount_due | currency_format }}
+                                        </th>
                                     </tr>
                                     </tfoot>
 
