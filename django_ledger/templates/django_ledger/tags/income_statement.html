@@ -25,6 +25,9 @@
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
+                {% if by_unit %}
+                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
                         <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
@@ -32,9 +35,6 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                {% if by_unit %}
-                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
-                {% endif %}
                 <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
@@ -62,6 +62,9 @@
             <tr>
                 <td>{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
+                {% if by_unit %}
+                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                {% endif %}
                 <td class="has-text-centered">
                     {% if acc.balance_type == 'debit' %}
                         <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
@@ -69,9 +72,6 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                {% if by_unit %}
-                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
-                {% endif %}
                 <td>{% currency_symbol %}{{ acc.balance | reverse_sing | currency_format }}</td>
             </tr>
         {% endfor %}

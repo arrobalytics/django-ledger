@@ -299,6 +299,8 @@ class AccruableItemMixIn(models.Model):
                       je_date: date = None):
 
         if self.migrate_allowed() or force_migrate:
+
+            # getting
             txs_digest = self.ledger.digest(
                 user_model=user_model,
                 process_groups=True,
@@ -366,7 +368,6 @@ class AccruableItemMixIn(models.Model):
             current_state.update(account_balance_data_idx)
 
             idx_keys = set(list(ledger_state) + list(current_state))
-            unit_uuids = list(set(k[1] for k in idx_keys))
             diff_idx = {
                 k: current_state.get(k, 0) - ledger_state.get(k, 0) for k in idx_keys
             }
@@ -374,6 +375,7 @@ class AccruableItemMixIn(models.Model):
             JournalEntryModel = lazy_loader.get_journal_entry_model()
             TransactionModel = lazy_loader.get_transaction_model()
 
+            unit_uuids = list(set(k[1] for k in idx_keys))
             now_date = localdate() if not je_date else je_date
             je_list = {
                 u: JournalEntryModel.objects.create(
@@ -385,24 +387,30 @@ class AccruableItemMixIn(models.Model):
                     locked=True,
                     posted=True,
                     ledger_id=self.ledger_id
-                ) for u in list(unit_uuids)
+                ) for u in unit_uuids
             }
 
             txs_list = [
-                TransactionModel(
+                (unit_uuid, TransactionModel(
                     journal_entry=je_list.get(unit_uuid),
                     amount=abs(round(amt, 2)),
                     tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
                     account_id=acc_uuid,
                     description=self.get_migrate_state_desc()
-                ) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+                )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
             ]
 
-            for tx in txs_list:
+            for unit_uuid, tx in txs_list:
                 tx.clean()
 
-            validate_tx_data(tx_data=txs_list)
-            TransactionModel.objects.bulk_create(txs_list)
+            for uid in unit_uuids:
+                # validates each unit txs independently...
+                validate_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
+
+            # validates all txs as a whole (for safety)...
+            txs = [tx for ui, tx in txs_list]
+            validate_tx_data(tx_data=txs)
+            TransactionModel.objects.bulk_create(txs)
 
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
