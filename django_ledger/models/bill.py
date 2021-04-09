@@ -151,7 +151,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
-    def get_account_balance_data(self, queryset=None):
+    def get_item_data(self, queryset=None):
         if not queryset:
             queryset = self.billmodelitemsthroughmodel_set.all()
         return queryset.order_by('item_model__expense_account__uuid',
@@ -162,7 +162,8 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             'entity_unit__slug',
             'entity_unit__uuid',
             'total_amount').annotate(
-            account_unit_total=Sum('total_amount'))
+            account_unit_total=Sum('total_amount')
+        )
 
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:

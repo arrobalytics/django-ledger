@@ -150,7 +150,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
-    def get_account_balance_data(self, queryset=None):
+    def get_item_data(self, queryset=None):
         if not queryset:
             queryset = self.invoicemodelitemsthroughmodel_set.all()
         return queryset.order_by('item_model__earnings_account__uuid',

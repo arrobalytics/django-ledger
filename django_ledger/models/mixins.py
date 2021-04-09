@@ -243,7 +243,7 @@ class AccruableItemMixIn(models.Model):
             'balance_type': account.balance_type
         }
 
-    def get_account_balance_data(self, queryset=None):
+    def get_item_data(self, queryset=None):
         raise NotImplementedError('Must implement get_account_balance_data method.')
 
     def get_migrate_state_desc(self, *args, **kwargs):
@@ -300,7 +300,7 @@ class AccruableItemMixIn(models.Model):
 
         if self.migrate_allowed() or force_migrate:
 
-            # getting
+            # getting current ledger state
             txs_digest = self.ledger.digest(
                 user_model=user_model,
                 process_groups=True,
@@ -312,64 +312,79 @@ class AccruableItemMixIn(models.Model):
 
             digest_data = txs_digest['tx_digest']['accounts']
 
-            ledger_state = {
+            # Index (account_uuid, unit_uuid, balance_type)
+            current_ledger_state = {
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            new_state = self.new_state(commit=commit)
-
             # todo: use entity_slug here for safety...
-            account_balance_data = self.get_account_balance_data()
+            item_data = self.get_item_data()
 
             if isinstance(self, lazy_loader.get_bill_model()):
-                account_balance_data_gb = groupby(account_balance_data,
-                                                  key=lambda a: (a['item_model__expense_account__uuid'],
-                                                                 a['entity_unit__uuid'],
-                                                                 a['item_model__expense_account__balance_type']))
+                item_data_gb = groupby(item_data,
+                                       key=lambda a: (a['item_model__expense_account__uuid'],
+                                                      a['entity_unit__uuid'],
+                                                      a['item_model__expense_account__balance_type']))
             elif isinstance(self, lazy_loader.get_invoice_model()):
-                account_balance_data_gb = groupby(account_balance_data,
-                                                  key=lambda a: (a['item_model__earnings_account__uuid'],
-                                                                 a['entity_unit__uuid'],
-                                                                 a['item_model__earnings_account__balance_type']))
+                item_data_gb = groupby(item_data,
+                                       key=lambda a: (a['item_model__earnings_account__uuid'],
+                                                      a['entity_unit__uuid'],
+                                                      a['item_model__earnings_account__balance_type']))
 
             progress = self.get_progress()
-            account_balance_data_idx = {
-                g: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for g, ad in account_balance_data_gb
+
+            # scaling down item amount based on progress...
+            progress_item_idx = {
+                idx: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for idx, ad in item_data_gb
             }
-            ua_gen = sorted(((k[1], v) for k, v in account_balance_data_idx.items()),
-                            key=lambda a: a[0] if a[0] else uuid4())
+
+            # tuple ( unit_uuid, total_amount ) sorted by uuid...
+            # sorting before groupby...
+            ua_gen = list((k[1], v) for k, v in progress_item_idx.items())
+            ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
+
             unit_amounts = {
                 u: sum(a[1] for a in l) for u, l in groupby(ua_gen, key=lambda x: x[0])
             }
             total_amount = sum(unit_amounts.values())
+
+            # { unit_uuid: float (percent) }
             unit_percents = {
                 k: (v / total_amount) if progress else Decimal('0.00') for k, v in unit_amounts.items()
             }
 
-            current_state = dict()
-            current_state.update(self.split_amount(
+            new_state = self.new_state(commit=commit)
+            amount_paid_split = self.split_amount(
                 amount=new_state['amount_paid'],
                 unit_split=unit_percents,
                 account_uuid=self.cash_account_id,
                 account_balance_type='debit'
-            ))
-            current_state.update(self.split_amount(
+            )
+            amount_prepaid_split = self.split_amount(
                 amount=new_state['amount_receivable'],
                 unit_split=unit_percents,
                 account_uuid=self.prepaid_account_id,
                 account_balance_type='debit'
-            ))
-            current_state.update(self.split_amount(
+            )
+            amount_unearned_split = self.split_amount(
                 amount=new_state['amount_unearned'],
                 unit_split=unit_percents,
                 account_uuid=self.unearned_account_id,
                 account_balance_type='credit'
-            ))
-            current_state.update(account_balance_data_idx)
+            )
 
-            idx_keys = set(list(ledger_state) + list(current_state))
+            new_ledger_state = dict()
+            new_ledger_state.update(amount_paid_split)
+            new_ledger_state.update(amount_prepaid_split)
+            new_ledger_state.update(amount_unearned_split)
+            new_ledger_state.update(progress_item_idx)
+
+            # list of all keys involved
+            idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
+
+            # difference between new vs curre
             diff_idx = {
-                k: current_state.get(k, 0) - ledger_state.get(k, 0) for k in idx_keys
+                k: new_ledger_state.get(k, 0) - current_ledger_state.get(k, 0) for k in idx_keys
             }
 
             JournalEntryModel = lazy_loader.get_journal_entry_model()
