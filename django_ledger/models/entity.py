@@ -5,9 +5,11 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from calendar import monthrange
+from datetime import date
 from random import choices
 from string import ascii_lowercase, digits
+from typing import Tuple
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -29,6 +31,59 @@ UserModel = get_user_model()
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
+class EntityReportManager:
+    VALID_QUARTERS = list(range(1, 5))
+
+    def get_fy_start_month(self) -> int:
+        fy = getattr(self, 'fy_start_month', None)
+        if not fy:
+            return 1
+        return fy
+
+    def validate_quarter(self, quarter: int):
+        if quarter not in self.VALID_QUARTERS:
+            raise ValidationError(f'Specified quarter is not valid: {quarter}')
+
+    def get_fy_start(self, year: int, fy_start_month: int = None) -> date:
+        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        return date(year, fy_start_month, 1)
+
+    def get_fy_end(self, year: int, fy_start_month: int = None) -> date:
+        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        ye = year if fy_start_month == 1 else year + 1
+        me = 12 if fy_start_month == 1 else fy_start_month - 1
+        return date(ye, me, monthrange(ye, me)[1])
+
+    def get_quarter_start(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        quarter_month_start = (quarter - 1) * 3 + fy_start_month
+        year_start = year
+        if quarter_month_start > 12:
+            quarter_month_start -= 12
+            year_start = year + 1
+        return date(year_start, quarter_month_start, 1)
+
+    def get_quarter_end(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        quarter_month_end = quarter * 3 + fy_start_month - 1
+        year_end = year
+        if quarter_month_end > 12:
+            quarter_month_end -= 12
+            year_end += 1
+        return date(year_end, quarter_month_end, monthrange(year_end, quarter_month_end)[1])
+
+    def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> Tuple[date, date]:
+        sd = self.get_fy_start(year, fy_start_month)
+        ed = self.get_fy_end(year, fy_start_month)
+        return sd, ed
+
+    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> Tuple[date, date]:
+        self.validate_quarter(quarter)
+        qs = self.get_quarter_start(year, quarter, fy_start_month)
+        qe = self.get_quarter_end(year, quarter, fy_start_month)
+        return qs, qe
+
+
 class EntityModelManager(Manager):
 
     def for_user(self, user_model):
@@ -43,7 +98,23 @@ class EntityModelAbstract(MPTTModel,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
-                          IOMixIn):
+                          IOMixIn,
+                          EntityReportManager):
+    FY_MONTHS = [
+        (1, _('January')),
+        (2, _('February')),
+        (3, _('March')),
+        (4, _('April')),
+        (5, _('May')),
+        (6, _('June')),
+        (7, _('July')),
+        (8, _('August')),
+        (9, _('September')),
+        (10, _('October')),
+        (11, _('November')),
+        (12, _('December')),
+    ]
+
     parent = TreeForeignKey('self',
                             null=True,
                             blank=True,
@@ -59,6 +130,7 @@ class EntityModelAbstract(MPTTModel,
                                       related_name='managed_by', verbose_name=_('Managers'))
 
     hidden = models.BooleanField(default=False)
+    fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     objects = EntityModelManager()
 
     class Meta:
@@ -154,6 +226,9 @@ class EntityModelAbstract(MPTTModel,
                        kwargs={
                            'entity_slug': self.slug
                        })
+
+    def get_fy_start_month(self) -> int:
+        return self.fy_start_month
 
     def clean(self):
         if not self.name:

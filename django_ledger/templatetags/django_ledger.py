@@ -83,7 +83,7 @@ def icon(icon_name, size):
 
 
 @register.inclusion_tag('django_ledger/tags/balance_sheet.html', takes_context=True)
-def balance_sheet_table(context, io_model, end_date):
+def balance_sheet_table(context, io_model, to_date):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
@@ -98,7 +98,7 @@ def balance_sheet_table(context, io_model, end_date):
         entity_slug=entity_slug,
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
-        to_date=end_date,
+        to_date=to_date,
         process_groups=True)
 
     digest['by_unit'] = context['by_unit']
@@ -108,7 +108,7 @@ def balance_sheet_table(context, io_model, end_date):
 
 
 @register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
-def income_statement_table(context, io_model, start_date, end_date):
+def income_statement_table(context, io_model, from_date, to_date):
     user_model: EntityUnitModel = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
@@ -122,8 +122,8 @@ def income_statement_table(context, io_model, start_date, end_date):
         entity_slug=entity_slug,
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
-        from_date=start_date,
-        to_date=end_date,
+        from_date=from_date,
+        to_date=to_date,
         equity_only=True,
         process_groups=True)
 
@@ -497,8 +497,8 @@ def period_navigation(context, base_url: str):
         })
     ctx['month_urls'] = month_urls
 
-    ctx['start_date'] = context['start_date']
-    ctx['end_date'] = context['end_date']
+    ctx['from_date'] = context['from_date']
+    ctx['to_date'] = context['to_date']
 
     ctx.update(KWARGS)
 

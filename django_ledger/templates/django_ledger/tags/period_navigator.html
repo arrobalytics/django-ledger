@@ -28,9 +28,9 @@
         </p>
         <div class="has-text-centered">
             <p class="has-text-weight-bold is-italic mt-2">
-                {{ start_date | date:"m/d/Y" }}
+                {{ from_date | date:"m/d/Y" }}
                 {% trans 'thru' %}
-                {{ end_date | date:"m/d/Y" }}</p>
+                {{ to_date | date:"m/d/Y" }}</p>
             <a href="{{ current_month_url }}">{% trans 'Go To Current Month' %}</a>
         </div>
     </div>

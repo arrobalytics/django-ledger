@@ -40,7 +40,7 @@
                     </div>
                 </div>
             </div>
-            {% income_statement_table io_model=object start_date=start_date end_date=end_date %}
+            {% income_statement_table io_model=object from_date=from_date to_date=to_date %}
             {% if ledger %}
                 <a class="button is-fullwidth is-dark is-small my-2"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go

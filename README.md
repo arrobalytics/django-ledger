@@ -12,7 +12,7 @@ Django Ledger supports:
 - Self-contained Ledgers, Journal Entries & Transactions.
 - Financial Activities Support (operational/financial/investing).
 - Basic OFX & QFX file import.
-- Bills & Invoices with optional _progressible_ functionality.
+- Bills & Invoices with optional _accruable_ functionality.
 - Basic navigational templates.
 - Entity administration & entity manager support.
 - Bank Accounts.

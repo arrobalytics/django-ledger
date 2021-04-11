@@ -7,16 +7,13 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.forms import (ModelForm, TextInput, BooleanField, ValidationError,
-                          EmailInput, URLInput, CheckboxInput)
+                          EmailInput, URLInput, CheckboxInput, Select)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
-
-# def create_default_entity_unit(instance: EntityModel):
-#     if not instance.
 
 class EntityModelCreateForm(ModelForm):
     default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
@@ -56,8 +53,9 @@ class EntityModelCreateForm(ModelForm):
             'email',
             'website',
             'phone',
+            'fy_start_month',
             'default_coa',
-            'activate_all_accounts',
+            'activate_all_accounts'
         ]
         labels = {
             'name': _('Entity Name'),
@@ -108,6 +106,9 @@ class EntityModelCreateForm(ModelForm):
             }),
             'default_coa': CheckboxInput(attrs={
                 'class': 'checkbox'
+            }),
+            'fy_start_month': Select(attrs={
+                'class': 'input'
             })
         }
 
@@ -125,7 +126,8 @@ class EntityModelUpdateForm(ModelForm):
             'country',
             'email',
             'phone',
-            'website'
+            'website',
+            'fy_start_month'
         ]
         labels = {
             'name': _('Entity Name')
@@ -185,4 +187,7 @@ class EntityModelUpdateForm(ModelForm):
                     'placeholder': _('Website...')
                 }
             ),
+            'fy_start_month': Select(attrs={
+                'class': 'input'
+            })
         }

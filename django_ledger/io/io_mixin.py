@@ -9,7 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import datetime, date
 from itertools import groupby
 from random import choice
-from typing import List, Set
+from typing import List, Set, Union
 from typing import Tuple
 
 from django.contrib.auth import get_user_model
@@ -153,8 +153,8 @@ def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True
 
 
 def validate_dates(
-        from_date: str or date or datetime = None,
-        to_date: str or date or datetime = None) -> Tuple[date, date]:
+        from_date: Union[str, datetime, date] = None,
+        to_date: Union[str, datetime, date] = None) -> Tuple[date, date]:
     from_date = validate_io_date(from_date, no_parse_locadate=False)
     to_date = validate_io_date(to_date)
     return from_date, to_date
@@ -433,8 +433,8 @@ class IOMixIn:
                entity_slug: str = None,
                unit_slug: str = None,
                signs: bool = True,
-               to_date: str = None,
-               from_date: str = None,
+               to_date: Union[str, datetime, date] = None,
+               from_date: Union[str, datetime, date] = None,
                queryset: QuerySet = None,
                process_roles: bool = True,
                process_groups: bool = False,
