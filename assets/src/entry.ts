@@ -2,19 +2,24 @@ import {DjangoLedgerApp} from "./DjangoLedgerApp";
 import {NetPayablesChart, NetReceivablesChart, PnLChart} from "./AppCharts";
 import Iconify from '@iconify/iconify';
 
+// @ts-ignore
+import * as Pikaday from 'pikaday';
+// import Vue from 'vue';
+// import DatePicker from "./vue/DatePicker";
+
 let app = new DjangoLedgerApp();
 
 
-export function renderPnLChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
-    return new PnLChart(selector, entitySlug, startDate, endDate);
+export function renderPnLChart(selector: string, entitySlug: string, fromDate: string, toDate: string) {
+    return new PnLChart(selector, entitySlug, fromDate, toDate);
 }
 
-export function renderNetPayablesChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
-    return new NetPayablesChart(selector, entitySlug, startDate, endDate);
+export function renderNetPayablesChart(selector: string, entitySlug: string, fromDate: string, toDate: string) {
+    return new NetPayablesChart(selector, entitySlug, fromDate, toDate);
 }
 
-export function renderNetReceivablesChart(selector: string, entitySlug: string, startDate: string, endDate: string) {
-    return new NetReceivablesChart(selector, entitySlug, startDate, endDate);
+export function renderNetReceivablesChart(selector: string, entitySlug: string, fromDate: string, toDate: string) {
+    return new NetReceivablesChart(selector, entitySlug, fromDate, toDate);
 }
 
 export function showModal(modalId: string) {
@@ -71,11 +76,31 @@ export function calculateItemTotal(
         let quantity = quantityItemElement
         console.log(unitCost, quantity);
         // totalItemCostElement.innerHTML = String(unitCost * quantity);
+        // totalItemCostElement.innerHTML = String(unitCost * quantity);
     }
 }
 
-export function onChangeItem(htmlInput: HTMLInputElement) {
-    console.log(+htmlInput.value)
+
+export function getCalendar(htmlId: string, baseUrl: string) {
+    return new Pikaday({
+        field: document.getElementById(htmlId),
+        onSelect(value: Date) {
+            const y = value.getFullYear();
+            const m = value.getMonth() + 1;
+            const d = value.getDate();
+            window.location.href = `${baseUrl}date/${y}/${m}/${d}/`
+        }
+    })
 }
+
+// export function getCalendarVue(htmlId: string, baseUrl: string) {
+//     const htmlIdVue = '#' + htmlId;
+//     return new Vue({
+//         el: htmlIdVue,
+//         components: {
+//             DatePicker
+//         }
+//     })
+// }
 
 export {Iconify};

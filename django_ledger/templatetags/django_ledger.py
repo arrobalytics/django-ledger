@@ -15,7 +15,7 @@ from django.utils.formats import number_format
 from django.utils.timezone import localdate
 
 from django_ledger import __version__
-from django_ledger.forms.app_filters import EntityFilterForm, AsOfDateFilterForm, ActivityFilterForm
+from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.models.journalentry import validate_activity
@@ -331,25 +331,30 @@ def activity_filter(context):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/date_filter.html', takes_context=True)
-def date_filter_form(context, inline=False):
-    entity_slug = context['view'].kwargs.get('entity_slug')
-    end_date = get_end_date_from_session(entity_slug, context['request'])
-    identity = randint(0, 1000000)
-    if entity_slug:
-        form = AsOfDateFilterForm(form_id=identity, initial={
-            'entity_slug': context['view'].kwargs['entity_slug'],
-            'date': end_date
-        })
-        next_url = context['request'].path
-        return {
-            'date_form': form,
-            'form_id': identity,
-            'entity_slug': entity_slug,
-            'date_filter': end_date,
-            'next': next_url,
-            'inline': inline
-        }
+@register.inclusion_tag('django_ledger/tags/date_picker.html', takes_context=True)
+def date_picker(context, date_picker_id=None):
+    try:
+        entity_slug = context['view'].kwargs.get('entity_slug')
+    except KeyError:
+        entity_slug = context['entity_slug']
+
+    if not date_picker_id:
+        date_picker_id = f'djl-datepicker-{randint(10000, 99999)}'
+
+    if 'date_picker_ids' not in context:
+        context['date_picker_ids'] = list()
+    context['date_picker_ids'].append(date_picker_id)
+
+    base_url = reverse('django_ledger:entity-dashboard',
+                       kwargs={
+                           'entity_slug': entity_slug
+                       })
+
+    return {
+        'entity_slug': entity_slug,
+        'date_picker_id': date_picker_id,
+        'base_url': base_url
+    }
 
 
 @register.simple_tag(takes_context=True)

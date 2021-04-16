@@ -22,17 +22,21 @@ class BaseChart {
     entitySlug: string;
     consoleLogData: boolean = false;
     lazyGetData: boolean = false;
-    startDate: string | null
-    endDate: string | null
+    fromDate: string | null
+    toDate: string | null
+    htmlElement: HTMLHtmlElement | null = null
 
     constructor(selector: string,
                 entitySlug: string,
-                startDate: string | null,
-                endDate: string | null,
+                fromDate: string | null,
+                toDate: string | null,
                 chartData = undefined) {
+
+
         this.selector = selector
-        this.startDate = startDate
-        this.endDate = endDate
+        this.fromDate = fromDate
+        this.toDate = toDate
+        this.getHTMLElement()
 
         if (!chartData) {
             this.startHttpClient()
@@ -43,17 +47,20 @@ class BaseChart {
         this.entitySlug = entitySlug;
     }
 
+    getHTMLElement() {
+        this.htmlElement = <HTMLHtmlElement>document.getElementById(this.selector)
+    }
+
     getEndPoint(): string | undefined {
-        // @ts-ignore
-        return document.getElementById(this.selector).dataset.endpoint
+        return this.htmlElement!.dataset.endpoint
     }
 
     getChartData() {
-        if (!this.chartData) {
+        if (!this.chartData && this.htmlElement) {
             let axiosConfig: AxiosRequestConfig = {
                 params: {
-                    startDate: this.startDate ? this.startDate : null,
-                    endDate: this.endDate ? this.endDate : null,
+                    fromDate: this.fromDate ? this.fromDate : null,
+                    toDate: this.toDate ? this.toDate : null,
                 }
             }
             this.http?.get(
@@ -107,13 +114,13 @@ class PnLChart extends BaseChart {
                 datasets: [
                     {
                         label: 'Income',
-                        backgroundColor: 'rgb(110,210,81)',
+                        backgroundColor: 'rgb(70,160,45)',
                         borderColor: 'rgb(115,255,99)',
                         data: income
                     },
                     {
                         label: 'Expenses',
-                        backgroundColor: 'rgb(255,127,153)',
+                        backgroundColor: 'rgb(231,46,75)',
                         borderColor: 'rgb(255, 99, 132)',
                         data: expenses
                     }]

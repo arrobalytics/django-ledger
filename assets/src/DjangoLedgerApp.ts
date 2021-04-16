@@ -1,5 +1,4 @@
 import Vue from 'vue';
-import flatpickr from "flatpickr";
 
 
 export class DjangoLedgerApp {
@@ -40,8 +39,6 @@ export class DjangoLedgerApp {
                 f.addEventListener('change', this.setEntityFilter);
             });
         });
-        this.endDateFilters = flatpickr(".djetler-end-date-icon-filter", this.getFlatPickrOptions(false));
-        this.dateFilters = flatpickr(".djetler-date-filter", this.getFlatPickrOptions(true));
     }
 
     getFlatPickrOptions(inline: boolean = false) {

@@ -114,11 +114,20 @@
 {% block script_bottom %}
     {{ block.super }}
     <script>
-        let startDate = "{{ start_date | date:'Y-m-d' }}";
-        let endDate = "{{ end_date | date:'Y-m-d' }}";
-        djLedger.renderPnLChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}", startDate, endDate)
-        djLedger.renderNetPayablesChart("{{ payables_chart_id }}", "{{ view.kwargs.entity_slug }}")
-        djLedger.renderNetReceivablesChart("{{ receivables_chart_id }}", "{{ view.kwargs.entity_slug }}")
+
+        let fromDate = "{{ from_date | date:'Y-m-d' }}";
+        let toDate = "{{ to_date | date:'Y-m-d' }}";
+        let entitySlug = "{{ view.kwargs.entity_slug }}"
+        let dashboardBaseUrl = "{{ dashboard_base_url }}"
+
+        let datePickers = document.querySelectorAll("[id^='djl-datepicker']")
+        datePickers.forEach(dp => djLedger.getCalendar(dp.attributes.id.value, dashboardBaseUrl))
+
+        djLedger.renderPnLChart("{{ pnl_chart_id }}", "{{ view.kwargs.entity_slug }}", fromDate, toDate)
+        djLedger.renderNetReceivablesChart("{{ receivables_chart_id }}", "{{ view.kwargs.entity_slug }}", fromDate, toDate)
+        djLedger.renderNetPayablesChart("{{ payables_chart_id }}", "{{ view.kwargs.entity_slug }}", fromDate, toDate)
+
+
     </script>
 {% endblock %}
 

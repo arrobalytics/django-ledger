@@ -1,3 +1,4 @@
+{% load django_ledger %}
 {% load trans from i18n %}
 
 <div class="card">
@@ -26,12 +27,16 @@
                 <a href="{{ m_url.url }}">{{ m_url.month_abbr }}</a> {% if not forloop.last %}|{% endif %}
             {% endfor %}
         </p>
+
         <div class="has-text-centered">
             <p class="has-text-weight-bold is-italic mt-2">
                 {{ from_date | date:"m/d/Y" }}
                 {% trans 'thru' %}
                 {{ to_date | date:"m/d/Y" }}</p>
             <a href="{{ current_month_url }}">{% trans 'Go To Current Month' %}</a>
+        </div>
+        <div class="has-text-centered">
+            {% date_picker %}
         </div>
     </div>
 </div>

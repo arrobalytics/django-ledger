@@ -7,7 +7,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from calendar import monthrange
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
+from typing import Tuple
 
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.core.exceptions import ValidationError
@@ -57,6 +58,11 @@ class YearlyReportMixIn(YearMixin, EntityReportManager):
 
     def get_to_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_end_date(year, fy_start)
+
+    def get_from_to_dates(self, year: int = None, fy_start: int = None, **kwargs) -> Tuple[date, date]:
+        from_date = self.get_from_date(year, fy_start, **kwargs)
+        to_date = self.get_to_date(year, fy_start, **kwargs)
+        return from_date, to_date
 
     def get_year_start_date(self, year: int = None, fy_start: int = None) -> date:
         if not year:
@@ -115,6 +121,15 @@ class QuarterlyReportMixIn(YearMixin, EntityReportManager):
     def get_to_date(self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_quarter_end_date(quarter, year, fy_start)
 
+    def get_from_to_dates(self,
+                          quarter: int = None,
+                          year: int = None,
+                          fy_start: int = None,
+                          **kwargs) -> Tuple[date, date]:
+        from_date = self.get_from_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
+        to_date = self.get_to_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
+        return from_date, to_date
+
     def get_quarter_start_date(self, quarter: int = None, year: int = None, fy_start: int = None) -> date:
         if not year:
             year = self.get_year()
@@ -158,6 +173,14 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
     def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
         return self.get_month_end_date(month=month, year=year)
 
+    def get_from_to_dates(self,
+                          month: int = None,
+                          year: int = None,
+                          **kwargs) -> Tuple[date, date]:
+        from_date = self.get_from_date(month=month, year=year, **kwargs)
+        to_date = self.get_to_date(month=month, year=year, **kwargs)
+        return from_date, to_date
+
     def get_month_start_date(self, month: int = None, year: int = None) -> date:
         if not month:
             month = int(self.get_month())
@@ -171,7 +194,7 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         if not year:
             year = self.get_year()
         last_day = monthrange(year, month)[1]
-        return datetime(year=year, month=month, day=last_day)
+        return date(year=year, month=month, day=last_day)
 
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
@@ -185,12 +208,12 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         context['has_month'] = True
         return context
 
-    def get_next_month(self, month):
+    def get_next_month(self, month) -> int:
         if month != 12:
             return month + 1
         return 1
 
-    def get_previous_month(self, month):
+    def get_previous_month(self, month) -> int:
         if month != 1:
             return month - 1
         return 12
@@ -201,17 +224,28 @@ class DateReportMixIn(MonthlyReportMixIn, DayMixin):
     def get_context_data(self, **kwargs):
         context = super(DateReportMixIn, self).get_context_data(**kwargs)
         view_date = self.get_date()
+        context['has_date'] = True
         context['view_date'] = view_date
         context['next_day'] = view_date + timedelta(days=1)
         context['previous_day'] = view_date - timedelta(days=1)
         return context
 
-    def get_date(self):
-        return datetime(
+    def get_date(self) -> date:
+        return date(
             year=self.get_year(),
             month=self.get_month(),
             day=self.get_day()
         )
+
+    def get_from_date(self, month: int = None, year: int = None, **kwargs) -> date:
+        return self.get_date()
+
+    def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
+        return self.get_date()
+
+    def get_from_to_dates(self, month: int = None, year: int = None, **kwargs) -> Tuple[date, date]:
+        dt = self.get_from_date(month=month, year=year, **kwargs)
+        return dt, dt
 
 
 class FromToDatesMixIn:
@@ -235,6 +269,11 @@ class FromToDatesMixIn:
         if not parsed_date and self.DJL_NO_TO_DATE_RAISE_404:
             raise Http404(_(f'Must provide {query_param} date parameter.'))
         return parsed_date
+
+    def get_from_to_dates(self, query_param: str = None) -> Tuple[date, date]:
+        from_date = self.get_from_date(query_param)
+        to_date = self.get_to_date(query_param)
+        return from_date, to_date
 
     def parse_date_from_query_param(self, query_param: str):
         param_date = self.request.GET.get(query_param)

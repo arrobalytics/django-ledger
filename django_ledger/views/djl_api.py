@@ -39,8 +39,8 @@ class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 signs=False,
                 by_period=True,
                 process_groups=True,
-                from_date=self.request.GET.get('startDate'),
-                to_date=self.request.GET.get('endDate')
+                from_date=self.request.GET.get('fromDate'),
+                to_date=self.request.GET.get('toDate')
             )
 
             group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']

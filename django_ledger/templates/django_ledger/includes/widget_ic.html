@@ -11,7 +11,11 @@
     <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
     <h1 class="has-text-centered">
         {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</h1>
-    <h4 class="has-text-centered has-text-weight-light">{% trans 'As Of' %}</h4>
-    <h3 class="has-text-centered">{{ start_date | date }} <span
-            class="is-italic">{% trans 'thru' %}</span> {{ end_date | date }}</h3>
+    <h4 class="has-text-centered has-text-weight-light">{% trans 'Accounting Period' %}</h4>
+    {% if not has_date %}
+        <h3 class="has-text-centered">{{ from_date | date }} <span
+                class="is-italic">{% trans 'thru' %}</span> {{ to_date | date }}</h3>
+    {% else %}
+        <h3 class="has-text-centered">{% trans 'Date' %}: {{ view_date | date }}</h3>
+    {% endif %}
 </div>

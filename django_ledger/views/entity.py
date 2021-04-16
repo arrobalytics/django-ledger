@@ -158,7 +158,7 @@ class EntityModelDetailView(EntityUnitMixIn, LoginRequiredMixIn, RedirectView):
 
 class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
                                       EntityUnitMixIn,
-                                      FromToDatesMixIn,
+                                      # FromToDatesMixIn,
                                       YearlyReportMixIn,
                                       SessionConfigurationMixIn,
                                       DetailView):
@@ -193,17 +193,21 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
                                                         kwargs=KWARGS)
 
-        year = self.get_year()
-        sd, ed = self.get_fiscal_year_dates(year)
-        context['from_date'] = sd
-        context['to_date'] = ed
-        context = self.get_entity_digest(context, sd, ed)
+        context['dashboard_base_url'] = reverse(f'django_ledger:entity-dashboard',
+                                                kwargs={
+                                                    'entity_slug': self.kwargs['entity_slug']
+                                                })
+
+        from_date, to_date = self.get_from_to_dates()
+        context['from_date'] = from_date
+        context['to_date'] = to_date
+        context = self.get_entity_digest(context, from_date, to_date)
 
         # Unpaid Bills for Dashboard
-        context['bills'] = self.get_unpaid_bills_qs(sd, ed)
+        context['bills'] = self.get_unpaid_bills_qs(from_date, to_date)
 
         # Unpaid Invoices for Dashboard
-        context['invoices'] = self.get_unpaid_invoices_qs(sd, ed)
+        context['invoices'] = self.get_unpaid_invoices_qs(from_date, to_date)
         return context
 
     def get_fy_start_month(self) -> int:
