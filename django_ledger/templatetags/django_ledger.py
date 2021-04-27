@@ -332,7 +332,7 @@ def activity_filter(context):
 
 
 @register.inclusion_tag('django_ledger/tags/date_picker.html', takes_context=True)
-def date_picker(context, date_picker_id=None):
+def date_picker(context, nav_url=None, date_picker_id=None):
     try:
         entity_slug = context['view'].kwargs.get('entity_slug')
     except KeyError:
@@ -345,15 +345,11 @@ def date_picker(context, date_picker_id=None):
         context['date_picker_ids'] = list()
     context['date_picker_ids'].append(date_picker_id)
 
-    base_url = reverse('django_ledger:entity-dashboard',
-                       kwargs={
-                           'entity_slug': entity_slug
-                       })
-
+    date_navigation_url = nav_url if nav_url else context.get('date_navigation_url')
     return {
         'entity_slug': entity_slug,
         'date_picker_id': date_picker_id,
-        'base_url': base_url
+        'date_navigation_url': date_navigation_url
     }
 
 
@@ -435,7 +431,8 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
 @register.inclusion_tag('django_ledger/tags/period_navigator.html', takes_context=True)
 def period_navigation(context, base_url: str):
     KWARGS = dict()
-    KWARGS['entity_slug'] = context['view'].kwargs['entity_slug']
+    entity_slug = context['view'].kwargs['entity_slug']
+    KWARGS['entity_slug'] = entity_slug
 
     if context['view'].kwargs.get('ledger_pk'):
         KWARGS['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
@@ -451,6 +448,7 @@ def period_navigation(context, base_url: str):
     ctx['has_year'] = context.get('has_year')
     ctx['has_quarter'] = context.get('has_quarter')
     ctx['has_month'] = context.get('has_month')
+    ctx['has_date'] = context.get('has_date')
     ctx['previous_year'] = context['previous_year']
 
     KWARGS['year'] = context['previous_year']
@@ -501,11 +499,11 @@ def period_navigation(context, base_url: str):
             'month_abbr': month_abbr[M]
         })
     ctx['month_urls'] = month_urls
-
     ctx['from_date'] = context['from_date']
     ctx['to_date'] = context['to_date']
-
     ctx.update(KWARGS)
+
+    ctx['date_navigation_url'] = context.get('date_navigation_url')
 
     return ctx
 

@@ -12,13 +12,14 @@ from typing import Tuple
 
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 from django.http import Http404
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
-from django_ledger.models import EntityModel
+from django_ledger.models import EntityModel, InvoiceModel, BillModel
 from django_ledger.models.entity import EntityReportManager
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.utils import set_default_entity
@@ -80,8 +81,12 @@ class YearlyReportMixIn(YearMixin, EntityReportManager):
         context['year'] = year
         context['next_year'] = year + 1
         context['previous_year'] = year - 1
-        context['from_date'] = self.get_year_start_date(year)
-        context['to_date'] = self.get_year_end_date(year)
+        year_start = self.get_year_start_date(year)
+        year_end = self.get_year_end_date(year)
+        context['year_start'] = year_start
+        context['year_end'] = year_end
+        context['from_date'] = year_start
+        context['to_date'] = year_end
         context['has_year'] = True
         return context
 
@@ -145,14 +150,18 @@ class QuarterlyReportMixIn(YearMixin, EntityReportManager):
         return self.get_quarter_end(year, quarter, fy_start)
 
     def get_context_data(self, **kwargs) -> dict:
+        context = super(QuarterlyReportMixIn, self).get_context_data(**kwargs)
         quarter = self.get_quarter()
         year = self.get_year()
-        context = super(QuarterlyReportMixIn, self).get_context_data(**kwargs)
         context['quarter'] = quarter
         context['next_quarter'] = self.get_next_quarter(quarter)
         context['previous_quarter'] = self.get_previous_quarter(quarter)
-        context['from_date'] = self.get_quarter_start_date(year=year, quarter=quarter)
-        context['to_date'] = self.get_quarter_end_date(year=year, quarter=quarter)
+        quarter_start = self.get_quarter_start_date(year=year, quarter=quarter)
+        quarter_end = self.get_quarter_end_date(year=year, quarter=quarter)
+        context['quarter_start'] = quarter_start
+        context['quarter_end'] = quarter_end
+        context['from_date'] = quarter_start
+        context['to_date'] = quarter_end
         context['has_quarter'] = True
         return context
 
@@ -196,18 +205,6 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         last_day = monthrange(year, month)[1]
         return date(year=year, month=month, day=last_day)
 
-    def get_context_data(self, **kwargs):
-        context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
-        month = int(self.get_month())
-        year = int(self.get_year())
-        context['month'] = month
-        context['next_month'] = self.get_next_month(month)
-        context['previous_month'] = self.get_previous_month(month)
-        context['from_date'] = self.get_month_start_date(month, year)
-        context['to_date'] = self.get_month_end_date(month, year)
-        context['has_month'] = True
-        return context
-
     def get_next_month(self, month) -> int:
         if month != 12:
             return month + 1
@@ -218,16 +215,35 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
             return month - 1
         return 12
 
+    def get_context_data(self, **kwargs):
+        context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
+        month = int(self.get_month())
+        year = int(self.get_year())
+        context['month'] = month
+        context['next_month'] = self.get_next_month(month)
+        context['previous_month'] = self.get_previous_month(month)
+        month_start = self.get_month_start_date(year=year, month=month)
+        month_end = self.get_month_end_date(year=year, month=month)
+        context['month_start'] = month_start
+        context['month_end'] = month_end
+        context['from_date'] = month_start
+        context['to_date'] = month_end
+        context['has_month'] = True
+        return context
+
 
 class DateReportMixIn(MonthlyReportMixIn, DayMixin):
+    # BASE_DATE_URL = None
 
     def get_context_data(self, **kwargs):
-        context = super(DateReportMixIn, self).get_context_data(**kwargs)
+        context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
         view_date = self.get_date()
         context['has_date'] = True
-        context['view_date'] = view_date
         context['next_day'] = view_date + timedelta(days=1)
         context['previous_day'] = view_date - timedelta(days=1)
+        context['view_date'] = view_date
+        context['from_date'] = view_date
+        context['to_date'] = view_date
         return context
 
     def get_date(self) -> date:
@@ -299,3 +315,118 @@ class EntityUnitMixIn:
         if not unit_slug:
             unit_slug = self.request.GET.get(self.UNIT_SLUG_QUERY_PARAM)
         return unit_slug
+
+
+class EntityDigestMixIn:
+
+    def get_context_data(self, **kwargs):
+        context = super(EntityDigestMixIn, self).get_context_data(**kwargs)
+        context = self.get_entity_digest(context)
+        return context
+
+    def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
+        by_period = self.request.GET.get('by_period')
+        entity_model: EntityModel = self.object
+        if not end_date:
+            end_date = context['to_date']
+        if not from_date:
+            from_date = context['from_date']
+
+        unit_slug = self.get_unit_slug()
+
+        # todo: make it consistent to always return queryset
+        txs_qs, digest = entity_model.digest(user_model=self.request.user,
+                                             to_date=end_date,
+                                             unit_slug=unit_slug,
+                                             by_period=True if by_period else False,
+                                             process_ratios=True,
+                                             process_roles=True,
+                                             process_groups=True,
+                                             return_queryset=True)
+
+        equity_digest = entity_model.digest(user_model=self.request.user,
+                                            queryset=txs_qs,
+                                            digest_name='equity_digest',
+                                            to_date=end_date,
+                                            from_date=from_date,
+                                            unit_slug=unit_slug,
+                                            by_period=True if by_period else False,
+                                            process_ratios=False,
+                                            process_roles=True,
+                                            process_groups=True)
+        context.update(digest)
+        context.update(equity_digest)
+        context['date_filter'] = end_date
+        return context
+
+
+class UnpaidMixIn:
+    FETCH_UNPAID_INVOICES: bool = False
+    FETCH_UNPAID_BILLS: bool = False
+
+    def get_context_data(self, **kwargs):
+        context = super(UnpaidMixIn, self).get_context_data(**kwargs)
+        context['invoices'] = self.get_unpaid_invoices_qs(context)
+        context['bills'] = self.get_unpaid_bills_qs(context)
+        return context
+
+    def get_unpaid_invoices_qs(self, context, from_date=None, to_date=None):
+        if self.FETCH_UNPAID_INVOICES:
+            from_date = context['from_date'] if not from_date else from_date
+            to_date = context['to_date'] if not to_date else to_date
+
+            qs = InvoiceModel.objects.for_entity(
+                user_model=self.request.user,
+                entity_slug=self.kwargs['entity_slug']
+            ).filter(
+                Q(date__gte=from_date) &
+                Q(date__lte=to_date)
+            ).select_related('customer').order_by('due_date')
+
+            unit_slug = self.get_unit_slug()
+            if unit_slug:
+                qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
+
+            return qs
+
+    def get_unpaid_bills_qs(self, context, from_date=None, to_date=None):
+        if self.FETCH_UNPAID_BILLS:
+            from_date = context['from_date'] if not from_date else from_date
+            to_date = context['to_date'] if not to_date else to_date
+
+            qs = BillModel.objects.for_entity(
+                user_model=self.request.user,
+                entity_slug=self.kwargs['entity_slug']
+            ).filter(
+                Q(date__gte=from_date) &
+                Q(date__lte=to_date)
+            ).select_related('vendor').order_by('due_date')
+
+            unit_slug = self.get_unit_slug()
+            if unit_slug:
+                qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
+
+            return qs
+
+
+class BaseDateNavigationUrlMixIn:
+    BASE_DATE_URL_KWARGS = (
+        'entity_slug',
+        'unit_slug',
+        'ledger_pk',
+        'account_pk'
+    )
+
+    def get_context_data(self, **kwargs):
+        context = super(BaseDateNavigationUrlMixIn, self).get_context_data(**kwargs)
+        self.get_base_date_nav_url(context)
+        return context
+
+    def get_base_date_nav_url(self, context, **kwargs):
+        view_name = context['view'].request.resolver_match.url_name
+        view_name_base = '-'.join(view_name.split('-')[:2])
+        context['date_navigation_url'] = reverse(f'django_ledger:{view_name_base}',
+                                                 kwargs={
+                                                     k: v for k, v in self.kwargs.items() if
+                                                     k in self.BASE_DATE_URL_KWARGS
+                                                 })

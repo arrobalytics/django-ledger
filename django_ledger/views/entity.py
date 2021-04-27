@@ -10,7 +10,6 @@ from datetime import timedelta
 from random import randint
 
 from django.contrib.messages import add_message, ERROR
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localtime, localdate
@@ -19,7 +18,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.models import BillModel, EntityModel, InvoiceModel, EntityUnitModel
+from django_ledger.models import EntityModel, EntityUnitModel
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
@@ -27,8 +26,8 @@ from django_ledger.utils import (
 )
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, FromToDatesMixIn,
-    LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn
+    MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
+    EntityDigestMixIn, UnpaidMixIn, BaseDateNavigationUrlMixIn
 )
 
 
@@ -135,7 +134,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(EntityUnitMixIn, LoginRequiredMixIn, RedirectView):
+class EntityModelDetailView(LoginRequiredMixIn, EntityUnitMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -156,20 +155,25 @@ class EntityModelDetailView(EntityUnitMixIn, LoginRequiredMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
-                                      EntityUnitMixIn,
-                                      # FromToDatesMixIn,
-                                      YearlyReportMixIn,
-                                      SessionConfigurationMixIn,
-                                      DetailView):
+class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
+                                         SessionConfigurationMixIn,
+                                         BaseDateNavigationUrlMixIn,
+                                         UnpaidMixIn,
+                                         EntityUnitMixIn,
+                                         EntityDigestMixIn,
+                                         YearlyReportMixIn,
+                                         DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity_dashboard.html'
     DJL_NO_FROM_DATE_RAISE_404 = False
     DJL_NO_TO_DATE_RAISE_404 = False
 
+    FETCH_UNPAID_BILLS = True
+    FETCH_UNPAID_INVOICES = True
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = super(FiscalYearEntityModelDashboardView, self).get_context_data(**kwargs)
         entity_model: EntityModel = self.object
         context['page_title'] = entity_model.name
         context['header_title'] = entity_model.name
@@ -193,21 +197,6 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
                                                         kwargs=KWARGS)
 
-        context['dashboard_base_url'] = reverse(f'django_ledger:entity-dashboard',
-                                                kwargs={
-                                                    'entity_slug': self.kwargs['entity_slug']
-                                                })
-
-        from_date, to_date = self.get_from_to_dates()
-        context['from_date'] = from_date
-        context['to_date'] = to_date
-        context = self.get_entity_digest(context, from_date, to_date)
-
-        # Unpaid Bills for Dashboard
-        context['bills'] = self.get_unpaid_bills_qs(from_date, to_date)
-
-        # Unpaid Invoices for Dashboard
-        context['invoices'] = self.get_unpaid_invoices_qs(from_date, to_date)
         return context
 
     def get_fy_start_month(self) -> int:
@@ -223,80 +212,20 @@ class FiscalYearEntityModelDetailView(LoginRequiredMixIn,
         return EntityModel.objects.for_user(
             user_model=self.request.user).select_related('coa')
 
-    def get_entity_digest(self, context, from_date=None, end_date=None):
-        by_period = self.request.GET.get('by_period')
-        entity_model: EntityModel = self.object
-        if not end_date:
-            end_date = self.get_to_date()
-        if not from_date:
-            from_date = self.get_from_date()
-        unit_slug = self.get_unit_slug()
 
-        # todo: make it consistent to always return queryset
-        txs_qs, digest = entity_model.digest(user_model=self.request.user,
-                                             to_date=end_date,
-                                             unit_slug=unit_slug,
-                                             by_period=True if by_period else False,
-                                             process_ratios=True,
-                                             process_roles=True,
-                                             process_groups=True,
-                                             return_queryset=True)
-
-        equity_digest = entity_model.digest(user_model=self.request.user,
-                                            queryset=txs_qs,
-                                            digest_name='equity_digest',
-                                            to_date=end_date,
-                                            from_date=from_date,
-                                            unit_slug=unit_slug,
-                                            by_period=True if by_period else False,
-                                            process_ratios=False,
-                                            process_roles=True,
-                                            process_groups=True)
-        context.update(digest)
-        context.update(equity_digest)
-        context['date_filter'] = end_date
-        return context
-
-    def get_unpaid_invoices_qs(self, from_date, to_date):
-        qs = InvoiceModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).filter(
-            Q(date__gte=from_date) &
-            Q(date__lte=to_date)
-        ).select_related('customer').order_by('due_date')
-        unit_slug = self.get_unit_slug()
-        if unit_slug:
-            qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
-        return qs
-
-    def get_unpaid_bills_qs(self, from_date, to_date):
-        qs = BillModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).filter(
-            Q(date__gte=from_date) &
-            Q(date__lte=to_date)
-        ).select_related('vendor').order_by('due_date')
-        unit_slug = self.get_unit_slug()
-        if unit_slug:
-            qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
-        return qs
-
-
-class QuarterlyEntityDetailView(QuarterlyReportMixIn, FiscalYearEntityModelDetailView):
+class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
     """
     Entity Quarterly Dashboard View.
     """
 
 
-class MonthlyEntityDetailView(MonthlyReportMixIn, FiscalYearEntityModelDetailView):
+class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
     """
     Monthly Entity Dashboard View.
     """
 
 
-class DateEntityDetailView(DateReportMixIn, MonthlyEntityDetailView):
+class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
     """
     Date-specific Entity Dashboard View.
     """
@@ -315,6 +244,7 @@ class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
 
 
 class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
+                                            BaseDateNavigationUrlMixIn,
                                             YearlyReportMixIn,
                                             SessionConfigurationMixIn,
                                             DetailView):
@@ -323,7 +253,7 @@ class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
     template_name = 'django_ledger/balance_sheet.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = super(FiscalYearEntityModelBalanceSheetView, self).get_context_data(**kwargs)
         context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
         context['header_title'] = context['page_title']
         unit_slug = self.request.GET.get('unit')
@@ -355,6 +285,12 @@ class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntit
 class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
     """
     Monthly Balance Sheet View.
+    """
+
+
+class DateEntityModelBalanceSheetView(DateReportMixIn, MonthlyEntityModelBalanceSheetView):
+    """
+    Date Balance Sheet View.
     """
 
 

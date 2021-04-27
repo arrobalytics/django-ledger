@@ -5,9 +5,9 @@
     <div class="card-content">
         <div class="has-text-centered">
             <h2 class="is-size-2 has-font-weight-medium">
-                {% if has_month %}{{ start_date | date:"F" }}{% endif %}
-                {% if has_quarter %}Q{{ quarter }}{% endif %}
-                {{ year }}
+                {% if has_month %}{{ to_date | date:"F Y" }}{% endif %}
+                {% if has_quarter %}Q{{ quarter }} {{ year }}{% endif %}
+                {% if has_date %}{{ to_date | date }}{% endif %}
             </h2>
         </div>
 
@@ -29,14 +29,19 @@
         </p>
 
         <div class="has-text-centered">
-            <p class="has-text-weight-bold is-italic mt-2">
-                {{ from_date | date:"m/d/Y" }}
-                {% trans 'thru' %}
-                {{ to_date | date:"m/d/Y" }}</p>
+            {% if has_date %}
+                <p class="has-text-weight-bold is-italic mt-2">{{ from_date | date:"m/d/Y" }}</p>
+            {% else %}
+                <p class="has-text-weight-bold is-italic mt-2">
+                    {{ from_date | date:"m/d/Y" }}
+                    {% trans 'thru' %}
+                    {{ to_date | date:"m/d/Y" }}</p>
+            {% endif %}
+
             <a href="{{ current_month_url }}">{% trans 'Go To Current Month' %}</a>
         </div>
         <div class="has-text-centered">
-            {% date_picker %}
+            {% date_picker date_navigation_url %}
         </div>
     </div>
 </div>

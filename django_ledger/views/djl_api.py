@@ -84,9 +84,9 @@ class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).select_related('ledger__entity')
 
-            unit_slug = self.get_unit_slug()
-            if unit_slug:
-                bill_qs.filter(ledger__unit__slug__exact=unit_slug)
+            # unit_slug = self.get_unit_slug()
+            # if unit_slug:
+            #     bill_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
 
             net_summary = accruable_net_summary(bill_qs)
             entity_model = bill_qs.first().ledger.entity
@@ -123,9 +123,9 @@ class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).select_related('ledger__entity')
 
-            unit_slug = self.get_unit_slug()
-            if unit_slug:
-                invoice_qs.filter(ledger__unit__slug__exact=unit_slug)
+            # unit_slug = self.get_unit_slug()
+            # if unit_slug:
+            #     invoice_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
 
             net_summary = accruable_net_summary(invoice_qs)
             entity_model = invoice_qs.first().ledger.entity

@@ -16,6 +16,6 @@
         <h3 class="has-text-centered">{{ from_date | date }} <span
                 class="is-italic">{% trans 'thru' %}</span> {{ to_date | date }}</h3>
     {% else %}
-        <h3 class="has-text-centered">{% trans 'Date' %}: {{ view_date | date }}</h3>
+        <h3 class="has-text-centered">{{ from_date | date }}</h3>
     {% endif %}
 </div>

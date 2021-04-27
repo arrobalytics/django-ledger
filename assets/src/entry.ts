@@ -82,8 +82,11 @@ export function calculateItemTotal(
 
 
 export function getCalendar(htmlId: string, baseUrl: string) {
+    let el = document.getElementById(htmlId)
+    const bUrl = el!.dataset.baseurl
     return new Pikaday({
-        field: document.getElementById(htmlId),
+        field: el,
+
         onSelect(value: Date) {
             const y = value.getFullYear();
             const m = value.getMonth() + 1;

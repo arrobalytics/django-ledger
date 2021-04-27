@@ -144,6 +144,10 @@ class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceShee
             user_model=self.request.user
         ).prefetch_related('entity')
 
+    def get_fy_start_month(self) -> int:
+        entity_unit: EntityUnitModel = self.object
+        return entity_unit.entity.fy_start_month
+
 
 class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
     """

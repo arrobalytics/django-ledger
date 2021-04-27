@@ -33,10 +33,10 @@
                         {% endif %}
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
-                                {% elif month %}{{ start_date | date:'F, Y' }}
+                                {% elif month %}{{ from_date | date:'F, Y' }}
                                 {% else %}{% trans 'Fiscal Year' %} {{ year }}
                             {% endif %}</h2>
-                        <h3 class="is-size-4 is-italic has-font-weight-light">As Of {{ end_date | date:'m/d/Y' }}</h3>
+                        <h3 class="is-size-4 is-italic has-font-weight-light">As Of {{ to_date | date:'m/d/Y' }}</h3>
                     </div>
                 </div>
             </div>
@@ -54,4 +54,22 @@
 
         </div>
     </div>
+{% endblock %}
+
+{% block script_bottom %}
+    {{ block.super }}
+    <script>
+
+        let fromDate = "{{ from_date | date:'Y-m-d' }}";
+        let toDate = "{{ to_date | date:'Y-m-d' }}";
+        let entitySlug = "{{ view.kwargs.entity_slug }}"
+
+        {% if date_navigation_url %}
+            let dateNavigationUrl = "{{ date_navigation_url }}"
+            let datePickers = document.querySelectorAll("[id^='djl-datepicker']")
+            datePickers.forEach(dp => djLedger.getCalendar(dp.attributes.id.value, dateNavigationUrl))
+        {% endif %}
+
+
+    </script>
 {% endblock %}

@@ -17,15 +17,15 @@
 ### Version 0.5
 
 
-* Inventory tracking.
-* Purchase Order Model implementation.
-* Cash flow statement.
-* Closing entries, snapshots & trial balance import.
-* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
-  output __(help needed)__.
+* __0.5.0__: Inventory tracking.
+* __0.5.0__: Purchase Order Model implementation.
+* __0.5.1__: Cash flow statement.
+* __0.5.2__: Closing entries, snapshots & trial balance import.
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
+* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
+output __(help needed!)__.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 

@@ -18,6 +18,9 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/balance-sheet/month/<int:year>/<str:month>/',
          views.MonthlyEntityModelBalanceSheetView.as_view(),
          name='entity-bs-month'),
+    path('entity/<slug:entity_slug>/balance-sheet/date/<int:year>/<int:month>/<int:day>/',
+         views.DateEntityModelBalanceSheetView.as_view(),
+         name='entity-bs-date'),
 
     # Ledgers....
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/year/<int:year>/',
