@@ -84,6 +84,7 @@ class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).select_related('ledger__entity')
 
+            # todo: implement this...
             # unit_slug = self.get_unit_slug()
             # if unit_slug:
             #     bill_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
@@ -123,6 +124,7 @@ class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).select_related('ledger__entity')
 
+            # todo: implement this...
             # unit_slug = self.get_unit_slug()
             # if unit_slug:
             #     invoice_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)

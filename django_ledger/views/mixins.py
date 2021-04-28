@@ -310,6 +310,8 @@ class EntityUnitMixIn:
     UNIT_SLUG_KWARG = 'unit_slug'
     UNIT_SLUG_QUERY_PARAM = 'unit'
 
+    # todo: add get context data method
+
     def get_unit_slug(self):
         unit_slug = self.kwargs.get(self.UNIT_SLUG_KWARG)
         if not unit_slug:

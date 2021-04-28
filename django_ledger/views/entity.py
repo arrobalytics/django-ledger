@@ -225,7 +225,7 @@ class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashbo
     """
 
 
-class DateEntityDashboardView(DateReportMixIn, MonthlyEntityDashboardView):
+class DateEntityDashboardView(DateReportMixIn, FiscalYearEntityModelDashboardView):
     """
     Date-specific Entity Dashboard View.
     """
@@ -244,9 +244,10 @@ class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
 
 
 class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
-                                            BaseDateNavigationUrlMixIn,
-                                            YearlyReportMixIn,
                                             SessionConfigurationMixIn,
+                                            BaseDateNavigationUrlMixIn,
+                                            EntityUnitMixIn,
+                                            YearlyReportMixIn,
                                             DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -288,7 +289,7 @@ class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityMod
     """
 
 
-class DateEntityModelBalanceSheetView(DateReportMixIn, MonthlyEntityModelBalanceSheetView):
+class DateEntityModelBalanceSheetView(DateReportMixIn, FiscalYearEntityModelBalanceSheetView):
     """
     Date Balance Sheet View.
     """
@@ -306,8 +307,10 @@ class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
 
 
 class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
-                                               YearlyReportMixIn,
                                                SessionConfigurationMixIn,
+                                               BaseDateNavigationUrlMixIn,
+                                               EntityUnitMixIn,
+                                               YearlyReportMixIn,
                                                DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
@@ -341,6 +344,12 @@ class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEn
 class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
     """
     Monthly Income Statement View.
+    """
+
+
+class DateModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeStatementView):
+    """
+    Date Income Statement View.
     """
 
 

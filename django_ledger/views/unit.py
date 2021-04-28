@@ -7,7 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, R
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.models import EntityUnitModel, EntityModel
 from django_ledger.views.entity import FiscalYearEntityModelBalanceSheetView, FiscalYearEntityModelIncomeStatementView
-from django_ledger.views.mixins import LoginRequiredMixIn, QuarterlyReportMixIn, MonthlyReportMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn, QuarterlyReportMixIn, MonthlyReportMixIn, DateReportMixIn
 
 
 class EntityUnitModelListView(LoginRequiredMixIn, ListView):
@@ -151,13 +151,19 @@ class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceShee
 
 class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
     """
-    Entity Unit Fiscal Quarter Balance Sheet View Class
+    Entity Unit Fiscal Quarter Balance Sheet View Class.
     """
 
 
 class MonthlyEntityUnitModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
     """
-    Entity Unit Fiscal Month Balance Sheet View Class
+    Entity Unit Fiscal Month Balance Sheet View Class.
+    """
+
+
+class DateEntityUnitModelBalanceSheetView(DateReportMixIn, MonthlyEntityUnitModelBalanceSheetView):
+    """
+    Entity Unit Date Balance Sheet View Class.
     """
 
 
@@ -188,4 +194,10 @@ class QuarterlyEntityUnitModelIncomeStatementView(QuarterlyReportMixIn, FiscalYe
 class MonthlyEntityUnitModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
     """
     Entity Unit Fiscal Month Income Statement View Class
+    """
+
+
+class DateEntityUnitModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeStatementView):
+    """
+    Entity Unit Date Income Statement View Class
     """

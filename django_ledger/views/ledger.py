@@ -7,15 +7,17 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
-    MonthlyReportMixIn, LoginRequiredMixIn)
+    MonthlyReportMixIn, LoginRequiredMixIn, DateReportMixIn, SessionConfigurationMixIn, BaseDateNavigationUrlMixIn,
+    EntityUnitMixIn)
 
 
 class LedgerModelListView(LoginRequiredMixIn, ListView):
@@ -101,7 +103,22 @@ class LedgerModelUpdateView(LoginRequiredMixIn, UpdateView):
                        })
 
 
+# Ledger Balance Sheet Views...
+class BaseLedgerBalanceSheetView(LoginRequiredMixIn, RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:ledger-bs-year', kwargs={
+            'entity_slug': self.kwargs['entity_slug'],
+            'ledger_pk': self.kwargs['ledger_pk'],
+            'year': year
+        })
+
+
 class FiscalYearLedgerBalanceSheetView(LoginRequiredMixIn,
+                                       SessionConfigurationMixIn,
+                                       BaseDateNavigationUrlMixIn,
+                                       EntityUnitMixIn,
                                        YearlyReportMixIn,
                                        DetailView):
     context_object_name = 'ledger'
@@ -134,9 +151,31 @@ class MonthlyLedgerBalanceSheetView(MonthlyReportMixIn, FiscalYearLedgerBalanceS
     """
 
 
-class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn,
-                                          DetailView,
-                                          LoginRequiredMixIn):
+class DateLedgerBalanceSheetView(DateReportMixIn, FiscalYearLedgerBalanceSheetView):
+    """
+    Date Balance Sheet View.
+    """
+
+
+# Ledger Income Statement Views...
+class BaseLedgerIncomeStatementView(LoginRequiredMixIn, RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:ledger-ic-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'ledger_pk': self.kwargs['ledger_pk'],
+                           'year': year
+                       })
+
+
+class FiscalYearLedgerIncomeStatementView(LoginRequiredMixIn,
+                                          SessionConfigurationMixIn,
+                                          BaseDateNavigationUrlMixIn,
+                                          EntityUnitMixIn,
+                                          YearlyReportMixIn,
+                                          DetailView):
     context_object_name = 'ledger'
     template_name = 'django_ledger/income_statement.html'
     slug_url_kwarg = 'ledger_pk'
@@ -157,11 +196,17 @@ class FiscalYearLedgerIncomeStatementView(YearlyReportMixIn,
 
 class QuarterlyLedgerIncomeStatementView(QuarterlyReportMixIn, FiscalYearLedgerIncomeStatementView):
     """
-    Income Statement Quarter Report.
+    Quarterly Income Statement Quarter Report.
     """
 
 
 class MonthlyLedgerIncomeStatementView(MonthlyReportMixIn, FiscalYearLedgerIncomeStatementView):
     """
-    Income Statement Monthly Report.
+    Monthly Income Statement Monthly Report.
+    """
+
+
+class DateLedgerIncomeStatementView(DateReportMixIn, FiscalYearLedgerIncomeStatementView):
+    """
+    Date Income Statement Monthly Report.
     """

@@ -2,6 +2,7 @@ from django.urls import path
 
 from django_ledger import views
 
+# todo: implement missing date navigation views...
 urlpatterns = [
 
     # BALANCE SHEET Reports...
@@ -12,10 +13,10 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/balance-sheet/year/<int:year>/',
          views.FiscalYearEntityModelBalanceSheetView.as_view(),
          name='entity-bs-year'),
-    path('entity/<slug:entity_slug>/balance-sheet/quarter/<int:year>/<str:quarter>/',
+    path('entity/<slug:entity_slug>/balance-sheet/quarter/<int:year>/<int:quarter>/',
          views.QuarterlyEntityModelBalanceSheetView.as_view(),
          name='entity-bs-quarter'),
-    path('entity/<slug:entity_slug>/balance-sheet/month/<int:year>/<str:month>/',
+    path('entity/<slug:entity_slug>/balance-sheet/month/<int:year>/<int:month>/',
          views.MonthlyEntityModelBalanceSheetView.as_view(),
          name='entity-bs-month'),
     path('entity/<slug:entity_slug>/balance-sheet/date/<int:year>/<int:month>/<int:day>/',
@@ -23,15 +24,21 @@ urlpatterns = [
          name='entity-bs-date'),
 
     # Ledgers....
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/',
+         views.FiscalYearLedgerBalanceSheetView.as_view(),
+         name='ledger-bs'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/year/<int:year>/',
          views.FiscalYearLedgerBalanceSheetView.as_view(),
          name='ledger-bs-year'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/quarter/<int:year>/<int:quarter>/',
          views.QuarterlyLedgerBalanceSheetView.as_view(),
          name='ledger-bs-quarter'),
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/month/<int:year>/<str:month>/',
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/month/<int:year>/<int:month>/',
          views.MonthlyLedgerBalanceSheetView.as_view(),
          name='ledger-bs-month'),
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/balance-sheet/date/<int:year>/<int:month>/<int:day>/',
+         views.DateLedgerBalanceSheetView.as_view(),
+         name='ledger-bs-date'),
 
     # Units...
     path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/',
@@ -43,9 +50,12 @@ urlpatterns = [
     path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/quarter/<int:year>/<int:quarter>/',
          views.QuarterlyEntityUnitModelBalanceSheetView.as_view(),
          name='unit-bs-quarter'),
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/month/<int:year>/<str:month>/',
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/month/<int:year>/<int:month>/',
          views.MonthlyEntityUnitModelBalanceSheetView.as_view(),
          name='unit-bs-month'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/balance-sheet/date/<int:year>/<int:month>/<int:day>/',
+         views.DateEntityUnitModelBalanceSheetView.as_view(),
+         name='unit-bs-date'),
 
     # INCOME STATEMENT Reports ----
     # Entity .....
@@ -55,23 +65,32 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/income-statement/year/<int:year>/',
          views.FiscalYearEntityModelIncomeStatementView.as_view(),
          name='entity-ic-year'),
-    path('entity/<slug:entity_slug>/income-statement/quarter/<int:year>/<str:quarter>/',
+    path('entity/<slug:entity_slug>/income-statement/quarter/<int:year>/<int:quarter>/',
          views.QuarterlyEntityModelIncomeStatementView.as_view(),
          name='entity-ic-quarter'),
-    path('entity/<slug:entity_slug>/income-statement/month/<int:year>/<str:month>/',
+    path('entity/<slug:entity_slug>/income-statement/month/<int:year>/<int:month>/',
          views.MonthlyEntityModelIncomeStatementView.as_view(),
          name='entity-ic-month'),
+    path('entity/<slug:entity_slug>/income-statement/date/<int:year>/<int:month>/<int:day>/',
+         views.MonthlyEntityModelIncomeStatementView.as_view(),
+         name='entity-ic-date'),
 
     # Ledgers ....
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/',
+         views.FiscalYearLedgerIncomeStatementView.as_view(),
+         name='ledger-ic'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/year/<int:year>/',
          views.FiscalYearLedgerIncomeStatementView.as_view(),
          name='ledger-ic-year'),
     path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/quarter/<int:year>/<int:quarter>/',
          views.QuarterlyLedgerIncomeStatementView.as_view(),
          name='ledger-ic-quarter'),
-    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/month/<int:year>/<str:month>/',
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/month/<int:year>/<int:month>/',
          views.MonthlyLedgerIncomeStatementView.as_view(),
          name='ledger-ic-month'),
+    path('ledger/<slug:entity_slug>/<uuid:ledger_pk>/income-statement/date/<int:year>/<int:month>/<int:day>/',
+         views.DateLedgerIncomeStatementView.as_view(),
+         name='ledger-ic-date'),
 
     # Entity Units...
     path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/',
@@ -86,5 +105,7 @@ urlpatterns = [
     path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/month/<int:year>/<str:month>/',
          views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
          name='unit-ic-month'),
-
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/date/<int:year>/<str:month>/<int:day>/',
+         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-ic-date')
 ]
