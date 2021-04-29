@@ -9,7 +9,7 @@ Michael Noel <noel.michael87@gmail.com>
 
 from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, HiddenInput
 
-from django_ledger.io import validate_tx_data
+from django_ledger.io import balance_tx_data
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
@@ -83,7 +83,7 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
             'tx_type': tx.cleaned_data.get('tx_type'),
             'amount': tx.cleaned_data.get('amount')
         } for tx in self.forms if not self._should_delete_form(tx)]
-        validate_tx_data(txs_balances)
+        balance_tx_data(txs_balances)
 
 
 TransactionModelFormSet = modelformset_factory(

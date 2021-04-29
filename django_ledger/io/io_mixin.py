@@ -9,23 +9,21 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import datetime, date
 from itertools import groupby
 from random import choice
-from typing import List, Set, Union
-from typing import Tuple
+from typing import List, Set, Union, Tuple
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum, QuerySet
 from django.db.models.functions import TruncMonth
+from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import localdate
-from django.utils.timezone import make_aware, is_naive
+from django.utils.timezone import localdate, make_aware, is_naive
 from jsonschema import validate
 
 from django_ledger.exceptions import InvalidDateInputException, TransactionNotInBalanceException
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RoleManager, GroupManager
-from django_ledger.models.journalentry import JournalEntryModel, validate_activity
 from django_ledger.models.schemas import SCHEMA_DIGEST
 from django_ledger.settings import (DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME,
                                     DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -42,30 +40,37 @@ class LazyImporter:
     UNIT_MODEL = None
     LEDGER_MODEL = None
     TXS_MODEL = None
+    JE_MODEL = None
 
     def get_entity_model(self):
         if not self.ENTITY_MODEL:
-            from django_ledger.models.entity import EntityModel
+            from django_ledger.models import EntityModel
             self.ENTITY_MODEL = EntityModel
         return self.ENTITY_MODEL
 
     def get_txs_model(self):
         if not self.TXS_MODEL:
-            from django_ledger.models.transactions import TransactionModel
+            from django_ledger.models import TransactionModel
             self.TXS_MODEL = TransactionModel
         return self.TXS_MODEL
 
     def get_ledger_model(self):
         if not self.LEDGER_MODEL:
-            from django_ledger.models.ledger import LedgerModel
+            from django_ledger.models import LedgerModel
             self.LEDGER_MODEL = LedgerModel
         return self.LEDGER_MODEL
 
     def get_unit_model(self):
         if not self.UNIT_MODEL:
-            from django_ledger.models.unit import EntityUnitModel
+            from django_ledger.models import EntityUnitModel
             self.UNIT_MODEL = EntityUnitModel
         return self.UNIT_MODEL
+
+    def get_journal_entry_model(self):
+        if not self.JE_MODEL:
+            from django_ledger.models import JournalEntryModel
+            self.JE_MODEL = JournalEntryModel
+        return self.JE_MODEL
 
 
 lazy_importer = LazyImporter()
@@ -97,7 +102,7 @@ def diff_tx_data(tx_data: list):
     return IS_TX_MODEL, is_valid, diff
 
 
-def validate_tx_data(tx_data: list):
+def balance_tx_data(tx_data: list):
     if tx_data:
 
         IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
@@ -160,6 +165,31 @@ def validate_dates(
     return from_date, to_date
 
 
+def validate_activity(activity: str, raise_404: bool = False):
+    if activity:
+        JournalEntryModel = lazy_importer.get_journal_entry_model()
+        if activity in JournalEntryModel.ACTIVITY_IGNORE:
+            activity = None
+
+        # todo: temporary fix. User should be able to pass a list.
+        if isinstance(activity, list) and len(activity) == 1:
+            activity = activity[0]
+        elif isinstance(activity, list) and len(activity) > 1:
+            exception = ValidationError(f'Multiple activities passed {activity}')
+            if raise_404:
+                raise Http404(exception)
+            raise exception
+
+        valid = activity in JournalEntryModel.ACTIVITY_ALLOWS
+        if activity and not valid:
+            exception = ValidationError(f'{activity} is invalid. Choices are {JournalEntryModel.ACTIVITY_ALLOWS}.')
+            if raise_404:
+                raise Http404(exception)
+            raise exception
+
+    return activity
+
+
 class IOMixIn:
     """
     Controls how transactions are recorded into the ledger.
@@ -197,7 +227,7 @@ class IOMixIn:
         :return:
         """
         # Validates that credits/debits balance.
-        validate_tx_data(je_txs)
+        balance_tx_data(je_txs)
 
         # Validates that the activity is valid.
         je_activity = validate_activity(je_activity)
@@ -208,6 +238,8 @@ class IOMixIn:
 
         if not je_ledger:
             je_ledger = self
+
+        JournalEntryModel = lazy_importer.get_journal_entry_model()
 
         je_model = JournalEntryModel.objects.create(
             ledger=je_ledger,
@@ -442,7 +474,6 @@ class IOMixIn:
                equity_only: bool = False,
                by_period: bool = False,
                by_unit: bool = True,
-               return_queryset: bool = False,
                digest_name: str = None
                ) -> dict or tuple:
 
@@ -495,6 +526,4 @@ class IOMixIn:
             digest_name: digest,
         }
 
-        if return_queryset:
-            return txs_qs, digest_results
-        return digest_results
+        return txs_qs, digest_results

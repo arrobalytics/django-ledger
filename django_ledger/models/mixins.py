@@ -8,7 +8,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import timedelta
 from decimal import Decimal
 from itertools import groupby
-from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -17,10 +16,7 @@ from django.db.models import QuerySet
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import validate_tx_data
-from django_ledger.io.roles import (GROUP_INCOME, GROUP_EXPENSES,
-                                    ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE,
-                                    ASSET_CA_RECEIVABLES)
+from django_ledger.io import balance_tx_data, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, ASSET_CA_RECEIVABLES
 
 
 class LazyLoader:
@@ -111,6 +107,12 @@ class AccruableItemMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
+    TX_TYPE_MAPPING = {
+        'ci': 'credit',
+        'dd': 'credit',
+        'cd': 'debit',
+        'di': 'debit',
+    }
 
     TERMS = [
         ('on_receipt', 'Due On Receipt'),
@@ -243,7 +245,7 @@ class AccruableItemMixIn(models.Model):
             'balance_type': account.balance_type
         }
 
-    def get_item_data(self, queryset=None):
+    def get_item_data(self, entity_slug: str, queryset=None):
         raise NotImplementedError('Must implement get_account_balance_data method.')
 
     def get_migrate_state_desc(self, *args, **kwargs):
@@ -264,17 +266,9 @@ class AccruableItemMixIn(models.Model):
                     adjustment_amount: Decimal):
 
         if adjustment_amount:
-            # todo: implement this as a standalone function???
-            tx_types = {
-                'ci': 'credit',
-                'dd': 'credit',
-                'cd': 'debit',
-                'di': 'debit',
-            }
-
             acc_bal_type = acc_bal_type[0]
             d_or_i = 'd' if adjustment_amount < 0 else 'i'
-            return tx_types[acc_bal_type + d_or_i]
+            return self.TX_TYPE_MAPPING[acc_bal_type + d_or_i]
         return 'debit'
 
     def split_amount(self, amount: float, unit_split: dict, account_uuid, account_balance_type) -> dict:
@@ -301,7 +295,7 @@ class AccruableItemMixIn(models.Model):
         if self.migrate_allowed() or force_migrate:
 
             # getting current ledger state
-            txs_digest = self.ledger.digest(
+            txs_qs, txs_digest = self.ledger.digest(
                 user_model=user_model,
                 process_groups=True,
                 process_roles=False,
@@ -317,8 +311,7 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            # todo: use entity_slug here for safety...
-            item_data = self.get_item_data()
+            item_data = self.get_item_data(entity_slug=entity_slug)
 
             if isinstance(self, lazy_loader.get_bill_model()):
                 item_data_gb = groupby(item_data,
@@ -420,11 +413,11 @@ class AccruableItemMixIn(models.Model):
 
             for uid in unit_uuids:
                 # validates each unit txs independently...
-                validate_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
+                balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
 
             # validates all txs as a whole (for safety)...
             txs = [tx for ui, tx in txs_list]
-            validate_tx_data(tx_data=txs)
+            balance_tx_data(tx_data=txs)
             TransactionModel.objects.bulk_create(txs)
 
         else:

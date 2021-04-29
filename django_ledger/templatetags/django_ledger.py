@@ -17,8 +17,8 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
+from django_ledger.io.io_mixin import validate_activity
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
-from django_ledger.models.journalentry import validate_activity
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
@@ -310,7 +310,11 @@ def session_entity_name(context, request=None):
     if not request:
         request = context['request']
     session = request.session
-    return session.get(session_key)['entity_name']
+    try:
+        entity_name = session.get(session_key)['entity_name']
+    except KeyError:
+        entity_name = 'Django Ledger'
+    return entity_name
 
 
 # todo: rename template to activity_form_filter.

@@ -151,9 +151,10 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
-    def get_item_data(self, queryset=None):
+    def get_item_data(self, entity_slug, queryset=None):
         if not queryset:
             queryset = self.billmodelitemsthroughmodel_set.all()
+            queryset = queryset.filter(bill_model__ledger__entity__slug__exact=entity_slug)
         return queryset.order_by('item_model__expense_account__uuid',
                                  'entity_unit__uuid',
                                  'item_model__expense_account__balance_type').values(

@@ -12,15 +12,13 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localtime, localdate
 
-from django_ledger.models import (EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
-                                  UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel,
-                                  EntityUnitModel)
-from django_ledger.models.accounts import AccountModel
-from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.models.bill import BillModel, generate_bill_number, BillModelItemsThroughModel
+from django_ledger.models import (
+    EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
+    UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel, AccruableItemMixIn,
+    EntityUnitModel, AccountModel, BankAccountModel, BillModelItemsThroughModel, BillModel)
+from django_ledger.models.bill import generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.invoice import generate_invoice_number
-from django_ledger.models.mixins import AccruableItemMixIn
 from django_ledger.models.unit import create_entity_unit_slug
 
 UserModel = get_user_model()

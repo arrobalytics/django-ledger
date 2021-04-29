@@ -150,7 +150,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
         related_name=f'{REL_NAME_PREFIX}_cogs_account',
         help_text=_('COGS account where cost will be recognized on Income Statement.'),
         on_delete=models.PROTECT)
-    # todo: rename to income account... ?
     earnings_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,

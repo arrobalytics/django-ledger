@@ -180,13 +180,13 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
         context['header_subtitle'] = _('Dashboard')
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
-        unit_slug = self.get_unit_slug()
-        url_pointer = 'entity' if not unit_slug else 'unit'
+        unit_slug = context.get('unit_slug', self.get_unit_slug())
         KWARGS = dict(entity_slug=self.kwargs['entity_slug'])
 
         if unit_slug:
             KWARGS['unit_slug'] = unit_slug
 
+        url_pointer = 'entity' if not unit_slug else 'unit'
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
         context['pnl_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-pnl',
                                                 kwargs=KWARGS)

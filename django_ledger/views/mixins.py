@@ -310,7 +310,10 @@ class EntityUnitMixIn:
     UNIT_SLUG_KWARG = 'unit_slug'
     UNIT_SLUG_QUERY_PARAM = 'unit'
 
-    # todo: add get context data method
+    def get_context_data(self, **kwargs):
+        context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
+        context['unit_slug'] = self.get_unit_slug()
+        return context
 
     def get_unit_slug(self):
         unit_slug = self.kwargs.get(self.UNIT_SLUG_KWARG)
@@ -336,26 +339,24 @@ class EntityDigestMixIn:
 
         unit_slug = self.get_unit_slug()
 
-        # todo: make it consistent to always return queryset
         txs_qs, digest = entity_model.digest(user_model=self.request.user,
                                              to_date=end_date,
                                              unit_slug=unit_slug,
                                              by_period=True if by_period else False,
                                              process_ratios=True,
                                              process_roles=True,
-                                             process_groups=True,
-                                             return_queryset=True)
+                                             process_groups=True)
 
-        equity_digest = entity_model.digest(user_model=self.request.user,
-                                            queryset=txs_qs,
-                                            digest_name='equity_digest',
-                                            to_date=end_date,
-                                            from_date=from_date,
-                                            unit_slug=unit_slug,
-                                            by_period=True if by_period else False,
-                                            process_ratios=False,
-                                            process_roles=True,
-                                            process_groups=True)
+        txs_qs, equity_digest = entity_model.digest(user_model=self.request.user,
+                                                    queryset=txs_qs,
+                                                    digest_name='equity_digest',
+                                                    to_date=end_date,
+                                                    from_date=from_date,
+                                                    unit_slug=unit_slug,
+                                                    by_period=True if by_period else False,
+                                                    process_ratios=False,
+                                                    process_roles=True,
+                                                    process_groups=True)
         context.update(digest)
         context.update(equity_digest)
         context['date_filter'] = end_date

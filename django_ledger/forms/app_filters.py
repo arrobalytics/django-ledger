@@ -2,7 +2,7 @@ from django.forms import Form, ModelChoiceField, Select, ChoiceField, CharField,
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.journalentry import ACTIVITIES
+from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -29,7 +29,7 @@ class EntityFilterForm(Form):
 
 
 class ActivityFilterForm(Form):
-    CHOICES = [('all', _l('All'))] + ACTIVITIES
+    CHOICES = [('all', _l('All'))] + JournalEntryModel.ACTIVITIES
     activity = ChoiceField(choices=CHOICES,
                            label=_l('Activity'),
                            initial='all',

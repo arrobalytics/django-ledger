@@ -11,48 +11,11 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
-from django.http import Http404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from mptt.models import MPTTModel
 
-# todo: this is creating a circular reference need to resolve.
-# from django_ledger.abstracts.mixins import CreateUpdateMixIn
-
-ACTIVITIES = [
-    ('op', _('Operating')),
-    ('fin', _('Financing')),
-    ('inv', _('Investing')),
-    ('other', _('Other')),
-]
-
-ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
-ACTIVITY_IGNORE = ['all']
-
-
-def validate_activity(activity: str, raise_404: bool = False):
-    if activity:
-
-        if activity in ACTIVITY_IGNORE:
-            activity = None
-
-        # todo: temporary fix. User should be able to pass a list.
-        if isinstance(activity, list) and len(activity) == 1:
-            activity = activity[0]
-        elif isinstance(activity, list) and len(activity) > 1:
-            exception = ValidationError(f'Multiple activities passed {activity}')
-            if raise_404:
-                raise Http404(exception)
-            raise exception
-
-        valid = activity in ACTIVITY_ALLOWS
-        if activity and not valid:
-            exception = ValidationError(f'{activity} is invalid. Choices are {ACTIVITY_ALLOWS}.')
-            if raise_404:
-                raise Http404(exception)
-            raise exception
-
-    return activity
+from django_ledger.models import CreateUpdateMixIn
 
 
 class JournalEntryModelManager(models.Manager):
@@ -70,7 +33,16 @@ class JournalEntryModelManager(models.Manager):
         return qs
 
 
-class JournalEntryModelAbstract(MPTTModel):
+class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
+    ACTIVITY_IGNORE = ['all']
+    ACTIVITIES = [
+        ('op', _('Operating')),
+        ('fin', _('Financing')),
+        ('inv', _('Investing')),
+        ('other', _('Other')),
+    ]
+
+    ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
@@ -94,10 +66,6 @@ class JournalEntryModelAbstract(MPTTModel):
                                verbose_name=_('Ledger'),
                                related_name='journal_entries',
                                on_delete=models.CASCADE)
-
-    # todo: must come from create/update mixin. Resolve circular reference.
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     on_coa = JournalEntryModelManager()
 

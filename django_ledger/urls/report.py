@@ -2,7 +2,6 @@ from django.urls import path
 
 from django_ledger import views
 
-# todo: implement missing date navigation views...
 urlpatterns = [
 
     # BALANCE SHEET Reports...
