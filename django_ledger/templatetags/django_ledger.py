@@ -312,7 +312,7 @@ def session_entity_name(context, request=None):
     session = request.session
     try:
         entity_name = session.get(session_key)['entity_name']
-    except KeyError:
+    except KeyError or TypeError:
         entity_name = 'Django Ledger'
     return entity_name
 
