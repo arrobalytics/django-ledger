@@ -91,7 +91,7 @@ def balance_sheet_table(context, io_model, to_date):
 
     prepare_context_by_unit(context)
 
-    digest = io_model.digest(
+    txs_qs, digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         equity_only=False,
@@ -116,7 +116,7 @@ def income_statement_table(context, io_model, from_date, to_date):
 
     prepare_context_by_unit(context)
 
-    digest = io_model.digest(
+    txs_qs, digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         entity_slug=entity_slug,
