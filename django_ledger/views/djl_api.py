@@ -32,7 +32,7 @@ class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
 
             unit_slug = self.get_unit_slug()
 
-            entity_digest = entity.digest(
+            txs_qs, entity_digest = entity.digest(
                 user_model=self.request.user,
                 unit_slug=unit_slug,
                 equity_only=True,
