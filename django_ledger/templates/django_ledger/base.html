@@ -33,6 +33,24 @@
 
 {% block script_bottom %}
     <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+
+    <script>
+        {% if entity_slug %}
+            let entitySlug = "{{ view.kwargs.entity_slug }}"
+        {% endif %}
+
+        {% if from_date and to_date %}
+            let fromDate = "{{ from_date | date:'Y-m-d' }}";
+            let toDate = "{{ to_date | date:'Y-m-d' }}";
+        {% endif %}
+
+        {% if date_navigation_url %}
+            let dateNavigationUrl = "{{ date_navigation_url }}"
+            let datePickers = document.querySelectorAll("[id^='djl-datepicker']")
+            datePickers.forEach(dp => djLedger.getCalendar(dp.attributes.id.value, dateNavigationUrl))
+        {% endif %}
+    </script>
+
 {% endblock %}
 
 </body>

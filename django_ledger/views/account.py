@@ -17,7 +17,8 @@ from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCrea
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import (
-    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, LoginRequiredMixIn
+    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn,
+    BaseDateNavigationUrlMixIn, EntityUnitMixIn, DateReportMixIn
 )
 
 
@@ -165,6 +166,9 @@ class AccountModelDetailView(LoginRequiredMixIn, RedirectView):
 
 
 class AccountModelYearDetailView(LoginRequiredMixIn,
+                                 SessionConfigurationMixIn,
+                                 BaseDateNavigationUrlMixIn,
+                                 EntityUnitMixIn,
                                  YearlyReportMixIn,
                                  DetailView):
     context_object_name = 'account'
@@ -204,4 +208,10 @@ class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetail
 class AccountModelMonthDetailView(MonthlyReportMixIn, AccountModelYearDetailView):
     """
     Account Model Month Detail View
+    """
+
+
+class AccountModelDateDetailView(DateReportMixIn, AccountModelYearDetailView):
+    """
+    Account Model Date Detail View
     """

@@ -24,7 +24,10 @@ urlpatterns = [
     path('<slug:entity_slug>/detail/<uuid:account_pk>/quarter/<int:year>/<int:quarter>/',
          views.AccountModelQuarterDetailView.as_view(),
          name='account-detail-quarter'),
-    path('<slug:entity_slug>/detail/<uuid:account_pk>/month/<int:year>/<str:month>/',
+    path('<slug:entity_slug>/detail/<uuid:account_pk>/month/<int:year>/<int:month>/',
          views.AccountModelMonthDetailView.as_view(),
-         name='account-detail-month')
+         name='account-detail-month'),
+    path('<slug:entity_slug>/detail/<uuid:account_pk>/date/<int:year>/<int:month>/<int:day>/',
+         views.AccountModelDateDetailView.as_view(),
+         name='account-detail-date')
 ]

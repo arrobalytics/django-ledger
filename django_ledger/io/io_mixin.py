@@ -109,24 +109,26 @@ def balance_tx_data(tx_data: list):
 
         while not is_valid:
 
-            tx_choice = choice(['debit', 'credit'])
-            tx = choice(list(tx for tx in tx_data if tx.tx_type == tx_choice))
+            tx_type_choice = choice(['debit', 'credit'])
+            txs_candidates = list(tx for tx in tx_data if tx.tx_type == tx_type_choice)
+            if len(txs_candidates) > 0:
+                tx = choice(list(tx for tx in tx_data if tx.tx_type == tx_type_choice))
 
-            if any([diff > 0 and tx_choice == 'debit',
-                    diff < 0 and tx_choice == 'credit']):
-                if IS_TX_MODEL:
-                    tx.amount += DJANGO_LEDGER_TRANSACTION_CORRECTION
-                else:
-                    tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                if any([diff > 0 and tx_type_choice == 'debit',
+                        diff < 0 and tx_type_choice == 'credit']):
+                    if IS_TX_MODEL:
+                        tx.amount += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                    else:
+                        tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
 
-            elif any([diff < 0 and tx_choice == 'debit',
-                      diff > 0 and tx_choice == 'credit']):
-                if IS_TX_MODEL:
-                    tx.amount -= DJANGO_LEDGER_TRANSACTION_CORRECTION
-                else:
-                    tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                elif any([diff < 0 and tx_type_choice == 'debit',
+                          diff > 0 and tx_type_choice == 'credit']):
+                    if IS_TX_MODEL:
+                        tx.amount -= DJANGO_LEDGER_TRANSACTION_CORRECTION
+                    else:
+                        tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
 
-            IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
+                IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
 
     return True
 
