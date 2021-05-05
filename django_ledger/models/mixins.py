@@ -16,7 +16,7 @@ from django.db.models import QuerySet
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import balance_tx_data, ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, ASSET_CA_RECEIVABLES
+from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 
 
 class LazyLoader:
@@ -469,21 +469,10 @@ class AccruableItemMixIn(models.Model):
             self.date = localdate()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
-        if self.prepaid_account.role != ASSET_CA_RECEIVABLES:
-            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}')
-        if self.unearned_account.role != LIABILITY_CL_ACC_PAYABLE:
-            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}')
-
-        # if all([
-        #     self.IS_DEBIT_BALANCE,
-        #     self.earnings_account.role not in GROUP_INCOME
-        # ]):
-        #     raise ValidationError(f'Earnings account must be of role {GROUP_INCOME}')
-        # elif all([
-        #     not self.IS_DEBIT_BALANCE,
-        #     self.earnings_account.role not in GROUP_EXPENSES
-        # ]):
-        #     raise ValidationError(f'Earnings account must be of role {GROUP_EXPENSES}')
+        if self.prepaid_account.role != ASSET_CA_PREPAID:
+            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}')
+        if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
+            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}')
 
         if self.accrue and self.progress is None:
             self.progress = 0

@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localtime, localdate
 
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (
     EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
     UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel, AccruableItemMixIn,
@@ -348,9 +349,9 @@ def generate_random_invoice(
         terms=choice(InvoiceModel.TERMS)[0],
         invoice_number=generate_invoice_number(),
         amount_due=0,
-        cash_account=choice(accounts_by_role['asset_ca_cash']),
-        prepaid_account=choice(accounts_by_role['asset_ca_recv']),
-        unearned_account=choice(accounts_by_role['lia_cl_acc_pay']),
+        cash_account=choice(accounts_by_role[ASSET_CA_CASH]),
+        prepaid_account=choice(accounts_by_role[ASSET_CA_PREPAID]),
+        unearned_account=choice(accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
         date=issue_dt,
         paid=is_paid,
         paid_date=paid_dt
@@ -410,9 +411,9 @@ def generate_random_bill(
         terms=choice(BillModel.TERMS)[0],
         bill_number=generate_bill_number(),
         amount_due=0,
-        cash_account=choice(accounts_by_role['asset_ca_cash']),
-        prepaid_account=choice(accounts_by_role['asset_ca_recv']),
-        unearned_account=choice(accounts_by_role['lia_cl_acc_pay']),
+        cash_account=choice(accounts_by_role[ASSET_CA_CASH]),
+        prepaid_account=choice(accounts_by_role[ASSET_CA_PREPAID]),
+        unearned_account=choice(accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
         date=issue_dt,
         paid=is_paid,
         paid_date=paid_dt

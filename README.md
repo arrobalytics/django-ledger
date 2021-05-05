@@ -7,19 +7,20 @@ Django Ledger supports:
 - Chart of Accounts.
 - Financial Statements (Income Statement & Balance Sheets).
 - Automatic financial ratio & insight calculations.
-- Multi tenancy.
-- Hierarchical entity management.
+- Multi tenancy (multiple users/clients).
+- Hierarchical entity management (for consolidated financial statements - v0.9).
 - Self-contained Ledgers, Journal Entries & Transactions.
-- Financial Activities Support (operational/financial/investing).
 - Basic OFX & QFX file import.
 - Bills & Invoices with optional _accruable_ functionality.
 - Basic navigational templates.
 - Entity administration & entity manager support.
 - Bank Accounts.
 
-__WARNING__: Currently this project is under active development, it is not stable and is not recommended for production 
-environments. Breaking changes may occur in future releases. The author is actively working to provide a stable release 
-as soon as possible and to incorporate the following functionality:
+__WARNING__: Currently this project is under active development, it is not stable and is not recommended for production
+environments. Breaking changes may occur in future releases and migration backwards compatibility may not be preserved
+until the first
+__stable__ release. The author is actively working to provide a stable release as soon as possible and to incorporate
+the following functionality:
 
 ## High Level Road Map
 
@@ -52,6 +53,12 @@ option when creating new entities.
 pip install git+https://github.com/arrobalytics/django-ledger.git
 ```
 
+* Or with pipenv:
+
+```shell script
+pipenv install git+https://github.com/arrobalytics/django-ledger.git
+```
+
 * Add django_ledger to INSTALLED_APPS
 
 ```python
@@ -65,6 +72,8 @@ INSTALLED_APPS = [
 * Add URLs to your project:
 
 ```python
+from django.urls import include, path
+
 urlpatterns = [
     ...,
     path('ledger/', include('django_ledger.urls', namespace='django_ledger')),

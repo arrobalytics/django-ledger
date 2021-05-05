@@ -2,7 +2,7 @@ from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput
                           modelformset_factory)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_EXPENSES
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, BillModelItemsThroughModel,
                                   VendorModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -14,17 +14,17 @@ class BillModelCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-        account_qs = AccountModel.on_coa.for_entity_available(
+        account_qs = AccountModel.on_coa.for_bill(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
         )
 
-        # forcing evaluation of qs to cache results for fields... (avoids 4 database queries, vs 1)
+        # forcing evaluation of qs to cache results for fields... (avoids multiple database queries)
         len(account_qs)
 
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
-        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
-        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
+        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
+        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
         vendor_qs = VendorModel.objects.for_entity(
             user_model=self.USER_MODEL,

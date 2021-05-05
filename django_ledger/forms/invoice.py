@@ -10,7 +10,7 @@ from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput,
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE, GROUP_INCOME
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -22,7 +22,7 @@ class InvoiceModelCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-        account_qs = AccountModel.on_coa.for_create_invoice(
+        account_qs = AccountModel.on_coa.for_invoice(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG)
 
@@ -30,8 +30,8 @@ class InvoiceModelCreateForm(ModelForm):
         len(account_qs)
 
         self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
-        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
-        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
+        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
+        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
         customer_qs = CustomerModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
