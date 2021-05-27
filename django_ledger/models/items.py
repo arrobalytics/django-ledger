@@ -104,6 +104,10 @@ class ItemModelManager(models.Manager):
             for_inventory=False
         )
 
+    def inventory(self, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(for_inventory=True)
+
 
 class ItemModelAbstract(CreateUpdateMixIn):
     REL_NAME_PREFIX = 'item'
@@ -198,6 +202,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def is_expense(self):
         return not self.is_product_or_service and not self.for_inventory
+
+    def is_inventory(self):
+        return self.for_inventory is True
 
     def clean(self):
         if any([

@@ -1,6 +1,6 @@
 from django.forms import ModelForm, TextInput, Select, HiddenInput
 
-from django_ledger.io.roles import GROUP_INCOME, GROUP_EXPENSES_NO_COGS
+from django_ledger.io.roles import GROUP_INCOME, GROUP_EXPENSES_NO_COGS, COGS, ASSET_CA_INVENTORY
 from django_ledger.models import AccountModel, ItemModel, UnitOfMeasureModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -190,6 +190,78 @@ class ExpenseItemUpdateForm(ModelForm):
 
 
 class ExpenseItemCreateForm(ExpenseItemUpdateForm):
+
+    def __init__(self, entity_slug: str, user_model, *args, **kwargs):
+        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
+        uom_qs = UnitOfMeasureModel.objects.for_entity_active(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+        self.fields['uom'].queryset = uom_qs
+
+
+class InventoryItemUpdateForm(ModelForm):
+    INVENTORY_ROLES = [COGS, ASSET_CA_INVENTORY]
+
+    def __init__(self, entity_slug: str, user_model, *args, **kwargs):
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+        super().__init__(*args, **kwargs)
+
+        accounts_qs = AccountModel.on_coa.with_roles(
+            roles=self.INVENTORY_ROLES,
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL)
+
+        # evaluating qs...
+        len(accounts_qs)
+
+        self.fields['inventory_account'].queryset = accounts_qs.filter(role__in=[ASSET_CA_INVENTORY])
+        self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=[COGS])
+
+        uom_qs = UnitOfMeasureModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+        self.fields['uom'].queryset = uom_qs
+
+    class Meta:
+        model = ItemModel
+        fields = [
+            'name',
+            'uom',
+            'upc',
+            'item_id',
+            'inventory_account',
+            'cogs_account',
+            'default_amount',
+        ]
+        widgets = {
+            'name': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'uom': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'inventory_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'cogs_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'upc': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'item_id': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'default_amount': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+        }
+
+
+class InventoryItemCreateForm(InventoryItemUpdateForm):
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)

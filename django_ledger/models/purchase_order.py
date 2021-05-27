@@ -98,7 +98,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn):
 
     def get_po_item_data(self, queryset=None) -> tuple:
         if not queryset:
-            queryset = self.pomodelitemsthroughmodel_set.all()
+            queryset = self.purchaseorderitemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
