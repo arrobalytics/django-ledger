@@ -1,0 +1,21 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+
+    <form action="{% url 'django_ledger:po-create' entity_slug=view.kwargs.entity_slug %}"
+          method="post">
+
+        <div class="columns is-multiline is-centered">
+            {% csrf_token %}
+            <div class="column is-6">
+                {{ form }}
+                <button type="submit"
+                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+                </button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

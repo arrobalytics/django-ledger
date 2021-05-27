@@ -1,0 +1,34 @@
+{% load i18n %}
+{% load django_ledger %}
+
+{% if not create_po %}
+    {% if style == 'po-detail' %}
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-header-title has-text-weight-light is-size-3">
+            <span class="icon is-large">
+                    {% icon 'uil:bill' 36 %}</span>
+                    {% trans 'Purchase Order Info' %}</h2>
+            </div>
+            <div class="card-content">
+                <h2 class="is-size-3">{{ po_model.po_number }}</h2>
+                <h3 class="is-size-4 has-text-weight-light">
+                    Status: <span class="{% if po_model.po_status == 'draft' %}has-text-danger{% endif %}">
+                    {{ po_model.get_po_status_display }}</span></h3>
+                <h3 class="is-size-4 has-text-weight-light">Inventory Purchase:
+                    {% if po_model.for_inventory %}
+                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                    {% endif %}</h3>
+            </div>
+        </div>
+
+    {% endif %}
+{% else %}
+    <div class="box has-text-centered">
+        <a href="{% url 'django_ledger:po-create' entity_slug=entity_slug %}">
+            <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
+        <h2 class="is-size-3 has-text-grey">{% trans 'New Bill' %}</h2>
+    </div>
+{% endif %}

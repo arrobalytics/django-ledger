@@ -234,6 +234,14 @@ def bill_table(context):
     }
 
 
+@register.inclusion_tag('django_ledger/tags/po_table.html', takes_context=True)
+def po_table(context):
+    return {
+        'po_list': context['po_list'],
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
 @register.inclusion_tag('django_ledger/tags/accounts_table.html', takes_context=True)
 def accounts_table(context, accounts_qs, title=None):
     return {
@@ -561,6 +569,11 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Invoices',
                         'url': reverse('django_ledger:invoice-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Purchase Orders',
+                        'url': reverse('django_ledger:po-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'products_services',

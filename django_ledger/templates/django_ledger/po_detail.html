@@ -1,0 +1,170 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+
+    <div class="columns">
+        <div class="column is-4">
+            <div class="columns is-multiline">
+                <div class="column is-12">
+                    {% include 'django_ledger/includes/card_po.html' with po_model=po_model entity_slug=view.kwargs.entity_slug style='po-detail' %}
+                </div>
+                {% if po_model.vendor %}
+                    <div class="column is-12">
+                        {% include 'django_ledger/includes/card_vendor.html' with vendor=po_model.vendor %}
+                    </div>
+                {% endif %}
+                <div class="column is-12">
+                    <a class="button is-info is-fullwidth is-outlined"
+                       href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'PO List' %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {#        <div class="column is-4">#}
+        {#            <div class="columns is-multiline">#}
+        {#                <div class="column is-12">#}
+        {#                    {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=view.kwargs.entity_slug style='bill-detail' %}#}
+        {#                </div>#}
+        {#                <div class="column is-12">#}
+        {#                    {% include 'django_ledger/includes/card_vendor.html' with vendor=bill.vendor %}#}
+        {#                </div>#}
+        {#                <div class="column is-12">#}
+        {#                    <a class="button is-info is-fullwidth is-outlined"#}
+        {#                       href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}">#}
+        {#                        {% trans 'Bill List' %}#}
+        {#                    </a>#}
+        {#                </div>#}
+        {#            </div>#}
+        {#        </div>#}
+        {#        <div class="column is-8">#}
+        {#            <div class="columns is-multiline">#}
+        {#                <div class="column is-12">#}
+        {#                    <nav class="level">#}
+        {#                        <div class="level-item has-text-centered">#}
+        {#                            <div>#}
+        {#                                <p class="heading">Cash Account:#}
+        {#                                    <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
+        {#                                       class="has-text-danger">{{ bill.cash_account.code }}</a>#}
+        {#                                <p class="title">#}
+        {#                                    {% currency_symbol %}{{ bill.get_amount_cash | absolute | currency_format }}</p>#}
+        {#                            </div>#}
+        {#                        </div>#}
+        {##}
+        {#                        {% if bill.accrue %}#}
+        {#                            <div class="level-item has-text-centered">#}
+        {#                                <div>#}
+        {#                                    <p class="heading">Prepaid Account:#}
+        {#                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
+        {#                                           class="has-text-danger">{{ bill.prepaid_account.code }}</a>#}
+        {#                                    </p>#}
+        {#                                    <p class="title has-text-success">#}
+        {#                                        {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>#}
+        {#                                </div>#}
+        {#                            </div>#}
+        {#                            <div class="level-item has-text-centered">#}
+        {#                                <div>#}
+        {#                                    <p class="heading">Unearned Account:#}
+        {#                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
+        {#                                           class="has-text-danger">{{ bill.unearned_account.code }}</a>#}
+        {##}
+        {#                                    </p>#}
+        {#                                    <p class="title has-text-danger">#}
+        {#                                        {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>#}
+        {#                                </div>#}
+        {#                            </div>#}
+        {##}
+        {#                            <div class="level-item has-text-centered">#}
+        {#                                <div>#}
+        {#                                    <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>#}
+        {#                                    <p class="title">#}
+        {#                                        {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>#}
+        {#                                </div>#}
+        {#                            </div>#}
+        {#                        {% else %}#}
+        {#                            <div class="level-item has-text-centered">#}
+        {#                                <div>#}
+        {#                                    <p class="heading">You Still Owe</p>#}
+        {#                                    <p class="title has-text-danger">#}
+        {#                                        {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>#}
+        {#                                </div>#}
+        {#                            </div>#}
+        {#                        {% endif %}#}
+        {#                    </nav>#}
+        {#                </div>#}
+        {#                <div class="column is-12">#}
+        {#                    <div class="card">#}
+        {#                        <div class="card-header">#}
+        {#                            <h2 class="card-header-title has-text-weight-light is-size-3">#}
+        {#                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>#}
+        {#                                {% trans 'Bill Items' %}#}
+        {#                            </h2>#}
+        {#                        </div>#}
+        {#                        <div class="card-content">#}
+        {#                            <div class="table-container">#}
+        {#                                <table class="table is-fullwidth is-narrow is-striped is-bordered">#}
+        {##}
+        {#                                    <thead>#}
+        {#                                    <tr>#}
+        {#                                        <th>{% trans 'Item' %}</th>#}
+        {#                                        <th>{% trans 'Entity Unit' %}</th>#}
+        {#                                        <th>{% trans 'Unit Cost' %}</th>#}
+        {#                                        <th>{% trans 'Quantity' %}</th>#}
+        {#                                        <th>{% trans 'Total' %}</th>#}
+        {#                                    </tr>#}
+        {#                                    </thead>#}
+        {##}
+        {#                                    <tbody>#}
+        {#                                    {% for bill_item in bill_items %}#}
+        {#                                        <tr>#}
+        {#                                            <td>{{ bill_item.item_model }}</td>#}
+        {#                                            <td>{% if bill_item.entity_unit %}#}
+        {#                                                {{ bill_item.entity_unit }}{% endif %}</td>#}
+        {#                                            <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>#}
+        {#                                            <td>{{ bill_item.quantity }}</td>#}
+        {#                                            <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>#}
+        {#                                        </tr>#}
+        {#                                    {% endfor %}#}
+        {#                                    </tbody>#}
+        {##}
+        {#                                    <tfoot>#}
+        {#                                    <tr>#}
+        {#                                        <th></th>#}
+        {#                                        <th></th>#}
+        {#                                        <th></th>#}
+        {#                                        <th>{% trans 'Total' %}</th>#}
+        {#                                        <th>#}
+        {#                                            {% currency_symbol %}{{ total_amount_due | currency_format }}#}
+        {#                                        </th>#}
+        {#                                    </tr>#}
+        {#                                    </tfoot>#}
+        {##}
+        {#                                </table>#}
+        {#                            </div>#}
+        {#                        </div>#}
+        {#                    </div>#}
+        {#                </div>#}
+        {#                <div class="column is-12">#}
+        {#                    <div class="card">#}
+        {#                        <div class="card-header">#}
+        {#                            <h2 class="card-header-title has-text-weight-light is-size-3">#}
+        {#                                <span class="icon is-large">{% icon 'grommet-icons:transaction' 36 %}</span>#}
+        {#                                {% trans 'Bill Transactions' %}#}
+        {#                            </h2>#}
+        {#                        </div>#}
+        {#                        <div class="card-content">#}
+        {#                            {% bill_txs_table bill %}#}
+        {#                        </div>#}
+        {#                    </div>#}
+        {##}
+        {#                </div>#}
+        {#            </div>#}
+        {#        </div>#}
+    </div>
+
+
+
+{% endblock %}

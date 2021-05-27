@@ -16,7 +16,8 @@ from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL
 from django_ledger.models import (
     EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
     UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel, AccruableItemMixIn,
-    EntityUnitModel, AccountModel, BankAccountModel, BillModelItemsThroughModel, BillModel)
+    EntityUnitModel, AccountModel, BankAccountModel, BillModelItemsThroughModel, BillModel, PurchaseOrderModel,
+    generate_po_number)
 from django_ledger.models.bill import generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.invoice import generate_invoice_number
@@ -41,9 +42,33 @@ def generate_random_item_id(length=20):
     return ''.join(choice(ITEM_ID_CHARS) for _ in range(length))
 
 
+def new_po_protocol(po_model: PurchaseOrderModel,
+                    entity_slug: str or EntityModel,
+                    user_model: UserModel) -> tuple[LedgerModel, PurchaseOrderModel]:
+
+    if isinstance(entity_slug, str):
+        entity_qs = EntityModel.objects.for_user(
+            user_model=user_model)
+        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+    elif isinstance(entity_slug, EntityModel):
+        entity_model = entity_slug
+    else:
+        raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+    po_model.po_number = generate_po_number()
+    ledger_model: LedgerModel = LedgerModel.objects.create(
+        entity=entity_model,
+        posted=True,
+        name=f'PO {po_model.po_number}',
+    )
+    ledger_model.clean()
+    po_model.ledger = ledger_model
+    return ledger_model, po_model
+
+
 def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
-                      user_model: UserModel) -> Tuple[LedgerModel, InvoiceModel]:
+                      user_model: UserModel) -> tuple[LedgerModel, BillModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -54,7 +79,7 @@ def new_bill_protocol(bill_model: BillModel,
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
     bill_model.bill_number = generate_bill_number()
-    ledger_model = LedgerModel.objects.create(
+    ledger_model: LedgerModel = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
         name=f'Bill {bill_model.bill_number}',

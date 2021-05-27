@@ -21,3 +21,4 @@ from django_ledger.models.transactions import *
 from django_ledger.models.customer import *
 from django_ledger.models.vendor import *
 from django_ledger.models.unit import *
+from django_ledger.models.purchase_order import *
