@@ -703,6 +703,16 @@ def bill_item_formset_table(context, item_formset):
     }
 
 
+@register.inclusion_tag('django_ledger/tags/po_item_formset.html', takes_context=True)
+def po_item_formset_table(context, item_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'po_pk': context['view'].kwargs['po_pk'],
+        'total_amount_due': context['total_amount_due'],
+        'item_formset': item_formset,
+    }
+
+
 @register.inclusion_tag('django_ledger/tags/uom_table.html', takes_context=True)
 def uom_table(context, uom_queryset):
     return {

@@ -114,11 +114,17 @@ class AccruableItemMixIn(models.Model):
         'di': 'debit',
     }
 
+    TERMS_ON_RECEIPT = 'on_receipt'
+    TERMS_NET_30 = 'net_30'
+    TERMS_NET_60 = 'net_60'
+    TERMS_NET_90 = 'net_90'
+    TERMS_NET_90_PLUS = 'net_90+'
+
     TERMS = [
-        ('on_receipt', 'Due On Receipt'),
-        ('net_30', 'Net 30 Days'),
-        ('net_60', 'Net 60 Days'),
-        ('net_90', 'Net 90 Days'),
+        (TERMS_ON_RECEIPT, 'Due On Receipt'),
+        (TERMS_NET_30, 'Net 30 Days'),
+        (TERMS_NET_60, 'Net 60 Days'),
+        (TERMS_NET_90, 'Net 90 Days'),
     ]
 
     terms = models.CharField(max_length=10,
@@ -156,15 +162,21 @@ class AccruableItemMixIn(models.Model):
                                   verbose_name=_('Ledger'),
                                   on_delete=models.CASCADE)
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.CASCADE,
+                                     on_delete=models.PROTECT,
+                                     blank=True,
+                                     null=True,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.CASCADE,
+                                        on_delete=models.PROTECT,
+                                        blank=True,
+                                        null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.CASCADE,
+                                         on_delete=models.PROTECT,
+                                         blank=True,
+                                         null=True,
                                          verbose_name=_('Unearned Account'),
                                          related_name=f'{REL_NAME_PREFIX}_unearned_account')
 
@@ -284,6 +296,13 @@ class AccruableItemMixIn(models.Model):
                 running_alloc += alloc
         return split_results
 
+    def is_configured(self):
+        return all([
+            self.cash_account_id is not None,
+            self.unearned_account_id is not None,
+            self.prepaid_account_id is not None
+        ])
+
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
@@ -332,7 +351,7 @@ class AccruableItemMixIn(models.Model):
             }
 
             # tuple ( unit_uuid, total_amount ) sorted by uuid...
-            # sorting before groupby...
+            # sorting before group by...
             ua_gen = list((k[1], v) for k, v in progress_item_idx.items())
             ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
 
@@ -453,31 +472,42 @@ class AccruableItemMixIn(models.Model):
     def net_due_group(self):
         due_in = self.due_in_days()
         if due_in == 0:
-            return 'net_0'
+            return self.TERMS_ON_RECEIPT
         elif due_in <= 30:
-            return 'net_30'
+            return self.TERMS_NET_30
         elif due_in <= 60:
-            return 'net_60'
+            return self.TERMS_NET_60
         elif due_in <= 90:
-            return 'net_90'
-        else:
-            return 'net_90+'
+            return self.TERMS_NET_90
+        return self.TERMS_NET_90_PLUS
 
     def clean(self):
 
         if not self.date:
             self.date = localdate()
-        if self.cash_account.role != ASSET_CA_CASH:
-            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}')
-        if self.prepaid_account.role != ASSET_CA_PREPAID:
-            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}')
-        if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
-            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}')
+
+        if any([
+            self.cash_account_id is not None,
+            self.prepaid_account_id is not None,
+            self.unearned_account_id is not None
+        ]):
+            if not all([
+                self.cash_account_id is not None,
+                self.prepaid_account_id is not None,
+                self.unearned_account_id is not None
+            ]):
+                raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
+            if self.cash_account.role != ASSET_CA_CASH:
+                raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            if self.prepaid_account.role != ASSET_CA_PREPAID:
+                raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
+            if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
+                raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
         if self.accrue and self.progress is None:
             self.progress = 0
 
-        if self.terms != 'on_receipt':
+        if self.terms != self.TERMS_ON_RECEIPT:
             self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
         else:
             self.due_date = self.date
@@ -503,34 +533,3 @@ class AccruableItemMixIn(models.Model):
 
         if self.migrate_allowed():
             self.update_state()
-
-
-class ItemTotalCostMixIn(models.Model):
-    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.SET_NULL,
-                                    blank=True,
-                                    null=True,
-                                    verbose_name=_('Associated Entity Unit'))
-    item_model = models.ForeignKey('django_ledger.ItemModel',
-                                   on_delete=models.PROTECT,
-                                   verbose_name=_('Item Model'))
-    quantity = models.FloatField(default=0.0,
-                                 verbose_name=_('Quantity'),
-                                 validators=[MinValueValidator(0)])
-    unit_cost = models.FloatField(default=0.0,
-                                  verbose_name=_('Cost Per Unit'),
-                                  validators=[MinValueValidator(0)])
-    total_amount = models.DecimalField(max_digits=20,
-                                       editable=False,
-                                       decimal_places=2,
-                                       verbose_name=_('Total Amount QTY x UnitCost'),
-                                       validators=[MinValueValidator(0)])
-
-    class Meta:
-        abstract = True
-
-    def update_total_amount(self):
-        self.total_amount = round(self.quantity * self.unit_cost, 2)
-
-    def clean(self):
-        self.update_total_amount()

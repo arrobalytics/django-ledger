@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn, ItemTotalCostMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
 
 
 class LazyLoader:
@@ -90,7 +90,8 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     additional_info = models.JSONField(default=dict, verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
-                                           through='django_ledger.InvoiceModelItemsThroughModel',
+                                           through='django_ledger.ItemThroughModel',
+                                           through_fields=('invoice_model', 'item_model'),
                                            verbose_name=_('Invoice Items'))
 
     objects = InvoiceModelManager()
@@ -144,7 +145,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_invoice_item_data(self, queryset=None) -> tuple:
         if not queryset:
-            queryset = self.invoicemodelitemsthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
@@ -152,7 +153,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
-            queryset = self.invoicemodelitemsthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all()
             queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
         return queryset.order_by('item_model__earnings_account__uuid',
                                  'entity_unit__uuid',
@@ -189,49 +190,3 @@ def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
 
 
 post_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
-
-
-class InvoiceModelItemsThroughManager(models.Manager):
-
-    def for_entity(self, entity_slug: str, user_model):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
-
-    def for_invoice(self, entity_slug: str, invoice_pk, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(invoice__uuid__exact=invoice_pk)
-
-
-class InvoiceModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
-    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
-                                      on_delete=models.CASCADE,
-                                      verbose_name=_('Invoice Model'))
-
-    objects = InvoiceModelItemsThroughManager()
-
-    class Meta:
-        abstract = True
-        indexes = [
-            models.Index(fields=['invoice_model', 'item_model']),
-            models.Index(fields=['item_model', 'invoice_model']),
-        ]
-
-    def html_id_total_amount(self):
-        return f'invoice-item-total-{self.uuid}'
-
-    def html_id_quantity(self):
-        return f'invoice-item-quantity-{self.uuid}'
-
-    def html_id_unit_cost(self):
-        return f'invoice-item-unit-{self.uuid}'
-
-
-class InvoiceModelItemsThroughModel(InvoiceModelItemsThroughModelAbstract):
-    """
-    Base Invoice Items M2M Relationship Model from Abstract.
-    """

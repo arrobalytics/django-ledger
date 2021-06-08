@@ -11,7 +11,7 @@ from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel, ItemModel)
+from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemThroughModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -121,7 +121,7 @@ class InvoiceModelUpdateForm(ModelForm):
 
 class InvoiceItemForm(ModelForm):
     class Meta:
-        model = InvoiceModelItemsThroughModel
+        model = ItemThroughModel
         fields = [
             'item_model',
             'unit_cost',
@@ -159,7 +159,7 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
 
 
 InvoiceItemFormset = modelformset_factory(
-    model=InvoiceModelItemsThroughModel,
+    model=ItemThroughModel,
     form=InvoiceItemForm,
     formset=BaseInvoiceItemFormset,
     can_delete=True,

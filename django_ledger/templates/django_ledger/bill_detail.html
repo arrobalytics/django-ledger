@@ -25,59 +25,61 @@
 
         <div class="column is-8">
             <div class="columns is-multiline">
-                <div class="column is-12">
-                    <nav class="level">
-                        <div class="level-item has-text-centered">
-                            <div>
-                                <p class="heading">Cash Account:
-                                    <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
-                                       class="has-text-danger">{{ bill.cash_account.code }}</a>
-                                <p class="title">
-                                    {% currency_symbol %}{{ bill.get_amount_cash | absolute | currency_format }}</p>
-                            </div>
-                        </div>
-
-                        {% if bill.accrue %}
+                {% if bill.is_configured %}
+                    <div class="column is-12">
+                        <nav class="level">
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">Prepaid Account:
-                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
-                                           class="has-text-danger">{{ bill.prepaid_account.code }}</a>
-                                    </p>
-                                    <p class="title has-text-success">
-                                        {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
-                                </div>
-                            </div>
-                            <div class="level-item has-text-centered">
-                                <div>
-                                    <p class="heading">Unearned Account:
-                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
-                                           class="has-text-danger">{{ bill.unearned_account.code }}</a>
-
-                                    </p>
-                                    <p class="title has-text-danger">
-                                        {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>
-                                </div>
-                            </div>
-
-                            <div class="level-item has-text-centered">
-                                <div>
-                                    <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>
+                                    <p class="heading">Cash Account:
+                                        <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                           class="has-text-danger">{{ bill.cash_account.code }}</a>
                                     <p class="title">
-                                        {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>
+                                        {% currency_symbol %}{{ bill.get_amount_cash | absolute | currency_format }}</p>
                                 </div>
                             </div>
-                        {% else %}
-                            <div class="level-item has-text-centered">
-                                <div>
-                                    <p class="heading">You Still Owe</p>
-                                    <p class="title has-text-danger">
-                                        {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+
+                            {% if bill.accrue %}
+                                <div class="level-item has-text-centered">
+                                    <div>
+                                        <p class="heading">Prepaid Account:
+                                            <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                               class="has-text-danger">{{ bill.prepaid_account.code }}</a>
+                                        </p>
+                                        <p class="title has-text-success">
+                                            {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        {% endif %}
-                    </nav>
-                </div>
+                                <div class="level-item has-text-centered">
+                                    <div>
+                                        <p class="heading">Unearned Account:
+                                            <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
+                                               class="has-text-danger">{{ bill.unearned_account.code }}</a>
+
+                                        </p>
+                                        <p class="title has-text-danger">
+                                            {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="level-item has-text-centered">
+                                    <div>
+                                        <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>
+                                        <p class="title">
+                                            {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="level-item has-text-centered">
+                                    <div>
+                                        <p class="heading">You Still Owe</p>
+                                        <p class="title has-text-danger">
+                                            {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </nav>
+                    </div>
+                {% endif %}
                 <div class="column is-12">
                     <div class="card">
                         <div class="card-header">
@@ -124,7 +126,6 @@
                                         </th>
                                     </tr>
                                     </tfoot>
-
                                 </table>
                             </div>
                         </div>
@@ -142,12 +143,8 @@
                             {% bill_txs_table bill %}
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
     </div>
-
-
-
 {% endblock %}

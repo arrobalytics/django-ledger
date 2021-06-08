@@ -49,8 +49,7 @@ class LedgerModelAbstract(CreateUpdateMixIn,
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
-                               verbose_name=_('Ledger Entity'),
-                               related_name='ledgers')
+                               verbose_name=_('Ledger Entity'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked Ledger'))
     hidden = models.BooleanField(default=False, verbose_name=_('Hidden Ledger'))

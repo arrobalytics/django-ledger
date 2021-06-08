@@ -12,15 +12,14 @@
   random data for testing.
 * __0.4.1__: Entity internal organizations, department, branches, etc.
 * __0.4.2__: Custom Accounting Periods.
+* __0.4.3__: Purchase Order Model implementation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.5
-
-
 * __0.5.0__: Inventory tracking.
-* __0.5.0__: Purchase Order Model implementation.
-* __0.5.1__: Cash flow statement.
-* __0.5.2__: Closing entries, snapshots & trial balance import.
+* __0.5.1__: Customer jobs.
+* __0.5.2__: Cash flow statement.
+* __0.5.3__: Closing entries, snapshots & trial balance import.
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
@@ -30,7 +29,6 @@ output __(help needed!)__.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.6
-
 * Credit Line Models.
 * Time tracking.
 * Transaction tagging.
@@ -38,20 +36,17 @@ output __(help needed!)__.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.7
-
 * Currency Models implementation as a way to define EntityModel default currency.
 * Produce financial statements in different currencies.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.8
-
 * User roles and permissions on views to support read/write permissions for assigned managers to entities.
 * Customer jobs & job tracking.
 * Client proposals & estimates.
 * User preferences and settings & account creation views.
 * Update package and code documentation.
-
 ### Version 0.9
 
 * Enable Hierarchical Entity structures via MPTT.
@@ -60,7 +55,6 @@ output __(help needed!)__.
 * Update package and code documentation.
 
 ### Version 1.0
-
 * Complete Internationalization of all user-related fields.
 
 *** Roadmap subject to change based on user feedback and backlog priorities.

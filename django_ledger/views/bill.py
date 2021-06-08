@@ -10,13 +10,14 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView,
                                   View, ArchiveIndexView, MonthArchiveView, YearArchiveView,
                                   DetailView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset
+from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset, BillModelConfigureForm
 from django_ledger.models import EntityModel
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_accruable_paid
@@ -108,21 +109,35 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     }
 
     def get_form(self, form_class=None):
-        return BillModelUpdateForm(
+        form_class = self.get_form_class()
+        return form_class(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
+    def get_form_class(self):
+        bill_model: BillModel = self.object
+        if not bill_model.is_configured():
+            return BillModelConfigureForm
+        return BillModelUpdateForm
+
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
-        invoice = self.object.bill_number
-        title = f'Bill {invoice}'
+        bill_model = self.object
+        title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
         context['header_title'] = title
 
-        ledger_model = self.object.ledger
+        if not bill_model.is_configured():
+            messages.add_message(
+                request=self.request,
+                message=f'Bill {bill_model.bill_number} must have all accounts configured.',
+                level=messages.ERROR,
+                extra_tags='is-danger'
+            )
 
+        ledger_model = self.object.ledger
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
@@ -137,12 +152,13 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         bill_model: BillModel = self.object
         bill_item_queryset, item_data = bill_model.get_bill_item_data(
-            queryset=bill_model.billmodelitemsthroughmodel_set.all()
+            queryset=bill_model.itemthroughmodel_set.select_related(
+                'item_model', 'po_model', 'bill_model').all()
         )
         context['item_formset'] = BillItemFormset(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            bill_pk=self.object.uuid,
+            bill_pk=bill_model.uuid,
             queryset=bill_item_queryset
         )
         context['total_amount_due'] = item_data['amount_due']
@@ -162,7 +178,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'billmodelitemsthroughmodel_set'
+            'itemthroughmodel_set'
         ).select_related('ledger', 'vendor')
 
     def form_valid(self, form):
@@ -203,6 +219,7 @@ class BillModelItemsUpdateView(LoginRequiredMixIn, View):
                     item.bill_model = bill_model
 
                 bill_item_list = bill_item_formset.save()
+                # todo: pass item list to update_amount_due...?
                 bill_model.update_amount_due()
                 bill_model.new_state(commit=True)
                 bill_model.clean()
@@ -245,10 +262,24 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
 
         bill_model: BillModel = self.object
         bill_items_qs, item_data = bill_model.get_bill_item_data(
-            queryset=bill_model.billmodelitemsthroughmodel_set.all()
+            queryset=bill_model.itemthroughmodel_set.all()
         )
         context['bill_items'] = bill_items_qs
         context['total_amount_due'] = item_data['amount_due']
+
+        if not bill_model.is_configured():
+            link = format_html(f"""
+            <a href="{reverse("django_ledger:bill-update", kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'bill_pk': bill_model.uuid
+            })}">here</a>
+            """)
+            msg = f'Bill {bill_model.bill_number} has not been fully set up. ' + \
+                  f'Please update or assign associated accounts {link}.'
+            messages.add_message(self.request,
+                                 message=msg,
+                                 level=messages.WARNING,
+                                 extra_tags='is-danger')
         return context
 
     def get_queryset(self):
@@ -256,7 +287,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'billmodelitemsthroughmodel_set', 'ledger__journal_entries__entity_unit'
+            'itemthroughmodel_set', 'ledger__journal_entries__entity_unit'
         ).select_related('ledger', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
 
 

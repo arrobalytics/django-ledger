@@ -4,7 +4,7 @@ from django_ledger.views import (
     ProductsAndServicesListView, ProductOrServiceCreateView, UnitOfMeasureModelCreateView,
     UnitOfMeasureModelListView, UnitOfMeasureModelUpdateView, ProductOrServiceUpdateView,
     ExpenseItemCreateView, ExpenseItemModelListView, ExpenseItemUpdateView, InventoryItemModelListView,
-    InventoryItemCreateView)
+    InventoryItemCreateView, InventoryItemUpdateView)
 
 urlpatterns = [
     path('<str:entity_slug>/list/uom/', UnitOfMeasureModelListView.as_view(), name='uom-list'),
@@ -27,5 +27,8 @@ urlpatterns = [
 
     path('<str:entity_slug>/list/inventory/', InventoryItemModelListView.as_view(), name='inventory-item-list'),
     path('<str:entity_slug>/create/inventory/', InventoryItemCreateView.as_view(), name='inventory-item-create'),
+    path('<str:entity_slug>/update/inventory/<uuid:item_pk>/',
+         InventoryItemUpdateView.as_view(),
+         name='inventory-item-update'),
 
 ]

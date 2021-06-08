@@ -13,14 +13,25 @@
             <div class="card-content">
                 <h2 class="is-size-3">{{ po_model.po_number }}</h2>
                 <h3 class="is-size-4 has-text-weight-light">
-                    Status: <span class="{% if po_model.po_status == 'draft' %}has-text-danger{% endif %}">
+                    Status: <span
+                        class="{% if po_model.po_status == 'draft' %}has-text-danger{% elif po_model.po_status == 'approved' %}has-text-success{% endif %}">
                     {{ po_model.get_po_status_display }}</span></h3>
                 <h3 class="is-size-4 has-text-weight-light">Inventory Purchase:
                     {% if po_model.for_inventory %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                     {% else %}
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}</h3>
+                    {% endif %}
+                </h3>
+                <h3 class="is-size-4 has-text-weight-light">Fulfilled:
+                    {% if po_model.fulfilled %}
+                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                        {{ po_model.fulfillment_date | date }}
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                    {% endif %}
+                </h3>
+
             </div>
 
             <footer class="card-footer">
@@ -39,6 +50,6 @@
     <div class="box has-text-centered">
         <a href="{% url 'django_ledger:po-create' entity_slug=entity_slug %}">
             <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
-        <h2 class="is-size-3 has-text-grey">{% trans 'New Bill' %}</h2>
+        <h2 class="is-size-3 has-text-grey">{% trans 'New PO' %}</h2>
     </div>
 {% endif %}

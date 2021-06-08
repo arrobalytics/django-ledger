@@ -14,9 +14,9 @@ from django.utils.timezone import localtime, localdate
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (
-    EntityModel, CustomerModel, InvoiceModel, InvoiceModelItemsThroughModel,
+    EntityModel, CustomerModel, InvoiceModel, ItemThroughModel,
     UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel, AccruableItemMixIn,
-    EntityUnitModel, AccountModel, BankAccountModel, BillModelItemsThroughModel, BillModel, PurchaseOrderModel,
+    EntityUnitModel, AccountModel, BankAccountModel, BillModel, PurchaseOrderModel,
     generate_po_number)
 from django_ledger.models.bill import generate_bill_number
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
@@ -44,8 +44,7 @@ def generate_random_item_id(length=20):
 
 def new_po_protocol(po_model: PurchaseOrderModel,
                     entity_slug: str or EntityModel,
-                    user_model: UserModel) -> tuple[LedgerModel, PurchaseOrderModel]:
-
+                    user_model: UserModel) -> PurchaseOrderModel:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -56,19 +55,14 @@ def new_po_protocol(po_model: PurchaseOrderModel,
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
     po_model.po_number = generate_po_number()
-    ledger_model: LedgerModel = LedgerModel.objects.create(
-        entity=entity_model,
-        posted=True,
-        name=f'PO {po_model.po_number}',
-    )
-    ledger_model.clean()
-    po_model.ledger = ledger_model
-    return ledger_model, po_model
+    po_model.entity = entity_model
+    return po_model
 
 
 def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
-                      user_model: UserModel) -> tuple[LedgerModel, BillModel]:
+                      user_model: UserModel,
+                      bill_desc: str = None) -> tuple[LedgerModel, BillModel]:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -79,10 +73,13 @@ def new_bill_protocol(bill_model: BillModel,
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
     bill_model.bill_number = generate_bill_number()
+    ledger_name = f'Bill {bill_model.bill_number}'
+    if bill_desc:
+        ledger_name += f' | {bill_desc}'
     ledger_model: LedgerModel = LedgerModel.objects.create(
         entity=entity_model,
         posted=True,
-        name=f'Bill {bill_model.bill_number}',
+        name=ledger_name,
     )
     ledger_model.clean()
     bill_model.ledger = ledger_model
@@ -272,7 +269,7 @@ def fund_entity(entity_model: EntityModel,
         'description': f'Sample data for {entity_model.name}'
     })
 
-    ledger, created = entity_model.ledgers.get_or_create(
+    ledger, created = entity_model.ledgermodel_set.get_or_create(
         name='Business Funding Ledger',
         posted=True
     )
@@ -388,7 +385,7 @@ def generate_random_invoice(
         user_model=user_model)
 
     invoice_items = [
-        InvoiceModelItemsThroughModel(
+        ItemThroughModel(
             invoice_model=invoice_model,
             item_model=choice(product_models),
             quantity=round(random() * randint(1, 5), 2),
@@ -405,7 +402,7 @@ def generate_random_invoice(
     invoice_model.new_state(commit=True)
     invoice_model.clean()
     invoice_model.save()
-    invoice_items = invoice_model.invoicemodelitemsthroughmodel_set.bulk_create(invoice_items)
+    invoice_items = invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
     invoice_model.migrate_state(
         user_model=user_model,
         item_models=invoice_items,
@@ -450,7 +447,7 @@ def generate_random_bill(
         user_model=user_model)
 
     bill_items = [
-        BillModelItemsThroughModel(
+        ItemThroughModel(
             bill_model=bill_model,
             item_model=choice(expense_models),
             quantity=round(random() * randint(1, 5), 2),
@@ -467,7 +464,7 @@ def generate_random_bill(
     bill_model.new_state(commit=True)
     bill_model.clean()
     bill_model.save()
-    bill_items = bill_model.billmodelitemsthroughmodel_set.bulk_create(bill_items)
+    bill_items = bill_model.itemthroughmodel_set.bulk_create(bill_items)
     bill_model.migrate_state(
         user_model=user_model,
         item_models=bill_items,

@@ -6,10 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelFormSet,
-                          modelformset_factory)
+                          modelformset_factory, Textarea, BooleanField, HiddenInput)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import (ItemModel, PurchaseOrderModel, PurchaseOrderItemThroughModel)
+from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemThroughModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -47,28 +47,21 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-    #
-    #     def save(self, commit=True):
-    #         if commit:
-    #             self.instance.migrate_state(
-    #                 user_model=self.USER_MODEL,
-    #                 entity_slug=self.ENTITY_SLUG
-    #             )
-    #         super().save(commit=commit)
-
     class Meta:
         model = PurchaseOrderModel
         fields = [
+            'po_date',
             'po_title',
             'po_status',
             'po_notes',
             'vendor',
-            'fulfillment_date'
+            'fulfillment_date',
+            'fulfilled'
         ]
 
         widgets = {
             'po_title': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large'
             }),
             'po_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'vendor': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
@@ -76,24 +69,42 @@ class PurchaseOrderModelUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Fulfillment Date (YYYY-MM-DD)...')
             }),
+            'po_date': DateInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('PO Date (YYYY-MM-DD)...')
+            }),
+            'po_notes': Textarea(attrs={
+                'class': 'textarea'
+            })
+        }
+        labels = {
+            'po_status': _('PO Status'),
+            'fulfilled': _('Is Fulfilled?')
         }
 
 
 class PurchaseOrderItemForm(ModelForm):
+    create_bill = BooleanField(required=False)
+
     class Meta:
-        model = PurchaseOrderItemThroughModel
+        model = ItemThroughModel
         fields = [
             'item_model',
             'unit_cost',
             'entity_unit',
-            'quantity'
+            'quantity',
+            'po_item_status',
+            'create_bill',
         ]
         widgets = {
             'item_model': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'entity_unit': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'po_item_status': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'unit_cost': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -126,10 +137,14 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+            if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+                form.fields['po_item_status'].widget.attrs['disabled'] = True
+            else:
+                form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
 
 
 PurchaseOrderItemFormset = modelformset_factory(
-    model=PurchaseOrderItemThroughModel,
+    model=ItemThroughModel,
     form=PurchaseOrderItemForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=True,

@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
@@ -12,10 +13,11 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, ItemTotalCostMixIn
+from django_ledger.models import EntityModel, ItemThroughModel
+from django_ledger.models.mixins import CreateUpdateMixIn
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -38,26 +40,24 @@ class PurchaseOrderModelManager(models.Manager):
     def for_entity(self, entity_slug, user_model):
         qs = self.get_queryset()
         if isinstance(entity_slug, EntityModel):
-            return qs.filter(
-                Q(ledger__entity=entity_slug) & (
-                        Q(ledger__entity__admin=user_model) |
-                        Q(ledger__entity__managers__in=[user_model])
-                )
-            )
+            qs = qs.filter(entity=entity_slug)
         elif isinstance(entity_slug, str):
-            return qs.filter(
-                Q(ledger__entity__slug__exact=entity_slug) & (
-                        Q(ledger__entity__admin=user_model) |
-                        Q(ledger__entity__managers__in=[user_model])
-                )
-            )
+            qs = qs.filter(entity__slug__exact=entity_slug)
+        return qs.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn):
+    PO_STATUS_DRAFT = 'draft'
+    PO_STATUS_REVIEW = 'in_review'
+    PO_STATUS_APPROVED = 'approved'
+
     PO_STATUS = [
-        ('draft', _('Draft')),
-        ('in_review', _('In Review')),
-        ('approved', _('Approved'))
+        (PO_STATUS_DRAFT, _('Draft')),
+        (PO_STATUS_REVIEW, _('In Review')),
+        (PO_STATUS_APPROVED, _('Approved'))
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -67,15 +67,21 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn):
     po_notes = models.TextField(blank=True, null=True, verbose_name=_('Notes'))
     po_status = models.CharField(max_length=10, choices=PO_STATUS, default=PO_STATUS[0][0])
     po_amount = models.DecimalField(default=0, decimal_places=2, max_digits=20, verbose_name=_('Purchase Order Amount'))
+    po_amount_received = models.DecimalField(default=0,
+                                             decimal_places=2,
+                                             max_digits=20,
+                                             verbose_name=_('Received Amount'))
     vendor = models.ForeignKey('django_ledger.VendorModel', blank=True, null=True, on_delete=models.PROTECT)
-    ledger = models.OneToOneField('django_ledger.LedgerModel',
-                                  verbose_name=_('Ledger'),
-                                  on_delete=models.CASCADE)
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Entity'))
     for_inventory = models.BooleanField(verbose_name=_('Inventory Purchase?'))
+    fulfilled = models.BooleanField(default=False, verbose_name=_('Is Fulfilled'))
     fulfillment_date = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
 
     po_items = models.ManyToManyField('django_ledger.ItemModel',
-                                      through='django_ledger.PurchaseOrderItemThroughModel',
+                                      through='django_ledger.ItemThroughModel',
+                                      through_fields=('po_model', 'item_model'),
                                       verbose_name=_('Purchase Order Items'))
 
     objects = PurchaseOrderModelManager()
@@ -90,58 +96,44 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn):
         if not self.po_number:
             self.po_number = generate_po_number()
         if any([
-            self.po_status == self.PO_STATUS[1][0],
-            self.po_status == self.PO_STATUS[2][0],
+            self.po_status == self.PO_STATUS_REVIEW,
+            self.po_status == self.PO_STATUS_APPROVED,
         ]):
             if not self.vendor:
                 raise ValidationError(message=f'Must provide a Vendor for this PO')
 
+        if self.fulfilled:
+            if not self.fulfillment_date:
+                self.fulfillment_date = localdate()
+
     def get_po_item_data(self, queryset=None) -> tuple:
         if not queryset:
-            queryset = self.purchaseorderitemthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
         )
 
-
-class PurchaseOrderItemThroughModelManager(models.Manager):
-
-    def for_entity(self, entity_slug, user_model):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(po_model__ledger__entity_model__slug__exact=entity_slug) &
-            (
-                    Q(po_model__ledger__entity_model__managers__in=[user_model]) |
-                    Q(po_model__ledger__entity_model__admin=user_model)
-
-            )
+    def update_po_state(self, queryset=None, item_list: list = None) -> None or tuple:
+        if item_list:
+            self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            return
+        queryset, item_data = self.get_po_item_data(queryset=queryset)
+        qs_values = queryset.values(
+            'total_amount', 'po_item_status'
         )
-
-    def for_po(self, entity_slug, user_model, po_pk):
-        qs = self.for_entity(entity_slug, user_model)
-        return qs.filter(po_model__uuid__exact=po_pk)
-
-
-class PurchaseOrderItemThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
-    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.CASCADE,
-                                 verbose_name=_('PO Item'))
-
-    objects = PurchaseOrderItemThroughModelManager()
-
-    class Meta:
-        abstract = True
+        total_received = sum(
+            i['total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
+        )
+        total_po_amount = sum(
+            i['total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
+        )
+        self.po_amount = total_po_amount
+        self.po_amount_received = total_received
+        return queryset, item_data
 
 
 class PurchaseOrderModel(PurchaseOrderModelAbstract):
     """
     Purchase Order Base Model
-    """
-
-
-class PurchaseOrderItemThroughModel(PurchaseOrderItemThroughModelAbstract):
-    """
-    Purchase Order Item Base Model
     """

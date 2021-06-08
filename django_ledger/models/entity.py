@@ -286,7 +286,7 @@ def entitymodel_postsave(instance, **kwargs):
             name=instance.name + ' CoA',
             entity=instance
         )
-        instance.ledgers.create(
+        instance.ledgermodel_set.create(
             name=_(f'{instance.name} General Ledger'),
             posted=True
         )

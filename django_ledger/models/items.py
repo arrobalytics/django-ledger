@@ -98,14 +98,14 @@ class ItemModelManager(models.Manager):
         return qs.filter(is_product_or_service=True)
 
     def expenses(self, entity_slug: str, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             is_product_or_service=False,
             for_inventory=False
         )
 
     def inventory(self, entity_slug: str, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(for_inventory=True)
 
 
@@ -198,18 +198,25 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         if self.is_expense():
             return f'Expense Item: {self.name}'
+        elif self.is_inventory():
+            return f'Inventory: {self.name}'
         return f'Item Model: {self.name} - {self.sku}'
 
     def is_expense(self):
-        return not self.is_product_or_service and not self.for_inventory
+        return self.is_product_or_service is False and self.for_inventory is False
 
     def is_inventory(self):
         return self.for_inventory is True
 
     def clean(self):
+        # if all([
+        #     self.for_inventory is None,
+        #     self.is_product_or_service is None
+        # ]):
+        #     raise ValidationError(_('Must specify for_inventory and is_product_or_service values'))
         if any([
-            self.for_inventory,
-            self.is_product_or_service
+            self.for_inventory is True,
+            self.is_product_or_service is True
         ]):
             if self.for_inventory:
                 if not all([
@@ -226,12 +233,140 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 self.inventory_account = None
                 self.cogs_account = None
 
-        else:
+        elif all([
+            self.for_inventory is False,
+            self.is_product_or_service is False
+        ]):
             if not self.expense_account:
                 raise ValidationError(_('Items must have an associated expense accounts.'))
             self.inventory_account = None
             self.earnings_account = None
             self.cogs_account = None
+
+
+class ItemThroughModelManager(models.Manager):
+
+    def for_entity(self, user_model, entity_slug):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(item_model__entity__slug__exact=entity_slug) &
+            (
+                    Q(item_model__entity__admin=user_model) |
+                    Q(item_model__entity__managers__in=[user_model])
+            )
+        )
+
+    def for_bill(self, user_model, entity_slug, bill_pk):
+        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
+        return qs.filter(bill_model__uuid__exact=bill_pk)
+
+    def for_invoice(self, entity_slug: str, invoice_pk, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(invoice_model__uuid__exact=invoice_pk)
+
+    def for_po(self, entity_slug, user_model, po_pk):
+        qs = self.for_entity(entity_slug, user_model)
+        return qs.filter(po_model__uuid__exact=po_pk)
+
+
+class ItemThroughModelAbstract(CreateUpdateMixIn):
+    STATUS_NOT_ORDERED = 'not_ordered'
+    STATUS_ORDERED = 'ordered'
+    STATUS_IN_TRANSIT = 'in_transit'
+    STATUS_RECEIVED = 'received'
+    STATUS_CANCELED = 'cancelled'
+
+    ITEM_STATUS = [
+        (STATUS_NOT_ORDERED, _('Not Ordered')),
+        (STATUS_ORDERED, _('Ordered')),
+        (STATUS_IN_TRANSIT, _('In Transit')),
+        (STATUS_RECEIVED, _('Received')),
+        (STATUS_CANCELED, _('Canceled')),
+    ]
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
+                                    on_delete=models.SET_NULL,
+                                    blank=True,
+                                    null=True,
+                                    verbose_name=_('Associated Entity Unit'))
+    item_model = models.ForeignKey('django_ledger.ItemModel',
+                                   on_delete=models.PROTECT,
+                                   verbose_name=_('Item Model'))
+    bill_model = models.ForeignKey('django_ledger.BillModel', on_delete=models.CASCADE, null=True, blank=True,
+                                   verbose_name=_('Bill Model'))
+    invoice_model = models.ForeignKey('django_ledger.InvoiceModel', on_delete=models.CASCADE, null=True, blank=True,
+                                      verbose_name=_('Invoice Model'))
+    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel', on_delete=models.CASCADE, null=True, blank=True,
+                                 verbose_name=_('Purchase Order Model'))
+    po_item_status = models.CharField(max_length=15, choices=ITEM_STATUS, blank=True, null=True,
+                                      verbose_name=_('PO Item Status'))
+
+    quantity = models.FloatField(default=0.0,
+                                 verbose_name=_('Quantity'),
+                                 validators=[MinValueValidator(0)])
+    unit_cost = models.FloatField(default=0.0,
+                                  verbose_name=_('Cost Per Unit'),
+                                  validators=[MinValueValidator(0)])
+    total_amount = models.DecimalField(max_digits=20,
+                                       editable=False,
+                                       decimal_places=2,
+                                       verbose_name=_('Total Amount QTY x UnitCost'),
+                                       validators=[MinValueValidator(0)])
+    objects = ItemThroughModelManager()
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['bill_model', 'item_model']),
+            models.Index(fields=['invoice_model', 'item_model']),
+            models.Index(fields=['po_model', 'item_model']),
+        ]
+
+    def __str__(self):
+        if self.po_model:
+            return f'PO Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+        elif self.bill_model:
+            return f'Bill Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+        elif self.invoice_model:
+            return f'Invoice Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+        return f'Orphan Item Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+
+    def update_total_amount(self):
+        self.total_amount = round(self.quantity * self.unit_cost, 2)
+
+    def html_id(self):
+        return f'djl-item-{self.uuid}'
+
+    def html_id_unit_cost(self):
+        return f'djl-item-unit-cost-id-{self.uuid}'
+
+    def html_id_quantity(self):
+        return f'djl-item-quantity-id-{self.uuid}'
+
+    def is_cancelled(self):
+        return self.po_item_status == self.STATUS_CANCELED
+
+    def can_create_bill(self):
+        return self.bill_model_id is None and self.po_item_status in [
+            self.STATUS_ORDERED, self.STATUS_IN_TRANSIT, self.STATUS_RECEIVED
+        ]
+
+    def get_status_css_class(self):
+        if self.po_item_status == self.STATUS_RECEIVED:
+            return ' is-success'
+        elif self.po_item_status == self.STATUS_CANCELED:
+            return ' is-danger'
+        return ' is-warning'
+
+    def clean(self):
+        self.update_total_amount()
+
+
+class ItemThroughModel(ItemThroughModelAbstract):
+    """
+    Base Item Model Through Model for Many to Many Relationships
+    """
 
 
 class ItemModel(ItemModelAbstract):

@@ -124,7 +124,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         invoice_model: InvoiceModel = self.object
         invoice_item_queryset, item_data = invoice_model.get_invoice_item_data(
-            queryset=invoice_model.invoicemodelitemsthroughmodel_set.all()
+            queryset=invoice_model.itemthroughmodel_set.all()
         )
         context['item_formset'] = InvoiceItemFormset(
             entity_slug=self.kwargs['entity_slug'],
@@ -148,7 +148,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related('invoicemodelitemsthroughmodel_set').select_related('ledger', 'customer')
+        ).prefetch_related('itemthroughmodel_set').select_related('ledger', 'customer')
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
@@ -191,7 +191,8 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
                     item.entity = entity_model
                     item.invoice_model = invoice_model
 
-                item_formset.save()
+                invoice_item_list = item_formset.save()
+                # todo: pass item list to update_amount_due...?
                 invoice_model.update_amount_due()
                 invoice_model.new_state(commit=True)
                 invoice_model.clean()
@@ -203,7 +204,9 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
 
                 invoice_model.migrate_state(
                     entity_slug=entity_slug,
-                    user_model=self.request.user
+                    user_model=self.request.user,
+                    item_models=invoice_item_list,
+                    force_migrate=True
                 )
 
         return HttpResponseRedirect(reverse('django_ledger:invoice-update',
@@ -231,7 +234,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
 
         invoice_model: InvoiceModel = self.object
         invoice_items_qs, item_data = invoice_model.get_invoice_item_data(
-            queryset=invoice_model.invoicemodelitemsthroughmodel_set.all()
+            queryset=invoice_model.itemthroughmodel_set.all()
         )
         context['invoice_items'] = invoice_items_qs
         context['total_amount_due'] = item_data['amount_due']
@@ -242,7 +245,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'invoicemodelitemsthroughmodel_set'
+            'itemthroughmodel_set'
         ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
 
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):

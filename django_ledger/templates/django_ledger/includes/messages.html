@@ -4,7 +4,7 @@
         {% for msg in messages %}
             <div class="notification {{ msg.tags }} mt-3 mb-2">
                 <button class="delete"></button>
-                {{ msg }}
+                {{ msg | safe }}
             </div>
         {% endfor %}
     </div>

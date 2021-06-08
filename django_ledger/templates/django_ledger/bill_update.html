@@ -118,68 +118,99 @@
                 </div>
 
             </div>
-            <div class="column is-6">
-                <div class="card">
-                    <div class="card-header">
-                        <p class="card-header-title">{% trans 'Bill State' %}</p>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-content">
-                            <div class="columns is-multiline">
-                                <div class="column is-12">
-                                    <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
-                                    <p>{{ bill.cash_account }}:
-                                        ${{ bill.get_amount_cash | currency_format }}</p>
-                                    <p>{{ bill.prepaid_account }}:
-                                        ${{ bill.get_amount_receivable | currency_format }}</p>
-                                    <p>{{ bill.unearned_account }}:
-                                        ${{ bill.get_amount_payable | currency_format }}</p>
-                                    <p>{{ bill.earnings_account }}:
-                                        ${{ bill.get_amount_earned | currency_format }}</p>
-                                </div>
-                                <div class="column is-12">
-                                    <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
-                                    <p>{{ bill.cash_account }}: ${{ bill.amount_paid | currency_format }}</p>
-                                    <p>{{ bill.prepaid_account }}:
-                                        ${{ bill.amount_receivable | currency_format }}</p>
-                                    <p>{{ bill.unearned_account }}:
-                                        ${{ bill.amount_unearned | currency_format }}</p>
-                                    <p>{{ bill.earnings_account }}:
-                                        ${{ bill.amount_earned | currency_format }}</p>
-                                </div>
-
-                                {% now "Y" as current_year %}
-                                {% now "m" as current_month %}
-
-                                <div class="column is-6">
-                                    <a class="button is-outlined is-small is-primary is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-bs-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
-                                        {% trans 'Balance Sheet' %}</a>
-                                </div>
-                                <div class="column is-6">
-                                    <a class="button is-outlined is-small is-info is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-ic-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
-                                        {% trans 'Income Statement' %}</a>
-                                </div>
-                                <div class="column is-12">
-                                    <a class="button is-small is-warning is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-update' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                        {% trans 'Bill Ledger' %}
-                                    </a>
-                                    <a class="button is-small is-info is-fullwidth mt-2"
-                                       href="{% url 'django_ledger:je-list' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                        {% trans 'Ledger Journal Entries' %}
-                                    </a>
-                                </div>
-
-                            </div>
-
+            {% if bill.is_configured %}
+                <div class="column is-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <p class="card-header-title">{% trans 'Bill State' %}</p>
                         </div>
+                        <div class="card-body">
+                            <div class="card-content">
+                                <div class="columns is-multiline">
+                                    <div class="column is-12">
+                                        <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
+                                        <p>{{ bill.cash_account }}:
+                                            ${{ bill.get_amount_cash | currency_format }}</p>
+                                        <p>{{ bill.prepaid_account }}:
+                                            ${{ bill.get_amount_receivable | currency_format }}</p>
+                                        <p>{{ bill.unearned_account }}:
+                                            ${{ bill.get_amount_payable | currency_format }}</p>
+                                        <p>{{ bill.earnings_account }}:
+                                            ${{ bill.get_amount_earned | currency_format }}</p>
+                                    </div>
+                                    <div class="column is-12">
+                                        <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
+                                        <p>{{ bill.cash_account }}: ${{ bill.amount_paid | currency_format }}</p>
+                                        <p>{{ bill.prepaid_account }}:
+                                            ${{ bill.amount_receivable | currency_format }}</p>
+                                        <p>{{ bill.unearned_account }}:
+                                            ${{ bill.amount_unearned | currency_format }}</p>
+                                        <p>{{ bill.earnings_account }}:
+                                            ${{ bill.amount_earned | currency_format }}</p>
+                                    </div>
 
+                                    {% now "Y" as current_year %}
+                                    {% now "m" as current_month %}
+
+                                    <div class="column is-6">
+                                        <a class="button is-outlined is-small is-primary is-fullwidth"
+                                           href="{% url 'django_ledger:ledger-bs-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
+                                            {% trans 'Balance Sheet' %}</a>
+                                    </div>
+                                    <div class="column is-6">
+                                        <a class="button is-outlined is-small is-info is-fullwidth"
+                                           href="{% url 'django_ledger:ledger-ic-month' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug year=current_year month=current_month %}">
+                                            {% trans 'Income Statement' %}</a>
+                                    </div>
+                                    <div class="column is-12">
+                                        <a class="button is-small is-warning is-fullwidth"
+                                           href="{% url 'django_ledger:ledger-update' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                            {% trans 'Bill Ledger' %}
+                                        </a>
+                                        <a class="button is-small is-info is-fullwidth mt-2"
+                                           href="{% url 'django_ledger:je-list' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
+                                            {% trans 'Ledger Journal Entries' %}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-            </div>
+            {% else %}
+                <div class="column is-6">
+                    <div class="card animate__animated animate__tada">
+                        <div class="card-header">
+                            <p class="card-header-title">{% trans 'Bill Configuration' %}</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-content">
+                                <div class="field">
+                                    <div class="control">
+                                        <label for="{{ form.cash_account.id_for_label }}" class="label">
+                                            {{ form.cash_account.label }}</label>
+                                        {{ form.cash_account }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <label for="{{ form.prepaid_account.id_for_label }}" class="label">
+                                            {{ form.prepaid_account.label }}</label>
+                                        {{ form.prepaid_account }}
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <label for="{{ form.unearned_account.id_for_label }}" class="label">
+                                            {{ form.unearned_account.label }}</label>
+                                        {{ form.unearned_account }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </form>
 

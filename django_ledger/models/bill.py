@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn, ItemTotalCostMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -76,22 +76,10 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     vendor = models.ForeignKey('django_ledger.VendorModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Vendor'))
-    cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.PROTECT,
-                                     verbose_name=_('Cash Account'),
-                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
-    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.PROTECT,
-                                        verbose_name=_('Prepaid Account'),
-                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
-    unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.PROTECT,
-                                         verbose_name=_('Unearned Account'),
-                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
-
     additional_info = models.JSONField(default=dict, verbose_name=_('Bill Additional Info'))
     bill_items = models.ManyToManyField('django_ledger.ItemModel',
-                                        through='django_ledger.BillModelItemsThroughModel',
+                                        through='django_ledger.ItemThroughModel',
+                                        through_fields=('bill_model', 'item_model'),
                                         verbose_name=_('Bill Items'))
 
     objects = BillModelManager()
@@ -145,7 +133,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_bill_item_data(self, queryset=None) -> tuple:
         if not queryset:
-            queryset = self.billmodelitemsthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
@@ -153,7 +141,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_item_data(self, entity_slug, queryset=None):
         if not queryset:
-            queryset = self.billmodelitemsthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all()
             queryset = queryset.filter(bill_model__ledger__entity__slug__exact=entity_slug)
         return queryset.order_by('item_model__expense_account__uuid',
                                  'entity_unit__uuid',
@@ -191,44 +179,3 @@ def billmodel_predelete(instance: BillModel, **kwargs):
 
 
 post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
-
-
-class BillModelItemsThroughModelManager(models.Manager):
-
-    def for_entity(self, user_model, entity_slug):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(bill_model__ledger__entity_model__slug__exact=entity_slug) &
-            (
-                    Q(bill_model__ledger__entity_model__admin=user_model) |
-                    Q(bill_model__ledger__entity_model__managers__in=[user_model])
-            )
-        )
-
-    def for_bill(self, user_model, entity_slug, bill_pk):
-        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
-        return qs.filter(
-            bill_model__uuid__exact=bill_pk
-        )
-
-
-class BillModelItemsThroughModelAbstract(ItemTotalCostMixIn, CreateUpdateMixIn):
-    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    bill_model = models.ForeignKey('django_ledger.BillModel',
-                                   on_delete=models.CASCADE,
-                                   verbose_name=_('Bill Model'))
-
-    objects = BillModelItemsThroughModelManager()
-
-    class Meta:
-        abstract = True
-        indexes = [
-            models.Index(fields=['bill_model', 'item_model']),
-            models.Index(fields=['item_model', 'bill_model']),
-        ]
-
-
-class BillModelItemsThroughModel(BillModelItemsThroughModelAbstract):
-    """
-    Base Bill Items M2M Relationship Model from Abstract.
-    """

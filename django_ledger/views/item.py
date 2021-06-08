@@ -167,6 +167,7 @@ class ProductOrServiceCreateView(LoginRequiredMixIn, CreateView):
                         message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
                         extra_tags='is-danger')
         instance.is_product_or_service = True
+        instance.for_inventory = False
         instance.save()
         return super().form_valid(form=form)
 
@@ -245,8 +246,6 @@ class ExpenseItemCreateView(LoginRequiredMixIn, CreateView):
 
     def form_valid(self, form):
         instance: ItemModel = form.save(commit=False)
-        instance.is_product_or_service = False
-        instance.for_inventory = False
         entity_slug = self.kwargs['entity_slug']
 
         try:
@@ -260,6 +259,9 @@ class ExpenseItemCreateView(LoginRequiredMixIn, CreateView):
                         message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
                         extra_tags='is-danger')
 
+        instance.is_product_or_service = False
+        instance.for_inventory = False
+        instance.clean()
         instance.save()
         return super().form_valid(form=form)
 
@@ -340,11 +342,8 @@ class InventoryItemCreateView(LoginRequiredMixIn, CreateView):
         """If the form is invalid, render the invalid form."""
         return self.render_to_response(self.get_context_data(form=form))
 
-
     def form_valid(self, form):
         instance: ItemModel = form.save(commit=False)
-        instance.is_product_or_service = False
-        instance.for_inventory = True
         entity_slug = self.kwargs['entity_slug']
 
         try:
@@ -358,12 +357,15 @@ class InventoryItemCreateView(LoginRequiredMixIn, CreateView):
                         message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
                         extra_tags='is-danger')
 
+        instance.is_product_or_service = False
+        instance.for_inventory = True
+        instance.clean()
         instance.save()
         return super().form_valid(form=form)
 
 
 class InventoryItemUpdateView(LoginRequiredMixIn, UpdateView):
-    template_name = 'django_ledger/expense_update.html'
+    template_name = 'django_ledger/inventory_item_update.html'
     PAGE_TITLE = _('Update Expense Item')
     context_object_name = 'item'
     slug_field = 'uuid'
@@ -375,20 +377,20 @@ class InventoryItemUpdateView(LoginRequiredMixIn, UpdateView):
     }
 
     def get_queryset(self):
-        return ItemModel.objects.expenses(
+        return ItemModel.objects.inventory(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
 
     def get_form(self, form_class=None):
-        return ExpenseItemUpdateForm(
+        return InventoryItemUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
     def get_success_url(self):
-        return reverse('django_ledger:expense-list',
+        return reverse('django_ledger:inventory-item-list',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
