@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
@@ -18,10 +18,10 @@ from django.views.generic import (UpdateView, CreateView, DeleteView,
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset, BillModelConfigureForm
-from django_ledger.models import EntityModel
+from django_ledger.models import EntityModel, PurchaseOrderModel
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_accruable_paid
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn, SuccessUrlNextMixIn
 
 
 class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
@@ -75,6 +75,44 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'uil:bill'
     }
+    for_purchase_order = False
+
+    def get_context_data(self, **kwargs):
+        context = super(BillModelCreateView, self).get_context_data(**kwargs)
+        if self.for_purchase_order:
+            po_pk = self.kwargs['po_pk']
+            po_item_uuids_qry_param = self.request.GET.get('item_uuids')
+            if po_item_uuids_qry_param:
+                try:
+                    po_item_uuids = po_item_uuids_qry_param.split(',')
+                except:
+                    return HttpResponseBadRequest()
+            else:
+                return HttpResponseBadRequest()
+
+            po_qs = PurchaseOrderModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).prefetch_related('itemthroughmodel_set')
+            po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
+            po_items = po_model.itemthroughmodel_set.filter(
+                bill_model__isnull=True,
+                uuid__in=po_item_uuids
+            )
+            context['po_model'] = po_model
+            context['po_items'] = po_items
+            form_action = reverse('django_ledger:bill-create-po',
+                                  kwargs={
+                                      'entity_slug': self.kwargs['entity_slug'],
+                                      'po_pk': po_model.uuid
+                                  }) + f'?item_uuids={po_item_uuids_qry_param}'
+        else:
+            form_action = reverse('django_ledger:bill-create',
+                                  kwargs={
+                                      'entity_slug': self.kwargs['entity_slug'],
+                                  })
+        context['form_action_url'] = form_action
+        return context
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
@@ -84,15 +122,51 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        form.instance = new_bill_protocol(
-            bill_model=form.instance,
+        bill_model = form.save(commit=False)
+        ledger_model, bill_model = new_bill_protocol(
+            bill_model=bill_model,
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        )
-        return super().form_valid(form=form)
+            user_model=self.request.user)
+
+        if self.for_purchase_order:
+            po_pk = self.kwargs['po_pk']
+            item_uuids = self.request.GET.get('item_uuids')
+            if not item_uuids:
+                return HttpResponseBadRequest()
+            item_uuids = item_uuids.split(',')
+            po_qs = PurchaseOrderModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
+            po_model_items_qs = po_model.itemthroughmodel_set.filter(uuid__in=item_uuids)
+
+            bill_model.update_amount_due(queryset=po_model_items_qs)
+            bill_model.new_state(commit=True)
+            bill_model.clean()
+            form.save()
+
+            po_model_items_qs.update(bill_model=bill_model)
+
+            bill_model.migrate_state(
+                user_model=self.request.user,
+                entity_slug=self.kwargs['entity_slug'],
+                itemthrough_models=po_model_items_qs
+            )
+        else:
+            form.save()
+
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
+        if self.for_purchase_order:
+            po_pk = self.kwargs['po_pk']
+            return reverse('django_ledger:po-update',
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'po_pk': po_pk
+                           })
         return reverse('django_ledger:bill-list',
                        kwargs={
                            'entity_slug': entity_slug
@@ -141,13 +215,13 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
-                                 f'Warning! This Invoice is Locked. Must unlock before making any changes.',
+                                 f'Warning! This bill is locked. Must unlock before making any changes.',
                                  extra_tags='is-danger')
 
         if not ledger_model.posted:
             messages.add_message(self.request,
                                  messages.INFO,
-                                 f'This Invoice has not been posted. Must post to see ledger changes.',
+                                 f'This bill has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
         bill_model: BillModel = self.object
@@ -232,7 +306,7 @@ class BillModelItemsUpdateView(LoginRequiredMixIn, View):
                 bill_model.migrate_state(
                     entity_slug=entity_slug,
                     user_model=self.request.user,
-                    item_models=bill_item_list,
+                    itemthrough_models=bill_item_list,
                     force_migrate=True
                 )
 

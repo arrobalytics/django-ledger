@@ -47,8 +47,8 @@ output __(help needed!)__.
 * Client proposals & estimates.
 * User preferences and settings & account creation views.
 * Update package and code documentation.
-### Version 0.9
 
+### Version 0.9
 * Enable Hierarchical Entity structures via MPTT.
 * Consolidated financial statements.
 * Intercompany transactions.

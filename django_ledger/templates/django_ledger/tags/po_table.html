@@ -11,7 +11,6 @@
             <th>PO Status</th>
             <th>Fulfilment Date</th>
             <th>PO Amount</th>
-            <th>For Inventory</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -21,17 +20,8 @@
                 <td>{{ po.po_number }}</td>
                 <td>{{ po.po_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
-                <td>{{ po.fulfillment_date }}</td>
+                <td>{% if po.fulfillment_date %}{{ po.fulfillment_date }}{% endif %}</td>
                 <td>{% currency_symbol %}{{ po.po_amount | currency_format }}</td>
-
-                <td class="has-text-centered">
-                    {% if po.for_inventory %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                    {% endif %}
-                </td>
-
                 <td class="has-text-centered">
                     <div class="dropdown is-right is-hoverable" id="bill-action-{{ po.uuid }}">
                         <div class="dropdown-trigger">
@@ -46,18 +36,8 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:po-detail' entity_slug=entity_slug po_pk=po.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
-
-{#                                <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=po.uuid %}"#}
-{#                                   class="dropdown-item has-text-warning-dark">Update</a>#}
-{#                                {% if not po.paid %}#}
-{#                                    {% mark_as_paid po entity_slug %}#}
-{#                                    <a onclick="djLedger.showModal('{{ po.get_html_id }}')"#}
-{#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
-{#                                {% endif %}#}
-
                                 <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=po.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
-
                             </div>
                         </div>
                     </div>

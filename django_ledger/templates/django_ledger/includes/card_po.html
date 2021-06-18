@@ -39,7 +39,7 @@
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
                 <a onclick="djLedger.toggleModal('{{ po_model.get_html_id }}')"
                    class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Fulfilled' %}</a>
-                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=po_model.uuid %}"
+                <a href="{% url 'django_ledger:po-delete' entity_slug=entity_slug po_pk=po_model.uuid %}"
                    class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
             </footer>
 

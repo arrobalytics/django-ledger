@@ -69,6 +69,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 
+    # todo: add markdown mixin...
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
     customer = models.ForeignKey('django_ledger.CustomerModel',

@@ -173,26 +173,13 @@ class BaseBillItemFormset(BaseModelFormSet):
         self.BILL_PK = bill_pk
         self.ENTITY_SLUG = entity_slug
 
-        items_qs_exp = ItemModel.objects.expenses(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-
-        items_qs_inv = ItemModel.objects.inventory(
+        items_qs = ItemModel.objects.for_bill(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
 
         for form in self.forms:
-            po_model = form.instance.po_model
-            if po_model:
-                if po_model.for_inventory:
-                    form.fields['item_model'].queryset = items_qs_inv
-                else:
-                    form.fields['item_model'].queryset = items_qs_exp
-            else:
-                form.fields['item_model'].queryset = items_qs_exp
-
+            form.fields['item_model'].queryset = items_qs
 
 
 BillItemFormset = modelformset_factory(

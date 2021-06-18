@@ -1,5 +1,5 @@
 {% extends 'django_ledger/layouts/content_layout_1.html' %}
-{% load i18n %}
+{% load trans from i18n %}
 {% load static %}
 {% load django_ledger %}
 
@@ -11,15 +11,14 @@
                 <div class="column is-12">
                     {% include 'django_ledger/includes/card_po.html' with po_model=po_model entity_slug=view.kwargs.entity_slug style='po-detail' %}
                 </div>
-                {% if po_model.vendor %}
-                    <div class="column is-12">
-                        {% include 'django_ledger/includes/card_vendor.html' with vendor=po_model.vendor %}
-                    </div>
-                {% endif %}
                 <div class="column is-12">
                     <a class="button is-info is-fullwidth is-outlined"
                        href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}">
                         {% trans 'PO List' %}
+                    </a>
+                    <a class="button is-primary is-fullwidth is-outlined mt-2"
+                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Go To Dashboard' %}
                     </a>
                 </div>
             </div>
@@ -30,15 +29,14 @@
             <nav class="level">
                 <div class="level-item has-text-centered">
                     <div>
-                        <p class="heading">PO Amount:
+                        <p class="heading">{% trans 'PO Amount' %}:
                         <p class="title">
                             {% currency_symbol %}{{ po_model.po_amount | absolute | currency_format }}</p>
                     </div>
                 </div>
-
                 <div class="level-item has-text-centered">
                     <div>
-                        <p class="heading">Amount Received:</p>
+                        <p class="heading">{% trans 'Amount Received' %}:</p>
                         <p class="title has-text-success">
                             {% currency_symbol %}{{ po_model.po_amount_received  | currency_format }}</p>
                     </div>
@@ -46,31 +44,20 @@
             </nav>
 
             <div class="columns is-multiline">
-                <div class="column is-6">
+                <div class="column is-12">
                     <h3 class="is-size-3 has-text-weight-light">{{ po_model.po_title }}</h3>
-                </div>
-                <div class="column is-6">
-                    <div class="box">
-                        <h3 class="is-size-4">Notes:</h3>
-                        <hr>
-                        {#                    <p class="has-text-weight-light">{{ po_model.po_notes }}</p>#}
-                        <p class="has-text-weight-light">{% lorem %}</p>
-                        <p class="has-text-weight-light">{% lorem %}</p>
-                        <p class="has-text-weight-light">{% lorem %}</p>
-
-                    </div>
                 </div>
                 <div class="column is-12">
                     <div class="table-container">
                         <table class="table is-fullwidth is-tripped is-narrow">
                             <thead>
                             <tr>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                                <th>Unit Cost</th>
-                                <th>Total Cost</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th>{% trans 'Item' %}</th>
+                                <th>{% trans 'Quantity' %}</th>
+                                <th>{% trans 'Unit Cost' %}</th>
+                                <th>{% trans 'Total Cost' %}</th>
+                                <th>{% trans 'Status' %}</th>
+                                <th>{% trans 'Actions' %}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -82,38 +69,11 @@
                                     <td class="{% if item.is_cancelled %}djl-is-strikethrough{% endif %}">
                                         {% currency_symbol %}{{ item.total_amount | currency_format }}</td>
                                     <td class="has-text-weight-bold {% if item.is_cancelled %}has-text-danger{% endif %}">
-                                        {{ item.get_po_item_status_display }}
+                                        {% if item.po_item_status %}
+                                            {{ item.get_po_item_status_display }}
+                                        {% endif %}
                                     </td>
-                                    <td>
-{#                                        {{ item.create_bill }}#}
-{#                                        <div class="dropdown is-right is-hoverable"#}
-{#                                             id="je-action-{{ je.uuid }}">#}
-{#                                            <div class="dropdown-trigger">#}
-{#                                                <button class="button is-small is-rounded is-outlined is-dark"#}
-{#                                                        aria-haspopup="true"#}
-{#                                                        aria-controls="dropdown-menu">#}
-{#                                                    <span>Actions</span>#}
-{#                                                    <span class="icon is-small">#}
-{#                                        {% icon 'bi:arrow-down' 24 %}#}
-{#                                      </span>#}
-{#                                                </button>#}
-{#                                            </div>#}
-{##}
-{#                                            <div class="dropdown-menu"#}
-{#                                                 id="dropdown-menu-{{ item.html_id }}"#}
-{#                                                 role="menu">#}
-{#                                                <div class="dropdown-content">#}
-{#                                                    <a class="dropdown-item"#}
-{#                                                       href="">Edit</a>#}
-{#                                                    <a class="dropdown-item"#}
-{#                                                       href="">View</a>#}
-{#                                                    <a class="dropdown-item"#}
-{#                                                       href="">Txs</a>#}
-{#                                                </div>#}
-{#                                            </div>#}
-{#                                        </div>#}
-
-                                    </td>
+                                    <td></td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -130,6 +90,9 @@
                             </tfoot>
                         </table>
                     </div>
+                </div>
+                <div class="column is-12">
+                    {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='PO Notes' notes_html=po_model.notes_html %}
                 </div>
             </div>
         </div>

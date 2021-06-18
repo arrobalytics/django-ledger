@@ -13,8 +13,10 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import QuerySet
+from django.utils.encoding import force_str
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
+from markdown import markdown
 
 from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 
@@ -306,7 +308,7 @@ class AccruableItemMixIn(models.Model):
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
-                      item_models: QuerySet or list = None,
+                      itemthrough_models: QuerySet or list = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       je_date: date = None):
@@ -330,7 +332,7 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            item_data = self.get_item_data(entity_slug=entity_slug)
+            item_data = self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_models)
 
             if isinstance(self, lazy_loader.get_bill_model()):
                 item_data_gb = groupby(item_data,
@@ -533,3 +535,15 @@ class AccruableItemMixIn(models.Model):
 
         if self.migrate_allowed():
             self.update_state()
+
+
+class MarkdownNotesMixIn(models.Model):
+    markdown_notes = models.TextField(blank=True, null=True, verbose_name=_('Markdown Notes'))
+
+    class Meta:
+        abstract = True
+
+    def notes_html(self):
+        if not self.markdown_notes:
+            return ''
+        return markdown(force_str(self.markdown_notes))

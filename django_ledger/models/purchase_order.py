@@ -10,14 +10,13 @@ from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel, ItemThroughModel
-from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -49,7 +48,8 @@ class PurchaseOrderModelManager(models.Manager):
         )
 
 
-class PurchaseOrderModelAbstract(CreateUpdateMixIn):
+class PurchaseOrderModelAbstract(CreateUpdateMixIn,
+                                 MarkdownNotesMixIn):
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -64,18 +64,15 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn):
     po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
     po_date = models.DateField(verbose_name=_('Purchase Order Date'))
     po_title = models.CharField(max_length=250, verbose_name=_('Purchase Order Title'))
-    po_notes = models.TextField(blank=True, null=True, verbose_name=_('Notes'))
     po_status = models.CharField(max_length=10, choices=PO_STATUS, default=PO_STATUS[0][0])
     po_amount = models.DecimalField(default=0, decimal_places=2, max_digits=20, verbose_name=_('Purchase Order Amount'))
     po_amount_received = models.DecimalField(default=0,
                                              decimal_places=2,
                                              max_digits=20,
                                              verbose_name=_('Received Amount'))
-    vendor = models.ForeignKey('django_ledger.VendorModel', blank=True, null=True, on_delete=models.PROTECT)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity'))
-    for_inventory = models.BooleanField(verbose_name=_('Inventory Purchase?'))
     fulfilled = models.BooleanField(default=False, verbose_name=_('Is Fulfilled'))
     fulfillment_date = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
 
@@ -95,16 +92,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn):
     def clean(self):
         if not self.po_number:
             self.po_number = generate_po_number()
-        if any([
-            self.po_status == self.PO_STATUS_REVIEW,
-            self.po_status == self.PO_STATUS_APPROVED,
-        ]):
-            if not self.vendor:
-                raise ValidationError(message=f'Must provide a Vendor for this PO')
-
-        if self.fulfilled:
-            if not self.fulfillment_date:
-                self.fulfillment_date = localdate()
+        if self.fulfilled and not self.fulfillment_date:
+            self.fulfillment_date = localdate()
 
     def get_po_item_data(self, queryset=None) -> tuple:
         if not queryset:

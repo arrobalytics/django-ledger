@@ -40,15 +40,19 @@ class SessionConfigurationMixIn:
 
 
 class SuccessUrlNextMixIn:
+
+    def has_next_url(self):
+        return self.request.GET.get('next') is not None
+
     def get_success_url(self):
         next = self.request.GET.get('next')
         if next:
             return next
-        elif self.kwargs.get('entity_slug'):
-            return reverse('django_ledger:entity-dashboard',
-                           kwargs={
-                               'entity_slug': self.kwargs['entity_slug']
-                           })
+        # elif self.kwargs.get('entity_slug'):
+        #     return reverse('django_ledger:entity-dashboard',
+        #                    kwargs={
+        #                        'entity_slug': self.kwargs['entity_slug']
+        #                    })
         return reverse('django_ledger:home')
 
 

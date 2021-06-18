@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -94,7 +95,7 @@ class ItemModelManager(models.Manager):
         return qs.filter(is_active=True)
 
     def products_and_services(self, entity_slug: str, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_product_or_service=True)
 
     def expenses(self, entity_slug: str, user_model):
@@ -107,6 +108,20 @@ class ItemModelManager(models.Manager):
     def inventory(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(for_inventory=True)
+
+    def for_bill(self, entity_slug: str, user_model):
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            Q(is_product_or_service=False, for_inventory=False) |
+            Q(for_inventory=True)
+        )
+
+    def for_po(self, entity_slug: str, user_model):
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            Q(is_product_or_service=False, for_inventory=False) |
+            Q(for_inventory=True)
+        )
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -209,11 +224,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return self.for_inventory is True
 
     def clean(self):
-        # if all([
-        #     self.for_inventory is None,
-        #     self.is_product_or_service is None
-        # ]):
-        #     raise ValidationError(_('Must specify for_inventory and is_product_or_service values'))
         if any([
             self.for_inventory is True,
             self.is_product_or_service is True
@@ -265,7 +275,7 @@ class ItemThroughModelManager(models.Manager):
         return qs.filter(invoice_model__uuid__exact=invoice_pk)
 
     def for_po(self, entity_slug, user_model, po_pk):
-        qs = self.for_entity(entity_slug, user_model)
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
 
@@ -276,7 +286,7 @@ class ItemThroughModelAbstract(CreateUpdateMixIn):
     STATUS_RECEIVED = 'received'
     STATUS_CANCELED = 'cancelled'
 
-    ITEM_STATUS = [
+    PO_ITEM_STATUS = [
         (STATUS_NOT_ORDERED, _('Not Ordered')),
         (STATUS_ORDERED, _('Ordered')),
         (STATUS_IN_TRANSIT, _('In Transit')),
@@ -293,13 +303,24 @@ class ItemThroughModelAbstract(CreateUpdateMixIn):
     item_model = models.ForeignKey('django_ledger.ItemModel',
                                    on_delete=models.PROTECT,
                                    verbose_name=_('Item Model'))
-    bill_model = models.ForeignKey('django_ledger.BillModel', on_delete=models.CASCADE, null=True, blank=True,
+    bill_model = models.ForeignKey('django_ledger.BillModel',
+                                   on_delete=models.CASCADE,
+                                   null=True,
+                                   blank=True,
                                    verbose_name=_('Bill Model'))
-    invoice_model = models.ForeignKey('django_ledger.InvoiceModel', on_delete=models.CASCADE, null=True, blank=True,
+    invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
+                                      on_delete=models.CASCADE,
+                                      null=True, blank=True,
                                       verbose_name=_('Invoice Model'))
-    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel', on_delete=models.CASCADE, null=True, blank=True,
+    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
+                                 on_delete=models.CASCADE,
+                                 null=True,
+                                 blank=True,
                                  verbose_name=_('Purchase Order Model'))
-    po_item_status = models.CharField(max_length=15, choices=ITEM_STATUS, blank=True, null=True,
+    po_item_status = models.CharField(max_length=15,
+                                      choices=PO_ITEM_STATUS,
+                                      blank=True,
+                                      null=True,
                                       verbose_name=_('PO Item Status'))
 
     quantity = models.FloatField(default=0.0,
@@ -324,13 +345,15 @@ class ItemThroughModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
+        status_display = self.get_po_item_status_display()
+        amount = f'{currency_symbol}{self.total_amount}'
         if self.po_model:
-            return f'PO Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+            return f'PO Through Model: {self.uuid} | {status_display} | {amount}'
         elif self.bill_model:
-            return f'Bill Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+            return f'Bill Through Model: {self.uuid} | {status_display} | {amount}'
         elif self.invoice_model:
-            return f'Invoice Through Model: {self.uuid} | {self.get_po_item_status_display()}'
-        return f'Orphan Item Through Model: {self.uuid} | {self.get_po_item_status_display()}'
+            return f'Invoice Through Model: {self.uuid} | {status_display} | {amount}'
+        return f'Orphan Item Through Model: {self.uuid} | {status_display} | {amount}'
 
     def update_total_amount(self):
         self.total_amount = round(self.quantity * self.unit_cost, 2)
@@ -357,6 +380,8 @@ class ItemThroughModelAbstract(CreateUpdateMixIn):
             return ' is-success'
         elif self.po_item_status == self.STATUS_CANCELED:
             return ' is-danger'
+        elif self.po_item_status == self.STATUS_ORDERED:
+            return ' is-info'
         return ' is-warning'
 
     def clean(self):

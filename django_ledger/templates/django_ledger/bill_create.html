@@ -5,11 +5,20 @@
 
 {% block view_content %}
 
-    <form action="{% url 'django_ledger:bill-create' entity_slug=view.kwargs.entity_slug %}"
+    <form action="{{ form_action_url }}"
           method="post">
 
         <div class="columns is-multiline is-centered">
             {% csrf_token %}
+            {% if po_model %}
+                <div class="column is-12 has-text-centered">
+                    <h2 class="title">{% trans 'Bill for' %} {{ po_model.po_number }}</h2>
+                    <h3 class="subtitle has-text-weight-light">{% trans 'Bill for' %} {{ po_model.po_title }}</h3>
+                    {% for po_item in po_items %}
+                        <p>{{ po_item }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
             <div class="column is-6">
                 <div class="columns is-multiline">
                     <div class="column is-12">

@@ -205,7 +205,7 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
                 invoice_model.migrate_state(
                     entity_slug=entity_slug,
                     user_model=self.request.user,
-                    item_models=invoice_item_list,
+                    itemthrough_models=invoice_item_list,
                     force_migrate=True
                 )
 
@@ -248,6 +248,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
             'itemthroughmodel_set'
         ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
 
+
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
@@ -274,6 +275,7 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
+
 
 class InvoiceModelMarkPaidView(LoginRequiredMixIn,
                                View,

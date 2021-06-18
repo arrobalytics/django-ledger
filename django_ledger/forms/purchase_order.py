@@ -6,7 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelFormSet,
-                          modelformset_factory, Textarea, BooleanField, HiddenInput)
+                          modelformset_factory, Textarea, BooleanField, ValidationError)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemThroughModel)
@@ -24,7 +24,6 @@ class PurchaseOrderModelCreateForm(ModelForm):
         fields = [
             'po_date',
             'po_title',
-            'for_inventory'
         ]
         widgets = {
             'po_date': DateInput(attrs={
@@ -47,14 +46,18 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
+        if self.initial['po_status'] == PurchaseOrderModel.PO_STATUS_APPROVED:
+            self.fields['po_status'].disabled = True
+        else:
+            self.fields['fulfilled'].disabled = True
+
     class Meta:
         model = PurchaseOrderModel
         fields = [
             'po_date',
             'po_title',
             'po_status',
-            'po_notes',
-            'vendor',
+            'markdown_notes',
             'fulfillment_date',
             'fulfilled'
         ]
@@ -73,14 +76,37 @@ class PurchaseOrderModelUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('PO Date (YYYY-MM-DD)...')
             }),
-            'po_notes': Textarea(attrs={
+            'markdown_notes': Textarea(attrs={
                 'class': 'textarea'
             })
         }
         labels = {
             'po_status': _('PO Status'),
-            'fulfilled': _('Is Fulfilled?')
+            'fulfilled': _('Mark as Fulfilled'),
+            'markdown_notes': _('PO Notes')
         }
+
+    def clean(self):
+        is_fulfilled = self.cleaned_data['fulfilled']
+        new_status = self.cleaned_data['po_status']
+
+        if 'fulfilled' in self.changed_data:
+            if not is_fulfilled:
+                raise ValidationError(
+                    message=f'Cannot change fulfilled status to False after being fulfilled once.'
+                )
+            if new_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+                raise ValidationError(
+                    message=f'Cannot fulfill a PO that has not been approved.'
+                )
+
+        if 'po_status' in self.changed_data:
+            if new_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+                initial_status = self.initial['po_status']
+                raise ValidationError(
+                    message=f'Cannot change form status to {new_status} '
+                            f'from {initial_status}'
+                )
 
 
 class PurchaseOrderItemForm(ModelForm):
@@ -114,6 +140,21 @@ class PurchaseOrderItemForm(ModelForm):
             })
         }
 
+    def clean_po_item_status(self):
+        po_item_status = self.cleaned_data['po_item_status']
+        if 'po_item_status' in self.changed_data:
+            po_model: PurchaseOrderModel = getattr(self, 'PO_MODEL')
+            if po_model.po_status == po_model.PO_STATUS_APPROVED:
+                if not po_item_status:
+                    raise ValidationError('Cannot assign null status to approved PO.')
+                if all([
+                    self.instance.bill_model_id,
+                    po_item_status == ItemThroughModel.STATUS_NOT_ORDERED
+                ]):
+                    raise ValidationError('Cannot assign not ordered status to a billed item. '
+                                          'Void or delete bill first')
+        return po_item_status
+
 
 class BasePurchaseOrderItemFormset(BaseModelFormSet):
 
@@ -123,30 +164,40 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         self.ENTITY_SLUG = entity_slug
         self.PO_MODEL = po_model
 
-        if self.PO_MODEL.for_inventory:
-            items_qs = ItemModel.objects.inventory(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
-            )
-        else:
-            items_qs = ItemModel.objects.expenses(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
-            )
+        items_qs = ItemModel.objects.for_po(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
 
-        self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
+            form.PO_MODEL = self.PO_MODEL
             form.fields['item_model'].queryset = items_qs
             if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-                form.fields['po_item_status'].widget.attrs['disabled'] = True
+                form.fields['po_item_status'].disabled = True
             else:
                 form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
+                if form.instance.po_item_status == ItemThroughModel.STATUS_RECEIVED:
+                    form.fields['po_item_status'].disabled = True
+
+                form.fields['unit_cost'].disabled = True
+                form.fields['quantity'].disabled = True
+                form.fields['entity_unit'].disabled = True
+                form.fields['item_model'].disabled = True
 
 
-PurchaseOrderItemFormset = modelformset_factory(
-    model=ItemThroughModel,
-    form=PurchaseOrderItemForm,
-    formset=BasePurchaseOrderItemFormset,
-    can_delete=True,
-    extra=5
-)
+def get_po_item_formset(po_model: PurchaseOrderModel):
+    if po_model.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+        return modelformset_factory(
+            model=ItemThroughModel,
+            form=PurchaseOrderItemForm,
+            formset=BasePurchaseOrderItemFormset,
+            can_delete=True,
+            extra=5
+        )
+    return modelformset_factory(
+        model=ItemThroughModel,
+        form=PurchaseOrderItemForm,
+        formset=BasePurchaseOrderItemFormset,
+        can_delete=False,
+        extra=0
+    )

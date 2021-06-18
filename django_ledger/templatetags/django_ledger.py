@@ -235,9 +235,9 @@ def bill_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/po_table.html', takes_context=True)
-def po_table(context):
+def po_table(context, purchase_order_qs):
     return {
-        'po_list': context['po_list'],
+        'po_list': purchase_order_qs,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 

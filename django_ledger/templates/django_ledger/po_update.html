@@ -43,12 +43,6 @@
                     </div>
                 </div>
                 <div class="field">
-                    <label for="{{ form.vendor.id_for_label }}" class="label">{{ form.vendor.label }}</label>
-                    <div class="control">
-                        {{ form.vendor }}
-                    </div>
-                </div>
-                <div class="field">
                     <label for="{{ form.fulfillment_date.id_for_label }}"
                            class="label">{{ form.fulfillment_date.label }}</label>
                     <div class="control">
@@ -62,12 +56,12 @@
                         {{ form.fulfilled }}
                     </div>
                 </div>
-
             </div>
             <div class="column is-6">
                 <div class="field">
-                    <label for="{{ form.po_notes.id_for_label }}" class="label">{{ form.po_notes.label }}</label>
-                    {{ form.po_notes }}
+                    <label for="{{ form.markdown_notes.id_for_label }}" class="label">{{ form.markdown_notes.label }}
+                        <span class="icon is-medium has-text-grey">{% icon 'logos:markdown' 16 %}</span></label>
+                    {{ form.markdown_notes }}
                 </div>
             </div>
             <div class="column is-12 has-text-centered">
@@ -79,11 +73,8 @@
                 <h3 class="is-size-3 has-text-weight-light">{% trans 'Received Amount' %}:
                     {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
             </div>
-
         </div>
-
     </form>
-
     <hr>
 
     {% po_item_formset_table item_formset %}
