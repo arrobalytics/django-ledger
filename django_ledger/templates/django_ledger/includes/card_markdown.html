@@ -1,0 +1,25 @@
+{% load trans from i18n %}
+{% load django_ledger %}
+
+{% if style == 'card_1' %}
+    <div class="card">
+        <div class="card-header">
+            <div class="card-header-title">
+                <h1 class="is-size-3 has-text-weight-light">{% if title %}{{ title }}{% else %}
+                    {% trans 'Notes' %}
+                {% endif %}</h1>
+            </div>
+        </div>
+        <div class="card-content">
+            <div class="content">
+                {% if notes_html %}
+                    {% autoescape off %}
+                        {{ notes_html | safe }}
+                    {% endautoescape %}
+                {% else %}
+                    <p>{% trans 'No available notes to display...' %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
