@@ -7,6 +7,7 @@
         <thead>
         <tr>
             <th>PO Number</th>
+            <th>Description</th>
             <th>PO Date</th>
             <th>PO Status</th>
             <th>Fulfilment Date</th>
@@ -18,6 +19,7 @@
         {% for po in po_list %}
             <tr>
                 <td>{{ po.po_number }}</td>
+                <td>{{ po.po_title }}</td>
                 <td>{{ po.po_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
                 <td>{% if po.fulfillment_date %}{{ po.fulfillment_date }}{% endif %}</td>

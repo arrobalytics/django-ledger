@@ -116,16 +116,64 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     def post(self, request, entity_slug, *args, **kwargs):
         self.object = self.get_object()
         po_model: PurchaseOrderModel = self.object
-        PurchaseOrderItemFormset = get_po_item_formset(po_model)
-        po_item_formset: PurchaseOrderItemFormset = PurchaseOrderItemFormset(request.POST,
-                                                                             user_model=self.request.user,
-                                                                             po_model=po_model,
-                                                                             entity_slug=entity_slug)
         if self.update_items:
-            if po_item_formset.is_valid():
+            PurchaseOrderItemFormset = get_po_item_formset(po_model)
+            po_item_formset: PurchaseOrderItemFormset = PurchaseOrderItemFormset(request.POST,
+                                                                                 user_model=self.request.user,
+                                                                                 po_model=po_model,
+                                                                                 entity_slug=entity_slug)
 
-                po_items = po_item_formset.save(commit=False)
+            context = self.get_context_data(item_formset=po_item_formset)
+
+            if po_item_formset.is_valid():
                 if po_item_formset.has_changed():
+                    po_items = po_item_formset.save(commit=False)
+                    all_received = all([
+                        i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
+                        for i in po_item_formset.cleaned_data if i
+                    ])
+
+                    for f in po_item_formset.forms:
+                        i: ItemThroughModel = f.instance
+                        if i:
+                            if all([
+                                i.po_item_status in [
+                                    ItemThroughModel.STATUS_RECEIVED,
+                                    ItemThroughModel.STATUS_IN_TRANSIT
+                                ],
+                                i.bill_model is None
+                            ]):
+                                messages.add_message(
+                                    request=self.request,
+                                    level=messages.ERROR,
+                                    message=f'Item {i.item_model.__str__()} must be billed'
+                                            f' before {i.get_po_item_status_display()}...',
+                                    extra_tags='is-danger')
+                                return self.render_to_response(context)
+
+                    if all_received and po_model.fulfillment_date:
+
+                        all_bills_paid = all([
+                            f.instance.bill_model.paid_date for f in po_item_formset.forms
+                        ])
+
+                        if not all_bills_paid:
+                            messages.add_message(
+                                request=self.request,
+                                level=messages.ERROR,
+                                message=f'All Bills must be paid before PO being fulfilled..',
+                                extra_tags='is-danger')
+                            return self.render_to_response(context)
+
+                    elif all_received and not po_model.fulfillment_date:
+                        po_model.fulfillment_date = localdate()
+                        # po_model.fulfilled = True
+                        po_model.clean()
+                        po_model.save(update_fields=[
+                            'fulfillment_date',
+                            'fulfilled',
+                            'updated'
+                        ])
 
                     create_bill_uuids = [
                         str(i['uuid'].uuid) for i in po_item_formset.cleaned_data if i and i['create_bill'] is True
@@ -154,9 +202,6 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                                                  'updated'])
 
             else:
-                context = self.get_context_data(
-                    item_formset=po_item_formset
-                )
                 return self.render_to_response(context)
         return super().post(request, *args, **kwargs)
 

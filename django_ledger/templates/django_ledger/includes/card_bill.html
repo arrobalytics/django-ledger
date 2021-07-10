@@ -18,7 +18,7 @@
                         Due: {{ bill.due_date | timesince }} ago</p>
                 {% endif %}
                 {% if bill.progressible %}
-                    <p>Is Progressible: <span
+                    <p>Is Accrued: <span
                             class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                         {% else %}
                     <p>Is Progressible:
@@ -78,11 +78,11 @@
                     <p class="is-size-5 has-text-danger">You Still Owe: {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
 
                     {% if bill.progressible %}
-                        <p>Is Progressible: <span
+                        <p>Is Accrued: <span
                                 class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                         </p>
                     {% else %}
-                        <p>Is Progressible:
+                        <p>Is Accrued:
                             <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                         </p>
                     {% endif %}

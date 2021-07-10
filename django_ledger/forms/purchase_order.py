@@ -46,8 +46,13 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-        if self.initial['po_status'] == PurchaseOrderModel.PO_STATUS_APPROVED:
+        if self.instance.po_status == PurchaseOrderModel.PO_STATUS_APPROVED:
             self.fields['po_status'].disabled = True
+            self.fields['po_date'].disabled = True
+            if self.instance.fulfilled:
+                self.fields['fulfilled'].disabled = True
+                self.fields['fulfillment_date'].disabled = True
+
         else:
             self.fields['fulfilled'].disabled = True
 

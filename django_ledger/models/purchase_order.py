@@ -92,8 +92,11 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     def clean(self):
         if not self.po_number:
             self.po_number = generate_po_number()
+        if self.fulfillment_date:
+            self.fulfilled = True
         if self.fulfilled and not self.fulfillment_date:
             self.fulfillment_date = localdate()
+
 
     def get_po_item_data(self, queryset=None) -> tuple:
         if not queryset:

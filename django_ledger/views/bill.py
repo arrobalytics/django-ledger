@@ -139,6 +139,15 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                 user_model=self.request.user
             )
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
+
+            if po_model.po_date > bill_model.date:
+                messages.add_message(self.request,
+                                     message=f'Bill Date {bill_model.date} cannot be'
+                                             f' earlier than PO Date {po_model.po_date}',
+                                     level=messages.ERROR,
+                                     extra_tags='is-danger')
+                return self.render_to_response(self.get_context_data(form=form))
+
             po_model_items_qs = po_model.itemthroughmodel_set.filter(uuid__in=item_uuids)
 
             bill_model.update_amount_due(queryset=po_model_items_qs)
@@ -155,7 +164,6 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             )
         else:
             form.save()
-
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
