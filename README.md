@@ -17,10 +17,9 @@ Django Ledger supports:
 - Bank Accounts.
 
 __WARNING__: Currently this project is under active development, it is not stable and is not recommended for production
-environments. Breaking changes may occur in future releases and migration backwards compatibility may not be preserved
-until the first
-__stable__ release. The author is actively working to provide a stable release as soon as possible and to incorporate
-the following functionality:
+environments. Due to its high complexity, breaking changes may occur in future releases and migration backwards 
+compatibility may not be preserved until the first __stable__ release. The author is actively working to provide a 
+stable release as soon as possible and to incorporate the following functionality:
 
 ## High Level Road Map
 
@@ -30,7 +29,7 @@ the following functionality:
 - Tax line mapping.
 - Package documentation.
 - Collaborators & Permissions.
-- Extensible API & Object Oriented Accounting.
+- API Implementation.
 - Unit Tests & Behavior Driven Development Tests.
 - And a lot more stuff...
 

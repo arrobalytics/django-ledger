@@ -16,6 +16,7 @@
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.5
+
 * __0.5.0__: Inventory tracking.
 * __0.5.1__: Customer jobs.
 * __0.5.2__: Cash flow statement.
@@ -23,12 +24,13 @@
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
-* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate
-output __(help needed!)__.
+* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output __(
+  help needed!)__.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.6
+
 * Credit Line Models.
 * Time tracking.
 * Transaction tagging.
@@ -36,12 +38,14 @@ output __(help needed!)__.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.7
+
 * Currency Models implementation as a way to define EntityModel default currency.
 * Produce financial statements in different currencies.
 * Update package and code documentation.
 * Bugfixes & UI/UX Enhancements.
 
 ### Version 0.8
+
 * User roles and permissions on views to support read/write permissions for assigned managers to entities.
 * Customer jobs & job tracking.
 * Client proposals & estimates.
@@ -49,12 +53,14 @@ output __(help needed!)__.
 * Update package and code documentation.
 
 ### Version 0.9
+
 * Enable Hierarchical Entity structures via MPTT.
 * Consolidated financial statements.
 * Intercompany transactions.
 * Update package and code documentation.
 
 ### Version 1.0
+
 * Complete Internationalization of all user-related fields.
 
 *** Roadmap subject to change based on user feedback and backlog priorities.
