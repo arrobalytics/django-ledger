@@ -38,7 +38,7 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:po-detail' entity_slug=entity_slug po_pk=po.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
-                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=po.uuid %}"
+                                <a href="{% url 'django_ledger:po-delete' entity_slug=entity_slug po_pk=po.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
                             </div>
                         </div>

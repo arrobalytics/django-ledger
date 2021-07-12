@@ -46,14 +46,19 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-        if self.instance.po_status == PurchaseOrderModel.PO_STATUS_APPROVED:
+        if self.instance.po_status == PurchaseOrderModel.PO_STATUS_REVIEW:
+            self.fields['po_date'].disabled = True
+            self.fields['fulfillment_date'].disabled = True
+            self.fields['fulfilled'].disabled = True
+        elif self.instance.po_status == PurchaseOrderModel.PO_STATUS_APPROVED:
             self.fields['po_status'].disabled = True
             self.fields['po_date'].disabled = True
             if self.instance.fulfilled:
                 self.fields['fulfilled'].disabled = True
                 self.fields['fulfillment_date'].disabled = True
-
+        # PO is Draft
         else:
+            self.fields['fulfillment_date'].disabled = True
             self.fields['fulfilled'].disabled = True
 
     class Meta:
@@ -98,7 +103,7 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         if 'fulfilled' in self.changed_data:
             if not is_fulfilled:
                 raise ValidationError(
-                    message=f'Cannot change fulfilled status to False after being fulfilled once.'
+                    message=f'Cannot change status to un-fulfilled once fulfilled. Void instead.'
                 )
             if new_status != PurchaseOrderModel.PO_STATUS_APPROVED:
                 raise ValidationError(
@@ -106,8 +111,8 @@ class PurchaseOrderModelUpdateForm(ModelForm):
                 )
 
         if 'po_status' in self.changed_data:
-            if new_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-                initial_status = self.initial['po_status']
+            initial_status = self.initial['po_status']
+            if initial_status == PurchaseOrderModel.PO_STATUS_APPROVED:
                 raise ValidationError(
                     message=f'Cannot change form status to {new_status} '
                             f'from {initial_status}'
@@ -177,17 +182,22 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         for form in self.forms:
             form.PO_MODEL = self.PO_MODEL
             form.fields['item_model'].queryset = items_qs
-            if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-                form.fields['po_item_status'].disabled = True
-            else:
-                form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
-                if form.instance.po_item_status == ItemThroughModel.STATUS_RECEIVED:
-                    form.fields['po_item_status'].disabled = True
-
+            if self.PO_MODEL.po_status in [
+                PurchaseOrderModel.PO_STATUS_APPROVED,
+                PurchaseOrderModel.PO_STATUS_REVIEW
+            ]:
                 form.fields['unit_cost'].disabled = True
                 form.fields['quantity'].disabled = True
                 form.fields['entity_unit'].disabled = True
                 form.fields['item_model'].disabled = True
+                if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+                    form.fields['po_item_status'].disabled = True
+                    form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
+            # PO is Draft
+            else:
+                # form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
+                # if form.instance.po_item_status == ItemThroughModel.STATUS_RECEIVED:
+                form.fields['po_item_status'].disabled = True
 
 
 def get_po_item_formset(po_model: PurchaseOrderModel):

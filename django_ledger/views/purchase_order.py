@@ -167,7 +167,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
                     elif all_received and not po_model.fulfillment_date:
                         po_model.fulfillment_date = localdate()
-                        # po_model.fulfilled = True
+                        po_model.fulfilled = True
                         po_model.clean()
                         po_model.save(update_fields=[
                             'fulfillment_date',
@@ -249,7 +249,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         po_pk = self.kwargs['po_pk']
-        return reverse('django_ledger:po-detail',
+        return reverse('django_ledger:po-update',
                        kwargs={
                            'entity_slug': entity_slug,
                            'po_pk': po_pk
@@ -346,6 +346,26 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
                        })
+
+    def delete(self, request, *args, **kwargs):
+        po_model: PurchaseOrderModel = self.get_object()
+        self.object = po_model
+        po_items_qs = po_model.itemthroughmodel_set.filter(bill_model__isnull=False)
+        if po_items_qs.exists():
+            messages.add_message(request,
+                                 message=f'Cannot delete {po_model.po_number} because it has related bills.',
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+            url = reverse('django_ledger:po-update',
+                          kwargs={
+                              'entity_slug': self.kwargs['entity_slug'],
+                              'po_pk': self.kwargs['po_pk']
+                          })
+            return HttpResponseRedirect(url)
+        success_url = self.get_success_url()
+        self.object.delete()
+        return HttpResponseRedirect(success_url)
+
 #
 #
 # class BillModelMarkPaidView(LoginRequiredMixIn,

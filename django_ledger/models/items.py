@@ -313,7 +313,7 @@ class ItemThroughModelAbstract(CreateUpdateMixIn):
                                       null=True, blank=True,
                                       verbose_name=_('Invoice Model'))
     po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.CASCADE,
+                                 on_delete=models.SET_NULL,
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Purchase Order Model'))

@@ -72,6 +72,7 @@
                     {% if not bill.is_past_due %}
                         <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
                     {% else %}
+                        <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | date }}</p>
                         <p class="has-text-danger has-text-weight-bold is-size-3">Past
                             Due: {{ bill.due_date | timesince }} ago</p>
                     {% endif %}

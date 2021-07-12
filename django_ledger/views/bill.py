@@ -21,7 +21,7 @@ from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, B
 from django_ledger.models import EntityModel, PurchaseOrderModel
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_accruable_paid
-from django_ledger.views.mixins import LoginRequiredMixIn, SuccessUrlNextMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
@@ -400,6 +400,14 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
                        })
+
+    def delete(self, request, *args, **kwargs):
+        bill_model: BillModel = self.get_object()
+        self.object = bill_model
+        bill_model.itemthroughmodel_set.update(bill_model=None)
+        success_url = self.get_success_url()
+        self.object.delete()
+        return HttpResponseRedirect(success_url)
 
 
 class BillModelMarkPaidView(LoginRequiredMixIn,

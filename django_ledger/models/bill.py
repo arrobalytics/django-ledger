@@ -71,6 +71,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     ALLOW_MIGRATE = True
 
     # todo: add markdown mixin...
+    # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))

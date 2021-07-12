@@ -57,7 +57,7 @@
                                 <th>{% trans 'Unit Cost' %}</th>
                                 <th>{% trans 'Total Cost' %}</th>
                                 <th>{% trans 'Status' %}</th>
-                                <th>{% trans 'Actions' %}</th>
+                                <th>{% trans 'Billed' %}</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -73,7 +73,10 @@
                                             {{ item.get_po_item_status_display }}
                                         {% endif %}
                                     </td>
-                                    <td></td>
+                                    <td>{% if item.bill_model_id %}
+                                        <a class="is-small is-light button"
+                                           href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=item.bill_model_id %}">View Bill</a>{% endif %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -86,12 +89,13 @@
                                     {% currency_symbol %}{{ total_amount_due | currency_format }}</td>
                                 <td></td>
                                 <td></td>
+{#                                <td></td>#}
                             </tr>
                             </tfoot>
                         </table>
                     </div>
                 </div>
-                <div class="column is-12">
+                <div class=" column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='PO Notes' notes_html=po_model.notes_html %}
                 </div>
             </div>
