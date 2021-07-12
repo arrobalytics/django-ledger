@@ -5,9 +5,6 @@
 ### Version 0.4
 
 * __0.4.0__: Items, resources and & lists for bills & invoices itemization:
-* __0.4.0__: Testing framework implementation that will include:
-    * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
-    * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
 * __0.4.0__: Enhance and optimize Django Ledger the random data generation functionality to properly populate relevant
   random data for testing.
 * __0.4.1__: Entity internal organizations, department, branches, etc.
@@ -21,6 +18,10 @@
 * __0.5.1__: Customer jobs.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
+* __0.5.4__: Testing framework implementation that will include:
+  * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
+  * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
+  * __Need help!!!! If you want to contribute PLEASE ADD UNIT TESTS!!!__
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
