@@ -70,7 +70,6 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
 
-    # todo: add markdown mixin...
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))

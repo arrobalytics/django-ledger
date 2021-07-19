@@ -99,6 +99,7 @@
                                         <th>{% trans 'Unit Cost' %}</th>
                                         <th>{% trans 'Quantity' %}</th>
                                         <th>{% trans 'Total' %}</th>
+                                        <th>{% trans 'PO' %}</th>
                                     </tr>
                                     </thead>
 
@@ -111,6 +112,12 @@
                                             <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>
                                             <td>{{ bill_item.quantity }}</td>
                                             <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>
+                                        <td>{% if bill_item.po_model_id %}
+                                            <a class="button is-small is-light"
+                                               href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=bill_item.po_model_id %}">
+                                            {% trans 'View PO' %}
+                                            </a>
+                                        {% endif %} </td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -124,6 +131,7 @@
                                         <th>
                                             {% currency_symbol %}{{ total_amount_due | currency_format }}
                                         </th>
+                                        <th></th>
                                     </tr>
                                     </tfoot>
                                 </table>

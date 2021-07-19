@@ -11,6 +11,7 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView,
                                   View, ArchiveIndexView, MonthArchiveView, YearArchiveView,
@@ -314,7 +315,7 @@ class BillModelItemsUpdateView(LoginRequiredMixIn, View):
                 bill_model.migrate_state(
                     entity_slug=entity_slug,
                     user_model=self.request.user,
-                    itemthrough_models=bill_item_list,
+                    # itemthrough_models=bill_item_list,
                     force_migrate=True
                 )
 
@@ -377,16 +378,22 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
-    template_name = 'django_ledger/bill_delete.html'
     extra_context = {
         'hide_menu': True,
         'header_subtitle_icon': 'uil:bill'
     }
+    void = False
+
+    def get_template_names(self):
+        if self.void:
+            return 'django_ledger/bill_void.html'
+        return 'django_ledger/bill_delete.html'
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
         context['page_title'] = _('Delete Bill ') + self.object.bill_number
         context['header_title'] = context['page_title']
+        context['form_action_url'] = self.get_form_action_url()
         return context
 
     def get_queryset(self):
@@ -395,7 +402,29 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
             user_model=self.request.user
         )
 
+    def get_form_action_url(self):
+        bill_model: BillModel = self.object
+        KWARGS = {
+            'entity_slug': self.kwargs['entity_slug'],
+            'bill_pk': bill_model.uuid
+        }
+        if self.void:
+            return reverse(
+                viewname='django_ledger:bill-void',
+                kwargs=KWARGS
+            )
+        return reverse(
+            viewname='django_ledger:bill-delete',
+            kwargs=KWARGS
+        )
+
     def get_success_url(self):
+        if self.void:
+            return reverse('django_ledger:bill-detail',
+                           kwargs={
+                               'entity_slug': self.kwargs['entity_slug'],
+                               'bill_pk': self.kwargs['bill_pk']
+                           })
         return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -403,9 +432,49 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         bill_model: BillModel = self.get_object()
-        self.object = bill_model
-        bill_model.itemthroughmodel_set.update(bill_model=None)
         success_url = self.get_success_url()
+
+        self.object = bill_model
+
+        bill_items_qs = bill_model.itemthroughmodel_set.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+        )
+
+        # forcing QS evaluation
+        len(bill_items_qs)
+        if self.void:
+            # if bill_model.void:
+            #     return HttpResponseNotFound()
+
+            bill_model.void = True
+            ld = localdate()
+            bill_model.void_date = ld
+            bill_model.save(update_fields=[
+                'void',
+                'void_date',
+                'updated'
+            ])
+
+            bill_model.migrate_state(
+                user_model=self.request.user,
+                commit=True,
+                void=True,
+                itemthrough_models=bill_items_qs,
+                je_date=ld,
+                entity_slug=self.kwargs['entity_slug']
+            )
+            return HttpResponseRedirect(success_url)
+
+        has_POs = bill_items_qs.filter(po_model__isnull=False).count() > 0
+        if has_POs:
+            messages.add_message(self.request,
+                                 level=messages.ERROR,
+                                 message='Cannot delete bill that has a PO. Void bill instead.',
+                                 extra_tags='is-danger')
+            return self.render_to_response(context=self.get_context_data())
+
+        bill_model.itemthroughmodel_set.update(bill_model=None)
         self.object.delete()
         return HttpResponseRedirect(success_url)
 

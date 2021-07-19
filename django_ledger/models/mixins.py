@@ -22,6 +22,7 @@ from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, L
 
 
 class LazyLoader:
+    # todo: find other implementations of Lazy Loaders and replace with this one...
     ACCOUNT_MODEL = None
     BILL_MODEL = None
     INVOICE_MODEL = None
@@ -311,6 +312,7 @@ class AccruableItemMixIn(models.Model):
                       itemthrough_models: QuerySet or list = None,
                       force_migrate: bool = False,
                       commit: bool = True,
+                      void: bool = False,
                       je_date: date = None):
 
         if self.migrate_allowed() or force_migrate:
@@ -367,7 +369,11 @@ class AccruableItemMixIn(models.Model):
                 k: (v / total_amount) if progress else Decimal('0.00') for k, v in unit_amounts.items()
             }
 
-            new_state = self.new_state(commit=commit)
+            if not void:
+                new_state = self.new_state(commit=commit)
+            else:
+                new_state = self.void_state(commit=commit)
+
             amount_paid_split = self.split_amount(
                 amount=new_state['amount_paid'],
                 unit_split=unit_percents,
@@ -443,6 +449,17 @@ class AccruableItemMixIn(models.Model):
 
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+
+    def void_state(self, commit: bool = False):
+        void_state = {
+            'amount_paid': 0,
+            'amount_receivable': 0,
+            'amount_unearned': 0,
+            'amount_earned': 0
+        }
+        if commit:
+            self.update_state(void_state)
+        return void_state
 
     def new_state(self, commit: bool = False):
         new_state = {
@@ -532,6 +549,14 @@ class AccruableItemMixIn(models.Model):
                 raise ValidationError('Cannot pay invoice before invoice date.')
         else:
             self.paid_date = None
+
+        if self.void and not all([
+            self.amount_paid == 0,
+            self.amount_earned == 0,
+            self.amount_unearned == 0,
+            self.amount_due == 0
+        ]):
+            raise ValidationError('Voided element cannot have any balance.')
 
         if self.migrate_allowed():
             self.update_state()

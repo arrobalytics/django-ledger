@@ -33,4 +33,7 @@ urlpatterns = [
     path('<slug:entity_slug>/mark-as-paid/<uuid:bill_pk>/',
          views.BillModelMarkPaidView.as_view(),
          name='bill-mark-paid'),
+    path('<slug:entity_slug>/void/<uuid:bill_pk>/',
+         views.BillModelDeleteView.as_view(void=True),
+         name='bill-void'),
 ]
