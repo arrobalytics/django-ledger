@@ -24,7 +24,8 @@
                     <p>Is Progressible:
                     <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                 {% endif %}
-                <p class="is-size-5 has-text-danger">You Still Owe: {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+                <p class="is-size-5 has-text-danger">You Still Owe:
+                    {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
                 <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
                 <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
                 <progress class="progress is-medium is-success"
@@ -55,7 +56,6 @@
                     {% trans 'Bill Info' %}</h2>
             </div>
             <div class="card-content">
-
                 {% if bill.paid %}
                     <p class="is-size-3 has-text-dark">Is Paid
                         <span class="icon is-large has-text-success-dark">
@@ -66,53 +66,56 @@
                         <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</span>
                     </p>
                 {% else %}
-                    <p class="is-size-3 has-text-dark">Bill Amount:
-                        <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
-                    </p>
-                    {% if not bill.is_past_due %}
-                        <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
-                    {% else %}
-                        <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | date }}</p>
-                        <p class="has-text-danger has-text-weight-bold is-size-3">Past
-                            Due: {{ bill.due_date | timesince }} ago</p>
-                    {% endif %}
-                    <p class="is-size-5 has-text-danger">You Still Owe: {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
 
-                    {% if bill.accrue %}
-                        <p>Is Accrued: <span
-                                class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                    {% if not bill.void %}
+                        <p class="is-size-3 has-text-dark">Bill Amount:
+                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
                         </p>
+                        {% if not bill.is_past_due %}
+                            <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
+                        {% else %}
+                            <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | date }}</p>
+                            <p class="has-text-danger has-text-weight-bold is-size-3">Past
+                                Due: {{ bill.due_date | timesince }} ago</p>
+                        {% endif %}
+                        <p class="is-size-5 has-text-danger">You Still Owe:
+                            {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
+                        {% if bill.accrue %}
+                            <p>Is Accrued: <span
+                                    class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                            </p>
+                        {% else %}
+                            <p>Is Accrued:
+                                <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                            </p>
+                        {% endif %}
+                        <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
+                        <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
+                        <progress class="progress is-medium is-success"
+                                  value="{{ bill.get_progress_percent }}"
+                                  max="100">
+                            {{ bill.get_progress | percentage }}
+                        </progress>
+                        <footer class="card-footer">
+                            <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                               class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+                            <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
+                               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                            <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                               class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
+                            <a href="{% url 'django_ledger:bill-void' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                               class="card-footer-item has-text-warning has-text-centered">{% trans 'Void' %}</a>
+                        </footer>
+                        {# MARK AS PAID MODAL #}
+                        {% mark_as_paid bill %}
                     {% else %}
-                        <p>Is Accrued:
-                            <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                        <p class="is-size-3 has-text-dark">Bill Amount:
+                            <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
                         </p>
+                        <p class="is-size-3 has-text-warning-dark">VOIDED {{ bill.void_date | date }}</p>
                     {% endif %}
-
-                    <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>
-
-                    <p>Progressed: {{ bill.get_progress | percentage }}</p><br>
-                    <progress class="progress is-medium is-success"
-                              value="{{ bill.get_progress_percent }}"
-                              max="100">
-                        {{ bill.get_progress | percentage }}
-                    </progress>
-
                 {% endif %}
-
-                {# MARK AS PAID MODAL #}
-                {% mark_as_paid bill %}
-
             </div>
-            <footer class="card-footer">
-                <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-                <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
-                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
-                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
-                <a href="{% url 'django_ledger:bill-void' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                   class="card-footer-item has-text-warning has-text-centered">{% trans 'Void' %}</a>
-            </footer>
         </div>
     {% endif %}
 {% else %}

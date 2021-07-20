@@ -227,9 +227,9 @@ def invoice_table(context):
 
 
 @register.inclusion_tag('django_ledger/tags/bill_table.html', takes_context=True)
-def bill_table(context):
+def bill_table(context, bill_qs):
     return {
-        'bills': context['bills'],
+        'bills': bill_qs,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 

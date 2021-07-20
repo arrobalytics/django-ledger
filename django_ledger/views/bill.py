@@ -444,8 +444,19 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
         # forcing QS evaluation
         len(bill_items_qs)
         if self.void:
-            # if bill_model.void:
-            #     return HttpResponseNotFound()
+
+            if bill_model.void:
+                messages.add_message(
+                    self.request,
+                    message=f'Bill {bill_model.bill_number} already voided...',
+                    level=messages.ERROR,
+                    extra_tags='is-danger')
+                url_redirect = reverse('django_ledger:bill-detail',
+                                       kwargs={
+                                           'entity_slug': self.kwargs['entity_slug'],
+                                           'bill_pk': bill_model.uuid
+                                       })
+                return HttpResponseRedirect(redirect_to=url_redirect)
 
             bill_model.void = True
             ld = localdate()
