@@ -13,16 +13,14 @@ from django.db import models
 from django.db.models import Q, Sum
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from mptt.models import MPTTModel
 
-from django_ledger.models import CreateUpdateMixIn
+from django_ledger.models import CreateUpdateMixIn, NodeTreeMixIn
 
 
 class JournalEntryModelManager(models.Manager):
 
-    def for_ledger(self, ledger_pk: str, entity_slug: str, user_model):
-        qs = self.get_queryset().filter(
-            Q(ledger__uuid__exact=ledger_pk) &
+    def for_entity(self, entity_slug: str, user_model):
+        return self.get_queryset().filter(
             Q(ledger__entity__slug__iexact=entity_slug) &
             (
                     Q(ledger__entity__admin=user_model) |
@@ -30,10 +28,13 @@ class JournalEntryModelManager(models.Manager):
             )
 
         )
-        return qs
+
+    def for_ledger(self, ledger_pk: str, entity_slug: str, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(ledger__uuid__exact=ledger_pk)
 
 
-class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
+class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     ACTIVITY_IGNORE = ['all']
     ACTIVITIES = [
         ('op', _('Operating')),
@@ -68,6 +69,7 @@ class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
                                on_delete=models.CASCADE)
 
     on_coa = JournalEntryModelManager()
+    objects = JournalEntryModelManager()
 
     class Meta:
         abstract = True
@@ -82,9 +84,6 @@ class JournalEntryModelAbstract(MPTTModel, CreateUpdateMixIn):
             models.Index(fields=['ledger', 'posted']),
             models.Index(fields=['locked']),
         ]
-
-    class MPTTMeta:
-        order_insertion_by = ['created']
 
     def __str__(self):
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)

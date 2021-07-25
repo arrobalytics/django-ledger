@@ -48,7 +48,7 @@
                 <div class="column is-12 has-text-centered">
                     <button class="button is-primary is-outlined">Save</button>
                     <a class="button is-dark"
-                       href="{% url "django_ledger:je-list" entity_slug=entity_slug ledger_pk=ledger_pk %}">Done</a>
+                       href="{% url "django_ledger:je-list" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Done</a>
                 </div>
             </div>
         </form>

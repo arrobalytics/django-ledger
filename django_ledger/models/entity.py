@@ -20,11 +20,10 @@ from django.db.models.signals import post_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.io import IOMixIn
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
 
 UserModel = get_user_model()
 
@@ -94,7 +93,7 @@ class EntityModelManager(Manager):
         )
 
 
-class EntityModelAbstract(MPTTModel,
+class EntityModelAbstract(NodeTreeMixIn,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
@@ -115,17 +114,12 @@ class EntityModelAbstract(MPTTModel,
         (12, _('December')),
     ]
 
-    parent = TreeForeignKey('self',
-                            null=True,
-                            blank=True,
-                            related_name='children',
-                            verbose_name=_('Parent Entity'),
-                            on_delete=models.CASCADE)
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'), null=True, blank=True)
-    admin = models.ForeignKey(UserModel, on_delete=models.CASCADE,
-                              related_name='admin_of', verbose_name=_('Admin'))
+    admin = models.ForeignKey(UserModel,
+                              on_delete=models.CASCADE,
+                              related_name='admin_of',
+                              verbose_name=_('Admin'))
     managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
                                       related_name='managed_by', verbose_name=_('Managers'))
 
@@ -142,9 +136,6 @@ class EntityModelAbstract(MPTTModel,
             models.Index(fields=['admin']),
             models.Index(fields=['parent'])
         ]
-
-    class MPTTMeta:
-        order_insertion_by = ['created']
 
     def __str__(self):
         return self.name

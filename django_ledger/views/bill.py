@@ -161,7 +161,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             bill_model.migrate_state(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug'],
-                itemthrough_models=po_model_items_qs
+                itemthrough_queryset=po_model_items_qs
             )
         else:
             form.save()
@@ -471,7 +471,7 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
                 user_model=self.request.user,
                 commit=True,
                 void=True,
-                itemthrough_models=bill_items_qs,
+                itemthrough_queryset=bill_items_qs,
                 je_date=ld,
                 entity_slug=self.kwargs['entity_slug']
             )

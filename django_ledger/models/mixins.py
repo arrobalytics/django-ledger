@@ -309,7 +309,7 @@ class AccruableItemMixIn(models.Model):
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
-                      itemthrough_models: QuerySet or list = None,
+                      itemthrough_queryset: QuerySet = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
@@ -334,7 +334,7 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            item_data = self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_models)
+            item_data = self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset)
 
             if isinstance(self, lazy_loader.get_bill_model()):
                 item_data_gb = groupby(item_data,
@@ -413,7 +413,7 @@ class AccruableItemMixIn(models.Model):
             unit_uuids = list(set(k[1] for k in idx_keys))
             now_date = localdate() if not je_date else je_date
             je_list = {
-                u: JournalEntryModel.objects.create(
+                u: JournalEntryModel.on_coa.create(
                     entity_unit_id=u,
                     date=now_date,
                     description=self.get_migrate_state_desc(),
@@ -572,3 +572,14 @@ class MarkdownNotesMixIn(models.Model):
         if not self.markdown_notes:
             return ''
         return markdown(force_str(self.markdown_notes))
+
+
+class NodeTreeMixIn(models.Model):
+    parent = models.ForeignKey('self',
+                               null=True,
+                               blank=True,
+                               on_delete=models.CASCADE,
+                               related_name='children_set')
+
+    class Meta:
+        abstract = True

@@ -243,7 +243,7 @@ class IOMixIn:
 
         JournalEntryModel = lazy_importer.get_journal_entry_model()
 
-        je_model = JournalEntryModel.objects.create(
+        je_model = JournalEntryModel.on_coa.create(
             ledger=je_ledger,
             description=je_desc,
             date=je_date,

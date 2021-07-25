@@ -402,10 +402,9 @@ def generate_random_invoice(
     invoice_model.new_state(commit=True)
     invoice_model.clean()
     invoice_model.save()
-    invoice_items = invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
+    invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
     invoice_model.migrate_state(
         user_model=user_model,
-        itemthrough_models=invoice_items,
         entity_slug=entity_model.slug,
         je_date=issue_dt)
 
@@ -464,10 +463,9 @@ def generate_random_bill(
     bill_model.new_state(commit=True)
     bill_model.clean()
     bill_model.save()
-    bill_items = bill_model.itemthroughmodel_set.bulk_create(bill_items)
+    bill_model.itemthroughmodel_set.bulk_create(bill_items)
     bill_model.migrate_state(
         user_model=user_model,
-        itemthrough_models=bill_items,
         entity_slug=entity_model.slug,
         je_date=issue_dt)
 

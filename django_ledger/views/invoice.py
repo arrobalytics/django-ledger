@@ -205,7 +205,7 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
                 invoice_model.migrate_state(
                     entity_slug=entity_slug,
                     user_model=self.request.user,
-                    itemthrough_models=invoice_item_list,
+                    itemthrough_queryset=invoice_item_list,
                     force_migrate=True
                 )
 

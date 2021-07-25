@@ -17,7 +17,6 @@ setup(
     use_pipfile=True,
     install_requires=[
         'django',
-        'django-mptt',
         'ofxtools',
         'faker'
     ],

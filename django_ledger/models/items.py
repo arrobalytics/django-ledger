@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
@@ -279,7 +279,7 @@ class ItemThroughModelManager(models.Manager):
         return qs.filter(po_model__uuid__exact=po_pk)
 
 
-class ItemThroughModelAbstract(CreateUpdateMixIn):
+class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     STATUS_NOT_ORDERED = 'not_ordered'
     STATUS_ORDERED = 'ordered'
     STATUS_IN_TRANSIT = 'in_transit'

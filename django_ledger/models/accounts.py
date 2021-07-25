@@ -12,10 +12,9 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
-from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_INVOICE, GROUP_BILL
-from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
 
 DEBIT = 'debit'
 CREDIT = 'credit'
@@ -69,7 +68,7 @@ class AccountModelManager(models.Manager):
         return qs.filter(role__in=GROUP_BILL)
 
 
-class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
+class AccountModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     """
     Djetler's Base Account Model Abstract
     """
@@ -83,13 +82,6 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
     name = models.CharField(max_length=100, verbose_name=_('Account Name'))
     role = models.CharField(max_length=25, choices=ACCOUNT_ROLES, verbose_name=_('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
-    parent = TreeForeignKey('self',
-                            null=True,
-                            blank=True,
-                            related_name='children',
-                            verbose_name=_('Parent'),
-                            db_index=True,
-                            on_delete=models.CASCADE)
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     active = models.BooleanField(default=False, verbose_name=_('Active'))
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
@@ -113,9 +105,6 @@ class AccountModelAbstract(MPTTModel, CreateUpdateMixIn):
             models.Index(fields=['coa']),
             models.Index(fields=['role', 'balance_type', 'active']),
         ]
-
-    class MPTTMeta:
-        order_insertion_by = ['name']
 
     def __str__(self):
         return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(x1=self.role_bs.upper(),

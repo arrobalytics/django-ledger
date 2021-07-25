@@ -15,10 +15,9 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from mptt.models import MPTTModel, TreeForeignKey
 
 from django_ledger.io.io_mixin import IOMixIn
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, NodeTreeMixIn
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -44,16 +43,9 @@ class EntityUnitModelManager(models.Manager):
         )
 
 
-class EntityUnitModelAbstract(IOMixIn, MPTTModel, SlugNameMixIn, CreateUpdateMixIn):
+class EntityUnitModelAbstract(IOMixIn, NodeTreeMixIn, SlugNameMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
-    parent = TreeForeignKey('self',
-                            null=True,
-                            blank=True,
-                            related_name='children',
-                            verbose_name=_('Parent Unit'),
-                            on_delete=models.CASCADE)
-
     entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Unit Entity'))
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))

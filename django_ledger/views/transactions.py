@@ -7,10 +7,12 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView
 
 from django_ledger.forms.transactions import TransactionModelFormSet
+from django_ledger.models import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -31,25 +33,42 @@ class TXSJournalEntryView(LoginRequiredMixIn, TemplateView):
             ledger_pk=self.kwargs['ledger_pk']
         ).order_by('account__code')
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)
-        context['txs_formset'] = TransactionModelFormSet(
-            user_model=self.request.user,
-            je_pk=kwargs['je_pk'],
-            ledger_pk=kwargs['ledger_pk'],
-            entity_slug=kwargs['entity_slug'],
-            queryset=self.get_queryset()
-        )
-        return self.render_to_response(context)
+    def get_context_data(self, txs_formset=None, **kwargs):
+        context = super(TXSJournalEntryView, self).get_context_data(**kwargs)
+        if not txs_formset:
+            context['txs_formset'] = TransactionModelFormSet(
+                user_model=self.request.user,
+                je_pk=kwargs['je_pk'],
+                ledger_pk=kwargs['ledger_pk'],
+                entity_slug=kwargs['entity_slug'],
+                queryset=self.get_queryset()
+            )
+        else:
+            context['txs_formset'] = txs_formset
+        return context
 
     def post(self, request, **kwargs):
-        context = self.get_context_data(**kwargs)
         txs_formset = TransactionModelFormSet(request.POST,
                                               user_model=self.request.user,
                                               ledger_pk=kwargs['ledger_pk'],
                                               entity_slug=kwargs['entity_slug'],
                                               je_pk=kwargs['je_pk'])
 
+        je_qs = JournalEntryModel.on_coa.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+        je_model: JournalEntryModel = get_object_or_404(je_qs, uuid=self.kwargs['je_pk'])
+        if je_model.locked:
+            messages.add_message(self.request,
+                                 message=_('Cannot update a Locked Journal Entry.'),
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+            return self.render_to_response(
+                context=self.get_context_data(txs_formset=txs_formset)
+            )
+
+        context = self.get_context_data()
         if txs_formset.is_valid():
             txs_formset.save()
             context['txs_formset'] = txs_formset
