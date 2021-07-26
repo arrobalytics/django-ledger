@@ -320,16 +320,45 @@ def generate_random_products(entity_model: EntityModel,
         ) for _ in range(product_count)
     ]
 
-    product_models = entity_model.items.bulk_create(product_models)
-
     for im in product_models:
         im.clean()
 
+    product_models = entity_model.items.bulk_create(product_models)
     return product_models
 
 
-def generate_random_expenses(entity_model: EntityModel, uom_models, accounts_gb):
-    expense_count = randint(20, 40)
+def generate_random_inventories(entity_model: EntityModel,
+                                uom_models,
+                                accounts_gb,
+                                min_inventory: int = 20,
+                                max_inventory: int = 40):
+    inv_count = randint(min_inventory, max_inventory)
+    inventory_models = [
+        ItemModel(
+            name=f'Inventory {randint(1000, 9999)}',
+            uom=choice(uom_models),
+            item_id=generate_random_item_id(),
+            entity=entity_model,
+            for_inventory=True,
+            is_product_or_service=False,
+            cogs_account=choice(accounts_gb['ex_cogs']),
+            inventory_account=choice(accounts_gb['asset_ca_inv']),
+        ) for _ in range(inv_count)
+    ]
+
+    for i in inventory_models:
+        i.clean()
+
+    inventory_models = entity_model.items.bulk_create(inventory_models)
+    return inventory_models
+
+
+def generate_random_expenses(entity_model: EntityModel,
+                             uom_models,
+                             accounts_gb,
+                             min_expenses: int = 20,
+                             max_expenses: int = 40):
+    expense_count = randint(min_expenses, max_expenses)
     expense_models = [
         ItemModel(
             name=f'Expense Item {randint(1000, 9999)}',
@@ -344,10 +373,10 @@ def generate_random_expenses(entity_model: EntityModel, uom_models, accounts_gb)
         ) for _ in range(expense_count)
     ]
 
-    expense_models = entity_model.items.bulk_create(expense_models)
-
     for em in expense_models:
         em.clean()
+
+    expense_models = entity_model.items.bulk_create(expense_models)
 
     return expense_models
 
@@ -580,6 +609,10 @@ def generate_sample_data(entity_model: str or EntityModel,
     expense_models = generate_random_expenses(entity_model=entity_model,
                                               uom_models=uom_models,
                                               accounts_gb=accounts_by_role)
+
+    inventory_models = generate_random_inventories(entity_model=entity_model,
+                                                   uom_models=uom_models,
+                                                   accounts_gb=accounts_by_role)
 
     loc_time = localtime()
     for i in range(tx_quantity):
