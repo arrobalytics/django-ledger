@@ -72,11 +72,12 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        form.instance = new_invoice_protocol(
+        ledger_model, invoice_model = new_invoice_protocol(
             invoice_model=form.instance,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         )
+        form.instance = invoice_model
         return super().form_valid(form=form)
 
     def get_success_url(self):
