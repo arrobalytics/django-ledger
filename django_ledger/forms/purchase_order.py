@@ -143,10 +143,10 @@ class PurchaseOrderItemForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'unit_cost': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'quantity': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
 
@@ -190,7 +190,7 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 form.fields['quantity'].disabled = True
                 form.fields['entity_unit'].disabled = True
                 form.fields['item_model'].disabled = True
-                if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+                if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED or self.PO_MODEL.fulfilled:
                     form.fields['po_item_status'].disabled = True
                     form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
             # PO is Draft

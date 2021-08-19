@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views import View
 from django.views.generic import (
@@ -62,6 +63,11 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+
+    def get_initial(self):
+        return {
+            'date': localdate()
+        }
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']

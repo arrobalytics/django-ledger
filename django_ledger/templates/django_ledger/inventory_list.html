@@ -1,0 +1,44 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="container">
+        <div class="columns">
+            <div class="column">
+                <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory On Hand</h1>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="box">
+                    <div class="table-container">
+                        <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                            <thead>
+                            <tr class="has-text-centered">
+                                <th>Item</th>
+                                <th>UOM</th>
+                                <th>Quantity</th>
+                                <th>Value</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for inventory in inventory_list %}
+                                 <tr>
+                                 <td>{{ inventory.item_model__name }}</td>
+                                 <td>{{ inventory.item_model__uom__name }}</td>
+                                 <td>{{ inventory.total_quantity }}</td>
+                                 <td>{% currency_symbol %}{{ inventory.total_value | currency_format }}</td>
+                                 </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

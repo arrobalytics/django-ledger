@@ -106,7 +106,7 @@ class ItemModelManager(models.Manager):
         )
 
     def inventory(self, entity_slug: str, user_model):
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(for_inventory=True)
 
     def for_bill(self, entity_slug: str, user_model):
@@ -277,6 +277,14 @@ class ItemThroughModelManager(models.Manager):
     def for_po(self, entity_slug, user_model, po_pk):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
+
+    def inventory_all(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(item_model__for_inventory=True)
+
+    def inventory_received(self, entity_slug, user_model):
+        qs = self.inventory_all(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
 
 
 class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):

@@ -35,7 +35,6 @@
                         {{ form.po_date }}
                     </div>
                 </div>
-
                 <div class="field">
                     <label for="{{ form.po_status.id_for_label }}" class="label">{{ form.po_status.label }}</label>
                     <div class="control">
@@ -72,6 +71,8 @@
                     {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                 <h3 class="is-size-3 has-text-weight-light">{% trans 'Received Amount' %}:
                     {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
+                <h3 class="is-size-3 has-text-weight-light">{% trans 'Paid Amount' %}:
+                    {% currency_symbol %}{{ total_paid | currency_format }}</h3>
             </div>
         </div>
     </form>
