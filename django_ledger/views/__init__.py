@@ -16,6 +16,7 @@ from django_ledger.views.customer import *
 from django_ledger.views.data_import import *
 from django_ledger.views.djl_api import *
 from django_ledger.views.entity import *
+from django_ledger.views.inventory import *
 from django_ledger.views.invoice import *
 from django_ledger.views.item import *
 from django_ledger.views.journal_entry import *

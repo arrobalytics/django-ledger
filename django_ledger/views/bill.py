@@ -115,6 +115,11 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         context['form_action_url'] = form_action
         return context
 
+    def get_initial(self):
+        return {
+            'date': localdate()
+        }
+
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
         form = BillModelCreateForm(entity_slug=entity_slug,

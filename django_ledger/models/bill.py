@@ -148,7 +148,9 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
                                  'entity_unit__uuid',
                                  'item_model__expense_account__balance_type').values(
             'item_model__expense_account__uuid',
+            'item_model__inventory_account__uuid',
             'item_model__expense_account__balance_type',
+            'item_model__inventory_account__balance_type',
             'entity_unit__slug',
             'entity_unit__uuid',
             'total_amount').annotate(

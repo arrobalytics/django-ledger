@@ -377,7 +377,7 @@ class InventoryItemUpdateView(LoginRequiredMixIn, UpdateView):
     }
 
     def get_queryset(self):
-        return ItemModel.objects.inventory(
+        return ItemModel.objects.inventory_all(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
