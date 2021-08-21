@@ -94,15 +94,17 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             self.po_number = generate_po_number()
         if self.fulfillment_date:
             self.fulfilled = True
+        if self.fulfilled:
+            self.po_amount_received = self.po_amount
         if self.fulfilled and not self.fulfillment_date:
             self.fulfillment_date = localdate()
-
 
     def get_po_item_data(self, queryset=None) -> tuple:
         if not queryset:
             queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
+            total_paid=Sum('bill_model__amount_paid'),
             total_items=Count('uuid')
         )
 
@@ -110,6 +112,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if item_list:
             self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
             return
+
+        # todo: explore if queryset can be passed from PO Update View...
         queryset, item_data = self.get_po_item_data(queryset=queryset)
         qs_values = queryset.values(
             'total_amount', 'po_item_status'

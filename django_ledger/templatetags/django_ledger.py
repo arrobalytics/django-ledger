@@ -538,7 +538,7 @@ def navigation_menu(context, style):
             },
             {
                 'type': 'links',
-                'title': 'Your Lists',
+                'title': 'Management',
                 'links': [
                     {
                         'type': 'link',
@@ -549,11 +549,6 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Customers',
                         'url': reverse('django_ledger:customer-list', kwargs={'entity_slug': ENTITY_SLUG})
-                    },
-                    {
-                        'type': 'link',
-                        'title': 'Entity Units',
-                        'url': reverse('django_ledger:unit-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',
@@ -574,6 +569,23 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Purchase Orders',
                         'url': reverse('django_ledger:po-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Inventory',
+                        'url': reverse('django_ledger:inventory-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    }
+
+                ]
+            },
+            {
+                'type': 'links',
+                'title': 'Your Lists',
+                'links': [
+                    {
+                        'type': 'link',
+                        'title': 'Entity Units',
+                        'url': reverse('django_ledger:unit-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',

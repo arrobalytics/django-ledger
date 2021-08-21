@@ -241,6 +241,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                 queryset=po_item_queryset,
             )
             context['total_amount_due'] = item_data['amount_due']
+            context['total_paid'] = item_data['total_paid']
         else:
             context['item_formset'] = item_formset
             context['total_amount_due'] = po_model.po_amount
@@ -259,28 +260,47 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related(
-            'itemthroughmodel_set'
         ).select_related('entity')
 
     def form_valid(self, form: PurchaseOrderModelUpdateForm):
         po_model: PurchaseOrderModel = form.save(commit=False)
-        messages.add_message(self.request,
-                             messages.SUCCESS,
-                             f'{self.object.po_number} successfully updated.',
-                             extra_tags='is-success')
 
         if form.has_changed():
             po_items_qs = ItemThroughModel.objects.for_po(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 po_pk=po_model.uuid,
-            )
+            ).select_related('bill_model')
+
             if all(['po_status' in form.changed_data,
                     po_model.po_status == po_model.PO_STATUS_APPROVED]):
                 po_items_qs.update(po_item_status=ItemThroughModel.STATUS_NOT_ORDERED)
+
             if 'fulfilled' in form.changed_data:
+
+                if not all([i.bill_model for i in po_items_qs]):
+                    messages.add_message(self.request,
+                                         messages.ERROR,
+                                         f'All PO items must be billed before marking'
+                                         f' PO: {po_model.po_number} as fulfilled.',
+                                         extra_tags='is-danger')
+                    return self.get(self.request)
+
+                else:
+                    if not all([i.bill_model.paid for i in po_items_qs]):
+                        messages.add_message(self.request,
+                                             messages.SUCCESS,
+                                             f'All bills must be paid before marking'
+                                             f' PO: {po_model.po_number} as fulfilled.',
+                                             extra_tags='is-success')
+                        return self.get(self.request)
+
                 po_items_qs.update(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+        messages.add_message(self.request,
+                             messages.SUCCESS,
+                             f'{self.object.po_number} successfully updated.',
+                             extra_tags='is-success')
         return super().form_valid(form)
 
 

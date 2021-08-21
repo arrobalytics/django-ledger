@@ -334,18 +334,30 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            item_data = self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset)
+            # todo: temporary fix... Inventory accounts must be properly mapped...
+            item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
+
+            for item in item_data:
+                account_uuid_expense = item.get('item_model__expense_account__uuid')
+                account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                if account_uuid_expense:
+                    item['account_uuid'] = account_uuid_expense
+                    item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
+                elif account_uuid_inventory:
+                    item['account_uuid'] = account_uuid_inventory
+                    item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+
 
             if isinstance(self, lazy_loader.get_bill_model()):
                 item_data_gb = groupby(item_data,
-                                       key=lambda a: (a['item_model__expense_account__uuid'],
+                                       key=lambda a: (a['account_uuid'],
                                                       a['entity_unit__uuid'],
-                                                      a['item_model__expense_account__balance_type']))
+                                                      a['account_balance_type']))
             elif isinstance(self, lazy_loader.get_invoice_model()):
                 item_data_gb = groupby(item_data,
-                                       key=lambda a: (a['item_model__earnings_account__uuid'],
+                                       key=lambda a: (a['account_uuid'],
                                                       a['entity_unit__uuid'],
-                                                      a['item_model__earnings_account__balance_type']))
+                                                      a['account_balance_type']))
 
             progress = self.get_progress()
 
