@@ -97,18 +97,6 @@
                             {{ bill.get_progress | percentage }}
                         </progress>
                         {# todo: fix card footer #}
-                        <footer class="card-footer">
-                            <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                               class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-                            <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
-                               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
-                            <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                               class="card-footer-item has-text-danger has-text-centered">{% trans 'Delet' %}</a>
-                            <a href="{% url 'django_ledger:bill-void' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                               class="card-footer-item has-text-warning has-text-centered">{% trans 'Void' %}</a>
-                        </footer>
-                        {# MARK AS PAID MODAL #}
-                        {% mark_as_paid bill %}
                     {% else %}
                         <p class="is-size-3 has-text-dark">Bill Amount:
                             <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>
@@ -117,6 +105,19 @@
                     {% endif %}
                 {% endif %}
             </div>
+            <footer class="card-footer">
+                <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                   class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+                <a onclick="djLedger.toggleModal('{{ bill.get_html_id }}')"
+                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
+                <a href="{% url 'django_ledger:bill-void' entity_slug=entity_slug bill_pk=bill.uuid %}"
+                   class="card-footer-item has-text-warning has-text-centered">{% trans 'Void' %}</a>
+            </footer>
+            {# MARK AS PAID MODAL #}
+            {% mark_as_paid bill %}
+
         </div>
     {% endif %}
 {% else %}

@@ -25,6 +25,7 @@
                             <th>{% trans 'Delete' %}</th>
                         {% endif %}
                         <th>{% trans 'Create Bill' %}</th>
+                        <th>{% trans 'Bill Paid?' %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -61,6 +62,16 @@
                                     {#                                {% else %}#}
                                 {% endif %}
                             </td>
+                            <td class="has-text-centered">
+                            {% if f.instance.bill_model %}
+                                {% if f.instance.bill_model.paid %}
+                                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                                {% else %}
+                                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                                {% endif %}
+
+                            {% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -76,6 +87,7 @@
                         {% if item_formset.can_delete %}
                             <th></th>
                         {% endif %}
+                        <th></th>
                         <th></th>
                     </tr>
                     </tfoot>

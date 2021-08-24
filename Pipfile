@@ -4,15 +4,16 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=3.2"
-ofxtools = ">=0.8.21"
-jsonschema = ">=3.2.0"
-markdown = ">=3.3.4"
+django = "~=3.2.6"
+ofxtools = "~=0.9.4"
+jsonschema = "~=3.2.0"
+markdown = "~=3.3.4"
+faker = "~=8.12"
 
 [dev-packages]
-sphinx = "~=3.4.1"
-faker = "~=5.1"
+sphinx = "~=4.1.2"
 behave = "~=1.2.6"
+pipenv-setup = "*"
 
 [requires]
 python_version = "3.9"
