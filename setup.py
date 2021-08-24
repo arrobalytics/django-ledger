@@ -18,7 +18,9 @@ setup(
     install_requires=[
         'django',
         'ofxtools',
-        'faker'
+        'faker',
+        'markdown',
+        'jsonchema',
     ],
     project_urls={
         'Bug Tracker': 'https://github.com/arrobalytics/django-ledger/issues',
