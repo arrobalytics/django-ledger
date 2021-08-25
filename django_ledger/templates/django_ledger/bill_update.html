@@ -76,14 +76,12 @@
                                         {{ form.amount_paid }}
                                     </div>
                                 </div>
-
                                 <div class="field">
                                     <label for="{{ form.paid.id_for_label }}"
                                            class="label is-small">
                                         {{ form.paid }}
                                         {{ form.paid.label }}</label>
                                 </div>
-
                                 <div class="field">
                                     <label class="label is-small"
                                            for="{{ form.paid_date.id_for_label }}">{{ form.paid_date.label }}</label>
@@ -91,8 +89,6 @@
                                         {{ form.paid_date }}
                                     </div>
                                 </div>
-
-
                                 <div class="field">
                                     <label class="label is-small"
                                            for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
@@ -100,7 +96,6 @@
                                         {{ form.progress }}
                                     </div>
                                 </div>
-
 
                                 <button type="submit"
                                         class="button is-primary is-fullwidth djetler_my_1">
@@ -111,12 +106,9 @@
                                 <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                             </form>
-
                         </div>
-
                     </div>
                 </div>
-
             </div>
             {% if bill.is_configured %}
                 <div class="column is-6">
@@ -135,8 +127,6 @@
                                             ${{ bill.get_amount_receivable | currency_format }}</p>
                                         <p>{{ bill.unearned_account }}:
                                             ${{ bill.get_amount_payable | currency_format }}</p>
-                                        <p>{{ bill.earnings_account }}:
-                                            ${{ bill.get_amount_earned | currency_format }}</p>
                                     </div>
                                     <div class="column is-12">
                                         <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
@@ -145,8 +135,6 @@
                                             ${{ bill.amount_receivable | currency_format }}</p>
                                         <p>{{ bill.unearned_account }}:
                                             ${{ bill.amount_unearned | currency_format }}</p>
-                                        <p>{{ bill.earnings_account }}:
-                                            ${{ bill.amount_earned | currency_format }}</p>
                                     </div>
 
                                     {% now "Y" as current_year %}
@@ -171,6 +159,26 @@
                                            href="{% url 'django_ledger:je-list' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
+
+                                        <form action="{% url "django_ledger:bill-action-lock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-success is-fullwidth mt-2">
+                                                {% trans 'Lock Bill' %}
+                                            </button>
+                                        </form>
+                                        <form action="{% url "django_ledger:bill-action-unlock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                                {% trans 'Unlock Bill' %}
+                                            </button>
+                                        </form>
+                                        <form action="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                                {% trans 'Force Migrate Bill' %}
+                                            </button>
+                                        </form>
+
                                     </div>
                                 </div>
                             </div>

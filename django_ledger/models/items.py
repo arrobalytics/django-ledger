@@ -301,6 +301,9 @@ class ItemThroughModelManager(models.Manager):
         qs = self.inventory_all(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
 
+    def is_orphan(self, entity_slug, user_model):
+        # todo: implement is orphans...
+        raise NotImplementedError
 
 class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     STATUS_NOT_ORDERED = 'not_ordered'

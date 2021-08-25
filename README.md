@@ -14,6 +14,7 @@ Django Ledger supports:
 - Bills & Invoices with optional _accruable_ functionality.
 - Basic navigational templates.
 - Entity administration & entity manager support.
+- Items, lists & inventory management.
 - Bank Accounts.
 
 __WARNING__: Currently this project is under active development, it is not stable and is not recommended for production
@@ -24,7 +25,6 @@ stable release as soon as possible and to incorporate the following functionalit
 ## High Level Road Map
 
 - Cash flow statement.
-- Inventory Management.
 - Entity Nesting and Corporate Structures.
 - Tax line mapping.
 - Package documentation.

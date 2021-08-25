@@ -414,51 +414,52 @@ class AccruableItemMixIn(models.Model):
             # list of all keys involved
             idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
 
-            # difference between new vs curre
+            # difference between new vs current
             diff_idx = {
                 k: new_ledger_state.get(k, 0) - current_ledger_state.get(k, 0) for k in idx_keys
             }
 
-            JournalEntryModel = lazy_loader.get_journal_entry_model()
-            TransactionModel = lazy_loader.get_transaction_model()
+            if commit:
+                JournalEntryModel = lazy_loader.get_journal_entry_model()
+                TransactionModel = lazy_loader.get_transaction_model()
 
-            unit_uuids = list(set(k[1] for k in idx_keys))
-            now_date = localdate() if not je_date else je_date
-            je_list = {
-                u: JournalEntryModel.on_coa.create(
-                    entity_unit_id=u,
-                    date=now_date,
-                    description=self.get_migrate_state_desc(),
-                    activity='op',
-                    origin='migration',
-                    locked=True,
-                    posted=True,
-                    ledger_id=self.ledger_id
-                ) for u in unit_uuids
-            }
+                unit_uuids = list(set(k[1] for k in idx_keys))
+                now_date = localdate() if not je_date else je_date
+                je_list = {
+                    u: JournalEntryModel.on_coa.create(
+                        entity_unit_id=u,
+                        date=now_date,
+                        description=self.get_migrate_state_desc(),
+                        activity='op',
+                        origin='migration',
+                        locked=True,
+                        posted=True,
+                        ledger_id=self.ledger_id
+                    ) for u in unit_uuids
+                }
 
-            txs_list = [
-                (unit_uuid, TransactionModel(
-                    journal_entry=je_list.get(unit_uuid),
-                    amount=abs(round(amt, 2)),
-                    tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
-                    account_id=acc_uuid,
-                    description=self.get_migrate_state_desc()
-                )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
-            ]
+                txs_list = [
+                    (unit_uuid, TransactionModel(
+                        journal_entry=je_list.get(unit_uuid),
+                        amount=abs(round(amt, 2)),
+                        tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
+                        account_id=acc_uuid,
+                        description=self.get_migrate_state_desc()
+                    )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+                ]
 
-            for unit_uuid, tx in txs_list:
-                tx.clean()
+                for unit_uuid, tx in txs_list:
+                    tx.clean()
 
-            for uid in unit_uuids:
-                # validates each unit txs independently...
-                balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
+                for uid in unit_uuids:
+                    # validates each unit txs independently...
+                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
 
-            # validates all txs as a whole (for safety)...
-            txs = [tx for ui, tx in txs_list]
-            balance_tx_data(tx_data=txs)
-            TransactionModel.objects.bulk_create(txs)
-
+                # validates all txs as a whole (for safety)...
+                txs = [tx for ui, tx in txs_list]
+                balance_tx_data(tx_data=txs)
+                TransactionModel.objects.bulk_create(txs)
+            return diff_idx
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
