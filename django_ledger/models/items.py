@@ -254,7 +254,22 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.cogs_account = None
 
 
+class ItemThroughModelQueryset(models.QuerySet):
+
+    def is_received(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+    def in_transit(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+
+    def is_ordered(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
+
 class ItemThroughModelManager(models.Manager):
+
+    def get_queryset(self):
+        return ItemThroughModelQueryset(self.model, using=self._db)
 
     def for_entity(self, user_model, entity_slug):
         qs = self.get_queryset()

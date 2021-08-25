@@ -7,38 +7,35 @@
     <div class="container">
         <div class="columns">
             <div class="column">
-                <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory On Hand</h1>
-            </div>
-        </div>
-        <div class="columns">
-            <div class="column">
-                <div class="box">
-                    <div class="table-container">
-                        <table class="table is-fullwidth is-narrow is-striped is-bordered">
-                            <thead>
-                            <tr class="has-text-centered">
-                                <th>Item</th>
-                                <th>UOM</th>
-                                <th>Quantity</th>
-                                <th>Value</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for inventory in inventory_list %}
-                                 <tr>
-                                 <td>{{ inventory.item_model__name }}</td>
-                                 <td>{{ inventory.item_model__uom__name }}</td>
-                                 <td>{{ inventory.total_quantity }}</td>
-                                 <td>{% currency_symbol %}{{ inventory.total_value | currency_format }}</td>
-                                 </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                {% if inventory_ordered %}
+                    <div class="column is-12">
+                        <div class="box">
+                            <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory Ordered</h1>
+                            {% inventory_table inventory_ordered %}
+                        </div>
                     </div>
-
-                </div>
+                {% endif %}
+                {% if inventory_in_transit %}
+                    <div class="column is-12">
+                        <div class="box">
+                            <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory In Transit</h1>
+                            <div class="table-container">
+                                {% inventory_table inventory_in_transit %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if inventory_received %}
+                    <div class="column is-12">
+                        <div class="box">
+                            <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory On Hand</h1>
+                            <div class="table-container">
+                                {% inventory_table inventory_received %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
-
 {% endblock %}

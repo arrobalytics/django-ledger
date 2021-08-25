@@ -10,6 +10,7 @@ from calendar import month_abbr
 from random import randint
 
 from django import template
+from django.db.models import Sum
 from django.urls import reverse
 from django.utils.formats import number_format
 from django.utils.timezone import localdate
@@ -731,3 +732,14 @@ def uom_table(context, uom_queryset):
         'entity_slug': context['view'].kwargs['entity_slug'],
         'uom_list': uom_queryset
     }
+
+@register.inclusion_tag('django_ledger/tags/inventory_table.html', takes_context=True)
+def inventory_table(context, queryset):
+    ctx = {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'inventory_list': queryset
+    }
+    ctx.update(queryset.aggregate(inventory_total_value=Sum('total_value')))
+    return ctx
+
+
