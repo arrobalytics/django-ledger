@@ -152,6 +152,8 @@ class AccruableItemMixIn(models.Model):
     void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
 
     accrue = models.BooleanField(default=False, verbose_name=_('Progressible'))
+
+    # todo: change progress method from percent to currency amount...
     progress = models.DecimalField(default=0,
                                    verbose_name=_('Progress Amount'),
                                    decimal_places=2,

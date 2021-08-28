@@ -9,7 +9,6 @@
     "bulmaswatch": "^0.8.1",
     "chart.js": "^2.9.4",
     "pikaday": "^1.8.2",
-    "trim-newlines": "^3.0.1",
     "vue": "^2.6.12",
     "vue-class-component": "^7.2.6"
   },
