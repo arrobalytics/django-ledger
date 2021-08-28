@@ -528,12 +528,15 @@ class BillModelMarkPaidView(LoginRequiredMixIn,
 
 
 class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
-    template_name = 'django_ledger/bill_reconcile.html'
     context_object_name = 'bill_model'
     slug_field = 'uuid'
     slug_url_kwarg = 'bill_pk'
     http_method_names = ['post']
+
     action = None
+    ACTION_FORCE_MIGRATE = 'force-migrate'
+    ACTION_LOCK = 'lock'
+    ACTION_UNLOCK = 'unlock'
 
     def get_redirect_url(self, *args, **kwargs):
         bill_model: BillModel = self.get_object()
@@ -547,7 +550,7 @@ class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
         bill_model: BillModel = self.get_object()
         ledger_model: LedgerModel = bill_model.ledger
 
-        if self.action == 'force-migrate':
+        if self.action == self.ACTION_FORCE_MIGRATE:
 
             if bill_model.ledger.locked:
                 messages.add_message(self.request,
@@ -561,7 +564,7 @@ class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
                     force_migrate=True
                 )
 
-        elif self.action == 'lock':
+        elif self.action == self.ACTION_LOCK:
             if not ledger_model.locked:
                 ledger_model.locked = True
                 ledger_model.save(update_fields=['locked', 'updated'])
@@ -575,7 +578,7 @@ class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
                                      message=f'{bill_model.bill_number} already locked.',
                                      extra_tags='is-warning')
 
-        elif self.action == 'unlock':
+        elif self.action == self.ACTION_UNLOCK:
             if ledger_model.locked:
                 ledger_model.locked = False
                 ledger_model.save(update_fields=['locked', 'updated'])

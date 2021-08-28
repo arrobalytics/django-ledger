@@ -31,4 +31,18 @@ urlpatterns = [
          views.InvoiceModelMarkPaidView.as_view(),
          name='invoice-mark-paid'),
 
+    # actions....
+    path('<slug:entity_slug>/actions/<uuid:invoice_pk>/force-migrate/',
+         views.InvoiceModelActionView.as_view(
+             action=views.InvoiceModelActionView.ACTION_FORCE_MIGRATE),
+         name='invoice-action-force-migrate'),
+    path('<slug:entity_slug>/actions/<uuid:invoice_pk>/lock/',
+         views.InvoiceModelActionView.as_view(
+             action=views.InvoiceModelActionView.ACTION_LOCK),
+         name='invoice-action-lock'),
+    path('<slug:entity_slug>/actions/<uuid:invoice_pk>/unlock/',
+         views.InvoiceModelActionView.as_view(
+             action=views.InvoiceModelActionView.ACTION_UNLOCK),
+         name='invoice-action-unlock'),
+
 ]

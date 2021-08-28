@@ -39,12 +39,15 @@ urlpatterns = [
 
     # actions....
     path('<slug:entity_slug>/actions/<uuid:bill_pk>/force-migrate/',
-         views.BillModelActionView.as_view(action='force-migrate'),
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_FORCE_MIGRATE),
          name='bill-action-force-migrate'),
     path('<slug:entity_slug>/actions/<uuid:bill_pk>/lock/',
-         views.BillModelActionView.as_view(action='lock'),
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_LOCK),
          name='bill-action-lock'),
     path('<slug:entity_slug>/actions/<uuid:bill_pk>/unlock/',
-         views.BillModelActionView.as_view(action='unlock'),
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_UNLOCK),
          name='bill-action-unlock'),
 ]

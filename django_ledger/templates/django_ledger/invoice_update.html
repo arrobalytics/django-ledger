@@ -4,14 +4,11 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
     <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
           method="post">
-
         {% if form.errors %}
             {{ form.errors }}
         {% endif %}
-
         {% csrf_token %}
         <div class="columns is-multiline">
             <div class="column is-6">
@@ -36,11 +33,9 @@
                                     {{ form.amount_due }}
                                 </div>
                             </div>
-
                             <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
                             <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
                             <h4 class="has-text-weight-light">Accrue Invoice: {{ form.accrue }}</h4>
-
                         </div>
 
                     </div>
@@ -56,7 +51,6 @@
                             <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
                                   method="post">
                                 {% csrf_token %}
-
                                 <div class="field">
                                     <label for="{{ form.paid.id_for_amount_paid }}"
                                            class="label is-small">{{ form.amount_paid.label }}</label>
@@ -64,14 +58,12 @@
                                         {{ form.amount_paid }}
                                     </div>
                                 </div>
-
                                 <div class="field">
                                     <label for="{{ form.paid.id_for_label }}"
                                            class="label is-small">
                                         {{ form.paid }}
                                         {{ form.paid.label }}</label>
                                 </div>
-
                                 <div class="field">
                                     <label class="label is-small"
                                            for="{{ form.paid_date.id_for_label }}">{{ form.paid_date.label }}</label>
@@ -79,8 +71,6 @@
                                         {{ form.paid_date }}
                                     </div>
                                 </div>
-
-
                                 <div class="field">
                                     <label class="label is-small"
                                            for="{{ form.progress.id_for_label }}">{{ form.progress.label }}</label>
@@ -88,8 +78,6 @@
                                         {{ form.progress }}
                                     </div>
                                 </div>
-
-
                                 <button type="submit"
                                         class="button is-primary is-outlined is-fullwidth djetler_my_1">Save
                                 </button>
@@ -98,9 +86,7 @@
                                 <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                             </form>
-
                         </div>
-
                     </div>
                 </div>
 
@@ -175,6 +161,25 @@
                                        href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                         {% trans 'Ledger Journal Entries' %}
                                     </a>
+                                    <form action="{% url "django_ledger:invoice-action-lock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-success is-fullwidth mt-2">
+                                                {% trans 'Lock Invoice' %}
+                                            </button>
+                                        </form>
+                                        <form action="{% url "django_ledger:invoice-action-unlock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                                {% trans 'Unlock Invoice' %}
+                                            </button>
+                                        </form>
+                                        <form action="{% url "django_ledger:invoice-action-force-migrate" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                                {% trans 'Force Migrate Invoice' %}
+                                            </button>
+                                        </form>
+
                                 </div>
                             </div>
 
