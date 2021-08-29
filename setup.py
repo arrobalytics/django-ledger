@@ -14,7 +14,6 @@ setup(
     description="Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, "
     + "Chart of Accounts, Entities",
     include_package_data=True,
-    use_pipfile=True,
     install_requires=[
         "asgiref==3.4.1; python_version >= '3.6'",
         "attrs==21.2.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
