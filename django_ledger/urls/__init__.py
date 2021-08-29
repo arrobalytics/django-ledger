@@ -33,10 +33,7 @@ urlpatterns = [
     path('auth/', include('django_ledger.urls.auth')),
     path('feedback/', include('django_ledger.urls.feedback')),
     path('inventory/', include('django_ledger.urls.inventory')),
-    path('', include('django_ledger.urls.home')),
-
-    path('', views.RootUrlView.as_view(), name='root-url'),
-
+    path('home/', include('django_ledger.urls.home')),
     path('djl-api/v1/', include('django_ledger.urls.djl_api')),
-
+    path('', views.RootUrlView.as_view(), name='root'),
 ]

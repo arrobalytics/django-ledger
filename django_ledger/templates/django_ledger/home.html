@@ -8,13 +8,11 @@
     <section class="section">
         <div class="container">
             <div class="columns is-multiline">
-
                 {% for entity in entities %}
                     <div class="column is-6-tablet">
                         {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
                     </div>
                 {% endfor %}
-
                 <div class="column is-6-tablet has-text-centered">
                     <div class="box">
                         <a href="{% url 'django_ledger:entity-create' %}">

@@ -22,7 +22,9 @@
             {% navigation_menu 'mobile' %}
             <div class="navbar-end">
                 <div class="navbar-item">
-                    <a href="{% url 'django_ledger:logout' %}" class="button is-small is-danger is-outlined">
+                    <a href="{% url 'django_ledger:logout' %}"
+                       id="djl-el=logout-button-nav"
+                       class="button is-small is-danger is-outlined">
                         {% trans 'Logout' %}
                     </a>
                 </div>

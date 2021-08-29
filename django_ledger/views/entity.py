@@ -134,7 +134,9 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(LoginRequiredMixIn, EntityUnitMixIn, RedirectView):
+class EntityModelDetailView(LoginRequiredMixIn,
+                            EntityUnitMixIn,
+                            RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()

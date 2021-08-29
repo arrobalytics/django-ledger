@@ -306,8 +306,10 @@ class FromToDatesMixIn:
 
 
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
-    login_url = DJANGO_LEDGER_LOGIN_URL
     redirect_field_name = 'next'
+
+    def get_login_url(self):
+        return reverse('django_ledger:login')
 
 
 class EntityUnitMixIn:

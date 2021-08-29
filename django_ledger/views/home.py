@@ -22,18 +22,18 @@ class RootUrlView(RedirectView):
         return reverse('django_ledger:home')
 
 
-class HomeView(LoginRequiredMixIn, ListView):
+class DasboardView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/home.html'
-    PAGE_TITLE = _('My Entities')
+    PAGE_TITLE = _('My Dashboard')
     context_object_name = 'entities'
     extra_context = {
         'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
+        'header_title': PAGE_TITLE,
     }
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['header_subtitle'] = self.request.user.get_full_name
+        context['header_subtitle'] = self.request.user.get_full_name()
         context['header_subtitle_icon'] = 'ei:user'
         return context
 

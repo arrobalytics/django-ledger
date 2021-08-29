@@ -3,6 +3,7 @@ from django.views.generic import ListView
 
 from django_ledger.views.mixins import LoginRequiredMixIn
 from django_ledger.models.items import ItemModel, ItemThroughModel
+from django.utils.translation import gettext_lazy as _
 
 
 class InventoryListView(LoginRequiredMixIn, ListView):
@@ -25,6 +26,11 @@ class InventoryListView(LoginRequiredMixIn, ListView):
         # on hand inventory...
         received_qs = qs.is_received()
         context['inventory_received'] = received_qs
+
+        context['page_title'] = _('Inventory')
+        context['header_title'] = _('Inventory Status')
+        context['header_subtitle'] = _('Ordered/In Transit/On Hand')
+        context['header_subtitle_icon'] = 'ic:round-inventory'
         return context
 
     def get_queryset(self):
