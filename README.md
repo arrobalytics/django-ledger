@@ -40,6 +40,7 @@ v1.0 [Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMA
 
 __This project is actively looking for contributors. Any financial and/or accounting experience is a big plus.__
 If you have prior accounting experience and want to contribute, don't hesitate to contact me.
+See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
 
 ## Quick Start
 
