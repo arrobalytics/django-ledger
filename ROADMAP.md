@@ -2,7 +2,7 @@
 
 # Roadmap to Version 1.0 Stable
 
-### Version 0.4
+### ~~Version 0.4~~ *completed*
 
 * __0.4.0__: Items, resources and & lists for bills & invoices itemization:
 * __0.4.0__: Enhance and optimize Django Ledger the random data generation functionality to properly populate relevant
@@ -15,6 +15,7 @@
 ### Version 0.5
 
 * __0.5.0__: Inventory tracking.
+  * FIFO and Average Cost.
 * __0.5.1__: Customer jobs.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.

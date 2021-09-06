@@ -336,7 +336,6 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            # todo: temporary fix... Inventory accounts must be properly mapped...
             item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
 
             if isinstance(self, lazy_loader.get_bill_model()):
@@ -350,7 +349,6 @@ class AccruableItemMixIn(models.Model):
                     elif account_uuid_inventory:
                         item['account_uuid'] = account_uuid_inventory
                         item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
-
 
             elif isinstance(self, lazy_loader.get_invoice_model()):
 
@@ -469,7 +467,7 @@ class AccruableItemMixIn(models.Model):
                 txs = [tx for ui, tx in txs_list]
                 balance_tx_data(tx_data=txs)
                 TransactionModel.objects.bulk_create(txs)
-            return diff_idx
+            return item_data, digest_data
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 

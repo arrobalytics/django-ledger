@@ -42,17 +42,12 @@ class InvoiceModelCreateForm(ModelForm):
     class Meta:
         model = InvoiceModel
         fields = [
-
             'customer',
-
             'date',
-            'amount_due',
             'terms',
-
             'cash_account',
             'prepaid_account',
-            'unearned_account',
-
+            'unearned_account'
         ]
         labels = {
             'terms': _('Invoice Terms')
@@ -88,7 +83,6 @@ class InvoiceModelUpdateForm(ModelForm):
     class Meta:
         model = InvoiceModel
         fields = [
-            'amount_due',
             'amount_paid',
             'paid',
             'paid_date',
@@ -101,7 +95,6 @@ class InvoiceModelUpdateForm(ModelForm):
         }
         widgets = {
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={

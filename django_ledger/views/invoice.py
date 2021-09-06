@@ -212,7 +212,7 @@ class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
                 invoice_model.migrate_state(
                     entity_slug=entity_slug,
                     user_model=self.request.user,
-                    itemthrough_queryset=invoice_item_list,
+                    # itemthrough_queryset=invoice_item_list,
                     force_migrate=True
                 )
 
@@ -347,7 +347,7 @@ class InvoiceModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView
                                      message=f'Cannot migrate {invoice_model.invoice_number}. Invoice ledger is locked.',
                                      extra_tags='is-danger')
             else:
-                invoice_model.migrate_state(
+                items, _ = invoice_model.migrate_state(
                     user_model=self.request.user,
                     entity_slug=self.kwargs['entity_slug'],
                     force_migrate=True
@@ -356,7 +356,9 @@ class InvoiceModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView
                                      level=messages.SUCCESS,
                                      message=f'{invoice_model.invoice_number} migrated!...',
                                      extra_tags='is-success')
-
+                if not items:
+                    invoice_model.amount_due = 0
+                    invoice_model.save(update_fields=['amount_due', 'updated'])
 
         elif self.action == self.ACTION_LOCK:
             if not ledger_model.locked:
@@ -385,7 +387,6 @@ class InvoiceModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView
                                      level=messages.WARNING,
                                      message=f'{invoice_model.invoice_number} already unlocked.',
                                      extra_tags='is-warning')
-
         return super(InvoiceModelActionView, self).post(self.request)
 
     def get_queryset(self):

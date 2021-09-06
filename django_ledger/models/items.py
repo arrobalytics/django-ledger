@@ -224,26 +224,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return self.for_inventory is True
 
     def clean(self):
-        if any([
-            self.for_inventory is True,
-            self.is_product_or_service is True
-        ]):
-            if self.for_inventory:
-                if not all([
-                    self.inventory_account,
-                    self.cogs_account
-                ]):
-                    raise ValidationError(_('Items for inventory must have Inventory & COGS accounts'))
-                self.expense_account = None
-                self.earnings_account = None
-            if self.is_product_or_service:
-                if not self.earnings_account:
-                    raise ValidationError(_('Products & Services must have an Earnings Account'))
-                self.expense_account = None
-                self.inventory_account = None
-                self.cogs_account = None
 
-        elif all([
+        if all([
             self.for_inventory is False,
             self.is_product_or_service is False
         ]):
@@ -251,6 +233,39 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 raise ValidationError(_('Items must have an associated expense accounts.'))
             self.inventory_account = None
             self.earnings_account = None
+            self.cogs_account = None
+
+        elif all([
+            self.for_inventory is True,
+            self.is_product_or_service is True
+        ]):
+            if not all([
+                self.inventory_account,
+                self.cogs_account,
+                self.earnings_account
+            ]):
+                raise ValidationError(_('Items for resale must have Inventory, COGS & Earnings accounts.'))
+
+        elif all([
+            self.for_inventory is True,
+            self.is_product_or_service is False
+        ]):
+            if not all([
+                self.inventory_account,
+                self.cogs_account
+            ]):
+                raise ValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
+            self.expense_account = None
+            self.earnings_account = None
+
+        elif all([
+            self.for_inventory is False,
+            self.is_product_or_service is True
+        ]):
+            if not self.earnings_account:
+                raise ValidationError(_('Products & Services must have an Earnings Account'))
+            self.expense_account = None
+            self.inventory_account = None
             self.cogs_account = None
 
 
@@ -304,6 +319,7 @@ class ItemThroughModelManager(models.Manager):
     def is_orphan(self, entity_slug, user_model):
         # todo: implement is orphans...
         raise NotImplementedError
+
 
 class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     STATUS_NOT_ORDERED = 'not_ordered'

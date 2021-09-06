@@ -558,11 +558,14 @@ class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
                                      message=f'Cannot migrate {bill_model.bill_number}. Bill ledger is locked.',
                                      extra_tags='is-danger')
             else:
-                bill_model.migrate_state(
+                items, _ = bill_model.migrate_state(
                     user_model=self.request.user,
                     entity_slug=self.kwargs['entity_slug'],
                     force_migrate=True
                 )
+                if not items:
+                    bill_model.amount_due = 0
+                    bill_model.save(update_fields=['amount_due', 'updated'])
 
         elif self.action == self.ACTION_LOCK:
             if not ledger_model.locked:

@@ -366,7 +366,7 @@ class InventoryItemCreateView(LoginRequiredMixIn, CreateView):
 
 class InventoryItemUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/inventory_item_update.html'
-    PAGE_TITLE = _('Update Expense Item')
+    PAGE_TITLE = _('Update Inventory Item')
     context_object_name = 'item'
     slug_field = 'uuid'
     slug_url_kwarg = 'item_pk'
@@ -377,7 +377,7 @@ class InventoryItemUpdateView(LoginRequiredMixIn, UpdateView):
     }
 
     def get_queryset(self):
-        return ItemModel.objects.inventory_all(
+        return ItemModel.objects.inventory(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
