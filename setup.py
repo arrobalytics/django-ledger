@@ -26,7 +26,7 @@ setup(
         "python-dateutil==2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "pytz==2021.1",
         "six==1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-        "sqlparse==0.4.1; python_version >= '3.5'",
+        "sqlparse==0.4.2; python_version >= '3.5'",
         "text-unidecode==1.3",
     ],
     project_urls={
