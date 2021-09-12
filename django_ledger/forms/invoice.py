@@ -13,6 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemThroughModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
+from django.core.exceptions import ValidationError
 
 
 class InvoiceModelCreateForm(ModelForm):
@@ -113,6 +114,20 @@ class InvoiceModelUpdateForm(ModelForm):
 
 
 class InvoiceItemForm(ModelForm):
+
+    def __init__(self, *args, entity_slug, user_model,
+                 invoice_model, invoice_pk=None, **kwargs):
+        super(InvoiceItemForm, self).__init__(*args, **kwargs)
+
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+        self.INVOICE_MODEL = invoice_model
+        self.INVOICE_PK = invoice_pk
+
+        if not self.instance.item_model_id:
+            self.fields['unit_cost'].disabled = True
+            self.fields['quantity'].disabled = True
+
     class Meta:
         model = ItemThroughModel
         fields = [
@@ -122,22 +137,26 @@ class InvoiceItemForm(ModelForm):
         ]
         widgets = {
             'item_model': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'unit_cost': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'quantity': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
 
 
 class BaseInvoiceItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, invoice_pk, user_model, **kwargs):
+    def __init__(self, *args, entity_slug, user_model,
+                 invoice_model=None, invoice_pk=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if not invoice_model and not invoice_pk:
+            raise ValidationError('Must instantiate BaseInvoiceItemFormset with either invoice_model or invoice_pk')
         self.USER_MODEL = user_model
+        self.INVOICE_MODEL: InvoiceModel = invoice_model
         self.INVOICE_PK = invoice_pk
         self.ENTITY_SLUG = entity_slug
 
@@ -149,6 +168,26 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
         self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+
+    def get_queryset(self):
+        if not self.queryset:
+            if self.INVOICE_PK:
+                self.queryset = ItemThroughModel.objects.for_invoice(
+                    entity_slug=self.ENTITY_SLUG,
+                    user_model=self.USER_MODEL,
+                    invoice_pk=self.INVOICE_PK
+                )
+            else:
+                self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
+        return self.queryset
+
+    def get_form_kwargs(self, index):
+        return {
+            'entity_slug': self.ENTITY_SLUG,
+            'user_model': self.USER_MODEL,
+            'invoice_pk': self.INVOICE_PK,
+            'invoice_model': self.INVOICE_MODEL,
+        }
 
 
 InvoiceItemFormset = modelformset_factory(

@@ -1,0 +1,43 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="container">
+        <div class="columns">
+            <div class="column">
+                <h1 class="title">Inventory Recount</h1>
+                <div class="table-container">
+                    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+                        <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>UOM</th>
+                            <th>Count Recorded</th>
+                            <th>Value Recorded</th>
+                            <th>New Count</th>
+                            <th>New Value</th>
+                            <th>New Avg. Cost</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for k in inventory_diff %}
+                            <tr>
+                                <td>{{ k.0.1 }}</td>
+                                <td>{{ k.0.2 }}</td>
+                                <td>{{ k.1.recorded }}</td>
+                                <td>{% currency_symbol %}{{ k.1.recorded_value | currency_format }}</td>
+                                <td>{{ k.1.counted }}</td>
+                                <td>{% currency_symbol %}{{ k.1.counted_value | currency_format }}</td>
+                                <td>{% currency_symbol %}{{ k.1.counted_avg_cost | currency_format }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}?confirm=1" class="button is-warning">Update Inventory</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
@@ -153,6 +153,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Is a product or service.'),
         help_text=_('Is a product or service you sell or provide to customers.'))
 
+    sold_as_unit = models.BooleanField(default=False)
+
     inventory_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -161,6 +163,18 @@ class ItemModelAbstract(CreateUpdateMixIn):
         related_name=f'{REL_NAME_PREFIX}_inventory_account',
         help_text=_('Inventory account where cost will be capitalized.'),
         on_delete=models.PROTECT)
+    inventory_received = models.DecimalField(
+        null=True,
+        blank=True,
+        decimal_places=3,
+        max_digits=20,
+        verbose_name=_('Total inventory received.'))
+    inventory_received_value = models.DecimalField(
+        null=True,
+        blank=True,
+        decimal_places=2,
+        max_digits=20,
+        verbose_name=_('Total value of inventory received.'))
     cogs_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -308,13 +322,48 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def inventory_all(self, entity_slug, user_model):
+    def inventory_available(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(item_model__for_inventory=True)
+        return qs.filter(
+            Q(item_model__for_inventory=True) &
+            Q(po_item_status__in=[
+                ItemThroughModel.STATUS_ORDERED,
+                ItemThroughModel.STATUS_IN_TRANSIT,
+                ItemThroughModel.STATUS_RECEIVED,
+            ])
+        )
+
+    def inventory_ordered(self, entity_slug, user_model):
+        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
+    def inventory_transit(self, entity_slug, user_model):
+        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
 
     def inventory_received(self, entity_slug, user_model):
-        qs = self.inventory_all(entity_slug=entity_slug, user_model=user_model)
+        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+    def inventory_received_value(self, entity_slug: str, user_model):
+        qs = self.inventory_received(entity_slug=entity_slug, user_model=user_model)
+        return qs.values(
+            'item_model__name',
+            'item_model__uom__name',
+            'po_item_status').annotate(
+            total_quantity=Sum('quantity'),
+            total_value=Sum('total_amount')
+        )
+
+    def inventory_value(self, entity_slug: str, user_model):
+        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
+        return qs.values(
+            'item_model__name',
+            'item_model__uom__name',
+            'po_item_status').annotate(
+            total_quantity=Sum('quantity'),
+            total_value=Sum('total_amount')
+        )
 
     def is_orphan(self, entity_slug, user_model):
         # todo: implement is orphans...
@@ -384,6 +433,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             models.Index(fields=['bill_model', 'item_model']),
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['po_model', 'item_model']),
+            models.Index(fields=['po_item_status'])
         ]
 
     def __str__(self):

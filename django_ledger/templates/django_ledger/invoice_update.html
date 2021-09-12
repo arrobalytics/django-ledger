@@ -166,21 +166,18 @@
                                                 {% trans 'Force Migrate Invoice' %}
                                             </button>
                                         </form>
-
                                 </div>
                             </div>
-
                         </div>
-
                     </div>
                 </div>
-
             </div>
         </div>
     </form>
-
-
     {% invoice_item_formset_table item_formset %}
-
-
+    <div class="columns">
+    <div class="column is-12">
+        <p>{{ inventory_count_qs }}</p>
+    </div>
+    </div>
 {% endblock %}

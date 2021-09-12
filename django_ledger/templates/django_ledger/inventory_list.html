@@ -7,7 +7,6 @@
     <div class="container">
         <div class="columns">
             <div class="column">
-
                 <div class="column is-12">
                     <div class="box">
                         <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory Ordered</h1>
@@ -18,8 +17,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-
                 <div class="column is-12">
                     <div class="box">
                         <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory In Transit</h1>
@@ -32,10 +29,9 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="column is-12">
                     <div class="box">
-                        <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory On Hand</h1>
+                        <h1 class="is-size-1 has-text-weight-light has-text-centered">Inventory Received</h1>
                         <div class="table-container">
                             {% if inventory_received %}
                                 {% inventory_table inventory_received %}
@@ -43,7 +39,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

@@ -20,7 +20,7 @@ from django.views.generic import (
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, InvoiceItemFormset
-from django_ledger.models import EntityModel, LedgerModel
+from django_ledger.models import EntityModel, LedgerModel, ItemThroughModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import new_invoice_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -130,16 +130,25 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  extra_tags='is-info')
 
         invoice_model: InvoiceModel = self.object
-        invoice_item_queryset, item_data = invoice_model.get_invoice_item_data(
+        invoice_item_qs, item_data = invoice_model.get_invoice_item_data(
             queryset=invoice_model.itemthroughmodel_set.all()
         )
         context['item_formset'] = InvoiceItemFormset(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            invoice_pk=self.object.uuid,
-            queryset=invoice_item_queryset
+            invoice_model=invoice_model,
+            queryset=invoice_item_qs
         )
         context['total_amount_due'] = item_data['amount_due']
+
+        item_model_uuids = set(i['item_model_id'] for i in invoice_item_qs.values('item_model_id'))
+        inventory_count_qs = ItemThroughModel.objects.inventory_all_count(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+        context['inventory_count_qs'] = inventory_count_qs.filter(
+            item_model_id__in=item_model_uuids
+        )
         return context
 
     def get_success_url(self):

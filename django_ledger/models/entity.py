@@ -125,6 +125,7 @@ class EntityModelAbstract(NodeTreeMixIn,
 
     hidden = models.BooleanField(default=False)
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager()
 
     class Meta:

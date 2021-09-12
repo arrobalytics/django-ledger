@@ -523,6 +523,9 @@ class AccruableItemMixIn(models.Model):
 
     def clean(self):
 
+        if not self.amount_due:
+            self.amount_due = 0
+
         if not self.date:
             self.date = localdate()
 

@@ -9,6 +9,7 @@ ofxtools = "~=0.9.4"
 jsonschema = "~=3.2.0"
 markdown = "~=3.3.4"
 faker = "~=8.12"
+pillow = "*"
 
 [dev-packages]
 sphinx = "~=4.1.2"
