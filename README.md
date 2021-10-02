@@ -53,6 +53,9 @@ option when creating new entities.
 pip install git+https://github.com/arrobalytics/django-ledger.git
 ```
 
+To install Django Virtual Environment
+```pip install pipenv```
+
 * Or with pipenv:
 
 ```shell script
