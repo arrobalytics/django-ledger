@@ -39,6 +39,10 @@
                         </div>
                     </div>
                 </div>
+                <div class="column is-12">
+                    <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}"
+                       class="button is-info is-small">Inventory Recount</a>
+                </div>
             </div>
         </div>
     </div>

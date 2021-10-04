@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from string import ascii_lowercase, digits
 from uuid import uuid4
 
@@ -164,14 +164,12 @@ class ItemModelAbstract(CreateUpdateMixIn):
         help_text=_('Inventory account where cost will be capitalized.'),
         on_delete=models.PROTECT)
     inventory_received = models.DecimalField(
-        null=True,
-        blank=True,
+        default=Decimal('0.000'),
         decimal_places=3,
         max_digits=20,
         verbose_name=_('Total inventory received.'))
     inventory_received_value = models.DecimalField(
-        null=True,
-        blank=True,
+        default=Decimal('0.00'),
         decimal_places=2,
         max_digits=20,
         verbose_name=_('Total value of inventory received.'))
@@ -236,6 +234,11 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def is_inventory(self):
         return self.for_inventory is True
+
+    def get_average_cost(self):
+        if self.inventory_received:
+            return self.inventory_received_value / self.inventory_received
+        return Decimal('0.00')
 
     def clean(self):
 

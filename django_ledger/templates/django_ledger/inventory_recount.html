@@ -14,29 +14,50 @@
                         <tr>
                             <th>Item</th>
                             <th>UOM</th>
-                            <th>Count Recorded</th>
+
+                            <th>Qty Recorded</th>
                             <th>Value Recorded</th>
-                            <th>New Count</th>
-                            <th>New Value</th>
-                            <th>New Avg. Cost</th>
+                            <th>Avg. Cost Recorded</th>
+
+                            <th>Qty ReCount</th>
+                            <th>Value ReCount</th>
+                            <th>Avg. Cost</th>
+
+                            <th>Qty Diff</th>
+                            <th>Value Diff</th>
+                            <th>Avg. Cost Diff</th>
+
                         </tr>
                         </thead>
                         <tbody>
-                        {% for k in inventory_diff %}
+                        {% for k in inventory_adjustment %}
                             <tr>
                                 <td>{{ k.0.1 }}</td>
                                 <td>{{ k.0.2 }}</td>
-                                <td>{{ k.1.recorded }}</td>
-                                <td>{% currency_symbol %}{{ k.1.recorded_value | currency_format }}</td>
-                                <td>{{ k.1.counted }}</td>
+
+                                {# Recorded Inventory #}
+                                <td class="has-background-primary-light">{{ k.1.recorded }}</td>
+                                <td class="has-background-primary-light">
+                                    {% currency_symbol %}{{ k.1.recorded_value | currency_format }}</td>
+                                <td class="has-background-primary-light">
+                                    {% currency_symbol %}{{ k.1.recorded_avg_cost | currency_format }}</td>
+
+                                {# Recount Inventory #}
+                                <td>{{ k.1.counted | floatformat:3 }}</td>
                                 <td>{% currency_symbol %}{{ k.1.counted_value | currency_format }}</td>
                                 <td>{% currency_symbol %}{{ k.1.counted_avg_cost | currency_format }}</td>
+
+                                {# Trueup Adjustment #}
+                                <td>{{ k.1.count_diff | floatformat:3 }}</td>
+                                <td>{% currency_symbol %}{{ k.1.value_diff | currency_format }}</td>
+                                <td>{% currency_symbol %}{{ k.1.avg_cost_diff | currency_format }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}?confirm=1" class="button is-warning">Update Inventory</a>
+                <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}?confirm=1"
+                   class="button is-warning">Update Inventory</a>
             </div>
         </div>
     </div>

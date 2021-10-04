@@ -1,9 +1,9 @@
 from collections import defaultdict
 from decimal import Decimal
 
+from django.http import HttpResponseBadRequest, HttpResponseNotFound
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, TemplateView
-from django.http import HttpResponseBadRequest
 
 from django_ledger.models.items import ItemThroughModel, ItemModel
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -46,6 +46,71 @@ class InventoryListView(LoginRequiredMixIn, ListView):
         )
 
 
+def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
+    counted_map = {
+        (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
+            'count': i['total_quantity'],
+            'value': i['total_value'],
+            'avg_cost': i['total_value'] / Decimal.from_float(i['total_quantity'])
+            if i['total_quantity'] else Decimal('0.00')
+        } for i in counted_qs
+    }
+    recorded_map = {
+        (i['uuid'], i['name'], i['uom__name']): {
+            'count': i['inventory_received'] or Decimal.from_float(0.0),
+            'value': i['inventory_received_value'] or Decimal.from_float(0.0),
+            'avg_cost': i['inventory_received_value'] / i['inventory_received']
+            if i['inventory_received'] else Decimal('0.00')
+        } for i in recorded_qs
+    }
+    item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
+    adjustment = defaultdict(lambda: {
+        # keeps track of inventory recounts...
+        'counted': Decimal('0.000'),
+        'counted_value': Decimal('0.00'),
+        'counted_avg_cost': Decimal('0.00'),
+
+        # keeps track of inventory level...
+        'recorded': Decimal('0.000'),
+        'recorded_value': Decimal('0.00'),
+        'recorded_avg_cost': Decimal('0.00'),
+
+        # keeps track of necessary inventory adjustment...
+        'count_diff': Decimal('0.000'),
+        'value_diff': Decimal('0.00'),
+        'avg_cost_diff': Decimal('0.00')
+    })
+
+    for uid in item_ids:
+        data = counted_map.get(uid)
+        if data:
+            counted = Decimal.from_float(data['count'])
+            avg_cost = data['value'] / counted if data['count'] else Decimal('0.000')
+
+            adjustment[uid]['counted'] = counted
+            adjustment[uid]['counted_value'] = data['value']
+            adjustment[uid]['counted_avg_cost'] = avg_cost
+
+            adjustment[uid]['count_diff'] += counted
+            adjustment[uid]['value_diff'] += data['value']
+            adjustment[uid]['avg_cost_diff'] += avg_cost
+
+        data = recorded_map.get(uid)
+        if data:
+            counted = data['count']
+            avg_cost = data['value'] / counted if data['count'] else Decimal('0.000')
+
+            adjustment[uid]['recorded'] = counted
+            adjustment[uid]['recorded_value'] = data['value']
+            adjustment[uid]['recorded_avg_cost'] = avg_cost
+
+            adjustment[uid]['count_diff'] -= counted
+            adjustment[uid]['value_diff'] -= data['value']
+            adjustment[uid]['avg_cost_diff'] -= avg_cost
+
+    return adjustment
+
+
 class InventoryRecountView(LoginRequiredMixIn, TemplateView):
     template_name = 'django_ledger/inventory_recount.html'
     http_method_names = ['get']
@@ -56,92 +121,78 @@ class InventoryRecountView(LoginRequiredMixIn, TemplateView):
         return ItemThroughModel.objects.inventory_received_value(
             entity_slug=entity_slug,
             user_model=user_model
-        ).values('item_model_id', 'item_model__name', 'item_model__uom__name', 'quantity', 'total_amount')
+        ).values('item_model_id', 'item_model__name', 'item_model__uom__name', 'total_quantity', 'total_value')
 
-    def recorded_inventory(self):
+    def recorded_inventory(self, queryset=None, as_values=True):
         entity_slug = self.kwargs['entity_slug']
         user_model = self.request.user
-        return ItemModel.objects.inventory(
-            entity_slug=entity_slug,
-            user_model=user_model
-        ).values('uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
+        if not queryset:
+            recorded_qs = ItemModel.objects.inventory(
+                entity_slug=entity_slug,
+                user_model=user_model
+            ).select_related('uom')
+        else:
+            recorded_qs = queryset
+        if as_values:
+            return recorded_qs.values(
+                'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
+        return recorded_qs
 
-    def calculate_adjustment(self, counted, recorded):
-        counted_map = {
-            (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
-                'count': i['quantity'],
-                'value': i['total_amount']
-            } for i in counted
-        }
-        recorded_map = {
-            (i['uuid'], i['name'], i['uom__name']): {
-                'count': i['inventory_received'] or 0,
-                'value': i['inventory_received_value'] or 0
-            } for i in recorded
-        }
-        item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
-
-        adjustment = defaultdict(lambda: {
-            'counted': 0,
-            'value_counted': Decimal.from_float(0.00),
-            'counted_avg_cost': Decimal.from_float(0.00),
-            'recorded': 0,
-            'recorded_value': Decimal.from_float(0.00),
-            'count_diff': 0,
-            'value_diff': Decimal.from_float(0.00)})
-
-        for uid in item_ids:
-            data = counted_map.get(uid)
-            if data:
-                adjustment[uid]['counted'] = data['count']
-                adjustment[uid]['counted_value'] = data['value']
-                adjustment[uid]['counted_avg_cost'] = data['value'] / Decimal.from_float(data['count'])
-                adjustment[uid]['count_diff'] += data['count']
-                adjustment[uid]['value_diff'] += data['value']
-
-            data = recorded_map.get(uid)
-            if data:
-                adjustment[uid]['recorded'] = data['count']
-                adjustment[uid]['recorded_value'] = data['value']
-                adjustment[uid]['count_diff'] -= data['count']
-                adjustment[uid]['value_diff'] -= data['value']
-
-        return adjustment
-
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, adjustment=None, counted_qs=None, recorded_qs=None, **kwargs):
         context = super(InventoryRecountView, self).get_context_data(**kwargs)
         context['page_title'] = _('Inventory Recount')
         context['header_title'] = _('Inventory Recount')
 
-        counted_inventory_qs = self.counted_inventory()
-        recorded_inventory_qs = self.recorded_inventory()
+        recorded_qs = self.recorded_inventory() if not recorded_qs else recorded_qs
+        counted_qs = self.counted_inventory() if not counted_qs else counted_qs
+        adjustment = inventory_adjustment(counted_qs, recorded_qs) if not adjustment else adjustment
 
-        context['count_inventory_received'] = counted_inventory_qs
-        context['current_inventory_levels'] = recorded_inventory_qs
-        adjustment = self.calculate_adjustment(counted_inventory_qs, recorded_inventory_qs)
-        context['inventory_diff'] = [(k, v) for k, v in adjustment.items() if any(v.values())]
+        context['count_inventory_received'] = counted_qs
+        context['current_inventory_levels'] = recorded_qs
+        context['inventory_adjustment'] = [(k, v) for k, v in adjustment.items() if any(v.values())]
 
         return context
 
     def get(self, request, *args, **kwargs):
 
         confirm = self.request.GET.get('confirm')
+        counted_qs = None
+        recorded_qs = None
+        adj = None
 
         if confirm:
             try:
                 confirm = int(confirm)
             except TypeError:
-                return HttpResponseBadRequest()
+                return HttpResponseBadRequest('Not Found. Invalid conform code...')
             finally:
                 if confirm not in [0, 1]:
-                    return HttpResponseBadRequest()
+                    return HttpResponseNotFound('Not Found. Invalid conform code...')
 
-            confirm = bool(confirm)
+            adj, counted_qs, recorded_qs = self.update_inventory()
 
-            self.update_inventory()
-
-        context = self.get_context_data(**kwargs)
+        context = self.get_context_data(
+            adjustment=adj,
+            counted_qs=counted_qs,
+            recorded_qs=recorded_qs, **kwargs)
         return self.render_to_response(context)
 
     def update_inventory(self):
-        pass
+        counted_qs = self.counted_inventory()
+        recorded_qs = self.recorded_inventory(as_values=False)
+        list(recorded_qs)
+        recorded_qs_values = self.recorded_inventory(queryset=recorded_qs, as_values=True)
+        adj = inventory_adjustment(counted_qs, recorded_qs_values)
+        updated_items = list()
+        for (uuid, name, uom), i in adj.items():
+            item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
+            item_model.inventory_received = i['counted']
+            item_model.inventory_received_value = i['counted_value']
+            updated_items.append(item_model)
+        ItemModel.objects.bulk_update(updated_items,
+                                      fields=[
+                                          'inventory_received',
+                                          'inventory_received_value',
+                                          'updated'
+                                      ])
+        return adj, counted_qs, recorded_qs
