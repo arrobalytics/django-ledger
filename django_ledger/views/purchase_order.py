@@ -326,9 +326,9 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
             queryset=po_model.itemthroughmodel_set.all().select_related('item_model')
         )
         context['po_items'] = po_items_qs
-        context['total_amount_due'] = sum(
-            i['total_amount'] for i in po_items_qs.values(
-                'total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
+        context['po_total_amount'] = sum(
+            i['po_total_amount'] for i in po_items_qs.values(
+                'po_total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
         return context
 
     def get_queryset(self):

@@ -2,6 +2,19 @@
 
 ### A Bookkeeping & Financial Analysis Engine for the Django Framework.
 
+The __Django Ledger Project__ is led and maintained by Miguel Sanda aiming to provide an open source financial
+engine to power financially driven applications using Python and the Django Framework. Unfortunately
+due to its complexity we cannot offer a stable release until all features on the
+[Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md) has been implemented.
+
+Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects 
+as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API. 
+This project in particular, not only requires Python AND Django programming experience, but also finance and 
+accounting experience.
+
+Due to time limitations, the developer is focusing on the development of new features. \
+__This project can greatly benefit from contributions towards Documentation and Unit Tests.__
+
 Django Ledger supports:
 
 - Chart of Accounts.

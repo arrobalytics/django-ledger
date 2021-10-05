@@ -49,15 +49,17 @@
 
                                 {# Trueup Adjustment #}
                                 <td>{{ k.1.count_diff | floatformat:3 }}</td>
-                                <td>{% currency_symbol %}{{ k.1.value_diff | currency_format }}</td>
-                                <td>{% currency_symbol %}{{ k.1.avg_cost_diff | currency_format }}</td>
+                                <td>{% currency_symbol %}{{ k.1.value_diff | floatformat:2 | currency_format }}</td>
+                                <td>{% currency_symbol %}{{ k.1.avg_cost_diff | floatformat:2 | currency_format }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-primary">{% trans 'Recount Inventory' %}</a>
                 <a href="{% url 'django_ledger:inventory-recount' entity_slug=view.kwargs.entity_slug %}?confirm=1"
-                   class="button is-warning">Update Inventory</a>
+                   class="button is-warning">{% trans 'Update Inventory' %}</a>
             </div>
         </div>
     </div>

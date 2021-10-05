@@ -25,7 +25,7 @@ urlpatterns = [
          views.BillModelUpdateView.as_view(),
          name='bill-update'),
     path('<slug:entity_slug>/update/<uuid:bill_pk>/items/',
-         views.BillModelItemsUpdateView.as_view(),
+         views.BillModelUpdateView.as_view(update_items=True),
          name='bill-update-items'),
     path('<slug:entity_slug>/delete/<uuid:bill_pk>/',
          views.BillModelDeleteView.as_view(),

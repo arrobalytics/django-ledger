@@ -50,11 +50,11 @@
                     <div class="table-container">
                         <table class="table is-fullwidth is-striped is-narrow is-bordered">
                             <thead>
-                            <tr>
+                            <tr class="has-text-centered">
                                 <th>{% trans 'Item' %}</th>
-                                <th>{% trans 'Quantity' %}</th>
+                                <th>{% trans 'PO Qty' %}</th>
                                 <th>{% trans 'Unit Cost' %}</th>
-                                <th>{% trans 'Total Cost' %}</th>
+                                <th>{% trans 'Amount' %}</th>
                                 <th>{% trans 'Status' %}</th>
                                 <th>{% trans 'Billed' %}</th>
                             </tr>
@@ -63,17 +63,17 @@
                             {% for item in po_items %}
                                 <tr>
                                     <td>{{ item.item_model }}</td>
-                                    <td>{{ item.quantity }}</td>
-                                    <td>{{ item.unit_cost }}</td>
-                                    <td class="{% if item.is_cancelled %}djl-is-strikethrough{% endif %}">
-                                        {% currency_symbol %}{{ item.total_amount | currency_format }}</td>
-                                    <td class="has-text-weight-bold {% if item.is_cancelled %}has-text-danger{% endif %}">
+                                    <td class="has-text-centered">{{ item.po_quantity }}</td>
+                                    <td class="has-text-centered">{{ item.po_unit_cost }}</td>
+                                    <td class="{% if item.is_cancelled %}djl-is-strikethrough{% endif %} has-text-centered">
+                                        {% currency_symbol %}{{ item.po_total_amount | currency_format }}</td>
+                                    <td class="has-text-weight-bold has-text-centered {% if item.is_cancelled %}has-text-danger{% endif %}">
                                         {% if item.po_item_status %}
                                             {{ item.get_po_item_status_display }}
                                         {% endif %}
                                     </td>
-                                    <td>{% if item.bill_model_id %}
-                                        <a class="is-small is-light button"
+                                    <td class="has-text-centered">{% if item.bill_model_id %}
+                                        <a class="is-small is-info button"
                                            href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=item.bill_model_id %}">View Bill</a>{% endif %}
                                     </td>
                                 </tr>
@@ -83,9 +83,9 @@
                             <tr>
                                 <td></td>
                                 <td></td>
-                                <td>Total PO Amount</td>
-                                <td class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ total_amount_due | currency_format }}</td>
+                                <td class="has-text-right">{% trans 'Total PO Amount' %}</td>
+                                <td class="has-text-weight-bold has-text-centered">
+                                    {% currency_symbol %}{{ po_total_amount | currency_format }}</td>
                                 <td></td>
                                 <td></td>
                             </tr>

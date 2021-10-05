@@ -16,6 +16,8 @@
                     <thead>
                     <tr>
                         <th>{% trans 'Item' %}</th>
+                        <th>{% trans 'PO Qty' %}</th>
+                        <th>{% trans 'PO Amount' %}</th>
                         <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Quantity' %}</th>
                         <th>{% trans 'Unit' %}</th>
@@ -31,8 +33,17 @@
                                     {{ hidden_field }}
                                 {% endfor %}
                                 {{ f.item_model }}
+                                {% if f.errors %}
+                                    <span class="has-text-danger">{{ f.errors }}</span>
+                                {% endif %}
                             </td>
-
+                            <td>{% if f.instance.po_quantity %}{{ f.instance.po_quantity }}{% endif %}</td>
+                            <td>{% if f.instance.po_total_amount %}{% currency_symbol %}
+                                {{ f.instance.po_total_amount | currency_format }}
+                                <a class="button is-small is-info is-outlined"
+                                   href="{% url 'django_ledger:po-detail' entity_slug=entity_slug po_pk=f.instance.po_model_id %}">
+                                {% trans 'View PO' %}
+                                </a>{% endif %}</td>
                             <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
                             <td>{{ f.entity_unit }}</td>
@@ -48,6 +59,8 @@
                     </tbody>
                     <tfoot>
                     <tr>
+                        <th></th>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>

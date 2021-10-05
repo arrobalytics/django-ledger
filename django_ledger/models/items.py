@@ -417,6 +417,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                       null=True,
                                       verbose_name=_('PO Item Status'))
 
+    # Bill/ Invoice fields....
     quantity = models.FloatField(default=0.0,
                                  verbose_name=_('Quantity'),
                                  validators=[MinValueValidator(0)])
@@ -428,6 +429,22 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                        decimal_places=2,
                                        verbose_name=_('Total Amount QTY x UnitCost'),
                                        validators=[MinValueValidator(0)])
+
+    # Purchase Order fields...
+    po_quantity = models.FloatField(default=0.0,
+                                    verbose_name=_('PO Quantity'),
+                                    help_text=_('Authorized item quantity for purchasing.'),
+                                    validators=[MinValueValidator(0)])
+    po_unit_cost = models.FloatField(default=0.0,
+                                     verbose_name=_('PO Unit Cost'),
+                                     help_text=_('Purchase Order unit cost.'),
+                                     validators=[MinValueValidator(0)])
+    po_total_amount = models.DecimalField(max_digits=20,
+                                          default=Decimal('0.00'),
+                                          decimal_places=2,
+                                          verbose_name=_('Authorized maximum item cost per Purchase Order'),
+                                          help_text=_('Maximum authorized cost per Purchase Order.'),
+                                          validators=[MinValueValidator(0)])
     objects = ItemThroughModelManager()
 
     class Meta:
@@ -451,7 +468,14 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return f'Orphan Item Through Model: {self.uuid} | {status_display} | {amount}'
 
     def update_total_amount(self):
-        self.total_amount = round(self.quantity * self.unit_cost, 2)
+        total_amount = round(self.quantity * self.unit_cost, 2)
+        if self.po_model_id:
+            if total_amount > self.po_total_amount:
+                raise ValidationError(f'Item amount cannot exceed authorized PO amount {self.po_total_amount}')
+        self.total_amount = total_amount
+
+    def update_po_total_amount(self):
+        self.po_total_amount = round(self.po_quantity * self.po_unit_cost, 2)
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -480,6 +504,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return ' is-warning'
 
     def clean(self):
+        self.update_po_total_amount()
         self.update_total_amount()
 
 

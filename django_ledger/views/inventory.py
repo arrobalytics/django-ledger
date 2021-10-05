@@ -1,7 +1,9 @@
 from collections import defaultdict
 from decimal import Decimal
 
-from django.http import HttpResponseBadRequest, HttpResponseNotFound
+from django.contrib import messages
+from django.http import HttpResponseBadRequest, HttpResponseNotFound, HttpResponseRedirect
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, TemplateView
 
@@ -156,9 +158,9 @@ class InventoryRecountView(LoginRequiredMixIn, TemplateView):
     def get(self, request, *args, **kwargs):
 
         confirm = self.request.GET.get('confirm')
-        counted_qs = None
-        recorded_qs = None
-        adj = None
+        # counted_qs = None
+        # recorded_qs = None
+        # adj = None
 
         if confirm:
             try:
@@ -169,12 +171,20 @@ class InventoryRecountView(LoginRequiredMixIn, TemplateView):
                 if confirm not in [0, 1]:
                     return HttpResponseNotFound('Not Found. Invalid conform code...')
 
-            adj, counted_qs, recorded_qs = self.update_inventory()
-
-        context = self.get_context_data(
-            adjustment=adj,
-            counted_qs=counted_qs,
-            recorded_qs=recorded_qs, **kwargs)
+            self.update_inventory()
+            messages.add_message(
+                request,
+                level=messages.INFO,
+                message=f'Successfully updated recorded inventory.',
+                extra_tags='is-success'
+            )
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:inventory-recount',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug']
+                                    })
+            )
+        context = self.get_context_data(**kwargs)
         return self.render_to_response(context)
 
     def update_inventory(self):

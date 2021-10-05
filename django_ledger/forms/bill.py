@@ -122,6 +122,9 @@ class BillModelUpdateForm(BillModelCreateForm):
             'prepaid_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
             'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
         }
+        labels = {
+            'progress': 'Bill Progress Amount (%)'
+        }
 
 
 class BillModelConfigureForm(BillModelUpdateForm):
@@ -147,20 +150,20 @@ class BillItemForm(ModelForm):
             'item_model',
             'unit_cost',
             'entity_unit',
-            'quantity'
+            'quantity',
         ]
         widgets = {
             'item_model': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'entity_unit': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'unit_cost': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'quantity': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
 
@@ -180,6 +183,10 @@ class BaseBillItemFormset(BaseModelFormSet):
 
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+            instance: ItemThroughModel = form.instance
+            if instance.po_model_id:
+                form.fields['item_model'].disabled = True
+                form.fields['entity_unit'].disabled = True
 
 
 BillItemFormset = modelformset_factory(
