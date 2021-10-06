@@ -91,23 +91,23 @@
                     <div class="card-body">
                         <div class="card-content">
                             <div class="columns is-multiline">
-                                    <div class="column is-12">
-                                        <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
-                                        <p>{{ invoice.cash_account }}:
-                                            ${{ invoice.get_amount_cash | currency_format }}</p>
-                                        <p>{{ invoice.prepaid_account }}:
-                                            ${{ invoice.get_amount_receivable | currency_format }}</p>
-                                        <p>{{ invoice.unearned_account }}:
-                                            ${{ invoice.get_amount_payable | currency_format }}</p>
-                                    </div>
-                                    <div class="column is-12">
-                                        <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
-                                        <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | currency_format }}</p>
-                                        <p>{{ invoice.prepaid_account }}:
-                                            ${{ invoice.amount_receivable | currency_format }}</p>
-                                        <p>{{ invoice.unearned_account }}:
-                                            ${{ invoice.amount_unearned | currency_format }}</p>
-                                    </div>
+                                <div class="column is-12">
+                                    <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
+                                    <p>{{ invoice.cash_account }}:
+                                        ${{ invoice.get_amount_cash | currency_format }}</p>
+                                    <p>{{ invoice.prepaid_account }}:
+                                        ${{ invoice.get_amount_receivable | currency_format }}</p>
+                                    <p>{{ invoice.unearned_account }}:
+                                        ${{ invoice.get_amount_payable | currency_format }}</p>
+                                </div>
+                                <div class="column is-12">
+                                    <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
+                                    <p>{{ invoice.cash_account }}: ${{ invoice.amount_paid | currency_format }}</p>
+                                    <p>{{ invoice.prepaid_account }}:
+                                        ${{ invoice.amount_receivable | currency_format }}</p>
+                                    <p>{{ invoice.unearned_account }}:
+                                        ${{ invoice.amount_unearned | currency_format }}</p>
+                                </div>
                                 <div class="column is-12">
                                     <p>Ledger is Posted:
                                         {% if invoice.ledger.posted %}
@@ -148,24 +148,27 @@
                                        href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                         {% trans 'Ledger Journal Entries' %}
                                     </a>
-                                    <form action="{% url "django_ledger:invoice-action-lock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-success is-fullwidth mt-2">
-                                                {% trans 'Lock Invoice' %}
-                                            </button>
-                                        </form>
-                                        <form action="{% url "django_ledger:invoice-action-unlock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
-                                                {% trans 'Unlock Invoice' %}
-                                            </button>
-                                        </form>
-                                        <form action="{% url "django_ledger:invoice-action-force-migrate" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
-                                                {% trans 'Force Migrate Invoice' %}
-                                            </button>
-                                        </form>
+                                    <form action="{% url "django_ledger:invoice-action-lock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                                          method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button is-small is-success is-fullwidth mt-2">
+                                            {% trans 'Lock Invoice' %}
+                                        </button>
+                                    </form>
+                                    <form action="{% url "django_ledger:invoice-action-unlock" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                                          method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                            {% trans 'Unlock Invoice' %}
+                                        </button>
+                                    </form>
+                                    <form action="{% url "django_ledger:invoice-action-force-migrate" entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                                          method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
+                                            {% trans 'Force Migrate Invoice' %}
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -175,9 +178,4 @@
         </div>
     </form>
     {% invoice_item_formset_table item_formset %}
-    <div class="columns">
-    <div class="column is-12">
-        <p>{{ inventory_count_qs }}</p>
-    </div>
-    </div>
 {% endblock %}

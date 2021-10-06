@@ -128,6 +128,14 @@ class InvoiceItemForm(ModelForm):
             self.fields['unit_cost'].disabled = True
             self.fields['quantity'].disabled = True
 
+    def clean_quantity(self):
+        quantity = self.cleaned_data['quantity']
+        if self.instance.item_model_id:
+            item_model: ItemModel = self.instance.item_model
+            if quantity > item_model.inventory_received:
+                raise ValidationError(f'Cannot invoice more than {quantity} units available.')
+        return quantity
+
     class Meta:
         model = ItemThroughModel
         fields = [

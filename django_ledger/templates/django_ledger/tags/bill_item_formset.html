@@ -18,8 +18,8 @@
                         <th>{% trans 'Item' %}</th>
                         <th>{% trans 'PO Qty' %}</th>
                         <th>{% trans 'PO Amount' %}</th>
-                        <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Quantity' %}</th>
+                        <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Unit' %}</th>
                         <th>{% trans 'Total' %}</th>
                         <th>{% trans 'Delete' %}</th>
@@ -42,10 +42,10 @@
                                 {{ f.instance.po_total_amount | currency_format }}
                                 <a class="button is-small is-info is-outlined"
                                    href="{% url 'django_ledger:po-detail' entity_slug=entity_slug po_pk=f.instance.po_model_id %}">
-                                {% trans 'View PO' %}
+                                    {% trans 'View PO' %}
                                 </a>{% endif %}</td>
-                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
+                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td>{{ f.entity_unit }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
@@ -74,8 +74,10 @@
             </div>
         </div>
         <div class="column is-12">
-            <a href="{% url 'django_ledger:product-create' entity_slug=entity_slug %}"
-               class="button is-primary">{% trans 'New Item' %}</a>
+            {% if not item_formset.has_po %}
+                <a href="{% url 'django_ledger:product-create' entity_slug=entity_slug %}"
+                   class="button is-primary">{% trans 'New Item' %}</a>
+            {% endif %}
             <button class="button is-primary">{% trans 'Save' %}</button>
         </div>
     </div>

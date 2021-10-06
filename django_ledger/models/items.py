@@ -164,12 +164,14 @@ class ItemModelAbstract(CreateUpdateMixIn):
         help_text=_('Inventory account where cost will be capitalized.'),
         on_delete=models.PROTECT)
     inventory_received = models.DecimalField(
-        default=Decimal('0.000'),
+        null=True,
+        blank=True,
         decimal_places=3,
         max_digits=20,
         verbose_name=_('Total inventory received.'))
     inventory_received_value = models.DecimalField(
-        default=Decimal('0.00'),
+        null=True,
+        blank=True,
         decimal_places=2,
         max_digits=20,
         verbose_name=_('Total value of inventory received.'))
@@ -470,6 +472,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     def update_total_amount(self):
         total_amount = round(self.quantity * self.unit_cost, 2)
         if self.po_model_id:
+            if self.quantity > self.po_quantity:
+                raise ValidationError(f'Billed quantity cannot be greater than PO quantity {self.po_quantity}')
             if total_amount > self.po_total_amount:
                 raise ValidationError(f'Item amount cannot exceed authorized PO amount {self.po_total_amount}')
         self.total_amount = total_amount

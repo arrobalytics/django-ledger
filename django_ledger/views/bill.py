@@ -218,7 +218,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
         context['header_title'] = title
-        can_delete = True
 
         if not bill_model.is_configured():
             messages.add_message(
@@ -252,18 +251,20 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 bill_pk=bill_model.uuid,
-                queryset=bill_item_queryset,
+                queryset=bill_item_queryset
             )
         else:
             bill_item_queryset, item_data = bill_model.get_bill_item_data(
                 queryset=item_formset.queryset
             )
-        if any(i['po_model'] for i in bill_item_queryset.values('po_model')):
-            can_delete = False
 
-        item_formset.can_delete = can_delete
+        has_po = any(i['po_model'] for i in bill_item_queryset.values('po_model'))
+        if has_po:
+            item_formset.can_delete = False
+            item_formset.has_po = has_po
         context['item_formset'] = item_formset
         context['total_amount_due'] = item_data['amount_due']
+        context['has_po'] = has_po
         return context
 
     def get_success_url(self):
@@ -295,15 +296,15 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         if self.update_items:
             self.object = self.get_object()
-            bill_item_formset: BillItemFormset = BillItemFormset(request.POST,
+            item_formset: BillItemFormset = BillItemFormset(request.POST,
                                                                  user_model=self.request.user,
                                                                  bill_pk=bill_pk,
                                                                  entity_slug=entity_slug)
 
-            if bill_item_formset.is_valid():
-                invoice_items = bill_item_formset.save(commit=False)
+            if item_formset.is_valid():
+                invoice_items = item_formset.save(commit=False)
 
-                if bill_item_formset.has_changed():
+                if item_formset.has_changed():
                     bill_qs = BillModel.objects.for_entity(
                         user_model=self.request.user,
                         entity_slug=entity_slug
@@ -319,7 +320,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                         item.entity = entity_model
                         item.bill_model = bill_model
 
-                    bill_item_list = bill_item_formset.save()
+                    bill_item_list = item_formset.save()
                     # todo: pass item list to update_amount_due...?
                     bill_model.update_amount_due()
                     bill_model.new_state(commit=True)
@@ -337,8 +338,9 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                         force_migrate=True
                     )
 
-            context = self.get_context_data(item_formset=bill_item_formset)
-            return self.render_to_response(context)
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context)
 
         return super(BillModelUpdateView, self).post(request, *args, **kwargs)
 

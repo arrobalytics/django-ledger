@@ -18,6 +18,7 @@
                         <th>{% trans 'Item' %}</th>
                         <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Quantity' %}</th>
+                        <th>{% trans 'Available' %}</th>
                         <th>{% trans 'Total' %}</th>
                         <th>{% trans 'Delete' %}</th>
                     </tr>
@@ -30,10 +31,13 @@
                                     {{ hidden_field }}
                                 {% endfor %}
                                 {{ f.item_model }}
+                                {% if f.errors %}
+                                    {{ f.errors }}
+                                {% endif %}
                             </td>
-
                             <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
+                            <td>{{ f.instance.item_model.inventory_received }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
                             <td class="has-text-centered">
@@ -46,6 +50,7 @@
                     </tbody>
                     <tfoot>
                     <tr>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>

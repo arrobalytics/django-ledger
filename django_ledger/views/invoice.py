@@ -100,6 +100,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_update.html'
     form_class = InvoiceModelUpdateForm
+    update_items = False
 
     def get_form(self, form_class=None):
         return InvoiceModelUpdateForm(
@@ -108,14 +109,14 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
             **self.get_form_kwargs()
         )
 
-    def get_context_data(self, *, object_list=None, **kwargs):
+    def get_context_data(self, *, object_list=None, item_formset=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
         invoice = self.object.invoice_number
         title = f'Invoice {invoice}'
         context['page_title'] = title
         context['header_title'] = title
 
-        ledger_model = self.object.ledger
+        ledger_model: LedgerModel = self.object.ledger
 
         if ledger_model.locked:
             messages.add_message(self.request,
@@ -130,25 +131,19 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  extra_tags='is-info')
 
         invoice_model: InvoiceModel = self.object
-        invoice_item_qs, item_data = invoice_model.get_invoice_item_data(
-            queryset=invoice_model.itemthroughmodel_set.all()
-        )
-        context['item_formset'] = InvoiceItemFormset(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            invoice_model=invoice_model,
-            queryset=invoice_item_qs
-        )
+        if not item_formset:
+            invoice_item_qs = invoice_model.itemthroughmodel_set.all().select_related('item_model')
+            invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=invoice_item_qs)
+            item_formset = InvoiceItemFormset(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                invoice_model=invoice_model,
+                queryset=invoice_item_qs
+            )
+        else:
+            invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=item_formset.queryset)
+        context['item_formset'] = item_formset
         context['total_amount_due'] = item_data['amount_due']
-
-        item_model_uuids = set(i['item_model_id'] for i in invoice_item_qs.values('item_model_id'))
-        inventory_count_qs = ItemThroughModel.objects.inventory_all_count(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
-        context['inventory_count_qs'] = inventory_count_qs.filter(
-            item_model_id__in=item_model_uuids
-        )
         return context
 
     def get_success_url(self):
@@ -164,7 +159,8 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related('itemthroughmodel_set').select_related('ledger', 'customer')
+        ).prefetch_related('itemthroughmodel_set').select_related(
+            'ledger', 'customer')
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
@@ -178,58 +174,58 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
+    def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
-class InvoiceModelItemsUpdateView(LoginRequiredMixIn, View):
-    http_method_names = ['post']
+        if self.update_items:
+            self.object = self.get_object()
+            item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
+                                                                  user_model=self.request.user,
+                                                                  invoice_pk=invoice_pk,
+                                                                  entity_slug=entity_slug)
 
-    def post(self, request, entity_slug, invoice_pk, **kwargs):
-        item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
-                                                              user_model=self.request.user,
-                                                              invoice_pk=invoice_pk,
-                                                              entity_slug=entity_slug)
+            if item_formset.is_valid():
+                invoice_items = item_formset.save(commit=False)
 
-        if item_formset.is_valid():
-            invoice_items = item_formset.save(commit=False)
+                if item_formset.has_changed():
+                    invoice_qs = InvoiceModel.objects.for_entity(
+                        user_model=self.request.user,
+                        entity_slug=entity_slug
+                    )
+                    invoice_model: InvoiceModel = get_object_or_404(invoice_qs, uuid__exact=invoice_pk)
 
-            if item_formset.has_changed():
-                invoice_qs = InvoiceModel.objects.for_entity(
-                    user_model=self.request.user,
-                    entity_slug=entity_slug
-                )
-                invoice_model: InvoiceModel = get_object_or_404(invoice_qs, uuid__exact=invoice_pk)
+                    entity_qs = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    )
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=self.request.user
-                )
-                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                    for item in invoice_items:
+                        item.entity = entity_model
+                        item.invoice_model = invoice_model
 
-                for item in invoice_items:
-                    item.entity = entity_model
-                    item.invoice_model = invoice_model
+                    invoice_item_list = item_formset.save()
+                    # todo: pass item list to update_amount_due...?
+                    invoice_model.update_amount_due()
+                    invoice_model.new_state(commit=True)
+                    invoice_model.clean()
+                    invoice_model.save(update_fields=['amount_due',
+                                                      'amount_receivable',
+                                                      'amount_unearned',
+                                                      'amount_earned',
+                                                      'updated'])
 
-                invoice_item_list = item_formset.save()
-                # todo: pass item list to update_amount_due...?
-                invoice_model.update_amount_due()
-                invoice_model.new_state(commit=True)
-                invoice_model.clean()
-                invoice_model.save(update_fields=['amount_due',
-                                                  'amount_receivable',
-                                                  'amount_unearned',
-                                                  'amount_earned',
-                                                  'updated'])
+                    invoice_model.migrate_state(
+                        entity_slug=entity_slug,
+                        user_model=self.request.user,
+                        # itemthrough_queryset=invoice_item_list,
+                        force_migrate=True
+                    )
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context)
 
-                invoice_model.migrate_state(
-                    entity_slug=entity_slug,
-                    user_model=self.request.user,
-                    # itemthrough_queryset=invoice_item_list,
-                    force_migrate=True
-                )
+        return super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
 
-        return HttpResponseRedirect(reverse('django_ledger:invoice-update',
-                                            kwargs={
-                                                'entity_slug': entity_slug,
-                                                'invoice_pk': invoice_pk
-                                            }))
+
 
 
 class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
