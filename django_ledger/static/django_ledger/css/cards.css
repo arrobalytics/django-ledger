@@ -1,0 +1,28 @@
+.hyperlink-card {
+    cursor: pointer;
+}
+
+.entity-card {
+    height: 280px;
+}
+
+.nav-card {
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    right: 0;
+    z-index: 2;
+    margin-top: 72px;
+}
+
+#user-card{
+    display: none;
+}
+
+#feedback-card {
+    display: none;
+}
+
+#info-card {
+    display: none;
+}

@@ -2,23 +2,59 @@
 {% load trans from i18n %}
 
 {% if style == 'desktop' %}
-    <div class="box">
-        <aside class="menu">
-            <p class="menu-label">{% session_entity_name request %}</p>
-            <ul class="menu-list">
+<style>
+.menu-list>li>ul>li {
+  display: block;
+}
 
+.menu-list a:hover {
+    background-color: black;
+}
+
+#new-btn {
+    border-radius: 20px;
+    position: relative;
+    min-width: 160px;
+    width: 100%;
+    padding: 0px 20px;
+    display: flex;
+    -webkit-box-pack: center;
+    justify-content: center;
+    -webkit-box-align: center;
+    align-items: center;
+    font-weight: 500;
+    border: 2px solid rgb(255, 255, 255);
+    color: rgb(255, 255, 255);
+    height: 36px;
+    font-size: 16px;
+    background-color: transparent;
+}
+#new-btn:hover {
+    border: 3px solid rgb(255, 255, 255);
+}
+.menu-label{
+    text-align: center;
+    font-size: 20px;
+}
+</style>
+    <div class="box " style="background-color: #393a3d;">
+        <aside class="menu">
+            <p class="menu-label" style="color: rgb(234,233,233);">{% session_entity_name request %}</p>
+            <ul class="menu-list" id="show" >
+                <button id="new-btn" class="button is-small is-rounded is-dark is-outlined">{% trans 'New' %}</button>
+                <br>
                 {% for link in links %}
                     {% if link.type == 'link' %}
-                        <li>
-                            <a href="{{ link.url }}">{{ link.title }}</a>
+                        <li >
+                            <a style="color: rgb(234,233,233);" href="{{ link.url }}">{{ link.title }}</a>
                         </li>
                     {% elif link.type == 'links' %}
-                        <li>
-                            <a>{{ link.title }}</a>
-                            <ul>
+                        <li >
+                            <a id="drop" style="color: rgb(234,233,233);">{{ link.title }} &nbsp; &nbsp; &#9660;</a>
+                            <ul class="sub-menu">
                                 {% for l in link.links %}
-                                    <li>
-                                        <a href="{{ l.url }}">{{ l.title }}</a>
+                                    <li id="abc">
+                                        <a style="color: rgb(187,186,186);" href="{{ l.url }}">{{ l.title }}</a>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -29,6 +65,14 @@
             </ul>
         </aside>
     </div>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+    <script>
+    $('.menu-list>li>a').click(function() {
+
+  $(this).parent().find('li').slideToggle();
+
+});
+    </script>
 
 {# A menu that renders only on mobile devices when the burger menu is opened #}
 {% elif style == 'mobile' %}

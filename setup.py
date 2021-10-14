@@ -35,7 +35,7 @@ setup(
         'ofxtools',
         'faker',
         'markdown',
-        'jsonchema',
+        'jsonschema',
     ],
 >>>>>>> aff5596 (Added missing packages)
     project_urls={
