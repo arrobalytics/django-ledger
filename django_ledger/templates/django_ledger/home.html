@@ -8,20 +8,21 @@
     <section class="section">
         <div class="container">
             <div class="columns is-multiline">
-
-                {% for entity in entities %}
-                    <div class="column is-6-tablet">
-                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
-                    </div>
-                {% endfor %}
-
-                <div class="column is-6-tablet has-text-centered">
-                    <div class="box">
+                <div class="column is-one-third-widescreen is-half-tablet is-one-quarter-fullhd">
+                    <div class="box hyperlink-card is-flex is-justify-content-center is-align-items-center entity-card">
                         <a href="{% url 'django_ledger:entity-create' %}">
                             <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
                         <h2 class="is-size-3">{% trans 'New Entity' %}</h2>
                     </div>
                 </div>
+
+                {% for entity in entities %}
+                    <div class="column is-one-third-widescreen is-half-tablet is-one-quarter-fullhd">
+                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
+                    </div>
+                {% endfor %}
+
+
             </div>
         </div>
     </section>

@@ -4,6 +4,51 @@
 {% load i18n %}
 {% now "Y" as current_year %}
 
+    <nav class="nav is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
+    <figure id="user-toggle" class="image is-64x64 ml-3" onclick="showCard('user-card', 'user-toggle')">
+         <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
+    </figure>
+    <span id="feedback-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "bi:chat-left-quote" 30 %} </span>
+    <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "bi:info-circle" 30 %} </span>
+   <a href="{% url 'django_ledger:home' %}"><span class="icon is-large">{% icon "bi:house" 30 %} </span></a>
+   <div class="navbar-start pl-3">
+   <a href="{{ entity.get_dashboard_url }}">
+     <h1 class="title is-2">{% session_entity_name request %}</h1>
+   </a>
+    </div>
+    </nav>
+
+<div id="user-card" class="box nav-card">
+    <div class="is-flex is-align-items-center is-flex-direction-column">
+    <figure class="image is-96x96 mb-3">
+         <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
+    </figure>
+    <h1 class="title">{{ user }}</h1>
+    <h2 class="subtitle is-6">{{ user.email }}</h2>
+    <a class="button is-primary is-light">Sign Out</a>
+    </div>
+</div>
+
+
+<div id="feedback-card" class="box nav-card">
+    <div class="is-flex is-align-items-center is-flex-direction-column">
+    <a class="button is-primary is-light">Report a Bug</a>
+    <a class="button is-primary is-light">Request a Feature</a>
+    </div>
+
+</div>
+
+<div id="info-card" class="box nav-card">
+    <div class="is-flex is-align-items-center is-flex-direction-column">
+    <figure class="image is-96x96 mb-5">
+         <img class="is-rounded" src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}">
+    </figure>
+    <h1 class="title is-4">v {% current_version %}</h1>
+    <a href="https://djangoledger.com" target="_blank"><h2 class="subtitle is-6">djangoledger.com</h2></a>
+    </div>
+</div>
+
+<!--
 <nav class="navbar is-light" role="navigation" aria-label="main navigation">
     <div class="container">
         <div class="navbar-brand">
@@ -33,3 +78,4 @@
     </div>
 
 </nav>
+-->

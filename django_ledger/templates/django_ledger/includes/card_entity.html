@@ -2,17 +2,20 @@
 {% now "Y" as current_year %}
 
 
-<div class="card">
-    <div class="card-content">
-        <p class="title has-text-weight-light">
-            <span class="icon is-medium">{% icon "ic:baseline-business" 36 %}</span>{{ entity.name }}
+<div class="box entity-card hyperlink-card">
+    <a href="{{ entity.get_dashboard_url }}"></a>
+        <div class="is-flex is-justify-content-space-between">
+         <a href="{{ entity.get_delete_url }}"> <span class="icon is-large">{% icon "bi:x-circle" 36 %} </span></a>
+            <a href="{{ entity.get_manage_url }}"><span class="icon is-large">{% icon "bi:pencil" 36 %} </span></a>
+        </div>
+        <div class="is-flex is-justify-content-center">
+        <figure class="image is-128x128">
+         <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
+        </figure>
+        </div>
+        <p class="title">
+            {{ entity.name }}
         </p>
         <p class="subtitle">{{ entity.address_1 }}</p>
         <p>Created: {{ entity.created | timesince }} ago</p>
-    </div>
-    <footer class="card-footer">
-        <a href="{{ entity.get_dashboard_url }}" class="card-footer-item">Dashboard</a>
-        <a href="{{ entity.get_manage_url }}" class="card-footer-item has-text-info">Manage</a>
-        <a href="{{ entity.get_delete_url }}" class="card-footer-item has-text-danger">Delete</a>
-    </footer>
 </div>

@@ -20,7 +20,7 @@ setup(
         'ofxtools',
         'faker',
         'markdown',
-        'jsonchema',
+        'jsonschema',
     ],
     project_urls={
         'Bug Tracker': 'https://github.com/arrobalytics/django-ledger/issues',
