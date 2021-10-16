@@ -38,7 +38,8 @@ height: 100%;
 
 <body>
     {% include 'django_ledger/includes/nav.html' %}
-    <div class="block columns" style="background-color: #393a3d;">
+    <h1>Test</h1>
+    <div class="block columns" style="background-color: red;">
         <div class="column is-2 sidenav">
             {% navigation_menu 'desktop' %}
            {% if view.kwargs.unit_slug or request.GET.unit %}
