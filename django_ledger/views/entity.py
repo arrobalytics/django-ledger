@@ -103,6 +103,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_delete.html'
+    verify_descendants = False
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -119,16 +120,17 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
         return reverse('django_ledger:home')
 
     def delete(self, request, *args, **kwargs):
-        entity_model = self.get_object()
-        c = entity_model.children.count()
-        # todo: this will need to be changed once hierarchical support is enabled.
-        if c != 0:
-            add_message(request,
-                        level=ERROR,
-                        extra_tags='is-danger',
-                        message=_('Entity has %s children. Must delete children first.' % c))
-            return self.get(request, *args, **kwargs)
-        entity_model.ledgers.all().delete()
+        entity_model: EntityModel = self.get_object()
+        if self.verify_descendants:
+            c = entity_model.children.count()
+            # todo: this will need to be changed once hierarchical support is enabled.
+            if c != 0:
+                add_message(request,
+                            level=ERROR,
+                            extra_tags='is-danger',
+                            message=_('Entity has %s children. Must delete children first.' % c))
+                return self.get(request, *args, **kwargs)
+        entity_model.ledgermodel_set.all().delete()
         entity_model.items.all().delete()
         return super().delete(request, *args, **kwargs)
 

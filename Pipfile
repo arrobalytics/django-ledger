@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 django = "~=3.2.6"
+django-treebeard = "~=4.5.1"
 ofxtools = "~=0.9.4"
 jsonschema = "~=3.2.0"
 markdown = "~=3.3.4"

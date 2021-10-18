@@ -197,94 +197,6 @@ class IOMixIn:
     Controls how transactions are recorded into the ledger.
     """
 
-    # used in migrate_states...
-    def commit_txs(self,
-                   je_date: str or datetime,
-                   je_txs: list,
-                   je_activity: str,
-                   je_posted: bool = False,
-                   je_ledger=None,
-                   je_desc=None,
-                   je_origin=None,
-                   je_parent=None):
-        """
-        Creates JE from TXS list using provided account_id.
-
-        TXS = List[{
-            'account_id': Account Database UUID
-            'tx_type': credit/debit,
-            'amount': Decimal/Float/Integer,
-            'description': string,
-            'staged_tx_model': StagedTransactionModel or None
-        }]
-
-        :param je_date:
-        :param je_txs:
-        :param je_activity:
-        :param je_posted:
-        :param je_ledger:
-        :param je_desc:
-        :param je_origin:
-        :param je_parent:
-        :return:
-        """
-        # Validates that credits/debits balance.
-        balance_tx_data(je_txs)
-
-        # Validates that the activity is valid.
-        je_activity = validate_activity(je_activity)
-
-        if all([isinstance(self, lazy_importer.get_entity_model()),
-                not je_ledger]):
-            raise ValidationError('Must pass an instance of LedgerModel')
-
-        if not je_ledger:
-            je_ledger = self
-
-        JournalEntryModel = lazy_importer.get_journal_entry_model()
-
-        je_model = JournalEntryModel.on_coa.create(
-            ledger=je_ledger,
-            description=je_desc,
-            date=je_date,
-            origin=je_origin,
-            activity=je_activity,
-            posted=je_posted,
-            parent=je_parent
-        )
-
-        TransactionModel = lazy_importer.get_txs_model()
-        txs_models = [
-            TransactionModel(
-                account_id=tx['account_id'],
-                tx_type=tx['tx_type'],
-                amount=tx['amount'],
-                description=tx['description'],
-                journal_entry=je_model,
-                stagedtransactionmodel=tx.get('staged_tx_model')
-            ) for tx in je_txs
-        ]
-        txs_models = TransactionModel.objects.bulk_create(txs_models)
-        return je_model, txs_models
-
-    @staticmethod
-    def digest_gb_accounts(k, g, by_unit: bool):
-        gl = list(g)
-        return {
-            'account_uuid': k[0],
-            'unit_uuid': k[1],
-            'unit_name': gl[0]['journal_entry__entity_unit__name'] if by_unit else None,
-            'period_year': k[2],
-            'period_month': k[3],
-            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
-            'role': gl[0]['account__role'],
-            'code': gl[0]['account__code'],
-            'name': gl[0]['account__name'],
-            'balance_type': gl[0]['account__balance_type'],
-            'balance': sum(a['balance'] for a in gl),
-            'account_list': gl
-        }
-
     def database_digest(self,
                         user_model: UserModel,
                         queryset: QuerySet,
@@ -529,3 +441,90 @@ class IOMixIn:
         }
 
         return txs_qs, digest_results
+
+    def commit_txs(self,
+                   je_date: str or datetime,
+                   je_txs: list,
+                   je_activity: str,
+                   je_posted: bool = False,
+                   je_ledger=None,
+                   je_desc=None,
+                   je_origin=None,
+                   je_parent=None):
+        """
+        Creates JE from TXS list using provided account_id.
+
+        TXS = List[{
+            'account_id': Account Database UUID
+            'tx_type': credit/debit,
+            'amount': Decimal/Float/Integer,
+            'description': string,
+            'staged_tx_model': StagedTransactionModel or None
+        }]
+
+        :param je_date:
+        :param je_txs:
+        :param je_activity:
+        :param je_posted:
+        :param je_ledger:
+        :param je_desc:
+        :param je_origin:
+        :param je_parent:
+        :return:
+        """
+        # Validates that credits/debits balance.
+        balance_tx_data(je_txs)
+
+        # Validates that the activity is valid.
+        je_activity = validate_activity(je_activity)
+
+        if all([isinstance(self, lazy_importer.get_entity_model()),
+                not je_ledger]):
+            raise ValidationError('Must pass an instance of LedgerModel')
+
+        if not je_ledger:
+            je_ledger = self
+
+        JournalEntryModel = lazy_importer.get_journal_entry_model()
+
+        je_model = JournalEntryModel.on_coa.create(
+            ledger=je_ledger,
+            description=je_desc,
+            date=je_date,
+            origin=je_origin,
+            activity=je_activity,
+            posted=je_posted,
+            parent=je_parent
+        )
+
+        TransactionModel = lazy_importer.get_txs_model()
+        txs_models = [
+            TransactionModel(
+                account_id=tx['account_id'],
+                tx_type=tx['tx_type'],
+                amount=tx['amount'],
+                description=tx['description'],
+                journal_entry=je_model,
+                stagedtransactionmodel=tx.get('staged_tx_model')
+            ) for tx in je_txs
+        ]
+        txs_models = TransactionModel.objects.bulk_create(txs_models)
+        return je_model, txs_models
+
+    @staticmethod
+    def digest_gb_accounts(k, g, by_unit: bool):
+        gl = list(g)
+        return {
+            'account_uuid': k[0],
+            'unit_uuid': k[1],
+            'unit_name': gl[0]['journal_entry__entity_unit__name'] if by_unit else None,
+            'period_year': k[2],
+            'period_month': k[3],
+            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
+            'role': gl[0]['account__role'],
+            'code': gl[0]['account__code'],
+            'name': gl[0]['account__name'],
+            'balance_type': gl[0]['account__balance_type'],
+            'balance': sum(a['balance'] for a in gl),
+            'account_list': gl
+        }

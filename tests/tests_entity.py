@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from logging import getLogger, INFO
+import logging
 from random import choice, randint
 from urllib.parse import urlparse
 
@@ -17,9 +17,6 @@ from django_ledger.utils import populate_default_coa, generate_sample_data
 
 UserModel = get_user_model()
 
-logger = getLogger(__name__)
-logger.setLevel(level=INFO)
-
 
 class EntityModelTests(TestCase):
 
@@ -35,6 +32,20 @@ class EntityModelTests(TestCase):
         self.DAYS_FWD: int = randint(180, 180 * 3)
         self.TZ = get_default_timezone()
         self.START_DATE = self.get_random_date()
+        self.FY_STARTS = [
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6',
+            '7',
+            '8',
+            '9',
+            '10',
+            '11',
+            '12'
+        ]
 
         self.CLIENT = Client()
 
@@ -49,8 +60,10 @@ class EntityModelTests(TestCase):
 
         self.TEST_DATA = [self.get_random_entity_data() for _ in range(self.N)]
 
-    @staticmethod
-    def get_random_entity_data() -> dict:
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(level=logging.DEBUG)
+
+    def get_random_entity_data(self) -> dict:
         return {
             'name': f'Testing Inc-{randint(100000, 999999)}',
             'address_1': f'{randint(100000, 999999)} Main St',
@@ -61,6 +74,7 @@ class EntityModelTests(TestCase):
             'country': 'US',
             'email': 'mytest@testinginc.com',
             'website': 'http://www.mytestingco.com',
+            'fy_start_month': choice(self.FY_STARTS)
         }
 
     def get_random_date(self) -> datetime:
@@ -122,6 +136,10 @@ class EntityModelTests(TestCase):
             self.login_client()
             response = self.CLIENT.get(entity_create_url)
             self.assertContains(response, status_code=200, text='New Entity Information')
+            self.assertContains(response, status_code=200, text='Populate Default CoA')
+            self.assertContains(response, status_code=200, text='Activate All Accounts')
+            self.assertContains(response, status_code=200, text='Fill With Sample Data?')
+            self.assertContains(response, text='Create Entity')
 
         # checks that form throws Validation Error if any value is missing...
         entity_must_have_all = ['city', 'state', 'zip_code', 'country']
@@ -131,7 +149,9 @@ class EntityModelTests(TestCase):
                 del ent_copy[entity_must_have_all.pop()]
                 response = self.CLIENT.post(entity_create_url, data=ent_copy, follow=False)
                 self.assertContains(response, status_code=200, text='New Entity Information')
-                self.assertFormError(response, form='form', field=None,
+                self.assertFormError(response,
+                                     form='form',
+                                     field=None,
                                      errors='Must provide all City/State/Zip/Country')
 
         # checks that valid url is provided...
@@ -156,7 +176,7 @@ class EntityModelTests(TestCase):
         for ent_data in self.TEST_DATA:
             response = self.CLIENT.post(entity_create_url, data=ent_data, follow=True)
             # user must be redirected if success...
-            self.assertContains(response, status_code=200, text='My Entities')
+            self.assertContains(response, status_code=200, text='My Dashboard')
             self.assertContains(response, status_code=200, text=ent_data['name'])
 
         # ENTITY-LIST VIEW...
@@ -183,17 +203,53 @@ class EntityModelTests(TestCase):
                 # checks if there is a button with a link to the dashboard...
                 self.assertContains(response,
                                     status_code=200,
-                                    text=reverse('django_ledger:entity-dashboard',
-                                                 kwargs={
-                                                     'entity_slug': entity_model.slug
-                                                 }))
-                # checks if there is a button with a link to the update view...
+                                    msg_prefix=f'There is no Dashboard link button for {entity_model.name}',
+                                    text=entity_list_url)
+                # checks if there is a button with a link to the delete view...
                 self.assertContains(response,
                                     status_code=200,
-                                    text=reverse('django_ledger:entity-update',
+                                    text=reverse('django_ledger:entity-delete',
                                                  kwargs={
                                                      'entity_slug': entity_model.slug
-                                                 }))
+                                                 }))        # ENTITY-LIST VIEW...
+
+        # # HOME VIEW
+        # with self.assertNumQueries(3):
+        #     entity_list_url = reverse('django_ledger:home')
+        #     response = self.CLIENT.get(entity_list_url)
+        #
+        #     # checks if it was able to render template...
+        #     self.assertContains(response, status_code=200, text='My Dashboard')
+        #
+        #     # checks if all entities where rendered...
+        #     for ent_data in self.TEST_DATA:
+        #         self.assertContains(response, status_code=200, text=ent_data['name'])
+        #
+        #     # checks if all entities have proper anchor tags to dashboard and update views...
+        #     entity_qs = response.context['entities']
+        #     for entity_model in entity_qs:
+        #         # checks if entity shows up in the list...
+        #         self.assertContains(response,
+        #                             status_code=200,
+        #                             text=entity_model.name,
+        #                             msg_prefix=f'Entity {entity_model.name} not in the view!')
+        #
+        #         # checks if there is a button with a link to the dashboard...
+        #         entity_list_url = reverse('django_ledger:entity-dashboard',
+        #                 kwargs={
+        #                     'entity_slug': entity_model.slug
+        #                 })
+        #         self.assertContains(response,
+        #                             status_code=200,
+        #                             msg_prefix=f'There is no Dashboard link button for {entity_model.name}',
+        #                             text=entity_list_url)
+        #         # checks if there is a button with a link to the update view...
+        #         self.assertContains(response,
+        #                             status_code=200,
+        #                             text=reverse('django_ledger:entity-update',
+        #                                          kwargs={
+        #                                              'entity_slug': entity_model.slug
+        #                                          }))
 
         # ENTITY-UPDATE VIEW...
         with self.assertNumQueries(3):
@@ -222,14 +278,14 @@ class EntityModelTests(TestCase):
 
         # ENTITY-DETAIL VIEW...
         entity_model = entity_model.get_previous_by_created()
-        logger.warning(f'Populating CoA for {entity_model.name}...')
+        self.logger.warning(f'Populating CoA for {entity_model.name}...')
         # populates accounts with DJL default CoA.
         populate_default_coa(
             entity_model=entity_model,
             activate_accounts=True
         )
 
-        logger.warning(f'Generating sample data for {entity_model.name}...')
+        self.logger.warning(f'Generating sample data for {entity_model.name}...')
         # generates sample data to perform tests.
         generate_sample_data(
             entity_model=entity_model,
@@ -247,7 +303,7 @@ class EntityModelTests(TestCase):
                                         })
             response = self.CLIENT.get(entity_detail_url)
 
-        with self.assertNumQueries(9):
+        with self.assertNumQueries(10):
             local_dt = localdate()
             entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
@@ -257,7 +313,7 @@ class EntityModelTests(TestCase):
                                               })
             self.assertRedirects(response, entity_month_detail_url)
 
-        with self.assertNumQueries(6):
+        with self.assertNumQueries(7):
             # same as before, but this time the session must not be update because user has not suited entities...
             response = self.CLIENT.get(entity_month_detail_url)
             self.assertContains(response, text=entity_model.name)
@@ -273,7 +329,7 @@ class EntityModelTests(TestCase):
             response = self.CLIENT.get(entity_delete_url)
             self.assertContains(response,
                                 status_code=200,
-                                text=entity_model.name)
+                                text=entity_model.slug)
             self.assertContains(response,
                                 status_code=200,
                                 text=f'Are you sure you want to delete')
@@ -285,7 +341,8 @@ class EntityModelTests(TestCase):
         response = self.CLIENT.post(entity_delete_url,
                                     data={
                                         'slug': entity_model.slug
-                                    })
+                                    }, follow=False)
+
         with self.assertNumQueries(3):
             # checks that user is redirected to home after entity is deleted...
             home_url = reverse('django_ledger:home')
@@ -293,5 +350,6 @@ class EntityModelTests(TestCase):
 
         with self.assertNumQueries(3):
             # checks that entity no longer shows in entity list...
-            response = self.CLIENT.get(entity_list_url)
-            self.assertNotContains(response, text=entity_model.name)
+            home_url = reverse('django_ledger:home')
+            response = self.CLIENT.get(home_url)
+            self.assertNotContains(response, text=entity_model.slug)

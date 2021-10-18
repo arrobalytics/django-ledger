@@ -43,8 +43,7 @@ class LedgerModelManager(models.Manager):
         return self.get_queryset().filter(posted=True)
 
 
-class LedgerModelAbstract(CreateUpdateMixIn,
-                          IOMixIn):
+class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
     entity = models.ForeignKey('django_ledger.EntityModel',
@@ -83,34 +82,6 @@ class LedgerModelAbstract(CreateUpdateMixIn,
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
-
-    # def get_coa(self):
-    #     return self.entity.coa
-    #
-    # def get_accounts(self):
-    #     return AccountModel.on_coa.available(coa=self.get_coa())
-
-    # def get_account(self, code):
-    #     """
-    #     Convenience method to get an account model instance from the ledger entity Chart of Accounts.
-    #     :param code: Account code.
-    #     :return:
-    #     """
-    #     return get_coa_account(coa_model=self.get_coa(),
-    #                            code=code)
-
-    # def get_account_balance(self, account_code: str, as_of: str = None):
-    #     return self.get_jes(accounts=account_code, to_date=as_of)
-
-    # def clean(self):
-    #     if not self.slug:
-    #         r_id = generate_ledger_id()
-    #         slug = slugify(self.name)
-    #         self.slug = f'{slug}-{r_id}'
-    #
-    # def save(self, *args, **kwargs):
-    #     self.clean()
-    #     super().save(*args, **kwargs)
 
 
 class LedgerModel(LedgerModelAbstract):

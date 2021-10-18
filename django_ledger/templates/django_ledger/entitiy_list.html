@@ -16,10 +16,10 @@
                             <ul>
                                 {% for entity in entities %}
                                     <li>{{ entity.name }}
-                                        <a href="{{ entity.get_absolute_url }}"
-                                           class="button is-small is-primary is-outlined">{% trans 'View' %}</a>
-                                        <a href="{{ entity.get_manage_url }}"
-                                           class="button is-small is-dark">{% trans 'Settings' %}</a>
+                                        <a href="{{ entity.get_dashboard_url }}"
+                                           class="button is-small is-primary">{% trans 'View' %}</a>
+                                        <a href="{{ entity.get_delete_url }}"
+                                           class="button is-small is-danger">{% trans 'Delete' %}</a>
                                     </li>
                                 {% endfor %}
                             </ul>
