@@ -98,14 +98,13 @@ urlpatterns = [
 ```
 
 # How To Set Up Django Ledger for Development
-Django Ledger comes with a basic development environments already configured under __dev_env/__ folder not to be used
+Django Ledger comes with a basic development environment already configured under __dev_env/__ folder not to be used
 for production environments. If you want to contribute to the project perform the following steps:
 
 1. Navigate to your projects directory.
 2. Clone the repo from github and CD into project.
 ```shell
-git clone https://github.com/arrobalytics/django-ledger.git
-cd django-ledger
+git clone https://github.com/arrobalytics/django-ledger.git && cd django-ledger
 ```
 3. Install PipEnv, if not already installed:
 ```shell
@@ -123,7 +122,15 @@ pipenv install --python PATH_TO_INTERPRETER
 ```shell
 pipenv shell
 ```
-7. Run development server.
+6. Apply migrations.
+```shell
+python manage.py migrate
+```
+7. Create a Development Django user.
+```shell
+python manage.py createsuperuser
+```
+8. Run development server.
 ```shell
 python manage.py runserver
 ```
