@@ -1,7 +1,7 @@
 from django.urls import reverse
 
-from tests.base import DjangoLedgerBaseTest
-from tests.settings import LOGIN_URL
+from django_ledger.tests.base import DjangoLedgerBaseTest
+from dev_env.settings import LOGIN_URL
 
 
 class AuthTest(DjangoLedgerBaseTest):
@@ -73,4 +73,3 @@ class AuthTest(DjangoLedgerBaseTest):
 
         response = self.client.get(logout_url)
         self.assertRedirects(response, expected_url=login_url)
-

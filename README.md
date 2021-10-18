@@ -97,8 +97,44 @@ urlpatterns = [
 ]
 ```
 
-# Screenshots
+# How To Set Up Django Ledger for Development
+Django Ledger comes with a basic development environments already configured under __dev_env/__ folder not to be used
+for production environments. If you want to contribute to the project perform the following steps:
 
+1. Navigate to your projects directory.
+2. Clone the repo from github and CD into project.
+```shell
+git clone https://github.com/arrobalytics/django-ledger.git
+cd django-ledger
+```
+3. Install PipEnv, if not already installed:
+```shell
+pip install -U pipenv
+```
+4. Create virtual environment.
+```shell
+pipenv install
+```
+If using a specific version of Python you may specify the path.
+```shell
+pipenv install --python PATH_TO_INTERPRETER
+```
+5. Activate environment.
+```shell
+pipenv shell
+```
+7. Run development server.
+```shell
+python manage.py runserver
+```
+
+# Run Test Suite
+After setting up your development environment you may run tests.
+```shell
+python manage.py test django_ledger
+```
+
+# Screenshots
 ![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
 ![django ledger balance sheet](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_income_statement.png)
 ![django ledger income statement](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_balance_sheet.png)

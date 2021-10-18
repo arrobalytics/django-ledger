@@ -211,7 +211,7 @@ class EntityModelTests(TestCase):
                                     text=reverse('django_ledger:entity-delete',
                                                  kwargs={
                                                      'entity_slug': entity_model.slug
-                                                 }))        # ENTITY-LIST VIEW...
+                                                 }))  # ENTITY-LIST VIEW...
 
         # # HOME VIEW
         # with self.assertNumQueries(3):
