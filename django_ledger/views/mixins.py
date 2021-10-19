@@ -237,7 +237,6 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
 
 
 class DateReportMixIn(MonthlyReportMixIn, DayMixin):
-    # BASE_DATE_URL = None
 
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
@@ -330,10 +329,10 @@ class EntityUnitMixIn:
 
 class EntityDigestMixIn:
 
-    def get_context_data(self, **kwargs):
-        context = super(EntityDigestMixIn, self).get_context_data(**kwargs)
-        context = self.get_entity_digest(context)
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context = self.get_entity_digest(context)
+    #     return context
 
     def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
         by_period = self.request.GET.get('by_period')
@@ -345,7 +344,7 @@ class EntityDigestMixIn:
 
         unit_slug = self.get_unit_slug()
 
-        txs_qs, digest = entity_model.digest(user_model=self.request.user,
+        qs_all, digest = entity_model.digest(user_model=self.request.user,
                                              to_date=end_date,
                                              unit_slug=unit_slug,
                                              by_period=True if by_period else False,
@@ -353,16 +352,15 @@ class EntityDigestMixIn:
                                              process_roles=True,
                                              process_groups=True)
 
-        txs_qs, equity_digest = entity_model.digest(user_model=self.request.user,
-                                                    queryset=txs_qs,
-                                                    digest_name='equity_digest',
-                                                    to_date=end_date,
-                                                    from_date=from_date,
-                                                    unit_slug=unit_slug,
-                                                    by_period=True if by_period else False,
-                                                    process_ratios=False,
-                                                    process_roles=True,
-                                                    process_groups=True)
+        qs_equity, equity_digest = entity_model.digest(user_model=self.request.user,
+                                                       digest_name='equity_digest',
+                                                       to_date=end_date,
+                                                       from_date=from_date,
+                                                       unit_slug=unit_slug,
+                                                       by_period=True if by_period else False,
+                                                       process_ratios=False,
+                                                       process_roles=False,
+                                                       process_groups=True)
         context.update(digest)
         context.update(equity_digest)
         context['date_filter'] = end_date

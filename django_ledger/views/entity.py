@@ -201,6 +201,8 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
         context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
                                                         kwargs=KWARGS)
 
+        context = self.get_entity_digest(context)
+
         return context
 
     def get_fy_start_month(self) -> int:
@@ -217,19 +219,19 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
             user_model=self.request.user).select_related('coa')
 
 
-class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
+class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):
     """
     Entity Quarterly Dashboard View.
     """
 
 
-class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
+class MonthlyEntityDashboardView(FiscalYearEntityModelDashboardView, MonthlyReportMixIn):
     """
     Monthly Entity Dashboard View.
     """
 
 
-class DateEntityDashboardView(DateReportMixIn, FiscalYearEntityModelDashboardView):
+class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixIn):
     """
     Date-specific Entity Dashboard View.
     """

@@ -19,7 +19,7 @@ class DjangoLedgerBaseTest(TestCase):
         self.logger.setLevel(level=DEBUG)
 
         self.USERNAME: str = 'testuser'
-        self.PASSWORD: str = 'TestingDJL1234'
+        self.PASSWORD: str = 'NeverUseThisPassword12345'
         self.USER_EMAIL: str = 'testuser@djangoledger.com'
         self.N: int = 5
 
@@ -27,7 +27,7 @@ class DjangoLedgerBaseTest(TestCase):
         self.TZ = get_default_timezone()
         self.START_DATE = self.get_random_date()
 
-        self.CLIENT = Client(enforce_csrf_checks=True)
+        self.CLIENT = Client(enforce_csrf_checks=False)
 
         try:
             self.user_model = UserModel.objects.get(username=self.USERNAME)

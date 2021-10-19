@@ -1,34 +1,28 @@
-from datetime import datetime, date
-import logging
+from datetime import date
 from random import choice, randint
 from urllib.parse import urlparse
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
-from django.test import TestCase
-from django.test.client import Client
 from django.urls import reverse
 from django.utils.timezone import get_default_timezone, localdate
 
 from django_ledger.models import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
-from django_ledger.urls.entity import urlpatterns
+from django_ledger.tests.base import DjangoLedgerBaseTest
+from django_ledger.urls.entity import urlpatterns as entity_urls
 from django_ledger.utils import populate_default_coa, generate_sample_data
 
 UserModel = get_user_model()
 
 
-class EntityModelTests(TestCase):
+class EntityModelTests(DjangoLedgerBaseTest):
 
     def setUp(self) -> None:
-        self.ENTITY_URL_PATTERN = {
-            p.name: set(p.pattern.converters.keys()) for p in urlpatterns
-        }
-        self.USERNAME: str = 'testuser'
-        self.PASSWORD: str = 'TestingDJL1234'
-        self.USER_EMAIL: str = 'testuser@djangoledger.com'
-        self.N: int = 5
+        super(EntityModelTests, self).setUp()
 
+        self.ENTITY_URL_PATTERN = {
+            p.name: set(p.pattern.converters.keys()) for p in entity_urls
+        }
         self.DAYS_FWD: int = randint(180, 180 * 3)
         self.TZ = get_default_timezone()
         self.START_DATE = self.get_random_date()
@@ -46,22 +40,11 @@ class EntityModelTests(TestCase):
             '11',
             '12'
         ]
+        self.TEST_DATA = list()
 
-        self.CLIENT = Client()
-
-        try:
-            self.user_model = UserModel.objects.get(username=self.USERNAME)
-        except ObjectDoesNotExist:
-            self.user_model = UserModel.objects.create_user(
-                username=self.USERNAME,
-                password=self.PASSWORD,
-                email=self.USER_EMAIL,
-            )
-
-        self.TEST_DATA = [self.get_random_entity_data() for _ in range(self.N)]
-
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(level=logging.DEBUG)
+    def refresh_test_data(self, n: int = None):
+        N = n if n else self.N
+        self.TEST_DATA = [self.get_random_entity_data() for _ in range(N)]
 
     def get_random_entity_data(self) -> dict:
         return {
@@ -77,16 +60,17 @@ class EntityModelTests(TestCase):
             'fy_start_month': choice(self.FY_STARTS)
         }
 
-    def get_random_date(self) -> datetime:
-        return datetime(
-            year=choice(range(1990, 2020)),
-            month=choice(range(1, 13)),
-            day=choice(range(1, 28)),
-            tzinfo=self.TZ
-        )
-
-    def login_client(self):
-        return self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
+    def get_entity_models(self, save=True, n: int = 5):
+        self.refresh_test_data(n)
+        entity_models = list()
+        for ent_data in self.TEST_DATA:
+            entity_model = EntityModel(**ent_data)
+            entity_model.admin = self.user_model
+            entity_model.clean()
+            if save:
+                entity_model.save()
+            entity_models.append(entity_model)
+        return entity_models
 
     def test_protected_views(self, test_date: date = None):
         """
@@ -94,7 +78,7 @@ class EntityModelTests(TestCase):
         If not, user must be redirected to login page.
         @param test_date: Optional test date. If None, will generate random date.
         """
-        self.CLIENT.logout()
+        self.logout_client()
         entity_model_qs = EntityModel.objects.for_user(self.user_model)
 
         for entity_model in entity_model_qs:
@@ -123,17 +107,18 @@ class EntityModelTests(TestCase):
                 self.assertEqual(redirect_path, login_path,
                                  msg='EntityModelListView not redirecting to correct auth URL.')
 
-    def test_entity_views(self):
+    def test_entity_create(self):
         """
         Testing the creation of a number of entities.
         """
+        self.login_client()
+
         # ENTITY-CREATE VIEW...
         entity_create_url = reverse('django_ledger:entity-create')
         response = self.CLIENT.get(entity_create_url, follow=False)
 
         # making sure user is logged in...
         if response.status_code == 302:
-            self.login_client()
             response = self.CLIENT.get(entity_create_url)
             self.assertContains(response, status_code=200, text='New Entity Information')
             self.assertContains(response, status_code=200, text='Populate Default CoA')
@@ -179,9 +164,15 @@ class EntityModelTests(TestCase):
             self.assertContains(response, status_code=200, text='My Dashboard')
             self.assertContains(response, status_code=200, text=ent_data['name'])
 
+    def test_entity_list(self):
+        self.login_client()
+        # self.refresh_test_data()
+
+        # entity_models = self.get_entity_models()
+        entity_list_url = reverse('django_ledger:entity-list')
+
         # ENTITY-LIST VIEW...
         with self.assertNumQueries(3):
-            entity_list_url = reverse('django_ledger:entity-list')
             response = self.CLIENT.get(entity_list_url)
 
             # checks if it was able to render template...
@@ -213,50 +204,18 @@ class EntityModelTests(TestCase):
                                                      'entity_slug': entity_model.slug
                                                  }))  # ENTITY-LIST VIEW...
 
-        # # HOME VIEW
-        # with self.assertNumQueries(3):
-        #     entity_list_url = reverse('django_ledger:home')
-        #     response = self.CLIENT.get(entity_list_url)
-        #
-        #     # checks if it was able to render template...
-        #     self.assertContains(response, status_code=200, text='My Dashboard')
-        #
-        #     # checks if all entities where rendered...
-        #     for ent_data in self.TEST_DATA:
-        #         self.assertContains(response, status_code=200, text=ent_data['name'])
-        #
-        #     # checks if all entities have proper anchor tags to dashboard and update views...
-        #     entity_qs = response.context['entities']
-        #     for entity_model in entity_qs:
-        #         # checks if entity shows up in the list...
-        #         self.assertContains(response,
-        #                             status_code=200,
-        #                             text=entity_model.name,
-        #                             msg_prefix=f'Entity {entity_model.name} not in the view!')
-        #
-        #         # checks if there is a button with a link to the dashboard...
-        #         entity_list_url = reverse('django_ledger:entity-dashboard',
-        #                 kwargs={
-        #                     'entity_slug': entity_model.slug
-        #                 })
-        #         self.assertContains(response,
-        #                             status_code=200,
-        #                             msg_prefix=f'There is no Dashboard link button for {entity_model.name}',
-        #                             text=entity_list_url)
-        #         # checks if there is a button with a link to the update view...
-        #         self.assertContains(response,
-        #                             status_code=200,
-        #                             text=reverse('django_ledger:entity-update',
-        #                                          kwargs={
-        #                                              'entity_slug': entity_model.slug
-        #                                          }))
+    def test_entity_update(self):
+
+        self.login_client()
+        entity_models = self.get_entity_models()
+        entity_list_url = reverse('django_ledger:entity-list')
+        an_entity: EntityModel = choice(entity_models)
 
         # ENTITY-UPDATE VIEW...
         with self.assertNumQueries(3):
-            entity_model = entity_qs.first()
             entity_update_url = reverse('django_ledger:entity-update',
                                         kwargs={
-                                            'entity_slug': entity_model.slug
+                                            'entity_slug': an_entity.slug
                                         })
             response = self.CLIENT.get(entity_update_url)
 
@@ -275,8 +234,13 @@ class EntityModelTests(TestCase):
             # checks if updated entity is in list...
             self.assertContains(response, status_code=200, text=ent_data['name'])
 
+    def test_entity_detail(self):
+
+        self.login_client()
+        entity_models = self.get_entity_models(n=1)
+        entity_model: EntityModel = choice(entity_models)
+
         # ENTITY-DETAIL VIEW...
-        entity_model = entity_model.get_previous_by_created()
         self.logger.warning(f'Populating CoA for {entity_model.name}...')
         # populates accounts with DJL default CoA.
         populate_default_coa(
@@ -316,9 +280,14 @@ class EntityModelTests(TestCase):
             # same as before, but this time the session must not be update because user has not suited entities...
             response = self.CLIENT.get(entity_month_detail_url)
             self.assertContains(response, text=entity_model.name)
+            self.assertContains(response, text='Dashboard')
             self.assertTrue(response.context['bills'].count() >= 0)
             self.assertTrue(response.context['invoices'].count() >= 0)
 
+    def test_delete_entity(self):
+        self.login_client()
+        entity_models = self.get_entity_models(n=1)
+        entity_model = choice(entity_models)
         # ENTITY-DELETE VIEW...
         with self.assertNumQueries(3):
             entity_delete_url = reverse('django_ledger:entity-delete',
