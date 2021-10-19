@@ -195,7 +195,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
-    update_items = False
+    action_update_items = False
     http_method_names = ['get', 'post']
 
     def get_form(self, form_class=None):
@@ -294,7 +294,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def post(self, request, bill_pk, entity_slug, *args, **kwargs):
 
-        if self.update_items:
+        if self.action_update_items:
             self.object = self.get_object()
             item_formset: BillItemFormset = BillItemFormset(request.POST,
                                                                  user_model=self.request.user,

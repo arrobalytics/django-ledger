@@ -22,7 +22,7 @@ urlpatterns = [
          views.InvoiceModelUpdateView.as_view(),
          name='invoice-update'),
     path('<slug:entity_slug>/update/<uuid:invoice_pk>/items/',
-         views.InvoiceModelUpdateView.as_view(update_items=True),
+         views.InvoiceModelUpdateView.as_view(action_update_items=True),
          name='invoice-update-items'),
     path('<slug:entity_slug>/delete/<uuid:invoice_pk>/',
          views.InvoiceModelDeleteView.as_view(),

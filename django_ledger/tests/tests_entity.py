@@ -261,7 +261,6 @@ class EntityModelTests(TestCase):
             response = self.CLIENT.get(entity_update_url)
 
         with self.assertNumQueries(5):
-            # idea: DJL-123 - Chart of Accounts OneToOne Field on CoA Model?
             ent_data = response.context['form'].initial
             ent_data['name'] = 'New Cool Name LLC'
             ent_data = {k: v for k, v in ent_data.items() if v}

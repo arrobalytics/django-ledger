@@ -13,7 +13,7 @@ from typing import Tuple
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -369,12 +369,12 @@ class EntityDigestMixIn:
         return context
 
 
-class UnpaidMixIn:
+class UnpaidElementsMixIn:
     FETCH_UNPAID_INVOICES: bool = False
     FETCH_UNPAID_BILLS: bool = False
 
     def get_context_data(self, **kwargs):
-        context = super(UnpaidMixIn, self).get_context_data(**kwargs)
+        context = super(UnpaidElementsMixIn, self).get_context_data(**kwargs)
         context['invoices'] = self.get_unpaid_invoices_qs(context)
         context['bills'] = self.get_unpaid_bills_qs(context)
         return context
@@ -439,3 +439,22 @@ class BaseDateNavigationUrlMixIn:
                                                      k: v for k, v in self.kwargs.items() if
                                                      k in self.BASE_DATE_URL_KWARGS
                                                  })
+
+
+class ConfirmActionMixIn:
+
+    def is_confirmed(self):
+
+        request: HttpRequest = getattr(self, 'request')
+        confirm_action = request.GET.get(key='confirm_action')
+
+        if confirm_action is not None:
+            try:
+                confirm_action = int(confirm_action)
+                if confirm_action not in [0, 1]:
+                    return HttpResponseBadRequest()
+            except TypeError:
+                return HttpResponseBadRequest()
+
+            return bool(confirm_action)
+        return False

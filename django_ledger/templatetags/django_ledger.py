@@ -159,11 +159,20 @@ def data_import_job_txs_imported(context):
 
 
 @register.inclusion_tag('django_ledger/tags/jes_table.html', takes_context=True)
-def jes_table(context):
+def jes_table(context, next_url=None):
+    entity_slug = context['view'].kwargs['entity_slug']
+    ledger_pk = context['view'].kwargs['ledger_pk']
+    if not next_url:
+        next_url = reverse('django_ledger:je-list',
+                                          kwargs={
+                                              'entity_slug': entity_slug,
+                                              'ledger_pk': ledger_pk
+                                          })
     return {
         'jes': context['journal_entries'],
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'ledger_pk': context['view'].kwargs['ledger_pk']
+        'ledger_pk': context['view'].kwargs['ledger_pk'],
+        'next_url': next_url
     }
 
 
@@ -733,6 +742,7 @@ def uom_table(context, uom_queryset):
         'uom_list': uom_queryset
     }
 
+
 @register.inclusion_tag('django_ledger/tags/inventory_table.html', takes_context=True)
 def inventory_table(context, queryset):
     ctx = {
@@ -741,5 +751,3 @@ def inventory_table(context, queryset):
     }
     ctx.update(queryset.aggregate(inventory_total_value=Sum('total_value')))
     return ctx
-
-

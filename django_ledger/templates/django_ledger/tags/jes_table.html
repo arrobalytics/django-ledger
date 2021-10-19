@@ -56,6 +56,16 @@
                              id="dropdown-menu-{{ je.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
+                                {% if not je.posted %}
+                                    <a class="dropdown-item"
+                                       href="{% url 'django_ledger:je-mark-as-posted' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}&confirm_action=1">
+                                        Post</a>
+                                {% endif %}
+                                {% if not je.locked %}
+                                    <a class="dropdown-item"
+                                       href="{% url 'django_ledger:je-mark-as-locked' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}&confirm_action=1">
+                                        Lock</a>
+                                {% endif %}
                                 <a class="dropdown-item"
                                    href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">Edit</a>
                                 <a class="dropdown-item"

@@ -100,7 +100,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_update.html'
     form_class = InvoiceModelUpdateForm
-    update_items = False
+    action_update_items = False
 
     def get_form(self, form_class=None):
         return InvoiceModelUpdateForm(
@@ -176,7 +176,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
-        if self.update_items:
+        if self.action_update_items:
             self.object = self.get_object()
             item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
                                                                   user_model=self.request.user,

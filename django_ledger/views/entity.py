@@ -27,7 +27,7 @@ from django_ledger.utils import (
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
-    EntityDigestMixIn, UnpaidMixIn, BaseDateNavigationUrlMixIn
+    EntityDigestMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
 
@@ -162,7 +162,7 @@ class EntityModelDetailView(LoginRequiredMixIn,
 class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
                                          SessionConfigurationMixIn,
                                          BaseDateNavigationUrlMixIn,
-                                         UnpaidMixIn,
+                                         UnpaidElementsMixIn,
                                          EntityUnitMixIn,
                                          EntityDigestMixIn,
                                          YearlyReportMixIn,
