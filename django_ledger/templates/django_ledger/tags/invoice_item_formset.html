@@ -16,8 +16,8 @@
                     <thead>
                     <tr>
                         <th>{% trans 'Item' %}</th>
-                        <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Quantity' %}</th>
+                        <th>{% trans 'Unit Cost' %}</th>
                         <th>{% trans 'Available' %}</th>
                         <th>{% trans 'Total' %}</th>
                         <th>{% trans 'Delete' %}</th>
@@ -35,8 +35,8 @@
                                     {{ f.errors }}
                                 {% endif %}
                             </td>
-                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
+                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
                             <td>{{ f.instance.item_model.inventory_received }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>

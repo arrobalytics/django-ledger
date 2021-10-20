@@ -184,6 +184,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
         if self.action_update_items:
+            self.object = self.get_object()
             item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
                                                                   user_model=self.request.user,
                                                                   invoice_pk=invoice_pk,
@@ -207,7 +208,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                         item.entity = entity_model
                         item.invoice_model = invoice_model
 
-                    invoice_item_list = item_formset.save()
+                    item_formset.save()
                     # todo: pass item list to update_amount_due...?
                     invoice_model.update_amount_due()
                     invoice_model.new_state(commit=True)

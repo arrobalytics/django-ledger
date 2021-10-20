@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
@@ -327,10 +327,11 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def inventory_available(self, entity_slug, user_model):
+    def inventory_pipeline(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             Q(item_model__for_inventory=True) &
+            Q(bill_model__isnull=False) &
             Q(po_item_status__in=[
                 ItemThroughModel.STATUS_ORDERED,
                 ItemThroughModel.STATUS_IN_TRANSIT,
@@ -338,20 +339,8 @@ class ItemThroughModelManager(models.Manager):
             ])
         )
 
-    def inventory_ordered(self, entity_slug, user_model):
-        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
-
-    def inventory_transit(self, entity_slug, user_model):
-        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
-
-    def inventory_received(self, entity_slug, user_model):
-        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
-
-    def inventory_received_value(self, entity_slug: str, user_model):
-        qs = self.inventory_received(entity_slug=entity_slug, user_model=user_model)
+    def inventory_pipeline_aggregate(self, entity_slug: str, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
         return qs.values(
             'item_model__name',
             'item_model__uom__name',
@@ -360,14 +349,56 @@ class ItemThroughModelManager(models.Manager):
             total_value=Sum('total_amount')
         )
 
-    def inventory_value(self, entity_slug: str, user_model):
-        qs = self.inventory_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.values(
-            'item_model__name',
-            'item_model__uom__name',
-            'po_item_status').annotate(
-            total_quantity=Sum('quantity'),
-            total_value=Sum('total_amount')
+    def inventory_pipeline_ordered(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
+    def inventory_pipeline_intransit(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+
+    def inventory_pipeline_received(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+    def inventory_invoiced(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            Q(item_model__for_inventory=True) &
+            Q(invoice_model__isnull=False)
+        )
+
+    def inventory_count(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = qs.filter(
+            Q(item_model__for_inventory=True) &
+            (
+                # received inventory...
+                    (
+                            Q(bill_model__isnull=False) &
+                            Q(po_model__po_status='approved') &
+                            Q(po_item_status__exact=ItemThroughModel.STATUS_RECEIVED)
+                    ) |
+
+                    # invoiced inventory...
+                    (
+                        Q(invoice_model__isnull=False)
+                    )
+
+            )
+        )
+
+        return qs.values('item_model_id', 'item_model__name', 'item_model__uom__name').annotate(
+            quantity_received=Sum('quantity', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
+            cost_received=Sum('total_amount', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
+            quantity_invoiced=Sum('quantity', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
+            revenue_invoiced=Sum('total_amount', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
+        ).annotate(
+            quantity_onhand=F('quantity_received') - F('quantity_invoiced'),
+            cost_average=ExpressionWrapper(F('cost_received') / F('quantity_received'),
+                                           output_field=DecimalField(decimal_places=3)),
+            value_onhand=ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
+                                           output_field=DecimalField(decimal_places=3))
         )
 
     def is_orphan(self, entity_slug, user_model):

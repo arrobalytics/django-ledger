@@ -42,7 +42,7 @@ class InventoryListView(LoginRequiredMixIn, ListView):
         return context
 
     def get_queryset(self):
-        return ItemThroughModel.objects.inventory_value(
+        return ItemThroughModel.objects.inventory_pipeline_aggregate(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
@@ -51,10 +51,10 @@ class InventoryListView(LoginRequiredMixIn, ListView):
 def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
     counted_map = {
         (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
-            'count': i['total_quantity'],
-            'value': i['total_value'],
-            'avg_cost': i['total_value'] / Decimal.from_float(i['total_quantity'])
-            if i['total_quantity'] else Decimal('0.00')
+            'count': i['quantity_onhand'],
+            'value': i['value_onhand'],
+            'avg_cost': i['cost_average']
+            if i['quantity_onhand'] else Decimal('0.00')
         } for i in counted_qs
     }
     recorded_map = {
@@ -65,6 +65,8 @@ def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
             if i['inventory_received'] else Decimal('0.00')
         } for i in recorded_qs
     }
+
+    # todo: change this to use a groupby then sum...
     item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
     adjustment = defaultdict(lambda: {
         # keeps track of inventory recounts...
@@ -120,10 +122,11 @@ class InventoryRecountView(LoginRequiredMixIn, TemplateView):
     def counted_inventory(self):
         entity_slug = self.kwargs['entity_slug']
         user_model = self.request.user
-        return ItemThroughModel.objects.inventory_received_value(
+
+        return ItemThroughModel.objects.inventory_count(
             entity_slug=entity_slug,
             user_model=user_model
-        ).values('item_model_id', 'item_model__name', 'item_model__uom__name', 'total_quantity', 'total_value')
+        )
 
     def recorded_inventory(self, queryset=None, as_values=True):
         entity_slug = self.kwargs['entity_slug']

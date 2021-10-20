@@ -1,6 +1,7 @@
 from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet,
                           modelformset_factory)
 from django.utils.translation import gettext_lazy as _
+from django.forms import ValidationError
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemThroughModel,
@@ -144,6 +145,17 @@ class BillModelConfigureForm(BillModelUpdateForm):
 
 
 class BillItemForm(ModelForm):
+
+    def clean(self):
+        cleaned_data = super(BillItemForm, self).clean()
+        quantity = cleaned_data['quantity']
+        if self.instance.item_model_id:
+            bill_item_model: ItemThroughModel = self.instance
+            if quantity > bill_item_model.po_quantity:
+                raise ValidationError(f'Cannot bill more than {bill_item_model.po_quantity} authorized.')
+        return cleaned_data
+
+
     class Meta:
         model = ItemThroughModel
         fields = [
