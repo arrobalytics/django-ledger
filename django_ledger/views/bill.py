@@ -200,6 +200,12 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
+        if self.request.method == 'POST' and self.action_update_items:
+            return form_class(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                instance=self.object
+            )
         return form_class(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
@@ -297,14 +303,13 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         if self.action_update_items:
             self.object = self.get_object()
             item_formset: BillItemFormset = BillItemFormset(request.POST,
-                                                                 user_model=self.request.user,
-                                                                 bill_pk=bill_pk,
-                                                                 entity_slug=entity_slug)
+                                                            user_model=self.request.user,
+                                                            bill_pk=bill_pk,
+                                                            entity_slug=entity_slug)
 
             if item_formset.is_valid():
-                invoice_items = item_formset.save(commit=False)
-
                 if item_formset.has_changed():
+                    invoice_items = item_formset.save(commit=False)
                     bill_qs = BillModel.objects.for_entity(
                         user_model=self.request.user,
                         entity_slug=entity_slug
@@ -338,9 +343,20 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                         force_migrate=True
                     )
 
+                    messages.add_message(request,
+                                         message=f'Items for Invoice {bill_model.bill_number} saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
+
+                    return HttpResponseRedirect(reverse('django_ledger:bill-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'bill_pk': bill_pk
+                                                        }))
+
             else:
                 context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context)
+                return self.render_to_response(context=context)
 
         return super(BillModelUpdateView, self).post(request, *args, **kwargs)
 

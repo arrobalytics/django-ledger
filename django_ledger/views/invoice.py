@@ -103,16 +103,23 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     action_update_items = False
 
     def get_form(self, form_class=None):
-        return InvoiceModelUpdateForm(
+        form_class = self.get_form_class()
+        if self.request.method == 'POST' and self.action_update_items:
+            return form_class(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                instance=self.object
+            )
+        return form_class(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
-    def get_context_data(self, *, object_list=None, item_formset=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        invoice = self.object.invoice_number
-        title = f'Invoice {invoice}'
+    def get_context_data(self, item_formset=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        invoice: InvoiceModel = self.object
+        title = f'Invoice {invoice.invoice_number}'
         context['page_title'] = title
         context['header_title'] = title
 
@@ -177,16 +184,14 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
         if self.action_update_items:
-            self.object = self.get_object()
             item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
                                                                   user_model=self.request.user,
                                                                   invoice_pk=invoice_pk,
                                                                   entity_slug=entity_slug)
 
             if item_formset.is_valid():
-                invoice_items = item_formset.save(commit=False)
-
                 if item_formset.has_changed():
+                    invoice_items = item_formset.save(commit=False)
                     invoice_qs = InvoiceModel.objects.for_entity(
                         user_model=self.request.user,
                         entity_slug=entity_slug
@@ -219,13 +224,23 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                         # itemthrough_queryset=invoice_item_list,
                         force_migrate=True
                     )
+
+                    messages.add_message(request,
+                                         message=f'Items for Invoice {invoice_model.invoice_number} saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
+
+                    return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'invoice_pk': invoice_pk
+                                                        }))
+
             else:
                 context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context)
+                return self.render_to_response(context=context)
 
         return super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
-
-
 
 
 class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):

@@ -35,7 +35,9 @@
                         <div class="table-container">
                             {% if inventory_received %}
                                 {% inventory_table inventory_received %}
-                            {% endif %}
+                        {% else %}
+                            <h1>No inventory in received status.</h1>
+                        {% endif %}
                         </div>
                     </div>
                 </div>
