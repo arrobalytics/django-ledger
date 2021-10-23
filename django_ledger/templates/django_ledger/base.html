@@ -8,10 +8,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% session_entity_name %} | {{ page_title }}</title>
-    <script src="{% static 'django_ledger/bundle/styles.bundle.js' %}"></script>
+    <script src="{% static 'django_ledger/css/styles.bundle.js' %}"></script>
     <link rel="shortcut icon" type="image/jpg" href="{% static 'django_ledger/logo/favicon.png' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/css/cards.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/css/nav.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/bundle/mystyles.css' %}">
 </head>
 
 <body>
@@ -34,7 +35,7 @@
 {% endblock %}
 
 {% block script_bottom %}
-    <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+    <script src="{% static 'django_ledger/css/djetler.bundle.js' %}"></script>
 
     <script>
         {% if entity_slug %}

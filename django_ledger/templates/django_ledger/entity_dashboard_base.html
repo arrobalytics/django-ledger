@@ -8,39 +8,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% session_entity_name %} | {{ page_title }}</title>
-    <script src="{% static 'django_ledger/bundle/styles.bundle.js' %}"></script>
+    <script src="{% static 'django_ledger/css/styles.bundle.js' %}"></script>
     <link rel="shortcut icon" type="image/jpg" href="{% static 'django_ledger/logo/favicon.png' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/css/cards.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/css/nav.css' %}">
-
-    <style>
-            .sidenav {
-  height: 100%;
-  width: 20% !important;
-
-  z-index: 1;
-  top: 0;
-  left: 0;
-  overflow-x: hidden;
-  padding-top: 20px;
-}
-.sidecontent {
-
-height: 100%;
-  background-color: #F1F1F1;
-  margin-bottom: 0px !important;
-    width: 80% !important;
-
-}
-
-    </style>
+    <link rel="stylesheet" type="text/css" href="{% static 'django_ledger/bundle/mystyles.css' %}">
 </head>
 
 <body>
     {% include 'django_ledger/includes/nav.html' %}
-    <h1>Test</h1>
-    <div class="block columns" style="background-color: red;">
-        <div class="column is-2 sidenav">
+
+    <div class="block columns">
+        <div class="column is-2 has-background-grey-dark">
             {% navigation_menu 'desktop' %}
            {% if view.kwargs.unit_slug or request.GET.unit %}
                {% period_navigation 'unit-dashboard' %}
@@ -49,7 +28,7 @@ height: 100%;
                  {% endif %}
 
     </div>
-    <div class="block column is-10 sidecontent">
+    <div class="block column is-10">
     {% block content %}{% endblock %}
    </div>
 {% block footer %}
@@ -58,11 +37,11 @@ height: 100%;
     </div>
     <script src = "{% static 'django_ledger/js/card.js' %}"></script>
     <script src = "{% static 'django_ledger/js/nav.js' %}"></script>
-    <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+    <script src="{% static 'django_ledger/css/djetler.bundle.js' %}"></script>
 
 
 {% block script_bottom %}
-    <script src="{% static 'django_ledger/bundle/djetler.bundle.js' %}"></script>
+    <script src="{% static 'django_ledger/css/djetler.bundle.js' %}"></script>
 
     <script>
         {% if entity_slug %}

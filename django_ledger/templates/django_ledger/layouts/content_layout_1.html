@@ -2,13 +2,13 @@
 {% load navigation_menu from django_ledger %}
 
 {% block content %}
-    <section class="section">
+    <section class="section p-0">
         <div class="container is-fluid px-1">
             <div class="columns">
 
                 {# SIDE MENU #}
                 {% if not hide_menu %}
-                    <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+                    <div class="column is-2 is-hidden-mobile is-hidden-tablet-only">
                         <div class="columns is-multiline">
                             {% block aux_menu %}{% endblock %}
                             <div class="column is-12">
