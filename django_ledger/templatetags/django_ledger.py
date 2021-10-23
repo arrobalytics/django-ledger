@@ -336,6 +336,20 @@ def session_entity_name(context, request=None):
         entity_name = 'Django Ledger'
     return entity_name
 
+@register.simple_tag(takes_context=True)
+def session_entity_slug(context, request=None):
+    session_key = get_default_entity_session_key()
+    if not request:
+        request = context['request']
+    session = request.session
+    try:
+        entity_slug = session.get(session_key)['entity_slug']
+    except KeyError:
+        entity_name = 'Django Ledger'
+    except TypeError:
+        entity_name = 'Django Ledger'
+    return entity_slug
+
 
 # todo: rename template to activity_form_filter.
 @register.inclusion_tag('django_ledger/tags/activity_form.html', takes_context=True)

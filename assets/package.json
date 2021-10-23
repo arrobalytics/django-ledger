@@ -19,7 +19,12 @@
     "file-loader": "^6.2.0",
     "less": "^4.1.1",
     "less-loader": "^8.0.0",
+<<<<<<< HEAD
     "node-sass": "^7.0.1",
+=======
+    "mini-css-extract-plugin": "^2.4.2",
+    "node-sass": "^5.0.0",
+>>>>>>> da010c6 (fixed some changes)
     "sass-loader": "^11.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^8.1.0",

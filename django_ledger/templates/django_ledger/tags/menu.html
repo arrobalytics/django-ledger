@@ -1,60 +1,38 @@
 {% load django_ledger %}
 {% load trans from i18n %}
+{% load static %}
+{% load cache %}
+{% load i18n %}
+{% now "Y" as current_year %}
 
 {% if style == 'desktop' %}
-<style>
-.menu-list>li>ul>li {
-  display: none;
-}
 
-.menu-list a:hover {
-    background-color: black;
-}
+        <aside class="menu has-background-grey-dark" >
+            <p class="menu-label has-text-white-ter has-text-centered p-2 is-size-6">{% session_entity_name request %}</p>
+            <ul class="menu-list">
+            <div class="container p-3">
+                <button id="new-btn" class="button is-rounded is-primary is-darker is-outlined is-fullwidth" onclick="showCard('info-card2', 'new-btn')">
+                    <span class="icon">{% icon 'carbon:add' 60 %}</span>
+                    <span>{% trans 'New' %}</span>
 
-#new-btn {
-    border-radius: 20px;
-    position: relative;
-    min-width: 160px;
-    width: 100%;
-    padding: 0px 20px;
-    display: flex;
-    -webkit-box-pack: center;
-    justify-content: center;
-    -webkit-box-align: center;
-    align-items: center;
-    font-weight: 500;
-    border: 2px solid rgb(255, 255, 255);
-    color: rgb(255, 255, 255);
-    height: 36px;
-    font-size: 16px;
-    background-color: transparent;
-}
-#new-btn:hover {
-    border: 3px solid rgb(255, 255, 255);
-}
-.menu-label{
-    text-align: center;
-    font-size: 20px;
-}
-</style>
-    <div class="box " style="background-color: #393a3d;">
-        <aside class="menu">
-            <p class="menu-label" style="color: rgb(234,233,233);">{% session_entity_name request %}</p>
-            <ul class="menu-list" id="show" >
-                <button id="new-btn" class="button is-small is-rounded is-dark is-outlined">{% trans 'New' %}</button>
+                </button></div>
+
+
                 <br>
                 {% for link in links %}
                     {% if link.type == 'link' %}
-                        <li >
-                            <a style="color: rgb(234,233,233);" href="{{ link.url }}">{{ link.title }}</a>
+                        <li class="p-1">
+
+                            <a href="{{ link.url }}" class="has-text-white-ter has-text-weight-normal" >{{ link.title }}</a>
+
                         </li>
                     {% elif link.type == 'links' %}
-                        <li >
-                            <a id="drop" style="color: rgb(234,233,233);">{{ link.title }} &nbsp; &nbsp; &#9660;</a>
-                            <ul class="sub-menu">
+                        <li class="p-1">
+                            <a class="has-text-white-ter has-text-weight-normal is-flex is-justify-content-space-between">{{ link.title }}<span class="icon">{% icon 'carbon:caret-right' 20  %}</span></a>
+                            <ul>
                                 {% for l in link.links %}
-                                    <li id="abc">
-                                        <a style="color: rgb(187,186,186);" href="{{ l.url }}">{{ l.title }}</a>
+                                    <li class="p-1">
+                                        <a class="has-text-white-ter has-text-weight-normal" href="{{ l.url }}">{{ l.title }}</a>
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -64,15 +42,15 @@
 
             </ul>
         </aside>
+<div id="info-card2" class="box nav-card2">
+    <div class="is-flex is-align-items-left is-flex-direction-column">
+
+    {% session_entity_slug as entity_slug %}
+    <a class="p-2" href="{% url 'django_ledger:invoice-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Invoice</h2></a>
+    <a class="p-2" href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Bill</h2></a>
     </div>
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
-    <script>
-    $('.menu-list>li>a').click(function() {
+</div>
 
-  $(this).parent().find('li').slideToggle();
-
-});
-    </script>
 
 {# A menu that renders only on mobile devices when the burger menu is opened #}
 {% elif style == 'mobile' %}
@@ -100,6 +78,7 @@
 
         {% endfor %}
     </div>
+
 
 
 {% endif %}
