@@ -3425,7 +3425,7 @@ a.navbar-item,
     border-radius: 12px;
     padding-left: 0; }
     .menu-list li ul li {
-      border-radius: 12px;
+      border-radius: 15px;
       position: relative; }
 
 .menu-label {
