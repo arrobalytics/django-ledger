@@ -103,26 +103,26 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not queryset:
             queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
-            amount_due=Sum('total_amount'),
+            amount_due=Sum('po_total_amount'),
             total_paid=Sum('bill_model__amount_paid'),
             total_items=Count('uuid')
         )
 
     def update_po_state(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
-            self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            self.amount_due = Decimal.from_float(round(sum(a.po_total_amount for a in item_list), 2))
             return
 
         # todo: explore if queryset can be passed from PO Update View...
         queryset, item_data = self.get_po_item_data(queryset=queryset)
         qs_values = queryset.values(
-            'total_amount', 'po_item_status'
+            'po_total_amount', 'po_item_status'
         )
         total_received = sum(
-            i['total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
+            i['po_total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
         )
         total_po_amount = sum(
-            i['total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
+            i['po_total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
         )
         self.po_amount = total_po_amount
         self.po_amount_received = total_received

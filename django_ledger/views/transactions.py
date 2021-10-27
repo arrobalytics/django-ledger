@@ -38,9 +38,9 @@ class TXSJournalEntryView(LoginRequiredMixIn, TemplateView):
         if not txs_formset:
             context['txs_formset'] = TransactionModelFormSet(
                 user_model=self.request.user,
-                je_pk=kwargs['je_pk'],
-                ledger_pk=kwargs['ledger_pk'],
-                entity_slug=kwargs['entity_slug'],
+                je_pk=self.kwargs['je_pk'],
+                ledger_pk=self.kwargs['ledger_pk'],
+                entity_slug=self.kwargs['entity_slug'],
                 queryset=self.get_queryset()
             )
         else:

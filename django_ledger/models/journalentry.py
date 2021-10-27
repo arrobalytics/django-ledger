@@ -115,6 +115,23 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         if not self.je_is_valid():
             raise ValidationError(check1)
 
+    def mark_as_posted(self):
+        if not self.posted:
+            self.posted = True
+            self.save(update_fields=[
+                'posted',
+                'updated'
+            ])
+
+    def mark_as_locked(self):
+        if not self.locked:
+            self.locked = True
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
+
+
     def save(self, *args, **kwargs):
         try:
             self.clean_fields()

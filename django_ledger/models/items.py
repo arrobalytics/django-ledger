@@ -5,14 +5,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from string import ascii_lowercase, digits
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
@@ -153,6 +153,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Is a product or service.'),
         help_text=_('Is a product or service you sell or provide to customers.'))
 
+    sold_as_unit = models.BooleanField(default=False)
+
     inventory_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -161,6 +163,18 @@ class ItemModelAbstract(CreateUpdateMixIn):
         related_name=f'{REL_NAME_PREFIX}_inventory_account',
         help_text=_('Inventory account where cost will be capitalized.'),
         on_delete=models.PROTECT)
+    inventory_received = models.DecimalField(
+        null=True,
+        blank=True,
+        decimal_places=3,
+        max_digits=20,
+        verbose_name=_('Total inventory received.'))
+    inventory_received_value = models.DecimalField(
+        null=True,
+        blank=True,
+        decimal_places=2,
+        max_digits=20,
+        verbose_name=_('Total value of inventory received.'))
     cogs_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -223,27 +237,14 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def is_inventory(self):
         return self.for_inventory is True
 
-    def clean(self):
-        if any([
-            self.for_inventory is True,
-            self.is_product_or_service is True
-        ]):
-            if self.for_inventory:
-                if not all([
-                    self.inventory_account,
-                    self.cogs_account
-                ]):
-                    raise ValidationError(_('Items for inventory must have Inventory & COGS accounts'))
-                self.expense_account = None
-                self.earnings_account = None
-            if self.is_product_or_service:
-                if not self.earnings_account:
-                    raise ValidationError(_('Products & Services must have an Earnings Account'))
-                self.expense_account = None
-                self.inventory_account = None
-                self.cogs_account = None
+    def get_average_cost(self):
+        if self.inventory_received:
+            return self.inventory_received_value / self.inventory_received
+        return Decimal('0.00')
 
-        elif all([
+    def clean(self):
+
+        if all([
             self.for_inventory is False,
             self.is_product_or_service is False
         ]):
@@ -253,8 +254,56 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.earnings_account = None
             self.cogs_account = None
 
+        elif all([
+            self.for_inventory is True,
+            self.is_product_or_service is True
+        ]):
+            if not all([
+                self.inventory_account,
+                self.cogs_account,
+                self.earnings_account
+            ]):
+                raise ValidationError(_('Items for resale must have Inventory, COGS & Earnings accounts.'))
+
+        elif all([
+            self.for_inventory is True,
+            self.is_product_or_service is False
+        ]):
+            if not all([
+                self.inventory_account,
+                self.cogs_account
+            ]):
+                raise ValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
+            self.expense_account = None
+            self.earnings_account = None
+
+        elif all([
+            self.for_inventory is False,
+            self.is_product_or_service is True
+        ]):
+            if not self.earnings_account:
+                raise ValidationError(_('Products & Services must have an Earnings Account'))
+            self.expense_account = None
+            self.inventory_account = None
+            self.cogs_account = None
+
+
+class ItemThroughModelQueryset(models.QuerySet):
+
+    def is_received(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+    def in_transit(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+
+    def is_ordered(self):
+        return self.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
 
 class ItemThroughModelManager(models.Manager):
+
+    def get_queryset(self):
+        return ItemThroughModelQueryset(self.model, using=self._db)
 
     def for_entity(self, user_model, entity_slug):
         qs = self.get_queryset()
@@ -278,13 +327,83 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def inventory_all(self, entity_slug, user_model):
+    def inventory_pipeline(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(item_model__for_inventory=True)
+        return qs.filter(
+            Q(item_model__for_inventory=True) &
+            Q(bill_model__isnull=False) &
+            Q(po_item_status__in=[
+                ItemThroughModel.STATUS_ORDERED,
+                ItemThroughModel.STATUS_IN_TRANSIT,
+                ItemThroughModel.STATUS_RECEIVED,
+            ])
+        )
 
-    def inventory_received(self, entity_slug, user_model):
-        qs = self.inventory_all(entity_slug=entity_slug, user_model=user_model)
+    def inventory_pipeline_aggregate(self, entity_slug: str, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.values(
+            'item_model__name',
+            'item_model__uom__name',
+            'po_item_status').annotate(
+            total_quantity=Sum('quantity'),
+            total_value=Sum('total_amount')
+        )
+
+    def inventory_pipeline_ordered(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
+    def inventory_pipeline_intransit(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+
+    def inventory_pipeline_received(self, entity_slug, user_model):
+        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+
+    def inventory_invoiced(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            Q(item_model__for_inventory=True) &
+            Q(invoice_model__isnull=False)
+        )
+
+    def inventory_count(self, entity_slug, user_model):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = qs.filter(
+            Q(item_model__for_inventory=True) &
+            (
+                # received inventory...
+                    (
+                            Q(bill_model__isnull=False) &
+                            Q(po_model__po_status='approved') &
+                            Q(po_item_status__exact=ItemThroughModel.STATUS_RECEIVED)
+                    ) |
+
+                    # invoiced inventory...
+                    (
+                        Q(invoice_model__isnull=False)
+                    )
+
+            )
+        )
+
+        return qs.values('item_model_id', 'item_model__name', 'item_model__uom__name').annotate(
+            quantity_received=Sum('quantity', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
+            cost_received=Sum('total_amount', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
+            quantity_invoiced=Sum('quantity', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
+            revenue_invoiced=Sum('total_amount', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
+        ).annotate(
+            quantity_onhand=F('quantity_received') - F('quantity_invoiced'),
+            cost_average=ExpressionWrapper(F('cost_received') / F('quantity_received'),
+                                           output_field=DecimalField(decimal_places=3)),
+            value_onhand=ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
+                                           output_field=DecimalField(decimal_places=3))
+        )
+
+    def is_orphan(self, entity_slug, user_model):
+        # todo: implement is orphans...
+        raise NotImplementedError
 
 
 class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
@@ -331,6 +450,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                       null=True,
                                       verbose_name=_('PO Item Status'))
 
+    # Bill/ Invoice fields....
     quantity = models.FloatField(default=0.0,
                                  verbose_name=_('Quantity'),
                                  validators=[MinValueValidator(0)])
@@ -342,6 +462,22 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                        decimal_places=2,
                                        verbose_name=_('Total Amount QTY x UnitCost'),
                                        validators=[MinValueValidator(0)])
+
+    # Purchase Order fields...
+    po_quantity = models.FloatField(default=0.0,
+                                    verbose_name=_('PO Quantity'),
+                                    help_text=_('Authorized item quantity for purchasing.'),
+                                    validators=[MinValueValidator(0)])
+    po_unit_cost = models.FloatField(default=0.0,
+                                     verbose_name=_('PO Unit Cost'),
+                                     help_text=_('Purchase Order unit cost.'),
+                                     validators=[MinValueValidator(0)])
+    po_total_amount = models.DecimalField(max_digits=20,
+                                          default=Decimal('0.00'),
+                                          decimal_places=2,
+                                          verbose_name=_('Authorized maximum item cost per Purchase Order'),
+                                          help_text=_('Maximum authorized cost per Purchase Order.'),
+                                          validators=[MinValueValidator(0)])
     objects = ItemThroughModelManager()
 
     class Meta:
@@ -350,6 +486,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             models.Index(fields=['bill_model', 'item_model']),
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['po_model', 'item_model']),
+            models.Index(fields=['po_item_status'])
         ]
 
     def __str__(self):
@@ -364,7 +501,16 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return f'Orphan Item Through Model: {self.uuid} | {status_display} | {amount}'
 
     def update_total_amount(self):
-        self.total_amount = round(self.quantity * self.unit_cost, 2)
+        total_amount = round(self.quantity * self.unit_cost, 2)
+        if self.po_model_id:
+            if self.quantity > self.po_quantity:
+                raise ValidationError(f'Billed quantity cannot be greater than PO quantity {self.po_quantity}')
+            if total_amount > self.po_total_amount:
+                raise ValidationError(f'Item amount cannot exceed authorized PO amount {self.po_total_amount}')
+        self.total_amount = total_amount
+
+    def update_po_total_amount(self):
+        self.po_total_amount = round(self.po_quantity * self.po_unit_cost, 2)
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -393,6 +539,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return ' is-warning'
 
     def clean(self):
+        self.update_po_total_amount()
         self.update_total_amount()
 
 

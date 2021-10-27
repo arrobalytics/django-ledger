@@ -8,7 +8,8 @@ class LogInForm(AuthenticationForm):
         widget=TextInput(
             attrs={
                 'autofocus': True,
-                'class': 'input'
+                'class': 'input',
+                'id': 'djl-el-login-form-username-field'
             }))
     password = CharField(
         label=_("Password"),
@@ -16,6 +17,7 @@ class LogInForm(AuthenticationForm):
         widget=PasswordInput(
             attrs={
                 'autocomplete': 'current-password',
-                'class': 'input'
+                'class': 'input',
+                'id': 'djl-el-login-form-password-field'
             }),
     )

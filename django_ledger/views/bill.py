@@ -15,11 +15,11 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView,
                                   View, ArchiveIndexView, MonthArchiveView, YearArchiveView,
-                                  DetailView)
+                                  DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset, BillModelConfigureForm
-from django_ledger.models import EntityModel, PurchaseOrderModel
+from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel
 from django_ledger.models.bill import BillModel
 from django_ledger.utils import new_bill_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -195,9 +195,17 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
+    action_update_items = False
+    http_method_names = ['get', 'post']
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
+        if self.request.method == 'POST' and self.action_update_items:
+            return form_class(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                instance=self.object
+            )
         return form_class(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
@@ -210,7 +218,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             return BillModelConfigureForm
         return BillModelUpdateForm
 
-    def get_context_data(self, *, object_list=None, **kwargs):
+    def get_context_data(self, *, object_list=None, item_formset: BillItemFormset = None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
         bill_model = self.object
         title = f'Bill {bill_model.bill_number}'
@@ -239,17 +247,30 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  extra_tags='is-info')
 
         bill_model: BillModel = self.object
-        bill_item_queryset, item_data = bill_model.get_bill_item_data(
-            queryset=bill_model.itemthroughmodel_set.select_related(
-                'item_model', 'po_model', 'bill_model').all()
-        )
-        context['item_formset'] = BillItemFormset(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            bill_pk=bill_model.uuid,
-            queryset=bill_item_queryset
-        )
+        if not item_formset:
+            bill_item_queryset, item_data = bill_model.get_bill_item_data(
+                queryset=bill_model.itemthroughmodel_set.select_related(
+                    'item_model', 'po_model', 'bill_model').all()
+            )
+
+            item_formset = BillItemFormset(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                bill_pk=bill_model.uuid,
+                queryset=bill_item_queryset
+            )
+        else:
+            bill_item_queryset, item_data = bill_model.get_bill_item_data(
+                queryset=item_formset.queryset
+            )
+
+        has_po = any(i['po_model'] for i in bill_item_queryset.values('po_model'))
+        if has_po:
+            item_formset.can_delete = False
+            item_formset.has_po = has_po
+        context['item_formset'] = item_formset
         context['total_amount_due'] = item_data['amount_due']
+        context['has_po'] = has_po
         return context
 
     def get_success_url(self):
@@ -277,58 +298,67 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
+    def post(self, request, bill_pk, entity_slug, *args, **kwargs):
 
-class BillModelItemsUpdateView(LoginRequiredMixIn, View):
-    http_method_names = ['post']
+        if self.action_update_items:
+            self.object = self.get_object()
+            item_formset: BillItemFormset = BillItemFormset(request.POST,
+                                                            user_model=self.request.user,
+                                                            bill_pk=bill_pk,
+                                                            entity_slug=entity_slug)
 
-    def post(self, request, entity_slug, bill_pk, **kwargs):
-        bill_item_formset: BillItemFormset = BillItemFormset(request.POST,
-                                                             user_model=self.request.user,
-                                                             bill_pk=bill_pk,
-                                                             entity_slug=entity_slug)
+            if item_formset.is_valid():
+                if item_formset.has_changed():
+                    invoice_items = item_formset.save(commit=False)
+                    bill_qs = BillModel.objects.for_entity(
+                        user_model=self.request.user,
+                        entity_slug=entity_slug
+                    )
+                    bill_model: BillModel = get_object_or_404(bill_qs, uuid__exact=bill_pk)
 
-        if bill_item_formset.is_valid():
-            invoice_items = bill_item_formset.save(commit=False)
+                    entity_qs = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    )
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
-            if bill_item_formset.has_changed():
-                bill_qs = BillModel.objects.for_entity(
-                    user_model=self.request.user,
-                    entity_slug=entity_slug
-                )
-                bill_model: BillModel = get_object_or_404(bill_qs, uuid__exact=bill_pk)
+                    for item in invoice_items:
+                        item.entity = entity_model
+                        item.bill_model = bill_model
 
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=self.request.user
-                )
-                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                    item_formset.save()
+                    # todo: pass item list to update_amount_due...?
+                    bill_model.update_amount_due()
+                    bill_model.new_state(commit=True)
+                    bill_model.clean()
+                    bill_model.save(update_fields=['amount_due',
+                                                   'amount_receivable',
+                                                   'amount_unearned',
+                                                   'amount_earned',
+                                                   'updated'])
 
-                for item in invoice_items:
-                    item.entity = entity_model
-                    item.bill_model = bill_model
+                    bill_model.migrate_state(
+                        entity_slug=entity_slug,
+                        user_model=self.request.user,
+                        # itemthrough_models=bill_item_list,
+                        force_migrate=True
+                    )
 
-                bill_item_list = bill_item_formset.save()
-                # todo: pass item list to update_amount_due...?
-                bill_model.update_amount_due()
-                bill_model.new_state(commit=True)
-                bill_model.clean()
-                bill_model.save(update_fields=['amount_due',
-                                               'amount_receivable',
-                                               'amount_unearned',
-                                               'amount_earned',
-                                               'updated'])
+                    messages.add_message(request,
+                                         message=f'Items for Invoice {bill_model.bill_number} saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
 
-                bill_model.migrate_state(
-                    entity_slug=entity_slug,
-                    user_model=self.request.user,
-                    # itemthrough_models=bill_item_list,
-                    force_migrate=True
-                )
+                    return HttpResponseRedirect(reverse('django_ledger:bill-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'bill_pk': bill_pk
+                                                        }))
 
-        return HttpResponseRedirect(reverse('django_ledger:bill-update',
-                                            kwargs={
-                                                'entity_slug': entity_slug,
-                                                'bill_pk': bill_pk
-                                            }))
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
+
+        return super(BillModelUpdateView, self).post(request, *args, **kwargs)
 
 
 class BillModelDetailView(LoginRequiredMixIn, DetailView):
@@ -525,3 +555,80 @@ class BillModelMarkPaidView(LoginRequiredMixIn,
                                    'bill_pk': bill.uuid
                                })
         return HttpResponseRedirect(redirect_url)
+
+
+class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
+    context_object_name = 'bill_model'
+    slug_field = 'uuid'
+    slug_url_kwarg = 'bill_pk'
+    http_method_names = ['post']
+
+    action = None
+    ACTION_FORCE_MIGRATE = 'force-migrate'
+    ACTION_LOCK = 'lock'
+    ACTION_UNLOCK = 'unlock'
+
+    def get_redirect_url(self, *args, **kwargs):
+        bill_model: BillModel = self.get_object()
+        return reverse('django_ledger:bill-update',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'bill_pk': bill_model.uuid
+                       })
+
+    def post(self, request, *args, **kwargs):
+        bill_model: BillModel = self.get_object()
+        ledger_model: LedgerModel = bill_model.ledger
+
+        if self.action == self.ACTION_FORCE_MIGRATE:
+
+            if bill_model.ledger.locked:
+                messages.add_message(self.request,
+                                     level=messages.ERROR,
+                                     message=f'Cannot migrate {bill_model.bill_number}. Bill ledger is locked.',
+                                     extra_tags='is-danger')
+            else:
+                items, _ = bill_model.migrate_state(
+                    user_model=self.request.user,
+                    entity_slug=self.kwargs['entity_slug'],
+                    force_migrate=True
+                )
+                if not items:
+                    bill_model.amount_due = 0
+                    bill_model.save(update_fields=['amount_due', 'updated'])
+
+        elif self.action == self.ACTION_LOCK:
+            if not ledger_model.locked:
+                ledger_model.locked = True
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{bill_model.bill_number} is locked.',
+                                     extra_tags='is-success')
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{bill_model.bill_number} already locked.',
+                                     extra_tags='is-warning')
+
+        elif self.action == self.ACTION_UNLOCK:
+            if ledger_model.locked:
+                ledger_model.locked = False
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{bill_model.bill_number} is unlocked.',
+                                     extra_tags='is-success')
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{bill_model.bill_number} already unlocked.',
+                                     extra_tags='is-warning')
+
+        return super(BillModelActionView, self).post(self.request)
+
+    def get_queryset(self):
+        return BillModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).select_related('ledger')

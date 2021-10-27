@@ -201,7 +201,7 @@ class ExpenseItemCreateForm(ExpenseItemUpdateForm):
 
 
 class InventoryItemUpdateForm(ModelForm):
-    INVENTORY_ROLES = [COGS, ASSET_CA_INVENTORY]
+    INVENTORY_ROLES = [COGS, ASSET_CA_INVENTORY] + GROUP_INCOME
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         self.ENTITY_SLUG = entity_slug
@@ -216,6 +216,7 @@ class InventoryItemUpdateForm(ModelForm):
         # evaluating qs...
         len(accounts_qs)
 
+        self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
         self.fields['inventory_account'].queryset = accounts_qs.filter(role__in=[ASSET_CA_INVENTORY])
         self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=[COGS])
 
@@ -235,6 +236,8 @@ class InventoryItemUpdateForm(ModelForm):
             'inventory_account',
             'cogs_account',
             'default_amount',
+            'is_product_or_service',
+            'earnings_account',
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -244,6 +247,9 @@ class InventoryItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'inventory_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'earnings_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'cogs_account': Select(attrs={

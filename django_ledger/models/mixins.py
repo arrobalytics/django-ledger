@@ -152,6 +152,8 @@ class AccruableItemMixIn(models.Model):
     void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
 
     accrue = models.BooleanField(default=False, verbose_name=_('Progressible'))
+
+    # todo: change progress method from percent to currency amount...
     progress = models.DecimalField(default=0,
                                    verbose_name=_('Progress Amount'),
                                    decimal_places=2,
@@ -334,30 +336,36 @@ class AccruableItemMixIn(models.Model):
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
             }
 
-            # todo: temporary fix... Inventory accounts must be properly mapped...
             item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
 
-            for item in item_data:
-                account_uuid_expense = item.get('item_model__expense_account__uuid')
-                account_uuid_inventory = item.get('item_model__inventory_account__uuid')
-                if account_uuid_expense:
-                    item['account_uuid'] = account_uuid_expense
-                    item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
-                elif account_uuid_inventory:
-                    item['account_uuid'] = account_uuid_inventory
-                    item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
-
-
             if isinstance(self, lazy_loader.get_bill_model()):
-                item_data_gb = groupby(item_data,
-                                       key=lambda a: (a['account_uuid'],
-                                                      a['entity_unit__uuid'],
-                                                      a['account_balance_type']))
+
+                for item in item_data:
+                    account_uuid_expense = item.get('item_model__expense_account__uuid')
+                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                    if account_uuid_expense:
+                        item['account_uuid'] = account_uuid_expense
+                        item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
+                    elif account_uuid_inventory:
+                        item['account_uuid'] = account_uuid_inventory
+                        item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+
             elif isinstance(self, lazy_loader.get_invoice_model()):
-                item_data_gb = groupby(item_data,
-                                       key=lambda a: (a['account_uuid'],
-                                                      a['entity_unit__uuid'],
-                                                      a['account_balance_type']))
+
+                for item in item_data:
+                    account_uuid_expense = item.get('item_model__earnings_account__uuid')
+                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                    if account_uuid_expense:
+                        item['account_uuid'] = account_uuid_expense
+                        item['account_balance_type'] = item.get('item_model__earnings_account__balance_type')
+                    elif account_uuid_inventory:
+                        item['account_uuid'] = account_uuid_inventory
+                        item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+
+            item_data_gb = groupby(item_data,
+                                   key=lambda a: (a['account_uuid'],
+                                                  a['entity_unit__uuid'],
+                                                  a['account_balance_type']))
 
             progress = self.get_progress()
 
@@ -414,51 +422,52 @@ class AccruableItemMixIn(models.Model):
             # list of all keys involved
             idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
 
-            # difference between new vs curre
+            # difference between new vs current
             diff_idx = {
                 k: new_ledger_state.get(k, 0) - current_ledger_state.get(k, 0) for k in idx_keys
             }
 
-            JournalEntryModel = lazy_loader.get_journal_entry_model()
-            TransactionModel = lazy_loader.get_transaction_model()
+            if commit:
+                JournalEntryModel = lazy_loader.get_journal_entry_model()
+                TransactionModel = lazy_loader.get_transaction_model()
 
-            unit_uuids = list(set(k[1] for k in idx_keys))
-            now_date = localdate() if not je_date else je_date
-            je_list = {
-                u: JournalEntryModel.on_coa.create(
-                    entity_unit_id=u,
-                    date=now_date,
-                    description=self.get_migrate_state_desc(),
-                    activity='op',
-                    origin='migration',
-                    locked=True,
-                    posted=True,
-                    ledger_id=self.ledger_id
-                ) for u in unit_uuids
-            }
+                unit_uuids = list(set(k[1] for k in idx_keys))
+                now_date = localdate() if not je_date else je_date
+                je_list = {
+                    u: JournalEntryModel.on_coa.create(
+                        entity_unit_id=u,
+                        date=now_date,
+                        description=self.get_migrate_state_desc(),
+                        activity='op',
+                        origin='migration',
+                        locked=True,
+                        posted=True,
+                        ledger_id=self.ledger_id
+                    ) for u in unit_uuids
+                }
 
-            txs_list = [
-                (unit_uuid, TransactionModel(
-                    journal_entry=je_list.get(unit_uuid),
-                    amount=abs(round(amt, 2)),
-                    tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
-                    account_id=acc_uuid,
-                    description=self.get_migrate_state_desc()
-                )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
-            ]
+                txs_list = [
+                    (unit_uuid, TransactionModel(
+                        journal_entry=je_list.get(unit_uuid),
+                        amount=abs(round(amt, 2)),
+                        tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
+                        account_id=acc_uuid,
+                        description=self.get_migrate_state_desc()
+                    )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+                ]
 
-            for unit_uuid, tx in txs_list:
-                tx.clean()
+                for unit_uuid, tx in txs_list:
+                    tx.clean()
 
-            for uid in unit_uuids:
-                # validates each unit txs independently...
-                balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
+                for uid in unit_uuids:
+                    # validates each unit txs independently...
+                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
 
-            # validates all txs as a whole (for safety)...
-            txs = [tx for ui, tx in txs_list]
-            balance_tx_data(tx_data=txs)
-            TransactionModel.objects.bulk_create(txs)
-
+                # validates all txs as a whole (for safety)...
+                txs = [tx for ui, tx in txs_list]
+                balance_tx_data(tx_data=txs)
+                TransactionModel.objects.bulk_create(txs)
+            return item_data, digest_data
         else:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
@@ -513,6 +522,9 @@ class AccruableItemMixIn(models.Model):
         return self.TERMS_NET_90_PLUS
 
     def clean(self):
+
+        if not self.amount_due:
+            self.amount_due = 0
 
         if not self.date:
             self.date = localdate()

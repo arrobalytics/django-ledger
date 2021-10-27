@@ -25,7 +25,7 @@ urlpatterns = [
          views.BillModelUpdateView.as_view(),
          name='bill-update'),
     path('<slug:entity_slug>/update/<uuid:bill_pk>/items/',
-         views.BillModelItemsUpdateView.as_view(),
+         views.BillModelUpdateView.as_view(action_update_items=True),
          name='bill-update-items'),
     path('<slug:entity_slug>/delete/<uuid:bill_pk>/',
          views.BillModelDeleteView.as_view(),
@@ -36,4 +36,18 @@ urlpatterns = [
     path('<slug:entity_slug>/void/<uuid:bill_pk>/',
          views.BillModelDeleteView.as_view(void=True),
          name='bill-void'),
+
+    # actions....
+    path('<slug:entity_slug>/actions/<uuid:bill_pk>/force-migrate/',
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_FORCE_MIGRATE),
+         name='bill-action-force-migrate'),
+    path('<slug:entity_slug>/actions/<uuid:bill_pk>/lock/',
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_LOCK),
+         name='bill-action-lock'),
+    path('<slug:entity_slug>/actions/<uuid:bill_pk>/unlock/',
+         views.BillModelActionView.as_view(
+             action=views.BillModelActionView.ACTION_UNLOCK),
+         name='bill-action-unlock'),
 ]

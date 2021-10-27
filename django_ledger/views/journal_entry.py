@@ -5,7 +5,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.contrib.messages import add_message, WARNING
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
@@ -13,7 +14,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn, ConfirmActionMixIn
 
 
 # JE Views ---
@@ -25,6 +26,7 @@ class JournalEntryListView(LoginRequiredMixIn, ListView):
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    http_method_names = ['get']
 
     def get_queryset(self):
         sort = self.request.GET.get('sort')
@@ -48,6 +50,7 @@ class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'bi:journal-plus'
     }
+    http_method_names = ['get']
 
     def get_queryset(self):
         return JournalEntryModel.on_coa.for_ledger(
@@ -57,7 +60,7 @@ class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
         ).prefetch_related('txs', 'txs__account')
 
 
-class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
+class JournalEntryUpdateView(LoginRequiredMixIn, ConfirmActionMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
     slug_url_kwarg = 'je_pk'
@@ -66,6 +69,9 @@ class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    action_mark_as_posted: bool = False
+    action_mark_as_locked: bool = False
+    http_method_names = ['get', 'post']
 
     def get_slug_field(self):
         return 'uuid'
@@ -90,6 +96,40 @@ class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user
         ).prefetch_related('txs', 'txs__account')
+
+    def get(self, request, *args, **kwargs):
+        response = super(JournalEntryUpdateView, self).get(request, *args, **kwargs)
+        je_model: JournalEntryModel = self.object
+
+        if any([
+            self.action_mark_as_posted,
+            self.action_mark_as_locked
+        ]):
+
+            confirm_action = self.is_confirmed()
+
+            if not confirm_action:
+                add_message(request,
+                            level=WARNING,
+                            message=f'Must explicitly confirm action by providing right parameters.',
+                            extra_tags='is-warning')
+                context = self.get_context_data()
+
+            else:
+                if self.action_mark_as_posted:
+                    je_model.mark_as_posted()
+                if self.action_mark_as_locked:
+                    je_model.mark_as_locked()
+
+                next_url = self.request.GET.get('next')
+                if next_url:
+                    return HttpResponseRedirect(next_url)
+
+                context = self.get_context_data(object=je_model)
+
+            return self.render_to_response(context)
+
+        return response
 
 
 class JournalEntryCreateView(LoginRequiredMixIn, CreateView):

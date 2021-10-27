@@ -1,10 +1,12 @@
 {% extends 'django_ledger/base.html' %}
+{% load trans from i18n %}
 {% load static %}
 
 {% block nav %}{% endblock %}
 {% block header %}{% endblock %}
 {% block content %}
     <section class="hero is-fullheight"
+             id="djl-login-bg-image"
              style="background-image: url({% static 'django_ledger/img/daniel-weiss-aj2Os9mYgJU-unsplash.jpg' %})">
         <div class="hero-body">
             <div class="container is-fluid">
@@ -16,30 +18,18 @@
                                     <img src="{% static 'django_ledger/logo/django-ledger-logo.png' %}" alt="">
                                 </div>
                             </div>
-
-{#                            <h1 class="title">#}
-{#                                Hero title#}
-{#                            </h1>#}
-{#                            <h2 class="subtitle">#}
-{#                                Hero subtitle#}
-{#                            </h2>#}
-
-                            <form action="{% url 'django_ledger:login' %}" method="post">
+                            <form action="{% url 'django_ledger:login' %}" method="post" id="djl-el-login-form">
                                 {% csrf_token %}
                                 <div class="columns is-multiline">
+                                    <div class="column is-12">{{ form }}</div>
                                     <div class="column is-12">
-                                        {{ form }}
-                                    </div>
-                                    <div class="column is-12">
-                                        <button type="submit" class="button is-primary is-fullwidth">Login</button>
+                                        <button type="submit" class="button is-primary is-fullwidth">{% trans 'Login' %}</button>
                                     </div>
                                 </div>
                             </form>
                         </div>
                     </div>
-
                 </div>
-
             </div>
         </div>
     </section>

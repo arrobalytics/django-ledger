@@ -7,7 +7,6 @@
 
     <form action="{{ form_action_url }}"
           method="post">
-
         <div class="columns is-multiline is-centered">
             {% csrf_token %}
             {% if po_model %}
@@ -17,6 +16,11 @@
                     {% for po_item in po_items %}
                         <p>{{ po_item }}</p>
                     {% endfor %}
+                </div>
+            {% endif %}
+            {% if form.errors %}
+                <div class="column is-12">
+                    {{ form.errors }}
                 </div>
             {% endif %}
             <div class="column is-6">
@@ -38,7 +42,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="column is-6">
                 <div class="card">
                     <div class="card-header">
@@ -72,8 +75,6 @@
                         <p class="card-header-title">{% trans 'Connected Accounts' %}</p>
                     </div>
                     <div class="card-content">
-
-
                         <div class="field">
                             <label for="{{ form.terms.cash_account }}"
                                    class="label is-small">{{ form.cash_account.label }}</label>
@@ -82,7 +83,6 @@
                             </div>
                         </div>
                         <div class="field">
-
                             <label for="{{ form.terms.prepaid_account }}"
                                    class="label is-small">{{ form.prepaid_account.label }}</label>
                             <div class="control">

@@ -13,7 +13,7 @@ from typing import Tuple
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -237,7 +237,6 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
 
 
 class DateReportMixIn(MonthlyReportMixIn, DayMixin):
-    # BASE_DATE_URL = None
 
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
@@ -306,8 +305,10 @@ class FromToDatesMixIn:
 
 
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
-    login_url = DJANGO_LEDGER_LOGIN_URL
     redirect_field_name = 'next'
+
+    def get_login_url(self):
+        return reverse('django_ledger:login')
 
 
 class EntityUnitMixIn:
@@ -328,10 +329,10 @@ class EntityUnitMixIn:
 
 class EntityDigestMixIn:
 
-    def get_context_data(self, **kwargs):
-        context = super(EntityDigestMixIn, self).get_context_data(**kwargs)
-        context = self.get_entity_digest(context)
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context = self.get_entity_digest(context)
+    #     return context
 
     def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
         by_period = self.request.GET.get('by_period')
@@ -343,7 +344,7 @@ class EntityDigestMixIn:
 
         unit_slug = self.get_unit_slug()
 
-        txs_qs, digest = entity_model.digest(user_model=self.request.user,
+        qs_all, digest = entity_model.digest(user_model=self.request.user,
                                              to_date=end_date,
                                              unit_slug=unit_slug,
                                              by_period=True if by_period else False,
@@ -351,28 +352,27 @@ class EntityDigestMixIn:
                                              process_roles=True,
                                              process_groups=True)
 
-        txs_qs, equity_digest = entity_model.digest(user_model=self.request.user,
-                                                    queryset=txs_qs,
-                                                    digest_name='equity_digest',
-                                                    to_date=end_date,
-                                                    from_date=from_date,
-                                                    unit_slug=unit_slug,
-                                                    by_period=True if by_period else False,
-                                                    process_ratios=False,
-                                                    process_roles=True,
-                                                    process_groups=True)
+        qs_equity, equity_digest = entity_model.digest(user_model=self.request.user,
+                                                       digest_name='equity_digest',
+                                                       to_date=end_date,
+                                                       from_date=from_date,
+                                                       unit_slug=unit_slug,
+                                                       by_period=True if by_period else False,
+                                                       process_ratios=False,
+                                                       process_roles=False,
+                                                       process_groups=True)
         context.update(digest)
         context.update(equity_digest)
         context['date_filter'] = end_date
         return context
 
 
-class UnpaidMixIn:
+class UnpaidElementsMixIn:
     FETCH_UNPAID_INVOICES: bool = False
     FETCH_UNPAID_BILLS: bool = False
 
     def get_context_data(self, **kwargs):
-        context = super(UnpaidMixIn, self).get_context_data(**kwargs)
+        context = super(UnpaidElementsMixIn, self).get_context_data(**kwargs)
         context['invoices'] = self.get_unpaid_invoices_qs(context)
         context['bills'] = self.get_unpaid_bills_qs(context)
         return context
@@ -437,3 +437,22 @@ class BaseDateNavigationUrlMixIn:
                                                      k: v for k, v in self.kwargs.items() if
                                                      k in self.BASE_DATE_URL_KWARGS
                                                  })
+
+
+class ConfirmActionMixIn:
+
+    def is_confirmed(self):
+
+        request: HttpRequest = getattr(self, 'request')
+        confirm_action = request.GET.get(key='confirm_action')
+
+        if confirm_action is not None:
+            try:
+                confirm_action = int(confirm_action)
+                if confirm_action not in [0, 1]:
+                    return HttpResponseBadRequest()
+            except TypeError:
+                return HttpResponseBadRequest()
+
+            return bool(confirm_action)
+        return False

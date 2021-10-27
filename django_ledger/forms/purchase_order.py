@@ -126,9 +126,9 @@ class PurchaseOrderItemForm(ModelForm):
         model = ItemThroughModel
         fields = [
             'item_model',
-            'unit_cost',
+            'po_unit_cost',
+            'po_quantity',
             'entity_unit',
-            'quantity',
             'po_item_status',
             'create_bill',
         ]
@@ -142,16 +142,17 @@ class PurchaseOrderItemForm(ModelForm):
             'po_item_status': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'unit_cost': TextInput(attrs={
+            'po_unit_cost': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'quantity': TextInput(attrs={
+            'po_quantity': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
 
     def clean_po_item_status(self):
         po_item_status = self.cleaned_data['po_item_status']
+        po_item_model: ItemThroughModel = self.instance
         if 'po_item_status' in self.changed_data:
             po_model: PurchaseOrderModel = getattr(self, 'PO_MODEL')
             if po_model.po_status == po_model.PO_STATUS_APPROVED:
@@ -163,6 +164,13 @@ class PurchaseOrderItemForm(ModelForm):
                 ]):
                     raise ValidationError('Cannot assign not ordered status to a billed item. '
                                           'Void or delete bill first')
+            if all([
+                po_item_status in [ItemThroughModel.STATUS_IN_TRANSIT, ItemThroughModel.STATUS_RECEIVED],
+                not po_item_model.bill_model_id
+            ]):
+                raise ValidationError(f'Cannot mark as {po_item_status.upper()}. '
+                                      'Item must be billed first.')
+
         return po_item_status
 
 
@@ -186,8 +194,8 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 PurchaseOrderModel.PO_STATUS_APPROVED,
                 PurchaseOrderModel.PO_STATUS_REVIEW
             ]:
-                form.fields['unit_cost'].disabled = True
-                form.fields['quantity'].disabled = True
+                form.fields['po_unit_cost'].disabled = True
+                form.fields['po_quantity'].disabled = True
                 form.fields['entity_unit'].disabled = True
                 form.fields['item_model'].disabled = True
                 if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED or self.PO_MODEL.fulfilled:

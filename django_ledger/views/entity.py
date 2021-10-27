@@ -27,7 +27,7 @@ from django_ledger.utils import (
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
-    EntityDigestMixIn, UnpaidMixIn, BaseDateNavigationUrlMixIn
+    EntityDigestMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
 
@@ -103,6 +103,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_delete.html'
+    verify_descendants = False
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -119,22 +120,25 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
         return reverse('django_ledger:home')
 
     def delete(self, request, *args, **kwargs):
-        entity_model = self.get_object()
-        c = entity_model.children.count()
-        # todo: this will need to be changed once hierarchical support is enabled.
-        if c != 0:
-            add_message(request,
-                        level=ERROR,
-                        extra_tags='is-danger',
-                        message=_('Entity has %s children. Must delete children first.' % c))
-            return self.get(request, *args, **kwargs)
-        entity_model.ledgers.all().delete()
+        entity_model: EntityModel = self.get_object()
+        if self.verify_descendants:
+            c = entity_model.children.count()
+            # todo: this will need to be changed once hierarchical support is enabled.
+            if c != 0:
+                add_message(request,
+                            level=ERROR,
+                            extra_tags='is-danger',
+                            message=_('Entity has %s children. Must delete children first.' % c))
+                return self.get(request, *args, **kwargs)
+        entity_model.ledgermodel_set.all().delete()
         entity_model.items.all().delete()
         return super().delete(request, *args, **kwargs)
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(LoginRequiredMixIn, EntityUnitMixIn, RedirectView):
+class EntityModelDetailView(LoginRequiredMixIn,
+                            EntityUnitMixIn,
+                            RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -158,7 +162,7 @@ class EntityModelDetailView(LoginRequiredMixIn, EntityUnitMixIn, RedirectView):
 class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
                                          SessionConfigurationMixIn,
                                          BaseDateNavigationUrlMixIn,
-                                         UnpaidMixIn,
+                                         UnpaidElementsMixIn,
                                          EntityUnitMixIn,
                                          EntityDigestMixIn,
                                          YearlyReportMixIn,
@@ -197,6 +201,8 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
         context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
                                                         kwargs=KWARGS)
 
+        context = self.get_entity_digest(context)
+
         return context
 
     def get_fy_start_month(self) -> int:
@@ -213,19 +219,19 @@ class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
             user_model=self.request.user).select_related('coa')
 
 
-class QuarterlyEntityDashboardView(QuarterlyReportMixIn, FiscalYearEntityModelDashboardView):
+class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):
     """
     Entity Quarterly Dashboard View.
     """
 
 
-class MonthlyEntityDashboardView(MonthlyReportMixIn, FiscalYearEntityModelDashboardView):
+class MonthlyEntityDashboardView(FiscalYearEntityModelDashboardView, MonthlyReportMixIn):
     """
     Monthly Entity Dashboard View.
     """
 
 
-class DateEntityDashboardView(DateReportMixIn, FiscalYearEntityModelDashboardView):
+class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixIn):
     """
     Date-specific Entity Dashboard View.
     """
