@@ -557,7 +557,7 @@ def navigation_menu(context, style):
         nav_menu_links = [
             {
                 'type': 'link',
-                'title': 'Entity Dashboard',
+                'title': 'Dashboard',
                 'url': reverse('django_ledger:entity-dashboard', kwargs={'entity_slug': ENTITY_SLUG})
             },
             {
