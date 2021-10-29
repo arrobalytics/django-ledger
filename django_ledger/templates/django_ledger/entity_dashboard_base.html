@@ -16,10 +16,10 @@
 </head>
 
 <body>
-    {% include 'django_ledger/includes/nav.html' %}
+
 
     <div class="block columns">
-        <div class="column is-2 has-background-grey-dark">
+        <div class="column is-1.5 has-background-grey-dark">
             {% navigation_menu 'desktop' %}
            {% if view.kwargs.unit_slug or request.GET.unit %}
                {% period_navigation 'unit-dashboard' %}
@@ -27,14 +27,14 @@
               {% period_navigation 'entity-dashboard' %}
                  {% endif %}
 
-    </div>
+        </div>
+
     <div class="block column is-10">
+    {% include 'django_ledger/includes/nav.html' %}
     {% block content %}{% endblock %}
-   </div>
 {% block footer %}
     {% include 'django_ledger/includes/footer.html' %}
 {% endblock %}
-    </div>
     <script src = "{% static 'django_ledger/js/card.js' %}"></script>
     <script src = "{% static 'django_ledger/js/nav.js' %}"></script>
     <script src="{% static 'django_ledger/css/djetler.bundle.js' %}"></script>
@@ -62,7 +62,8 @@
     {% endblock %}
     <script src = "{% static 'django_ledger/js/card.js' %}"></script>
     <script src = "{% static 'django_ledger/js/nav.js' %}"></script>
-
+    </div>
+    </div>
 
 
 </body>
