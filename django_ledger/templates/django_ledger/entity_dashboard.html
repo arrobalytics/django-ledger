@@ -1,4 +1,4 @@
-{% extends 'django_ledger/entity_dashboard_base.html' %}
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
@@ -7,8 +7,11 @@
     <section class="section">
         <div class="container is-fluid p-0">
             <div class="columns">
-               <!-- <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
+               <div class="column is-3 is-hidden-mobile is-hidden-tablet-only">
                     <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% navigation_menu 'desktop' %}
+                        </div>
                         <div class="column is-12">
                             {% if view.kwargs.unit_slug or request.GET.unit %}
                                 {% period_navigation 'unit-dashboard' %}
@@ -16,14 +19,11 @@
                                 {% period_navigation 'entity-dashboard' %}
                             {% endif %}
                         </div>
-                        <div class="column is-12">
-                            {% navigation_menu 'desktop' %}
-                            <h2>Where does this shit show up?</h2>
-                        </div>
+
                     </div>
 
 
-                </div> -->
+                </div>
                 <div class="column">
                     <div class="columns is-multiline is-centered">
                         <div class="column is-half">

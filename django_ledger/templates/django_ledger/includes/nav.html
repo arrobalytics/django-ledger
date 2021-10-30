@@ -4,17 +4,29 @@
 {% load i18n %}
 {% now "Y" as current_year %}
 
-    <nav class="nav is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
-    <figure id="user-toggle" class="image is-64x64 ml-3" onclick="showCard('user-card', 'user-toggle')">
+    <nav class="navbar is-light is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
+    <figure id="user-toggle" class="image is-48x48 ml-3" onclick="showCard('user-card', 'user-toggle')">
          <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
     </figure>
     <span id="feedback-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "bi:chat-left-quote" 30 %} </span>
     <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "bi:info-circle" 30 %} </span>
-   <a href="{% url 'django_ledger:home' %}"><span class="icon is-large">{% icon "bi:house" 30 %} </span></a>
+   <a class="navbar-item" href="{% url 'django_ledger:home' %}">
+                <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
+            </a>
+            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
+               data-target="djl-navbar-menu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        <a href="{% url 'django_ledger:home' %}"><span class="icon is-large">{% icon "bi:house" 30 %} </span></a>
    <div class="navbar-start pl-3">
    <a href="{{ entity.get_dashboard_url }}">
-     <h1 class="title is-2">{% session_entity_name request %}</h1>
+     <h2 class="title is-3">{% session_entity_name request %}</h2>
    </a>
+    </div>
+        <div class="navbar-item pl-3">
+     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "fe:app-menu" 30 %} </span>
     </div>
     </nav>
 
@@ -25,15 +37,18 @@
     </figure>
     <h1 class="title">{{ user }}</h1>
     <h2 class="subtitle is-6">{{ user.email }}</h2>
-    <a class="button is-primary is-light">Sign Out</a>
+    <a href="{% url 'django_ledger:logout' %}"
+                       id="djl-el=logout-button-nav"
+                       class="button is-small is-danger is-outlined">
+                        {% trans 'Logout' %}
+                    </a>
     </div>
 </div>
 
 
 <div id="feedback-card" class="box nav-card">
     <div class="is-flex is-align-items-center is-flex-direction-column">
-    <a class="button is-primary is-light">Report a Bug</a>
-    <a class="button is-primary is-light">Request a Feature</a>
+    <div class="navbar-item">{% feedback_button %}</div>
     </div>
 
 </div>
@@ -48,36 +63,4 @@
     </div>
 </div>
 
-<!--
-<nav class="navbar is-light" role="navigation" aria-label="main navigation">
-    <div class="container">
-        <div class="navbar-brand">
-            <a class="navbar-item" href="{% url 'django_ledger:home' %}">
-                <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
-            </a>
-            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
-               data-target="djl-navbar-menu">
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-                <span aria-hidden="true"></span>
-            </a>
-        </div>
 
-        <div id="djl-navbar-menu" class="navbar-menu">
-            {% navigation_menu 'mobile' %}
-            <div class="navbar-end">
-                <div class="navbar-item">
-                    <a href="{% url 'django_ledger:logout' %}"
-                       id="djl-el=logout-button-nav"
-                       class="button is-small is-danger is-outlined">
-                        {% trans 'Logout' %}
-                    </a>
-                </div>
-                <div class="navbar-item">{% feedback_button %}</div>
-                <div class="navbar-item">v{% current_version %}</div>
-            </div>
-        </div>
-    </div>
-
-</nav>
--->
