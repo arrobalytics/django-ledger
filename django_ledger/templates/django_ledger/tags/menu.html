@@ -8,7 +8,6 @@
 {% if style == 'desktop' %}
 
         <aside class="menu has-background-grey-dark" >
-            <p class="menu-label has-text-white-ter has-text-centered p-2 is-size-6">{% session_entity_name request %}</p>
             <ul class="menu-list">
             <div class="container p-3">
                 <button id="new-btn" class="button is-rounded is-primary is-darker is-outlined is-fullwidth" onclick="showCard('info-card2', 'new-btn')">
@@ -48,6 +47,7 @@
     {% session_entity_slug as entity_slug %}
     <a class="p-2" href="{% url 'django_ledger:invoice-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Invoice</h2></a>
     <a class="p-2" href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Bill</h2></a>
+    <a class="p-2" href="https://beachwoodfinancial.com"><h2 class="subtitle is-6">Credits</h2></a>
     </div>
 </div>
 
