@@ -8,8 +8,16 @@ Django Ledger was created by [Miguel Sanda](https://github.com/elarroba).
 * Miguel Sanda [@elarroba](https://github.com/elarroba)
 
 ### Developers
+<<<<<<<<< Temporary merge branch 1
+* Miguel Sanda [@elarroba](https://github.com/elarroba)
+
+### Accountants
+* Albert Salazar [@Beachwood619](https://github.com/Beachwood619)
+* Michael Noel [@MNooel](https://github.com/MNooel)
+=========
 * Michael Noel [@mnooel](https://github.com/mnooel)
 
 ### Accountants
 * Albert Salazar [@Beachwood619](https://github.com/Beachwood619)
 * Michael Noel [@mnooel](https://github.com/mnooel) 
+>>>>>>>>> Temporary merge branch 2
