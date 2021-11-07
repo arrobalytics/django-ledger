@@ -3,11 +3,13 @@
 {% load cache %}
 {% load i18n %}
 {% now "Y" as current_year %}
+    <section class="section is-flex is-flex-direction-row-reverse is-align-items-center pt-5 pr-2">
 
-    <nav class="navbar is-light is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
+    <nav class="navbar is-fixed-top is-light is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
     <figure id="user-toggle" class="image is-48x48 ml-3" onclick="showCard('user-card', 'user-toggle')">
          <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
     </figure>
+
     <span id="feedback-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "bi:chat-left-quote" 30 %} </span>
     <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "bi:info-circle" 30 %} </span>
    <a class="navbar-item" href="{% url 'django_ledger:home' %}">
@@ -26,7 +28,7 @@
    </a>
     </div>
         <div class="navbar-item pl-3">
-     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "fe:app-menu" 30 %} </span>
+     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard()">{% icon "fe:app-menu" 30 %} </span>
     </div>
     </nav>
 
@@ -62,5 +64,4 @@
     <a href="https://djangoledger.com" target="_blank"><h2 class="subtitle is-6">djangoledger.com</h2></a>
     </div>
 </div>
-
-
+    </section>

@@ -3,10 +3,8 @@
 {% load django_ledger %}
 
 {% if not header_style %}
-    <div class="container">
-        <h1 class="title mt-3">{{ header_title }}</h1>
-        <h2 class="subtitle">{{ header_subtitle }}</h2>
-        <!-- <div class="hero-body">
+    <section class="hero is-primary is-bold is-small mb-2">
+        <div class="hero-body p-2">
             <div class="container">
                 <div class="columns is-mobile">
                     {% if header_subtitle_icon %}
@@ -28,9 +26,8 @@
                     </div>
                 </div>
             </div>
-            -->
-    </div>
-<!-- {% else %}
+    </section>
+{% else %}
     <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
         <div class="hero-body">
             <div class="container">
@@ -55,6 +52,3 @@
         </div>
     </section>
 {% endif %}
--->
-
-
