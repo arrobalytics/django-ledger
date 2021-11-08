@@ -4,7 +4,16 @@
 
 {% if not header_style %}
     <section class="hero is-primary is-bold is-small mb-2">
-        <div class="hero-body p-2">
+        <div class="hero-body">
+        <div class="columns">
+            <div class="column is-2 container p-3">
+                <div class="columns mt-0">
+                    <a href="#"><span class="icon is-large ml-2 mr-3" onclick="djLedger.toggleElement('hide-menu')">{% icon "ci:hamburger" 30 %} </span></a>
+                <button id="new-btn" class="button  is-primary is-darker is-outlined is-fullwidth mt-1" onclick="showModal('info-modal')">
+                    <span class="icon">{% icon 'carbon:add' 60 %}</span>
+                    <span>{% trans 'New' %}</span>
+
+                </button></div></div>
             <div class="container">
                 <div class="columns is-mobile">
                     {% if header_subtitle_icon %}
@@ -18,6 +27,9 @@
                             {% icon header_subtitle_icon 60 %}
                         </div>
                     {% endif %}
+                    <div>
+
+                    </div>
                     <div class="column is-9">
                         <h1 class="title has-text-weight-light">{{ header_title }}</h1>
                         {% if header_subtitle %}
@@ -26,6 +38,7 @@
                     </div>
                 </div>
             </div>
+        </div>
     </section>
 {% else %}
     <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
