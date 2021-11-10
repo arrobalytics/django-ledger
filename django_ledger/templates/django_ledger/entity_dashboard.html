@@ -4,7 +4,7 @@
 {% load django_ledger %}
 
 {% block aux_menu %}
- <div class="column column is-1.5">
+ <div class="column is-1.5">
     {% if view.kwargs.unit_slug or request.GET.unit %}
         {% period_navigation 'unit-dashboard' %}
     {% else %}
