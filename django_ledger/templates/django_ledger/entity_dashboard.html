@@ -16,20 +16,6 @@
 
 {% block view_content %}
 
-<div id="info-modal" class="modal is-justify-content-space-between">
-  <div class="modal-background" onclick="djLedger.toggleModal('info-modal')"></div>
-  <div class="modal-card">
-    <header class="modal-card-head">
-      <p class="modal-card-title">Modal title</p>
-      <button class="delete" aria-label="close" onclick="djLedger.toggleModal('info-modal')"></button>
-    </header>
-    <section class="modal-card-body">
-      <!-- Content ... -->
-    </section>
-  </div>
-</div>
-
-    <button class="" onclick="djLedger.toggleModal('info-modal')">Hello</button>
         <div class="columns is-multiline is-centered">
         <div class="column is-half">
             {% include 'django_ledger/includes/widget_bs.html' with tx_digest=tx_digest %}
