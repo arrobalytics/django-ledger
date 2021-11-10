@@ -58,6 +58,36 @@
     </div>
 </div>
 
+                    <div id="new-feature" class="modal is-justify-content-space-between">
+  <div class="modal-background" onclick="djLedger.toggleModal('new-feature')"></div>
+    <div class="container ml-6 mt-6">
+        <br><br>
+  <div class="modal-card mt-6">
+
+    <section class="modal-card-body">
+      <div class="is-flex is-flex-direction-column">
+          <div class="columns">
+              <div class="column is-7 has-text-weight-bold">Customers</div>
+              <div class="column is-4 has-text-weight-bold">Vendors</div>
+          </div>
+          <div class="columns">
+              <div class="column is-7"><a  href="{% url 'django_ledger:invoice-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Invoice</h2></a></div>
+              <div class="column is-4"><a  href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Bill</h2></a></div>
+          </div>
+
+         {% session_entity_slug as entity_slug %}
+
+
+    </div>
+    </section>
+      <footer class="modal-card-foot">
+          <div class="container">
+<button class="delete" aria-label="close" onclick="djLedger.toggleModal('new-feature')"></button></div>
+      </footer>
+  </div>
+        </div>
+</div>
+
 
 {# A menu that renders only on mobile devices when the burger menu is opened #}
 {% elif style == 'mobile' %}
