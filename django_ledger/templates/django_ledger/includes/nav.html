@@ -3,12 +3,14 @@
 {% load cache %}
 {% load i18n %}
 {% now "Y" as current_year %}
+    <section class="section is-flex is-flex-direction-row-reverse is-align-items-center pt-5 pr-2">
 
-    <nav class="navbar is-light is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
+    <nav class="navbar is-fixed-top is-light is-flex is-flex-direction-row-reverse is-align-items-center pt-2 pr-2">
     <figure id="user-toggle" class="image is-48x48 ml-3" onclick="showCard('user-card', 'user-toggle')">
          <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
     </figure>
-    <span id="feedback-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "bi:chat-left-quote" 30 %} </span>
+
+    <span id="feedback-toggle" class="icon is-large ml-3" onclick="djLedger.toggleModal('info-modal')">{% icon "bi:chat-left-quote" 30 %} </span>
     <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "bi:info-circle" 30 %} </span>
    <a class="navbar-item" href="{% url 'django_ledger:home' %}">
                 <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
@@ -26,7 +28,7 @@
    </a>
     </div>
         <div class="navbar-item pl-3">
-     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard('feedback-card', 'feedback-toggle')">{% icon "fe:app-menu" 30 %} </span>
+     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard()">{% icon "fe:app-menu" 30 %} </span>
     </div>
     </nav>
 
@@ -53,7 +55,25 @@
 
 </div>
 
+<div id="info-modal" class="modal is-justify-content-space-between">
+  <div class="modal-background" onclick="djLedger.toggleModal('info-modal')"></div>
+    <div class="container mr-6 mt-6">
+  <div class="modal-card">
+    <header class="modal-card-head">
+      <p class="modal-card-title p-0">Feedback</p>
+      <button class="delete" aria-label="close" onclick="djLedger.toggleModal('info-modal')"></button>
+    </header>
+    <section class="modal-card-body">
+      <div class="is-flex is-align-items-center is-flex-direction-column">
+    <div class="navbar-item">{% feedback_button %}</div>
+    </div>
+    </section>
+  </div>
+        </div>
+</div>
+
 <div id="info-card" class="box nav-card">
+    <h1>test</h1>
     <div class="is-flex is-align-items-center is-flex-direction-column">
     <figure class="image is-96x96 mb-5">
          <img class="is-rounded" src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}">
@@ -62,5 +82,4 @@
     <a href="https://djangoledger.com" target="_blank"><h2 class="subtitle is-6">djangoledger.com</h2></a>
     </div>
 </div>
-
-
+    </section>

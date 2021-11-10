@@ -3,6 +3,7 @@
 //@import "../node_modules/pikaday/css/pikaday.css";
 
 $menu-item-hover-background-color: #030303 !default
+$modal-content-width: 300px !default;
 $menu-nested-list-style: none !default;
 $button-ghost-hover-color: #000000 !default
 $purple: #8A4D76;
@@ -15,8 +16,8 @@ $beige-lighter: #EFF0EB;
 $family-sans-serif: "Nunito", sans-serif;
 $grey-dark: $brown;
 $grey-light: $beige-light;
-$primary: $purple;
-$link: $pink;
+//$primary: $purple;
+//$link: $pink;
 $widescreen-enabled: false;
 $fullhd-enabled: false;
 
@@ -36,6 +37,7 @@ $input-shadow: none;
 @import "../node_modules/bulma/sass/elements/title.sass";
 @import "../node_modules/bulma/sass/form/_all.sass";
 @import "../node_modules/bulma/sass/components/navbar.sass";
+@import "../node_modules/bulma/sass/components/modal.sass";
 @import "../node_modules/bulma/sass/layout/hero.sass";
 @import "../node_modules/bulma/sass/layout/section.sass";
 @import "../node_modules/bulma/sass/components/menu.sass";
