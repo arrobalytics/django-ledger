@@ -3,8 +3,20 @@
 {% load django_ledger %}
 
 {% if not header_style %}
-    <div class="container">
-        <h1 class="title mt-3">{{ header_title }}</h1>
+    <section class="section p-0">
+    <div class="container is-fluid px-1">
+    <div class="columns">
+        <div class="columns is-3 p-2 m-4">
+            <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "ci:hamburger" 30 %} </span>
+            <button id="new-btn" class="button is-primary is-darker is-outlined is-fullwidth" onclick="showCard('info-card2', 'new-btn')">
+                    <span class="icon">{% icon 'carbon:add' 60 %}</span>
+                    <span>{% trans 'New' %}</span>
+
+                </button>
+        </div>
+        <div class="column is-12">
+            <h1 class="title mt-3">{{ header_title }}</h1>
+        </div>
         <!-- <h2 class="subtitle">{{ header_subtitle }}</h2>
         <div class="hero-body">
             <div class="container">
@@ -30,6 +42,8 @@
             </div>
             -->
     </div>
+    </div>
+    </section>
 <!-- {% else %}
     <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
         <div class="hero-body">
