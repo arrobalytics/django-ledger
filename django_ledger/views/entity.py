@@ -18,7 +18,8 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.models import EntityModel, EntityUnitModel
+from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel, TransactionModel,
+                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel)
 from django_ledger.utils import (
     get_default_entity_session_key,
     populate_default_coa, generate_sample_data, set_default_entity,
@@ -121,15 +122,48 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         entity_model: EntityModel = self.get_object()
+
+        # todo: this will need to be changed once hierarchical support is enabled.
         if self.verify_descendants:
             c = entity_model.children.count()
-            # todo: this will need to be changed once hierarchical support is enabled.
             if c != 0:
                 add_message(request,
                             level=ERROR,
                             extra_tags='is-danger',
                             message=_('Entity has %s children. Must delete children first.' % c))
                 return self.get(request, *args, **kwargs)
+
+        ItemThroughModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        PurchaseOrderModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        BillModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        InvoiceModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        TransactionModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        JournalEntryModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ).all().delete()
+
+        # entity_model.entityunitmodel_set.all().delete()
         entity_model.ledgermodel_set.all().delete()
         entity_model.items.all().delete()
         return super().delete(request, *args, **kwargs)

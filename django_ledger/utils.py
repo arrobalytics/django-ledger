@@ -44,7 +44,8 @@ def generate_random_item_id(length=20):
 
 def new_po_protocol(po_model: PurchaseOrderModel,
                     entity_slug: str or EntityModel,
-                    user_model: UserModel) -> PurchaseOrderModel:
+                    user_model: UserModel,
+                    po_date: date = None) -> PurchaseOrderModel:
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -55,6 +56,8 @@ def new_po_protocol(po_model: PurchaseOrderModel,
         raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
     po_model.po_number = generate_po_number()
+    if po_date:
+        po_model.po_date = po_date
     po_model.entity = entity_model
     return po_model
 
@@ -543,6 +546,51 @@ def create_random_entity_unit_models(entity_model, nb_units: int = 4):
     ]
 
 
+def generate_random_po(
+        entity_model: EntityModel,
+        unit_models: list,
+        user_model,
+        po_date: date,
+        po_item_models  # expense or inventory
+):
+    po_model: PurchaseOrderModel = PurchaseOrderModel()
+    po_model = new_po_protocol(
+        po_model=po_model,
+        entity_slug=entity_model,
+        user_model=user_model,
+        po_date=po_date
+    )
+    po_model.po_title = f'PO Title for {po_model.po_number}'
+
+    po_items = [
+        ItemThroughModel(
+            po_model=po_model,
+            item_model=choice(po_item_models),
+            po_quantity=round(random() * randint(1, 5), 2),
+            po_unit_cost=round(random() * randint(100, 800), 2),
+            entity_unit=choice(unit_models) if random() > .75 else None
+        ) for _ in range(randint(1, 10))
+    ]
+
+    for poi in po_items:
+        poi.clean()
+
+    po_model.update_po_state(item_list=po_items)
+
+    # mark as approved...
+    if random() > 0.3:
+        po_model.mark_as_approved()
+
+        # mark as fulfilled...
+        if random() > 0.5:
+            dt = po_date + timedelta(days=randint(0, 10))
+            po_model.mark_as_fulfilled(date=dt)
+
+    po_model.clean()
+    po_model.save()
+    po_model.itemthroughmodel_set.bulk_create(po_items)
+
+
 def generate_sample_data(entity_model: str or EntityModel,
                          user_model,
                          start_dt: datetime,
@@ -647,6 +695,15 @@ def generate_sample_data(entity_model: str or EntityModel,
                 user_model=user_model,
                 expense_models=expense_models
             )
+
+            if random() > .40:
+                generate_random_po(
+                    entity_model=entity_model,
+                    unit_models=unit_models,
+                    user_model=user_model,
+                    po_date=issue_dt,
+                    po_item_models=inventory_models
+                )
 
         else:
             generate_random_invoice(

@@ -5,13 +5,17 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+import datetime
 from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
+from typing import Tuple, List, Union
 from uuid import uuid4
 
+from django.core.validators import MinLengthValidator
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, QuerySet
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
@@ -50,6 +54,7 @@ class PurchaseOrderModelManager(models.Manager):
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                                  MarkdownNotesMixIn):
+    PO_MIN_TITLE_LENGTH = 5
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -63,7 +68,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
     po_date = models.DateField(verbose_name=_('Purchase Order Date'))
-    po_title = models.CharField(max_length=250, verbose_name=_('Purchase Order Title'))
+    po_title = models.CharField(max_length=250,
+                                verbose_name=_('Purchase Order Title'),
+                                validators=[
+                                    MinLengthValidator(limit_value=PO_MIN_TITLE_LENGTH,
+                                                       message=_(
+                                                           f'PO Title must be greater than {PO_MIN_TITLE_LENGTH}'))
+                                ])
     po_status = models.CharField(max_length=10, choices=PO_STATUS, default=PO_STATUS[0][0])
     po_amount = models.DecimalField(default=0, decimal_places=2, max_digits=20, verbose_name=_('Purchase Order Amount'))
     po_amount_received = models.DecimalField(default=0,
@@ -99,34 +110,68 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if self.fulfilled and not self.fulfillment_date:
             self.fulfillment_date = localdate()
 
-    def get_po_item_data(self, queryset=None) -> tuple:
+    def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
             queryset = self.itemthroughmodel_set.all()
+
         return queryset, queryset.aggregate(
             amount_due=Sum('po_total_amount'),
             total_paid=Sum('bill_model__amount_paid'),
             total_items=Count('uuid')
         )
 
-    def update_po_state(self, queryset=None, item_list: list = None) -> None or tuple:
-        if item_list:
-            self.amount_due = Decimal.from_float(round(sum(a.po_total_amount for a in item_list), 2))
-            return
+    def update_po_state(self,
+                        item_queryset: QuerySet = None,
+                        item_list: List[ItemThroughModel] = None) -> Union[Tuple, None]:
 
-        # todo: explore if queryset can be passed from PO Update View...
-        queryset, item_data = self.get_po_item_data(queryset=queryset)
-        qs_values = queryset.values(
-            'po_total_amount', 'po_item_status'
-        )
-        total_received = sum(
-            i['po_total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
-        )
-        total_po_amount = sum(
-            i['po_total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
-        )
-        self.po_amount = total_po_amount
-        self.po_amount_received = total_received
-        return queryset, item_data
+        if item_queryset and item_list:
+            raise ValidationError('Either queryset or list can be used.')
+
+        if item_list:
+            self.po_amount = Decimal.from_float(
+                round(sum(a.po_total_amount for a in item_list
+                          if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2))
+
+            self.po_amount_received = Decimal.from_float(
+                round(sum(a.po_total_amount for a in item_list
+                          if a.po_item_status == ItemThroughModel.STATUS_RECEIVED), 2))
+        else:
+
+            # todo: explore if queryset can be passed from PO Update View...
+            item_queryset, item_data = self.get_po_item_data(queryset=item_queryset)
+            qs_values = item_queryset.values(
+                'po_total_amount', 'po_item_status'
+            )
+            total_po_amount = sum(
+                i['po_total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
+            )
+            total_received = sum(
+                i['po_total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
+            )
+            self.po_amount = total_po_amount
+            self.po_amount_received = total_received
+            return item_queryset, item_data
+
+    def mark_as_approved(self, commit: bool = False):
+        self.po_status = self.PO_STATUS_APPROVED
+        if commit:
+            self.save(update_fields=[
+                'po_status',
+                'updated'
+            ])
+
+    def mark_as_fulfilled(self, date: datetime.date = None, commit=False):
+        self.po_status = self.PO_STATUS_APPROVED
+        if date:
+            self.fulfillment_date = date
+        if commit:
+            update_fields = [
+                'fulfilled',
+                'updated'
+            ]
+            if date:
+                update_fields += ['fulfillment_date']
+            self.save(update_fields=update_fields)
 
 
 class PurchaseOrderModel(PurchaseOrderModelAbstract):
