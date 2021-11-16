@@ -529,6 +529,15 @@ class AccruableItemMixIn(models.Model):
         if not self.date:
             self.date = localdate()
 
+        if self.cash_account_id is None:
+            raise ValidationError('Must provide a cash account.')
+
+        if self.accrue:
+            if not self.prepaid_account_id:
+                raise ValidationError(f'Accrued {self.__class__.__name__} must define a Prepaid Expense account.')
+            if not self.unearned_account_id:
+                raise ValidationError(f'Accrued {self.__class__.__name__} must define an Unearned Income account.')
+
         if any([
             self.cash_account_id is not None,
             self.prepaid_account_id is not None,
@@ -568,9 +577,10 @@ class AccruableItemMixIn(models.Model):
             if not self.paid_date:
                 self.paid_date = today
             if self.paid_date > today:
-                raise ValidationError('Cannot pay invoice in the future.')
+                raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
             if self.paid_date < self.date:
-                raise ValidationError('Cannot pay invoice before invoice date.')
+                raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+                                      f' date {self.date}.')
         else:
             self.paid_date = None
 

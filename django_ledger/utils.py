@@ -551,7 +551,9 @@ def generate_random_po(
         unit_models: list,
         user_model,
         po_date: date,
-        po_item_models  # expense or inventory
+        po_item_models,
+        vendor_models,
+        accounts_by_role
 ):
     po_model: PurchaseOrderModel = PurchaseOrderModel()
     po_model = new_po_protocol(
@@ -577,18 +579,62 @@ def generate_random_po(
 
     po_model.update_po_state(item_list=po_items)
 
+    po_model.clean()
+    po_model.save()
+    po_items = po_model.itemthroughmodel_set.bulk_create(po_items)
+
     # mark as approved...
     if random() > 0.3:
-        po_model.mark_as_approved()
+        po_model.mark_as_approved(commit=True)
 
         # mark as fulfilled...
         if random() > 0.5:
-            dt = po_date + timedelta(days=randint(0, 10))
-            po_model.mark_as_fulfilled(date=dt)
+            fulfilled_dt = po_date + timedelta(days=randint(4, 10))
+            bill_dt = po_date + timedelta(days=randint(1, 3))
+            bill_model: BillModel = BillModel(
+                bill_number=f'Bill for {po_model.po_number}',
+                date=bill_dt,
+                vendor=choice(vendor_models))
+            ledger_model, bill_model = new_bill_protocol(
+                bill_model=bill_model,
+                entity_slug=entity_model.slug,
+                user_model=user_model
+            )
+            bill_model.amount_due = po_model.po_amount
+            bill_model.paid = True
+            bill_model.paid_date = bill_dt + timedelta(days=1)
+            bill_model.cash_account = choice(accounts_by_role[ASSET_CA_CASH])
+            bill_model.prepaid_account = choice(accounts_by_role[ASSET_CA_PREPAID])
+            bill_model.unearned_account = choice(accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
+            bill_model.clean()
+            bill_model.update_state()
+            bill_model.save()
+            for po_i in po_items:
+                po_i.total_amount = po_i.po_total_amount
+                po_i.quantity = po_i.po_quantity
+                po_i.unit_cost = po_i.po_unit_cost
+                po_i.bill_model = bill_model
+                po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
+                po_i.clean()
+                print(po_i)
+            ItemThroughModel.objects.bulk_update(
+                po_items,
+                fields=[
+                    'po_total_amount',
+                    'total_amount',
+                    'po_quantity',
+                    'quantity',
+                    'po_unit_cost',
+                    'unit_cost',
+                    'bill_model',
+                    'po_item_status'])
+            bill_model.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_model.slug,
+                # itemthrough_queryset=po_items
+            )
 
-    po_model.clean()
-    po_model.save()
-    po_model.itemthroughmodel_set.bulk_create(po_items)
+            po_model.mark_as_fulfilled(date=fulfilled_dt, commit=True, po_items=po_items)
 
 
 def generate_sample_data(entity_model: str or EntityModel,
@@ -629,13 +675,13 @@ def generate_sample_data(entity_model: str or EntityModel,
         raise ValidationError(
             f'Cannot populate random data on {entity_model.name} because it already has existing Transactions')
 
-    accounts = AccountModel.on_coa.for_entity_available(
+    account_models = AccountModel.on_coa.for_entity_available(
         entity_slug=entity_model.slug,
         user_model=user_model
     ).order_by('role')
 
     accounts_by_role = {
-        g: list(v) for g, v in groupby(accounts, key=lambda a: a.role)
+        g: list(v) for g, v in groupby(account_models, key=lambda a: a.role)
     }
 
     vendor_models = create_random_vendors(entity_model, fk)
@@ -702,7 +748,9 @@ def generate_sample_data(entity_model: str or EntityModel,
                     unit_models=unit_models,
                     user_model=user_model,
                     po_date=issue_dt,
-                    po_item_models=inventory_models
+                    po_item_models=inventory_models,
+                    vendor_models=vendor_models,
+                    accounts_by_role=accounts_by_role
                 )
 
         else:

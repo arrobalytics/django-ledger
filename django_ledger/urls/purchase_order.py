@@ -24,10 +24,10 @@ urlpatterns = [
     path('<slug:entity_slug>/update/<uuid:po_pk>/update-items/',
          views.PurchaseOrderModelUpdateView.as_view(update_items=True),
          name='po-update-items'),
+    path('<slug:entity_slug>/update/<uuid:po_pk>/mark-as-fulfilled/',
+         views.PurchaseOrderModelUpdateView.as_view(mark_as_fulfilled=True),
+         name='po-mark-as-fulfilled'),
     path('<slug:entity_slug>/delete/<uuid:po_pk>/',
          views.PurchaseOrderModelDeleteView.as_view(),
          name='po-delete'),
-    # path('<slug:entity_slug>/mark-as-paid/<uuid:bill_pk>/',
-    #      views.BillModelMarkPaidView.as_view(),
-    #      name='bill-mark-paid'),
 ]

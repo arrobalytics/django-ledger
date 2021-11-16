@@ -101,8 +101,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         return f'PO Model: {self.po_number} | {self.get_po_status_display()}'
 
     def clean(self):
+        if self.fulfilled and self.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
+            raise ValidationError('Can only fulfill POs thjat have been approved.')
+
         if not self.po_number:
             self.po_number = generate_po_number()
+
         if self.fulfillment_date:
             self.fulfilled = True
         if self.fulfilled:
@@ -112,7 +116,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
-            queryset = self.itemthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.all().select_related('bill_model')
 
         return queryset, queryset.aggregate(
             amount_due=Sum('po_total_amount'),
@@ -152,25 +156,58 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             self.po_amount_received = total_received
             return item_queryset, item_data
 
+    def is_approved(self):
+        return self.po_status == PurchaseOrderModel.PO_STATUS_APPROVED
+
+    def can_mark_as_fulfilled(self):
+        self.is_approved() and not self.fulfilled
+
     def mark_as_approved(self, commit: bool = False):
         self.po_status = self.PO_STATUS_APPROVED
+        self.clean()
         if commit:
             self.save(update_fields=[
                 'po_status',
                 'updated'
             ])
 
-    def mark_as_fulfilled(self, date: datetime.date = None, commit=False):
-        self.po_status = self.PO_STATUS_APPROVED
-        if date:
-            self.fulfillment_date = date
+    def mark_as_fulfilled(self,
+                          date: datetime.date = None,
+                          po_items: Union[QuerySet, List[ItemThroughModel]] = None,
+                          commit=False):
+        self.clean()
+
+        if not date and not self.po_date:
+            date = localdate()
+
+        elif date and self.po_date:
+            if date < self.po_date:
+                raise ValidationError(f'Cannot fulfill PO with date earlier than PO date {self.po_date}')
+
+        if not po_items:
+            po_items, agg = self.get_po_item_data()
+
+        bill_models = [i.bill_model for i in po_items]
+
+        all_items_billed = all(bill_models)
+        if not all_items_billed:
+            raise ValidationError('All items must be billed before PO can be fulfilled.')
+
+        all_bills_paid = all(b.paid for b in bill_models)
+        if not all_bills_paid:
+            raise ValidationError('All Bills must be paid before PO can be fulfilled.')
+
+        self.fulfillment_date = date
+        self.fulfilled = True
+
+        self.clean()
+
         if commit:
             update_fields = [
                 'fulfilled',
+                'fulfillment_date',
                 'updated'
             ]
-            if date:
-                update_fields += ['fulfillment_date']
             self.save(update_fields=update_fields)
 
 

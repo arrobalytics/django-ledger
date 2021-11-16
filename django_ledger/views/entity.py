@@ -73,7 +73,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
             generate_sample_data(
                 entity_model=entity.slug,
                 user_model=self.request.user,
-                start_dt=localtime() - timedelta(days=30 * 6),
+                start_dt=localtime() - timedelta(days=365),
                 days_fw=30 * 9,
                 tx_quantity=50
             )
