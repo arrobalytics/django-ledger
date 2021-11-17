@@ -6,7 +6,9 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from calendar import monthrange
+from collections import defaultdict
 from datetime import date
+from decimal import Decimal
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple
@@ -24,10 +26,79 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io import IOMixIn
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
+from django_ledger.models.utils import LazyImporter
 
 UserModel = get_user_model()
+lazy_loader = LazyImporter()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
+
+
+def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
+    counted_map = {
+        (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
+            'count': i['quantity_onhand'],
+            'value': i['value_onhand'],
+            'avg_cost': i['cost_average']
+            if i['quantity_onhand'] else Decimal('0.00')
+        } for i in counted_qs
+    }
+    recorded_map = {
+        (i['uuid'], i['name'], i['uom__name']): {
+            'count': i['inventory_received'] or Decimal.from_float(0.0),
+            'value': i['inventory_received_value'] or Decimal.from_float(0.0),
+            'avg_cost': i['inventory_received_value'] / i['inventory_received']
+            if i['inventory_received'] else Decimal('0.00')
+        } for i in recorded_qs
+    }
+
+    # todo: change this to use a groupby then sum...
+    item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
+    adjustment = defaultdict(lambda: {
+        # keeps track of inventory recounts...
+        'counted': Decimal('0.000'),
+        'counted_value': Decimal('0.00'),
+        'counted_avg_cost': Decimal('0.00'),
+
+        # keeps track of inventory level...
+        'recorded': Decimal('0.000'),
+        'recorded_value': Decimal('0.00'),
+        'recorded_avg_cost': Decimal('0.00'),
+
+        # keeps track of necessary inventory adjustment...
+        'count_diff': Decimal('0.000'),
+        'value_diff': Decimal('0.00'),
+        'avg_cost_diff': Decimal('0.00')
+    })
+
+    for uid in item_ids:
+
+        count_data = counted_map.get(uid)
+        if count_data:
+            avg_cost = count_data['value'] / count_data['count'] if count_data['count'] else Decimal('0.000')
+
+            adjustment[uid]['counted'] = count_data['count']
+            adjustment[uid]['counted_value'] = count_data['value']
+            adjustment[uid]['counted_avg_cost'] = avg_cost
+
+            adjustment[uid]['count_diff'] += count_data['count']
+            adjustment[uid]['value_diff'] += count_data['value']
+            adjustment[uid]['avg_cost_diff'] += avg_cost
+
+        recorded_data = recorded_map.get(uid)
+        if recorded_data:
+            counted = recorded_data['count']
+            avg_cost = recorded_data['value'] / counted if recorded_data['count'] else Decimal('0.000')
+
+            adjustment[uid]['recorded'] = counted
+            adjustment[uid]['recorded_value'] = recorded_data['value']
+            adjustment[uid]['recorded_avg_cost'] = avg_cost
+
+            adjustment[uid]['count_diff'] -= counted
+            adjustment[uid]['value_diff'] -= recorded_data['value']
+            adjustment[uid]['avg_cost_diff'] -= avg_cost
+
+    return adjustment
 
 
 class EntityReportManager:
@@ -221,6 +292,53 @@ class EntityModelAbstract(NodeTreeMixIn,
 
     def get_fy_start_month(self) -> int:
         return self.fy_start_month
+
+    def recorded_inventory(self, user_model, queryset=None, as_values=True):
+        if not queryset:
+            recorded_qs = self.items.inventory(
+                entity_slug=self.slug,
+                user_model=user_model
+            )
+        else:
+            recorded_qs = queryset
+        if as_values:
+            return recorded_qs.values(
+                'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
+        return recorded_qs
+
+    def update_inventory(self, user_model, commit: bool = False):
+
+        ItemThroughModel = lazy_loader.get_item_through_model()
+        ItemModel = lazy_loader.get_item_model()
+
+        counted_qs = ItemThroughModel.objects.inventory_count(
+            entity_slug=self.slug,
+            user_model=user_model
+        )
+        recorded_qs = self.recorded_inventory(user_model=user_model, as_values=False)
+        recorded_qs_values = self.recorded_inventory(
+            user_model=user_model,
+            queryset=recorded_qs,
+            as_values=True)
+
+        adj = inventory_adjustment(counted_qs, recorded_qs_values)
+
+        updated_items = list()
+        for (uuid, name, uom), i in adj.items():
+            item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
+            item_model.inventory_received = i['counted']
+            item_model.inventory_received_value = i['counted_value']
+            updated_items.append(item_model)
+
+        if commit:
+            ItemModel.objects.bulk_update(updated_items,
+                                          fields=[
+                                              'inventory_received',
+                                              'inventory_received_value',
+                                              'updated'
+                                          ])
+
+        return adj, counted_qs, recorded_qs
 
     def clean(self):
         if not self.name:

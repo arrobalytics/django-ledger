@@ -22,7 +22,9 @@
                 <td>{{ po.po_title }}</td>
                 <td>{{ po.po_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
-                <td>{% if po.fulfillment_date %}{{ po.fulfillment_date }}{% endif %}</td>
+                <td class="has-text-success">{% if po.fulfilled %}{{ po.fulfillment_date }}{% else %}
+                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                {% endif %}</td>
                 <td>{% currency_symbol %}{{ po.po_amount | currency_format }}</td>
                 <td class="has-text-centered">
                     <div class="dropdown is-right is-hoverable" id="bill-action-{{ po.uuid }}">

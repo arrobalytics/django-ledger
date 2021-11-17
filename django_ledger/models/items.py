@@ -12,11 +12,13 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
-from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol
+from django_ledger.settings import (DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol,
+                                    DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -107,7 +109,7 @@ class ItemModelManager(models.Manager):
 
     def inventory(self, entity_slug: str, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(for_inventory=True)
+        return qs.filter(for_inventory=True).select_related('uom')
 
     def for_bill(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
@@ -237,7 +239,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def is_inventory(self):
         return self.for_inventory is True
 
-    def get_average_cost(self):
+    def get_average_cost(self) -> Decimal:
         if self.inventory_received:
             return self.inventory_received_value / self.inventory_received
         return Decimal('0.00')
@@ -389,16 +391,29 @@ class ItemThroughModelManager(models.Manager):
         )
 
         return qs.values('item_model_id', 'item_model__name', 'item_model__uom__name').annotate(
-            quantity_received=Sum('quantity', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
-            cost_received=Sum('total_amount', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)),
-            quantity_invoiced=Sum('quantity', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
-            revenue_invoiced=Sum('total_amount', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)),
+            quantity_received=Coalesce(
+                Sum('quantity', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)), Value(0.0),
+                output_field=DecimalField()),
+            cost_received=Coalesce(
+                Sum('total_amount', filter=Q(bill_model__isnull=False) & Q(invoice_model__isnull=True)), Value(0.0),
+                output_field=DecimalField()),
+            quantity_invoiced=Coalesce(
+                Sum('quantity', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)), Value(0.0),
+                output_field=DecimalField()),
+            revenue_invoiced=Coalesce(
+                Sum('total_amount', filter=Q(invoice_model__isnull=False) & Q(bill_model__isnull=True)), Value(0.0),
+                output_field=DecimalField()),
         ).annotate(
-            quantity_onhand=F('quantity_received') - F('quantity_invoiced'),
-            cost_average=ExpressionWrapper(F('cost_received') / F('quantity_received'),
-                                           output_field=DecimalField(decimal_places=3)),
-            value_onhand=ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
-                                           output_field=DecimalField(decimal_places=3))
+            quantity_onhand=Coalesce(F('quantity_received') - F('quantity_invoiced'), Value(0.0),
+                                     output_field=DecimalField()),
+            cost_average=Coalesce(
+                ExpressionWrapper(F('cost_received') / F('quantity_received'),
+                                  output_field=DecimalField(decimal_places=3)), Value(0.0),
+                output_field=DecimalField()
+            ),
+            value_onhand=Coalesce(
+                ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
+                                  output_field=DecimalField(decimal_places=3)), Value(0.0), output_field=DecimalField())
         )
 
     def is_orphan(self, entity_slug, user_model):
@@ -500,17 +515,31 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Invoice Through Model: {self.uuid} | {status_display} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {status_display} | {amount}'
 
-    def update_total_amount(self):
-        total_amount = round(self.quantity * self.unit_cost, 2)
-        if self.po_model_id:
-            if self.quantity > self.po_quantity:
-                raise ValidationError(f'Billed quantity cannot be greater than PO quantity {self.po_quantity}')
+    def clean_total_amount(self):
+        qty = self.quantity
+        if not isinstance(qty, Decimal):
+            qty = Decimal.from_float(qty)
+
+        uc = self.unit_cost
+        if not isinstance(uc, Decimal):
+            uc = Decimal.from_float(uc)
+
+        total_amount = uc * qty
+
+        if self.po_total_amount > 0:
             if total_amount > self.po_total_amount:
-                raise ValidationError(f'Item amount cannot exceed authorized PO amount {self.po_total_amount}')
+                # checks if difference is within tolerance...
+                diff = total_amount - self.po_total_amount
+                if diff > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+                    raise ValidationError(
+                        f'Difference between PO Amount {self.po_total_amount} and Bill {total_amount} '
+                        f'exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}')
+                self.total_amount = self.po_total_amount
+                return
         self.total_amount = total_amount
 
-    def update_po_total_amount(self):
-        self.po_total_amount = round(self.po_quantity * self.po_unit_cost, 2)
+    def clean_po_total_amount(self):
+        self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -539,8 +568,16 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return ' is-warning'
 
     def clean(self):
-        self.update_po_total_amount()
-        self.update_total_amount()
+        self.clean_po_total_amount()
+        self.clean_total_amount()
+
+        if self.po_model_id:
+            if self.quantity > self.po_quantity:
+                raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
+                                      f'PO quantity {self.po_quantity}')
+            if self.total_amount > self.po_total_amount:
+                raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
+                                      f'PO amount {self.po_total_amount}')
 
 
 class ItemThroughModel(ItemThroughModelAbstract):

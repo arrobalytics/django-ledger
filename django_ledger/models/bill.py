@@ -159,7 +159,8 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
-            self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            #self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            self.amount_due = sum(a.total_amount for a in item_list)
             return
         queryset, item_data = self.get_bill_item_data(queryset=queryset)
         self.amount_due = item_data['amount_due']

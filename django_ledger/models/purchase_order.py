@@ -132,13 +132,17 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             raise ValidationError('Either queryset or list can be used.')
 
         if item_list:
-            self.po_amount = Decimal.from_float(
-                round(sum(a.po_total_amount for a in item_list
-                          if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2))
+            # self.po_amount = Decimal.from_float(
+            #     round(sum(a.po_total_amount for a in item_list
+            #               if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2))
+            self.po_amount = sum(
+                a.po_total_amount for a in item_list if a.po_item_status != ItemThroughModel.STATUS_CANCELED)
 
-            self.po_amount_received = Decimal.from_float(
-                round(sum(a.po_total_amount for a in item_list
-                          if a.po_item_status == ItemThroughModel.STATUS_RECEIVED), 2))
+            # self.po_amount_received = Decimal.from_float(
+            #     round(sum(a.po_total_amount for a in item_list
+            #               if a.po_item_status == ItemThroughModel.STATUS_RECEIVED), 2))
+            self.po_amount_received = sum(
+                a.po_total_amount for a in item_list if a.po_item_status == ItemThroughModel.STATUS_RECEIVED)
         else:
 
             # todo: explore if queryset can be passed from PO Update View...

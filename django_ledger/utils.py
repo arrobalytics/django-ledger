@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date
 from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
@@ -12,18 +13,18 @@ from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localtime, localdate
 
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (
-    EntityModel, CustomerModel, InvoiceModel, ItemThroughModel,
-    UnitOfMeasureModel, ItemModel, LedgerModel, VendorModel, TransactionModel, AccruableItemMixIn,
-    EntityUnitModel, AccountModel, BankAccountModel, BillModel, PurchaseOrderModel,
-    generate_po_number)
-from django_ledger.models.bill import generate_bill_number
+from django_ledger.io.roles import (ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
+                                    COGS, ASSET_CA_INVENTORY, INCOME_SALES)
+from django_ledger.models import (AccruableItemMixIn, generate_po_number, PurchaseOrderModel, EntityModel,
+                                  LedgerModel, BankAccountModel, AccountModel, VendorModel, CustomerModel,
+                                  UnitOfMeasureModel, ItemModel, ItemThroughModel, TransactionModel)
+from django_ledger.models.bill import generate_bill_number, BillModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
-from django_ledger.models.invoice import generate_invoice_number
-from django_ledger.models.unit import create_entity_unit_slug
+from django_ledger.models.invoice import generate_invoice_number, InvoiceModel
+from django_ledger.models.unit import create_entity_unit_slug, EntityUnitModel
 
 UserModel = get_user_model()
+
 FAKER_IMPORTED = False
 
 SKU_UPC_CHARS = ascii_uppercase + digits
@@ -319,7 +320,7 @@ def generate_random_products(entity_model: EntityModel,
             entity=entity_model,
             for_inventory=False,
             is_product_or_service=True,
-            earnings_account=choice(accounts_gb['in_sales']),
+            earnings_account=choice(accounts_gb[INCOME_SALES]),
         ) for _ in range(product_count)
     ]
 
@@ -343,9 +344,10 @@ def generate_random_inventories(entity_model: EntityModel,
             item_id=generate_random_item_id(),
             entity=entity_model,
             for_inventory=True,
-            is_product_or_service=False,
-            cogs_account=choice(accounts_gb['ex_cogs']),
-            inventory_account=choice(accounts_gb['asset_ca_inv']),
+            is_product_or_service=True if random() > 0.6 else False,
+            earnings_account=choice(accounts_gb[INCOME_SALES]),
+            cogs_account=choice(accounts_gb[COGS]),
+            inventory_account=choice(accounts_gb[ASSET_CA_INVENTORY]),
         ) for _ in range(inv_count)
     ]
 
@@ -416,18 +418,39 @@ def generate_random_invoice(
         entity_slug=entity_model,
         user_model=user_model)
 
-    invoice_items = [
-        ItemThroughModel(
-            invoice_model=invoice_model,
-            item_model=choice(product_models),
-            quantity=round(random() * randint(1, 5), 2),
-            unit_cost=round(random() * randint(100, 999), 2),
-            entity_unit=choice(unit_models) if random() > .75 else None
-        ) for _ in range(randint(1, 10))
-    ]
+    invoice_items = list()
 
-    for ii in invoice_items:
-        ii.clean()
+    for i in range(randint(1, 10)):
+        item_model: ItemModel = choice(product_models)
+        quantity = Decimal.from_float(round(random() * randint(1, 5), 2))
+        entity_unit = choice(unit_models) if random() > .75 else None
+        margin = Decimal(random() * 0.5 + 1)
+        avg_cost = item_model.get_average_cost()
+        unit_cost = round(random() * randint(100, 999), 2)
+
+        if item_model.for_inventory and item_model.is_product_or_service:
+            if item_model.inventory_received is not None and item_model.inventory_received > 0.0:
+
+                if quantity > item_model.inventory_received:
+                    quantity = item_model.inventory_received
+
+                    # reducing inventory qty...
+                item_model.inventory_received -= quantity
+                item_model.inventory_received_value -= avg_cost * quantity
+                unit_cost = avg_cost * margin
+            else:
+                quantity = 0.0
+                unit_cost = 0.0
+
+        itm = ItemThroughModel(
+            invoice_model=invoice_model,
+            item_model=item_model,
+            quantity=quantity,
+            unit_cost=unit_cost,
+            entity_unit=entity_unit
+        )
+        itm.clean()
+        invoice_items.append(itm)
 
     invoice_model.update_amount_due(item_list=invoice_items)
     invoice_model.amount_paid = Decimal.from_float(round(random() * float(invoice_model.amount_due), 2))
@@ -553,8 +576,7 @@ def generate_random_po(
         po_date: date,
         po_item_models,
         vendor_models,
-        accounts_by_role
-):
+        accounts_by_role):
     po_model: PurchaseOrderModel = PurchaseOrderModel()
     po_model = new_po_protocol(
         po_model=po_model,
@@ -568,7 +590,7 @@ def generate_random_po(
         ItemThroughModel(
             po_model=po_model,
             item_model=choice(po_item_models),
-            po_quantity=round(random() * randint(1, 5), 2),
+            po_quantity=round(random() * randint(3, 10), 2),
             po_unit_cost=round(random() * randint(100, 800), 2),
             entity_unit=choice(unit_models) if random() > .75 else None
         ) for _ in range(randint(1, 10))
@@ -589,8 +611,13 @@ def generate_random_po(
 
         # mark as fulfilled...
         if random() > 0.5:
+            ldt = localdate()
             fulfilled_dt = po_date + timedelta(days=randint(4, 10))
             bill_dt = po_date + timedelta(days=randint(1, 3))
+
+            if bill_dt > ldt:
+                bill_dt = ldt
+
             bill_model: BillModel = BillModel(
                 bill_number=f'Bill for {po_model.po_number}',
                 date=bill_dt,
@@ -602,10 +629,22 @@ def generate_random_po(
             )
             bill_model.amount_due = po_model.po_amount
             bill_model.paid = True
-            bill_model.paid_date = bill_dt + timedelta(days=1)
+
+            paid_date = bill_dt + timedelta(days=1)
+            if paid_date > ldt:
+                paid_date = ldt
+            bill_model.paid_date = paid_date
+
             bill_model.cash_account = choice(accounts_by_role[ASSET_CA_CASH])
             bill_model.prepaid_account = choice(accounts_by_role[ASSET_CA_PREPAID])
             bill_model.unearned_account = choice(accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
+            bill_model.terms = choice([
+                BillModel.TERMS_ON_RECEIPT,
+                BillModel.TERMS_NET_30,
+                BillModel.TERMS_NET_60,
+                BillModel.TERMS_NET_60,
+                # BillModel.TERMS_NET_90_PLUS,
+            ])
             bill_model.clean()
             bill_model.update_state()
             bill_model.save()
@@ -616,7 +655,6 @@ def generate_random_po(
                 po_i.bill_model = bill_model
                 po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
                 po_i.clean()
-                print(po_i)
             ItemThroughModel.objects.bulk_update(
                 po_items,
                 fields=[
@@ -642,9 +680,7 @@ def generate_sample_data(entity_model: str or EntityModel,
                          start_dt: datetime,
                          days_fw: int,
                          cap_contribution: float or int = 20000,
-                         # income_tx_avg: float or int = 2000,
-                         # expense_tx_avg: float or int = 1000,
-                         tx_quantity: int = 5,
+                         tx_quantity: int = 25,
                          is_accruable_probability: float = 0.2,
                          is_paid_probability: float = 0.90):
     try:
@@ -709,6 +745,8 @@ def generate_sample_data(entity_model: str or EntityModel,
                                                    accounts_gb=accounts_by_role)
 
     loc_time = localtime()
+    count_inventory = True
+
     for i in range(tx_quantity):
 
         issue_dttm = start_dt + timedelta(days=randint(0, days_fw))
@@ -727,7 +765,8 @@ def generate_sample_data(entity_model: str or EntityModel,
         issue_dt = issue_dttm.date()
         paid_dt = paid_dttm.date() if paid_dttm else None
 
-        if i % 2 == 0:
+        # process the first half adding bills and POs...
+        if i < tx_quantity / 2:
             generate_random_bill(
                 entity_model=entity_model,
                 unit_models=unit_models,
@@ -754,6 +793,17 @@ def generate_sample_data(entity_model: str or EntityModel,
                 )
 
         else:
+            if count_inventory:
+                entity_model.update_inventory(
+                    user_model=user_model,
+                    commit=True
+                )
+                count_inventory = False
+                product_models = ItemModel.objects.products_and_services(
+                    entity_slug=entity_model.slug,
+                    user_model=user_model
+                )
+
             generate_random_invoice(
                 entity_model=entity_model,
                 unit_models=unit_models,
@@ -767,6 +817,11 @@ def generate_sample_data(entity_model: str or EntityModel,
                 user_model=user_model,
                 product_models=product_models
             )
+
+        ItemModel.objects.bulk_update(product_models, fields=[
+            'inventory_received',
+            'inventory_received_value'
+        ])
 
 
 def accruable_net_summary(queryset: QuerySet) -> dict:
