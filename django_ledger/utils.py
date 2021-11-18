@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, date
-from datetime import datetime, timedelta, date
 from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
@@ -18,9 +17,8 @@ from django_ledger.io.roles import (ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_C
 from django_ledger.models import (AccruableItemMixIn, generate_po_number, PurchaseOrderModel, EntityModel,
                                   LedgerModel, BankAccountModel, AccountModel, VendorModel, CustomerModel,
                                   UnitOfMeasureModel, ItemModel, ItemThroughModel, TransactionModel)
-from django_ledger.models.bill import generate_bill_number, BillModel
+from django_ledger.models import generate_invoice_number, InvoiceModel, generate_bill_number, BillModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
-from django_ledger.models.invoice import generate_invoice_number, InvoiceModel
 from django_ledger.models.unit import create_entity_unit_slug, EntityUnitModel
 
 UserModel = get_user_model()
@@ -183,10 +181,6 @@ def set_default_entity(request, entity_model: EntityModel):
             'entity_slug': entity_model.slug,
             'entity_name': entity_model.name,
         }
-
-
-def set_default_unit(request, entity_model: EntityModel):
-    pass
 
 
 def get_default_entity_from_session(request):
@@ -603,6 +597,8 @@ def generate_random_po(
 
     po_model.clean()
     po_model.save()
+
+    # pylint: disable=no-member
     po_items = po_model.itemthroughmodel_set.bulk_create(po_items)
 
     # mark as approved...
