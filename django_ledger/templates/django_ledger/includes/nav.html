@@ -28,7 +28,7 @@
    </a>
     </div>
         <div class="navbar-item pl-3">
-     <span id="app-toggle" class="icon is-large ml-3" onclick="showCard()">{% icon "fe:app-menu" 30 %} </span>
+            <a href="#" class="has-text-black"><span id="app-toggle" class="icon is-large ml-3" onclick="djLedger.toggleModal('nav-menu')">{% icon "fe:app-menu" 30 %} </span></a>
     </div>
     </nav>
 
@@ -124,15 +124,68 @@
   </div>
         </div>
 </div>
+{# code for new button Modal#}
+        <div id="new-feature" class="modal is-justify-content-space-between">
+  <div class="modal-background" onclick="djLedger.toggleModal('new-feature')"></div>
+    <div class="container ml-6 mt-6">
+        <br><br>
+  <div class="modal-card mt-6">
 
-<div id="info-card" class="box nav-card">
-    <h1>test</h1>
-    <div class="is-flex is-align-items-center is-flex-direction-column">
-    <figure class="image is-96x96 mb-5">
-         <img class="is-rounded" src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}">
-    </figure>
-    <h1 class="title is-4">v {% current_version %}</h1>
-    <a href="https://djangoledger.com" target="_blank"><h2 class="subtitle is-6">djangoledger.com</h2></a>
+    <section class="modal-card-body">
+      <div class="is-flex is-flex-direction-column">
+          <div class="columns">
+              <div class="column is-7 has-text-weight-bold">Customers</div>
+              <div class="column is-4 has-text-weight-bold">Vendors</div>
+          </div>
+          <div class="columns">
+              {% session_entity_slug as entity_slug %}
+              <div class="column is-7"><a  href="{% url 'django_ledger:invoice-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Invoice</h2></a></div>
+              <div class="column is-4"><a  href="{% url 'django_ledger:bill-create' entity_slug=entity_slug %}"><h2 class="subtitle is-6">Bill</h2></a></div>
+          </div>
     </div>
+    </section>
+      <footer class="modal-card-foot">
+          <div class="container has-text-right">
+<button class="delete" aria-label="close" onclick="djLedger.toggleModal('new-feature')"></button></div>
+      </footer>
+  </div>
+        </div>
 </div>
+
+{# Code for Nav Menu Modal#}
+
+        <div id="nav-menu" class="modal">
+  <div class="modal-background" onclick="djLedger.toggleModal('nav-menu')"></div>
+    <div class="container ml-0">
+
+  <div class="modal-card">
+<header class="modal-card-head has-background-white">
+
+    <a href="#" class="has-text-black"><span id="app-toggle" class="icon is-large" onclick="djLedger.toggleModal('nav-menu')">{% icon "fe:app-menu" 30 %} </span></a>
+
+    </header>
+    <section class="modal-card-body">
+      <div class="is-flex is-flex-direction-column">
+      <div class="columns">
+          <span id="app-toggle" class="icon is-large" >{% icon "mdi:barn" 30 %}</span>
+          <div class=" has-text-weight-bold has-text-justified p-4">Departments</div>
+     </div>
+      <div class="columns">
+          <span id="app-toggle" class="icon is-large" >{% icon "bytesize:settings" 30 %}</span>
+          <div class=" has-text-weight-bold has-text-justified p-4">Settings</div>
+     </div>
+      <div class="columns">
+          <span id="app-toggle" class="icon is-large" >{% icon "bi:tools" 30 %}</span>
+          <div class=" has-text-weight-bold has-text-justified p-4">Tools</div>
+     </div>
+    </div>
+    </section>
+      <footer class="modal-card-foot has-background-white">
+          <div class="container m-3"></div>
+      </footer>
+
+  </div>
+        </div>
+</div>
+
     </section>
