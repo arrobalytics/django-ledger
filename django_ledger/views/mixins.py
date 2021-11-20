@@ -388,7 +388,7 @@ class UnpaidElementsMixIn:
             ).filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
-            ).select_related('customer').order_by('-due_date')[:3]
+            ).select_related('customer').order_by('due_date')
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
@@ -407,7 +407,7 @@ class UnpaidElementsMixIn:
             ).filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
-            ).select_related('vendor').order_by('-due_date')[:3]
+            ).select_related('vendor').order_by('due_date')
 
             unit_slug = self.get_unit_slug()
             if unit_slug:

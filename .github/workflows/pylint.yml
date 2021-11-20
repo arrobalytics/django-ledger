@@ -1,0 +1,34 @@
+name: Code Quality
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install pylint
+          pip3 install pylint-exit
+          pip3 install pylint-django
+          if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+      - name: Lint Project Level
+        run: |
+          find . -path '**/migrations' -prune -false -o -name '*.py' | xargs pylint --load-plugins pylint_django --disable=django-not-configured,R0901  --ignore-patterns=manage.py
+      - name: Lint brickbox
+        run: |
+          cd brickbox/
+          find . -type f -name "*.py" | xargs pylint --load-plugins pylint_django --disable=django-not-configured  --ignore-patterns=settings.py,wsgi.py

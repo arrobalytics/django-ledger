@@ -14,7 +14,7 @@
             <tr>
                 <td>{{ i.item_model__name }}</td>
                 <td>{{ i.item_model__uom__name }}</td>
-                <td>{{ i.total_quantity }}</td>
+                <td>{{ i.total_quantity | floatformat:3 }}</td>
                 <td>{% currency_symbol %}{{ i.total_value | currency_format }}</td>
             </tr>
         {% endfor %}

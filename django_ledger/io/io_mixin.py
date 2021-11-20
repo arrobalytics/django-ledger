@@ -25,53 +25,12 @@ from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RoleManager, GroupManager
 from django_ledger.models.schemas import SCHEMA_DIGEST
+from django_ledger.models.utils import LazyImporter
 from django_ledger.settings import (DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME,
                                     DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
                                     DJANGO_LEDGER_TRANSACTION_CORRECTION)
 
 UserModel = get_user_model()
-
-
-class LazyImporter:
-    """
-    This class eliminates the circle dependency between models.
-    """
-    ENTITY_MODEL = None
-    UNIT_MODEL = None
-    LEDGER_MODEL = None
-    TXS_MODEL = None
-    JE_MODEL = None
-
-    def get_entity_model(self):
-        if not self.ENTITY_MODEL:
-            from django_ledger.models import EntityModel
-            self.ENTITY_MODEL = EntityModel
-        return self.ENTITY_MODEL
-
-    def get_txs_model(self):
-        if not self.TXS_MODEL:
-            from django_ledger.models import TransactionModel
-            self.TXS_MODEL = TransactionModel
-        return self.TXS_MODEL
-
-    def get_ledger_model(self):
-        if not self.LEDGER_MODEL:
-            from django_ledger.models import LedgerModel
-            self.LEDGER_MODEL = LedgerModel
-        return self.LEDGER_MODEL
-
-    def get_unit_model(self):
-        if not self.UNIT_MODEL:
-            from django_ledger.models import EntityUnitModel
-            self.UNIT_MODEL = EntityUnitModel
-        return self.UNIT_MODEL
-
-    def get_journal_entry_model(self):
-        if not self.JE_MODEL:
-            from django_ledger.models import JournalEntryModel
-            self.JE_MODEL = JournalEntryModel
-        return self.JE_MODEL
-
 
 lazy_importer = LazyImporter()
 

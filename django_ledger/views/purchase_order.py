@@ -110,8 +110,27 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
+
     update_items = False
     create_bills = False
+    mark_as_fulfilled = False
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        po_model: PurchaseOrderModel = self.object
+        if self.mark_as_fulfilled:
+            po_model.mark_as_fulfilled(commit=True)
+            messages.add_message(request,
+                                 level=messages.SUCCESS,
+                                 message=f'Successfully marked {po_model.po_number} as fulfilled.',
+                                 extra_tags='is-success')
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:po-update',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug'],
+                                        'po_pk': self.kwargs['po_pk']
+                                    }))
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, entity_slug, *args, **kwargs):
         self.object = self.get_object()
@@ -203,6 +222,9 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
             else:
                 return self.render_to_response(context)
+        elif self.mark_as_fulfilled:
+            po_model.mark_as_fulfilled(commit=True, date=localdate())
+        # fixme: the super call needs to be executed first...?
         return super().post(request, *args, **kwargs)
 
     def get_form(self, form_class=None):
@@ -385,36 +407,3 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
         success_url = self.get_success_url()
         self.object.delete()
         return HttpResponseRedirect(success_url)
-
-#
-#
-# class BillModelMarkPaidView(LoginRequiredMixIn,
-#                             View,
-#                             SingleObjectMixin):
-#     http_method_names = ['post']
-#     slug_url_kwarg = 'bill_pk'
-#     slug_field = 'uuid'
-#
-#     def get_queryset(self):
-#         return BillModel.objects.for_entity(
-#             entity_slug=self.kwargs['entity_slug'],
-#             user_model=self.request.user
-#         ).select_related('ledger')
-#
-#     def post(self, request, *args, **kwargs):
-#         bill: BillModel = self.get_object()
-#         mark_accruable_paid(
-#             accruable_model=bill,
-#             entity_slug=self.kwargs['entity_slug'],
-#             user_model=self.request.user
-#         )
-#         messages.add_message(request,
-#                              messages.SUCCESS,
-#                              f'Successfully marked bill {bill.bill_number} as Paid.',
-#                              extra_tags='is-success')
-#         redirect_url = reverse('django_ledger:bill-detail',
-#                                kwargs={
-#                                    'entity_slug': self.kwargs['entity_slug'],
-#                                    'bill_pk': bill.uuid
-#                                })
-#         return HttpResponseRedirect(redirect_url)

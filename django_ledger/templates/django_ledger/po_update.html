@@ -63,6 +63,8 @@
                 <button type="submit" class="button is-medium is-primary">{% trans 'Update PO' %}</button>
                 <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
                    class="button is-medium is-info">{% trans 'Back to PO' %}</a>
+                <a href="{% url 'django_ledger:po-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                   class="button is-medium is-warning">{% trans 'Mark as FulFilled' %}</a>
                 <a href="{% url 'django_ledger:po-delete' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
                    class="button is-medium is-danger">{% trans 'Delete PO' %}</a>
             </div>
