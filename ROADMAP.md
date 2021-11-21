@@ -15,7 +15,7 @@
 ### Version 0.5
 
 * __0.5.0__: Inventory tracking.
-  * LIFO and Average Cost.
+  * FIFO and Average Cost.
 * __0.5.1__: Customer jobs.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.

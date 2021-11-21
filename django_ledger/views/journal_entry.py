@@ -8,6 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.contrib.messages import add_message, WARNING
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView
 
@@ -159,6 +160,7 @@ class JournalEntryCreateView(LoginRequiredMixIn, CreateView):
 
     def get_initial(self):
         return {
+            'date': localdate(),
             'ledger': LedgerModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user

@@ -261,9 +261,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = title
 
         invoice_model: InvoiceModel = self.object
-        invoice_items_qs, item_data = invoice_model.get_invoice_item_data(
-            queryset=invoice_model.itemthroughmodel_set.all()
-        )
+        invoice_items_qs, item_data = invoice_model.get_invoice_item_data()
         context['invoice_items'] = invoice_items_qs
         context['total_amount_due'] = item_data['amount_due']
         return context

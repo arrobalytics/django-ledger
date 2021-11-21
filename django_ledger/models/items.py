@@ -241,7 +241,10 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:
-            return self.inventory_received_value / self.inventory_received
+            try:
+                return self.inventory_received_value / self.inventory_received
+            except ZeroDivisionError:
+                pass
         return Decimal('0.00')
 
     def clean(self):

@@ -114,12 +114,12 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Invoice: {self.invoice_number}'
 
-    def get_absolute_url(self):
-        return reverse('django_ledger:bill-detail',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'bill_pk': self.uuid
-                       })
+    # def get_absolute_url(self):
+    #     return reverse('django_ledger:bill-detail',
+    #                    kwargs={
+    #                        'entity_slug': self.ledger.entity.slug,
+    #                        'bill_pk': self.uuid
+    #                    })
 
     def get_document_id(self):
         return self.invoice_number
@@ -146,7 +146,8 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_invoice_item_data(self, queryset=None) -> tuple:
         if not queryset:
-            queryset = self.itemthroughmodel_set.all()
+            # pylint: disable=no-member
+            queryset = self.itemthroughmodel_set.all().select_related('item_model')
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
@@ -154,15 +155,23 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
+            # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all()
             queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
-        return queryset.order_by('item_model__earnings_account__uuid',
+        return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                  'entity_unit__uuid',
                                  'item_model__earnings_account__balance_type').values(
             'item_model__earnings_account__uuid',
             'item_model__earnings_account__balance_type',
+            'item_model__cogs_account__uuid',
+            'item_model__cogs_account__balance_type',
+            'item_model__inventory_account__uuid',
+            'item_model__inventory_account__balance_type',
+            'item_model__inventory_received',
+            'item_model__inventory_received_value',
             'entity_unit__slug',
             'entity_unit__uuid',
+            'quantity',
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 

@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from itertools import groupby
@@ -331,12 +332,16 @@ class AccruableItemMixIn(models.Model):
 
             digest_data = txs_digest['tx_digest']['accounts']
 
-            # Index (account_uuid, unit_uuid, balance_type)
+            # Index (account_uuid, unit_uuid, balance_type, role)
             current_ledger_state = {
                 (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
+                # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
             }
 
             item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
+            cogs_items = list()
+            total_inventory = defaultdict(lambda: 0)
+            progress = self.get_progress()
 
             if isinstance(self, lazy_loader.get_bill_model()):
 
@@ -353,21 +358,54 @@ class AccruableItemMixIn(models.Model):
             elif isinstance(self, lazy_loader.get_invoice_model()):
 
                 for item in item_data:
-                    account_uuid_expense = item.get('item_model__earnings_account__uuid')
+                    account_uuid_earnings = item.get('item_model__earnings_account__uuid')
+                    account_uuid_cogs = item.get('item_model__cogs_account__uuid')
                     account_uuid_inventory = item.get('item_model__inventory_account__uuid')
-                    if account_uuid_expense:
-                        item['account_uuid'] = account_uuid_expense
+
+                    if account_uuid_earnings:
+                        item['account_uuid'] = account_uuid_earnings
                         item['account_balance_type'] = item.get('item_model__earnings_account__balance_type')
-                    elif account_uuid_inventory:
-                        item['account_uuid'] = account_uuid_inventory
-                        item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+
+                    if account_uuid_cogs and account_uuid_inventory:
+
+                        try:
+                            irq = item.get('item_model__inventory_received')
+                            irv = item.get('item_model__inventory_received_value')
+                            tot_amt = 0
+                            if irq is not None and irv is not None:
+                                qty = item.get('quantity', Decimal('0.00'))
+                                if not isinstance(qty, Decimal):
+                                    qty = Decimal.from_float(qty)
+                                cogs_unit_cost = irv / irq
+                                tot_amt = round(cogs_unit_cost * qty, 2)
+                        except ZeroDivisionError:
+                            tot_amt = 0
+
+                        cogs_i = dict()
+                        cogs_i['account_uuid'] = account_uuid_cogs
+                        cogs_i['account_balance_type'] = item.get('item_model__cogs_account__balance_type')
+                        cogs_i['entity_unit_slug'] = item.get('entity_unit__slug')
+                        cogs_i['entity_unit__uuid'] = item.get('entity_unit__uuid')
+                        cogs_i['total_amount'] = tot_amt
+                        cogs_i['account_unit_total'] = tot_amt
+                        cogs_items.append(cogs_i)
+
+                        # keeps track of necessary transactions to reduce inventory account...
+                        total_inventory[(
+                            account_uuid_inventory,
+                            item.get('entity_unit__uuid'),
+                            item.get('item_model__inventory_account__balance_type')
+                        )] -= tot_amt * progress
+
+                        # cogs_items.append(inv_i)
+
+            if cogs_items:
+                item_data += cogs_items
 
             item_data_gb = groupby(item_data,
                                    key=lambda a: (a['account_uuid'],
                                                   a['entity_unit__uuid'],
                                                   a['account_balance_type']))
-
-            progress = self.get_progress()
 
             # scaling down item amount based on progress...
             progress_item_idx = {
@@ -417,6 +455,10 @@ class AccruableItemMixIn(models.Model):
             new_ledger_state.update(amount_paid_split)
             new_ledger_state.update(amount_prepaid_split)
             new_ledger_state.update(amount_unearned_split)
+
+            if total_inventory:
+                new_ledger_state.update(total_inventory)
+
             new_ledger_state.update(progress_item_idx)
 
             # list of all keys involved
