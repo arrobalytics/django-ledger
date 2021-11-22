@@ -18,7 +18,7 @@
                         <p class="subtitle">All data associated with this entity will be deleted.</p>
                     </div>
                     <div class="card-content has-text-centered">
-                        <a href="{{ entity.get_absolute_url }}"
+                        <a href="{% url 'django_ledger:home' %}"
                            class="button is-primary">{% trans 'Go Back' %}</a>
                         <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
                     </div>

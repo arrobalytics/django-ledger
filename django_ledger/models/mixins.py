@@ -339,8 +339,8 @@ class AccruableItemMixIn(models.Model):
             }
 
             item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
-            cogs_items = list()
-            total_inventory = defaultdict(lambda: 0)
+            cogs_adjustment = defaultdict(lambda: Decimal('0.00'))
+            inventory_adjustment = defaultdict(lambda: Decimal('0.00'))
             progress = self.get_progress()
 
             if isinstance(self, lazy_loader.get_bill_model()):
@@ -358,6 +358,7 @@ class AccruableItemMixIn(models.Model):
             elif isinstance(self, lazy_loader.get_invoice_model()):
 
                 for item in item_data:
+
                     account_uuid_earnings = item.get('item_model__earnings_account__uuid')
                     account_uuid_cogs = item.get('item_model__cogs_account__uuid')
                     account_uuid_inventory = item.get('item_model__inventory_account__uuid')
@@ -372,7 +373,7 @@ class AccruableItemMixIn(models.Model):
                             irq = item.get('item_model__inventory_received')
                             irv = item.get('item_model__inventory_received_value')
                             tot_amt = 0
-                            if irq is not None and irv is not None:
+                            if irq is not None and irv is not None and irq != 0:
                                 qty = item.get('quantity', Decimal('0.00'))
                                 if not isinstance(qty, Decimal):
                                     qty = Decimal.from_float(qty)
@@ -381,26 +382,20 @@ class AccruableItemMixIn(models.Model):
                         except ZeroDivisionError:
                             tot_amt = 0
 
-                        cogs_i = dict()
-                        cogs_i['account_uuid'] = account_uuid_cogs
-                        cogs_i['account_balance_type'] = item.get('item_model__cogs_account__balance_type')
-                        cogs_i['entity_unit_slug'] = item.get('entity_unit__slug')
-                        cogs_i['entity_unit__uuid'] = item.get('entity_unit__uuid')
-                        cogs_i['total_amount'] = tot_amt
-                        cogs_i['account_unit_total'] = tot_amt
-                        cogs_items.append(cogs_i)
+                        if tot_amt != 0:
+                            # keeps track of necessary transactions to increase COGS account...
+                            cogs_adjustment[(
+                                account_uuid_cogs,
+                                item.get('entity_unit__uuid'),
+                                item.get('item_model__cogs_account__balance_type')
+                            )] += tot_amt * progress
 
-                        # keeps track of necessary transactions to reduce inventory account...
-                        total_inventory[(
-                            account_uuid_inventory,
-                            item.get('entity_unit__uuid'),
-                            item.get('item_model__inventory_account__balance_type')
-                        )] -= tot_amt * progress
-
-                        # cogs_items.append(inv_i)
-
-            if cogs_items:
-                item_data += cogs_items
+                            # keeps track of necessary transactions to reduce inventory account...
+                            inventory_adjustment[(
+                                account_uuid_inventory,
+                                item.get('entity_unit__uuid'),
+                                item.get('item_model__inventory_account__balance_type')
+                            )] -= tot_amt * progress
 
             item_data_gb = groupby(item_data,
                                    key=lambda a: (a['account_uuid'],
@@ -456,8 +451,9 @@ class AccruableItemMixIn(models.Model):
             new_ledger_state.update(amount_prepaid_split)
             new_ledger_state.update(amount_unearned_split)
 
-            if total_inventory:
-                new_ledger_state.update(total_inventory)
+            if inventory_adjustment and cogs_adjustment:
+                new_ledger_state.update(cogs_adjustment)
+                new_ledger_state.update(inventory_adjustment)
 
             new_ledger_state.update(progress_item_idx)
 
@@ -466,7 +462,8 @@ class AccruableItemMixIn(models.Model):
 
             # difference between new vs current
             diff_idx = {
-                k: new_ledger_state.get(k, 0) - current_ledger_state.get(k, 0) for k in idx_keys
+                k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in
+                idx_keys if new_ledger_state.get(k, Decimal('0.00')) != Decimal('0.00')
             }
 
             if commit:
@@ -503,11 +500,11 @@ class AccruableItemMixIn(models.Model):
 
                 for uid in unit_uuids:
                     # validates each unit txs independently...
-                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui])
+                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
 
                 # validates all txs as a whole (for safety)...
                 txs = [tx for ui, tx in txs_list]
-                balance_tx_data(tx_data=txs)
+                balance_tx_data(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
             return item_data, digest_data
         else:

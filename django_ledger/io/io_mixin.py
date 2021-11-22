@@ -35,7 +35,7 @@ UserModel = get_user_model()
 lazy_importer = LazyImporter()
 
 
-def diff_tx_data(tx_data: list):
+def diff_tx_data(tx_data: list, raise_exception: bool = True):
     IS_TX_MODEL = False
     TransactionModel = lazy_importer.get_txs_model()
 
@@ -53,18 +53,22 @@ def diff_tx_data(tx_data: list):
     diff = CREDITS - DEBITS
 
     if not is_valid and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
-        raise TransactionNotInBalanceException(
-            f'Invalid tx data. Credits and debits must match. Currently cr: {CREDITS}, db {DEBITS}.'
-            f'Max Tolerance {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
-        )
+        if raise_exception:
+            raise TransactionNotInBalanceException(
+                f'Invalid tx data. Credits and debits must match. Currently cr: {CREDITS}, db {DEBITS}.'
+                f'Max Tolerance {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+            )
 
     return IS_TX_MODEL, is_valid, diff
 
 
-def balance_tx_data(tx_data: list):
+def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
     if tx_data:
 
-        IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
+        IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data, raise_exception=perform_correction)
+
+        if not perform_correction and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+            return False
 
         while not is_valid:
 

@@ -3,7 +3,7 @@ from decimal import Decimal
 from itertools import groupby
 from random import choice, random, randint
 from string import ascii_uppercase, ascii_lowercase, digits
-from typing import Tuple
+from typing import Tuple, Union
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -418,7 +418,7 @@ def generate_random_invoice(
         item_model: ItemModel = choice(product_models)
         quantity = Decimal.from_float(round(random() * randint(1, 5), 2))
         entity_unit = choice(unit_models) if random() > .75 else None
-        margin = Decimal(random() * 0.5 + 1)
+        margin = Decimal(random() + 1)
         avg_cost = item_model.get_average_cost()
         unit_cost = round(random() * randint(100, 999), 2)
 
@@ -644,6 +644,7 @@ def generate_random_po(
             bill_model.clean()
             bill_model.update_state()
             bill_model.save()
+
             for po_i in po_items:
                 po_i.total_amount = po_i.po_total_amount
                 po_i.quantity = po_i.po_quantity
@@ -671,11 +672,11 @@ def generate_random_po(
             po_model.mark_as_fulfilled(date=fulfilled_dt, commit=True, po_items=po_items)
 
 
-def generate_sample_data(entity_model: str or EntityModel,
+def generate_sample_data(entity_model: Union[str, EntityModel],
                          user_model,
                          start_dt: datetime,
                          days_fw: int,
-                         cap_contribution: float or int = 20000,
+                         cap_contribution: Union[float, int] = 20000,
                          tx_quantity: int = 25,
                          is_accruable_probability: float = 0.2,
                          is_paid_probability: float = 0.90):
