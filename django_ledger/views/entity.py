@@ -18,11 +18,12 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel, TransactionModel,
                                   JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel)
 from django_ledger.utils import (
     get_default_entity_session_key,
-    populate_default_coa, generate_sample_data, set_default_entity,
+    populate_default_coa, set_default_entity,
     set_session_date_filter
 )
 from django_ledger.views.mixins import (
@@ -62,22 +63,25 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
     def form_valid(self, form):
         user = self.request.user
         form.instance.admin = user
-        entity = form.save()
+        entity_model = form.save()
         default_coa = form.cleaned_data.get('default_coa')
         activate_accounts = form.cleaned_data.get('activate_all_accounts')
         if default_coa:
-            populate_default_coa(entity_model=entity, activate_accounts=activate_accounts)
+            populate_default_coa(entity_model=entity_model, activate_accounts=activate_accounts)
 
         sample_data = form.cleaned_data.get('generate_sample_data')
         if sample_data:
-            generate_sample_data(
-                entity_model=entity.slug,
+            entity_generator = EntityDataGenerator(
+                entity_model=entity_model,
                 user_model=self.request.user,
-                start_dt=localtime() - timedelta(days=30 * 8),
-                days_fw=30 * 9,
+                start_date=localtime() - timedelta(days=30 * 8),
+                capital_contribution=50000,
+                days_forward=30 * 9,
                 tx_quantity=50
             )
-        self.object = entity
+            entity_generator.populate_entity()
+
+        self.object = entity_model
         return super().form_valid(form)
 
 
@@ -438,7 +442,6 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
                                    'day': end_date.day,
                                })
         return super().post(request, *args, **kwargs)
-
 
 # class GenerateSampleData(LoginRequiredMixIn, RedirectView):
 #
