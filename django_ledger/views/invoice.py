@@ -19,8 +19,8 @@ from django.views.generic import (
 )
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, InvoiceItemFormset
-from django_ledger.models import EntityModel, LedgerModel, ItemThroughModel
+from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
+from django_ledger.models import EntityModel, LedgerModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import new_invoice_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -141,6 +141,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         if not item_formset:
             invoice_item_qs = invoice_model.itemthroughmodel_set.all().select_related('item_model')
             invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=invoice_item_qs)
+            InvoiceItemFormset = get_invoice_item_formset(invoice_model)
             item_formset = InvoiceItemFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
@@ -185,10 +186,26 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         if self.action_update_items:
             self.object = self.get_object()
+            invoice_model = self.object
+            InvoiceItemFormset = get_invoice_item_formset(invoice_model)
             item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
                                                                   user_model=self.request.user,
-                                                                  invoice_pk=invoice_pk,
+                                                                  invoice_model=invoice_model,
                                                                   entity_slug=entity_slug)
+
+            if not invoice_model.can_update_items():
+                messages.add_message(
+                    request,
+                    message=f'Cannot update items once Invoice is {invoice_model.get_invoice_status_display()}',
+                    level=messages.ERROR,
+                    extra_tags='is-danger'
+                )
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
+
+
+
+
 
             if item_formset.is_valid():
                 if item_formset.has_changed():

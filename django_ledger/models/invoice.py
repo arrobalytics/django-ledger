@@ -69,9 +69,23 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 
+    INVOICE_STATUS_DRAFT = 'draft'
+    INVOICE_STATUS_REVIEW = 'in_review'
+    INVOICE_STATUS_APPROVED = 'approved'
+    INVOICE_STATUS_CANCELED = 'canceled'
+
+    INVOICE_STATUS = [
+        (INVOICE_STATUS_DRAFT, _('Draft')),
+        (INVOICE_STATUS_REVIEW, _('In Review')),
+        (INVOICE_STATUS_APPROVED, _('Approved')),
+        (INVOICE_STATUS_CANCELED, _('Canceled'))
+    ]
+
+
     # todo: add markdown mixin...
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
+    invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0])
     customer = models.ForeignKey('django_ledger.CustomerModel',
                                  on_delete=models.PROTECT,
                                  verbose_name=_('Customer'))
@@ -183,6 +197,18 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
         queryset, item_data = self.get_invoice_item_data(queryset=queryset)
         self.amount_due = item_data['amount_due']
         return queryset, item_data
+
+    def is_approved(self):
+        return self.invoice_status == self.INVOICE_STATUS_APPROVED
+
+    def can_delete_items(self):
+        return self.invoice_status == self.INVOICE_STATUS_DRAFT
+
+    def can_update_items(self):
+        return self.invoice_status not in [
+            self.INVOICE_STATUS_APPROVED,
+            self.INVOICE_STATUS_CANCELED
+        ]
 
     def clean(self):
         if not self.invoice_number:

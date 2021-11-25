@@ -37,7 +37,7 @@
                             </td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
                             <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
-                            <td>{% if f.instance.item_model.for_inventory %}
+                            <td>{% if f.instance.item_model.for_inventory and not f.instance.invoice_model.is_approved %}
                                 {{ f.instance.item_model.inventory_received }}
                             {% endif %}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">

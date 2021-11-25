@@ -58,11 +58,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
+    PO_STATUS_CANCELED = 'canceled'
 
     PO_STATUS = [
         (PO_STATUS_DRAFT, _('Draft')),
         (PO_STATUS_REVIEW, _('In Review')),
-        (PO_STATUS_APPROVED, _('Approved'))
+        (PO_STATUS_APPROVED, _('Approved')),
+        (PO_STATUS_CANCELED, _('Canceled')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)

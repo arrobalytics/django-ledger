@@ -76,7 +76,11 @@ class InvoiceModelCreateForm(ModelForm):
 
 class InvoiceModelUpdateForm(ModelForm):
 
-    def __init__(self, *args, entity_slug, user_model, **kwargs):
+    def __init__(self,
+                 *args,
+                 entity_slug,
+                 user_model,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
@@ -88,7 +92,8 @@ class InvoiceModelUpdateForm(ModelForm):
             'paid',
             'paid_date',
             'progress',
-            'accrue'
+            'accrue',
+            'invoice_status'
         ]
         labels = {
             'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
@@ -97,6 +102,7 @@ class InvoiceModelUpdateForm(ModelForm):
         widgets = {
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -115,14 +121,16 @@ class InvoiceModelUpdateForm(ModelForm):
 
 class InvoiceItemForm(ModelForm):
 
-    def __init__(self, *args, entity_slug, user_model,
-                 invoice_model, invoice_pk=None, **kwargs):
+    def __init__(self,
+                 *args,
+                 entity_slug,
+                 user_model,
+                 invoice_model,
+                 **kwargs):
         super(InvoiceItemForm, self).__init__(*args, **kwargs)
-
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.INVOICE_MODEL = invoice_model
-        self.INVOICE_PK = invoice_pk
 
         if not self.instance.item_model_id:
             self.fields['unit_cost'].disabled = True
@@ -159,14 +167,16 @@ class InvoiceItemForm(ModelForm):
 
 class BaseInvoiceItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model,
-                 invoice_model=None, invoice_pk=None, **kwargs):
+    def __init__(self, *args,
+                 entity_slug,
+                 user_model,
+                 invoice_model,
+                 **kwargs):
         super().__init__(*args, **kwargs)
-        if not invoice_model and not invoice_pk:
-            raise ValidationError('Must instantiate BaseInvoiceItemFormset with either invoice_model or invoice_pk')
+        # if not invoice_model and not invoice_pk:
+        #     raise ValidationError('Must instantiate BaseInvoiceItemFormset with either invoice_model or invoice_pk')
         self.USER_MODEL = user_model
         self.INVOICE_MODEL: InvoiceModel = invoice_model
-        self.INVOICE_PK = invoice_pk
         self.ENTITY_SLUG = entity_slug
 
         items_qs = ItemModel.objects.products_and_services(
@@ -176,33 +186,38 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
 
         self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
+            if self.INVOICE_MODEL.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED:
+                form.fields['item_model'].disabled = True
+                form.fields['quantity'].disabled = True
+                form.fields['unit_cost'].disabled = True
+                form.can_delete = False
             form.fields['item_model'].queryset = items_qs
 
     def get_queryset(self):
         if not self.queryset:
-            if self.INVOICE_PK:
-                self.queryset = ItemThroughModel.objects.for_invoice(
-                    entity_slug=self.ENTITY_SLUG,
-                    user_model=self.USER_MODEL,
-                    invoice_pk=self.INVOICE_PK
-                )
-            else:
-                self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
+            self.queryset = ItemThroughModel.objects.for_invoice(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL,
+                invoice_pk=self.INVOICE_MODEL.uuid
+            )
+        else:
+            self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
         return self.queryset
 
     def get_form_kwargs(self, index):
         return {
             'entity_slug': self.ENTITY_SLUG,
             'user_model': self.USER_MODEL,
-            'invoice_pk': self.INVOICE_PK,
             'invoice_model': self.INVOICE_MODEL,
         }
 
 
-InvoiceItemFormset = modelformset_factory(
-    model=ItemThroughModel,
-    form=InvoiceItemForm,
-    formset=BaseInvoiceItemFormset,
-    can_delete=True,
-    extra=5
-)
+def get_invoice_item_formset(invoice_model: InvoiceModel):
+    can_delete = invoice_model.can_delete_items()
+    return modelformset_factory(
+        model=ItemThroughModel,
+        form=InvoiceItemForm,
+        formset=BaseInvoiceItemFormset,
+        can_delete=can_delete,
+        extra=5 if not can_delete else 0
+    )

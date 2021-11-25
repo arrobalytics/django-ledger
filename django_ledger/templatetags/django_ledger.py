@@ -710,6 +710,7 @@ def invoice_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'invoice_pk': context['view'].kwargs['invoice_pk'],
+        'invoice_model': context['invoice'],
         'total_amount_due': context['total_amount_due'],
         'item_formset': item_formset,
     }

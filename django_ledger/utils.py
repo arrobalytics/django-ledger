@@ -60,6 +60,7 @@ def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
                       user_model: UserModel,
                       bill_desc: str = None) -> Tuple[LedgerModel, BillModel]:
+
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
