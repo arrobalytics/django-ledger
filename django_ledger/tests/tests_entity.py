@@ -6,11 +6,12 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.timezone import get_default_timezone, localdate
 
+from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.entity import urlpatterns as entity_urls
-from django_ledger.utils import populate_default_coa, generate_sample_data
+from django_ledger.utils import populate_default_coa
 
 UserModel = get_user_model()
 
@@ -250,13 +251,15 @@ class EntityModelTests(DjangoLedgerBaseTest):
 
         self.logger.warning(f'Generating sample data for {entity_model.name}...')
         # generates sample data to perform tests.
-        generate_sample_data(
+        generator = EntityDataGenerator(
             entity_model=entity_model,
             user_model=self.user_model,
-            start_dt=self.START_DATE,
-            days_fw=self.DAYS_FWD,
-            tx_quantity=int(self.DAYS_FWD * 0.5)
+            start_date=self.START_DATE,
+            days_forward=self.DAYS_FWD,
+            tx_quantity=int(self.DAYS_FWD * 0.5),
+            capital_contribution=50000
         )
+        generator.populate_entity()
 
         with self.assertNumQueries(2):
             # this will redirect to entity-detail-month...

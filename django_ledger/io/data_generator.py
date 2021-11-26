@@ -492,10 +492,12 @@ class EntityDataGenerator:
         invoice_model.clean()
         invoice_model.save()
         invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
-        invoice_model.migrate_state(
-            user_model=self.user_model,
-            entity_slug=self.entity_model.slug,
-            je_date=issue_dt)
+
+        if invoice_model.migrate_allowed():
+            invoice_model.migrate_state(
+                user_model=self.user_model,
+                entity_slug=self.entity_model.slug,
+                je_date=issue_dt)
 
         if is_paid:
             ledger_model.locked = True
