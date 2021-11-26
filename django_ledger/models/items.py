@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
@@ -409,10 +409,11 @@ class ItemThroughModelManager(models.Manager):
         ).annotate(
             quantity_onhand=Coalesce(F('quantity_received') - F('quantity_invoiced'), Value(0.0),
                                      output_field=DecimalField()),
-            cost_average=Coalesce(
-                ExpressionWrapper(F('cost_received') / F('quantity_received'),
-                                  output_field=DecimalField(decimal_places=3)), Value(0.0),
-                output_field=DecimalField()
+            cost_average=Case(
+                When(quantity_received__gt=0.0,
+                     then=ExpressionWrapper(F('cost_received') / F('quantity_received'),
+                                            output_field=DecimalField(decimal_places=3))
+                     )
             ),
             value_onhand=Coalesce(
                 ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
