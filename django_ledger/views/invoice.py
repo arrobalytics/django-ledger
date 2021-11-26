@@ -22,7 +22,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
 from django_ledger.models import EntityModel, LedgerModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import new_invoice_protocol, mark_accruable_paid
+from django_ledger.utils import mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -78,8 +78,8 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        ledger_model, invoice_model = new_invoice_protocol(
-            invoice_model=form.instance,
+        invoice_model: InvoiceModel = form.instance
+        ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         )
@@ -118,14 +118,14 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def get_context_data(self, item_formset=None, **kwargs):
         context = super().get_context_data(**kwargs)
-        invoice: InvoiceModel = self.object
-        title = f'Invoice {invoice.invoice_number}'
+        invoice_model: InvoiceModel = self.object
+        title = f'Invoice {invoice_model.invoice_number}'
         context['page_title'] = title
         context['header_title'] = title
 
         ledger_model: LedgerModel = self.object.ledger
 
-        if ledger_model.locked:
+        if ledger_model.locked and not invoice_model.paid:
             messages.add_message(self.request,
                                  messages.ERROR,
                                  f'Warning! This Invoice is Locked. Must unlock before making any changes.',
@@ -137,7 +137,6 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  f'This Invoice has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
-        invoice_model: InvoiceModel = self.object
         if not item_formset:
             invoice_item_qs = invoice_model.itemthroughmodel_set.all().select_related('item_model')
             invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=invoice_item_qs)
@@ -150,6 +149,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
             )
         else:
             invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=item_formset.queryset)
+
         context['item_formset'] = item_formset
         context['total_amount_due'] = item_data['amount_due']
         return context
@@ -157,7 +157,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         invoice_pk = self.kwargs['invoice_pk']
-        return reverse('django_ledger:invoice-detail',
+        return reverse('django_ledger:invoice-update',
                        kwargs={
                            'entity_slug': entity_slug,
                            'invoice_pk': invoice_pk
@@ -172,10 +172,11 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
-        invoice_model.migrate_state(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        )
+        if invoice_model.migrate_allowed():
+            invoice_model.migrate_state(
+                user_model=self.request.user,
+                entity_slug=self.kwargs['entity_slug']
+            )
         messages.add_message(self.request,
                              messages.SUCCESS,
                              f'Invoice {self.object.invoice_number} successfully updated.',
@@ -202,10 +203,6 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                 )
                 context = self.get_context_data(item_formset=item_formset)
                 return self.render_to_response(context=context)
-
-
-
-
 
             if item_formset.is_valid():
                 if item_formset.has_changed():

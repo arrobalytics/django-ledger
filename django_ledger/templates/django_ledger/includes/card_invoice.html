@@ -68,6 +68,7 @@
                     <p class="is-size-3 has-text-dark">Invoice Amount:
                         <span class="has-text-weight-bold">{% currency_symbol %}{{ invoice.amount_due | currency_format }}</span>
                     </p>
+                    <p class="is-size-4">Invoice Status: {{ invoice.get_invoice_status_display }}</p>
                     {% if not invoice.is_past_due %}
                         <p class="is-size-4 has-text-info">Due in: {{ invoice.due_date | timeuntil }}</p>
                     {% else %}

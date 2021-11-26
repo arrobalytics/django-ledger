@@ -25,9 +25,15 @@
                                 <strong>${{ invoice.amount_due | currency_format }}</strong>
                             </h3>
                             <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
-                            <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
                             <h4 class="has-text-weight-light">Accrue Invoice: {{ form.accrue }}</h4>
 
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.terms.id_for_label }}"
+                                   class="label">{{ form.terms.label }}</label>
+                            <div class="control">
+                                {{ form.terms }}
+                            </div>
                         </div>
                         <div class="field">
                             <label for="{{ form.invoice_status.id_for_label }}"

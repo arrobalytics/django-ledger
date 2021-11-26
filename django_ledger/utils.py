@@ -60,7 +60,6 @@ def new_bill_protocol(bill_model: BillModel,
                       entity_slug: str or EntityModel,
                       user_model: UserModel,
                       bill_desc: str = None) -> Tuple[LedgerModel, BillModel]:
-
     if isinstance(entity_slug, str):
         entity_qs = EntityModel.objects.for_user(
             user_model=user_model)
@@ -82,30 +81,6 @@ def new_bill_protocol(bill_model: BillModel,
     ledger_model.clean()
     bill_model.ledger = ledger_model
     return ledger_model, bill_model
-
-
-def new_invoice_protocol(invoice_model: InvoiceModel,
-                         entity_slug: str or EntityModel,
-                         user_model: UserModel) -> Tuple[LedgerModel, InvoiceModel]:
-    if isinstance(entity_slug, str):
-        entity_qs = EntityModel.objects.for_user(
-            user_model=user_model)
-        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-    elif isinstance(entity_slug, EntityModel):
-        entity_model = entity_slug
-    else:
-        raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-    if not invoice_model.invoice_number:
-        invoice_model.invoice_number = generate_invoice_number()
-    ledger_model = LedgerModel.objects.create(
-        entity=entity_model,
-        posted=True,
-        name=f'Invoice {invoice_model.invoice_number}',
-    )
-    ledger_model.clean()
-    invoice_model.ledger = ledger_model
-    return ledger_model, invoice_model
 
 
 def new_bankaccount_protocol(bank_account_model: BankAccountModel,

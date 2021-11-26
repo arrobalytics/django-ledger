@@ -5,30 +5,25 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-from decimal import Decimal
+
 from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
 
-
-class LazyLoader:
-    TXS_MODEL = None
-
-    def get_txs_model(self):
-        if not self.TXS_MODEL:
-            from django_ledger.models.transactions import TransactionModel
-            self.TXS_MODEL = TransactionModel
-        return self.TXS_MODEL
-
+UserModel = get_user_model()
 
 lazy_loader = LazyLoader()
 
@@ -81,7 +76,6 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
         (INVOICE_STATUS_CANCELED, _('Canceled'))
     ]
 
-
     # todo: add markdown mixin...
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
@@ -128,12 +122,33 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Invoice: {self.invoice_number}'
 
-    # def get_absolute_url(self):
-    #     return reverse('django_ledger:bill-detail',
-    #                    kwargs={
-    #                        'entity_slug': self.ledger.entity.slug,
-    #                        'bill_pk': self.uuid
-    #                    })
+    def configure(self,
+                  entity_slug: str or EntityModel,
+                  user_model: UserModel,
+                  post_ledger: bool = False):
+
+        if isinstance(entity_slug, str):
+            entity_qs = EntityModel.objects.for_user(
+                user_model=user_model)
+            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+        elif isinstance(entity_slug, EntityModel):
+            entity_model = entity_slug
+        else:
+            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+        if not self.invoice_number:
+            self.invoice_number = generate_invoice_number()
+
+        LedgerModel = lazy_loader.get_ledger_model()
+
+        ledger_model = LedgerModel.objects.create(
+            entity=entity_model,
+            posted=post_ledger,
+            name=f'Invoice {self.invoice_number}',
+        )
+        ledger_model.clean()
+        self.ledger = ledger_model
+        return ledger_model, self
 
     def get_document_id(self):
         return self.invoice_number
@@ -167,14 +182,17 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
             total_items=Count('uuid')
         )
 
+    def migrate_allowed(self) -> bool:
+        return self.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED
+
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
             # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all()
             queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
-                                 'entity_unit__uuid',
-                                 'item_model__earnings_account__balance_type').values(
+                                                              'entity_unit__uuid',
+                                                              'item_model__earnings_account__balance_type').values(
             'item_model__earnings_account__uuid',
             'item_model__earnings_account__balance_type',
             'item_model__cogs_account__uuid',
@@ -191,7 +209,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
-            #self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
             self.amount_due = sum(a.total_amount for a in item_list)
             return
         queryset, item_data = self.get_invoice_item_data(queryset=queryset)
@@ -201,7 +219,7 @@ class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     def is_approved(self):
         return self.invoice_status == self.INVOICE_STATUS_APPROVED
 
-    def can_delete_items(self):
+    def can_edit_items(self):
         return self.invoice_status == self.INVOICE_STATUS_DRAFT
 
     def can_update_items(self):

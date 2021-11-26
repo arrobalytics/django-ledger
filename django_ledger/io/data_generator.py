@@ -21,8 +21,8 @@ from django_ledger.models import EntityModel, TransactionModel, AccountModel, Ve
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemThroughModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
     create_entity_unit_slug
-from django_ledger.utils import generate_random_sku, generate_random_upc, \
-    generate_random_item_id, new_bill_protocol, new_po_protocol, new_invoice_protocol
+from django_ledger.utils import (generate_random_sku, generate_random_upc,
+                                 generate_random_item_id, new_bill_protocol, new_po_protocol)
 
 try:
     from faker import Faker
@@ -447,10 +447,10 @@ class EntityDataGenerator:
             paid_date=paid_dt
         )
 
-        ledger_model, invoice_model = new_invoice_protocol(
-            invoice_model=invoice_model,
+        ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model)
+            user_model=self.user_model,
+            post_ledger=True)
 
         invoice_items = list()
 

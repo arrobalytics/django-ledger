@@ -26,10 +26,10 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io import IOMixIn
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
-from django_ledger.models.utils import LazyImporter
+from django_ledger.models.utils import LazyLoader
 
 UserModel = get_user_model()
-lazy_loader = LazyImporter()
+lazy_loader = LazyLoader()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
