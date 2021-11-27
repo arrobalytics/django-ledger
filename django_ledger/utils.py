@@ -36,85 +36,17 @@ def generate_random_item_id(length=20):
     return ''.join(choice(ITEM_ID_CHARS) for _ in range(length))
 
 
-def new_po_protocol(po_model: PurchaseOrderModel,
-                    entity_slug: str or EntityModel,
-                    user_model: UserModel,
-                    po_date: date = None) -> PurchaseOrderModel:
-    if isinstance(entity_slug, str):
-        entity_qs = EntityModel.objects.for_user(
-            user_model=user_model)
-        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-    elif isinstance(entity_slug, EntityModel):
-        entity_model = entity_slug
-    else:
-        raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-    po_model.po_number = generate_po_number()
-    if po_date:
-        po_model.po_date = po_date
-    po_model.entity = entity_model
-    return po_model
-
-
-def new_bill_protocol(bill_model: BillModel,
-                      entity_slug: str or EntityModel,
-                      user_model: UserModel,
-                      bill_desc: str = None) -> Tuple[LedgerModel, BillModel]:
-    if isinstance(entity_slug, str):
-        entity_qs = EntityModel.objects.for_user(
-            user_model=user_model)
-        entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-    elif isinstance(entity_slug, EntityModel):
-        entity_model = entity_slug
-    else:
-        raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-    bill_model.bill_number = generate_bill_number()
-    ledger_name = f'Bill {bill_model.bill_number}'
-    if bill_desc:
-        ledger_name += f' | {bill_desc}'
-    ledger_model: LedgerModel = LedgerModel.objects.create(
-        entity=entity_model,
-        posted=True,
-        name=ledger_name,
-    )
-    ledger_model.clean()
-    bill_model.ledger = ledger_model
-    return ledger_model, bill_model
-
-
-def new_bankaccount_protocol(bank_account_model: BankAccountModel,
-                             entity_slug: str or EntityModel,
-                             user_model: UserModel,
-                             posted_ledger: bool = True) -> BankAccountModel:
-    if isinstance(entity_slug, str):
-        entity_model = EntityModel.objects.for_user(
-            user_model=user_model).get(
-            slug__exact=entity_slug)
-    elif isinstance(entity_slug, EntityModel):
-        entity_model = entity_slug
-    else:
-        raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-    ledger_model = LedgerModel.objects.create(
-        entity=entity_model,
-        posted=posted_ledger,
-        name=f'Bank Account {"***" + bank_account_model.account_number[-4:]}'
-    )
-    ledger_model.clean()
-    bank_account_model.ledger = ledger_model
-    return bank_account_model
-
-
 def populate_default_coa(entity_model: EntityModel, activate_accounts: bool = False):
-    acc_objs = [AccountModel(
-        code=a['code'],
-        name=a['name'],
-        role=a['role'],
-        balance_type=a['balance_type'],
-        active=activate_accounts,
-        coa=entity_model.coa,
-    ) for a in CHART_OF_ACCOUNTS]
+    acc_objs = [
+        AccountModel(
+            code=a['code'],
+            name=a['name'],
+            role=a['role'],
+            balance_type=a['balance_type'],
+            active=activate_accounts,
+            coa=entity_model.coa,
+        ) for a in CHART_OF_ACCOUNTS
+    ]
 
     for acc in acc_objs:
         acc.full_clean()

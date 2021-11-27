@@ -8,12 +8,15 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.core.validators import int_list_validator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn
+from django_ledger.models import CreateUpdateMixIn, LazyLoader
+
+lazy_loader = LazyLoader()
 
 
 class BankAccountModelManager(models.Manager):
@@ -60,6 +63,29 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager()
+
+    def configure(self,
+                  entity_slug,
+                  user_model,
+                  posted_ledger: bool = True):
+        if isinstance(entity_slug, str):
+            entity_model = EntityModel.objects.for_user(
+                user_model=user_model).get(
+                slug__exact=entity_slug)
+        elif isinstance(entity_slug, EntityModel):
+            entity_model = entity_slug
+        else:
+            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+        LedgerModel = lazy_loader.get_ledger_model()
+        ledger_model = LedgerModel.objects.create(
+            entity=entity_model,
+            posted=posted_ledger,
+            name=f'Bank Account {"***" + self.account_number[-4:]}'
+        )
+        ledger_model.clean()
+        self.ledger = ledger_model
+        return self
 
     class Meta:
         abstract = True

@@ -21,7 +21,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset, BillModelConfigureForm
 from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel
 from django_ledger.models.bill import BillModel
-from django_ledger.utils import new_bill_protocol, mark_accruable_paid
+from django_ledger.utils import mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -128,10 +128,10 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        bill_model = form.save(commit=False)
-        ledger_model, bill_model = new_bill_protocol(
-            bill_model=bill_model,
+        bill_model: BillModel = form.save(commit=False)
+        ledger_model, bill_model = bill_model.configure(
             entity_slug=self.kwargs['entity_slug'],
+            ledger_posted=False,
             user_model=self.request.user)
 
         if self.for_purchase_order:

@@ -16,7 +16,6 @@ from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView,
 from django_ledger.forms.purchase_order import PurchaseOrderModelCreateForm, PurchaseOrderModelUpdateForm, \
     get_po_item_formset
 from django_ledger.models import PurchaseOrderModel, ItemThroughModel
-from django_ledger.utils import new_po_protocol
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -86,8 +85,8 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        po_model = new_po_protocol(
-            po_model=form.instance,
+        po_model: PurchaseOrderModel = form.save(commit=False)
+        po_model = po_model.configure(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         )

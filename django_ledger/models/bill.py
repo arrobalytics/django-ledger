@@ -10,14 +10,19 @@ from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
+from django_ledger.models import LazyLoader
+
+lazy_loader = LazyLoader()
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -102,6 +107,36 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
     def __str__(self):
         return f'Bill: {self.bill_number}'
 
+    def configure(self,
+                  entity_slug: str or EntityModel,
+                  user_model,
+                  ledger_posted: bool = False,
+                  bill_desc: str = None):
+
+        if isinstance(entity_slug, str):
+            entity_qs = EntityModel.objects.for_user(
+                user_model=user_model)
+            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+        elif isinstance(entity_slug, EntityModel):
+            entity_model = entity_slug
+        else:
+            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+        self.bill_number = generate_bill_number()
+        ledger_name = f'Bill {self.bill_number}'
+        if bill_desc:
+            ledger_name += f' | {bill_desc}'
+
+        LedgerModel = lazy_loader.get_ledger_model()
+        ledger_model: LedgerModel = LedgerModel.objects.create(
+            entity=entity_model,
+            posted=ledger_posted,
+            name=ledger_name,
+        )
+        ledger_model.clean()
+        self.ledger = ledger_model
+        return ledger_model, self
+
     def get_absolute_url(self):
         return reverse('django_ledger:invoice-detail',
                        kwargs={
@@ -159,7 +194,7 @@ class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
 
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
-            #self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
+            # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
             self.amount_due = sum(a.total_amount for a in item_list)
             return
         queryset, item_data = self.get_bill_item_data(queryset=queryset)

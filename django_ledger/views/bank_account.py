@@ -12,7 +12,6 @@ from django.views.generic import ListView, CreateView, UpdateView
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models.bank_account import BankAccountModel
-from django_ledger.utils import new_bankaccount_protocol
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -58,10 +57,10 @@ class BankAccountModelCreateView(LoginRequiredMixIn, CreateView):
 
     def form_valid(self, form):
         bank_account_model: BankAccountModel = form.save(commit=False)
-        new_bankaccount_protocol(
-            bank_account_model=bank_account_model,
+        bank_account_model.configure(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user)
+            user_model=self.request.user,
+            posted_ledger=True)
         bank_account_model.save()
         return HttpResponseRedirect(self.get_success_url())
 

@@ -21,8 +21,7 @@ from django_ledger.models import EntityModel, TransactionModel, AccountModel, Ve
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemThroughModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
     create_entity_unit_slug
-from django_ledger.utils import (generate_random_sku, generate_random_upc,
-                                 generate_random_item_id, new_bill_protocol, new_po_protocol)
+from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
     from faker import Faker
@@ -289,10 +288,10 @@ class EntityDataGenerator:
             paid_date=paid_dt
         )
 
-        ledger_model, bill_model = new_bill_protocol(
-            bill_model=bill_model,
+        ledger_model, bill_model = bill_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model)
+            user_model=self.user_model,
+            ledger_posted=True)
 
         bill_items = [
             ItemThroughModel(
@@ -325,8 +324,7 @@ class EntityDataGenerator:
     def create_po(self, po_date: date):
 
         po_model: PurchaseOrderModel = PurchaseOrderModel()
-        po_model = new_po_protocol(
-            po_model=po_model,
+        po_model = po_model.configure(
             entity_slug=self.entity_model,
             user_model=self.user_model,
             po_date=po_date
@@ -371,8 +369,8 @@ class EntityDataGenerator:
                     bill_number=f'Bill for {po_model.po_number}',
                     date=bill_dt,
                     vendor=choice(self.vendor_models))
-                ledger_model, bill_model = new_bill_protocol(
-                    bill_model=bill_model,
+                ledger_model, bill_model = bill_model.configure(
+                    ledger_posted=True,
                     entity_slug=self.entity_model.slug,
                     user_model=self.user_model
                 )
