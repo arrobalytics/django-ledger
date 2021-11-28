@@ -487,6 +487,9 @@ class EntityDataGenerator:
         invoice_model.update_amount_due(item_list=invoice_items)
         invoice_model.amount_paid = Decimal.from_float(round(random() * float(invoice_model.amount_due), 2))
         invoice_model.new_state(commit=True)
+        is_approved = random() > 0.2
+        if is_approved:
+            invoice_model.invoice_status = InvoiceModel.INVOICE_STATUS_APPROVED
         invoice_model.clean()
         invoice_model.save()
         invoice_model.itemthroughmodel_set.bulk_create(invoice_items)

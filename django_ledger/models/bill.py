@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn
 from django_ledger.models import LazyLoader
 
 lazy_loader = LazyLoader()
@@ -70,7 +70,7 @@ class BillModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class BillModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
+class BillModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True

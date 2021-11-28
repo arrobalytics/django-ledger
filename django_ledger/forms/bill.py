@@ -148,13 +148,12 @@ class BillItemForm(ModelForm):
 
     def clean(self):
         cleaned_data = super(BillItemForm, self).clean()
-        quantity = cleaned_data['quantity']
-        if self.instance.item_model_id:
-            bill_item_model: ItemThroughModel = self.instance
+        bill_item_model: ItemThroughModel = self.instance
+        if bill_item_model.po_model is not None:
+            quantity = cleaned_data['quantity']
             if quantity > bill_item_model.po_quantity:
                 raise ValidationError(f'Cannot bill more than {bill_item_model.po_quantity} authorized.')
         return cleaned_data
-
 
     class Meta:
         model = ItemThroughModel

@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccruableItemMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn
 
 UserModel = get_user_model()
 
@@ -60,7 +60,7 @@ class InvoiceModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class InvoiceModelAbstract(AccruableItemMixIn, CreateUpdateMixIn):
+class InvoiceModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 

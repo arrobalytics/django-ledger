@@ -22,7 +22,6 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
 from django_ledger.models import EntityModel, LedgerModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.utils import mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -331,20 +330,20 @@ class InvoiceModelMarkPaidView(LoginRequiredMixIn,
         ).select_related('ledger')
 
     def post(self, request, *args, **kwargs):
-        invoice: InvoiceModel = self.get_object()
-        mark_accruable_paid(
-            accruable_model=invoice,
+        invoice_model: InvoiceModel = self.get_object()
+        invoice_model.mark_as_paid(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
+            user_model=self.request.user,
+            commit=True
         )
         messages.add_message(request,
                              messages.SUCCESS,
-                             f'Successfully marked bill {invoice.invoice_number} as Paid.',
+                             f'Successfully marked bill {invoice_model.invoice_number} as Paid.',
                              extra_tags='is-success')
         redirect_url = reverse('django_ledger:invoice-detail',
                                kwargs={
                                    'entity_slug': self.kwargs['entity_slug'],
-                                   'invoice_pk': invoice.uuid
+                                   'invoice_pk': invoice_model.uuid
                                })
         return HttpResponseRedirect(redirect_url)
 

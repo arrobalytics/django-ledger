@@ -101,8 +101,10 @@
                                         class="button is-primary is-fullwidth djetler_my_1">
                                     {% trans 'Save' %}
                                 </button>
+                                <a href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                                   class="button is-small is-dark is-fullwidth">{% trans 'Back to Bill' %}</a>
                                 <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
-                                   class="button is-small is-info is-fullwidth">{% trans 'Bill List' %}</a>
+                                   class="button is-small is-info is-fullwidth mt-2">{% trans 'Bill List' %}</a>
                                 <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                             </form>

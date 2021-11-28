@@ -107,7 +107,7 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
 
-class AccruableItemMixIn(models.Model):
+class LedgerPlugInMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -244,25 +244,6 @@ class AccruableItemMixIn(models.Model):
             payments = self.amount_paid or 0
             return amount_due - payments
 
-    def get_account_bt(self, account_id, user_model, entity_slug: str):
-        """
-        Creates a dictionary that contains the balance_type parameter of an account for Migration in case there
-        are no existing entries.
-        :return:
-        """
-        AccountModel = lazy_loader.get_account_model()
-
-        try:
-            account = AccountModel.on_coa.for_entity_available(
-                user_model=user_model,
-                entity_slug=entity_slug
-            ).get(uuid__exact=account_id)
-        except ObjectDoesNotExist:
-            raise ValidationError(f'Account ID: {account_id} may be locked or unavailable...')
-        return {
-            'balance_type': account.balance_type
-        }
-
     def get_item_data(self, entity_slug: str, queryset=None):
         raise NotImplementedError('Must implement get_account_balance_data method.')
 
@@ -308,6 +289,36 @@ class AccruableItemMixIn(models.Model):
             self.unearned_account_id is not None,
             self.prepaid_account_id is not None
         ])
+
+    def mark_as_paid(self,
+                     user_model,
+                     entity_slug: str,
+                     paid_date: date = None,
+                     commit: bool = False):
+
+        self.paid = True
+        self.progress = Decimal.from_float(1.0)
+        self.amount_paid = self.amount_due
+        paid_dt = localdate() if not paid_date else paid_date
+
+        if not self.paid_date:
+            self.paid_date = paid_dt
+        if self.paid_date > paid_dt:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        if self.paid_date < self.date:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+                                  f' date {self.date}.')
+        self.update_state()
+        self.clean()
+        if commit:
+            self.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_slug
+            )
+            self.save()
+            ledger_model = self.ledger
+            ledger_model.locked = True
+            ledger_model.save(update_fields=['locked', 'updated'])
 
     def migrate_state(self,
                       user_model,
@@ -508,7 +519,6 @@ class AccruableItemMixIn(models.Model):
             balance_tx_data(tx_data=txs, perform_correction=True)
             TransactionModel.objects.bulk_create(txs)
         return item_data, digest_data
-
 
     def void_state(self, commit: bool = False):
         void_state = {

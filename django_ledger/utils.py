@@ -2,18 +2,13 @@ from datetime import date
 from itertools import groupby
 from random import choice
 from string import ascii_uppercase, ascii_lowercase, digits
-from typing import Tuple
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.db.models import QuerySet
-from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localdate
 
-from django_ledger.models import (AccruableItemMixIn, generate_po_number, PurchaseOrderModel, EntityModel,
-                                  LedgerModel, BankAccountModel, AccountModel)
-from django_ledger.models import generate_invoice_number, InvoiceModel, generate_bill_number, BillModel
+from django_ledger.models import (LedgerPlugInMixIn, EntityModel, AccountModel)
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 
 UserModel = get_user_model()
@@ -124,18 +119,18 @@ def accruable_net_summary(queryset: QuerySet) -> dict:
     return nets
 
 
-def mark_accruable_paid(accruable_model: AccruableItemMixIn, user_model, entity_slug: str):
-    accruable_model.paid = True
-    accruable_model.clean()
-    accruable_model.save()
-    accruable_model.migrate_state(
-        user_model=user_model,
-        entity_slug=entity_slug
-    )
-
-    ledger = accruable_model.ledger
-    ledger.locked = True
-    ledger.save(update_fields=['locked'])
+# def mark_accruable_paid(accruable_model: LedgerPlugInMixIn, user_model, entity_slug: str):
+#     accruable_model.paid = True
+#     accruable_model.clean()
+#     accruable_model.save(update_fields=['paid', 'updated'])
+#     accruable_model.migrate_state(
+#         user_model=user_model,
+#         entity_slug=entity_slug
+#     )
+#
+#     ledger = accruable_model.ledger
+#     ledger.locked = True
+#     ledger.save(update_fields=['locked'])
 
 
 def get_end_date_from_session(entity_slug: str, request) -> date:

@@ -17,11 +17,11 @@
                     <p class="has-text-danger has-text-weight-bold is-size-5">Past
                         Due: {{ bill.due_date | timesince }} ago</p>
                 {% endif %}
-                {% if bill.progressible %}
+                {% if bill.accrue %}
                     <p>Is Accrued: <span
                             class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                         {% else %}
-                    <p>Is Progressible:
+                    <p>Accrue:
                     <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                 {% endif %}
                 <p class="is-size-5 has-text-danger">You Still Owe:

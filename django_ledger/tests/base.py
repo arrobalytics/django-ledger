@@ -47,7 +47,10 @@ class DjangoLedgerBaseTest(TestCase):
         )
 
     def login_client(self):
-        return self.CLIENT.login(username=self.USERNAME, password=self.PASSWORD)
+        return self.CLIENT.login(
+            username=self.USERNAME,
+            password=self.PASSWORD
+        )
 
     def logout_client(self):
         self.CLIENT.logout()
