@@ -12,12 +12,8 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views import View
-from django.views.generic import (
-    UpdateView, CreateView, DeleteView, MonthArchiveView,
-    ArchiveIndexView, YearArchiveView, DetailView, RedirectView
-)
-from django.views.generic.detail import SingleObjectMixin
+from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
+                                  ArchiveIndexView, YearArchiveView, DetailView)
 
 from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
 from django_ledger.models import EntityModel, LedgerModel
@@ -30,7 +26,7 @@ class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
-    paginate_by = 10
+    paginate_by = 20
     paginate_orphans = 2
     allow_empty = True
     extra_context = {
@@ -99,7 +95,13 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_update.html'
     form_class = InvoiceModelUpdateForm
+    http_method_names = ['get', 'post']
+
     action_update_items = False
+    action_mark_as_paid = False
+    action_lock_ledger = False
+    action_unlock_ledger = False
+    action_force_migrate = False
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -184,9 +186,11 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
+        response = super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
+        invoice_model = self.object
+        ledger_model: LedgerModel = invoice_model.ledger
+
         if self.action_update_items:
-            self.object = self.get_object()
-            invoice_model = self.object
             InvoiceItemFormset = get_invoice_item_formset(invoice_model)
             item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
                                                                   user_model=self.request.user,
@@ -254,7 +258,93 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                 context = self.get_context_data(item_formset=item_formset)
                 return self.render_to_response(context=context)
 
-        return super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
+        if self.action_mark_as_paid:
+            invoice_model: InvoiceModel = self.get_object()
+            invoice_model.mark_as_paid(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                commit=True
+            )
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 f'Successfully marked bill {invoice_model.invoice_number} as Paid.',
+                                 extra_tags='is-success')
+            redirect_url = reverse('django_ledger:invoice-detail',
+                                   kwargs={
+                                       'entity_slug': self.kwargs['entity_slug'],
+                                       'invoice_pk': invoice_model.uuid
+                                   })
+            return HttpResponseRedirect(redirect_url)
+
+        if self.action_lock_ledger:
+            if not ledger_model.locked:
+                ledger_model.locked = True
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{invoice_model.invoice_number} is locked.',
+                                     extra_tags='is-success')
+
+                return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                                    kwargs={
+                                                        'entity_slug': entity_slug,
+                                                        'invoice_pk': invoice_pk
+                                                    }))
+
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{invoice_model.invoice_number} already locked.',
+                                     extra_tags='is-warning')
+
+        if self.action_unlock_ledger:
+            if ledger_model.locked:
+                ledger_model.locked = False
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{invoice_model.invoice_number} is unlocked.',
+                                     extra_tags='is-success')
+
+                return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                                    kwargs={
+                                                        'entity_slug': entity_slug,
+                                                        'invoice_pk': invoice_pk
+                                                    }))
+
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{invoice_model.invoice_number} already unlocked.',
+                                     extra_tags='is-warning')
+
+        if self.action_force_migrate:
+            if invoice_model.ledger.locked:
+                messages.add_message(self.request,
+                                     level=messages.ERROR,
+                                     message=f'Cannot migrate {invoice_model.invoice_number}. Invoice ledger is locked.',
+                                     extra_tags='is-danger')
+            else:
+                items, _ = invoice_model.migrate_state(
+                    user_model=self.request.user,
+                    entity_slug=self.kwargs['entity_slug'],
+                    force_migrate=True
+                )
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{invoice_model.invoice_number} migrated!...',
+                                     extra_tags='is-success')
+                if not items:
+                    invoice_model.amount_due = 0
+                    invoice_model.save(update_fields=['amount_due', 'updated'])
+
+                    return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'invoice_pk': invoice_pk
+                                                        }))
+
+        return response
 
 
 class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
@@ -314,115 +404,3 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
-
-
-class InvoiceModelMarkPaidView(LoginRequiredMixIn,
-                               View,
-                               SingleObjectMixin):
-    http_method_names = ['post']
-    slug_url_kwarg = 'invoice_pk'
-    slug_field = 'uuid'
-
-    def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('ledger')
-
-    def post(self, request, *args, **kwargs):
-        invoice_model: InvoiceModel = self.get_object()
-        invoice_model.mark_as_paid(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-            commit=True
-        )
-        messages.add_message(request,
-                             messages.SUCCESS,
-                             f'Successfully marked bill {invoice_model.invoice_number} as Paid.',
-                             extra_tags='is-success')
-        redirect_url = reverse('django_ledger:invoice-detail',
-                               kwargs={
-                                   'entity_slug': self.kwargs['entity_slug'],
-                                   'invoice_pk': invoice_model.uuid
-                               })
-        return HttpResponseRedirect(redirect_url)
-
-
-class InvoiceModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
-    context_object_name = 'invoice_model'
-    slug_field = 'uuid'
-    slug_url_kwarg = 'invoice_pk'
-    http_method_names = ['post']
-
-    action = None
-    ACTION_FORCE_MIGRATE = 'force-migrate'
-    ACTION_LOCK = 'lock'
-    ACTION_UNLOCK = 'unlock'
-
-    def get_redirect_url(self, *args, **kwargs):
-        invoice_model: InvoiceModel = self.get_object()
-        return reverse('django_ledger:invoice-update',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'invoice_pk': invoice_model.uuid
-                       })
-
-    def post(self, request, *args, **kwargs):
-        invoice_model: InvoiceModel = self.get_object()
-        ledger_model: LedgerModel = invoice_model.ledger
-
-        if self.action == self.ACTION_FORCE_MIGRATE:
-
-            if invoice_model.ledger.locked:
-                messages.add_message(self.request,
-                                     level=messages.ERROR,
-                                     message=f'Cannot migrate {invoice_model.invoice_number}. Invoice ledger is locked.',
-                                     extra_tags='is-danger')
-            else:
-                items, _ = invoice_model.migrate_state(
-                    user_model=self.request.user,
-                    entity_slug=self.kwargs['entity_slug'],
-                    force_migrate=True
-                )
-                messages.add_message(self.request,
-                                     level=messages.SUCCESS,
-                                     message=f'{invoice_model.invoice_number} migrated!...',
-                                     extra_tags='is-success')
-                if not items:
-                    invoice_model.amount_due = 0
-                    invoice_model.save(update_fields=['amount_due', 'updated'])
-
-        elif self.action == self.ACTION_LOCK:
-            if not ledger_model.locked:
-                ledger_model.locked = True
-                ledger_model.save(update_fields=['locked', 'updated'])
-                messages.add_message(self.request,
-                                     level=messages.SUCCESS,
-                                     message=f'{invoice_model.invoice_number} is locked.',
-                                     extra_tags='is-success')
-            else:
-                messages.add_message(self.request,
-                                     level=messages.WARNING,
-                                     message=f'{invoice_model.invoice_number} already locked.',
-                                     extra_tags='is-warning')
-
-        elif self.action == self.ACTION_UNLOCK:
-            if ledger_model.locked:
-                ledger_model.locked = False
-                ledger_model.save(update_fields=['locked', 'updated'])
-                messages.add_message(self.request,
-                                     level=messages.SUCCESS,
-                                     message=f'{invoice_model.invoice_number} is unlocked.',
-                                     extra_tags='is-success')
-            else:
-                messages.add_message(self.request,
-                                     level=messages.WARNING,
-                                     message=f'{invoice_model.invoice_number} already unlocked.',
-                                     extra_tags='is-warning')
-        return super(InvoiceModelActionView, self).post(self.request)
-
-    def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('ledger')
