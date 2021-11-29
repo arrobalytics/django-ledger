@@ -24,7 +24,9 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
 from django_ledger.models.utils import LazyLoader
 
@@ -339,6 +341,26 @@ class EntityModelAbstract(NodeTreeMixIn,
                                           ])
 
         return adj, counted_qs, recorded_qs
+
+    def populate_default_coa(self, activate_accounts: bool = False):
+        coa: ChartOfAccountModel = self.coa
+        has_accounts = coa.accounts.all().exists()
+        if not has_accounts:
+            acc_objs = [
+                AccountModel(
+                    code=a['code'],
+                    name=a['name'],
+                    role=a['role'],
+                    balance_type=a['balance_type'],
+                    active=activate_accounts,
+                    coa=self.coa,
+                ) for a in CHART_OF_ACCOUNTS
+            ]
+
+            for acc in acc_objs:
+                acc.clean()
+            AccountModel.on_coa.bulk_create(acc_objs)
+            # acc.save()
 
     def clean(self):
         if not self.name:

@@ -5,6 +5,7 @@
     <div class="card-content">
         <div class="has-text-centered">
             <h2 class="is-size-2 has-font-weight-medium">
+                {% if has_year %}Fiscal Year {{ to_date.year }}{% endif %}
                 {% if has_month %}{{ to_date | date:"F Y" }}{% endif %}
                 {% if has_quarter %}Q{{ quarter }} {{ year }}{% endif %}
                 {% if has_date %}{{ to_date | date }}{% endif %}

@@ -5,7 +5,6 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-from django.contrib.messages import add_message, WARNING
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -15,7 +14,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.views.mixins import LoginRequiredMixIn, ConfirmActionMixIn
+from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 # JE Views ---
@@ -61,7 +60,7 @@ class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
         ).prefetch_related('txs', 'txs__account')
 
 
-class JournalEntryUpdateView(LoginRequiredMixIn, ConfirmActionMixIn, UpdateView):
+class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
     slug_url_kwarg = 'je_pk'
@@ -72,6 +71,7 @@ class JournalEntryUpdateView(LoginRequiredMixIn, ConfirmActionMixIn, UpdateView)
     }
     action_mark_as_posted: bool = False
     action_mark_as_locked: bool = False
+    action_mark_as_unlocked: bool = False
     http_method_names = ['get', 'post']
 
     def get_slug_field(self):
@@ -102,33 +102,16 @@ class JournalEntryUpdateView(LoginRequiredMixIn, ConfirmActionMixIn, UpdateView)
         response = super(JournalEntryUpdateView, self).get(request, *args, **kwargs)
         je_model: JournalEntryModel = self.object
 
-        if any([
-            self.action_mark_as_posted,
-            self.action_mark_as_locked
-        ]):
+        if self.action_mark_as_posted:
+            je_model.mark_as_posted()
+        if self.action_mark_as_locked:
+            je_model.mark_as_locked(commit=True)
+        if self.action_mark_as_unlocked:
+            je_model.mark_as_unlocked(commit=True)
 
-            confirm_action = self.is_confirmed()
-
-            if not confirm_action:
-                add_message(request,
-                            level=WARNING,
-                            message=f'Must explicitly confirm action by providing right parameters.',
-                            extra_tags='is-warning')
-                context = self.get_context_data()
-
-            else:
-                if self.action_mark_as_posted:
-                    je_model.mark_as_posted()
-                if self.action_mark_as_locked:
-                    je_model.mark_as_locked()
-
-                next_url = self.request.GET.get('next')
-                if next_url:
-                    return HttpResponseRedirect(next_url)
-
-                context = self.get_context_data(object=je_model)
-
-            return self.render_to_response(context)
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return HttpResponseRedirect(next_url)
 
         return response
 

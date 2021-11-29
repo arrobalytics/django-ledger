@@ -23,7 +23,7 @@ from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel
                                   JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel)
 from django_ledger.utils import (
     get_default_entity_session_key,
-    populate_default_coa, set_default_entity,
+    set_default_entity,
     set_session_date_filter
 )
 from django_ledger.views.mixins import (
@@ -67,7 +67,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
         default_coa = form.cleaned_data.get('default_coa')
         activate_accounts = form.cleaned_data.get('activate_all_accounts')
         if default_coa:
-            populate_default_coa(entity_model=entity_model, activate_accounts=activate_accounts)
+            entity_model.populate_default_coa(activate_accounts=activate_accounts)
 
         sample_data = form.cleaned_data.get('generate_sample_data')
         if sample_data:
@@ -80,8 +80,6 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
                 tx_quantity=50
             )
             entity_generator.populate_entity()
-
-        self.object = entity_model
         return super().form_valid(form)
 
 
