@@ -3,11 +3,6 @@
 
 <div id="{{ object.get_html_id }}" class="modal">
 
-    <form name="{{ object.get_html_form_name }}"
-          method="post"
-          action="{{ action_url }}">
-        {% csrf_token %}
-    </form>
 
     <div class="modal-background"></div>
 
@@ -19,10 +14,20 @@
             <div class="card-footer">
                 <a onclick="djLedger.toggleModal('{{ object.get_html_id }}')"
                    class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
-                <a onclick="djLedger.submitForm(
-                        '{{ object.get_html_form_name }}',
-                        '{{ object.get_html_id }}')"
-                   class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+                {% if http_method == 'post' %}
+                    <form name="{{ object.get_html_form_name }}"
+                          method="post"
+                          action="{{ action_url }}">
+                        {% csrf_token %}
+                    </form>
+                    <a onclick="djLedger.submitForm(
+                            '{{ object.get_html_form_name }}',
+                            '{{ object.get_html_id }}')"
+                       class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+                {% elif http_method == 'get' %}
+                    <a href="{{ action_url }}"
+                       class="card-footer-item has-background-info-light">{% trans 'Mark As Paid' %}</a>
+                {% endif %}
             </div>
         </div>
     </div>

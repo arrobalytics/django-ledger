@@ -440,22 +440,3 @@ class SetSessionDate(LoginRequiredMixIn, RedirectView):
                                    'day': end_date.day,
                                })
         return super().post(request, *args, **kwargs)
-
-# class GenerateSampleData(LoginRequiredMixIn, RedirectView):
-#
-#     def get_redirect_url(self, *args, **kwargs):
-#         return reverse('django_ledger:entity-dashboard',
-#                        kwargs={
-#                            'entity_slug': self.kwargs['entity_slug']
-#                        })
-#
-#     def get(self, request, *args, **kwargs):
-#         if request.user.is_authenticated:
-#             generate_sample_data(
-#                 entity_model=self.kwargs['entity_slug'],
-#                 user_model=self.request.user,
-#                 start_dt=localtime() - timedelta(days=30 * 6),
-#                 days_fw=30 * 9,
-#                 tx_quantity=5
-#             )
-#         return super().get(request, *args, **kwargs)

@@ -159,26 +159,12 @@
                                            href="{% url 'django_ledger:je-list' ledger_pk=bill.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
-
-                                        <form action="{% url "django_ledger:bill-action-lock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-success is-fullwidth mt-2">
-                                                {% trans 'Lock Bill' %}
-                                            </button>
-                                        </form>
-                                        <form action="{% url "django_ledger:bill-action-unlock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
-                                                {% trans 'Unlock Bill' %}
-                                            </button>
-                                        </form>
-                                        <form action="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="button is-small is-danger is-fullwidth mt-2">
-                                                {% trans 'Force Migrate Bill' %}
-                                            </button>
-                                        </form>
-
+                                        <a href="{% url "django_ledger:bill-action-lock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                                            class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Bill' %}</a>
+                                        <a href="{% url "django_ledger:bill-action-unlock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                                            class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Bill' %}</a>
+                                        <a href="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                                            class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate Bill' %}</a>
                                     </div>
                                 </div>
                             </div>

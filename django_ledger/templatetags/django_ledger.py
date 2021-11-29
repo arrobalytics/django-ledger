@@ -164,10 +164,10 @@ def jes_table(context, next_url=None):
     ledger_pk = context['view'].kwargs['ledger_pk']
     if not next_url:
         next_url = reverse('django_ledger:je-list',
-                                          kwargs={
-                                              'entity_slug': entity_slug,
-                                              'ledger_pk': ledger_pk
-                                          })
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'ledger_pk': ledger_pk
+                           })
     return {
         'jes': context['journal_entries'],
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -392,13 +392,14 @@ def chart_container(chart_id, endpoint=None):
 
 
 @register.inclusion_tag('django_ledger/tags/modals.html', takes_context=True)
-def mark_as_paid(context, model, entity_slug: str = None):
+def modal_action(context, model, http_method: str = 'post', entity_slug: str = None):
     if not entity_slug:
         entity_slug = context['view'].kwargs['entity_slug']
     action_url = model.get_mark_paid_url(entity_slug=entity_slug)
     return {
         'object': model,
         'action_url': action_url,
+        'http_method': http_method,
         'message': f'Do you want to mark {model.__class__._meta.verbose_name} {model.get_document_id()} as paid?'
     }
 

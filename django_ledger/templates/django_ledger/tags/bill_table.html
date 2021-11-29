@@ -57,7 +57,7 @@
                                    class="dropdown-item has-text-warning-dark">Update</a>
 
                                 {% if not bill.paid %}
-                                    {% mark_as_paid bill entity_slug %}
+                                    {% modal_action bill 'get' entity_slug %}
                                     <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"
                                        class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
                                 {% endif %}

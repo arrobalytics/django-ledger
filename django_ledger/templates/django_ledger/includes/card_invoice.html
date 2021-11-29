@@ -30,12 +30,9 @@
                           value="{{ invoice.get_progress_percent }}"
                           max="100">{{ invoice.get_progress | percentage }}
                 </progress>
-
                 {# MARK AS PAID MODAL #}
-                {% mark_as_paid invoice %}
-
+                {% modal_action invoice %}
             </div>
-
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
@@ -100,7 +97,7 @@
 
 
                 {# MARK AS PAID MODAL #}
-                {% mark_as_paid invoice %}
+                {% modal_action invoice %}
 
             </div>
             <footer class="card-footer">

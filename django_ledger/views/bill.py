@@ -301,68 +301,15 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
-    def post(self, request, bill_pk, entity_slug, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
 
-        response = super(BillModelUpdateView, self).post(request, *args, **kwargs)
+        # this action can only be used via POST request...
+        if self.action_update_items:
+            return HttpResponseBadRequest()
+
+        response = super(BillModelUpdateView, self).get(request, *args, **kwargs)
         bill_model: BillModel = self.get_object()
         ledger_model: LedgerModel = bill_model.ledger
-
-        if self.action_update_items:
-            item_formset: BillItemFormset = BillItemFormset(request.POST,
-                                                            user_model=self.request.user,
-                                                            bill_pk=bill_pk,
-                                                            entity_slug=entity_slug)
-
-            if item_formset.is_valid():
-                if item_formset.has_changed():
-                    invoice_items = item_formset.save(commit=False)
-                    bill_qs = BillModel.objects.for_entity(
-                        user_model=self.request.user,
-                        entity_slug=entity_slug
-                    )
-                    bill_model: BillModel = get_object_or_404(bill_qs, uuid__exact=bill_pk)
-
-                    entity_qs = EntityModel.objects.for_user(
-                        user_model=self.request.user
-                    )
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-
-                    for item in invoice_items:
-                        item.entity = entity_model
-                        item.bill_model = bill_model
-
-                    item_formset.save()
-                    # todo: pass item list to update_amount_due...?
-                    bill_model.update_amount_due()
-                    bill_model.new_state(commit=True)
-                    bill_model.clean()
-                    bill_model.save(update_fields=['amount_due',
-                                                   'amount_receivable',
-                                                   'amount_unearned',
-                                                   'amount_earned',
-                                                   'updated'])
-
-                    bill_model.migrate_state(
-                        entity_slug=entity_slug,
-                        user_model=self.request.user,
-                        # itemthrough_models=bill_item_list,
-                        force_migrate=True
-                    )
-
-                    messages.add_message(request,
-                                         message=f'Items for Invoice {bill_model.bill_number} saved.',
-                                         level=messages.SUCCESS,
-                                         extra_tags='is-success')
-
-                    return HttpResponseRedirect(reverse('django_ledger:bill-update',
-                                                        kwargs={
-                                                            'entity_slug': entity_slug,
-                                                            'bill_pk': bill_pk
-                                                        }))
-
-            else:
-                context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context=context)
 
         if self.action_mark_as_paid:
             bill_model.mark_as_paid(
@@ -445,6 +392,69 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                        'bill_pk': bill_model.uuid
                                    })
             return HttpResponseRedirect(redirect_url)
+
+        return response
+
+    def post(self, request, bill_pk, entity_slug, *args, **kwargs):
+
+        response = super(BillModelUpdateView, self).post(request, *args, **kwargs)
+
+        if self.action_update_items:
+            item_formset: BillItemFormset = BillItemFormset(request.POST,
+                                                            user_model=self.request.user,
+                                                            bill_pk=bill_pk,
+                                                            entity_slug=entity_slug)
+
+            if item_formset.is_valid():
+                if item_formset.has_changed():
+                    invoice_items = item_formset.save(commit=False)
+                    bill_qs = BillModel.objects.for_entity(
+                        user_model=self.request.user,
+                        entity_slug=entity_slug
+                    )
+                    bill_model: BillModel = get_object_or_404(bill_qs, uuid__exact=bill_pk)
+
+                    entity_qs = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    )
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+
+                    for item in invoice_items:
+                        item.entity = entity_model
+                        item.bill_model = bill_model
+
+                    item_formset.save()
+                    # todo: pass item list to update_amount_due...?
+                    bill_model.update_amount_due()
+                    bill_model.new_state(commit=True)
+                    bill_model.clean()
+                    bill_model.save(update_fields=['amount_due',
+                                                   'amount_receivable',
+                                                   'amount_unearned',
+                                                   'amount_earned',
+                                                   'updated'])
+
+                    bill_model.migrate_state(
+                        entity_slug=entity_slug,
+                        user_model=self.request.user,
+                        # itemthrough_models=bill_item_list,
+                        force_migrate=True
+                    )
+
+                    messages.add_message(request,
+                                         message=f'Items for Invoice {bill_model.bill_number} saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
+
+                    return HttpResponseRedirect(reverse('django_ledger:bill-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'bill_pk': bill_pk
+                                                        }))
+
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
 
         return response
 
