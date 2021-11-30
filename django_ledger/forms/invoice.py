@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.core.exceptions import ValidationError
-from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory
+from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory, Textarea
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
@@ -122,7 +122,8 @@ class InvoiceModelUpdateForm(ModelForm):
             'progress',
             'accrue',
             'invoice_status',
-            'terms'
+            'terms',
+            'markdown_notes'
         ]
         labels = {
             'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
@@ -144,6 +145,9 @@ class InvoiceModelUpdateForm(ModelForm):
             'progress': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'accrue': CheckboxInput(attrs={'type': 'checkbox'}),
             'paid': CheckboxInput(attrs={'type': 'checkbox'}),
+            'markdown_notes': Textarea(attrs={
+                'class': 'textarea'
+            })
 
         }
 
@@ -211,7 +215,6 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
-        self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
             if not self.INVOICE_MODEL.can_edit_items():
                 form.fields['item_model'].disabled = True

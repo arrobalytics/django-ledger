@@ -19,8 +19,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn
 from django_ledger.models import LazyLoader
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn, MarkdownNotesMixIn
 
 lazy_loader = LazyLoader()
 
@@ -70,14 +70,30 @@ class BillModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class BillModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
+class BillModelAbstract(LedgerPlugInMixIn,
+                        MarkdownNotesMixIn,
+                        CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
 
+    BILL_STATUS_DRAFT = 'draft'
+    BILL_STATUS_REVIEW = 'in_review'
+    BILL_STATUS_APPROVED = 'approved'
+    BILL_STATUS_CANCELED = 'canceled'
+
+    BILL_STATUS = [
+        (BILL_STATUS_DRAFT, _('Draft')),
+        (BILL_STATUS_REVIEW, _('In Review')),
+        (BILL_STATUS_APPROVED, _('Approved')),
+        (BILL_STATUS_CANCELED, _('Canceled'))
+    ]
+
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
+    bill_status = models.CharField(max_length=10, choices=BILL_STATUS, default=BILL_STATUS[0][0],
+                                   verbose_name=_('Bill Status'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
     vendor = models.ForeignKey('django_ledger.VendorModel',
                                on_delete=models.CASCADE,
@@ -201,10 +217,34 @@ class BillModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
         self.amount_due = item_data['amount_due']
         return queryset, item_data
 
+    def is_approved(self):
+        return self.bill_status == self.BILL_STATUS_APPROVED
+
+    def is_draft(self):
+        return self.bill_status == self.BILL_STATUS_DRAFT
+
+    def can_edit_items(self):
+        return self.is_draft()
+
+    def can_update_items(self):
+        return self.bill_status not in [
+            self.BILL_STATUS_APPROVED,
+            self.BILL_STATUS_CANCELED
+        ]
+
     def clean(self):
         if not self.bill_number:
             self.bill_number = generate_bill_number()
+
+        if self.is_draft():
+            self.amount_paid = Decimal('0.00')
+            self.paid = False
+            self.paid_date = None
+            self.progress = 0
+
         super().clean()
+
+
 
 
 class BillModel(BillModelAbstract):

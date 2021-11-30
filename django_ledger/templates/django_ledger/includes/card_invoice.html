@@ -23,7 +23,8 @@
                     <p>Accrue:
                     <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                 {% endif %}
-                <p class="is-size-5 has-text-success">Owed to You: {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
+                <p class="is-size-5 has-text-success">Owed to You:
+                    {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
                 <p>Amount Paid: {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
                 <p>Progressed: {{ invoice.get_progress | percentage }}</p><br>
                 <progress class="progress is-medium is-success"
@@ -31,15 +32,17 @@
                           max="100">{{ invoice.get_progress | percentage }}
                 </progress>
                 {# MARK AS PAID MODAL #}
-                {% modal_action invoice %}
+                {% modal_action invoice 'get' entity_slug %}
             </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-warning-dark has-text-centered">{% trans 'Update' %}</a>
-                <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
-                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                {% if not invoice.paid %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                {% endif %}
             </footer>
         </div>
     {% elif style == 'invoice-detail' %}
@@ -72,7 +75,8 @@
                         <p class="has-text-danger has-text-weight-bold is-size-3">Past
                             Due: {{ invoice.due_date | timesince }} ago</p>
                     {% endif %}
-                    <p class="is-size-5 has-text-success">Owed to You: {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
+                    <p class="is-size-5 has-text-success">Owed to You:
+                        {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
 
                     {% if invoice.accrue %}
                         <p>Accrue: <span
@@ -83,9 +87,7 @@
                             <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                         </p>
                     {% endif %}
-
                     <p>Amount Paid: {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
-
                     <p>Progressed: {{ invoice.get_progress_percent }}%</p><br>
                     <progress class="progress is-medium is-success"
                               value="{{ invoice.get_progress_percent }}"
@@ -95,16 +97,17 @@
 
                 {% endif %}
 
-
                 {# MARK AS PAID MODAL #}
-                {% modal_action invoice %}
+                {% modal_action invoice 'get' entity_slug %}
 
             </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-                <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
-                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                {% if not invoice.paid %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+                {% endif %}
                 <a href="{% url 'django_ledger:invoice-delete' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
             </footer>

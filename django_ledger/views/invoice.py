@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -184,79 +184,14 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
-    def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
-
-        response = super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
-        invoice_model = self.object
-        ledger_model: LedgerModel = invoice_model.ledger
+    def get(self, request, entity_slug, invoice_pk, *args, **kwargs):
 
         if self.action_update_items:
-            InvoiceItemFormset = get_invoice_item_formset(invoice_model)
-            item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
-                                                                  user_model=self.request.user,
-                                                                  invoice_model=invoice_model,
-                                                                  entity_slug=entity_slug)
+            return HttpResponseBadRequest()
 
-            if not invoice_model.can_update_items():
-                messages.add_message(
-                    request,
-                    message=f'Cannot update items once Invoice is {invoice_model.get_invoice_status_display()}',
-                    level=messages.ERROR,
-                    extra_tags='is-danger'
-                )
-                context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context=context)
-
-            if item_formset.is_valid():
-                if item_formset.has_changed():
-                    invoice_items = item_formset.save(commit=False)
-                    invoice_qs = InvoiceModel.objects.for_entity(
-                        user_model=self.request.user,
-                        entity_slug=entity_slug
-                    )
-                    invoice_model: InvoiceModel = get_object_or_404(invoice_qs, uuid__exact=invoice_pk)
-
-                    entity_qs = EntityModel.objects.for_user(
-                        user_model=self.request.user
-                    )
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-
-                    for item in invoice_items:
-                        item.entity = entity_model
-                        item.invoice_model = invoice_model
-
-                    item_formset.save()
-                    # todo: pass item list to update_amount_due...?
-                    invoice_model.update_amount_due()
-                    invoice_model.new_state(commit=True)
-                    invoice_model.clean()
-                    invoice_model.save(update_fields=['amount_due',
-                                                      'amount_receivable',
-                                                      'amount_unearned',
-                                                      'amount_earned',
-                                                      'updated'])
-
-                    invoice_model.migrate_state(
-                        entity_slug=entity_slug,
-                        user_model=self.request.user,
-                        # itemthrough_queryset=invoice_item_list,
-                        force_migrate=True
-                    )
-
-                    messages.add_message(request,
-                                         message=f'Items for Invoice {invoice_model.invoice_number} saved.',
-                                         level=messages.SUCCESS,
-                                         extra_tags='is-success')
-
-                    return HttpResponseRedirect(reverse('django_ledger:invoice-update',
-                                                        kwargs={
-                                                            'entity_slug': entity_slug,
-                                                            'invoice_pk': invoice_pk
-                                                        }))
-
-            else:
-                context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context=context)
+        response = super(InvoiceModelUpdateView, self).get(request, *args, **kwargs)
+        invoice_model = self.object
+        ledger_model: LedgerModel = invoice_model.ledger
 
         if self.action_mark_as_paid:
             invoice_model: InvoiceModel = self.get_object()
@@ -343,6 +278,82 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                                             'entity_slug': entity_slug,
                                                             'invoice_pk': invoice_pk
                                                         }))
+
+        return response
+
+    def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
+
+        response = super(InvoiceModelUpdateView, self).post(request, *args, **kwargs)
+        invoice_model = self.object
+        # ledger_model: LedgerModel = invoice_model.ledger
+
+        if self.action_update_items:
+            InvoiceItemFormset = get_invoice_item_formset(invoice_model)
+            item_formset: InvoiceItemFormset = InvoiceItemFormset(request.POST,
+                                                                  user_model=self.request.user,
+                                                                  invoice_model=invoice_model,
+                                                                  entity_slug=entity_slug)
+
+            if not invoice_model.can_update_items():
+                messages.add_message(
+                    request,
+                    message=f'Cannot update items once Invoice is {invoice_model.get_invoice_status_display()}',
+                    level=messages.ERROR,
+                    extra_tags='is-danger'
+                )
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
+
+            if item_formset.is_valid():
+                if item_formset.has_changed():
+                    invoice_items = item_formset.save(commit=False)
+                    invoice_qs = InvoiceModel.objects.for_entity(
+                        user_model=self.request.user,
+                        entity_slug=entity_slug
+                    )
+                    invoice_model: InvoiceModel = get_object_or_404(invoice_qs, uuid__exact=invoice_pk)
+
+                    entity_qs = EntityModel.objects.for_user(
+                        user_model=self.request.user
+                    )
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+
+                    for item in invoice_items:
+                        item.entity = entity_model
+                        item.invoice_model = invoice_model
+
+                    item_formset.save()
+                    # todo: pass item list to update_amount_due...?
+                    invoice_model.update_amount_due()
+                    invoice_model.new_state(commit=True)
+                    invoice_model.clean()
+                    invoice_model.save(update_fields=['amount_due',
+                                                      'amount_receivable',
+                                                      'amount_unearned',
+                                                      'amount_earned',
+                                                      'updated'])
+
+                    invoice_model.migrate_state(
+                        entity_slug=entity_slug,
+                        user_model=self.request.user,
+                        # itemthrough_queryset=invoice_item_list,
+                        force_migrate=True
+                    )
+
+                    messages.add_message(request,
+                                         message=f'Items for Invoice {invoice_model.invoice_number} saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
+
+                    return HttpResponseRedirect(reverse('django_ledger:invoice-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'invoice_pk': invoice_pk
+                                                        }))
+
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
 
         return response
 

@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
 from uuid import uuid4
@@ -21,7 +21,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn, MarkdownNotesMixIn
 
 UserModel = get_user_model()
 
@@ -60,7 +60,9 @@ class InvoiceModelManager(models.Manager):
         return qs.filter(paid=False)
 
 
-class InvoiceModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
+class InvoiceModelAbstract(LedgerPlugInMixIn,
+                           MarkdownNotesMixIn,
+                           CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 
@@ -76,10 +78,10 @@ class InvoiceModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
         (INVOICE_STATUS_CANCELED, _('Canceled'))
     ]
 
-    # todo: add markdown mixin...
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
-    invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0])
+    invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0],
+                                      verbose_name=_('Invoice Status'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
                                  on_delete=models.PROTECT,
                                  verbose_name=_('Customer'))
@@ -219,8 +221,11 @@ class InvoiceModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
     def is_approved(self):
         return self.invoice_status == self.INVOICE_STATUS_APPROVED
 
-    def can_edit_items(self):
+    def is_draft(self):
         return self.invoice_status == self.INVOICE_STATUS_DRAFT
+
+    def can_edit_items(self):
+        return self.is_draft()
 
     def can_update_items(self):
         return self.invoice_status not in [
@@ -231,6 +236,11 @@ class InvoiceModelAbstract(LedgerPlugInMixIn, CreateUpdateMixIn):
     def clean(self):
         if not self.invoice_number:
             self.invoice_number = generate_invoice_number()
+        if self.is_draft():
+            self.amount_paid = Decimal('0.00')
+            self.paid = False
+            self.paid_date = None
+            self.progress = 0
         super().clean()
 
 

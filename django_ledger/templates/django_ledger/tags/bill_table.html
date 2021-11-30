@@ -24,7 +24,6 @@
                 <td>{{ bill.vendor.vendor_name }}</td>
                 <td>${{ bill.amount_due | currency_format }}</td>
                 <td>${{ bill.amount_paid | currency_format }}</td>
-
                 <td class="has-text-centered">
                     {% if bill.paid %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
@@ -55,7 +54,6 @@
                                    class="dropdown-item has-text-success">Details</a>
                                 <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
                                    class="dropdown-item has-text-warning-dark">Update</a>
-
                                 {% if not bill.paid %}
                                     {% modal_action bill 'get' entity_slug %}
                                     <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"
@@ -63,7 +61,6 @@
                                 {% endif %}
                                 <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
-
                             </div>
                         </div>
                     </div>

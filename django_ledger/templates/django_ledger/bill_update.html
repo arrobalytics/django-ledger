@@ -38,23 +38,22 @@
                                 </div>
                             </div>
                             <h4 class="has-text-weight-light">Bill Date: {{ bill.date }}</h4>
-                            <h4 class="has-text-weight-light">Terms: {{ bill.get_terms_display }}</h4>
-                            <h4 class="has-text-weight-light">External Reference: {{ bill.xref }}
-                                <button type="button"
-                                        onclick="document.getElementById('django-ledger-bill-xref-field').classList.remove('is-hidden')"
-                                        class="button is-small is-info is-outlined">{% trans 'Edit' %}</button>
-                            </h4>
                             <h4 class="has-text-weight-light">Accrue Bill: {{ form.accrue }}</h4>
-
-                            <div class="field is-hidden"
-                                 id="django-ledger-bill-xref-field">
-                                <div class="control">
-                                    {{ form.xref }}
-                                </div>
-                            </div>
-
                         </div>
-
+                        <div class="field"
+                             id="django-ledger-bill-xref-field">
+                            <label for="{{ form.xref.id_for_label }}" class="label">{{ form.xref.label }}</label>
+                            <div class="control">{{ form.xref }} </div>
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.terms.id_for_label }}" class="label">{{ form.terms.label }}</label>
+                            <div class="control">{{ form.terms }}</div>
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.bill_status.id_for_label }}"
+                                   class="label">{{ form.bill_status.label }}</label>
+                            <div class="control">{{ form.bill_status }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -160,11 +159,11 @@
                                             {% trans 'Ledger Journal Entries' %}
                                         </a>
                                         <a href="{% url "django_ledger:bill-action-lock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
-                                            class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Bill' %}</a>
+                                           class="button is-small is-success is-fullwidth mt-2">{% trans 'Lock Bill' %}</a>
                                         <a href="{% url "django_ledger:bill-action-unlock" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
-                                            class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Bill' %}</a>
+                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Unlock Bill' %}</a>
                                         <a href="{% url "django_ledger:bill-action-force-migrate" entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
-                                            class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate Bill' %}</a>
+                                           class="button is-small is-danger is-fullwidth mt-2">{% trans 'Force Migrate Bill' %}</a>
                                     </div>
                                 </div>
                             </div>
@@ -205,6 +204,14 @@
                     </div>
                 </div>
             {% endif %}
+            <div class="column is-12">
+                <div class="field">
+                    <label for="{{ form.markdown_notes.id_for_label }}" class="label">{{ form.markdown_notes.label }}
+                        <span class="icon is-medium has-text-grey">{% icon 'logos:markdown' 16 %}</span></label>
+                    {{ form.markdown_notes }}
+                </div>
+            </div>
+
         </div>
     </form>
 

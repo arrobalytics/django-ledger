@@ -259,7 +259,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             item_formset = BillItemFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
-                bill_pk=bill_model.uuid,
+                bill_model=bill_model,
                 queryset=bill_item_queryset
             )
         else:
@@ -279,7 +279,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-detail',
+        return reverse('django_ledger:bill-update',
                        kwargs={
                            'entity_slug': entity_slug,
                            'bill_pk': bill_pk
@@ -398,11 +398,12 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     def post(self, request, bill_pk, entity_slug, *args, **kwargs):
 
         response = super(BillModelUpdateView, self).post(request, *args, **kwargs)
+        bill_model: BillModel = self.get_object()
 
         if self.action_update_items:
             item_formset: BillItemFormset = BillItemFormset(request.POST,
                                                             user_model=self.request.user,
-                                                            bill_pk=bill_pk,
+                                                            bill_model=bill_model,
                                                             entity_slug=entity_slug)
 
             if item_formset.is_valid():

@@ -1,7 +1,7 @@
 from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet,
-                          modelformset_factory)
-from django.utils.translation import gettext_lazy as _
+                          modelformset_factory, Textarea)
 from django.forms import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemThroughModel,
@@ -82,6 +82,39 @@ class BillModelCreateForm(ModelForm):
 
 class BillModelUpdateForm(BillModelCreateForm):
 
+    def __init__(self,
+                 *args,
+                 entity_slug,
+                 user_model,
+                 **kwargs):
+        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+
+        bill_model: BillModel = self.instance
+
+        if any([
+            bill_model.bill_status != BillModel.BILL_STATUS_APPROVED,
+            bill_model.paid,
+            bill_model.bill_status == BillModel.BILL_STATUS_CANCELED
+        ]):
+            self.fields['amount_paid'].disabled = True
+            self.fields['paid'].disabled = True
+            self.fields['paid_date'].disabled = True
+            self.fields['progress'].disabled = True
+
+        if any([
+            bill_model.bill_status != BillModel.BILL_STATUS_DRAFT,
+            bill_model.paid,
+            bill_model.bill_status == BillModel.BILL_STATUS_CANCELED
+        ]):
+            self.fields['terms'].disabled = True
+            self.fields['accrue'].disabled = True
+            self.fields['xref'].disabled = True
+
+        if bill_model.bill_status == BillModel.BILL_STATUS_APPROVED:
+            self.fields['bill_status'].disabled = True
+
     def save(self, commit=True):
         if commit:
             self.instance.migrate_state(
@@ -99,7 +132,10 @@ class BillModelUpdateForm(BillModelCreateForm):
             'paid',
             'paid_date',
             'progress',
-            'accrue'
+            'accrue',
+            'bill_status',
+            'terms',
+            'markdown_notes'
         ]
         widgets = {
             'xref': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -107,6 +143,7 @@ class BillModelUpdateForm(BillModelCreateForm):
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'bill_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -122,6 +159,9 @@ class BillModelUpdateForm(BillModelCreateForm):
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
             'prepaid_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
             'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
+            'markdown_notes': Textarea(attrs={
+                'class': 'textarea'
+            })
         }
         labels = {
             'progress': 'Bill Progress Amount (%)'
@@ -181,10 +221,10 @@ class BillItemForm(ModelForm):
 
 class BaseBillItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, bill_pk, user_model, **kwargs):
+    def __init__(self, *args, entity_slug, bill_model: BillModel, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
-        self.BILL_PK = bill_pk
+        self.BILL_MODEL = bill_model
         self.ENTITY_SLUG = entity_slug
 
         items_qs = ItemModel.objects.for_bill(
@@ -194,6 +234,13 @@ class BaseBillItemFormset(BaseModelFormSet):
 
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+
+            if not self.BILL_MODEL.can_edit_items():
+                form.fields['item_model'].disabled = True
+                form.fields['quantity'].disabled = True
+                form.fields['unit_cost'].disabled = True
+                form.fields['entity_unit'].disabled = True
+
             instance: ItemThroughModel = form.instance
             if instance.po_model_id:
                 form.fields['item_model'].disabled = True

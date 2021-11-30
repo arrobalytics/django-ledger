@@ -140,8 +140,9 @@
                         </div>
                     </div>
                 </div>
-
-
+                <div class=" column is-12">
+                    {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Invoice Notes' notes_html=invoice.notes_html %}
+                </div>
             </div>
         </div>
     </div>

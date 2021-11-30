@@ -22,7 +22,6 @@
                 </div>
             </div>
         </div>
-
         <div class="column is-8">
             <div class="columns is-multiline">
                 {% if bill.is_configured %}
@@ -112,12 +111,12 @@
                                             <td>{% currency_symbol %}{{ bill_item.unit_cost | currency_format }}</td>
                                             <td>{{ bill_item.quantity }}</td>
                                             <td>{% currency_symbol %}{{ bill_item.total_amount | currency_format }}</td>
-                                        <td>{% if bill_item.po_model_id %}
-                                            <a class="button is-small is-light"
-                                               href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=bill_item.po_model_id %}">
-                                            {% trans 'View PO' %}
-                                            </a>
-                                        {% endif %} </td>
+                                            <td>{% if bill_item.po_model_id %}
+                                                <a class="button is-small is-light"
+                                                   href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=bill_item.po_model_id %}">
+                                                    {% trans 'View PO' %}
+                                                </a>
+                                            {% endif %}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -151,6 +150,9 @@
                             {% bill_txs_table bill %}
                         </div>
                     </div>
+                </div>
+                <div class=" column is-12">
+                    {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Bill Notes' notes_html=bill.notes_html %}
                 </div>
             </div>
         </div>
