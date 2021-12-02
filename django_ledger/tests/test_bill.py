@@ -62,7 +62,7 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         self.logout_client()
 
-        entity_model, bill_model = self.create_bill()
+        entity_model, bill_model = self.create_bill(amount=Decimal('500.00'))
 
         for path, kwargs in self.URL_PATTERNS.items():
             url_kwargs = dict()
