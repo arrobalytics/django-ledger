@@ -30,9 +30,9 @@ class EntityModelTests(DjangoLedgerBaseTest):
         @param test_date: Optional test date. If None, will generate random date.
         """
         self.logout_client()
-        entity_model_qs = EntityModel.objects.for_user(self.user_model)
+        # entity_model_qs = EntityModel.objects.for_user(self.user_model)
 
-        for entity_model in entity_model_qs:
+        for entity_model in self.ENTITY_MODEL_QUERYSET:
             for path, kwargs in self.ENTITY_URL_PATTERN.items():
                 url_kwargs = dict()
                 if 'entity_slug' in kwargs:
