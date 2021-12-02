@@ -152,14 +152,20 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         self.ledger = ledger_model
         return ledger_model, self
 
-    def get_document_id(self):
-        return self.invoice_number
-
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
 
+    def get_html_amount_due_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due'
+
+    def get_html_amount_paid_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid'
+
     def get_html_form_name(self):
         return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_document_id(self):
+        return self.invoice_number
 
     def get_mark_paid_url(self, entity_slug):
         return reverse('django_ledger:invoice-mark-paid',

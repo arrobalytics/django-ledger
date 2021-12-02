@@ -8,6 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
+from typing import Union
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -153,12 +154,20 @@ class BillModelAbstract(LedgerPlugInMixIn,
         self.ledger = ledger_model
         return ledger_model, self
 
-    def get_absolute_url(self):
-        return reverse('django_ledger:invoice-detail',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'invoice_pk': self.uuid
-                       })
+    def get_document_id(self):
+        return self.bill_number
+
+    def get_html_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_html_amount_due_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due'
+
+    def get_html_amount_paid_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid'
+
+    def get_html_form_name(self):
+        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
 
     def get_migrate_state_desc(self):
         """
@@ -166,15 +175,6 @@ class BillModelAbstract(LedgerPlugInMixIn,
         :return:
         """
         return f'Bill {self.bill_number} account adjustment.'
-
-    def get_document_id(self):
-        return self.bill_number
-
-    def get_html_id(self):
-        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
-
-    def get_html_form_name(self):
-        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
 
     def get_mark_paid_url(self, entity_slug):
         return reverse('django_ledger:bill-mark-paid',
@@ -232,6 +232,36 @@ class BillModelAbstract(LedgerPlugInMixIn,
             self.BILL_STATUS_CANCELED
         ]
 
+    def make_payment(self,
+                     amt: Union[float, Decimal],
+                     entity_slug,
+                     user_model,
+                     as_additional: bool = True,
+                     commit: bool = False):
+        if isinstance(amt, float):
+            amt = Decimal.from_float(amt)
+        if as_additional:
+            self.amount_paid += amt
+        else:
+            self.amount_paid = amt
+
+        if self.amount_paid > self.amount_due:
+            raise ValidationError(f'Payments {self.amount_paid} cannot exceed amount due {self.amount_due}.')
+
+        self.update_state()
+        if commit:
+            self.save(update_fields=[
+                'amount_earned',
+                'amount_unearned',
+                'amount_receivable',
+                'amount_paid',
+                'updated'
+            ])
+            self.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_slug
+            )
+
     def clean(self):
         if not self.bill_number:
             self.bill_number = generate_bill_number()
@@ -243,8 +273,6 @@ class BillModelAbstract(LedgerPlugInMixIn,
             self.progress = 0
 
         super().clean()
-
-
 
 
 class BillModel(BillModelAbstract):
