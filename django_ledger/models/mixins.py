@@ -431,7 +431,7 @@ class LedgerPlugInMixIn(models.Model):
 
         # { unit_uuid: float (percent) }
         unit_percents = {
-            k: (v / total_amount) if progress else Decimal('0.00') for k, v in unit_amounts.items()
+            k: (v / total_amount) if progress and total_amount else Decimal('0.00') for k, v in unit_amounts.items()
         }
 
         if not void:

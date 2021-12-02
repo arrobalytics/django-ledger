@@ -293,6 +293,9 @@ class EntityDataGenerator:
             user_model=self.user_model,
             ledger_posted=True)
 
+        if random() > 0.3:
+            bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
+
         bill_items = [
             ItemThroughModel(
                 bill_model=bill_model,
@@ -374,6 +377,7 @@ class EntityDataGenerator:
                     entity_slug=self.entity_model.slug,
                     user_model=self.user_model
                 )
+                bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
                 bill_model.amount_due = po_model.po_amount
                 bill_model.paid = True
 

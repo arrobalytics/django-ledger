@@ -1,17 +1,15 @@
 from datetime import date
-from random import choice, randint
+from random import choice
 from urllib.parse import urlparse
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils.timezone import get_default_timezone, localdate
+from django.utils.timezone import localdate
 
-from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.entity import urlpatterns as entity_urls
-from django_ledger.utils import populate_default_coa
 
 UserModel = get_user_model()
 
@@ -24,54 +22,6 @@ class EntityModelTests(DjangoLedgerBaseTest):
         self.ENTITY_URL_PATTERN = {
             p.name: set(p.pattern.converters.keys()) for p in entity_urls
         }
-        self.DAYS_FWD: int = randint(180, 180 * 3)
-        self.TZ = get_default_timezone()
-        self.START_DATE = self.get_random_date()
-        self.FY_STARTS = [
-            '1',
-            '2',
-            '3',
-            '4',
-            '5',
-            '6',
-            '7',
-            '8',
-            '9',
-            '10',
-            '11',
-            '12'
-        ]
-        self.TEST_DATA = list()
-
-    def refresh_test_data(self, n: int = None):
-        N = n if n else self.N
-        self.TEST_DATA = [self.get_random_entity_data() for _ in range(N)]
-
-    def get_random_entity_data(self) -> dict:
-        return {
-            'name': f'Testing Inc-{randint(100000, 999999)}',
-            'address_1': f'{randint(100000, 999999)} Main St',
-            'address_2': f'Suite {randint(1000, 9999)}',
-            'city': 'Charlotte',
-            'state': 'NC',
-            'zip_code': '28202',
-            'country': 'US',
-            'email': 'mytest@testinginc.com',
-            'website': 'http://www.mytestingco.com',
-            'fy_start_month': choice(self.FY_STARTS)
-        }
-
-    def get_entity_models(self, save=True, n: int = 5):
-        self.refresh_test_data(n)
-        entity_models = list()
-        for ent_data in self.TEST_DATA:
-            entity_model = EntityModel(**ent_data)
-            entity_model.admin = self.user_model
-            entity_model.clean()
-            if save:
-                entity_model.save()
-            entity_models.append(entity_model)
-        return entity_models
 
     def test_protected_views(self, test_date: date = None):
         """
@@ -208,9 +158,9 @@ class EntityModelTests(DjangoLedgerBaseTest):
     def test_entity_update(self):
 
         self.login_client()
-        entity_models = self.get_entity_models()
+        entity_models = self.create_entity_models()
         entity_list_url = reverse('django_ledger:entity-list')
-        an_entity: EntityModel = choice(entity_models)
+        an_entity: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
 
         # ENTITY-UPDATE VIEW...
         with self.assertNumQueries(3):
@@ -238,29 +188,9 @@ class EntityModelTests(DjangoLedgerBaseTest):
     def test_entity_detail(self):
 
         self.login_client()
-        entity_models = self.get_entity_models(n=1)
-        entity_model: EntityModel = choice(entity_models)
+        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
 
         # ENTITY-DETAIL VIEW...
-        self.logger.warning(f'Populating CoA for {entity_model.name}...')
-        # populates accounts with DJL default CoA.
-        populate_default_coa(
-            entity_model=entity_model,
-            activate_accounts=True
-        )
-
-        self.logger.warning(f'Generating sample data for {entity_model.name}...')
-        # generates sample data to perform tests.
-        generator = EntityDataGenerator(
-            entity_model=entity_model,
-            user_model=self.user_model,
-            start_date=self.START_DATE,
-            days_forward=self.DAYS_FWD,
-            tx_quantity=int(self.DAYS_FWD * 0.5),
-            capital_contribution=50000
-        )
-        generator.populate_entity()
-
         with self.assertNumQueries(2):
             # this will redirect to entity-detail-month...
             entity_detail_url = reverse('django_ledger:entity-dashboard',
@@ -289,8 +219,8 @@ class EntityModelTests(DjangoLedgerBaseTest):
 
     def test_delete_entity(self):
         self.login_client()
-        entity_models = self.get_entity_models(n=1)
-        entity_model = choice(entity_models)
+        # entity_models = self.create_entity_models(n=1)
+        entity_model = choice(self.ENTITY_MODEL_QUERYSET)
         # ENTITY-DELETE VIEW...
         with self.assertNumQueries(3):
             entity_delete_url = reverse('django_ledger:entity-delete',
