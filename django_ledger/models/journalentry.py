@@ -93,6 +93,7 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                        kwargs={
                            'je_pk': self.id,
                            'ledger_pk': self.ledger_id,
+                           # pylint: disable=no-member
                            'entity_slug': self.ledger.entity.slug
                        })
 

@@ -212,7 +212,7 @@ class EntityModelAbstract(NodeTreeMixIn,
         ]
 
     def __str__(self):
-        return self.name
+        return f'{self.name}'
 
     def get_dashboard_url(self):
         return reverse('django_ledger:entity-dashboard',
@@ -297,6 +297,7 @@ class EntityModelAbstract(NodeTreeMixIn,
 
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
+            # pylint: disable=no-member
             recorded_qs = self.items.inventory(
                 entity_slug=self.slug,
                 user_model=user_model
@@ -343,6 +344,7 @@ class EntityModelAbstract(NodeTreeMixIn,
         return adj, counted_qs, recorded_qs
 
     def populate_default_coa(self, activate_accounts: bool = False):
+        # pylint: disable=no-member
         coa: ChartOfAccountModel = self.coa
         has_accounts = coa.accounts.all().exists()
         if not has_accounts:
@@ -353,14 +355,13 @@ class EntityModelAbstract(NodeTreeMixIn,
                     role=a['role'],
                     balance_type=a['balance_type'],
                     active=activate_accounts,
-                    coa=self.coa,
+                    coa=coa,
                 ) for a in CHART_OF_ACCOUNTS
             ]
 
             for acc in acc_objs:
                 acc.clean()
             AccountModel.on_coa.bulk_create(acc_objs)
-            # acc.save()
 
     def clean(self):
         if not self.name:

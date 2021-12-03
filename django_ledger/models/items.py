@@ -509,6 +509,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         ]
 
     def __str__(self):
+        # pylint: disable=no-member
         status_display = self.get_po_item_status_display()
         amount = f'{currency_symbol}{self.total_amount}'
         if self.po_model:
@@ -558,6 +559,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return self.po_item_status == self.STATUS_CANCELED
 
     def can_create_bill(self):
+        # pylint: disable=no-member
         return self.bill_model_id is None and self.po_item_status in [
             self.STATUS_ORDERED, self.STATUS_IN_TRANSIT, self.STATUS_RECEIVED
         ]
@@ -575,6 +577,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         self.clean_po_total_amount()
         self.clean_total_amount()
 
+        # pylint: disable=no-member
         if self.po_model_id:
             if self.quantity > self.po_quantity:
                 raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '

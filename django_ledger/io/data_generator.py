@@ -314,6 +314,8 @@ class EntityDataGenerator:
         bill_model.new_state(commit=True)
         bill_model.clean()
         bill_model.save()
+
+        # pylint: disable=no-member
         bill_model.itemthroughmodel_set.bulk_create(bill_items)
         bill_model.migrate_state(
             user_model=self.user_model,
@@ -496,6 +498,8 @@ class EntityDataGenerator:
             invoice_model.invoice_status = InvoiceModel.INVOICE_STATUS_APPROVED
         invoice_model.clean()
         invoice_model.save()
+
+        # pylint: disable=no-member
         invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
 
         if invoice_model.migrate_allowed():

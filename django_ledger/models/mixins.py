@@ -72,6 +72,7 @@ class SlugNameMixIn(models.Model):
         abstract = True
 
     def __str__(self):
+        # pylint: disable=invalid-str-returned
         return self.slug
 
 
@@ -318,6 +319,7 @@ class LedgerPlugInMixIn(models.Model):
             self.save()
             ledger_model = self.ledger
             ledger_model.locked = True
+            # pylint: disable=no-member
             ledger_model.save(update_fields=['locked', 'updated'])
 
     def migrate_state(self,
@@ -333,6 +335,7 @@ class LedgerPlugInMixIn(models.Model):
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
         # getting current ledger state
+        # pylint: disable=no-member
         txs_qs, txs_digest = self.ledger.digest(
             user_model=user_model,
             process_groups=True,
@@ -598,10 +601,13 @@ class LedgerPlugInMixIn(models.Model):
                 self.unearned_account_id is not None
             ]):
                 raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
+            # pylint: disable=no-member
             if self.cash_account.role != ASSET_CA_CASH:
                 raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            # pylint: disable=no-member
             if self.prepaid_account.role != ASSET_CA_PREPAID:
                 raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
+            # pylint: disable=no-member
             if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
                 raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
@@ -609,6 +615,7 @@ class LedgerPlugInMixIn(models.Model):
             self.progress = 0
 
         if self.terms != self.TERMS_ON_RECEIPT:
+            # pylint: disable=no-member
             self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
         else:
             self.due_date = self.date

@@ -185,6 +185,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
 
     def get_bill_item_data(self, queryset=None) -> tuple:
         if not queryset:
+            # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
@@ -193,6 +194,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
 
     def get_item_data(self, entity_slug, queryset=None):
         if not queryset:
+            # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all()
             queryset = queryset.filter(bill_model__ledger__entity__slug__exact=entity_slug)
         return queryset.order_by('item_model__expense_account__uuid',

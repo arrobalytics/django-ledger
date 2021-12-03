@@ -68,6 +68,7 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
                   entity_slug,
                   user_model,
                   posted_ledger: bool = True):
+        EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_slug, str):
             entity_model = EntityModel.objects.for_user(
                 user_model=user_model).get(
@@ -78,10 +79,12 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
         LedgerModel = lazy_loader.get_ledger_model()
+        acc_number = self.account_number
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
             posted=posted_ledger,
-            name=f'Bank Account {"***" + self.account_number[-4:]}'
+            # pylint: disable=unsubscriptable-object
+            name=f'Bank Account {"***" + acc_number[-4:]}'
         )
         ledger_model.clean()
         self.ledger = ledger_model
@@ -99,7 +102,9 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
             ('cash_account', 'account_number', 'routing_number')
         ]
 
+    # pylint: disable=invalid-str-returned
     def __str__(self):
+        # pylint: disable=bad-option-value
         return self.name
 
 

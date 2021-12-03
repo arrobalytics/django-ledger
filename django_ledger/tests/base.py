@@ -20,7 +20,7 @@ class DjangoLedgerBaseTest(TestCase):
     CAPITAL_CONTRIBUTION = None
     START_DATE = None
     user_model = None
-    TEST_DATA = None
+    TEST_DATA = list()
     CLIENT = None
     TZ = None
     N = None

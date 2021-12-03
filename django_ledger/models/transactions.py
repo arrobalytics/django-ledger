@@ -217,10 +217,12 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
+        # pylint: disable=no-member
         return '{x1}-{x2}/{x5}: {x3}/{x4}'.format(x1=self.account.code,
                                                   x2=self.account.name,
                                                   x3=self.amount,
                                                   x4=self.tx_type,
+                                                  # pylint: disable=no-member
                                                   x5=self.account.balance_type)
 
 

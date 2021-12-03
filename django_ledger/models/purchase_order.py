@@ -101,6 +101,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         abstract = True
 
     def __str__(self):
+        # pylint: disable=no-member
         return f'PO Model: {self.po_number} | {self.get_po_status_display()}'
 
     def configure(self,
@@ -139,6 +140,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
+            # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all().select_related('bill_model')
 
         return queryset, queryset.aggregate(
