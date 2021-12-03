@@ -27,7 +27,7 @@ jobs:
           if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
       - name: Lint Project Level
         run: |
-          find . -path '**/migrations' -prune -false -o -name '*.py' | xargs pylint --load-plugins pylint_django --disable=django-not-configured,R0901  --ignore-patterns=manage.py
+          find . -path '**/migrations' -prune -false -o -name '*.py' | xargs pylint -E --load-plugins pylint_django --disable=django-not-configured,R0901  --ignore-patterns=manage.py
       - name: Lint brickbox
         run: |
           cd brickbox/
