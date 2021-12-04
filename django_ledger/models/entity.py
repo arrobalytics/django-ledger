@@ -24,12 +24,14 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
-from django_ledger.models.utils import LazyImporter
+from django_ledger.models.utils import LazyLoader
 
 UserModel = get_user_model()
-lazy_loader = LazyImporter()
+lazy_loader = LazyLoader()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -210,7 +212,7 @@ class EntityModelAbstract(NodeTreeMixIn,
         ]
 
     def __str__(self):
-        return self.name
+        return f'{self.name}'
 
     def get_dashboard_url(self):
         return reverse('django_ledger:entity-dashboard',
@@ -295,6 +297,7 @@ class EntityModelAbstract(NodeTreeMixIn,
 
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
+            # pylint: disable=no-member
             recorded_qs = self.items.inventory(
                 entity_slug=self.slug,
                 user_model=user_model
@@ -339,6 +342,26 @@ class EntityModelAbstract(NodeTreeMixIn,
                                           ])
 
         return adj, counted_qs, recorded_qs
+
+    def populate_default_coa(self, activate_accounts: bool = False):
+        # pylint: disable=no-member
+        coa: ChartOfAccountModel = self.coa
+        has_accounts = coa.accounts.all().exists()
+        if not has_accounts:
+            acc_objs = [
+                AccountModel(
+                    code=a['code'],
+                    name=a['name'],
+                    role=a['role'],
+                    balance_type=a['balance_type'],
+                    active=activate_accounts,
+                    coa=coa,
+                ) for a in CHART_OF_ACCOUNTS
+            ]
+
+            for acc in acc_objs:
+                acc.clean()
+            AccountModel.on_coa.bulk_create(acc_objs)
 
     def clean(self):
         if not self.name:

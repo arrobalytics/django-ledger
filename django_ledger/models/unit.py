@@ -66,6 +66,7 @@ class EntityUnitModelAbstract(IOMixIn, NodeTreeMixIn, SlugNameMixIn, CreateUpdat
         ]
 
     def __str__(self):
+        # pylint: disable=invalid-str-returned
         return self.name
 
     def clean(self):

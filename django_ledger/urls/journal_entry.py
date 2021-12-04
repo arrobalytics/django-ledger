@@ -15,10 +15,15 @@ urlpatterns = [
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/',
          views.JournalEntryUpdateView.as_view(),
          name='je-update'),
+
+    # actions...
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-posted/',
          views.JournalEntryUpdateView.as_view(action_mark_as_posted=True),
          name='je-mark-as-posted'),
     path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-locked/',
          views.JournalEntryUpdateView.as_view(action_mark_as_locked=True),
          name='je-mark-as-locked'),
+    path('<slug:entity_slug>/<uuid:ledger_pk>/update/<uuid:je_pk>/mark-as-unlocked/',
+         views.JournalEntryUpdateView.as_view(action_mark_as_unlocked=True),
+         name='je-mark-as-unlocked'),
 ]

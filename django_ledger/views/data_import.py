@@ -22,7 +22,6 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.utils import new_bankaccount_protocol
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -119,14 +118,11 @@ class DataImportOFXFileView(LoginRequiredMixIn, FormView):
 
             for ba in new_bank_accs:
                 ba.clean()
-
-            new_bank_accs = [
-                new_bankaccount_protocol(
-                    bank_account_model=ba,
+                ba.configure(
                     entity_slug=entity_model,
-                    user_model=self.request.user
-                ) for ba in new_bank_accs
-            ]
+                    user_model=self.request.user,
+                    posted_ledger=True
+                )
             BankAccountModel.objects.bulk_create(new_bank_accs)
 
             # fetching all bank account models again

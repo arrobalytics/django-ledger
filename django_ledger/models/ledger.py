@@ -66,12 +66,15 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             models.Index(fields=['entity', 'locked']),
         ]
 
+    # pylint: disable=bad-option-value
     def __str__(self):
+        # pylint: disable=invalid-str-returned
         return self.name
 
     def get_absolute_url(self):
         return reverse('django_ledger:ledger-detail',
                        kwargs={
+                           # pylint: disable=no-member
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
@@ -79,6 +82,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def get_update_url(self):
         return reverse('django_ledger:ledger-update',
                        kwargs={
+                           # pylint: disable=no-member
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })

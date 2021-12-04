@@ -32,7 +32,7 @@ class AccountModelListView(LoginRequiredMixIn, ListView):
         'header_title': PAGE_TITLE
     }
 
-    def get_context_data(self, *, object_list=None, **kwargs):
+    def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
         context['asset_accounts'] = (a for a in qs if a.role_bs == 'assets')

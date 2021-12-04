@@ -6,14 +6,14 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory
+from django.core.exceptions import ValidationError
+from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory, Textarea
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemThroughModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
-from django.core.exceptions import ValidationError
 
 
 class InvoiceModelCreateForm(ModelForm):
@@ -76,10 +76,42 @@ class InvoiceModelCreateForm(ModelForm):
 
 class InvoiceModelUpdateForm(ModelForm):
 
-    def __init__(self, *args, entity_slug, user_model, **kwargs):
+    def __init__(self,
+                 *args,
+                 entity_slug,
+                 user_model,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
+
+        invoice_model: InvoiceModel = self.instance
+
+        if any([
+            invoice_model.invoice_status != InvoiceModel.INVOICE_STATUS_APPROVED,
+            invoice_model.paid,
+            invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_CANCELED
+        ]):
+            self.fields['amount_paid'].disabled = True
+            self.fields['paid'].disabled = True
+            self.fields['paid_date'].disabled = True
+            self.fields['progress'].disabled = True
+
+        if any([
+            invoice_model.invoice_status != InvoiceModel.INVOICE_STATUS_DRAFT,
+            invoice_model.paid,
+            invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_CANCELED
+        ]):
+            self.fields['terms'].disabled = True
+            self.fields['accrue'].disabled = True
+
+        if invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED:
+            self.fields['invoice_status'].disabled = True
+
+    def clean(self):
+        # todo: add validation...
+        self._validate_unique = True
+        return self.cleaned_data
 
     class Meta:
         model = InvoiceModel
@@ -88,7 +120,10 @@ class InvoiceModelUpdateForm(ModelForm):
             'paid',
             'paid_date',
             'progress',
-            'accrue'
+            'accrue',
+            'invoice_status',
+            'terms',
+            'markdown_notes'
         ]
         labels = {
             'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
@@ -97,6 +132,7 @@ class InvoiceModelUpdateForm(ModelForm):
         widgets = {
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -109,20 +145,25 @@ class InvoiceModelUpdateForm(ModelForm):
             'progress': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'accrue': CheckboxInput(attrs={'type': 'checkbox'}),
             'paid': CheckboxInput(attrs={'type': 'checkbox'}),
+            'markdown_notes': Textarea(attrs={
+                'class': 'textarea'
+            })
 
         }
 
 
 class InvoiceItemForm(ModelForm):
 
-    def __init__(self, *args, entity_slug, user_model,
-                 invoice_model, invoice_pk=None, **kwargs):
+    def __init__(self,
+                 *args,
+                 entity_slug,
+                 user_model,
+                 invoice_model,
+                 **kwargs):
         super(InvoiceItemForm, self).__init__(*args, **kwargs)
-
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.INVOICE_MODEL = invoice_model
-        self.INVOICE_PK = invoice_pk
 
         if not self.instance.item_model_id:
             self.fields['unit_cost'].disabled = True
@@ -133,7 +174,7 @@ class InvoiceItemForm(ModelForm):
         quantity = cleaned_data['quantity']
         if self.instance.item_model_id:
             item_model: ItemModel = self.instance.item_model
-            if quantity > item_model.inventory_received:
+            if item_model.for_inventory and quantity > item_model.inventory_received:
                 raise ValidationError(f'Cannot invoice more than {item_model.inventory_received} units available.')
         return cleaned_data
 
@@ -159,14 +200,14 @@ class InvoiceItemForm(ModelForm):
 
 class BaseInvoiceItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model,
-                 invoice_model=None, invoice_pk=None, **kwargs):
+    def __init__(self, *args,
+                 entity_slug,
+                 user_model,
+                 invoice_model,
+                 **kwargs):
         super().__init__(*args, **kwargs)
-        if not invoice_model and not invoice_pk:
-            raise ValidationError('Must instantiate BaseInvoiceItemFormset with either invoice_model or invoice_pk')
         self.USER_MODEL = user_model
         self.INVOICE_MODEL: InvoiceModel = invoice_model
-        self.INVOICE_PK = invoice_pk
         self.ENTITY_SLUG = entity_slug
 
         items_qs = ItemModel.objects.products_and_services(
@@ -174,35 +215,39 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
-        self.LN = len(items_qs)  # evaluate the QS and cache results...
         for form in self.forms:
+            if not self.INVOICE_MODEL.can_edit_items():
+                form.fields['item_model'].disabled = True
+                form.fields['quantity'].disabled = True
+                form.fields['unit_cost'].disabled = True
+                form.can_delete = False
             form.fields['item_model'].queryset = items_qs
 
     def get_queryset(self):
         if not self.queryset:
-            if self.INVOICE_PK:
-                self.queryset = ItemThroughModel.objects.for_invoice(
-                    entity_slug=self.ENTITY_SLUG,
-                    user_model=self.USER_MODEL,
-                    invoice_pk=self.INVOICE_PK
-                )
-            else:
-                self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
+            self.queryset = ItemThroughModel.objects.for_invoice(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL,
+                invoice_pk=self.INVOICE_MODEL.uuid
+            )
+        else:
+            self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
         return self.queryset
 
     def get_form_kwargs(self, index):
         return {
             'entity_slug': self.ENTITY_SLUG,
             'user_model': self.USER_MODEL,
-            'invoice_pk': self.INVOICE_PK,
             'invoice_model': self.INVOICE_MODEL,
         }
 
 
-InvoiceItemFormset = modelformset_factory(
-    model=ItemThroughModel,
-    form=InvoiceItemForm,
-    formset=BaseInvoiceItemFormset,
-    can_delete=True,
-    extra=5
-)
+def get_invoice_item_formset(invoice_model: InvoiceModel):
+    can_delete = invoice_model.can_edit_items()
+    return modelformset_factory(
+        model=ItemThroughModel,
+        form=InvoiceItemForm,
+        formset=BaseInvoiceItemFormset,
+        can_delete=can_delete,
+        extra=5 if can_delete else 0
+    )

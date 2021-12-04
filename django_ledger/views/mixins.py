@@ -11,7 +11,7 @@ from datetime import timedelta, date
 from typing import Tuple
 
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
 from django.urls import reverse
@@ -439,20 +439,3 @@ class BaseDateNavigationUrlMixIn:
                                                  })
 
 
-class ConfirmActionMixIn:
-
-    def is_confirmed(self):
-
-        request: HttpRequest = getattr(self, 'request')
-        confirm_action = request.GET.get(key='confirm_action')
-
-        if confirm_action is not None:
-            try:
-                confirm_action = int(confirm_action)
-                if confirm_action not in [0, 1]:
-                    return HttpResponseBadRequest()
-            except TypeError:
-                return HttpResponseBadRequest()
-
-            return bool(confirm_action)
-        return False

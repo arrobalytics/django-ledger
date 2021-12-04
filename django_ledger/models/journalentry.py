@@ -93,6 +93,7 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                        kwargs={
                            'je_pk': self.id,
                            'ledger_pk': self.ledger_id,
+                           # pylint: disable=no-member
                            'entity_slug': self.ledger.entity.slug
                        })
 
@@ -115,21 +116,32 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         if not self.je_is_valid():
             raise ValidationError(check1)
 
-    def mark_as_posted(self):
+    def mark_as_posted(self, commit: bool = False):
         if not self.posted:
             self.posted = True
-            self.save(update_fields=[
-                'posted',
-                'updated'
-            ])
+            if commit:
+                self.save(update_fields=[
+                    'posted',
+                    'updated'
+                ])
 
-    def mark_as_locked(self):
+    def mark_as_locked(self, commit: bool = False):
         if not self.locked:
             self.locked = True
-            self.save(update_fields=[
-                'locked',
-                'updated'
-            ])
+            if commit:
+                self.save(update_fields=[
+                    'locked',
+                    'updated'
+                ])
+
+    def mark_as_unlocked(self, commit: bool = False):
+        if self.locked:
+            self.locked = False
+            if commit:
+                self.save(update_fields=[
+                    'locked',
+                    'updated'
+                ])
 
 
     def save(self, *args, **kwargs):

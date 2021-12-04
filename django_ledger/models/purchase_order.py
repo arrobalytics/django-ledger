@@ -16,6 +16,7 @@ from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count, QuerySet
+from django.shortcuts import get_object_or_404
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
@@ -58,11 +59,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
+    PO_STATUS_CANCELED = 'canceled'
 
     PO_STATUS = [
         (PO_STATUS_DRAFT, _('Draft')),
         (PO_STATUS_REVIEW, _('In Review')),
-        (PO_STATUS_APPROVED, _('Approved'))
+        (PO_STATUS_APPROVED, _('Approved')),
+        (PO_STATUS_CANCELED, _('Canceled')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -98,7 +101,28 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         abstract = True
 
     def __str__(self):
+        # pylint: disable=no-member
         return f'PO Model: {self.po_number} | {self.get_po_status_display()}'
+
+    def configure(self,
+                  entity_slug: str or EntityModel,
+                  user_model,
+                  po_date: datetime.date = None):
+
+        if isinstance(entity_slug, str):
+            entity_qs = EntityModel.objects.for_user(
+                user_model=user_model)
+            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+        elif isinstance(entity_slug, EntityModel):
+            entity_model = entity_slug
+        else:
+            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+        self.po_number = generate_po_number()
+        if po_date:
+            self.po_date = po_date
+        self.entity = entity_model
+        return self
 
     def clean(self):
         if self.fulfilled and self.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
@@ -116,6 +140,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
+            # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.all().select_related('bill_model')
 
         return queryset, queryset.aggregate(

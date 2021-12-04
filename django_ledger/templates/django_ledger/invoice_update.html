@@ -25,10 +25,23 @@
                                 <strong>${{ invoice.amount_due | currency_format }}</strong>
                             </h3>
                             <h4 class="has-text-weight-light">Invoice Date: {{ object.date }}</h4>
-                            <h4 class="has-text-weight-light">Terms: {{ object.get_terms_display }}</h4>
                             <h4 class="has-text-weight-light">Accrue Invoice: {{ form.accrue }}</h4>
-                        </div>
 
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.terms.id_for_label }}"
+                                   class="label">{{ form.terms.label }}</label>
+                            <div class="control">
+                                {{ form.terms }}
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="{{ form.invoice_status.id_for_label }}"
+                                   class="label">{{ form.invoice_status.label }}</label>
+                            <div class="control">
+                                {{ form.invoice_status }}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -74,6 +87,8 @@
                                 </button>
                                 <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-fullwidth">{% trans 'Invoice List' %}</a>
+                                <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
+                                   class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to Invoice' %}</a>
                                 <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                                    class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Dashboard' %}</a>
                             </form>
@@ -173,6 +188,14 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="column is-12">
+                <div class="field">
+                    <label for="{{ form.markdown_notes.id_for_label }}"
+                           class="label">{{ form.markdown_notes.label }}
+                        <span class="icon is-medium has-text-grey">{% icon 'logos:markdown' 16 %}</span></label>
+                    {{ form.markdown_notes }}
                 </div>
             </div>
         </div>

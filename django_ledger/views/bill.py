@@ -14,14 +14,12 @@ from django.utils.html import format_html
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView,
-                                  View, ArchiveIndexView, MonthArchiveView, YearArchiveView,
-                                  DetailView, RedirectView)
-from django.views.generic.detail import SingleObjectMixin
+                                  ArchiveIndexView, MonthArchiveView, YearArchiveView,
+                                  DetailView)
 
 from django_ledger.forms.bill import BillModelCreateForm, BillModelUpdateForm, BillItemFormset, BillModelConfigureForm
 from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel
 from django_ledger.models.bill import BillModel
-from django_ledger.utils import new_bill_protocol, mark_accruable_paid
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -30,7 +28,7 @@ class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
     date_field = 'date'
-    paginate_by = 10
+    paginate_by = 20
     paginate_orphans = 2
     allow_empty = True
     extra_context = {
@@ -43,7 +41,7 @@ class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('vendor').order_by('-date')
+        ).select_related('vendor').order_by('-updated')
 
     def get_allow_future(self):
         allow_future = self.request.GET.get('allow_future')
@@ -128,10 +126,10 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         return form
 
     def form_valid(self, form):
-        bill_model = form.save(commit=False)
-        ledger_model, bill_model = new_bill_protocol(
-            bill_model=bill_model,
+        bill_model: BillModel = form.save(commit=False)
+        ledger_model, bill_model = bill_model.configure(
             entity_slug=self.kwargs['entity_slug'],
+            ledger_posted=False,
             user_model=self.request.user)
 
         if self.for_purchase_order:
@@ -195,8 +193,13 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
-    action_update_items = False
     http_method_names = ['get', 'post']
+
+    action_update_items = False
+    action_mark_as_paid = False
+    action_force_migrate = False
+    action_lock_ledger = False
+    action_unlock_ledger = False
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -256,7 +259,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             item_formset = BillItemFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
-                bill_pk=bill_model.uuid,
+                bill_model=bill_model,
                 queryset=bill_item_queryset
             )
         else:
@@ -276,7 +279,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-detail',
+        return reverse('django_ledger:bill-update',
                        kwargs={
                            'entity_slug': entity_slug,
                            'bill_pk': bill_pk
@@ -298,13 +301,109 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
+    def get(self, request, *args, **kwargs):
+
+        # this action can only be used via POST request...
+        if self.action_update_items:
+            return HttpResponseBadRequest()
+
+        response = super(BillModelUpdateView, self).get(request, *args, **kwargs)
+        bill_model: BillModel = self.get_object()
+        ledger_model: LedgerModel = bill_model.ledger
+
+        if self.action_mark_as_paid:
+            bill_model.mark_as_paid(
+                user_model=self.request.user,
+                entity_slug=self.kwargs['entity_slug'],
+                commit=True
+            )
+            messages.add_message(request,
+                                 messages.SUCCESS,
+                                 f'Successfully marked bill {bill_model.bill_number} as Paid.',
+                                 extra_tags='is-success')
+            redirect_url = reverse('django_ledger:bill-update',
+                                   kwargs={
+                                       'entity_slug': self.kwargs['entity_slug'],
+                                       'bill_pk': bill_model.uuid
+                                   })
+            return HttpResponseRedirect(redirect_url)
+
+        if self.action_force_migrate:
+            if bill_model.ledger.locked:
+                messages.add_message(self.request,
+                                     level=messages.ERROR,
+                                     message=f'Cannot migrate {bill_model.bill_number}. Bill ledger is locked.',
+                                     extra_tags='is-danger')
+            else:
+                items, _ = bill_model.migrate_state(
+                    user_model=self.request.user,
+                    entity_slug=self.kwargs['entity_slug'],
+                    force_migrate=True
+                )
+                if not items:
+                    bill_model.amount_due = 0
+                    bill_model.save(update_fields=['amount_due', 'updated'])
+
+            redirect_url = reverse('django_ledger:bill-update',
+                                   kwargs={
+                                       'entity_slug': self.kwargs['entity_slug'],
+                                       'bill_pk': bill_model.uuid
+                                   })
+            return HttpResponseRedirect(redirect_url)
+
+        if self.action_lock_ledger:
+            if not ledger_model.locked:
+                ledger_model.locked = True
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{bill_model.bill_number} is locked.',
+                                     extra_tags='is-success')
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{bill_model.bill_number} already locked.',
+                                     extra_tags='is-warning')
+
+            redirect_url = reverse('django_ledger:bill-update',
+                                   kwargs={
+                                       'entity_slug': self.kwargs['entity_slug'],
+                                       'bill_pk': bill_model.uuid
+                                   })
+            return HttpResponseRedirect(redirect_url)
+
+        if self.action_unlock_ledger:
+            if ledger_model.locked:
+                ledger_model.locked = False
+                ledger_model.save(update_fields=['locked', 'updated'])
+                messages.add_message(self.request,
+                                     level=messages.SUCCESS,
+                                     message=f'{bill_model.bill_number} is unlocked.',
+                                     extra_tags='is-success')
+            else:
+                messages.add_message(self.request,
+                                     level=messages.WARNING,
+                                     message=f'{bill_model.bill_number} already unlocked.',
+                                     extra_tags='is-warning')
+
+            redirect_url = reverse('django_ledger:bill-update',
+                                   kwargs={
+                                       'entity_slug': self.kwargs['entity_slug'],
+                                       'bill_pk': bill_model.uuid
+                                   })
+            return HttpResponseRedirect(redirect_url)
+
+        return response
+
     def post(self, request, bill_pk, entity_slug, *args, **kwargs):
 
+        response = super(BillModelUpdateView, self).post(request, *args, **kwargs)
+        bill_model: BillModel = self.get_object()
+
         if self.action_update_items:
-            self.object = self.get_object()
             item_formset: BillItemFormset = BillItemFormset(request.POST,
                                                             user_model=self.request.user,
-                                                            bill_pk=bill_pk,
+                                                            bill_model=bill_model,
                                                             entity_slug=entity_slug)
 
             if item_formset.is_valid():
@@ -358,7 +457,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                 context = self.get_context_data(item_formset=item_formset)
                 return self.render_to_response(context=context)
 
-        return super(BillModelUpdateView, self).post(request, *args, **kwargs)
+        return response
 
 
 class BillModelDetailView(LoginRequiredMixIn, DetailView):
@@ -523,112 +622,3 @@ class BillModelDeleteView(LoginRequiredMixIn, DeleteView):
         bill_model.itemthroughmodel_set.update(bill_model=None)
         self.object.delete()
         return HttpResponseRedirect(success_url)
-
-
-class BillModelMarkPaidView(LoginRequiredMixIn,
-                            View,
-                            SingleObjectMixin):
-    http_method_names = ['post']
-    slug_url_kwarg = 'bill_pk'
-    slug_field = 'uuid'
-
-    def get_queryset(self):
-        return BillModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('ledger')
-
-    def post(self, request, *args, **kwargs):
-        bill: BillModel = self.get_object()
-        mark_accruable_paid(
-            accruable_model=bill,
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
-        messages.add_message(request,
-                             messages.SUCCESS,
-                             f'Successfully marked bill {bill.bill_number} as Paid.',
-                             extra_tags='is-success')
-        redirect_url = reverse('django_ledger:bill-detail',
-                               kwargs={
-                                   'entity_slug': self.kwargs['entity_slug'],
-                                   'bill_pk': bill.uuid
-                               })
-        return HttpResponseRedirect(redirect_url)
-
-
-class BillModelActionView(LoginRequiredMixIn, SingleObjectMixin, RedirectView):
-    context_object_name = 'bill_model'
-    slug_field = 'uuid'
-    slug_url_kwarg = 'bill_pk'
-    http_method_names = ['post']
-
-    action = None
-    ACTION_FORCE_MIGRATE = 'force-migrate'
-    ACTION_LOCK = 'lock'
-    ACTION_UNLOCK = 'unlock'
-
-    def get_redirect_url(self, *args, **kwargs):
-        bill_model: BillModel = self.get_object()
-        return reverse('django_ledger:bill-update',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'bill_pk': bill_model.uuid
-                       })
-
-    def post(self, request, *args, **kwargs):
-        bill_model: BillModel = self.get_object()
-        ledger_model: LedgerModel = bill_model.ledger
-
-        if self.action == self.ACTION_FORCE_MIGRATE:
-
-            if bill_model.ledger.locked:
-                messages.add_message(self.request,
-                                     level=messages.ERROR,
-                                     message=f'Cannot migrate {bill_model.bill_number}. Bill ledger is locked.',
-                                     extra_tags='is-danger')
-            else:
-                items, _ = bill_model.migrate_state(
-                    user_model=self.request.user,
-                    entity_slug=self.kwargs['entity_slug'],
-                    force_migrate=True
-                )
-                if not items:
-                    bill_model.amount_due = 0
-                    bill_model.save(update_fields=['amount_due', 'updated'])
-
-        elif self.action == self.ACTION_LOCK:
-            if not ledger_model.locked:
-                ledger_model.locked = True
-                ledger_model.save(update_fields=['locked', 'updated'])
-                messages.add_message(self.request,
-                                     level=messages.SUCCESS,
-                                     message=f'{bill_model.bill_number} is locked.',
-                                     extra_tags='is-success')
-            else:
-                messages.add_message(self.request,
-                                     level=messages.WARNING,
-                                     message=f'{bill_model.bill_number} already locked.',
-                                     extra_tags='is-warning')
-
-        elif self.action == self.ACTION_UNLOCK:
-            if ledger_model.locked:
-                ledger_model.locked = False
-                ledger_model.save(update_fields=['locked', 'updated'])
-                messages.add_message(self.request,
-                                     level=messages.SUCCESS,
-                                     message=f'{bill_model.bill_number} is unlocked.',
-                                     extra_tags='is-success')
-            else:
-                messages.add_message(self.request,
-                                     level=messages.WARNING,
-                                     message=f'{bill_model.bill_number} already unlocked.',
-                                     extra_tags='is-warning')
-
-        return super(BillModelActionView, self).post(self.request)
-
-    def get_queryset(self):
-        return BillModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('ledger')

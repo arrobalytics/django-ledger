@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+
 from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelFormSet,
                           modelformset_factory, Textarea, BooleanField, ValidationError)
 from django.utils.translation import gettext_lazy as _
@@ -203,8 +204,6 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                     form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
             # PO is Draft
             else:
-                # form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
-                # if form.instance.po_item_status == ItemThroughModel.STATUS_RECEIVED:
                 form.fields['po_item_status'].disabled = True
 
 

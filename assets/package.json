@@ -8,6 +8,7 @@
     "bulma": "^0.9.3",
     "bulmaswatch": "^0.8.1",
     "chart.js": "^2.9.4",
+    "json-schema": "^0.4.0",
     "pikaday": "^1.8.2",
     "vue": "^2.6.12",
     "vue-class-component": "^7.2.6"

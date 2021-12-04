@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
@@ -241,7 +241,10 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:
-            return self.inventory_received_value / self.inventory_received
+            try:
+                return self.inventory_received_value / self.inventory_received
+            except ZeroDivisionError:
+                pass
         return Decimal('0.00')
 
     def clean(self):
@@ -406,10 +409,11 @@ class ItemThroughModelManager(models.Manager):
         ).annotate(
             quantity_onhand=Coalesce(F('quantity_received') - F('quantity_invoiced'), Value(0.0),
                                      output_field=DecimalField()),
-            cost_average=Coalesce(
-                ExpressionWrapper(F('cost_received') / F('quantity_received'),
-                                  output_field=DecimalField(decimal_places=3)), Value(0.0),
-                output_field=DecimalField()
+            cost_average=Case(
+                When(quantity_received__gt=0.0,
+                     then=ExpressionWrapper(F('cost_received') / F('quantity_received'),
+                                            output_field=DecimalField(decimal_places=3))
+                     )
             ),
             value_onhand=Coalesce(
                 ExpressionWrapper(F('quantity_onhand') * F('cost_average'),
@@ -505,6 +509,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         ]
 
     def __str__(self):
+        # pylint: disable=no-member
         status_display = self.get_po_item_status_display()
         amount = f'{currency_symbol}{self.total_amount}'
         if self.po_model:
@@ -554,6 +559,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return self.po_item_status == self.STATUS_CANCELED
 
     def can_create_bill(self):
+        # pylint: disable=no-member
         return self.bill_model_id is None and self.po_item_status in [
             self.STATUS_ORDERED, self.STATUS_IN_TRANSIT, self.STATUS_RECEIVED
         ]
@@ -571,6 +577,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         self.clean_po_total_amount()
         self.clean_total_amount()
 
+        # pylint: disable=no-member
         if self.po_model_id:
             if self.quantity > self.po_quantity:
                 raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
