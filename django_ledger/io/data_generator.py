@@ -38,7 +38,7 @@ class EntityDataGenerator:
                  user_model,
                  entity_model: Union[EntityModel, str],
                  start_date: date,
-                 capital_contribution: float,
+                 capital_contribution: Decimal,
                  days_forward: int,
                  tx_quantity: int = 25):
 
@@ -517,30 +517,15 @@ class EntityDataGenerator:
         capital_acc = choice(self.accounts_by_role['eq_capital'])
         cash_acc = choice(self.bank_account_models).cash_account
 
-        txs = list()
-        txs.append({
-            'account_id': cash_acc.uuid,
-            'tx_type': 'debit',
-            'amount': self.capital_contribution,
-            'description': f'Sample data for {self.entity_model.name}'
-        })
-        txs.append({
-            'account_id': capital_acc.uuid,
-            'tx_type': 'credit',
-            'amount': self.capital_contribution,
-            'description': f'Sample data for {self.entity_model.name}'
-        })
-
-        ledger, created = self.entity_model.ledgermodel_set.get_or_create(
-            name='Business Funding Ledger',
-            posted=True
-        )
-        self.entity_model.commit_txs(
-            je_date=self.start_date,
-            je_txs=txs,
-            je_activity='op',
-            je_posted=True,
-            je_ledger=ledger
+        ledger_model: LedgerModel = self.entity_model.capital_contribution(
+            user_model=self.user_model,
+            amount=self.capital_contribution,
+            cash_account=cash_acc,
+            equity_account=capital_acc,
+            txs_date=self.start_date,
+            ledger_name='Entity Funding for Sample Data',
+            ledger_posted=True,
+            je_posted=True
         )
 
     def recount_inventory(self):

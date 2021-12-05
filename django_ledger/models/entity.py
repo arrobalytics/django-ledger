@@ -11,7 +11,7 @@ from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple
+from typing import Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -24,6 +24,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
@@ -362,6 +363,70 @@ class EntityModelAbstract(NodeTreeMixIn,
             for acc in acc_objs:
                 acc.clean()
             AccountModel.on_coa.bulk_create(acc_objs)
+
+    def capital_contribution(self,
+                             user_model,
+                             cash_account: Union[str, AccountModel],
+                             equity_account: Union[str, AccountModel],
+                             txs_date: date,
+                             amount: Decimal,
+                             ledger_name: str,
+                             ledger_posted: bool = False,
+                             je_posted: bool = False):
+
+        if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
+
+            account_qs = AccountModel.on_coa.with_roles(
+                roles=[
+                    EQUITY_CAPITAL,
+                    EQUITY_COMMON_STOCK,
+                    EQUITY_PREFERRED_STOCK,
+                    ASSET_CA_CASH
+                ],
+                entity_slug=self.slug,
+                user_model=user_model
+            )
+
+            cash_account_model = account_qs.get(code__exact=cash_account)
+            equity_account_model = account_qs.get(code__exact=equity_account)
+
+        elif isinstance(cash_account, AccountModel) and isinstance(equity_account, AccountModel):
+            cash_account_model = cash_account
+            equity_account_model = equity_account
+
+        else:
+            raise ValidationError(
+                message=f'Both cash_account and equity account must be an instance of str or AccountMode.'
+                        f' Got. Cash Account: {cash_account.__class__.__name__} and '
+                        f'Equity Account: {equity_account.__class__.__name__}'
+            )
+
+        txs = list()
+        txs.append({
+            'account_id': cash_account_model.uuid,
+            'tx_type': 'debit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+        txs.append({
+            'account_id': equity_account_model.uuid,
+            'tx_type': 'credit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+
+        ledger = self.ledgermodel_set.create(
+            name=ledger_name,
+            posted=ledger_posted
+        )
+        self.commit_txs(
+            je_date=txs_date,
+            je_txs=txs,
+            je_activity='op',
+            je_posted=je_posted,
+            je_ledger=ledger
+        )
+        return ledger
 
     def clean(self):
         if not self.name:
