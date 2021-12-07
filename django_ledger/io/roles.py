@@ -246,8 +246,8 @@ def validate_roles(roles):
             roles = [roles]
         for r in roles:
             if r not in VALID_ROLES:
-                raise ValidationError('{roles}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES),
-                                                                                     roles=r))
+                raise ValidationError('{roles}) is invalid. Choices are {ch}'.format(
+                    ch=', '.join(VALID_ROLES), roles=r))
     return roles
 
 

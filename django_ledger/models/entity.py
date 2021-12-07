@@ -24,8 +24,9 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
-from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
-from django_ledger.models.accounts import AccountModel
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
+    validate_roles
+from django_ledger.models.accounts import AccountModel, CREDIT
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
@@ -296,6 +297,16 @@ class EntityModelAbstract(NodeTreeMixIn,
     def get_fy_start_month(self) -> int:
         return self.fy_start_month
 
+    def generate_slug(self, force_update: bool = False):
+        if not force_update and self.slug:
+            raise ValidationError(
+                message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
+            )
+        slug = slugify(self.name)
+        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
+        entity_slug = f'{slug}-{suffix}'
+        self.slug = entity_slug
+
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
             # pylint: disable=no-member
@@ -364,15 +375,36 @@ class EntityModelAbstract(NodeTreeMixIn,
                 acc.clean()
             AccountModel.on_coa.bulk_create(acc_objs)
 
-    def capital_contribution(self,
-                             user_model,
-                             cash_account: Union[str, AccountModel],
-                             equity_account: Union[str, AccountModel],
-                             txs_date: date,
-                             amount: Decimal,
-                             ledger_name: str,
-                             ledger_posted: bool = False,
-                             je_posted: bool = False):
+    def add_account(self,
+                    account_code: str,
+                    account_role: str,
+                    account_name: str,
+                    balance_type: str,
+                    is_active: bool = False,
+                    is_locked: bool = False) -> AccountModel:
+        validate_roles(account_role)
+        account_model = AccountModel(
+            code=account_code,
+            role=account_role,
+            name=account_name,
+            balance_type=balance_type,
+            coa_id=self.coa.uuid,
+            active=is_active,
+            locked=is_locked
+        )
+        account_model.clean()
+        account_model.save()
+        return account_model
+
+    def add_equity(self,
+                   user_model,
+                   cash_account: Union[str, AccountModel],
+                   equity_account: Union[str, AccountModel],
+                   txs_date: Union[date, str],
+                   amount: Decimal,
+                   ledger_name: str,
+                   ledger_posted: bool = False,
+                   je_posted: bool = False):
 
         if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
 
@@ -415,6 +447,7 @@ class EntityModelAbstract(NodeTreeMixIn,
             'description': f'Sample data for {self.name}'
         })
 
+        # pylint: disable=no-member
         ledger = self.ledgermodel_set.create(
             name=ledger_name,
             posted=ledger_posted
@@ -433,10 +466,7 @@ class EntityModelAbstract(NodeTreeMixIn,
             raise ValidationError(message=_('Must provide a name for EntityModel'))
 
         if not self.slug:
-            slug = slugify(self.name)
-            suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6))
-            entity_slug = f'{slug}-{suffix}'
-            self.slug = entity_slug
+            self.generate_slug()
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):

@@ -312,21 +312,27 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         ledger_model: LedgerModel = bill_model.ledger
 
         if self.action_mark_as_paid:
-            bill_model.mark_as_paid(
-                user_model=self.request.user,
-                entity_slug=self.kwargs['entity_slug'],
-                commit=True
-            )
+            if not bill_model.paid:
+                bill_model.mark_as_paid(
+                    user_model=self.request.user,
+                    entity_slug=self.kwargs['entity_slug'],
+                    commit=True
+                )
+                messages.add_message(request,
+                                     messages.SUCCESS,
+                                     f'Successfully marked bill {bill_model.bill_number} as Paid.',
+                                     extra_tags='is-success')
+                redirect_url = reverse('django_ledger:bill-update',
+                                       kwargs={
+                                           'entity_slug': self.kwargs['entity_slug'],
+                                           'bill_pk': bill_model.uuid
+                                       })
+                return HttpResponseRedirect(redirect_url)
+
             messages.add_message(request,
-                                 messages.SUCCESS,
-                                 f'Successfully marked bill {bill_model.bill_number} as Paid.',
-                                 extra_tags='is-success')
-            redirect_url = reverse('django_ledger:bill-update',
-                                   kwargs={
-                                       'entity_slug': self.kwargs['entity_slug'],
-                                       'bill_pk': bill_model.uuid
-                                   })
-            return HttpResponseRedirect(redirect_url)
+                                 messages.WARNING,
+                                 f'Bill {bill_model.bill_number} already paid.',
+                                 extra_tags='is-warning')
 
         if self.action_force_migrate:
             if bill_model.ledger.locked:

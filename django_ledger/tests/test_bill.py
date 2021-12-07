@@ -7,7 +7,6 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.formats import number_format
-from django.utils.timezone import localdate
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import EntityModel, BillModel, VendorModel
@@ -88,10 +87,7 @@ class BillModelTests(DjangoLedgerBaseTest):
     def test_bill_list(self):
 
         self.login_client()
-
-        entity_model, bill_model = self.create_bill(
-            amount=Decimal('1000.00'),
-            date=localdate())
+        entity_model = choice(self.ENTITY_MODEL_QUERYSET)
         bill_list_url = reverse('django_ledger:bill-list',
                                 kwargs={
                                     'entity_slug': entity_model.slug
@@ -102,17 +98,59 @@ class BillModelTests(DjangoLedgerBaseTest):
         # bill-list view is rendered...
         self.assertEqual(response.status_code, 200)
 
-        # bill shows in list...
-        self.assertContains(response, bill_model.get_html_id(), status_code=200)
+        bill_model_qs = response.context['bills']
 
-        # amount due shows in list...
-        amt_due_fmt = number_format(bill_model.amount_due, decimal_pos=2, use_l10n=True, force_grouping=True)
-        needle = f'<td id="{bill_model.get_html_amount_due_id()}">${amt_due_fmt}</td>'
-        self.assertContains(response, needle)
+        for bill_model in bill_model_qs:
 
-        # amount paid shows in list...
-        needle = f'<td id="{bill_model.get_html_amount_paid_id()}">$0</td>'
-        self.assertContains(response, needle)
+            bill_detail_url = reverse('django_ledger:bill-detail',
+                                      kwargs={
+                                          'entity_slug': entity_model.slug,
+                                          'bill_pk': bill_model.uuid
+                                      })
+            bill_update_url = reverse('django_ledger:bill-update',
+                                      kwargs={
+                                          'entity_slug': entity_model.slug,
+                                          'bill_pk': bill_model.uuid
+                                      })
+            bill_delete_url = reverse('django_ledger:bill-delete',
+                                      kwargs={
+                                          'entity_slug': entity_model.slug,
+                                          'bill_pk': bill_model.uuid
+                                      })
+            mark_as_paid_url = reverse('django_ledger:bill-mark-paid',
+                                       kwargs={
+                                           'entity_slug': entity_model.slug,
+                                           'bill_pk': bill_model.uuid
+                                       })
+
+            # bill shows in list...
+            self.assertContains(response, bill_model.get_html_id(), status_code=200)
+
+            # amount due shows in list...
+            amt_due_fmt = number_format(bill_model.amount_due, decimal_pos=2, use_l10n=True, force_grouping=True)
+            needle = f'id="{bill_model.get_html_amount_due_id()}"'
+            self.assertContains(response, needle)
+
+            # amount paid shows in list...
+            needle = f'id="{bill_model.get_html_amount_paid_id()}"'
+            self.assertContains(response, needle)
+
+            # contains bill-detail url
+            self.assertContains(response, bill_detail_url)
+            # contains bill-update url
+            self.assertContains(response, bill_update_url)
+            # contains bill-delete url
+            self.assertContains(response, bill_delete_url)
+
+            if not bill_model.paid:
+                # shows link to mark as paid...
+                self.assertContains(response, mark_as_paid_url)
+                paid_response = self.CLIENT.get(mark_as_paid_url, follow=False)
+                self.assertRedirects(paid_response, expected_url=bill_update_url)
+
+            else:
+                # if paid, it cannot be paid
+                self.assertNotContains(response, mark_as_paid_url)
 
         # # making one payment...
         # bill_model.make_payment(amt=Decimal('250.50'),

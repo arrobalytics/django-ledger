@@ -517,7 +517,7 @@ class EntityDataGenerator:
         capital_acc = choice(self.accounts_by_role['eq_capital'])
         cash_acc = choice(self.bank_account_models).cash_account
 
-        ledger_model: LedgerModel = self.entity_model.capital_contribution(
+        ledger_model: LedgerModel = self.entity_model.add_equity(
             user_model=self.user_model,
             amount=self.capital_contribution,
             cash_account=cash_acc,

@@ -11,7 +11,7 @@ from decimal import Decimal
 from itertools import groupby
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
@@ -65,7 +65,12 @@ lazy_loader = LazyLoader()
 
 
 class SlugNameMixIn(models.Model):
-    slug = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=50,
+                            unique=True,
+                            validators=[
+                                MinLengthValidator(limit_value=10,
+                                                   message=_('Slug field must contain at least 10 characters.'))
+                            ])
     name = models.CharField(max_length=150, null=True, blank=True)
 
     class Meta:

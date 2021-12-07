@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from typing import Union
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -35,11 +35,15 @@ class AccountModelManager(models.Manager):
             qs = qs.filter(coa__slug__iexact=coa_slug)
         return qs
 
-    def with_roles(self, roles: list, entity_slug: str, user_model):
+    def with_roles(self, roles: Union[list, str], entity_slug: str, user_model):
+        if isinstance(roles, str):
+            roles = [roles]
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
 
-    def with_roles_available(self, roles: list, entity_slug: str, user_model):
+    def with_roles_available(self, roles: Union[list, str], entity_slug: str, user_model):
+        if isinstance(roles, str):
+            roles = [roles]
         qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
 
