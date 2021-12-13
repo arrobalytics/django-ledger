@@ -183,10 +183,11 @@ class BillModelAbstract(LedgerPlugInMixIn,
                            'bill_pk': self.uuid
                        })
 
-    def get_bill_item_data(self, queryset=None) -> tuple:
+    def get_itemthrough_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all()
+            queryset = self.itemthroughmodel_set.select_related(
+                'item_model', 'po_model', 'bill_model').all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
@@ -215,7 +216,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
             self.amount_due = sum(a.total_amount for a in item_list)
             return
-        queryset, item_data = self.get_bill_item_data(queryset=queryset)
+        queryset, item_data = self.get_itemthrough_data(queryset=queryset)
         self.amount_due = item_data['amount_due']
         return queryset, item_data
 

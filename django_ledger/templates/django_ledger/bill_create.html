@@ -5,8 +5,7 @@
 
 {% block view_content %}
 
-    <form action="{{ form_action_url }}"
-          method="post">
+    <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
         <div class="columns is-multiline is-centered">
             {% csrf_token %}
             {% if po_model %}

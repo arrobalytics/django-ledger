@@ -93,10 +93,11 @@ class BillModelTests(DjangoLedgerBaseTest):
                                     'entity_slug': entity_model.slug
                                 })
 
-        response = self.CLIENT.get(bill_list_url)
+        with self.assertNumQueries(5):
+            response = self.CLIENT.get(bill_list_url)
 
-        # bill-list view is rendered...
-        self.assertEqual(response.status_code, 200)
+            # bill-list view is rendered...
+            self.assertEqual(response.status_code, 200)
 
         bill_model_qs = response.context['bills']
 
@@ -127,7 +128,7 @@ class BillModelTests(DjangoLedgerBaseTest):
             self.assertContains(response, bill_model.get_html_id(), status_code=200)
 
             # amount due shows in list...
-            amt_due_fmt = number_format(bill_model.amount_due, decimal_pos=2, use_l10n=True, force_grouping=True)
+            # amt_due_fmt = number_format(bill_model.amount_due, decimal_pos=2, use_l10n=True, force_grouping=True)
             needle = f'id="{bill_model.get_html_amount_due_id()}"'
             self.assertContains(response, needle)
 
@@ -142,13 +143,14 @@ class BillModelTests(DjangoLedgerBaseTest):
             # contains bill-delete url
             self.assertContains(response, bill_delete_url)
 
-            if not bill_model.paid:
+            if bill_model.is_approved() and not bill_model.paid:
                 # shows link to mark as paid...
                 self.assertContains(response, mark_as_paid_url)
-                paid_response = self.CLIENT.get(mark_as_paid_url, follow=False)
+                with self.assertNumQueries(11):
+                    paid_response = self.CLIENT.get(mark_as_paid_url, follow=False)
                 self.assertRedirects(paid_response, expected_url=bill_update_url)
 
-            else:
+            elif bill_model.is_approved() and bill_model.paid:
                 # if paid, it cannot be paid
                 self.assertNotContains(response, mark_as_paid_url)
 
@@ -184,3 +186,18 @@ class BillModelTests(DjangoLedgerBaseTest):
         # needle = f'<td id="{bill_model.get_html_amount_paid_id()}">${amt_paid}</td>'
         # self.assertEqual(bill_model.amount_paid, bill_model.amount_due)
         # self.assertContains(response, needle)
+
+    def test_bill_create(self):
+
+        self.login_client()
+        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+
+        bill_create_url = reverse('django_ledger:bill-create',
+                                  kwargs={
+                                      'entity_slug': entity_model.slug
+                                  })
+
+        response = self.CLIENT.get(bill_create_url)
+
+        # bill create form is rendered
+        self.assertContains(response, 'id="djl-bill-create-form-id"')

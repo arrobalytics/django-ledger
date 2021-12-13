@@ -5,19 +5,39 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, QuerySet
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CreateUpdateMixIn, NodeTreeMixIn
 
 
+class JournalEntryModelQuerySet(QuerySet):
+
+    def create(self, verify_on_save: bool = False, **kwargs):
+        obj = self.model(**kwargs)
+        self._for_write = True
+
+        # verify_on_save option avoids additional queries to validate that JE has CR/DB balanced.
+        # New JEs using the create() method don't have TXS to validate.
+        # therefore, it is not necessary to query DB to balance TXS.
+
+        obj.save(force_insert=True, using=self.db, verify_txs=verify_on_save)
+        return obj
+
+
 class JournalEntryModelManager(models.Manager):
+
+    def get_queryset(self):
+        return JournalEntryModelQuerySet(
+            self.model,
+            using=self._db
+        )
 
     def for_entity(self, entity_slug: str, user_model):
         return self.get_queryset().filter(
@@ -98,23 +118,26 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                        })
 
     def get_balances(self):
-        txs = self.txs.only('tx_type', 'amount')
-        credits = txs.filter(tx_type__iexact='credit').aggregate(Sum('amount'))
-        debits = txs.filter(tx_type__iexact='debit').aggregate(Sum('amount'))
+        txs_qs = self.txs.order_by('tx_type').values('tx_type').annotate(
+            tx_type_total=Sum('amount'))
+        txs_idx = {
+            i['tx_type']: i['tx_type_total'] for i in txs_qs
+        }
         balances = {
-            'credits': credits['amount__sum'],
-            'debits': debits['amount__sum']
+            'credit': txs_idx.get('credit', Decimal('0.00')),
+            'debit': txs_idx.get('debit', Decimal('0.00'))
         }
         return balances
 
     def je_is_valid(self):
         balances = self.get_balances()
-        return balances['credits'] == balances['debits']
+        return balances['credit'] == balances['debit']
 
-    def clean(self):
+    def clean(self, verify_txs: bool = True):
         check1 = 'Debits and credits do not match.'
-        if not self.je_is_valid():
-            raise ValidationError(check1)
+        if verify_txs:
+            if not self.je_is_valid():
+                raise ValidationError(check1)
 
     def mark_as_posted(self, commit: bool = False):
         if not self.posted:
@@ -143,11 +166,9 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                     'updated'
                 ])
 
-
-    def save(self, *args, **kwargs):
+    def save(self, verify_txs: bool = True, *args, **kwargs):
         try:
-            self.clean_fields()
-            self.clean()
+            self.clean(verify_txs=verify_txs)
         except ValidationError as e:
             self.txs.all().delete()
             raise ValidationError(f'Something went wrong cleaning journal entry ID: {self.uuid}: {e}')
