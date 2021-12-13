@@ -44,6 +44,13 @@ export function toggleModal(modalId: string) {
     }
 }
 
+export function toggleMenu(modalId: string) {
+    let modalElement = document.getElementById(modalId);
+    if (modalElement) {
+        modalElement.classList.toggle('is-active')
+    }
+}
+
 export function submitForm(formName: string, modalId: string) {
     let form = document.forms.namedItem(formName);
     if (form) {
