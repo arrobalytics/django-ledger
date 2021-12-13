@@ -9,19 +9,35 @@
     <figure id="user-toggle" class="image is-48x48 ml-3" onclick="djLedger.toggleModal('user-info')">
          <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
     </figure>
-
-    <span id="feedback-toggle" class="icon is-large ml-3" onclick="djLedger.toggleModal('info-modal')">{% icon "bi:chat-left-quote" 30 %} </span>
-    <span id="info-toggle" class="icon is-large ml-3" onclick="djLedger.toggleModal('info-modal-2')">{% icon "bi:info-circle" 30 %} </span>
-   <a class="navbar-item" href="{% url 'django_ledger:home' %}">
-                <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
+<div class="navbar-menu" id="nav-links">
+      <!-- right links -->
+      <div class="navbar-end">
+    <span id="feedback-toggle" class="icon is-hidden-mobile navbar-item is-large ml-3" onclick="djLedger.toggleModal('info-modal')">{% icon "bi:chat-left-quote" 30 %} </span>
+    <span id="info-toggle" class="icon is-hidden-mobile navbar-item is-large ml-3" onclick="djLedger.toggleModal('info-modal-2')">{% icon "bi:info-circle" 30 %} </span>
+   <a class="navbar-item is-hidden-mobile " href="{% url 'django_ledger:home' %}">
+                    <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
             </a>
-            <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
+      </div></div>
+        <div class="dropdown" id="drop-test">
+  <div class="dropdown-trigger">
+      <a role="button" class="navbar-burger burger"  onclick="djLedger.toggleMenu('drop-test')" aria-label="menu" aria-expanded="false"
                data-target="djl-navbar-menu">
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
                 <span aria-hidden="true"></span>
             </a>
-{#        <a href="{% url 'django_ledger:home' %}"><span class="icon is-large">{% icon "bi:house" 30 %} </span></a>#}
+  </div>
+  <div class="dropdown-menu" id="dropdown-menu" role="menu">
+    <div class="dropdown-content">
+      <span id="feedback-toggle" class="icon navbar-item is-large" onclick="djLedger.toggleModal('info-modal')">{% icon "bi:chat-left-quote" 30 %} </span>
+    <span id="info-toggle" class="icon navbar-item is-large" onclick="djLedger.toggleModal('info-modal-2')">{% icon "bi:info-circle" 30 %} </span>
+   <a class="navbar-item " href="{% url 'django_ledger:home' %}">
+                    <img src="{% static 'django_ledger/logo/django-ledger-logo_1.png' %}" height="28">
+            </a>
+    </div>
+  </div>
+</div>
+
    <div class="navbar-start pl-3">
    <a href="{{ entity.get_dashboard_url }}">
      <h2 class="title is-3">{% session_entity_name request %}</h2>
@@ -47,13 +63,6 @@
     </div>
 </div>
 
-
-<div id="feedback-card" class="box nav-card">
-    <div class="is-flex is-align-items-center is-flex-direction-column">
-    <div class="navbar-item">{% feedback_button %}</div>
-    </div>
-
-</div>
 
 <div id="info-modal" class="modal is-justify-content-space-between">
   <div class="modal-background" onclick="djLedger.toggleModal('info-modal')"></div>
