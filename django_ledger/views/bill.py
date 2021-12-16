@@ -168,9 +168,12 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             )
         else:
             form.save()
-        return HttpResponseRedirect(self.get_success_url())
+        return HttpResponseRedirect(
+            redirect_to=self.get_success_url(
+                bill_pk=bill_model.uuid
+            ))
 
-    def get_success_url(self):
+    def get_success_url(self, bill_pk):
         entity_slug = self.kwargs['entity_slug']
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
@@ -179,9 +182,10 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                                'entity_slug': entity_slug,
                                'po_pk': po_pk
                            })
-        return reverse('django_ledger:bill-list',
+        return reverse('django_ledger:bill-detail',
                        kwargs={
-                           'entity_slug': entity_slug
+                           'entity_slug': entity_slug,
+                           'bill_pk': bill_pk
                        })
 
 

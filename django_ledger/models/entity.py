@@ -396,6 +396,15 @@ class EntityModelAbstract(NodeTreeMixIn,
         account_model.save()
         return account_model
 
+    def get_accounts(self, user_model, active_only: bool = True):
+        accounts_qs = AccountModel.on_coa.for_entity(
+            entity_slug=self.slug,
+            user_model=user_model
+        )
+        if active_only:
+            accounts_qs = accounts_qs.active()
+        return accounts_qs
+
     def add_equity(self,
                    user_model,
                    cash_account: Union[str, AccountModel],

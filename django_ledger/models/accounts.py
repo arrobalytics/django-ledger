@@ -20,7 +20,21 @@ DEBIT = 'debit'
 CREDIT = 'credit'
 
 
+class AccountModelQuerySet(models.QuerySet):
+
+    def active(self):
+        return self.filter(active=True)
+
+    def with_roles(self, roles: Union[list, str]):
+        if isinstance(roles, str):
+            roles = [roles]
+        return self.filter(role__in=roles)
+
+
 class AccountModelManager(models.Manager):
+
+    def get_queryset(self):
+        return AccountModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, user_model, entity_slug: str, coa_slug: str = None):
         qs = self.get_queryset()

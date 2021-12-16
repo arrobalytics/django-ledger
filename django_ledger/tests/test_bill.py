@@ -249,8 +249,56 @@ class BillModelTests(DjangoLedgerBaseTest):
                                'id="djl-bill-amount-due-input"',
                                msg_prefix='Bill amount due input not rendered.')
 
-    def test_bill_detail(self):
-        today = localdate()
+        # user can navigate to bill list
+        bill_list_url = reverse('django_ledger:bill-list',
+                                kwargs={
+                                    'entity_slug': entity_model.slug
+                                })
+        self.assertContains(response, bill_list_url)
 
-        for i in range(5):
-            entity_model, bill_model = self.create_bill(amount=Decimal('3000.00'), date=today)
+        account_qs = entity_model.get_accounts(
+            user_model=self.user_model
+        )
+
+        # account_queryset = entity_model.
+        a_vendor_model = VendorModel.objects.for_entity(
+            entity_slug=entity_model.slug,
+            user_model=self.user_model
+        ).first()
+
+        bill_data = {
+            'vendor': a_vendor_model.uuid,
+            'date': localdate(),
+            'terms': BillModel.TERMS_ON_RECEIPT
+        }
+
+        create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
+        self.assertFormError(create_response, form='form', field=None, errors=['Must provide a cash account.'])
+
+        bill_data['cash_account'] = account_qs.with_roles(roles=ASSET_CA_CASH).first().uuid
+        create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
+        self.assertFormError(create_response, form='form', field=None,
+                             errors=['Must provide all accounts Cash, Prepaid, UnEarned.'])
+
+        cash_account = account_qs.with_roles(roles=ASSET_CA_PREPAID).first()
+        bill_data['prepaid_account'] = cash_account.uuid
+        create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
+        self.assertFormError(create_response, form='form', field=None,
+                             errors=['Must provide all accounts Cash, Prepaid, UnEarned.'])
+
+        del bill_data['prepaid_account']
+        unearned_account = account_qs.with_roles(roles=LIABILITY_CL_DEFERRED_REVENUE).first()
+        bill_data['unearned_account'] = unearned_account.uuid
+        create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
+        self.assertFormError(create_response, form='form', field=None,
+                             errors=['Must provide all accounts Cash, Prepaid, UnEarned.'])
+
+        bill_data['prepaid_account'] = cash_account.uuid
+        create_response = self.CLIENT.post(bill_create_url, data=bill_data, follow=True)
+        self.assertTrue(create_response.resolver_match.view_name, 'django_ledger:bill-detail')
+
+    # def test_bill_detail(self):
+    #     today = localdate()
+    #
+    #     for i in range(5):
+    #         entity_model, bill_model = self.create_bill(amount=Decimal('3000.00'), date=today)
