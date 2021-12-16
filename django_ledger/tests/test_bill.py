@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils.formats import number_format
+from django.utils.timezone import localdate
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import EntityModel, BillModel, VendorModel
@@ -200,4 +200,57 @@ class BillModelTests(DjangoLedgerBaseTest):
         response = self.CLIENT.get(bill_create_url)
 
         # bill create form is rendered
-        self.assertContains(response, 'id="djl-bill-create-form-id"')
+        self.assertContains(response,
+                            'id="djl-bill-create-form-id"',
+                            msg_prefix='Bill create form is not rendered.')
+
+        # user can select a vendor
+        self.assertContains(response,
+                            'id="djl-bill-create-vendor-select-input"',
+                            msg_prefix='Vendor Select input not rendered.')
+
+        # user can select bill terms...
+        self.assertContains(response,
+                            'id="djl-bill-create-terms-select-input"',
+                            msg_prefix='Bill terms input not rendered.')
+
+        # user can select bill terms...
+        self.assertContains(response,
+                            'id="djl-bill-xref-input"',
+                            msg_prefix='Bill XREF input not rendered.')
+
+        # user can select date...
+        self.assertContains(response,
+                            'id="djl-bill-date-input"',
+                            msg_prefix='Bill XREF input not rendered.')
+
+        # user can select cash account...
+        self.assertContains(response,
+                            'id="djl-bill-cash-account-input"',
+                            msg_prefix='Bill cash account input not rendered.')
+
+        # user can select prepaid account...
+        self.assertContains(response,
+                            'id="djl-bill-prepaid-account-input"',
+                            msg_prefix='Bill prepaid account input not rendered.')
+
+        # user can select unearned account...
+        self.assertContains(response,
+                            'id="djl-bill-unearned-account-input"',
+                            msg_prefix='Bill unearned account input not rendered.')
+
+        # user can select unearned account...
+        self.assertContains(response,
+                            'id="djl-bill-create-button"',
+                            msg_prefix='Bill create button not rendered.')
+
+        # user cannot input amount due...
+        self.assertNotContains(response,
+                               'id="djl-bill-amount-due-input"',
+                               msg_prefix='Bill amount due input not rendered.')
+
+    def test_bill_detail(self):
+        today = localdate()
+
+        for i in range(5):
+            entity_model, bill_model = self.create_bill(amount=Decimal('3000.00'), date=today)

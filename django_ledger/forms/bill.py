@@ -59,24 +59,41 @@ class BillModelCreateForm(ModelForm):
         widgets = {
             'date': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Bill Date (YYYY-MM-DD)...')
+                'placeholder': _('Bill Date (YYYY-MM-DD)...'),
+                'id': 'djl-bill-date-input'
             }),
             'amount_due': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': '$$$'}),
+                'placeholder': '$$$',
+                'id': 'djl-bill-amount-due-input'}),
             'xref': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
-                'placeholder': 'External Reference Number...'}),
+                'placeholder': 'External Reference Number...',
+                'id': 'djl-bill-xref-input'
+            }),
             'terms': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'id': 'djl-bill-create-terms-select-input'
             }),
             'vendor': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'id': 'djl-bill-create-vendor-select-input'
             }),
 
-            'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'prepaid_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'cash_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'id': 'djl-bill-cash-account-input'
+            }),
+            'prepaid_account': Select(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'id': 'djl-bill-prepaid-account-input'
+                }),
+            'unearned_account': Select(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                    'id': 'djl-bill-unearned-account-input'
+                }),
         }
 
 
