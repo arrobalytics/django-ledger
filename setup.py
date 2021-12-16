@@ -17,10 +17,9 @@ setup(
     install_requires=[
         "asgiref==3.4.1; python_version >= '3.6'",
         "attrs==21.2.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
-        "django==3.2.9",
+        "django==3.2.10",
         "django-treebeard==4.5.1",
         "faker==8.16.0",
-        "importlib-metadata==4.8.2; python_version < '3.10'",
         "jsonschema==3.2.0",
         "markdown==3.3.6",
         "ofxtools==0.9.4",
@@ -28,10 +27,10 @@ setup(
         "pyrsistent==0.18.0; python_version >= '3.6'",
         "python-dateutil==2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "pytz==2021.3",
+        "setuptools==59.6.0; python_version >= '3.6'",
         "six==1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "sqlparse==0.4.2; python_version >= '3.5'",
         "text-unidecode==1.3",
-        "zipp==3.6.0; python_version >= '3.6'",
     ],
     project_urls={
         "Bug Tracker": "https://github.com/arrobalytics/django-ledger/issues",
