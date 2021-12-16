@@ -8,7 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse, reverse_lazy
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.auth import LogInForm
 
