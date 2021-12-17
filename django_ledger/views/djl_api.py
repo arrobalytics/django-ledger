@@ -10,13 +10,13 @@ from calendar import month_name
 
 from django.http import JsonResponse
 from django.views.generic import View
-from jsonschema import validate, ValidationError
+# from jsonschema import validate, ValidationError
 
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
-from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
+# from django_ledger.models.schemas import SCHEMA_PNL, SCHEMA_NET_PAYABLES, SCHEMA_NET_RECEIVABLE
+# from django_ledger.settings import DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME
 from django_ledger.utils import accruable_net_summary
 from django_ledger.views.mixins import LoginRequiredMixIn, EntityUnitMixIn
 
@@ -56,13 +56,13 @@ class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 'pnl_data': entity_data
             }
 
-            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
-                try:
-                    validate(instance=entity_pnl, schema=SCHEMA_PNL)
-                except ValidationError as e:
-                    return JsonResponse({
-                        'message': f'Schema validation error. {e.message}'
-                    }, status=500)
+            # if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+            #     try:
+            #         validate(instance=entity_pnl, schema=SCHEMA_PNL)
+            #     except ValidationError as e:
+            #         return JsonResponse({
+            #             'message': f'Schema validation error. {e.message}'
+            #         }, status=500)
 
             return JsonResponse({
                 'results': entity_pnl
@@ -97,13 +97,13 @@ class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 'net_payable_data': net_summary
             }
 
-            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
-                try:
-                    validate(instance=net_payables, schema=SCHEMA_NET_PAYABLES)
-                except ValidationError as e:
-                    return JsonResponse({
-                        'message': f'Schema validation error. {e.message}'
-                    }, status=500)
+            # if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+            #     try:
+            #         validate(instance=net_payables, schema=SCHEMA_NET_PAYABLES)
+            #     except ValidationError as e:
+            #         return JsonResponse({
+            #             'message': f'Schema validation error. {e.message}'
+            #         }, status=500)
 
             return JsonResponse({
                 'results': net_payables
@@ -137,13 +137,13 @@ class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
                 'net_receivable_data': net_summary
             }
 
-            if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
-                try:
-                    validate(instance=net_receivable, schema=SCHEMA_NET_RECEIVABLE)
-                except ValidationError as e:
-                    return JsonResponse({
-                        'message': f'Schema validation error. {e.message}'
-                    }, status=500)
+            # if DJANGO_LEDGER_VALIDATE_SCHEMAS_AT_RUNTIME:
+            #     try:
+            #         validate(instance=net_receivable, schema=SCHEMA_NET_RECEIVABLE)
+            #     except ValidationError as e:
+            #         return JsonResponse({
+            #             'message': f'Schema validation error. {e.message}'
+            #         }, status=500)
 
             return JsonResponse({
                 'results': net_receivable
