@@ -32,7 +32,7 @@
                                     <p class="heading">Cash Account:
                                         <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                            class="has-text-danger">{{ bill.cash_account.code }}</a>
-                                    <p class="title">
+                                    <p class="title" id="djl-bill-detail-amount-paid">
                                         {% currency_symbol %}{{ bill.get_amount_cash | absolute | currency_format }}</p>
                                 </div>
                             </div>
@@ -44,7 +44,7 @@
                                             <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                                class="has-text-danger">{{ bill.prepaid_account.code }}</a>
                                         </p>
-                                        <p class="title has-text-success">
+                                        <p class="title has-text-success"  id="djl-bill-detail-amount-prepaid">
                                             {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>
                                     </div>
                                 </div>
@@ -53,9 +53,8 @@
                                         <p class="heading">Unearned Account:
                                             <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                                class="has-text-danger">{{ bill.unearned_account.code }}</a>
-
                                         </p>
-                                        <p class="title has-text-danger">
+                                        <p class="title has-text-danger"  id="djl-bill-detail-amount-unearned">
                                             {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>
                                     </div>
                                 </div>
@@ -71,7 +70,7 @@
                                 <div class="level-item has-text-centered">
                                     <div>
                                         <p class="heading">You Still Owe</p>
-                                        <p class="title has-text-danger">
+                                        <p class="title has-text-danger" id="djl-bill-detail-amount-owed">
                                             {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
                                     </div>
                                 </div>

@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load django_ledger %}
 
-<div class="card">
+<div class="card" id="djl-vendor-card-widget">
     <div class="card-header">
         <h2 class="card-header-title has-text-weight-light is-size-3">
             <span class="icon is-large">
@@ -22,12 +22,9 @@
                 {% if vendor.website %}{{ vendor.website }}<br>{% endif %}
             </p>
         </div>
-
-
     </div>
     <footer class="card-footer">
         <a href="{% url 'django_ledger:vendor-update' vendor_pk=vendor.uuid entity_slug=view.kwargs.entity_slug %}"
            class="card-footer-item has-text-primary has-text-centered">{% trans 'Edit' %}</a>
     </footer>
-
 </div>
