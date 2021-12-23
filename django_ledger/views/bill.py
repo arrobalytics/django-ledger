@@ -168,9 +168,12 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             )
         else:
             form.save()
-        return HttpResponseRedirect(self.get_success_url())
+        return HttpResponseRedirect(
+            redirect_to=self.get_success_url(
+                bill_pk=bill_model.uuid
+            ))
 
-    def get_success_url(self):
+    def get_success_url(self, bill_pk):
         entity_slug = self.kwargs['entity_slug']
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
@@ -179,9 +182,10 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                                'entity_slug': entity_slug,
                                'po_pk': po_pk
                            })
-        return reverse('django_ledger:bill-list',
+        return reverse('django_ledger:bill-detail',
                        kwargs={
-                           'entity_slug': entity_slug
+                           'entity_slug': entity_slug,
+                           'bill_pk': bill_pk
                        })
 
 
@@ -200,6 +204,17 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     action_force_migrate = False
     action_lock_ledger = False
     action_unlock_ledger = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.item_through_qs = None
+
+    def get_item_through_queryset(self):
+        bill_model: BillModel = self.object
+        if not self.item_through_qs:
+            self.item_through_qs = bill_model.itemthroughmodel_set.select_related(
+                'item_model', 'po_model', 'bill_model').order_by('-total_amount')
+        return self.item_through_qs
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -223,11 +238,14 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def get_context_data(self, *, object_list=None, item_formset: BillItemFormset = None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
-        bill_model = self.object
+        bill_model: BillModel = self.object
+        item_through_qs = self.get_item_through_queryset()
+
         title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
         context['header_title'] = title
 
+        # if not self.is_action():
         if not bill_model.is_configured():
             messages.add_message(
                 request=self.request,
@@ -236,7 +254,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                 extra_tags='is-danger'
             )
 
-        ledger_model = self.object.ledger
+        ledger_model = bill_model.ledger
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
@@ -249,30 +267,29 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  f'This bill has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
-        bill_model: BillModel = self.object
         if not item_formset:
-            bill_item_queryset, item_data = bill_model.get_bill_item_data(
-                queryset=bill_model.itemthroughmodel_set.select_related(
-                    'item_model', 'po_model', 'bill_model').all()
+            _, aggregate_data = bill_model.get_itemthrough_data(
+                queryset=item_through_qs
             )
 
             item_formset = BillItemFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 bill_model=bill_model,
-                queryset=bill_item_queryset
+                queryset=item_through_qs
             )
         else:
-            bill_item_queryset, item_data = bill_model.get_bill_item_data(
+            _, aggregate_data = bill_model.get_itemthrough_data(
                 queryset=item_formset.queryset
             )
 
-        has_po = any(i['po_model'] for i in bill_item_queryset.values('po_model'))
+        has_po = any(i.po_model_id for i in item_through_qs)
         if has_po:
             item_formset.can_delete = False
             item_formset.has_po = has_po
+
         context['item_formset'] = item_formset
-        context['total_amount_due'] = item_data['amount_due']
+        context['total_amount_due'] = aggregate_data['amount_due']
         context['has_po'] = has_po
         return context
 
@@ -289,9 +306,9 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related(
-            'itemthroughmodel_set'
-        ).select_related('ledger', 'vendor')
+        ).select_related(
+            'ledger', 'vendor', 'cash_account',
+            'prepaid_account', 'unearned_account')
 
     def form_valid(self, form):
         form.save(commit=False)
@@ -301,6 +318,15 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
+    def is_action(self):
+        return any([
+            self.action_update_items,
+            self.action_force_migrate,
+            self.action_lock_ledger,
+            self.action_unlock_ledger,
+            self.action_mark_as_paid
+        ])
+
     def get(self, request, *args, **kwargs):
 
         # this action can only be used via POST request...
@@ -308,25 +334,32 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             return HttpResponseBadRequest()
 
         response = super(BillModelUpdateView, self).get(request, *args, **kwargs)
-        bill_model: BillModel = self.get_object()
+        bill_model: BillModel = self.object
         ledger_model: LedgerModel = bill_model.ledger
 
         if self.action_mark_as_paid:
-            bill_model.mark_as_paid(
-                user_model=self.request.user,
-                entity_slug=self.kwargs['entity_slug'],
-                commit=True
-            )
+            if not bill_model.paid:
+                bill_model.mark_as_paid(
+                    user_model=self.request.user,
+                    entity_slug=self.kwargs['entity_slug'],
+                    commit=True,
+                    itemthrough_queryset=self.get_item_through_queryset()
+                )
+                messages.add_message(request,
+                                     messages.SUCCESS,
+                                     f'Successfully marked bill {bill_model.bill_number} as Paid.',
+                                     extra_tags='is-success')
+                redirect_url = reverse('django_ledger:bill-update',
+                                       kwargs={
+                                           'entity_slug': self.kwargs['entity_slug'],
+                                           'bill_pk': bill_model.uuid
+                                       })
+                return HttpResponseRedirect(redirect_url)
+
             messages.add_message(request,
-                                 messages.SUCCESS,
-                                 f'Successfully marked bill {bill_model.bill_number} as Paid.',
-                                 extra_tags='is-success')
-            redirect_url = reverse('django_ledger:bill-update',
-                                   kwargs={
-                                       'entity_slug': self.kwargs['entity_slug'],
-                                       'bill_pk': bill_model.uuid
-                                   })
-            return HttpResponseRedirect(redirect_url)
+                                 messages.WARNING,
+                                 f'Bill {bill_model.bill_number} already paid.',
+                                 extra_tags='is-warning')
 
         if self.action_force_migrate:
             if bill_model.ledger.locked:
@@ -478,7 +511,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = title
 
         bill_model: BillModel = self.object
-        bill_items_qs, item_data = bill_model.get_bill_item_data(
+        bill_items_qs, item_data = bill_model.get_itemthrough_data(
             queryset=bill_model.itemthroughmodel_set.all()
         )
         context['bill_items'] = bill_items_qs

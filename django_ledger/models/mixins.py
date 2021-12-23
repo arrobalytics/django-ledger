@@ -10,8 +10,8 @@ from datetime import timedelta
 from decimal import Decimal
 from itertools import groupby
 
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
@@ -65,7 +65,12 @@ lazy_loader = LazyLoader()
 
 
 class SlugNameMixIn(models.Model):
-    slug = models.SlugField(max_length=50, unique=True)
+    slug = models.SlugField(max_length=50,
+                            unique=True,
+                            validators=[
+                                MinLengthValidator(limit_value=10,
+                                                   message=_('Slug field must contain at least 10 characters.'))
+                            ])
     name = models.CharField(max_length=150, null=True, blank=True)
 
     class Meta:
@@ -295,6 +300,7 @@ class LedgerPlugInMixIn(models.Model):
                      user_model,
                      entity_slug: str,
                      paid_date: date = None,
+                     itemthrough_queryset=None,
                      commit: bool = False):
 
         self.paid = True
@@ -314,13 +320,14 @@ class LedgerPlugInMixIn(models.Model):
         if commit:
             self.migrate_state(
                 user_model=user_model,
-                entity_slug=entity_slug
+                entity_slug=entity_slug,
+                itemthrough_queryset=itemthrough_queryset
             )
-            self.save()
             ledger_model = self.ledger
             ledger_model.locked = True
             # pylint: disable=no-member
             ledger_model.save(update_fields=['locked', 'updated'])
+            self.save()
 
     def migrate_state(self,
                       user_model,
@@ -488,7 +495,7 @@ class LedgerPlugInMixIn(models.Model):
             unit_uuids = list(set(k[1] for k in idx_keys))
             now_date = localdate() if not je_date else je_date
             je_list = {
-                u: JournalEntryModel.on_coa.create(
+                u: JournalEntryModel(
                     entity_unit_id=u,
                     date=now_date,
                     description=self.get_migrate_state_desc(),
@@ -499,6 +506,13 @@ class LedgerPlugInMixIn(models.Model):
                     ledger_id=self.ledger_id
                 ) for u in unit_uuids
             }
+
+            for u, je in je_list.items():
+                je.clean(verify_txs=False)
+
+            JournalEntryModel.objects.bulk_create(
+                je for _, je in je_list.items()
+            )
 
             txs_list = [
                 (unit_uuid, TransactionModel(

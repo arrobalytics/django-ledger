@@ -22,8 +22,8 @@
                 <td>{{ bill.bill_number }}</td>
                 <td>{{ bill.date }}</td>
                 <td>{{ bill.vendor.vendor_name }}</td>
-                <td id="{{ bill.get_html_amount_due_id }}">${{ bill.amount_due | currency_format }}</td>
-                <td id="{{ bill.get_html_amount_paid_id }}">${{ bill.amount_paid | currency_format }}</td>
+                <td id="{{ bill.get_html_amount_due_id }}">{% currency_symbol %}{{ bill.amount_due | currency_format }}</td>
+                <td id="{{ bill.get_html_amount_paid_id }}">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</td>
                 <td class="has-text-centered">
                     {% if bill.paid %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>

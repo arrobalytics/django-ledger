@@ -253,7 +253,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.for_inventory is False,
             self.is_product_or_service is False
         ]):
-            if not self.expense_account:
+            if not self.expense_account_id:
                 raise ValidationError(_('Items must have an associated expense accounts.'))
             self.inventory_account = None
             self.earnings_account = None
@@ -264,9 +264,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.is_product_or_service is True
         ]):
             if not all([
-                self.inventory_account,
-                self.cogs_account,
-                self.earnings_account
+                self.inventory_account_id,
+                self.cogs_account_id,
+                self.earnings_account_id
             ]):
                 raise ValidationError(_('Items for resale must have Inventory, COGS & Earnings accounts.'))
 
@@ -275,8 +275,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.is_product_or_service is False
         ]):
             if not all([
-                self.inventory_account,
-                self.cogs_account
+                self.inventory_account_id,
+                self.cogs_account_id
             ]):
                 raise ValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
             self.expense_account = None
@@ -286,7 +286,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.for_inventory is False,
             self.is_product_or_service is True
         ]):
-            if not self.earnings_account:
+            if not self.earnings_account_id:
                 raise ValidationError(_('Products & Services must have an Earnings Account'))
             self.expense_account = None
             self.inventory_account = None

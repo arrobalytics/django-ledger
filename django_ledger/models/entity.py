@@ -11,7 +11,7 @@ from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple
+from typing import Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -24,7 +24,9 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
-from django_ledger.models.accounts import AccountModel
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
+    validate_roles
+from django_ledger.models.accounts import AccountModel, CREDIT
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
@@ -295,6 +297,16 @@ class EntityModelAbstract(NodeTreeMixIn,
     def get_fy_start_month(self) -> int:
         return self.fy_start_month
 
+    def generate_slug(self, force_update: bool = False):
+        if not force_update and self.slug:
+            raise ValidationError(
+                message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
+            )
+        slug = slugify(self.name)
+        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
+        entity_slug = f'{slug}-{suffix}'
+        self.slug = entity_slug
+
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
             # pylint: disable=no-member
@@ -363,15 +375,107 @@ class EntityModelAbstract(NodeTreeMixIn,
                 acc.clean()
             AccountModel.on_coa.bulk_create(acc_objs)
 
+    def add_account(self,
+                    account_code: str,
+                    account_role: str,
+                    account_name: str,
+                    balance_type: str,
+                    is_active: bool = False,
+                    is_locked: bool = False) -> AccountModel:
+        validate_roles(account_role)
+        account_model = AccountModel(
+            code=account_code,
+            role=account_role,
+            name=account_name,
+            balance_type=balance_type,
+            coa_id=self.coa.uuid,
+            active=is_active,
+            locked=is_locked
+        )
+        account_model.clean()
+        account_model.save()
+        return account_model
+
+    def get_accounts(self, user_model, active_only: bool = True):
+        accounts_qs = AccountModel.on_coa.for_entity(
+            entity_slug=self.slug,
+            user_model=user_model
+        )
+        if active_only:
+            accounts_qs = accounts_qs.active()
+        return accounts_qs
+
+    def add_equity(self,
+                   user_model,
+                   cash_account: Union[str, AccountModel],
+                   equity_account: Union[str, AccountModel],
+                   txs_date: Union[date, str],
+                   amount: Decimal,
+                   ledger_name: str,
+                   ledger_posted: bool = False,
+                   je_posted: bool = False):
+
+        if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
+
+            account_qs = AccountModel.on_coa.with_roles(
+                roles=[
+                    EQUITY_CAPITAL,
+                    EQUITY_COMMON_STOCK,
+                    EQUITY_PREFERRED_STOCK,
+                    ASSET_CA_CASH
+                ],
+                entity_slug=self.slug,
+                user_model=user_model
+            )
+
+            cash_account_model = account_qs.get(code__exact=cash_account)
+            equity_account_model = account_qs.get(code__exact=equity_account)
+
+        elif isinstance(cash_account, AccountModel) and isinstance(equity_account, AccountModel):
+            cash_account_model = cash_account
+            equity_account_model = equity_account
+
+        else:
+            raise ValidationError(
+                message=f'Both cash_account and equity account must be an instance of str or AccountMode.'
+                        f' Got. Cash Account: {cash_account.__class__.__name__} and '
+                        f'Equity Account: {equity_account.__class__.__name__}'
+            )
+
+        txs = list()
+        txs.append({
+            'account_id': cash_account_model.uuid,
+            'tx_type': 'debit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+        txs.append({
+            'account_id': equity_account_model.uuid,
+            'tx_type': 'credit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+
+        # pylint: disable=no-member
+        ledger = self.ledgermodel_set.create(
+            name=ledger_name,
+            posted=ledger_posted
+        )
+        self.commit_txs(
+            je_date=txs_date,
+            je_txs=txs,
+            je_activity='op',
+            je_posted=je_posted,
+            je_ledger=ledger
+        )
+        return ledger
+
     def clean(self):
         if not self.name:
             raise ValidationError(message=_('Must provide a name for EntityModel'))
 
         if not self.slug:
-            slug = slugify(self.name)
-            suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6))
-            entity_slug = f'{slug}-{suffix}'
-            self.slug = entity_slug
+            self.generate_slug()
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):

@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from logging import getLogger, DEBUG
 from random import randint, choice
 
@@ -71,7 +72,7 @@ class DjangoLedgerBaseTest(TestCase):
             '12'
         ]
         cls.TEST_DATA = list()
-        cls.CAPITAL_CONTRIBUTION = 50000
+        cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
         cls.ENTITY_MODEL_QUERYSET = None
 
         cls.START_DATE = cls.get_random_date()

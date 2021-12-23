@@ -406,7 +406,7 @@ class IOMixIn:
         return txs_qs, digest_results
 
     def commit_txs(self,
-                   je_date: str or datetime,
+                   je_date: Union[str, datetime, date],
                    je_txs: list,
                    je_activity: str,
                    je_posted: bool = False,
