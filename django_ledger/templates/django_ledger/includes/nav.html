@@ -48,20 +48,20 @@
     </div>
     </nav>
 
-<div id="user-card" class="box nav-card">
-    <div class="is-flex is-align-items-center is-flex-direction-column">
-    <figure class="image is-96x96 mb-3">
-         <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
-    </figure>
-    <h1 class="title">{{ user }}</h1>
-    <h2 class="subtitle is-6">{{ user.email }}</h2>
-    <a href="{% url 'django_ledger:logout' %}"
-                       id="djl-el=logout-button-nav"
-                       class="button is-small is-danger is-outlined">
-                        {% trans 'Logout' %}
-                    </a>
-    </div>
-</div>
+{#<div id="user-card" class="box nav-card">#}
+{#    <div class="is-flex is-align-items-center is-flex-direction-column">#}
+{#    <figure class="image is-96x96 mb-3">#}
+{#         <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">#}
+{#    </figure>#}
+{#    <h1 class="title">{{ user }}</h1>#}
+{#    <h2 class="subtitle is-6">{{ user.email }}</h2>#}
+{#    <a href="{% url 'django_ledger:logout' %}"#}
+{#                       id="djl-el=logout-button-nav"#}
+{#                       class="button is-small is-danger is-outlined">#}
+{#                        {% trans 'Logout' %}#}
+{#                    </a>#}
+{#    </div>#}
+{#</div>#}
 
 
 <div id="info-modal" class="modal is-justify-content-space-between">

@@ -3,17 +3,17 @@
 
 
 <div class="box card">
-
-    <a href="{{ entity.get_dashboard_url }}"></a>
         <div class="is-flex is-justify-content-space-between">
          <a href="{{ entity.get_delete_url }}"> <span class="icon is-large">{% icon "bi:x-circle" 36 %} </span></a>
             <a href="{{ entity.get_manage_url }}"><span class="icon is-large">{% icon "bi:pencil" 36 %} </span></a>
         </div>
+    <a href="{{ entity.get_dashboard_url }}">
         <div class="is-flex is-justify-content-center">
         <figure class="image is-96x96">
          <img class="is-rounded" src="https://bulma.io/images/placeholders/128x128.png">
         </figure>
         </div>
+        </a>
     <div class="card-content">
         <p class="title has-text-centered ">
             {{ entity.name }}
