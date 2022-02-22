@@ -28,6 +28,20 @@ setup(
         "text-unidecode>=1.3",
         "tzdata>=2021.5; sys_platform == 'win32'",
     ],
+    DATABASES = {
+        'default': {
+           'ENGINE': 'django.db.backends.mysql',
+           'NAME': 'enter_your_DBname_here',
+           'USER': 'enter_your_User_name_here',
+           'PASSWORD': 'enter_your_password_here',
+           'HOST': 'enter_your_Rds_endpoint_here',
+           'PORT': '3306',
+    }
+}
+    
+    
+    
+    
     project_urls={
         "Bug Tracker": "https://github.com/arrobalytics/django-ledger/issues",
         # 'Documentation': 'https://docs.example.com/HelloWorld/',
