@@ -497,6 +497,14 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                           verbose_name=_('Authorized maximum item cost per Purchase Order'),
                                           help_text=_('Maximum authorized cost per Purchase Order.'),
                                           validators=[MinValueValidator(0)])
+
+    # Customer Job / Contract fields...
+    customer_job = models.ForeignKey('django_ledger.CustomerJobModel',
+                                     null=True,
+                                     blank=True,
+                                     verbose_name=_('Customer Job'),
+                                     on_delete=models.PROTECT)
+
     objects = ItemThroughModelManager()
 
     class Meta:

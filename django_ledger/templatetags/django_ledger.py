@@ -563,6 +563,11 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
+                        'title': 'Jobs',
+                        'url': reverse('django_ledger:customer-job-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
                         'title': 'Bank Accounts',
                         'url': reverse('django_ledger:bank-account-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },

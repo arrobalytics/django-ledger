@@ -53,9 +53,7 @@ class PurchaseOrderModelManager(models.Manager):
         )
 
 
-class PurchaseOrderModelAbstract(CreateUpdateMixIn,
-                                 MarkdownNotesMixIn):
-    PO_MIN_TITLE_LENGTH = 5
+class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -74,9 +72,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     po_title = models.CharField(max_length=250,
                                 verbose_name=_('Purchase Order Title'),
                                 validators=[
-                                    MinLengthValidator(limit_value=PO_MIN_TITLE_LENGTH,
+                                    MinLengthValidator(limit_value=5,
                                                        message=_(
-                                                           f'PO Title must be greater than {PO_MIN_TITLE_LENGTH}'))
+                                                           f'PO Title must be greater than 5'))
                                 ])
     po_status = models.CharField(max_length=10, choices=PO_STATUS, default=PO_STATUS[0][0])
     po_amount = models.DecimalField(default=0, decimal_places=2, max_digits=20, verbose_name=_('Purchase Order Amount'))
@@ -108,7 +106,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                   entity_slug: str or EntityModel,
                   user_model,
                   po_date: datetime.date = None):
-
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
                 user_model=user_model)
@@ -152,7 +149,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     def update_po_state(self,
                         item_queryset: QuerySet = None,
                         item_list: List[ItemThroughModel] = None) -> Union[Tuple, None]:
-
         if item_queryset and item_list:
             raise ValidationError('Either queryset or list can be used.')
 
