@@ -43,7 +43,6 @@
                             </a>
                         </div>
                     {% endif %}
-
                     {% if previous_year %}
                         <div class="level-item">
                             <a class="button is-small is-dark is-outlined"
@@ -53,7 +52,6 @@
                             </a>
                         </div>
                     {% endif %}
-
                     {% if next_year %}
                         <div class="level-item">
                             <a class="button is-small is-dark is-outlined"
@@ -91,8 +89,7 @@
                 </div>
             </div>
 
-{#            {% bill_table bills %}#}
-            {{ customer_job_list }}
+            {% customer_job_table %}
 
             {% if year %}
                 <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>

@@ -105,6 +105,12 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_completed(self):
         return self.status == self.CJ_STATUS_COMPLETED
 
+    def cost_estimate(self):
+        return sum([self.labor_estimate, self.material_estimate, self.equipment_estimate])
+
+    def get_html_id(self):
+        return f'djl-customer-job-id-{self.uuid}'
+
     def clean(self):
         if self.is_approved() and not self.date_approved:
             raise ValidationError(message='Must provide date_approved for Customer Job.')

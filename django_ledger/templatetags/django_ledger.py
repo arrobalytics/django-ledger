@@ -758,3 +758,11 @@ def inventory_table(context, queryset):
     }
     ctx.update(queryset.aggregate(inventory_total_value=Sum('total_value')))
     return ctx
+
+
+@register.inclusion_tag('django_ledger/tags/customer_job_table.html', takes_context=True)
+def customer_job_table(context, queryset=None):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'customer_job_list': queryset if queryset else context['object_list']
+    }
