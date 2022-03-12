@@ -1,0 +1,116 @@
+schema {
+  query: Query
+}
+
+type BillList {
+  created: DateTime!
+  updated: DateTime
+  terms: BillModelTerms!
+  amountDue: Decimal!
+  amountPaid: Decimal!
+  amountReceivable: Decimal!
+  amountUnearned: Decimal!
+  amountEarned: Decimal!
+  paid: Boolean!
+  paidDate: Date
+  date: Date!
+  dueDate: Date!
+  void: Boolean!
+  voidDate: Date
+  accrue: Boolean!
+  progress: Decimal!
+  markdownNotes: String
+  uuid: UUID!
+  billNumber: String!
+  billStatus: BillModelBillStatus!
+  xref: String
+  additionalInfo: JSONString!
+}
+
+enum BillModelBillStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  CANCELED
+}
+
+enum BillModelTerms {
+  ON_RECEIPT
+  NET_30
+  NET_60
+  NET_90
+}
+
+type CustomerList {
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  uuid: UUID!
+  customerName: String!
+  entity: EntityList!
+  description: String!
+  active: Boolean!
+  hidden: Boolean!
+  additionalInfo: JSONString
+}
+
+scalar Date
+
+scalar DateTime
+
+scalar Decimal
+
+type EntityList {
+  slug: String!
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  parent: EntityList
+  uuid: UUID!
+  name: String
+  hidden: Boolean!
+  fyStartMonth: EntityModelFyStartMonth!
+  picture: String
+  childrenSet: [EntityList!]!
+  customers: [CustomerList!]!
+}
+
+enum EntityModelFyStartMonth {
+  A_1
+  A_2
+  A_3
+  A_4
+  A_5
+  A_6
+  A_7
+  A_8
+  A_9
+  A_10
+  A_11
+  A_12
+}
+
+scalar JSONString
+
+type Query {
+  allBills(slugName: String!): [BillList]
+  allCustomers(slugName: String!): [CustomerList]
+}
+
+scalar UUID
