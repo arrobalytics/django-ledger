@@ -10,8 +10,6 @@
                 <div class="level-item has-text-centered">
                     <div>
                         <p class="heading">{% trans 'Revenue Estimate' %}:
-{#                            <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
-{#                               class="has-text-danger">{{ bill.cash_account.code }}</a>#}
                         <p class="title" id="djl-cj-detail-estimated-revenue">
                             {% currency_symbol %}{{ customer_job.estimated_revenue  | absolute | currency_format }}</p>
                     </div>
@@ -20,8 +18,6 @@
                 <div class="level-item has-text-centered">
                     <div>
                         <p class="heading">{% trans 'Cost Estimate' %}:
-{#                            <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
-{#                               class="has-text-danger">{{ bill.cash_account.code }}</a>#}
                         <p class="title" id="djl-cj-detail-estimated-cost">
                             {% currency_symbol %}{{ customer_job.cost_estimate  | absolute | currency_format }}</p>
                     </div>
@@ -63,10 +59,4 @@
         </div>
     </div>
 
-
-    <div class="columns">
-        <div class="column">
-            {{ object }}
-        </div>
-    </div>
 {% endblock %}

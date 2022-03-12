@@ -47,11 +47,11 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
         return CreateCustomerJobModelForm
 
     def get_success_url(self):
-        # todo: redirect to detail view once implemented...
-        # cj_model = self.get_object()
-        return reverse('django_ledger:customer-job-list',
+        cj_model: CustomerJobModel = self.object
+        return reverse('django_ledger:customer-job-detail',
                        kwargs={
-                           'entity_slug': self.kwargs['entity_slug']
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'customer_job_pk': cj_model.uuid
                        })
 
     def form_valid(self, form):
@@ -73,7 +73,6 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CustomerJobModelDetailView, self).get_context_data(**kwargs)
-
         cj_model: CustomerJobModel = self.object
         context['page_title'] = self.PAGE_TITLE,
         context['header_title'] = self.PAGE_TITLE
