@@ -13,9 +13,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'djangoledger_api',
     'graphene_django',
-    'django_ledger'
+    'django_ledger',
 
 ]
 

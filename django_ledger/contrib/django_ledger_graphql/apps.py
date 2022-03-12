@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class DjangoledgerApiConfig(AppConfig):
+class DjangoLedgerGraphqlConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'djangoledger_api'
+    name = 'django_ledger_graphql'
