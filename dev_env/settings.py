@@ -95,3 +95,9 @@ STATIC_URL = '/static/'
 LOGIN_URL = '/auth/login/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+GRAPHENE = {
+    'SCHEMA': 'django_ledger.contrib.django_ledger_graphql.api.schema',
+    'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphql/schema.graphql',  # defaults to schema.json,
+    # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
+}
