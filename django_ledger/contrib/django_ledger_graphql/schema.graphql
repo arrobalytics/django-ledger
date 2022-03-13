@@ -1,0 +1,185 @@
+type Query {
+    allBills(slugName: String!): [BillList]
+    allCustomers(slugName: String!): [CustomerList]
+}
+
+type BillList {
+    created: DateTime!
+    updated: DateTime
+    terms: DjangoLedgerBillModelTermsChoices!
+
+    """"""
+    amountDue: Decimal!
+
+    """"""
+    amountPaid: Decimal!
+
+    """"""
+    amountReceivable: Decimal!
+
+    """"""
+    amountUnearned: Decimal!
+
+    """"""
+    amountEarned: Decimal!
+    paid: Boolean!
+    paidDate: Date
+    date: Date!
+    dueDate: Date!
+    void: Boolean!
+    voidDate: Date
+    accrue: Boolean!
+
+    """"""
+    progress: Decimal!
+    markdownNotes: String
+    uuid: UUID!
+    billNumber: String!
+    billStatus: DjangoLedgerBillModelBillStatusChoices!
+    xref: String
+    additionalInfo: JSONString!
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""An enumeration."""
+enum DjangoLedgerBillModelTermsChoices {
+    """Due On Receipt"""
+    ON_RECEIPT
+
+    """Net 30 Days"""
+    NET_30
+
+    """Net 60 Days"""
+    NET_60
+
+    """Net 90 Days"""
+    NET_90
+}
+
+"""The `Decimal` scalar type represents a python Decimal."""
+scalar Decimal
+
+"""
+The `Date` scalar type represents a Date
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar Date
+
+"""
+Leverages the internal Python implementation of UUID (uuid.UUID) to provide native UUID objects
+in fields, resolvers and input.
+"""
+scalar UUID
+
+"""An enumeration."""
+enum DjangoLedgerBillModelBillStatusChoices {
+    """Draft"""
+    DRAFT
+
+    """In Review"""
+    IN_REVIEW
+
+    """Approved"""
+    APPROVED
+
+    """Canceled"""
+    CANCELED
+}
+
+"""
+Allows use of a JSON String for input / output from the GraphQL schema.
+
+Use of this type is *not recommended* as you lose the benefits of having a defined, static
+schema (one of the key benefits of GraphQL).
+"""
+scalar JSONString
+
+type CustomerList {
+    created: DateTime!
+    updated: DateTime
+    address1: String!
+    address2: String
+    city: String
+    state: String
+    zipCode: String
+    country: String
+    email: String
+    website: String
+    phone: String
+    uuid: UUID!
+    customerName: String!
+    entity: EntityList!
+    description: String!
+    active: Boolean!
+    hidden: Boolean!
+    additionalInfo: JSONString
+}
+
+type EntityList {
+    slug: String!
+    created: DateTime!
+    updated: DateTime
+    address1: String!
+    address2: String
+    city: String
+    state: String
+    zipCode: String
+    country: String
+    email: String
+    website: String
+    phone: String
+    parent: EntityList
+    uuid: UUID!
+    name: String
+    hidden: Boolean!
+    fyStartMonth: DjangoLedgerEntityModelFyStartMonthChoices!
+    picture: String
+    childrenSet: [EntityList!]!
+    customers: [CustomerList!]!
+}
+
+"""An enumeration."""
+enum DjangoLedgerEntityModelFyStartMonthChoices {
+    """January"""
+    A_1
+
+    """February"""
+    A_2
+
+    """March"""
+    A_3
+
+    """April"""
+    A_4
+
+    """May"""
+    A_5
+
+    """June"""
+    A_6
+
+    """July"""
+    A_7
+
+    """August"""
+    A_8
+
+    """September"""
+    A_9
+
+    """October"""
+    A_10
+
+    """November"""
+    A_11
+
+    """December"""
+    A_12
+}

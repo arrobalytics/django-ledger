@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ecd94551d7d9841a716280b85309ac080ac9ad9fbe7beed0caa658dde73e5118"
+            "sha256": "dcd330b30b4aeb254e36b73d12ebc9130fc273d5e7455554f74791c696e8e091"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,13 @@
         ]
     },
     "default": {
+        "aniso8601": {
+            "hashes": [
+                "sha256:1d2b7ef82963909e93c4f24ce48d4de9e66009a21bf1c1e1c85bdd0812fe412f",
+                "sha256:72e3117667eedf66951bb2d93f4296a56b94b078a8a95905a052611fb3f1b973"
+            ],
+            "version": "==9.0.1"
+        },
         "asgiref": {
             "hashes": [
                 "sha256:2f8abc20f7248433085eda803936d98992f1343ddb022065779f37c5da0181d0",
@@ -47,6 +54,36 @@
             ],
             "index": "pypi",
             "version": "==8.16.0"
+        },
+        "graphene": {
+            "hashes": [
+                "sha256:57ce5ee7c9dc194224a1df96e4f7cb48d31eae96c791091d059f8f3d4d131390",
+                "sha256:af48066e152200a071aac1e0b703954c717ec7268720ba190a0c91d9bcb0a122"
+            ],
+            "version": "==3.0"
+        },
+        "graphene-django": {
+            "extras": [
+                "graphql"
+            ],
+            "git": "https://github.com/graphql-python/graphene-django.git",
+            "ref": "8324d47999afb8fb9d18725c5dd8cc5caa3595f1"
+        },
+        "graphql-core": {
+            "hashes": [
+                "sha256:62ec192150ccecd9a18cfb79e3e72eb7d1fd68fb594ef19c40099b6deec8ef0c",
+                "sha256:9b460f60320be01c7f3b1766cf3e406933003008055079b9d983b8f3988f4400"
+            ],
+            "markers": "python_version >= '3.6' and python_version < '4'",
+            "version": "==3.1.7"
+        },
+        "graphql-relay": {
+            "hashes": [
+                "sha256:127f40913f11cb847452ef794931261aae3b222eaaf976f7c8430298534e54d3",
+                "sha256:d1455316182e1017d06f0b4d4a2ce8bafad38253a6c7c5666fc80d5d516ee5c8"
+            ],
+            "markers": "python_version >= '3.6' and python_version < '4'",
+            "version": "==3.1.5"
         },
         "markdown": {
             "hashes": [
@@ -103,6 +140,12 @@
             ],
             "index": "pypi",
             "version": "==9.0.1"
+        },
+        "promise": {
+            "hashes": [
+                "sha256:dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0"
+            ],
+            "version": "==2.3"
         },
         "python-dateutil": {
             "hashes": [
@@ -409,11 +452,11 @@
         },
         "pip": {
             "hashes": [
-                "sha256:c146f331f0805c77017c6bb9740cec4a49a0d4582d0c3cc8244b057f83eca359",
-                "sha256:f29d589df8c8ab99c060e68ad294c4a9ed896624f6368c5349d70aa581b333d0"
+                "sha256:b3a9de2c6ef801e9247d1527a4b16f92f2cc141cd1489f3fffaf6a9e96729764",
+                "sha256:c6aca0f2f081363f689f041d90dab2a07a9a07fb840284db2218117a52da800b"
             ],
             "markers": "python_version >= '3.7'",
-            "version": "==22.0.3"
+            "version": "==22.0.4"
         },
         "pip-shims": {
             "hashes": [
