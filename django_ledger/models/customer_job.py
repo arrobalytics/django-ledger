@@ -1,3 +1,11 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+Miguel Sanda <msanda@arrobalytics.com>
+"""
+
 from typing import Union
 from uuid import uuid4
 
@@ -7,10 +15,11 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import SlugNameMixIn, CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn
+from django_ledger.models import CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn
 
 
 class CustomerJobModelManager(models.Manager):
+
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
         qs = self.get_queryset()
         if isinstance(entity_slug, EntityModel):
@@ -30,7 +39,6 @@ class CustomerJobModelManager(models.Manager):
 
 
 class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
-    
     CJ_STATUS_DRAFT = 'draft'
     CJ_STATUS_REVIEW = 'in_review'
     CJ_STATUS_APPROVED = 'approved'
@@ -47,13 +55,16 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Entity Model'))
+    customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.PROTECT, verbose_name=_('Customer'))
     title = models.CharField(max_length=250,
                              verbose_name=_('Customer Job Title'),
                              validators=[
                                  MinLengthValidator(limit_value=5,
                                                     message=_(f'PO Title length must be greater than 5'))
                              ])
-    status = models.CharField(max_length=10, choices=CJ_STATUS, verbose_name=_('Customer Job Status'))
+    status = models.CharField(max_length=10, choices=CJ_STATUS,
+                              verbose_name=_('Customer Job Status'),
+                              default=CJ_STATUS_DRAFT)
     date_approved = models.DateField(null=True, blank=True, verbose_name=_('Date Approved'))
     date_completed = models.DateField(null=True, blank=True, verbose_name=_('Date Completed'))
     revenue_estimate = models.DecimalField(decimal_places=2,
@@ -91,9 +102,9 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
         verbose_name = _('Customer Job')
         verbose_name_plural = _('Customer Jobs')
         indexes = [
+            models.Index(fields=['status']),
             models.Index(fields=['date_approved']),
-            models.Index(fields=['date_completed']),
-            models.Index(fields=['status'])
+            models.Index(fields=['date_completed'])
         ]
 
     def __str__(self):
@@ -108,6 +119,9 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     def cost_estimate(self):
         return sum([self.labor_estimate, self.material_estimate, self.equipment_estimate])
 
+    def profit_estimate(self):
+        return self.revenue_estimate - self.cost_estimate()
+
     def get_html_id(self):
         return f'djl-customer-job-id-{self.uuid}'
 
@@ -117,4 +131,3 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         if self.is_completed() and not self.date_completed:
             raise ValidationError(message='Must provide date_completed for Customer Job.')
-

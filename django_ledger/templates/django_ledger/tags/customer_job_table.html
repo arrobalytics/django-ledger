@@ -6,6 +6,7 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
+            <th>{% trans 'Customer' %}</th>
             <th>{% trans 'Title' %}</th>
             <th>{% trans 'Approved' %}</th>
             <th>{% trans 'Completed' %}</th>
@@ -15,9 +16,8 @@
         <tbody>
         {% for cj in customer_job_list %}
             <tr id="{{ cj.get_html_id }}">
-
+                <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
-
                 <td class="has-text-centered">
                     {% if cj.is_approved %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>

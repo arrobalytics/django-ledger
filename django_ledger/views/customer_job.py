@@ -1,12 +1,12 @@
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, CreateView, DetailView
 
+from django_ledger.forms.customer_job import CreateCustomerJobModelForm
 from django_ledger.models import EntityModel
 from django_ledger.models.customer_job import CustomerJobModel
-from django_ledger.forms.customer_job import CreateCustomerJobModelForm
 from django_ledger.views import LoginRequiredMixIn
-from django.utils.translation import gettext_lazy as _
 
 
 class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
@@ -17,7 +17,6 @@ class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
     paginate_by = 20
     paginate_orphans = 2
     allow_empty = True
-
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
@@ -28,7 +27,7 @@ class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return CustomerJobModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('customer')
 
     def get_date_field(self):
         return 'created'
@@ -45,6 +44,12 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
 
     def get_form_class(self):
         return CreateCustomerJobModelForm
+
+    def get_form(self, form_class=None):
+        form_class = self.get_form_class()
+        return form_class(entity_slug=self.kwargs['entity_slug'],
+                          user_model=self.request.user,
+                          **self.get_form_kwargs())
 
     def get_success_url(self):
         cj_model: CustomerJobModel = self.object
@@ -70,6 +75,9 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
     template_name = 'django_ledger/customer_job/customer_job_detail.html'
     PAGE_TITLE = _('Customer Job Detail')
     context_object_name = 'customer_job'
+    extra_context = {
+        'hide_menu': True
+    }
 
     def get_context_data(self, **kwargs):
         context = super(CustomerJobModelDetailView, self).get_context_data(**kwargs)
@@ -78,10 +86,11 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = cj_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
+        context['customer_job_item_list'] = cj_model.itemthroughmodel_set.all()
         return context
 
     def get_queryset(self):
         return CustomerJobModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('entity')
+        ).select_related('customer')
