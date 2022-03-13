@@ -1,10 +1,7 @@
 
-# Django ledger Graphql Api
+# Django Ledger GraphQL API
 
 ## Usage and installation
-
-
-
 
 
 ``` 
@@ -27,7 +24,7 @@ Open new tab and navigate to
 ``` 
 http://127.0.0.1:8000/graphql/
 ```
-## sample graphql Query
+## Sample GraphQL Query
 paste this at the graphql console and run the query
 ```
 {
