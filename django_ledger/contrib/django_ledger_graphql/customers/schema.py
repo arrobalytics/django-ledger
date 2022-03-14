@@ -1,18 +1,15 @@
+
 import graphene
 from graphene_django import DjangoObjectType
-
 from django_ledger.models import CustomerModel, EntityModel
 
 
 class CustomerList(DjangoObjectType):
     class Meta:
         model = CustomerModel
-
-
 class EntityList(DjangoObjectType):
     class Meta:
         model = EntityModel
-
 
 class CustomerQuery(graphene.ObjectType):
     all_customers = graphene.List(CustomerList, slug_name=graphene.String(required=True))
@@ -26,3 +23,7 @@ class CustomerQuery(graphene.ObjectType):
             return retuan
         else:
             return CustomerModel.objects.none()
+
+
+
+

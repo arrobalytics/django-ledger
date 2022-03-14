@@ -1,13 +1,12 @@
+
 import graphene
 from graphene_django import DjangoObjectType
-
 from django_ledger.models import BillModel
 
 
 class BillList(DjangoObjectType):
     class Meta:
         model = BillModel
-
 
 class Bill_list_Query(graphene.ObjectType):
     all_bills = graphene.List(BillList, slug_name=graphene.String(required=True))
@@ -20,3 +19,4 @@ class Bill_list_Query(graphene.ObjectType):
             ).select_related('vendor').order_by('-updated')
         else:
             return BillModel.objects.none()
+
