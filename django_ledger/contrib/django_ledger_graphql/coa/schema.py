@@ -1,11 +1,16 @@
 import graphene
 from graphene_django import DjangoObjectType
+<<<<<<< Updated upstream
 
 from django_ledger.models import CustomerModel, EntityModel
+=======
+from django_ledger.models import ChartOfAccountModel
+>>>>>>> Stashed changes
 
 
-class CustomerList(DjangoObjectType):
+class CoaList(DjangoObjectType):
     class Meta:
+<<<<<<< Updated upstream
         model = CustomerModel
 
 
@@ -28,3 +33,19 @@ class CustomerQuery(graphene.ObjectType):
     def resolve_entity_list(self, info, **kwargs):
         return EntityModel.objects.for_user(
             user_model=info.context.user)
+=======
+        model = ChartOfAccountModel
+
+
+class ChartOfAccountsQuery(graphene.ObjectType):
+    all_coa = graphene.List(CoaList, slug_name=graphene.String(required=True))
+
+    def resolve_all_coa(self, info, slug_name):
+        if info.context.user.is_authenticated:
+            return ChartOfAccountModel.objects.for_entity(
+                entity_slug=slug_name,
+                user_model=info.context.user,
+            )
+        else:
+            return ChartOfAccountModel.objects.none()
+>>>>>>> Stashed changes
