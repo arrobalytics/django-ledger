@@ -1,39 +1,11 @@
+
 import graphene
 from graphene_django import DjangoObjectType
-<<<<<<< Updated upstream
-
-from django_ledger.models import CustomerModel, EntityModel
-=======
 from django_ledger.models import ChartOfAccountModel
->>>>>>> Stashed changes
 
 
 class CoaList(DjangoObjectType):
     class Meta:
-<<<<<<< Updated upstream
-        model = CustomerModel
-
-
-class EntityList(DjangoObjectType):
-    class Meta:
-        model = EntityModel
-
-
-class CustomerQuery(graphene.ObjectType):
-    all_customers = graphene.List(CustomerList, slug_name=graphene.String(required=True))
-    entity_list = graphene.List(EntityList)
-
-    def resolve_all_customers(self, info, slug_name):
-        retuan = CustomerModel.objects.for_entity(
-            entity_slug=slug_name,
-            user_model=info.context.user
-        ).order_by('-updated')
-        return retuan
-
-    def resolve_entity_list(self, info, **kwargs):
-        return EntityModel.objects.for_user(
-            user_model=info.context.user)
-=======
         model = ChartOfAccountModel
 
 
@@ -48,4 +20,3 @@ class ChartOfAccountsQuery(graphene.ObjectType):
             )
         else:
             return ChartOfAccountModel.objects.none()
->>>>>>> Stashed changes
