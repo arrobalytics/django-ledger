@@ -1,7 +1,10 @@
 
-# Django Ledger GraphQL API
+# Django ledger Graphql Api
 
 ## Usage and installation
+
+
+
 
 
 ``` 
@@ -18,13 +21,22 @@ python manage.py runserver
 ``` 
 make sure you are loged in the main application go to the admin 
 site http://127.0.0.1:8000/admin/django_ledger/entitymodel/ choose your 
-entity and get your slug name from the entity choosen
+entity and get your slug name from the entity choosen or
 
 Open new tab and navigate to
 ``` 
 http://127.0.0.1:8000/graphql/
 ```
-## Sample GraphQL Query
+paste this to the console and run the query
+```
+{
+  allEntityList{
+    slug
+    name
+  }
+```
+this will return the current user logged in slug and name, use the slug for other queries (Slugname:String!)
+## sample graphql Query
 paste this at the graphql console and run the query
 ```
 {
