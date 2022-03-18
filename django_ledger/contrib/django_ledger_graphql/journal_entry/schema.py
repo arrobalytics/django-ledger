@@ -15,8 +15,12 @@ class JournalEntryNode(DjangoObjectType):
             'description': ['exact'],
         }
         interfaces = (relay.Node,)
+
+
 class JournalEntryQuery(graphene.ObjectType):
-    all_journal_entries = DjangoFilterConnectionField(JournalEntryNode, slug_name=graphene.String(required=True), pk_ledger=graphene.UUID())
+    all_journal_entries = DjangoFilterConnectionField(
+        JournalEntryNode, slug_name=graphene.String(
+            required=True), pk_ledger=graphene.UUID())
 
     def resolve_all_journal_entry(self, info, slug_name, pk_ledger, **kwargs):
         if info.context.user.is_authenticated:
@@ -30,4 +34,3 @@ class JournalEntryQuery(graphene.ObjectType):
                 ).order_by(sort)
         else:
             return JournalEntryModel.objects.none()
-

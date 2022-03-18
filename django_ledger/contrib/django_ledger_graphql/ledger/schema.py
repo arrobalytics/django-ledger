@@ -12,8 +12,11 @@ class LedgerNode(DjangoObjectType):
             'name': ['exact', 'icontains', 'istartswith'],
         }
         interfaces = (relay.Node,)
+
+
 class LedgerQuery(graphene.ObjectType):
-    all_ledger = DjangoFilterConnectionField(LedgerNode, slug_name=graphene.String(required=True))
+    all_ledger = DjangoFilterConnectionField(
+        LedgerNode, slug_name=graphene.String(required=True))
 
     def resolve_all_vendors(self, info, slug_name, **kwargs):
         if info.context.user.is_authenticated:
@@ -26,4 +29,3 @@ class LedgerQuery(graphene.ObjectType):
             ).order_by(sort)
         else:
             return LedgerModel.objects.none()
-
