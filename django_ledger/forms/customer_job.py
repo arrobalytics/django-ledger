@@ -13,7 +13,7 @@ from django_ledger.models import CustomerModel
 from django_ledger.models.customer_job import CustomerJobModel
 
 
-class CreateCustomerJobModelForm(forms.ModelForm):
+class CustomerJobModelCreateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,3 +41,9 @@ class CreateCustomerJobModelForm(forms.ModelForm):
                 'placeholder': _('Enter title...')
             })
         }
+
+
+class CustomerJobModelUpdateForm(forms.ModelForm):
+    class Meta:
+        model = CustomerJobModel
+        fields = '__all__'

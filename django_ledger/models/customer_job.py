@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from decimal import Decimal
 from typing import Union
 from uuid import uuid4
 
@@ -117,10 +117,22 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.status == self.CJ_STATUS_COMPLETED
 
     def cost_estimate(self):
-        return sum([self.labor_estimate, self.material_estimate, self.equipment_estimate])
+        return self.labor_estimate + self.material_estimate + self.equipment_estimate
 
     def profit_estimate(self):
         return self.revenue_estimate - self.cost_estimate()
+
+    def gross_margin_estimate(self, as_percent: bool = False) -> float:
+        try:
+            gm = float(self.revenue_estimate) / float(self.cost_estimate()) - 1.00
+            if as_percent:
+                return gm * 100
+            return gm
+        except ZeroDivisionError:
+            return 0.00
+
+    def gross_margin_percent_estimate(self) -> float:
+        return self.gross_margin_estimate(as_percent=True)
 
     def get_html_id(self):
         return f'djl-customer-job-id-{self.uuid}'

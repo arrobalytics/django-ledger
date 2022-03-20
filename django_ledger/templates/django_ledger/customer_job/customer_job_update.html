@@ -1,0 +1,45 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <form action="">
+        {% if form.errors %}
+            {{ form.errors }}
+        {% endif %}
+
+        <div class="columns is-multiline">
+            <div class="column is-12">
+                <div class="columns">
+                    <div class="column is-6">
+                        {% include 'django_ledger/includes/card_customer.html' with  customer=object.customer %}
+                    </div>
+                    <div class="column is-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <p class="card-header-title">{% trans 'Customer Job' %}</p>
+                            </div>
+                            <div class="card-content">
+                                <h2 class="has-text-weight-bold is-size-3">{% trans 'Estimated Revenue' %}:
+                                    {% currency_symbol %}{{ customer_job.revenue_estimate }}</h2>
+                                <br>
+                                <h3 class="has-text-weight-light is-italic is-size-5">
+                                    {% trans 'Labor Cost' %}:
+                                    {% currency_symbol %}{{ customer_job.labor_estimate }}</h3>
+                                <h3 class="has-text-weight-light is-italic is-size-5">
+                                    {% trans 'Materials Cost' %}:
+                                    {% currency_symbol %}{{ customer_job.material_estimate }}</h3>
+                                <h3 class="has-text-weight-light is-italic is-size-5">
+                                    {% trans 'Equipment Cost' %}:
+                                    {% currency_symbol %}{{ customer_job.equipment_estimate }}</h3>
+                                <h2 class="is-size-4">{% trans 'Total Cost' %}: {% currency_symbol %}{{ customer_job.cost_estimate }}</h2>
+                                <h1 class="is-size-2 has-text-info">{% trans 'Profit Estimate' %}: {% currency_symbol %}{{ customer_job.profit_estimate }}</h1>
+                                <h2 class="is-size-4 has-text-weight-light is-italic">{% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate }}%</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}

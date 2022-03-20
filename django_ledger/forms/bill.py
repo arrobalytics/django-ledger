@@ -1,4 +1,5 @@
-from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet,
+from django.forms import (ModelForm, DateInput, TextInput, Select,
+                          CheckboxInput, BaseModelFormSet,
                           modelformset_factory, Textarea)
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _

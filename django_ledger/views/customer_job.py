@@ -1,9 +1,9 @@
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ArchiveIndexView, CreateView, DetailView
+from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView
 
-from django_ledger.forms.customer_job import CreateCustomerJobModelForm
+from django_ledger.forms.customer_job import CustomerJobModelCreateForm, CustomerJobModelUpdateForm
 from django_ledger.models import EntityModel
 from django_ledger.models.customer_job import CustomerJobModel
 from django_ledger.views import LoginRequiredMixIn
@@ -43,7 +43,7 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/customer_job/customer_job_create.html'
 
     def get_form_class(self):
-        return CreateCustomerJobModelForm
+        return CustomerJobModelCreateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -88,6 +88,27 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_subtitle_icon'] = 'eos-icons:job'
         context['customer_job_item_list'] = cj_model.itemthroughmodel_set.all()
         return context
+
+    def get_queryset(self):
+        return CustomerJobModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        ).select_related('customer')
+
+
+class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
+    template_name = 'django_ledger/customer_job/customer_job_update.html'
+    pk_url_kwarg = 'customer_job_pk'
+    context_object_name = 'customer_job'
+
+    def get_form_class(self):
+        return CustomerJobModelUpdateForm
+
+    def get_form(self, form_class=None):
+        form_class = self.get_form_class()
+        return form_class(
+            **self.get_form_kwargs()
+        )
 
     def get_queryset(self):
         return CustomerJobModel.objects.for_entity(
