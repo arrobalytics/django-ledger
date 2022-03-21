@@ -1,17 +1,29 @@
 
 import graphene
+from graphene import relay
 from graphene_django import DjangoObjectType
 from django_ledger.models import BankAccountModel
+from graphene_django.filter import DjangoFilterConnectionField
 
 
-class Bank_accountList(DjangoObjectType):
+class BankaccountNode(DjangoObjectType):
     class Meta:
         model = BankAccountModel
+        filter_fields = {
+            'name': ['exact', 'icontains', 'istartswith'],
+            'account_type': ['exact', 'icontains', 'istartswith'],
+            'account_number': ['exact', 'icontains', 'istartswith'],
+            'routing_number': ['exact', 'icontains', 'istartswith'],
+            'aba_number': ['exact', 'icontains', 'istartswith'],
+            'cash_account': ['exact'],
+            'active': ['exact']
+        }
+        interfaces = (relay.Node,)
 
 class Bank_account_Query(graphene.ObjectType):
-    all_bank_account_list = graphene.List(Bank_accountList, slug_name=graphene.String(required=True))
+    all_bankaccounts = DjangoFilterConnectionField(BankaccountNode, slug_name=graphene.String(required=True))
 
-    def resolve_all_bank_account_list(self, info, slug_name):
+    def resolve_all_bankaccounts(self, info, slug_name, **kwargs):
         if info.context.user.is_authenticated:
             return BankAccountModel.objects.for_entity(
             entity_slug=slug_name,

@@ -10,6 +10,13 @@ from django_ledger.contrib.django_ledger_graphql.coa.schema import ChartOfAccoun
 from django_ledger.contrib.django_ledger_graphql.entity.schema import Entity_Query
 from django_ledger.contrib.django_ledger_graphql.item.schema import UnitOfMeasureQuery
 
+from django_ledger.contrib.django_ledger_graphql.vendor.schema import VendorsQuery
+from django_ledger.contrib.django_ledger_graphql.unit.schema import EntityUnitQuery
+from django_ledger.contrib.django_ledger_graphql.ledger.schema import LedgerQuery
+from django_ledger.contrib.django_ledger_graphql.transaction.schema import TransactionsQuery
+from django_ledger.contrib.django_ledger_graphql.journal_entry.schema import JournalEntryQuery
+from django_ledger.contrib.django_ledger_graphql.purchase_order.schema import PurchaseOrderQuery
+
 API_PATH = SimpleLazyObject(lambda: reverse("api"))
 
 
@@ -21,6 +28,13 @@ class Query(
     ChartOfAccountsQuery,
     Entity_Query,
     UnitOfMeasureQuery,
+    VendorsQuery,
+    EntityUnitQuery,
+    LedgerQuery,
+    TransactionsQuery,
+    JournalEntryQuery,
+    PurchaseOrderQuery,
+
 ):
     pass
 
