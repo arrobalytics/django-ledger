@@ -20,6 +20,17 @@ class ChartOfAccountsQuery(graphene.ObjectType):
     all_coa = DjangoFilterConnectionField(CoaNode, slug_name=graphene.String(required=True))
 
     def resolve_all_coa(self, info, slug_name, **kwargs):
+
+class CoaList(DjangoObjectType):
+    class Meta:
+        model = ChartOfAccountModel
+
+
+class ChartOfAccountsQuery(graphene.ObjectType):
+    all_coa = graphene.List(CoaList, slug_name=graphene.String(required=True))
+
+    def resolve_all_coa(self, info, slug_name):
+
         if info.context.user.is_authenticated:
             return ChartOfAccountModel.objects.for_entity(
                 entity_slug=slug_name,

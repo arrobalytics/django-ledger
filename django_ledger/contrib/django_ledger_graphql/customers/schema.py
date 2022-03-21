@@ -4,6 +4,9 @@ from graphene_django import DjangoObjectType
 from django_ledger.models import CustomerModel
 from graphene_django.filter import DjangoFilterConnectionField
 
+import graphene
+from graphene_django import DjangoObjectType
+from django_ledger.models import CustomerModel, EntityModel
 
 class CustomerNode(DjangoObjectType):
     class Meta:
@@ -21,6 +24,9 @@ class CustomerNode(DjangoObjectType):
             'website': ['exact', 'icontains', 'istartswith'],
         }
         interfaces = (relay.Node,)
+class EntityList(DjangoObjectType):
+    class Meta:
+        model = EntityModel
 
 class CustomerQuery(graphene.ObjectType):
     all_customers = DjangoFilterConnectionField(CustomerNode, slug_name=graphene.String(required=True))

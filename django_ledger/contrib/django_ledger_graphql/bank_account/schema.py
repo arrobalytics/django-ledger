@@ -1,3 +1,4 @@
+
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
@@ -18,6 +19,7 @@ class BankaccountNode(DjangoObjectType):
             'active': ['exact']
         }
         interfaces = (relay.Node,)
+
 class Bank_account_Query(graphene.ObjectType):
     all_bankaccounts = DjangoFilterConnectionField(BankaccountNode, slug_name=graphene.String(required=True))
 

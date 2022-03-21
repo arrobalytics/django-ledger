@@ -28,6 +28,17 @@ Open new tab and navigate to
 http://127.0.0.1:8000/graphql/
 ```
 paste this to the console and run the query
+
+```
+{
+  allEntityList{
+    slug
+    name
+  }
+```
+this will return the current user logged in slug and name, use the slug for other queries (Slugname:String!)
+## sample graphql Query
+paste this at the graphql console and run the query
 ```
 {
   allEntityList{
