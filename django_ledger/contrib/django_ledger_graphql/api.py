@@ -9,6 +9,7 @@ from django_ledger.contrib.django_ledger_graphql.bank_account.schema import Bank
 from django_ledger.contrib.django_ledger_graphql.coa.schema import ChartOfAccountsQuery
 from django_ledger.contrib.django_ledger_graphql.entity.schema import Entity_Query
 from django_ledger.contrib.django_ledger_graphql.item.schema import UnitOfMeasureQuery
+
 from django_ledger.contrib.django_ledger_graphql.vendor.schema import VendorsQuery
 from django_ledger.contrib.django_ledger_graphql.unit.schema import EntityUnitQuery
 from django_ledger.contrib.django_ledger_graphql.ledger.schema import LedgerQuery
@@ -33,6 +34,7 @@ class Query(
     TransactionsQuery,
     JournalEntryQuery,
     PurchaseOrderQuery,
+
 ):
     pass
 
