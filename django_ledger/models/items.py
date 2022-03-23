@@ -71,7 +71,7 @@ class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
 
 
-class ItemModelMQuerySet(models.QuerySet):
+class ItemModelQuerySet(models.QuerySet):
 
     def active(self):
         return self.filter(active=True)
@@ -80,7 +80,7 @@ class ItemModelMQuerySet(models.QuerySet):
 class ItemModelManager(models.Manager):
 
     def get_queryset(self):
-        return ItemModelMQuerySet(self.model, using=self._db)
+        return ItemModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -98,7 +98,10 @@ class ItemModelManager(models.Manager):
 
     def products_and_services(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(is_product_or_service=True)
+        return qs.filter(
+            Q(is_product_or_service=True) &
+            Q(for_inventory=False)
+        )
 
     def expenses(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
@@ -124,6 +127,9 @@ class ItemModelManager(models.Manager):
             Q(is_product_or_service=False, for_inventory=False) |
             Q(for_inventory=True)
         )
+
+    def for_cj(self, entity_slug: str, user_model):
+        return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -584,6 +590,11 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     def clean(self):
         self.clean_po_total_amount()
         self.clean_total_amount()
+
+        # pylint: disable=no-member
+        if self.customer_job_id:
+            self.po_model = None
+            self.bill_model = None
 
         # pylint: disable=no-member
         if self.po_model_id:

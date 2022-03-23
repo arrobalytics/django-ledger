@@ -1,10 +1,12 @@
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView
 
-from django_ledger.forms.customer_job import CustomerJobModelCreateForm, CustomerJobModelUpdateForm
-from django_ledger.models import EntityModel
+from django_ledger.forms.customer_job import (CustomerJobModelCreateForm, CustomerJobModelUpdateForm,
+                                              CustomerJobItemFormset)
+from django_ledger.models import EntityModel, ItemThroughModel
 from django_ledger.models.customer_job import CustomerJobModel
 from django_ledger.views import LoginRequiredMixIn
 
@@ -100,6 +102,10 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/customer_job/customer_job_update.html'
     pk_url_kwarg = 'customer_job_pk'
     context_object_name = 'customer_job'
+    PAGE_TITLE = _('Customer Job Update')
+    http_method_names = ['get', 'post']
+
+    action_update_items = False
 
     def get_form_class(self):
         return CustomerJobModelUpdateForm
@@ -110,8 +116,66 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
             **self.get_form_kwargs()
         )
 
+    # def get_item_through_queryset(self):
+    #     bill_model: CustomerJobModel = self.object
+    #     if not self.item_through_qs:
+    #         self.item_through_qs = bill_model.itemthroughmodel_set.select_related(
+    #             'item_model', 'po_model', 'bill_model').order_by('-total_amount')
+    #     return self.item_through_qs
+
+    def get_context_data(self, item_formset: CustomerJobItemFormset = None, **kwargs):
+        context = super(CustomerJobModelUpdateView, self).get_context_data(**kwargs)
+        cj_model: CustomerJobModel = self.object
+        context['page_title'] = self.PAGE_TITLE,
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = cj_model.title
+        context['header_subtitle_icon'] = 'eos-icons:job'
+
+        if not item_formset:
+            item_through_qs, aggregate_data = cj_model.get_itemthrough_data()
+            item_formset = CustomerJobItemFormset(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                customer_job_model=cj_model,
+                queryset=item_through_qs)
+        else:
+            item_through_qs: ItemThroughModel = item_formset.queryset
+
+        context['customer_job_item_list'] = item_through_qs
+        context['total_amount_estimate'] = aggregate_data['amount_estimate']
+        context['cj_formset'] = item_formset
+        return context
+
     def get_queryset(self):
         return CustomerJobModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('customer')
+
+    def get(self, request, entity_slug, customer_job_pk, *args, **kwargs):
+
+        # this action can only be used via POST request...
+        if self.action_update_items:
+            return HttpResponseBadRequest()
+
+        return super(CustomerJobModelUpdateView, self).get(request, *args, **kwargs)
+
+    def post(self, request, entity_slug, cj_pk, *args, **kwargs):
+
+        response = super(CustomerJobModelUpdateView, self).post(request, *args, **kwargs)
+        cj_model: CustomerJobModel = self.get_object()
+
+        # this action can only be used via POST request...
+        if self.action_update_items:
+            item_formset: CustomerJobItemFormset = CustomerJobItemFormset(request.POST,
+                                                                          user_model=self.request.user,
+                                                                          customer_job_model=cj_model,
+                                                                          entity_slug=entity_slug)
+            if item_formset.is_valid():
+                if item_formset.has_changed():
+                    pass
+            else:
+                context = self.get_context_data(item_formset=item_formset)
+                return self.render_to_response(context=context)
+
+        return response

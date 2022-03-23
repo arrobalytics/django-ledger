@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn
@@ -134,8 +134,22 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     def gross_margin_percent_estimate(self) -> float:
         return self.gross_margin_estimate(as_percent=True)
 
+    def can_edit_items(self):
+        return self.status in [
+            self.CJ_STATUS_DRAFT
+        ]
+
     def get_html_id(self):
         return f'djl-customer-job-id-{self.uuid}'
+
+    def get_itemthrough_data(self, queryset=None) -> tuple:
+        if not queryset:
+            # pylint: disable=no-member
+            queryset = self.itemthroughmodel_set.select_related('item_model').all()
+        return queryset, queryset.aggregate(
+            amount_estimate=Sum('total_amount'),
+            total_items=Count('uuid')
+        )
 
     def clean(self):
         if self.is_approved() and not self.date_approved:

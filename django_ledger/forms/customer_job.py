@@ -7,10 +7,12 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django import forms
+from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CustomerModel
+from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel
 from django_ledger.models.customer_job import CustomerJobModel
+from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class CustomerJobModelCreateForm(forms.ModelForm):
@@ -46,4 +48,70 @@ class CustomerJobModelCreateForm(forms.ModelForm):
 class CustomerJobModelUpdateForm(forms.ModelForm):
     class Meta:
         model = CustomerJobModel
-        fields = '__all__'
+        fields = [
+            'status',
+            'markdown_notes'
+        ]
+        widgets = {
+            'status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'markdown_notes': Textarea(attrs={
+                'class': 'textarea'
+            })
+        }
+
+
+class CustomerJobItemForm(ModelForm):
+    class Meta:
+        model = ItemThroughModel
+        fields = [
+            'item_model',
+            'unit_cost',
+            'entity_unit',
+            'quantity',
+        ]
+        widgets = {
+            'item_model': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'entity_unit': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'unit_cost': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'quantity': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            })
+        }
+
+
+class CustomerJobItemFormset(BaseModelFormSet):
+
+    def __init__(self, *args, entity_slug, user_model, customer_job_model: CustomerJobModel, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.USER_MODEL = user_model
+        self.CUSTOMER_JOB_MODEL = customer_job_model
+        self.ENTITY_SLUG = entity_slug
+
+        items_qs = ItemModel.objects.for_cj(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
+        for form in self.forms:
+            form.fields['item_model'].queryset = items_qs
+            if not self.CUSTOMER_JOB_MODEL.can_edit_items():
+                form.fields['item_model'].disabled = True
+                form.fields['quantity'].disabled = True
+                form.fields['unit_cost'].disabled = True
+                form.fields['entity_unit'].disabled = True
+
+
+# todo: add instance where can_delete = False
+CustomerJobItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=CustomerJobItemForm,
+    formset=CustomerJobItemFormset,
+    can_delete=True,
+    extra=5
+)

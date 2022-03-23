@@ -112,6 +112,9 @@ __This project is actively looking for contributors. Any financial and/or accoun
 If you have prior accounting experience and want to contribute, don't hesitate to contact me.
 See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
 
+# Contrib Packages
+* GraphQL API - See details [here.](https://github.com/arrobalytics/django-ledger/tree/develop/django_ledger/contrib/django_ledger_graphql)
+
 ## Quick Start
 
 Django Ledger comes with a default CoA ready to use or you could use your own. Make sure to select the appropriate

@@ -11,4 +11,7 @@ urlpatterns = [
     path('<slug:entity_slug>/update/<uuid:customer_job_pk>/',
          CustomerJobModelUpdateView.as_view(),
          name='customer-job-update'),
+    path('<slug:entity_slug>/update/<uuid:customer_job_pk>/items/',
+         CustomerJobModelUpdateView.as_view(action_update_items=True),
+         name='customer-job-update-items'),
 ]

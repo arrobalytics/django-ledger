@@ -3,14 +3,14 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    <form action="">
+    <form action="{% url 'django_ledger:customer-job-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
         {% if form.errors %}
             {{ form.errors }}
         {% endif %}
 
         <div class="columns is-multiline">
             <div class="column is-12">
-                <div class="columns">
+                <div class="columns is-multiline">
                     <div class="column is-6">
                         {% include 'django_ledger/includes/card_customer.html' with  customer=object.customer %}
                     </div>
@@ -20,6 +20,11 @@
                                 <p class="card-header-title">{% trans 'Customer Job' %}</p>
                             </div>
                             <div class="card-content">
+                                <div class="field">
+                                    <label for="{{ form.status.id_for_label }}"
+                                           class="label">{{ form.status.label }}</label>
+                                    <div class="control">{{ form.status }}</div>
+                                </div>
                                 <h2 class="has-text-weight-bold is-size-3">{% trans 'Estimated Revenue' %}:
                                     {% currency_symbol %}{{ customer_job.revenue_estimate }}</h2>
                                 <br>
@@ -32,11 +37,25 @@
                                 <h3 class="has-text-weight-light is-italic is-size-5">
                                     {% trans 'Equipment Cost' %}:
                                     {% currency_symbol %}{{ customer_job.equipment_estimate }}</h3>
-                                <h2 class="is-size-4">{% trans 'Total Cost' %}: {% currency_symbol %}{{ customer_job.cost_estimate }}</h2>
-                                <h1 class="is-size-2 has-text-info">{% trans 'Profit Estimate' %}: {% currency_symbol %}{{ customer_job.profit_estimate }}</h1>
+                                <h2 class="is-size-4">{% trans 'Total Cost' %}:
+                                    {% currency_symbol %}{{ customer_job.cost_estimate }}</h2>
+                                <h1 class="is-size-2 has-text-info">{% trans 'Profit Estimate' %}:
+                                    {% currency_symbol %}{{ customer_job.profit_estimate }}</h1>
                                 <h2 class="is-size-4 has-text-weight-light is-italic">{% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate }}%</h2>
+
                             </div>
                         </div>
+                    </div>
+                    <div class="column is-12">
+                        <div class="field">
+                            <label for="{{ form.markdown_notes.id_for_label }}"
+                                   class="label">{{ form.markdown_notes.label }}
+                                <span class="icon is-medium has-text-grey">{% icon 'logos:markdown' 16 %}</span></label>
+                            {{ form.markdown_notes }}
+                        </div>
+                    </div>
+                    <div class="column is-12">
+                        {% cj_item_formset_table cj_formset %}
                     </div>
                 </div>
             </div>
