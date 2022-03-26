@@ -15,6 +15,16 @@ class CoaNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
+class CoaNode(DjangoObjectType):
+    class Meta:
+        model = ChartOfAccountModel
+        filter_fields = {
+            'slug' : ['exact', 'icontains', 'istartswith'],
+            'name' : ['exact', 'icontains', 'istartswith'],
+            'description' : ['exact', 'icontains', 'istartswith']
+        }
+        interfaces = (relay.Node,)
+
 
 class ChartOfAccountsQuery(graphene.ObjectType):
     all_coa = DjangoFilterConnectionField(CoaNode, slug_name=graphene.String(required=True))

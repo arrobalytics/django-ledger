@@ -5,6 +5,7 @@ from graphene_django import DjangoObjectType
 from django_ledger.models import EntityModel
 from graphene_django.filter import DjangoFilterConnectionField
 
+
 class EntityNode(DjangoObjectType):
     class Meta:
         model = EntityModel
@@ -16,9 +17,6 @@ class EntityNode(DjangoObjectType):
 
 class Entity_Query(graphene.ObjectType):
     all_entity_list = DjangoFilterConnectionField(EntityNode)
-from graphene_django import DjangoObjectType
-from django_ledger.models import EntityModel
-
 
 class EntitytList(DjangoObjectType):
     class Meta:
@@ -27,7 +25,8 @@ class EntitytList(DjangoObjectType):
 
 class Entity_Query(graphene.ObjectType):
     all_entity_list = graphene.List(EntitytList)
-    def resolve_all_entity_list(self, info):
+    def resolve_all_entity_list(self, info, **kwargs):
+
         if info.context.user.is_authenticated:
             return EntityModel.objects.for_user(
                 user_model=info.context.user)
