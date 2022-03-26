@@ -10,6 +10,9 @@
 ``` 
 pip install graphene-django
 ```
+``` 
+pip install django-graphql-auth
+```
 Makemigrations
 ``` 
 python manage.py makemigrations

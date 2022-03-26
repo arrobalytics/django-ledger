@@ -4,7 +4,7 @@ from django.utils.functional import SimpleLazyObject
 
 from .customers.schema import CustomerQuery
 from .customers.mutations import CustomerMutations
-from .auth.schema import AuthQuery
+from .auth.mutations import AuthMutation
 from .bank_account.mutations import BankAccountMutations
 from django_ledger.contrib.django_ledger_graphql.bill.schema import Bill_list_Query
 from django_ledger.contrib.django_ledger_graphql.accounts.schema import Accountlist_Query
@@ -37,7 +37,6 @@ class Query(
     TransactionsQuery,
     JournalEntryQuery,
     PurchaseOrderQuery,
-    AuthQuery,
 
 ):
     pass
@@ -45,6 +44,8 @@ class Query(
 class Mutation(
     CustomerMutations,
     BankAccountMutations,
+    AuthMutation,
+
 ):
     pass
 
