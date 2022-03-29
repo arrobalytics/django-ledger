@@ -15,7 +15,7 @@ from django.db import models
 from django.db.models import Q, Sum, Count
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn
+from django_ledger.models import CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn, ItemModel
 
 
 class CustomerJobModelManager(models.Manager):
@@ -147,9 +147,29 @@ class CustomerJobModel(CreateUpdateMixIn, MarkdownNotesMixIn):
             # pylint: disable=no-member
             queryset = self.itemthroughmodel_set.select_related('item_model').all()
         return queryset, queryset.aggregate(
-            amount_estimate=Sum('total_amount'),
+            cost_estimate=Sum('total_amount'),
+            revenue_estimate=Sum('cjob_revenue_estimate'),
             total_items=Count('uuid')
         )
+
+    def update_state(self):
+        queryset, aggregate = self.get_itemthrough_data()
+        self.update_cost_estimate(queryset, aggregate)
+        self.update_revenue_estimate(queryset, aggregate)
+
+    def update_revenue_estimate(self, queryset, aggregate):
+        self.revenue_estimate = sum(i.cjob_revenue_estimate for i in queryset)
+
+    def update_cost_estimate(self, queryset, aggregate):
+        estimates = {
+            'labor': sum(a.total_amount for a in queryset if a.item_model.item_type == ItemModel.LABOR_TYPE),
+            'material': sum(a.total_amount for a in queryset if a.item_model.item_type == ItemModel.MATERIAL_TYPE),
+            'equipment': sum(
+                a.total_amount for a in queryset if a.item_model.item_type == ItemModel.EQUIPMENT_TYPE),
+        }
+        self.labor_estimate = estimates['labor']
+        self.material_estimate = estimates['material']
+        self.equipment_estimate = estimates['equipment']
 
     def clean(self):
         if self.is_approved() and not self.date_approved:

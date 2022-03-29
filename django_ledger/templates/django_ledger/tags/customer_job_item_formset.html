@@ -18,8 +18,10 @@
                         <th>{% trans 'Item' %}</th>
                         <th>{% trans 'Quantity' %}</th>
                         <th>{% trans 'Unit Cost' %}</th>
-                        <th>{% trans 'Unit' %}</th>
-                        <th>{% trans 'Total' %}</th>
+                        <th>{% trans 'Unit Sales Price' %}</th>
+                        <th>{% trans 'Business Unit' %}</th>
+                        <th>{% trans 'Total Cost' %}</th>
+                        <th>{% trans 'Total Revenue' %}</th>
                         <th>{% trans 'Delete' %}</th>
                     </tr>
                     </thead>
@@ -37,9 +39,12 @@
                             </td>
                             <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
                             <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
+                            <td>{{ f.cjob_unit_revenue_estimate }}</td>
                             <td>{{ f.entity_unit }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
+                            <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
+                                {% currency_symbol %}{{ f.instance.cjob_revenue_estimate | currency_format }}</td>
                             <td class="has-text-centered">
                                 {% if item_formset.can_delete %}
                                     {{ f.DELETE }}
@@ -53,8 +58,10 @@
                         <th></th>
                         <th></th>
                         <th></th>
+                        <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>
-                        <th class="has-text-right">{% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ cost_estimate | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ revenue_estimate | currency_format }}</th>
                         <th></th>
                     </tr>
                     </tfoot>

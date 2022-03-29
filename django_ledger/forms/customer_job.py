@@ -65,9 +65,10 @@ class CustomerJobItemForm(ModelForm):
         model = ItemThroughModel
         fields = [
             'item_model',
-            'unit_cost',
             'entity_unit',
+            'unit_cost',
             'quantity',
+            'cjob_unit_revenue_estimate',
         ]
         widgets = {
             'item_model': Select(attrs={
@@ -77,6 +78,9 @@ class CustomerJobItemForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'unit_cost': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'cjob_unit_revenue_estimate': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'quantity': TextInput(attrs={
@@ -106,6 +110,12 @@ class CustomerJobItemFormset(BaseModelFormSet):
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
+    # def get_queryset(self):
+    #     return ItemThroughModel.objects.for_cj(
+    #         user_model=self.USER_MODEL,
+    #         entity_slug=self.ENTITY_SLUG,
+    #         cj_pk=self.CUSTOMER_JOB_MODEL.uuid
+    #     )
 
 # todo: add instance where can_delete = False
 CustomerJobItemFormset = modelformset_factory(

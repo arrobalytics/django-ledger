@@ -1,4 +1,5 @@
-from django.http import HttpResponseBadRequest
+from django.contrib import messages
+from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -142,7 +143,8 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
             item_through_qs: ItemThroughModel = item_formset.queryset
 
         context['customer_job_item_list'] = item_through_qs
-        context['total_amount_estimate'] = aggregate_data['amount_estimate']
+        context['revenue_estimate'] = aggregate_data['revenue_estimate']
+        context['cost_estimate'] = aggregate_data['cost_estimate']
         context['cj_formset'] = item_formset
         return context
 
@@ -152,6 +154,13 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
             user_model=self.request.user
         ).select_related('customer')
 
+    def get_success_url(self):
+        return reverse('django_ledger:customer-job-detail',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'customer_job_pk': self.kwargs['customer_job_pk']
+                       })
+
     def get(self, request, entity_slug, customer_job_pk, *args, **kwargs):
 
         # this action can only be used via POST request...
@@ -160,7 +169,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         return super(CustomerJobModelUpdateView, self).get(request, *args, **kwargs)
 
-    def post(self, request, entity_slug, cj_pk, *args, **kwargs):
+    def post(self, request, entity_slug, customer_job_pk, *args, **kwargs):
 
         response = super(CustomerJobModelUpdateView, self).post(request, *args, **kwargs)
         cj_model: CustomerJobModel = self.get_object()
@@ -173,7 +182,42 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
                                                                           entity_slug=entity_slug)
             if item_formset.is_valid():
                 if item_formset.has_changed():
-                    pass
+                    cleaned_data = [d for d in item_formset.cleaned_data if d]
+                    cj_items = item_formset.save(commit=False)
+                    cj_model_qs = CustomerJobModel.objects.for_entity(user_model=self.request.user,
+                                                                      entity_slug=entity_slug)
+                    cj_model: CustomerJobModel = get_object_or_404(cj_model_qs, uuid__exact=customer_job_pk)
+                    entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+
+                    for item in cj_items:
+                        item.entity = entity_model
+                        item.cjob_model = cj_model
+
+                    item_formset.save()
+
+                    cj_model.update_state()
+                    cj_model.clean()
+                    cj_model.save(update_fields=[
+                        'revenue_estimate',
+                        'labor_estimate',
+                        'equipment_estimate',
+                        'material_estimate',
+                        'updated'
+                    ])
+
+                    messages.add_message(request,
+                                         message=f'Customer Job items saved.',
+                                         level=messages.SUCCESS,
+                                         extra_tags='is-success')
+
+                    return HttpResponseRedirect(reverse('django_ledger:customer-job-update',
+                                                        kwargs={
+                                                            'entity_slug': entity_slug,
+                                                            'customer_job_pk': customer_job_pk
+                                                        }))
+
+
             else:
                 context = self.get_context_data(item_formset=item_formset)
                 return self.render_to_response(context=context)

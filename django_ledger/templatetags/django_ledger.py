@@ -768,11 +768,12 @@ def customer_job_table(context, queryset=None):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/cj_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/tags/customer_job_item_formset.html', takes_context=True)
 def cj_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'customer_job_pk': context['view'].kwargs['customer_job_pk'],
-        'total_amount_due': context['total_amount_estimate'],
+        'revenue_estimate': context['revenue_estimate'],
+        'cost_estimate': context['cost_estimate'],
         'item_formset': item_formset,
     }

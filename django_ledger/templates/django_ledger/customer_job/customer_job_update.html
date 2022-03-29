@@ -3,11 +3,12 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    <form action="{% url 'django_ledger:customer-job-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+    <form action="{% url 'django_ledger:customer-job-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+          method="post">
+        {% csrf_token %}
         {% if form.errors %}
             {{ form.errors }}
         {% endif %}
-
         <div class="columns is-multiline">
             <div class="column is-12">
                 <div class="columns is-multiline">
@@ -41,7 +42,8 @@
                                     {% currency_symbol %}{{ customer_job.cost_estimate }}</h2>
                                 <h1 class="is-size-2 has-text-info">{% trans 'Profit Estimate' %}:
                                     {% currency_symbol %}{{ customer_job.profit_estimate }}</h1>
-                                <h2 class="is-size-4 has-text-weight-light is-italic">{% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate }}%</h2>
+                                <h2 class="is-size-4 has-text-weight-light is-italic">
+                                    {% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate | floatformat:2 }}%</h2>
 
                             </div>
                         </div>
@@ -55,10 +57,18 @@
                         </div>
                     </div>
                     <div class="column is-12">
-                        {% cj_item_formset_table cj_formset %}
+                        <button class="button is-dark" type="submit">{% trans 'Save' %}</button>
+                        <a href="{% url 'django_ledger:customer-job-detail' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+                           class="button is-dark">{% trans 'Back' %}</a>
                     </div>
                 </div>
             </div>
         </div>
     </form>
+    <div class="columns is-multiline">
+        <div class="column is-12">
+            {% cj_item_formset_table cj_formset %}
+        </div>
+
+    </div>
 {% endblock %}

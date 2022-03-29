@@ -459,7 +459,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                         item.bill_model = bill_model
 
                     item_formset.save()
-                    # todo: pass item list to update_amount_due...?
                     bill_model.update_amount_due()
                     bill_model.new_state(commit=True)
                     bill_model.clean()
