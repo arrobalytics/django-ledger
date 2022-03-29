@@ -16,7 +16,7 @@
                             <div>
                                 <p class="heading">{% trans 'Revenue Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-revenue">
-                                    {% currency_symbol %}{{ customer_job.estimated_revenue  | absolute | currency_format }}</p>
+                                    {% currency_symbol %}{{ customer_job.revenue_estimate  | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
@@ -30,36 +30,15 @@
                             <div>
                                 <p class="heading">{% trans 'Profit Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ customer_job.profit_estimate  | absolute | currency_format }}</p>
+                                    {% currency_symbol %}{{ customer_job.profit_estimate | currency_format }}</p>
                             </div>
                         </div>
-
                         <div class="level-item has-text-centered">
-                            {#                            <div>#}
-                            {#                                <p class="heading">Prepaid Account:#}
-                            {#                                    <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
-                            {#                                       class="has-text-danger">{{ bill.prepaid_account.code }}</a>#}
-                            {#                                </p>#}
-                            {#                                <p class="title has-text-success" id="djl-bill-detail-amount-prepaid">#}
-                            {#                                    {% currency_symbol %}{{ bill.get_amount_prepaid | currency_format }}</p>#}
-                            {#                            </div>#}
-                        </div>
-                        <div class="level-item has-text-centered">
-                            {#                            <div>#}
-                            {#                                <p class="heading">Unearned Account:#}
-                            {#                                    <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"#}
-                            {#                                       class="has-text-danger">{{ bill.unearned_account.code }}</a>#}
-                            {#                                </p>#}
-                            {#                                <p class="title has-text-danger" id="djl-bill-detail-amount-unearned">#}
-                            {#                                    {% currency_symbol %}{{ bill.get_amount_unearned | currency_format }}</p>#}
-                            {#                            </div>#}
-                        </div>
-                        <div class="level-item has-text-centered">
-                            {#                            <div>#}
-                            {#                                <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>#}
-                            {#                                <p class="title">#}
-                            {#                                    {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>#}
-                            {#                            </div>#}
+                            <div>
+                                <p class="heading">{% trans 'Gross Margin Estimate' %}:
+                                <p class="title" id="djl-cj-detail-estimated-cost">
+                                    {% currency_symbol %}{{ customer_job.gross_margin_estimate  | percentage }}</p>
+                            </div>
                         </div>
                     </nav>
                 </div>
@@ -79,9 +58,11 @@
                                     <tr>
                                         <th>{% trans 'Item' %}</th>
                                         <th>{% trans 'Entity Unit' %}</th>
-                                        <th>{% trans 'Unit Cost' %}</th>
                                         <th>{% trans 'Quantity' %}</th>
-                                        <th>{% trans 'Total' %}</th>
+                                        <th>{% trans 'Unit Cost' %}</th>
+                                        <th>{% trans 'Sale Price' %}</th>
+                                        <th>{% trans 'Total Cost' %}</th>
+                                        <th>{% trans 'Total Revenue' %}</th>
                                     </tr>
                                     </thead>
 
@@ -91,15 +72,11 @@
                                             <td>{{ cji.item_model }}</td>
                                             <td>{% if cji.entity_unit %}
                                                 {{ cji.entity_unit }}{% endif %}</td>
-                                            <td>{% currency_symbol %}{{ cji.unit_cost | currency_format }}</td>
                                             <td>{{ cji.quantity }}</td>
+                                            <td>{% currency_symbol %}{{ cji.unit_cost | currency_format }}</td>
+                                            <td>{% currency_symbol %}{{ cji.cjob_unit_revenue_estimate | currency_format }}</td>
                                             <td>{% currency_symbol %}{{ cji.total_amount | currency_format }}</td>
-                                            <td>{% if cji.po_model_id %}
-                                                <a class="button is-small is-light"
-                                                   href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=cji.po_model_id %}">
-                                                    {% trans 'View PO' %}
-                                                </a>
-                                            {% endif %}</td>
+                                            <td>{% currency_symbol %}{{ cji.cjob_revenue_estimate | currency_format }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -109,11 +86,14 @@
                                         <th></th>
                                         <th></th>
                                         <th></th>
+                                        <th></th>
                                         <th>{% trans 'Total' %}</th>
                                         <th>
-                                            {% currency_symbol %}{{ total_amount_due | currency_format }}
+                                            {% currency_symbol %}{{ customer_job.cost_estimate | currency_format }}
                                         </th>
-                                        <th></th>
+                                        <th>
+                                            {% currency_symbol %}{{ customer_job.revenue_estimate | currency_format }}
+                                        </th>
                                     </tr>
                                     </tfoot>
                                 </table>

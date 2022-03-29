@@ -10,7 +10,7 @@ from django import forms
 from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel
+from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel, EntityUnitModel
 from django_ledger.models.customer_job import CustomerJobModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -102,8 +102,15 @@ class CustomerJobItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        unit_qs = EntityUnitModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+            form.fields['entity_unit'].queryset = unit_qs
+
             if not self.CUSTOMER_JOB_MODEL.can_edit_items():
                 form.fields['item_model'].disabled = True
                 form.fields['quantity'].disabled = True
