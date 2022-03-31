@@ -52,8 +52,8 @@ stable release as soon as possible and to incorporate the following functionalit
 More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics.com/blog/2021/12/07/django-ledger-v05/).
 
 * __0.5.0__: Inventory tracking.
-  * FIFO and Average Cost.
-* __0.5.1__: Customer jobs.
+  * Average Cost.
+* __0.5.1__: Customer estimates & contract tracking.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
 * __0.5.4__: Testing framework implementation that will include:

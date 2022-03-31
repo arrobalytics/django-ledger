@@ -57,7 +57,7 @@ def currency_format(value):
 
 @register.filter(name='percentage')
 def percentage(value):
-    if value:
+    if value is not None:
         return '{0:,.2f}%'.format(value * 100)
 
 
@@ -563,13 +563,13 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'Jobs',
-                        'url': reverse('django_ledger:customer-job-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'title': 'Bank Accounts',
+                        'url': reverse('django_ledger:bank-account-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',
-                        'title': 'Bank Accounts',
-                        'url': reverse('django_ledger:bank-account-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'title': 'Estimates',
+                        'url': reverse('django_ledger:customer-job-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',
@@ -760,8 +760,8 @@ def inventory_table(context, queryset):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/tags/customer_job_table.html', takes_context=True)
-def customer_job_table(context, queryset=None):
+@register.inclusion_tag('django_ledger/tags/customer_estimate_table.html', takes_context=True)
+def customer_estimate_table(context, queryset=None):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'customer_job_list': queryset if queryset else context['object_list']

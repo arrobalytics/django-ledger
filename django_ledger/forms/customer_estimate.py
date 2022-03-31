@@ -7,15 +7,15 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django import forms
-from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea
+from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel, EntityUnitModel
-from django_ledger.models.customer_job import CustomerJobModel
+from django_ledger.models.customer_estimate import CustomerEstimateModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-class CustomerJobModelCreateForm(forms.ModelForm):
+class CustomerEstimateCreateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,11 +30,15 @@ class CustomerJobModelCreateForm(forms.ModelForm):
         )
 
     class Meta:
-        model = CustomerJobModel
-        fields = ['customer', 'title']
+        model = CustomerEstimateModel
+        fields = ['customer', 'title', 'terms']
         widgets = {
             'customer': forms.Select(attrs={
-                'id': 'djl-customer-job-title-input',
+                'id': 'djl-customer-estimate-customer-input',
+                'class': 'input'
+            }),
+            'terms': forms.Select(attrs={
+                'id': 'djl-customer-estimate-terms-input',
                 'class': 'input'
             }),
             'title': forms.TextInput(attrs={
@@ -45,9 +49,18 @@ class CustomerJobModelCreateForm(forms.ModelForm):
         }
 
 
-class CustomerJobModelUpdateForm(forms.ModelForm):
+class CustomerEstimateModelUpdateForm(forms.ModelForm):
+
+    def clean(self):
+        cleaned_data = super(CustomerEstimateModelUpdateForm, self).clean()
+        if 'status' in self.changed_data:
+            ce_model: CustomerEstimateModel = self.instance
+            new_status = cleaned_data['status']
+            ce_model.can_change_status(new_status=new_status)
+        return cleaned_data
+
     class Meta:
-        model = CustomerJobModel
+        model = CustomerEstimateModel
         fields = [
             'status',
             'markdown_notes'
@@ -60,7 +73,7 @@ class CustomerJobModelUpdateForm(forms.ModelForm):
         }
 
 
-class CustomerJobItemForm(ModelForm):
+class CustomerEstimateItemForm(ModelForm):
     class Meta:
         model = ItemThroughModel
         fields = [
@@ -89,9 +102,9 @@ class CustomerJobItemForm(ModelForm):
         }
 
 
-class CustomerJobItemFormset(BaseModelFormSet):
+class BaseCustomerEstimateItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, customer_job_model: CustomerJobModel, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, customer_job_model: CustomerEstimateModel, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.CUSTOMER_JOB_MODEL = customer_job_model
@@ -111,24 +124,18 @@ class CustomerJobItemFormset(BaseModelFormSet):
             form.fields['item_model'].queryset = items_qs
             form.fields['entity_unit'].queryset = unit_qs
 
-            if not self.CUSTOMER_JOB_MODEL.can_edit_items():
+            if not self.CUSTOMER_JOB_MODEL.can_update_items():
                 form.fields['item_model'].disabled = True
                 form.fields['quantity'].disabled = True
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
-    # def get_queryset(self):
-    #     return ItemThroughModel.objects.for_cj(
-    #         user_model=self.USER_MODEL,
-    #         entity_slug=self.ENTITY_SLUG,
-    #         cj_pk=self.CUSTOMER_JOB_MODEL.uuid
-    #     )
 
 # todo: add instance where can_delete = False
-CustomerJobItemFormset = modelformset_factory(
+CustomerEstimateItemFormset = modelformset_factory(
     model=ItemThroughModel,
-    form=CustomerJobItemForm,
-    formset=CustomerJobItemFormset,
+    form=CustomerEstimateItemForm,
+    formset=BaseCustomerEstimateItemFormset,
     can_delete=True,
     extra=5
 )

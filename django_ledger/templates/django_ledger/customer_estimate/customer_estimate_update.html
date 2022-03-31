@@ -18,7 +18,7 @@
                     <div class="column is-6">
                         <div class="card">
                             <div class="card-header">
-                                <p class="card-header-title">{% trans 'Customer Job' %}</p>
+                                <p class="card-header-title">{% trans 'Customer Estimate' %}</p>
                             </div>
                             <div class="card-content">
                                 <div class="field">
@@ -26,8 +26,11 @@
                                            class="label">{{ form.status.label }}</label>
                                     <div class="control">{{ form.status }}</div>
                                 </div>
-                                <h2 class="has-text-weight-bold is-size-3">{% trans 'Estimated Revenue' %}:
-                                    {% currency_symbol %}{{ customer_job.revenue_estimate }}</h2>
+                                <h3 class="has-text-weight-bold is-size-3 has-text-success">
+                                    {% trans 'Estimated Revenue' %}:
+                                    {% currency_symbol %}{{ customer_job.revenue_estimate }}</h3>
+                                <h3 class="is-size-4 has-text-info">{% trans 'Profit Estimate' %}:
+                                    {% currency_symbol %}{{ customer_job.profit_estimate }}</h3>
                                 <br>
                                 <h3 class="has-text-weight-light is-italic is-size-5">
                                     {% trans 'Labor Cost' %}:
@@ -38,12 +41,11 @@
                                 <h3 class="has-text-weight-light is-italic is-size-5">
                                     {% trans 'Equipment Cost' %}:
                                     {% currency_symbol %}{{ customer_job.equipment_estimate }}</h3>
-                                <h2 class="is-size-4">{% trans 'Total Cost' %}:
-                                    {% currency_symbol %}{{ customer_job.cost_estimate }}</h2>
-                                <h1 class="is-size-2 has-text-info">{% trans 'Profit Estimate' %}:
-                                    {% currency_symbol %}{{ customer_job.profit_estimate }}</h1>
-                                <h2 class="is-size-4 has-text-weight-light is-italic">
-                                    {% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate | floatformat:2 }}%</h2>
+                                <h3 class="is-size-4">{% trans 'Total Cost' %}:
+                                    {% currency_symbol %}{{ customer_job.cost_estimate }}</h3>
+                                <br>
+                                <h3 class="is-size-4 has-text-weight-light is-italic">
+                                    {% trans 'Estimated Gross Margin' %}: {{ customer_job.gross_margin_percent_estimate | floatformat:2 }}%</h3>
 
                             </div>
                         </div>

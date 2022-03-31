@@ -8,6 +8,7 @@
         <tr>
             <th>{% trans 'Customer' %}</th>
             <th>{% trans 'Title' %}</th>
+            <th>{% trans 'Sales Price' %}</th>
             <th>{% trans 'Approved' %}</th>
             <th>{% trans 'Completed' %}</th>
             <th>{% trans 'Actions' %}</th>
@@ -18,6 +19,7 @@
             <tr id="{{ cj.get_html_id }}">
                 <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
                 <td class="has-text-centered">
                     {% if cj.is_approved %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
@@ -48,15 +50,15 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:customer-job-detail' entity_slug=entity_slug customer_job_pk=cj.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
-{#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
-{#                                   class="dropdown-item has-text-warning-dark">Update</a>#}
-{#                                {% if not cj.paid %}#}
-{#                                    {% modal_action cj 'get' entity_slug %}#}
-{#                                    <a onclick="djLedger.showModal('{{ cj.get_html_id }}')"#}
-{#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
-{#                                {% endif %}#}
-{#                                <a href="{% url 'django_ledger:cj-delete' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
-{#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
+                                {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
+                                {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}
+                                {#                                {% if not cj.paid %}#}
+                                {#                                    {% modal_action cj 'get' entity_slug %}#}
+                                {#                                    <a onclick="djLedger.showModal('{{ cj.get_html_id }}')"#}
+                                {#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
+                                {#                                {% endif %}#}
+                                {#                                <a href="{% url 'django_ledger:cj-delete' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
+                                {#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
                             </div>
                         </div>
                     </div>

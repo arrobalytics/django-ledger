@@ -5,15 +5,15 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView
 
-from django_ledger.forms.customer_job import (CustomerJobModelCreateForm, CustomerJobModelUpdateForm,
-                                              CustomerJobItemFormset)
+from django_ledger.forms.customer_estimate import (CustomerEstimateCreateForm, CustomerEstimateModelUpdateForm,
+                                                   CustomerEstimateItemFormset)
 from django_ledger.models import EntityModel, ItemThroughModel
-from django_ledger.models.customer_job import CustomerJobModel
+from django_ledger.models.customer_estimate import CustomerEstimateModel
 from django_ledger.views import LoginRequiredMixIn
 
 
 class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/customer_job/customer_job_list.html'
+    template_name = 'django_ledger/customer_estimate/customer_estimate_list.html'
     context_object_name = 'customer_job_list'
     PAGE_TITLE = _('Customer Jobs')
     date_field = 'created'
@@ -27,7 +27,7 @@ class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
     }
 
     def get_queryset(self):
-        return CustomerJobModel.objects.for_entity(
+        return CustomerEstimateModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('customer')
@@ -37,16 +37,16 @@ class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
 
 
 class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
-    PAGE_TITLE = _('Create Customer Job')
+    PAGE_TITLE = _('Create Customer Estimate')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'eos-icons:job'
     }
-    template_name = 'django_ledger/customer_job/customer_job_create.html'
+    template_name = 'django_ledger/customer_estimate/customer_estimate_create.html'
 
     def get_form_class(self):
-        return CustomerJobModelCreateForm
+        return CustomerEstimateCreateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -55,7 +55,7 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
                           **self.get_form_kwargs())
 
     def get_success_url(self):
-        cj_model: CustomerJobModel = self.object
+        cj_model: CustomerEstimateModel = self.object
         return reverse('django_ledger:customer-job-detail',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -63,7 +63,7 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
                        })
 
     def form_valid(self, form):
-        cj_model: CustomerJobModel = form.save(commit=False)
+        cj_model: CustomerEstimateModel = form.save(commit=False)
 
         # making sure the user as permissions on entity_model...
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).only('uuid')
@@ -75,8 +75,8 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
 
 class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
     pk_url_kwarg = 'customer_job_pk'
-    template_name = 'django_ledger/customer_job/customer_job_detail.html'
-    PAGE_TITLE = _('Customer Job Detail')
+    template_name = 'django_ledger/customer_estimate/customer_estimate_detail.html'
+    PAGE_TITLE = _('Customer Estimate Detail')
     context_object_name = 'customer_job'
     extra_context = {
         'hide_menu': True
@@ -84,32 +84,32 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(CustomerJobModelDetailView, self).get_context_data(**kwargs)
-        cj_model: CustomerJobModel = self.object
+        cj_model: CustomerEstimateModel = self.object
         context['page_title'] = self.PAGE_TITLE,
         context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = cj_model.title
+        context['header_subtitle'] = cj_model.estimate_number
         context['header_subtitle_icon'] = 'eos-icons:job'
         context['customer_job_item_list'] = cj_model.itemthroughmodel_set.all()
         return context
 
     def get_queryset(self):
-        return CustomerJobModel.objects.for_entity(
+        return CustomerEstimateModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('customer')
 
 
 class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
-    template_name = 'django_ledger/customer_job/customer_job_update.html'
+    template_name = 'django_ledger/customer_estimate/customer_estimate_update.html'
     pk_url_kwarg = 'customer_job_pk'
     context_object_name = 'customer_job'
-    PAGE_TITLE = _('Customer Job Update')
+    PAGE_TITLE = _('Customer Estimate Update')
     http_method_names = ['get', 'post']
 
     action_update_items = False
 
     def get_form_class(self):
-        return CustomerJobModelUpdateForm
+        return CustomerEstimateModelUpdateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -124,9 +124,9 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
     #             'item_model', 'po_model', 'bill_model').order_by('-total_amount')
     #     return self.item_through_qs
 
-    def get_context_data(self, item_formset: CustomerJobItemFormset = None, **kwargs):
+    def get_context_data(self, item_formset: CustomerEstimateItemFormset = None, **kwargs):
         context = super(CustomerJobModelUpdateView, self).get_context_data(**kwargs)
-        cj_model: CustomerJobModel = self.object
+        cj_model: CustomerEstimateModel = self.object
         context['page_title'] = self.PAGE_TITLE,
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = cj_model.title
@@ -134,11 +134,12 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         if not item_formset:
             item_through_qs, aggregate_data = cj_model.get_itemthrough_data()
-            item_formset = CustomerJobItemFormset(
+            item_formset = CustomerEstimateItemFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 customer_job_model=cj_model,
-                queryset=item_through_qs)
+                queryset=item_through_qs
+            )
         else:
             item_through_qs: ItemThroughModel = item_formset.queryset
 
@@ -149,7 +150,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
         return context
 
     def get_queryset(self):
-        return CustomerJobModel.objects.for_entity(
+        return CustomerEstimateModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('customer')
@@ -172,21 +173,21 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
     def post(self, request, entity_slug, customer_job_pk, *args, **kwargs):
 
         response = super(CustomerJobModelUpdateView, self).post(request, *args, **kwargs)
-        cj_model: CustomerJobModel = self.get_object()
+        cj_model: CustomerEstimateModel = self.get_object()
 
         # this action can only be used via POST request...
         if self.action_update_items:
-            item_formset: CustomerJobItemFormset = CustomerJobItemFormset(request.POST,
-                                                                          user_model=self.request.user,
-                                                                          customer_job_model=cj_model,
-                                                                          entity_slug=entity_slug)
+            item_formset: BaseCustomerEstimateItemFormset = BaseCustomerEstimateItemFormset(request.POST,
+                                                                                            user_model=self.request.user,
+                                                                                            customer_job_model=cj_model,
+                                                                                            entity_slug=entity_slug)
             if item_formset.is_valid():
                 if item_formset.has_changed():
                     cleaned_data = [d for d in item_formset.cleaned_data if d]
                     cj_items = item_formset.save(commit=False)
-                    cj_model_qs = CustomerJobModel.objects.for_entity(user_model=self.request.user,
-                                                                      entity_slug=entity_slug)
-                    cj_model: CustomerJobModel = get_object_or_404(cj_model_qs, uuid__exact=customer_job_pk)
+                    cj_model_qs = CustomerEstimateModel.objects.for_entity(user_model=self.request.user,
+                                                                           entity_slug=entity_slug)
+                    cj_model: CustomerEstimateModel = get_object_or_404(cj_model_qs, uuid__exact=customer_job_pk)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
