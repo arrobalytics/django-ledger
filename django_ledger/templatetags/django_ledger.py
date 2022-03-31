@@ -569,7 +569,7 @@ def navigation_menu(context, style):
                     {
                         'type': 'link',
                         'title': 'Estimates',
-                        'url': reverse('django_ledger:customer-job-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'url': reverse('django_ledger:customer-estimate-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',

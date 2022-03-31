@@ -9,6 +9,7 @@
             <th>{% trans 'Customer' %}</th>
             <th>{% trans 'Title' %}</th>
             <th>{% trans 'Sales Price' %}</th>
+            <th>{% trans 'GM%' %}</th>
             <th>{% trans 'Approved' %}</th>
             <th>{% trans 'Completed' %}</th>
             <th>{% trans 'Actions' %}</th>
@@ -20,6 +21,7 @@
                 <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
                 <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ cj.gross_margin_estimate | percentage }}</td>
                 <td class="has-text-centered">
                     {% if cj.is_approved %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
@@ -48,7 +50,7 @@
                         </div>
                         <div class="dropdown-menu" id="dropdown-menu-{{ cj.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:customer-job-detail' entity_slug=entity_slug customer_job_pk=cj.uuid %}"
+                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug customer_job_pk=cj.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
                                 {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
                                 {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}

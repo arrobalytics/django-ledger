@@ -567,7 +567,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Customer Job Through Model: {self.uuid} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {amount}'
 
-    def clean_total_amount(self):
+    def update_total_amount(self):
         qty = self.quantity
         if not isinstance(qty, Decimal):
             qty = Decimal.from_float(qty)
@@ -590,8 +590,23 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                 return
         self.total_amount = total_amount
 
-    def clean_po_total_amount(self):
+    def update_po_total_amount(self):
         self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
+
+    def update_revenue_estimate(self):
+        if self.cjob_model_id:
+            qty = self.quantity
+            if not isinstance(qty, Decimal):
+                qty = Decimal.from_float(qty)
+
+            if not self.cjob_unit_revenue_estimate:
+                raise ValidationError('Must provide unit sales price estimate.')
+
+            uc = self.cjob_unit_revenue_estimate
+            if not isinstance(uc, Decimal):
+                uc = Decimal.from_float(uc)
+
+            self.cjob_revenue_estimate = uc * qty
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -621,8 +636,6 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return ' is-warning'
 
     def clean(self):
-        self.clean_po_total_amount()
-        self.clean_total_amount()
 
         # pylint: disable=no-member
         if self.cjob_model_id:
@@ -636,6 +649,11 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         else:
             self.cjob_revenue_estimate = None
             self.cjob_unit_revenue_estimate = None
+
+        self.update_po_total_amount()
+        self.update_total_amount()
+        self.update_revenue_estimate()
+
 
         # pylint: disable=no-member
         if self.po_model_id:

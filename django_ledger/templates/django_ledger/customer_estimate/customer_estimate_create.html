@@ -13,7 +13,7 @@
                                     </span>{{ page_title }}</h2>
                 </div>
                 <div class="card-content">
-                    <form action="{% url 'django_ledger:customer-job-create' entity_slug=view.kwargs.entity_slug %}"
+                    <form action="{% url 'django_ledger:customer-estimate-create' entity_slug=view.kwargs.entity_slug %}"
                           method="post">
                         {% csrf_token %}
                         {{ form.as_p }}
@@ -21,7 +21,7 @@
                                 class="button is-primary is-outlined is-fullwidth djetler_my_1">
                             {% trans 'Create' %}
                         </button>
-                        <a href="{% url 'django_ledger:customer-job-list' entity_slug=view.kwargs.entity_slug %}"
+                        <a href="{% url 'django_ledger:customer-estimate-list' entity_slug=view.kwargs.entity_slug %}"
                            class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
                     </form>
                 </div>

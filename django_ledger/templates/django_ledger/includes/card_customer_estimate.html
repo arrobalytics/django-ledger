@@ -29,14 +29,8 @@
 
     </div>
     <footer class="card-footer">
-        <a href="{% url 'django_ledger:customer-job-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+        <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
            class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-        {#        {% if not invoice.paid %}#}
-        {#            <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"#}
-        {#               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>#}
-        {#        {% endif %}#}
-        {#        <a href="{% url 'django_ledger:invoice-delete' entity_slug=entity_slug invoice_pk=invoice.uuid %}"#}
-        {#           class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>#}
     </footer>
 </div>
 

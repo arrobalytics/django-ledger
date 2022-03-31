@@ -51,6 +51,15 @@ class CustomerEstimateCreateForm(forms.ModelForm):
 
 class CustomerEstimateModelUpdateForm(forms.ModelForm):
 
+    def __init__(self, *args, entity_slug, user_model, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.USER_MODEL = user_model
+        self.ENTITY_SLUG = entity_slug
+        self.CUSTOMER_ESTIMATE_MODEL: CustomerEstimateModel = self.instance
+
+        if not self.CUSTOMER_ESTIMATE_MODEL.can_update_terms():
+            self.fields['terms'].disabled = True
+
     def clean(self):
         cleaned_data = super(CustomerEstimateModelUpdateForm, self).clean()
         if 'status' in self.changed_data:
@@ -62,11 +71,11 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
     class Meta:
         model = CustomerEstimateModel
         fields = [
-            'status',
+            'terms',
             'markdown_notes'
         ]
         widgets = {
-            'status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'markdown_notes': Textarea(attrs={
                 'class': 'textarea'
             })
@@ -138,4 +147,12 @@ CustomerEstimateItemFormset = modelformset_factory(
     formset=BaseCustomerEstimateItemFormset,
     can_delete=True,
     extra=5
+)
+
+CustomerEstimateItemFormsetReadOnly = modelformset_factory(
+    model=ItemThroughModel,
+    form=CustomerEstimateItemForm,
+    formset=BaseCustomerEstimateItemFormset,
+    can_delete=False,
+    extra=0
 )
