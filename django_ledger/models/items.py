@@ -355,7 +355,7 @@ class ItemThroughModelManager(models.Manager):
 
     def for_cj(self, user_model, entity_slug, cj_pk):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return self.filter(cjob_model_id__exact=cj_pk)
+        return self.filter(ce_model_id__exact=cj_pk)
 
     def inventory_pipeline(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
@@ -524,21 +524,21 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                           validators=[MinValueValidator(0)])
 
     # Customer Job / Contract fields...
-    cjob_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
-                                   null=True,
-                                   blank=True,
-                                   verbose_name=_('Customer Job'),
-                                   on_delete=models.PROTECT)
-    cjob_unit_revenue_estimate = models.FloatField(null=True,
-                                                   blank=True,
-                                                   verbose_name=_('Customer Job Revenue per Unit.'),
-                                                   validators=[MinValueValidator(0)])
-    cjob_revenue_estimate = models.DecimalField(max_digits=20,
-                                                null=True,
-                                                blank=True,
-                                                decimal_places=2,
-                                                verbose_name=_('Total customer job revenue estimate'),
-                                                validators=[MinValueValidator(0)])
+    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Customer Estimate'),
+                                 on_delete=models.PROTECT)
+    ce_unit_revenue_estimate = models.FloatField(null=True,
+                                                 blank=True,
+                                                 verbose_name=_('Customer Estimate Revenue per Unit.'),
+                                                 validators=[MinValueValidator(0)])
+    ce_revenue_estimate = models.DecimalField(max_digits=20,
+                                              null=True,
+                                              blank=True,
+                                              decimal_places=2,
+                                              verbose_name=_('Total customer estimate revenue.'),
+                                              validators=[MinValueValidator(0)])
 
     objects = ItemThroughModelManager()
 
@@ -548,7 +548,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             models.Index(fields=['bill_model', 'item_model']),
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['po_model', 'item_model']),
-            models.Index(fields=['cjob_model', 'item_model']),
+            models.Index(fields=['ce_model', 'item_model']),
             models.Index(fields=['po_item_status']),
         ]
 
@@ -563,7 +563,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Bill Through Model: {self.uuid} | {amount}'
         elif self.invoice_model_id:
             return f'Invoice Through Model: {self.uuid} | {amount}'
-        elif self.cjob_model_id:
+        elif self.ce_model_id:
             return f'Customer Job Through Model: {self.uuid} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {amount}'
 
@@ -594,19 +594,19 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
 
     def update_revenue_estimate(self):
-        if self.cjob_model_id:
+        if self.ce_model_id:
             qty = self.quantity
             if not isinstance(qty, Decimal):
                 qty = Decimal.from_float(qty)
 
-            if not self.cjob_unit_revenue_estimate:
+            if not self.ce_unit_revenue_estimate:
                 raise ValidationError('Must provide unit sales price estimate.')
 
-            uc = self.cjob_unit_revenue_estimate
+            uc = self.ce_unit_revenue_estimate
             if not isinstance(uc, Decimal):
                 uc = Decimal.from_float(uc)
 
-            self.cjob_revenue_estimate = uc * qty
+            self.ce_revenue_estimate = uc * qty
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -638,22 +638,21 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     def clean(self):
 
         # pylint: disable=no-member
-        if self.cjob_model_id:
-            if self.cjob_unit_revenue_estimate is None:
-                self.cjob_unit_revenue_estimate = 0.00
-            if self.cjob_revenue_estimate is None:
-                self.cjob_revenue_estimate = 0.00
+        if self.ce_model_id:
+            if self.ce_unit_revenue_estimate is None:
+                self.ce_unit_revenue_estimate = 0.00
+            if self.ce_revenue_estimate is None:
+                self.ce_revenue_estimate = 0.00
             self.po_model = None
             self.bill_model = None
-            self.cjob_revenue_estimate = self.cjob_unit_revenue_estimate * self.quantity
+            self.ce_revenue_estimate = self.ce_unit_revenue_estimate * self.quantity
         else:
-            self.cjob_revenue_estimate = None
-            self.cjob_unit_revenue_estimate = None
+            self.ce_revenue_estimate = None
+            self.ce_unit_revenue_estimate = None
 
         self.update_po_total_amount()
         self.update_total_amount()
         self.update_revenue_estimate()
-
 
         # pylint: disable=no-member
         if self.po_model_id:

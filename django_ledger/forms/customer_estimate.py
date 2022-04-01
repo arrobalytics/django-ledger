@@ -90,7 +90,7 @@ class CustomerEstimateItemForm(ModelForm):
             'entity_unit',
             'unit_cost',
             'quantity',
-            'cjob_unit_revenue_estimate',
+            'ce_unit_revenue_estimate',
         ]
         widgets = {
             'item_model': Select(attrs={
@@ -102,7 +102,7 @@ class CustomerEstimateItemForm(ModelForm):
             'unit_cost': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'cjob_unit_revenue_estimate': TextInput(attrs={
+            'ce_unit_revenue_estimate': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'quantity': TextInput(attrs={

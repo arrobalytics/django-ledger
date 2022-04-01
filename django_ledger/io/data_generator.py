@@ -282,11 +282,11 @@ class EntityDataGenerator:
 
         estimate_items = [
             ItemThroughModel(
-                cjob_model=customer_estimate,
+                ce_model=customer_estimate,
                 item_model=choice(self.expense_models),
                 quantity=round(random() * randint(5, 15), 2),
                 unit_cost=round(random() * randint(50, 100), 2),
-                cjob_unit_revenue_estimate=round(random() * randint(80, 120), 2) * (1 + 0.2 * random()),
+                ce_unit_revenue_estimate=round(random() * randint(80, 120), 2) * (1 + 0.2 * random()),
                 entity_unit=choice(self.entity_unit_models) if random() > .75 else None
             ) for _ in range(randint(1, 10))
         ]

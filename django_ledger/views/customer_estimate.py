@@ -200,7 +200,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
                     for item in cj_items:
                         item.entity = entity_model
-                        item.cjob_model = cj_model
+                        item.ce_model = cj_model
 
                     item_formset.save()
 

@@ -74,9 +74,9 @@
                                                 {{ cji.entity_unit }}{% endif %}</td>
                                             <td>{{ cji.quantity }}</td>
                                             <td>{% currency_symbol %}{{ cji.unit_cost | currency_format }}</td>
-                                            <td>{% currency_symbol %}{{ cji.cjob_unit_revenue_estimate | currency_format }}</td>
+                                            <td>{% currency_symbol %}{{ cji.ce_unit_revenue_estimate | currency_format }}</td>
                                             <td>{% currency_symbol %}{{ cji.total_amount | currency_format }}</td>
-                                            <td>{% currency_symbol %}{{ cji.cjob_revenue_estimate | currency_format }}</td>
+                                            <td>{% currency_symbol %}{{ cji.ce_revenue_estimate | currency_format }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>

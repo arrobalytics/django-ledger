@@ -346,12 +346,12 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
             queryset = self.itemthroughmodel_set.select_related('item_model').all()
         return queryset, queryset.aggregate(
             cost_estimate=Sum('total_amount'),
-            revenue_estimate=Sum('cjob_revenue_estimate'),
+            revenue_estimate=Sum('ce_revenue_estimate'),
             total_items=Count('uuid')
         )
 
     def update_revenue_estimate(self, queryset):
-        self.revenue_estimate = sum(i.cjob_revenue_estimate for i in queryset)
+        self.revenue_estimate = sum(i.ce_revenue_estimate for i in queryset)
 
     def update_cost_estimate(self, queryset):
         estimates = {
