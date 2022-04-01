@@ -273,7 +273,7 @@ class EntityDataGenerator:
         estimate_number = generate_estimate_number()
         customer_estimate: CustomerEstimateModel = CustomerEstimateModel(
             estimate_number=estimate_number,
-            terms=choice(CustomerEstimateModel.CJ_TERMS_TM)[0],
+            terms=choice(CustomerEstimateModel.CONTRACT_TERMS)[0],
             title=f'Customer Estimate {estimate_number}',
         )
         customer_estimate.configure(entity_slug=self.entity_model,
@@ -286,7 +286,7 @@ class EntityDataGenerator:
                 item_model=choice(self.expense_models),
                 quantity=round(random() * randint(5, 15), 2),
                 unit_cost=round(random() * randint(50, 100), 2),
-                cjob_unit_revenue_estimate=round(random() * randint(50, 100), 2) * (1 + 0.3 * random()),
+                cjob_unit_revenue_estimate=round(random() * randint(80, 120), 2) * (1 + 0.2 * random()),
                 entity_unit=choice(self.entity_unit_models) if random() > .75 else None
             ) for _ in range(randint(1, 10))
         ]
