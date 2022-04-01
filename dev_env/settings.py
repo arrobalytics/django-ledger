@@ -13,9 +13,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'django_ledger'
-
+    'graphene_django',
+    'django_ledger',
+    'graphql_auth', #  api authentication
 ]
 
 MIDDLEWARE = [
@@ -93,8 +93,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 LOGIN_URL = '/auth/login/'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 GRAPHENE = {
     'SCHEMA': 'django_ledger.contrib.django_ledger_graphql.api.schema',

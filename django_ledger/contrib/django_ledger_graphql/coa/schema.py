@@ -1,30 +1,45 @@
+
 import graphene
+from graphene import relay
 from graphene_django import DjangoObjectType
+from django_ledger.models import ChartOfAccountModel
+from graphene_django.filter import DjangoFilterConnectionField
 
-from django_ledger.models import CustomerModel, EntityModel
-
-
-class CustomerList(DjangoObjectType):
+class CoaNode(DjangoObjectType):
     class Meta:
-        model = CustomerModel
+        model = ChartOfAccountModel
+        filter_fields = {
+            'slug' : ['exact', 'icontains', 'istartswith'],
+            'name' : ['exact', 'icontains', 'istartswith'],
+            'description' : ['exact', 'icontains', 'istartswith']
+        }
+        interfaces = (relay.Node,)
 
-
-class EntityList(DjangoObjectType):
+class CoaNode(DjangoObjectType):
     class Meta:
-        model = EntityModel
+        model = ChartOfAccountModel
+        filter_fields = {
+            'slug' : ['exact', 'icontains', 'istartswith'],
+            'name' : ['exact', 'icontains', 'istartswith'],
+            'description' : ['exact', 'icontains', 'istartswith']
+        }
+        interfaces = (relay.Node,)
 
 
-class CustomerQuery(graphene.ObjectType):
-    all_customers = graphene.List(CustomerList, slug_name=graphene.String(required=True))
-    entity_list = graphene.List(EntityList)
+class CoaList(DjangoObjectType):
+    class Meta:
+        model = ChartOfAccountModel
 
-    def resolve_all_customers(self, info, slug_name):
-        retuan = CustomerModel.objects.for_entity(
-            entity_slug=slug_name,
-            user_model=info.context.user
-        ).order_by('-updated')
-        return retuan
 
-    def resolve_entity_list(self, info, **kwargs):
-        return EntityModel.objects.for_user(
-            user_model=info.context.user)
+class ChartOfAccountsQuery(graphene.ObjectType):
+    all_coa = graphene.List(CoaList, slug_name=graphene.String(required=True))
+
+    def resolve_all_coa(self, info, slug_name):
+
+        if info.context.user.is_authenticated:
+            return ChartOfAccountModel.objects.for_entity(
+                entity_slug=slug_name,
+                user_model=info.context.user,
+            )
+        else:
+            return ChartOfAccountModel.objects.none()

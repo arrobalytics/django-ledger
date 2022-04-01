@@ -1,43 +1,21 @@
 type Query {
+    allUnitOfMeasure(slugName: String!): [UnitOfMeasureList]
+    allEntityList: [EntitytList]
+    allCoa(slugName: String!): [CoaList]
+    allBankAccountList(slugName: String!): [Bank_accountList]
+    allAccounts(slugName: String!): [AccountList]
     allBills(slugName: String!): [BillList]
     allCustomers(slugName: String!): [CustomerList]
 }
 
-type BillList {
+type UnitOfMeasureList {
     created: DateTime!
     updated: DateTime
-    terms: DjangoLedgerBillModelTermsChoices!
-
-    """"""
-    amountDue: Decimal!
-
-    """"""
-    amountPaid: Decimal!
-
-    """"""
-    amountReceivable: Decimal!
-
-    """"""
-    amountUnearned: Decimal!
-
-    """"""
-    amountEarned: Decimal!
-    paid: Boolean!
-    paidDate: Date
-    date: Date!
-    dueDate: Date!
-    void: Boolean!
-    voidDate: Date
-    accrue: Boolean!
-
-    """"""
-    progress: Decimal!
-    markdownNotes: String
     uuid: UUID!
-    billNumber: String!
-    billStatus: DjangoLedgerBillModelBillStatusChoices!
-    xref: String
-    additionalInfo: JSONString!
+    name: String!
+    unitAbbr: String!
+    isActive: Boolean!
+    entity: EntitytList!
 }
 
 """
@@ -47,82 +25,13 @@ value as specified by
 """
 scalar DateTime
 
-"""An enumeration."""
-enum DjangoLedgerBillModelTermsChoices {
-    """Due On Receipt"""
-    ON_RECEIPT
-
-    """Net 30 Days"""
-    NET_30
-
-    """Net 60 Days"""
-    NET_60
-
-    """Net 90 Days"""
-    NET_90
-}
-
-"""The `Decimal` scalar type represents a python Decimal."""
-scalar Decimal
-
-"""
-The `Date` scalar type represents a Date
-value as specified by
-[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
-"""
-scalar Date
-
 """
 Leverages the internal Python implementation of UUID (uuid.UUID) to provide native UUID objects
 in fields, resolvers and input.
 """
 scalar UUID
 
-"""An enumeration."""
-enum DjangoLedgerBillModelBillStatusChoices {
-    """Draft"""
-    DRAFT
-
-    """In Review"""
-    IN_REVIEW
-
-    """Approved"""
-    APPROVED
-
-    """Canceled"""
-    CANCELED
-}
-
-"""
-Allows use of a JSON String for input / output from the GraphQL schema.
-
-Use of this type is *not recommended* as you lose the benefits of having a defined, static
-schema (one of the key benefits of GraphQL).
-"""
-scalar JSONString
-
-type CustomerList {
-    created: DateTime!
-    updated: DateTime
-    address1: String!
-    address2: String
-    city: String
-    state: String
-    zipCode: String
-    country: String
-    email: String
-    website: String
-    phone: String
-    uuid: UUID!
-    customerName: String!
-    entity: EntityList!
-    description: String!
-    active: Boolean!
-    hidden: Boolean!
-    additionalInfo: JSONString
-}
-
-type EntityList {
+type EntitytList {
     slug: String!
     created: DateTime!
     updated: DateTime
@@ -135,13 +44,15 @@ type EntityList {
     email: String
     website: String
     phone: String
-    parent: EntityList
+    parent: EntitytList
     uuid: UUID!
     name: String
     hidden: Boolean!
     fyStartMonth: DjangoLedgerEntityModelFyStartMonthChoices!
     picture: String
-    childrenSet: [EntityList!]!
+    coa: CoaList
+    childrenSet: [EntitytList!]!
+    unitofmeasuremodelSet: [UnitOfMeasureList!]!
     customers: [CustomerList!]!
 }
 
@@ -182,4 +93,290 @@ enum DjangoLedgerEntityModelFyStartMonthChoices {
 
     """December"""
     A_12
+}
+
+type CoaList {
+    slug: String!
+    name: String
+    created: DateTime!
+    updated: DateTime
+    uuid: UUID!
+    entity: EntitytList!
+    locked: Boolean!
+    description: String
+    accounts: [AccountList!]!
+}
+
+type AccountList {
+    created: DateTime!
+    updated: DateTime
+    parent: AccountList
+    uuid: UUID!
+    code: String!
+    name: String!
+    role: DjangoLedgerAccountModelRoleChoices!
+    balanceType: DjangoLedgerAccountModelBalanceTypeChoices!
+    locked: Boolean!
+    active: Boolean!
+    coa: CoaList!
+    bankCashAccount: [Bank_accountList!]!
+    childrenSet: [AccountList!]!
+    NoneCashAccount: [BillList!]!
+    NonePrepaidAccount: [BillList!]!
+    NoneUnearnedAccount: [BillList!]!
+}
+
+"""An enumeration."""
+enum DjangoLedgerAccountModelRoleChoices {
+    """Current Asset"""
+    ASSET_CA_CASH
+
+    """Marketable Securities"""
+    ASSET_CA_MKT_SEC
+
+    """Receivables"""
+    ASSET_CA_RECV
+
+    """Inventory"""
+    ASSET_CA_INV
+
+    """Uncollectibles"""
+    ASSET_CA_UNCOLL
+
+    """Prepaid"""
+    ASSET_CA_PREPAID
+
+    """Other Liquid Assets"""
+    ASSET_CA_OTHER
+
+    """Notes Receivable"""
+    ASSET_LTI_NOTES
+
+    """Land"""
+    ASSET_LTI_LAND
+
+    """Securities"""
+    ASSET_LTI_SEC
+
+    """Property Plant & Equipment"""
+    ASSET_PPE
+
+    """Intangible Assets"""
+    ASSET_IA
+
+    """Other Assets"""
+    ASSET_ADJUSTMENT
+
+    """Accounts Payable"""
+    LIA_CL_ACC_PAY
+
+    """Wages Payable"""
+    LIA_CL_WAGE_PAY
+
+    """Wages Payable"""
+    LIA_CL_WAGE_PAY_2
+
+    """Notes Payable"""
+    LIA_CL_ST_NOTES_PAYABLE
+
+    """Current Maturities of Long Tern Debt"""
+    LIA_CL_LTD_MAT
+
+    """Deferred Revenue"""
+    LIA_CL_DEF_REV
+
+    """Other Liabilities"""
+    LIA_CL_OTHER
+
+    """Notes Payable"""
+    LIA_LTL_NOTES
+
+    """Bonds Payable"""
+    LIA_LTL_BONDS
+
+    """Mortgage Payable"""
+    LIA_LTL_MORTGAGE
+
+    """Capital"""
+    EQ_CAPITAL
+
+    """Common Stock"""
+    EQ_STOCK_C
+
+    """Preferred Stock"""
+    EQ_STOCK_P
+
+    """Other Equity Adjustments"""
+    EQ_ADJUSTMENT
+
+    """Sales Income"""
+    IN_SALES
+
+    """Passive Income"""
+    IN_PASS
+
+    """Other Income"""
+    IN_OTHER
+
+    """Cost of Goods Sold"""
+    EX_COGS
+
+    """Operational Expense"""
+    EX_OP
+
+    """Interest Expense"""
+    EX_INTEREST
+
+    """Tax Expense"""
+    EX_TAXES
+
+    """Capital Expense"""
+    EX_CAP
+
+    """Other Expense"""
+    EX_OTHER
+}
+
+"""An enumeration."""
+enum DjangoLedgerAccountModelBalanceTypeChoices {
+    """Credit"""
+    CREDIT
+
+    """Debit"""
+    DEBIT
+}
+
+type Bank_accountList {
+    created: DateTime!
+    updated: DateTime
+    uuid: UUID!
+    name: String
+    accountNumber: String
+    routingNumber: String
+    abaNumber: String
+    accountType: DjangoLedgerBankAccountModelAccountTypeChoices!
+    cashAccount: AccountList
+    active: Boolean!
+    hidden: Boolean!
+}
+
+"""An enumeration."""
+enum DjangoLedgerBankAccountModelAccountTypeChoices {
+    """Checking"""
+    CHECKING
+
+    """Savings"""
+    SAVINGS
+
+    """Money Market"""
+    MONEY_MKT
+}
+
+type BillList {
+    created: DateTime!
+    updated: DateTime
+    terms: DjangoLedgerBillModelTermsChoices!
+
+    """"""
+    amountDue: Decimal!
+
+    """"""
+    amountPaid: Decimal!
+
+    """"""
+    amountReceivable: Decimal!
+
+    """"""
+    amountUnearned: Decimal!
+
+    """"""
+    amountEarned: Decimal!
+    paid: Boolean!
+    paidDate: Date
+    date: Date!
+    dueDate: Date!
+    void: Boolean!
+    voidDate: Date
+    accrue: Boolean!
+
+    """"""
+    progress: Decimal!
+    cashAccount: AccountList
+    prepaidAccount: AccountList
+    unearnedAccount: AccountList
+    markdownNotes: String
+    uuid: UUID!
+    billNumber: String!
+    billStatus: DjangoLedgerBillModelBillStatusChoices!
+    xref: String
+    additionalInfo: JSONString!
+}
+
+"""An enumeration."""
+enum DjangoLedgerBillModelTermsChoices {
+    """Due On Receipt"""
+    ON_RECEIPT
+
+    """Net 30 Days"""
+    NET_30
+
+    """Net 60 Days"""
+    NET_60
+
+    """Net 90 Days"""
+    NET_90
+}
+
+"""The `Decimal` scalar type represents a python Decimal."""
+scalar Decimal
+
+"""
+The `Date` scalar type represents a Date
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar Date
+
+"""An enumeration."""
+enum DjangoLedgerBillModelBillStatusChoices {
+    """Draft"""
+    DRAFT
+
+    """In Review"""
+    IN_REVIEW
+
+    """Approved"""
+    APPROVED
+
+    """Canceled"""
+    CANCELED
+}
+
+"""
+Allows use of a JSON String for input / output from the GraphQL schema.
+
+Use of this type is *not recommended* as you lose the benefits of having a defined, static
+schema (one of the key benefits of GraphQL).
+"""
+scalar JSONString
+
+type CustomerList {
+    created: DateTime!
+    updated: DateTime
+    address1: String!
+    address2: String
+    city: String
+    state: String
+    zipCode: String
+    country: String
+    email: String
+    website: String
+    phone: String
+    uuid: UUID!
+    customerName: String!
+    entity: EntitytList!
+    description: String!
+    active: Boolean!
+    hidden: Boolean!
+    additionalInfo: JSONString
 }
