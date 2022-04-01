@@ -26,6 +26,7 @@ urlpatterns = [
     path('bill/', include('django_ledger.urls.bill')),
     path('purchase_order/', include('django_ledger.urls.purchase_order')),
     path('customer/', include('django_ledger.urls.customer')),
+    path('customer-job/', include('django_ledger.urls.customer_job')),
     path('vendor/', include('django_ledger.urls.vendor')),
     path('item/', include('django_ledger.urls.item')),
     path('bank-account/', include('django_ledger.urls.bank_account')),

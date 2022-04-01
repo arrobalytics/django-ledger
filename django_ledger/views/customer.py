@@ -97,3 +97,5 @@ class CustomerModelUpdateView(LoginRequiredMixIn,
     def form_valid(self, form):
         form.save()
         return super().form_valid(form)
+
+# todo: add CustomerDeleteView

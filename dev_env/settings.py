@@ -1,4 +1,5 @@
 import os
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'djangoledger1234!DoNotUse!'
 DEBUG = True
@@ -97,32 +98,4 @@ GRAPHENE = {
     'SCHEMA': 'django_ledger.contrib.django_ledger_graphql.api.schema',
     'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphql/schema.graphql',  # defaults to schema.json,
     # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
-    'MIDDLEWARE': [
-        'graphql_jwt.middleware.JSONWebTokenMiddleware',
-    ],
 }
-
-AUTHENTICATION_BACKENDS = [
-    'graphql_jwt.backends.JSONWebTokenBackend',
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-GRAPHQL_JWT = {
-    'JWT_ALLOW_ARGUMENT': True,
-    #...
-    "JWT_ALLOW_ANY_CLASSES": [
-        "graphql_auth.mutations.Register",
-        "graphql_auth.mutations.VerifyAccount",
-        "graphql_auth.mutations.ResendActivationEmail",
-        "graphql_auth.mutations.SendPasswordResetEmail",
-        "graphql_auth.mutations.PasswordReset",
-        "graphql_auth.mutations.ObtainJSONWebToken",
-        "graphql_auth.mutations.VerifyToken",
-        "graphql_auth.mutations.RefreshToken",
-        "graphql_auth.mutations.RevokeToken",
-        "graphql_auth.mutations.VerifySecondaryEmail",
-        
-    ],
-}
-
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

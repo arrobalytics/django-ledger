@@ -1,0 +1,73 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th>{% trans 'Customer' %}</th>
+            <th>{% trans 'Title' %}</th>
+            <th>{% trans 'Sales Price' %}</th>
+            <th>{% trans 'GM%' %}</th>
+            <th>{% trans 'Approved' %}</th>
+            <th>{% trans 'Completed' %}</th>
+            <th>{% trans 'Actions' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for cj in customer_job_list %}
+            <tr id="{{ cj.get_html_id }}">
+                <td>{{ cj.customer.customer_name }}</td>
+                <td>{{ cj.title }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ cj.gross_margin_estimate | percentage }}</td>
+                <td class="has-text-centered">
+                    {% if cj.is_approved %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if cj.is_completed %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                    {% endif %}
+                </td>
+
+                {# ACTIONS #}
+                <td class="has-text-centered">
+                    <div class="dropdown is-right is-hoverable" id="cj-action-{{ cj.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>{% trans 'Actions' %}</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ cj.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug customer_job_pk=cj.uuid %}"
+                                   class="dropdown-item has-text-success">Details</a>
+                                {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
+                                {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}
+                                {#                                {% if not cj.paid %}#}
+                                {#                                    {% modal_action cj 'get' entity_slug %}#}
+                                {#                                    <a onclick="djLedger.showModal('{{ cj.get_html_id }}')"#}
+                                {#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
+                                {#                                {% endif %}#}
+                                {#                                <a href="{% url 'django_ledger:cj-delete' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
+                                {#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

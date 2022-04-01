@@ -20,7 +20,7 @@ from django_ledger.io import INCOME_SALES, ASSET_CA_INVENTORY, COGS, ASSET_CA_CA
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemThroughModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
-    create_entity_unit_slug
+    create_entity_unit_slug, CustomerEstimateModel, generate_estimate_number
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -203,6 +203,7 @@ class EntityDataGenerator:
             ItemModel(
                 name=f'Product or Service {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
+                item_type=choice(ItemModel.ITEM_CHOICES)[0],
                 sku=generate_random_sku(),
                 upc=generate_random_upc(),
                 item_id=generate_random_item_id(),
@@ -230,6 +231,7 @@ class EntityDataGenerator:
             ItemModel(
                 name=f'Expense Item {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
+                item_type=choice(ItemModel.ITEM_CHOICES)[0],
                 sku=generate_random_sku(),
                 upc=generate_random_upc(),
                 item_id=generate_random_item_id(),
@@ -251,6 +253,7 @@ class EntityDataGenerator:
             ItemModel(
                 name=f'Inventory {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
+                item_type=choice(ItemModel.ITEM_CHOICES)[0],
                 item_id=generate_random_item_id(),
                 entity=self.entity_model,
                 for_inventory=True,
@@ -265,6 +268,47 @@ class EntityDataGenerator:
             i.clean()
 
         self.inventory_models = self.entity_model.items.bulk_create(inventory_models)
+
+    def create_estimates(self, date_approved: date):
+        estimate_number = generate_estimate_number()
+        customer_estimate: CustomerEstimateModel = CustomerEstimateModel(
+            estimate_number=estimate_number,
+            terms=choice(CustomerEstimateModel.CONTRACT_TERMS)[0],
+            title=f'Customer Estimate {estimate_number}',
+        )
+        customer_estimate.configure(entity_slug=self.entity_model,
+                                    user_model=self.user_model,
+                                    customer_model=choice(self.customer_models))
+
+        estimate_items = [
+            ItemThroughModel(
+                ce_model=customer_estimate,
+                item_model=choice(self.expense_models),
+                quantity=round(random() * randint(5, 15), 2),
+                unit_cost=round(random() * randint(50, 100), 2),
+                ce_unit_revenue_estimate=round(random() * randint(80, 120), 2) * (1 + 0.2 * random()),
+                entity_unit=choice(self.entity_unit_models) if random() > .75 else None
+            ) for _ in range(randint(1, 10))
+        ]
+
+        for i in estimate_items:
+            i.clean()
+
+        customer_estimate.update_state(queryset=estimate_items)
+        customer_estimate.clean()
+        customer_estimate.save()
+
+        estimate_items = customer_estimate.itemthroughmodel_set.bulk_create(objs=estimate_items)
+
+        if random() < 0.2:
+            customer_estimate.mark_as_review(commit=True)
+        elif random() < 0.55:
+            customer_estimate.mark_as_approved(commit=True, date_approved=date_approved)
+            if random() < 0.80:
+                date_completed = date_approved + timedelta(days=randint(10, 45))
+                customer_estimate.mark_as_completed(commit=True, date_completed=date_completed)
+        else:
+            customer_estimate.mark_as_canceled(commit=True, date_canceled=date_approved)
 
     def create_bill(self,
                     is_accruable: bool,
@@ -583,6 +627,8 @@ class EntityDataGenerator:
 
             issue_dt = issue_dttm.date()
             paid_dt = paid_dttm.date() if paid_dttm else None
+
+            self.create_estimates(date_approved=issue_dt)
 
             if i < self.tx_quantity / 2:
                 self.create_bill(

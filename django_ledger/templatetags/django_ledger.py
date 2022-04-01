@@ -57,7 +57,7 @@ def currency_format(value):
 
 @register.filter(name='percentage')
 def percentage(value):
-    if value:
+    if value is not None:
         return '{0:,.2f}%'.format(value * 100)
 
 
@@ -568,6 +568,11 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
+                        'title': 'Estimates',
+                        'url': reverse('django_ledger:customer-estimate-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
                         'title': 'Bills',
                         'url': reverse('django_ledger:bill-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
@@ -753,3 +758,22 @@ def inventory_table(context, queryset):
     }
     ctx.update(queryset.aggregate(inventory_total_value=Sum('total_value')))
     return ctx
+
+
+@register.inclusion_tag('django_ledger/tags/customer_estimate_table.html', takes_context=True)
+def customer_estimate_table(context, queryset=None):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'customer_job_list': queryset if queryset else context['object_list']
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/customer_job_item_formset.html', takes_context=True)
+def cj_item_formset_table(context, item_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'customer_job_pk': context['view'].kwargs['customer_job_pk'],
+        'revenue_estimate': context['revenue_estimate'],
+        'cost_estimate': context['cost_estimate'],
+        'item_formset': item_formset,
+    }
