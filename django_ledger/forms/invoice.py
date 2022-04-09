@@ -16,6 +16,8 @@ from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, Ite
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
+# todo: need to add entity_unit to form...
+
 class InvoiceModelCreateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):

@@ -8,10 +8,11 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from uuid import uuid4
 
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn
+from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, SlugNameMixIn
 from django.db.models import Q
 
 

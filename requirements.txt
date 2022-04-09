@@ -4,6 +4,6 @@ setuptools>=50.3.2
 jsonschema>=3.2.0
 Markdown~=3.3.4
 Pillow>=8.4.0
-
+graphene-django>=2.15.0
 Faker>=8.16.0
 behave>=1.2.6
