@@ -25,7 +25,6 @@ class CoaNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
-
 class CoaList(DjangoObjectType):
     class Meta:
         model = ChartOfAccountModel
