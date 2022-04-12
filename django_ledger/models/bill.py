@@ -139,7 +139,8 @@ class BillModelAbstract(LedgerPlugInMixIn,
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-        self.bill_number = generate_bill_number()
+        if not self.bill_number:
+            self.bill_number = generate_bill_number()
         ledger_name = f'Bill {self.bill_number}'
         if bill_desc:
             ledger_name += f' | {bill_desc}'

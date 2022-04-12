@@ -1,0 +1,36 @@
+from django.urls import path
+
+from django_ledger.views import (CustomerJobModelListView, CustomerJobModelCreateView,
+                                 CustomerJobModelDetailView, CustomerJobModelUpdateView,
+                                 CustomerEstimateActionMarkAsDraftView, CustomerEstimateActionMarkAsReviewView,
+                                 CustomerEstimateActionMarkAsApprovedView, CustomerEstimateActionMarkAsCompletedView,
+                                 CustomerEstimateActionMarkAsCanceledView)
+
+urlpatterns = [
+    path('<slug:entity_slug>/list/', CustomerJobModelListView.as_view(), name='customer-estimate-list'),
+    path('<slug:entity_slug>/create/', CustomerJobModelCreateView.as_view(), name='customer-estimate-create'),
+    path('<slug:entity_slug>/detail/<uuid:customer_job_pk>/',
+         CustomerJobModelDetailView.as_view(),
+         name='customer-estimate-detail'),
+    path('<slug:entity_slug>/update/<uuid:customer_job_pk>/',
+         CustomerJobModelUpdateView.as_view(),
+         name='customer-estimate-update'),
+    path('<slug:entity_slug>/update/<uuid:customer_job_pk>/items/',
+         CustomerJobModelUpdateView.as_view(action_update_items=True),
+         name='customer-estimate-update-items'),
+    path('<slug:entity_slug>/action/<uuid:customer_job_pk>/mark-as-draft/',
+         CustomerEstimateActionMarkAsDraftView.as_view(),
+         name='customer-estimate-action-mark-as-draft'),
+    path('<slug:entity_slug>/action/<uuid:customer_job_pk>/mark-as-review/',
+         CustomerEstimateActionMarkAsReviewView.as_view(),
+         name='customer-estimate-action-mark-as-review'),
+    path('<slug:entity_slug>/action/<uuid:customer_job_pk>/mark-as-approved/',
+         CustomerEstimateActionMarkAsApprovedView.as_view(),
+         name='customer-estimate-action-mark-as-approved'),
+    path('<slug:entity_slug>/action/<uuid:customer_job_pk>/mark-as-completed/',
+         CustomerEstimateActionMarkAsCompletedView.as_view(),
+         name='customer-estimate-action-mark-as-completed'),
+    path('<slug:entity_slug>/action/<uuid:customer_job_pk>/mark-as-canceled/',
+         CustomerEstimateActionMarkAsCanceledView.as_view(),
+         name='customer-estimate-action-mark-as-canceled'),
+]

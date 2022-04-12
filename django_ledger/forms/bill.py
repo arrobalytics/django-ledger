@@ -1,11 +1,12 @@
-from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, BaseModelFormSet,
+from django.forms import (ModelForm, DateInput, TextInput, Select,
+                          CheckboxInput, BaseModelFormSet,
                           modelformset_factory, Textarea)
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemThroughModel,
-                                  VendorModel)
+                                  VendorModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -249,8 +250,14 @@ class BaseBillItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        unit_qs = EntityUnitModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
+            form.fields['entity_unit'].queryset = unit_qs
 
             if not self.BILL_MODEL.can_edit_items():
                 form.fields['item_model'].disabled = True

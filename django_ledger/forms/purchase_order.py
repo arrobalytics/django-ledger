@@ -10,7 +10,7 @@ from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelForm
                           modelformset_factory, Textarea, BooleanField, ValidationError)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemThroughModel)
+from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemThroughModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -98,8 +98,9 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         }
 
     def clean(self):
-        is_fulfilled = self.cleaned_data['fulfilled']
-        new_status = self.cleaned_data['po_status']
+        cleaned_data = super(PurchaseOrderModelUpdateForm, self).clean()
+        is_fulfilled = cleaned_data['fulfilled']
+        new_status = cleaned_data['po_status']
 
         if 'fulfilled' in self.changed_data:
             if not is_fulfilled:
@@ -118,6 +119,7 @@ class PurchaseOrderModelUpdateForm(ModelForm):
                     message=f'Cannot change form status to {new_status} '
                             f'from {initial_status}'
                 )
+        return cleaned_data
 
 
 class PurchaseOrderItemForm(ModelForm):
@@ -151,8 +153,9 @@ class PurchaseOrderItemForm(ModelForm):
             })
         }
 
-    def clean_po_item_status(self):
-        po_item_status = self.cleaned_data['po_item_status']
+    def clean(self):
+        cleaned_data = super(PurchaseOrderItemForm, self).clean()
+        po_item_status = cleaned_data['po_item_status']
         po_item_model: ItemThroughModel = self.instance
         if 'po_item_status' in self.changed_data:
             po_model: PurchaseOrderModel = getattr(self, 'PO_MODEL')
@@ -171,8 +174,7 @@ class PurchaseOrderItemForm(ModelForm):
             ]):
                 raise ValidationError(f'Cannot mark as {po_item_status.upper()}. '
                                       'Item must be billed first.')
-
-        return po_item_status
+        return cleaned_data
 
 
 class BasePurchaseOrderItemFormset(BaseModelFormSet):
@@ -188,9 +190,15 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        unit_qs = EntityUnitModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+
         for form in self.forms:
             form.PO_MODEL = self.PO_MODEL
             form.fields['item_model'].queryset = items_qs
+            form.fields['entity_unit'].queryset = unit_qs
             if self.PO_MODEL.po_status in [
                 PurchaseOrderModel.PO_STATUS_APPROVED,
                 PurchaseOrderModel.PO_STATUS_REVIEW

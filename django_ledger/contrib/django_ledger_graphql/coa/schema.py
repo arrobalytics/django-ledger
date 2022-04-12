@@ -15,6 +15,15 @@ class CoaNode(DjangoObjectType):
         }
         interfaces = (relay.Node,)
 
+class CoaNode(DjangoObjectType):
+    class Meta:
+        model = ChartOfAccountModel
+        filter_fields = {
+            'slug' : ['exact', 'icontains', 'istartswith'],
+            'name' : ['exact', 'icontains', 'istartswith'],
+            'description' : ['exact', 'icontains', 'istartswith']
+        }
+        interfaces = (relay.Node,)
 
 class CoaList(DjangoObjectType):
     class Meta:
