@@ -112,3 +112,36 @@ allCustomers(slugName:"jusper-onderi-ondieki-db23x1y8"){
     }
   }
 }
+
+```
+## Using graphql-auth
+Register user
+```
+mutation {
+  register(
+    email: "new_user@email.com",
+    username: "new_user",
+    password1: "dave123456",
+    password2: "dave123456",
+  ) {
+    success,
+    errors,
+    token,
+
+  }
+}
+```
+Returns a token and a succes message
+```
+{
+  "data": {
+    "register": {
+      "success": true,
+      "errors": null,
+      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6Im5ld191c2VyIiwiZXhwIjoxNjQ5NzY2Nzc4LCJvcmlnSWF0IjoxNjQ5NzY2NDc4fQ.cHaPq8CjQy60ifUawR4Pnyyu_E_SCU2J6CapBK0P8P4"
+    }
+  }
+}
+```
+for more detail usage visit the documentation
+https://django-graphql-auth.readthedocs.io/en/latest/quickstart/
