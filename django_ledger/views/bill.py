@@ -236,7 +236,9 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             return BillModelConfigureForm
         return BillModelUpdateForm
 
-    def get_context_data(self, *, object_list=None, item_formset: BillItemFormset = None, **kwargs):
+    def get_context_data(self, *, object_list=None,
+                         item_formset: BillItemFormset = None,
+                         **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
         bill_model: BillModel = self.object
         item_through_qs = self.get_item_through_queryset()
@@ -245,7 +247,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         context['page_title'] = title
         context['header_title'] = title
 
-        # if not self.is_action():
         if not bill_model.is_configured():
             messages.add_message(
                 request=self.request,
@@ -458,7 +459,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                         item.bill_model = bill_model
 
                     item_formset.save()
-                    # todo: pass item list to update_amount_due...?
                     bill_model.update_amount_due()
                     bill_model.new_state(commit=True)
                     bill_model.clean()

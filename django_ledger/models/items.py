@@ -71,7 +71,7 @@ class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
 
 
-class ItemModelMQuerySet(models.QuerySet):
+class ItemModelQuerySet(models.QuerySet):
 
     def active(self):
         return self.filter(active=True)
@@ -80,7 +80,7 @@ class ItemModelMQuerySet(models.QuerySet):
 class ItemModelManager(models.Manager):
 
     def get_queryset(self):
-        return ItemModelMQuerySet(self.model, using=self._db)
+        return ItemModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -98,7 +98,10 @@ class ItemModelManager(models.Manager):
 
     def products_and_services(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(is_product_or_service=True)
+        return qs.filter(
+            Q(is_product_or_service=True) &
+            Q(for_inventory=False)
+        )
 
     def expenses(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
@@ -125,12 +128,27 @@ class ItemModelManager(models.Manager):
             Q(for_inventory=True)
         )
 
+    def for_cj(self, entity_slug: str, user_model):
+        return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
+
 
 class ItemModelAbstract(CreateUpdateMixIn):
     REL_NAME_PREFIX = 'item'
 
+    LABOR_TYPE = 'L'
+    MATERIAL_TYPE = 'M'
+    EQUIPMENT_TYPE = 'E'
+    OTHER_TYPE = 'O'
+
+    ITEM_CHOICES = [
+        (LABOR_TYPE, _('Labor')),
+        (MATERIAL_TYPE, _('Material')),
+        (EQUIPMENT_TYPE, _('Equipment'))
+    ]
+
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=100, verbose_name=_('Item Name'))
+    item_type = models.CharField(max_length=1, choices=ITEM_CHOICES, null=True, blank=True)
 
     uom = models.ForeignKey('django_ledger.UnitOfMeasureModel',
                             verbose_name=_('Unit of Measure'),
@@ -221,17 +239,20 @@ class ItemModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['for_inventory']),
             models.Index(fields=['is_product_or_service']),
             models.Index(fields=['is_active']),
+            models.Index(fields=['item_type']),
             models.Index(fields=['entity', 'sku']),
             models.Index(fields=['entity', 'upc']),
-            models.Index(fields=['entity', 'item_id']),
+            models.Index(fields=['entity', 'item_id'])
         ]
 
     def __str__(self):
         if self.is_expense():
-            return f'Expense Item: {self.name}'
+            return f'Expense Item: {self.name} | {self.get_item_type_display()}'
         elif self.is_inventory():
-            return f'Inventory: {self.name}'
-        return f'Item Model: {self.name} - {self.sku}'
+            return f'Inventory: {self.name} | {self.get_item_type_display()}'
+        elif self.is_product_or_service:
+            return f'Product/Service: {self.name} | {self.get_item_type_display()}'
+        return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
     def is_expense(self):
         return self.is_product_or_service is False and self.for_inventory is False
@@ -322,15 +343,19 @@ class ItemThroughModelManager(models.Manager):
 
     def for_bill(self, user_model, entity_slug, bill_pk):
         qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
-        return qs.filter(bill_model__uuid__exact=bill_pk)
+        return qs.filter(bill_model_id__exact=bill_pk)
 
     def for_invoice(self, entity_slug: str, invoice_pk, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(invoice_model__uuid__exact=invoice_pk)
+        return qs.filter(invoice_model_id__exact=invoice_pk)
 
     def for_po(self, entity_slug, user_model, po_pk):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
+
+    def for_cj(self, user_model, entity_slug, cj_pk):
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return self.filter(ce_model_id__exact=cj_pk)
 
     def inventory_pipeline(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
@@ -458,16 +483,6 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                       on_delete=models.CASCADE,
                                       null=True, blank=True,
                                       verbose_name=_('Invoice Model'))
-    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.SET_NULL,
-                                 null=True,
-                                 blank=True,
-                                 verbose_name=_('Purchase Order Model'))
-    po_item_status = models.CharField(max_length=15,
-                                      choices=PO_ITEM_STATUS,
-                                      blank=True,
-                                      null=True,
-                                      verbose_name=_('PO Item Status'))
 
     # Bill/ Invoice fields....
     quantity = models.FloatField(default=0.0,
@@ -483,6 +498,16 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                        validators=[MinValueValidator(0)])
 
     # Purchase Order fields...
+    po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
+                                 on_delete=models.SET_NULL,
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Purchase Order Model'))
+    po_item_status = models.CharField(max_length=15,
+                                      choices=PO_ITEM_STATUS,
+                                      blank=True,
+                                      null=True,
+                                      verbose_name=_('PO Item Status'))
     po_quantity = models.FloatField(default=0.0,
                                     verbose_name=_('PO Quantity'),
                                     help_text=_('Authorized item quantity for purchasing.'),
@@ -497,6 +522,24 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                           verbose_name=_('Authorized maximum item cost per Purchase Order'),
                                           help_text=_('Maximum authorized cost per Purchase Order.'),
                                           validators=[MinValueValidator(0)])
+
+    # Customer Job / Contract fields...
+    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Customer Estimate'),
+                                 on_delete=models.PROTECT)
+    ce_unit_revenue_estimate = models.FloatField(null=True,
+                                                 blank=True,
+                                                 verbose_name=_('Customer Estimate Revenue per Unit.'),
+                                                 validators=[MinValueValidator(0)])
+    ce_revenue_estimate = models.DecimalField(max_digits=20,
+                                              null=True,
+                                              blank=True,
+                                              decimal_places=2,
+                                              verbose_name=_('Total customer estimate revenue.'),
+                                              validators=[MinValueValidator(0)])
+
     objects = ItemThroughModelManager()
 
     class Meta:
@@ -505,22 +548,26 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             models.Index(fields=['bill_model', 'item_model']),
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['po_model', 'item_model']),
-            models.Index(fields=['po_item_status'])
+            models.Index(fields=['ce_model', 'item_model']),
+            models.Index(fields=['po_item_status']),
         ]
 
     def __str__(self):
         # pylint: disable=no-member
-        status_display = self.get_po_item_status_display()
-        amount = f'{currency_symbol}{self.total_amount}'
-        if self.po_model:
-            return f'PO Through Model: {self.uuid} | {status_display} | {amount}'
-        elif self.bill_model:
-            return f'Bill Through Model: {self.uuid} | {status_display} | {amount}'
-        elif self.invoice_model:
-            return f'Invoice Through Model: {self.uuid} | {status_display} | {amount}'
-        return f'Orphan Item Through Model: {self.uuid} | {status_display} | {amount}'
 
-    def clean_total_amount(self):
+        amount = f'{currency_symbol}{self.total_amount}'
+        if self.po_model_id:
+            po_status_display = self.get_po_item_status_display()
+            return f'PO Through Model: {self.uuid} | {po_status_display} | {amount}'
+        elif self.bill_model_id:
+            return f'Bill Through Model: {self.uuid} | {amount}'
+        elif self.invoice_model_id:
+            return f'Invoice Through Model: {self.uuid} | {amount}'
+        elif self.ce_model_id:
+            return f'Customer Job Through Model: {self.uuid} | {amount}'
+        return f'Orphan Item Through Model: {self.uuid} | {amount}'
+
+    def update_total_amount(self):
         qty = self.quantity
         if not isinstance(qty, Decimal):
             qty = Decimal.from_float(qty)
@@ -543,8 +590,23 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                 return
         self.total_amount = total_amount
 
-    def clean_po_total_amount(self):
+    def update_po_total_amount(self):
         self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
+
+    def update_revenue_estimate(self):
+        if self.ce_model_id:
+            qty = self.quantity
+            if not isinstance(qty, Decimal):
+                qty = Decimal.from_float(qty)
+
+            if not self.ce_unit_revenue_estimate:
+                raise ValidationError('Must provide unit sales price estimate.')
+
+            uc = self.ce_unit_revenue_estimate
+            if not isinstance(uc, Decimal):
+                uc = Decimal.from_float(uc)
+
+            self.ce_revenue_estimate = uc * qty
 
     def html_id(self):
         return f'djl-item-{self.uuid}'
@@ -574,8 +636,23 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         return ' is-warning'
 
     def clean(self):
-        self.clean_po_total_amount()
-        self.clean_total_amount()
+
+        # pylint: disable=no-member
+        if self.ce_model_id:
+            if self.ce_unit_revenue_estimate is None:
+                self.ce_unit_revenue_estimate = 0.00
+            if self.ce_revenue_estimate is None:
+                self.ce_revenue_estimate = 0.00
+            self.po_model = None
+            self.bill_model = None
+            self.ce_revenue_estimate = self.ce_unit_revenue_estimate * self.quantity
+        else:
+            self.ce_revenue_estimate = None
+            self.ce_unit_revenue_estimate = None
+
+        self.update_po_total_amount()
+        self.update_total_amount()
+        self.update_revenue_estimate()
 
         # pylint: disable=no-member
         if self.po_model_id:

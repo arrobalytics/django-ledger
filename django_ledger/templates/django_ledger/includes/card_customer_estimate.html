@@ -1,0 +1,36 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-header-title has-text-weight-light is-size-3">
+            <span class="icon is-large">
+                    {% icon 'eos-icons:job' 36 %}</span>
+            {% trans 'Customer Estimate Info' %}</h2>
+    </div>
+
+    <div class="card-content">
+        <h3 class="is-size-4">{{ customer_job.estimate_number }}</h3>
+        <h3 class="is-size-3">{{ customer_job.customer.customer_name }}</h3>
+        <h3 class="is-size-3 has-text-weight-light">{{ customer_job.title }}</h3>
+        <h3 class="is-size-3">{% trans 'Terms' %}: {{ customer_job.get_terms_display }}</h3>
+        <h3 class="is-size-3 has-text-weight-light has-text-info">{% trans 'Status' %}: {{ customer_job.get_status_display }}</h3>
+
+        {% if customer_job.date_approved %}
+            <h4 class="is-size-4">{% trans 'Date Approved:' %} {{ customer_job.date_approved }}</h4>
+        {% endif %}
+
+        {% if customer_job.date_completed %}
+            <h4>{% trans 'Date Completed:' %} {{ customer_job.date_completed }}</h4>
+        {% endif %}
+
+        {# MARK AS PAID MODAL #}
+        {#        {% modal_action invoice 'get' entity_slug %}#}
+
+    </div>
+    <footer class="card-footer">
+        <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+           class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+    </footer>
+</div>
+

@@ -60,6 +60,7 @@ class ProductOrServiceUpdateForm(ModelForm):
             'upc',
             'item_id',
             'uom',
+            'item_type',
             'default_amount',
             'earnings_account',
         ]
@@ -68,6 +69,9 @@ class ProductOrServiceUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'uom': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'item_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'earnings_account': Select(attrs={
@@ -106,6 +110,7 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             'upc',
             'item_id',
             'uom',
+            'item_type',
             'default_amount',
             'earnings_account',
             'is_product_or_service'
@@ -115,6 +120,9 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'uom': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'item_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'earnings_account': Select(attrs={
@@ -161,6 +169,7 @@ class ExpenseItemUpdateForm(ModelForm):
         fields = [
             'name',
             'uom',
+            'item_type',
             'default_amount',
             'expense_account',
         ]
@@ -169,6 +178,9 @@ class ExpenseItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'uom': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'item_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'expense_account': Select(attrs={
@@ -231,6 +243,7 @@ class InventoryItemUpdateForm(ModelForm):
         fields = [
             'name',
             'uom',
+            'item_type',
             'upc',
             'item_id',
             'inventory_account',
@@ -244,6 +257,9 @@ class InventoryItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'uom': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'item_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'inventory_account': Select(attrs={

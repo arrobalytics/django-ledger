@@ -1,0 +1,32 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load django_ledger %}
+{% load i18n %}
+
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-8-desktop">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-header-title">
+                                    <span class="icon is-medium">
+                                        {% icon header_subtitle_icon 36 %}
+                                    </span>{{ page_title }}</h2>
+                </div>
+                <div class="card-content">
+                    <form action="{% url 'django_ledger:customer-estimate-create' entity_slug=view.kwargs.entity_slug %}"
+                          method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit"
+                                class="button is-primary is-outlined is-fullwidth djetler_my_1">
+                            {% trans 'Create' %}
+                        </button>
+                        <a href="{% url 'django_ledger:customer-estimate-list' entity_slug=view.kwargs.entity_slug %}"
+                           class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
