@@ -16,16 +16,11 @@ from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
-from django_ledger.forms.app_filters import AsOfDateFilterForm, EntityFilterForm
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel, TransactionModel,
-                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel)
-from django_ledger.utils import (
-    get_default_entity_session_key,
-    set_default_entity,
-    set_session_date_filter
-)
+                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel, CustomerEstimateModel,
+                                  ItemModel)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
@@ -122,6 +117,9 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
     def get_success_url(self):
         return reverse('django_ledger:home')
 
+    def post(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
+
     def delete(self, request, *args, **kwargs):
         entity_model: EntityModel = self.get_object()
 
@@ -138,36 +136,13 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
         ItemThroughModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
-
-        PurchaseOrderModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
-
-        BillModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
-
-        InvoiceModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
+        ).delete()
 
         TransactionModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
+        ).delete()
 
-        JournalEntryModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
-        ).all().delete()
-
-        # entity_model.entityunitmodel_set.all().delete()
-        entity_model.ledgermodel_set.all().delete()
-        entity_model.items.all().delete()
         return super().delete(request, *args, **kwargs)
 
 
@@ -396,47 +371,47 @@ class DateModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeS
 
 
 # ENTITY MISC VIEWS ---
-class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):
-    http_method_names = ['post']
+# class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):
+#     http_method_names = ['post']
+#
+#     def post(self, request, *args, **kwargs):
+#         form = EntityFilterForm(request.POST, user_model=request.user)
+#         session_key = get_default_entity_session_key()
+#         if form.is_valid():
+#             entity_model = form.cleaned_data['entity_model']
+#             self.url = reverse('django_ledger:entity-dashboard',
+#                                kwargs={
+#                                    'entity_slug': entity_model.slug
+#                                })
+#             set_default_entity(request, entity_model)
+#         else:
+#             try:
+#                 del self.request.session[session_key]
+#             finally:
+#                 self.url = reverse('django_ledger:entity-list')
+#         return super().post(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        form = EntityFilterForm(request.POST, user_model=request.user)
-        session_key = get_default_entity_session_key()
-        if form.is_valid():
-            entity_model = form.cleaned_data['entity_model']
-            self.url = reverse('django_ledger:entity-dashboard',
-                               kwargs={
-                                   'entity_slug': entity_model.slug
-                               })
-            set_default_entity(request, entity_model)
-        else:
-            try:
-                del self.request.session[session_key]
-            finally:
-                self.url = reverse('django_ledger:entity-list')
-        return super().post(request, *args, **kwargs)
 
-
-class SetSessionDate(LoginRequiredMixIn, RedirectView):
-    """
-    Sets the date filter on the session for a given entity.
-    """
-    http_method_names = ['post']
-
-    def post(self, request, *args, **kwargs):
-        entity_slug = kwargs['entity_slug']
-        as_of_form = AsOfDateFilterForm(data=request.POST, form_id=None)
-        # next_url = request.GET['next']
-
-        if as_of_form.is_valid():
-            as_of_form.clean()
-            end_date = as_of_form.cleaned_data['date']
-            set_session_date_filter(request, entity_slug, end_date)
-            self.url = reverse('django_ledger:entity-dashboard-date',
-                               kwargs={
-                                   'entity_slug': self.kwargs['entity_slug'],
-                                   'year': end_date.year,
-                                   'month': end_date.month,
-                                   'day': end_date.day,
-                               })
-        return super().post(request, *args, **kwargs)
+# class SetSessionDate(LoginRequiredMixIn, RedirectView):
+#     """
+#     Sets the date filter on the session for a given entity.
+#     """
+#     http_method_names = ['post']
+#
+#     def post(self, request, *args, **kwargs):
+#         entity_slug = kwargs['entity_slug']
+#         as_of_form = AsOfDateFilterForm(data=request.POST, form_id=None)
+#         # next_url = request.GET['next']
+#
+#         if as_of_form.is_valid():
+#             as_of_form.clean()
+#             end_date = as_of_form.cleaned_data['date']
+#             set_session_date_filter(request, entity_slug, end_date)
+#             self.url = reverse('django_ledger:entity-dashboard-date',
+#                                kwargs={
+#                                    'entity_slug': self.kwargs['entity_slug'],
+#                                    'year': end_date.year,
+#                                    'month': end_date.month,
+#                                    'day': end_date.day,
+#                                })
+#         return super().post(request, *args, **kwargs)

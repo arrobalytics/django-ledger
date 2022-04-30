@@ -46,7 +46,10 @@ class EntityUnitModelManager(models.Manager):
 class EntityUnitModelAbstract(IOMixIn, NodeTreeMixIn, SlugNameMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
-    entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Unit Entity'))
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Unit Entity'))
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 

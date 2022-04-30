@@ -47,6 +47,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
     entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger Entity'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))

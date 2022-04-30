@@ -199,20 +199,37 @@ class EntityDataGenerator:
 
     def create_products(self):
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
-        product_models = [
-            ItemModel(
-                name=f'Product or Service {randint(1000, 9999)}',
-                uom=choice(self.uom_models),
-                item_type=choice(ItemModel.ITEM_CHOICES)[0],
-                sku=generate_random_sku(),
-                upc=generate_random_upc(),
-                item_id=generate_random_item_id(),
-                entity=self.entity_model,
-                for_inventory=False,
-                is_product_or_service=True,
-                earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
-            ) for _ in range(product_count)
-        ]
+        product_models = list()
+        for i in range(product_count):
+            is_inventory = random() > 0.75
+            if is_inventory:
+                product_models.append(ItemModel(
+                        name=f'Product or Service {randint(1000, 9999)}',
+                        uom=choice(self.uom_models),
+                        item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                        sku=generate_random_sku(),
+                        upc=generate_random_upc(),
+                        item_id=generate_random_item_id(),
+                        entity=self.entity_model,
+                        for_inventory=is_inventory,
+                        is_product_or_service=True,
+                        earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                        cogs_account=choice(self.accounts_by_role[COGS]),
+                        inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY])
+                    ))
+            else:
+                product_models.append(ItemModel(
+                        name=f'Product or Service {randint(1000, 9999)}',
+                        uom=choice(self.uom_models),
+                        item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                        sku=generate_random_sku(),
+                        upc=generate_random_upc(),
+                        item_id=generate_random_item_id(),
+                        entity=self.entity_model,
+                        for_inventory=is_inventory,
+                        is_product_or_service=True,
+                        earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                    ))
 
         for im in product_models:
             im.clean()
@@ -283,10 +300,10 @@ class EntityDataGenerator:
         estimate_items = [
             ItemThroughModel(
                 ce_model=customer_estimate,
-                item_model=choice(self.expense_models),
+                item_model=choice(self.product_models),
                 quantity=round(random() * randint(5, 15), 2),
                 unit_cost=round(random() * randint(50, 100), 2),
-                ce_unit_revenue_estimate=round(random() * randint(80, 120), 2) * (1 + 0.2 * random()),
+                ce_unit_revenue_estimate=round(random() * randint(80, 120) * (1 + 0.2 * random()), 2),
                 entity_unit=choice(self.entity_unit_models) if random() > .75 else None
             ) for _ in range(randint(1, 10))
         ]

@@ -3,7 +3,7 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    <form action="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+    <form action="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
           method="post">
         {% csrf_token %}
         {% if form.errors %}
@@ -57,35 +57,35 @@
                                 {# ACTIONS #}
                                 {% if customer_estimate.can_draft %}
                                     <a class="button is-fullwidth is-info mt-2"
-                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-draft' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-draft' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}">
                                         {% trans 'Mark as Draft' %}
                                     </a>
                                 {% endif %}
 
                                 {% if customer_estimate.can_review %}
                                     <a class="button is-fullwidth is-info mt-2"
-                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-review' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-review' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}">
                                         {% trans 'Mark as In Review' %}
                                     </a>
                                 {% endif %}
 
                                 {% if customer_estimate.can_approve %}
                                     <a class="button is-fullwidth is-warning mt-2"
-                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-approved' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-approved' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}">
                                         {% trans 'Mark Approved' %}
                                     </a>
                                 {% endif %}
 
                                 {% if customer_estimate.can_complete %}
                                     <a class="button is-fullwidth is-success mt-2"
-                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-completed' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-completed' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}">
                                         {% trans 'Mark Complete' %}
                                     </a>
                                 {% endif %}
 
                                 {% if customer_estimate.can_cancel %}
                                     <a class="button is-fullwidth is-danger mt-2"
-                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-canceled' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}">
+                                       href="{% url 'django_ledger:customer-estimate-action-mark-as-canceled' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}">
                                         {% trans 'Cancel Estimate' %}
                                     </a>
                                 {% endif %}
@@ -103,7 +103,7 @@
                     </div>
                     <div class="column is-12">
                         <button class="button is-dark" type="submit">{% trans 'Save' %}</button>
-                        <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+                        <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
                            class="button is-dark">{% trans 'Back' %}</a>
                     </div>
                 </div>

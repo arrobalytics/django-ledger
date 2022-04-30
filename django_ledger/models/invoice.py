@@ -83,19 +83,19 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
     invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0],
                                       verbose_name=_('Invoice Status'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
-                                 on_delete=models.PROTECT,
+                                 on_delete=models.RESTRICT,
                                  verbose_name=_('Customer'))
 
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.PROTECT,
+                                     on_delete=models.RESTRICT,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.PROTECT,
+                                        on_delete=models.RESTRICT,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.PROTECT,
+                                         on_delete=models.RESTRICT,
                                          verbose_name=_('Unearned Account'),
                                          related_name=f'{REL_NAME_PREFIX}_unearned_account')
 

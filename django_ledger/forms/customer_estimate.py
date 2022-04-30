@@ -138,6 +138,7 @@ class BaseCustomerEstimateItemFormset(BaseModelFormSet):
                 form.fields['quantity'].disabled = True
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
+                form.fields['ce_unit_revenue_estimate'].disabled = True
 
 
 # todo: add instance where can_delete = False

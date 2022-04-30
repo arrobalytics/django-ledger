@@ -29,7 +29,7 @@
 
     </div>
     <footer class="card-footer">
-        <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug customer_job_pk=view.kwargs.customer_job_pk %}"
+        <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
            class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
     </footer>
 </div>

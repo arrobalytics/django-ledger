@@ -14,7 +14,8 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, LazyLoader
+from django_ledger.models import CreateUpdateMixIn
+from django_ledger.models.utils import LazyLoader
 
 lazy_loader = LazyLoader()
 
@@ -58,6 +59,7 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
                                      related_name=f'{REL_NAME_PREFIX}_cash_account',
                                      null=True, blank=True)
     ledger = models.OneToOneField('django_ledger.LedgerModel',
+                                  editable=False,
                                   verbose_name=_('Ledger'),
                                   on_delete=models.CASCADE)
     active = models.BooleanField(default=True)

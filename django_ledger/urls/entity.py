@@ -26,10 +26,4 @@ urlpatterns = [
 
     path('<slug:entity_slug>/update/', views.EntityModelUpdateView.as_view(), name='entity-update'),
     path('<slug:entity_slug>/delete/', views.EntityDeleteView.as_view(), name='entity-delete'),
-
-    # todo: is this needed?....
-    path('<slug:entity_slug>/set-date/', views.SetSessionDate.as_view(), name='entity-set-date'),
-
-    # todo: is this needed?....
-    path('set-default/', views.SetDefaultEntityView.as_view(), name='entity-set-default'),
 ]

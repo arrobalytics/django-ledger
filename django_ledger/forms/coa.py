@@ -9,7 +9,7 @@ class ChartOfAccountsModelForm(ModelForm):
     class Meta:
         model = ChartOfAccountModel
         fields = [
-            'slug',
+            # 'slug',
             'name',
             'description'
         ]
@@ -19,9 +19,9 @@ class ChartOfAccountsModelForm(ModelForm):
             'description': _('Description'),
         }
         widgets = {
-            'slug': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
+            # 'slug': TextInput(attrs={
+            #     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            # }),
             'name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),

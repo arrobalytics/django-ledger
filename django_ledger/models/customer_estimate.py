@@ -87,8 +87,11 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     estimate_number = models.SlugField(max_length=20,
                                        verbose_name=_('Estimate Number'),
                                        default=generate_estimate_number)
-    entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Entity Model'))
-    customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.PROTECT, verbose_name=_('Customer'))
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Entity Model'))
+    customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.RESTRICT, verbose_name=_('Customer'))
     terms = models.CharField(max_length=10, choices=CONTRACT_TERMS, verbose_name=_('Contract Terms'))
     title = models.CharField(max_length=250,
                              verbose_name=_('Customer Estimate Title'),
