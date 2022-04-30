@@ -20,16 +20,16 @@ class TransactionModelForm(ModelForm):
     class Meta:
         model = TransactionModel
         fields = [
-            'journal_entry',
+            # 'journal_entry',
             'account',
             'tx_type',
             'amount',
             'description'
         ]
         widgets = {
-            'journal_entry': HiddenInput(attrs={
-                'readonly': True
-            }),
+            # 'journal_entry': HiddenInput(attrs={
+            #     'readonly': True
+            # }),
             'account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
@@ -59,19 +59,16 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
             entity_slug=self.ENTITY_SLUG
         )
 
-        je_qs = JournalEntryModel.on_coa.for_ledger(
-            ledger_pk=self.LEDGER_PK,
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-
-        if je_pk:
-            je_qs = je_qs.filter(uuid__exact=self.JE_PK)
-
         for form in self.forms:
             form.fields['account'].queryset = account_qs
-            form.fields['journal_entry'].queryset = je_qs
-            form.fields['journal_entry'].initial = self.JE_PK
+
+    def get_queryset(self):
+        return TransactionModel.objects.for_journal_entry(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL,
+            je_pk=self.JE_PK,
+            ledger_pk=self.LEDGER_PK
+        ).order_by('account__code')
 
     def clean(self):
         if any(self.errors):

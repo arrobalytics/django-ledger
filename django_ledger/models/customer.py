@@ -34,6 +34,7 @@ class CustomerModel(ContactInfoMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     customer_name = models.CharField(max_length=100, unique=True)
     entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Customer Entity'),
                                related_name='customers')

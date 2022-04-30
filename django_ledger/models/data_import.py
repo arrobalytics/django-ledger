@@ -33,6 +33,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     description = models.CharField(max_length=200, verbose_name=_('Description'))
 
     ledger = models.ForeignKey('django_ledger.LedgerModel',
+                               editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger'))
     completed = models.BooleanField(default=False, verbose_name=_('Import Job Completed'))

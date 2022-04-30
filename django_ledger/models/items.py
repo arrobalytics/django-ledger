@@ -138,12 +138,15 @@ class ItemModelAbstract(CreateUpdateMixIn):
     LABOR_TYPE = 'L'
     MATERIAL_TYPE = 'M'
     EQUIPMENT_TYPE = 'E'
+    LUMP_SUM = 'S'
     OTHER_TYPE = 'O'
 
     ITEM_CHOICES = [
         (LABOR_TYPE, _('Labor')),
         (MATERIAL_TYPE, _('Material')),
-        (EQUIPMENT_TYPE, _('Equipment'))
+        (EQUIPMENT_TYPE, _('Equipment')),
+        (LUMP_SUM, _('Lump Sum')),
+        (OTHER_TYPE, _('Other')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -152,7 +155,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     uom = models.ForeignKey('django_ledger.UnitOfMeasureModel',
                             verbose_name=_('Unit of Measure'),
-                            on_delete=models.PROTECT)
+                            on_delete=models.RESTRICT)
 
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
@@ -182,7 +185,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Inventory Account'),
         related_name=f'{REL_NAME_PREFIX}_inventory_account',
         help_text=_('Inventory account where cost will be capitalized.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     inventory_received = models.DecimalField(
         null=True,
         blank=True,
@@ -202,7 +205,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('COGS Account'),
         related_name=f'{REL_NAME_PREFIX}_cogs_account',
         help_text=_('COGS account where cost will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     earnings_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -210,7 +213,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Earnings Account'),
         related_name=f'{REL_NAME_PREFIX}_earnings_account',
         help_text=_('Earnings account where revenue will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     expense_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -218,7 +221,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Expense Account'),
         related_name=f'{REL_NAME_PREFIX}_expense_account',
         help_text=_('Expense account where cost will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
 
     additional_info = models.JSONField(default=dict, verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
@@ -467,7 +470,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.SET_NULL,
+                                    on_delete=models.PROTECT,
                                     blank=True,
                                     null=True,
                                     verbose_name=_('Associated Entity Unit'))
@@ -475,12 +478,12 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                    on_delete=models.PROTECT,
                                    verbose_name=_('Item Model'))
     bill_model = models.ForeignKey('django_ledger.BillModel',
-                                   on_delete=models.CASCADE,
+                                   on_delete=models.PROTECT,
                                    null=True,
                                    blank=True,
                                    verbose_name=_('Bill Model'))
     invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
-                                      on_delete=models.CASCADE,
+                                      on_delete=models.PROTECT,
                                       null=True, blank=True,
                                       verbose_name=_('Invoice Model'))
 
@@ -499,7 +502,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
 
     # Purchase Order fields...
     po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.SET_NULL,
+                                 on_delete=models.PROTECT,
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Purchase Order Model'))
@@ -513,6 +516,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                     help_text=_('Authorized item quantity for purchasing.'),
                                     validators=[MinValueValidator(0)])
     po_unit_cost = models.FloatField(default=0.0,
+                                     null=True,
+                                     blank=True,
                                      verbose_name=_('PO Unit Cost'),
                                      help_text=_('Purchase Order unit cost.'),
                                      validators=[MinValueValidator(0)])
@@ -529,7 +534,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                  blank=True,
                                  verbose_name=_('Customer Estimate'),
                                  on_delete=models.PROTECT)
-    ce_unit_revenue_estimate = models.FloatField(null=True,
+    ce_unit_revenue_estimate = models.FloatField(default=0.0,
+                                                 null=True,
                                                  blank=True,
                                                  verbose_name=_('Customer Estimate Revenue per Unit.'),
                                                  validators=[MinValueValidator(0)])

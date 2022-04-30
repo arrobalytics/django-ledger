@@ -20,52 +20,14 @@ from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
 from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-
-
-class LazyLoader:
-    # todo: find other implementations of Lazy Loaders and replace with this one...
-    ACCOUNT_MODEL = None
-    BILL_MODEL = None
-    INVOICE_MODEL = None
-    JOURNAL_ENTRY_MODEL = None
-    TXS_MODEL = None
-
-    def get_account_model(self):
-        if not self.ACCOUNT_MODEL:
-            from django_ledger.models.accounts import AccountModel
-            self.ACCOUNT_MODEL = AccountModel
-        return self.ACCOUNT_MODEL
-
-    def get_bill_model(self):
-        if not self.BILL_MODEL:
-            from django_ledger.models import BillModel
-            self.BILL_MODEL = BillModel
-        return self.BILL_MODEL
-
-    def get_invoice_model(self):
-        if not self.INVOICE_MODEL:
-            from django_ledger.models import InvoiceModel
-            self.INVOICE_MODEL = InvoiceModel
-        return self.INVOICE_MODEL
-
-    def get_journal_entry_model(self):
-        if not self.JOURNAL_ENTRY_MODEL:
-            from django_ledger.models import JournalEntryModel
-            self.JOURNAL_ENTRY_MODEL = JournalEntryModel
-        return self.JOURNAL_ENTRY_MODEL
-
-    def get_transaction_model(self):
-        if not self.TXS_MODEL:
-            from django_ledger.models import TransactionModel
-            self.TXS_MODEL = TransactionModel
-        return self.TXS_MODEL
-
+from django_ledger.models.utils import LazyLoader
 
 lazy_loader = LazyLoader()
 
 
 class SlugNameMixIn(models.Model):
     slug = models.SlugField(max_length=50,
+                            editable=False,
                             unique=True,
                             validators=[
                                 MinLengthValidator(limit_value=10,
@@ -171,22 +133,23 @@ class LedgerPlugInMixIn(models.Model):
                                    ])
 
     ledger = models.OneToOneField('django_ledger.LedgerModel',
+                                  editable=False,
                                   verbose_name=_('Ledger'),
                                   on_delete=models.CASCADE)
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.PROTECT,
+                                     on_delete=models.RESTRICT,
                                      blank=True,
                                      null=True,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.PROTECT,
+                                        on_delete=models.RESTRICT,
                                         blank=True,
                                         null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.PROTECT,
+                                         on_delete=models.RESTRICT,
                                          blank=True,
                                          null=True,
                                          verbose_name=_('Unearned Account'),

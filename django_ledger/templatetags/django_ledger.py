@@ -764,15 +764,15 @@ def inventory_table(context, queryset):
 def customer_estimate_table(context, queryset=None):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'customer_job_list': queryset if queryset else context['object_list']
+        'ce_list': queryset if queryset else context['object_list']
     }
 
 
-@register.inclusion_tag('django_ledger/tags/customer_job_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/tags/ce_item_formset.html', takes_context=True)
 def cj_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'customer_job_pk': context['view'].kwargs['customer_job_pk'],
+        'ce_pk': context['view'].kwargs['ce_pk'],
         'revenue_estimate': context['revenue_estimate'],
         'cost_estimate': context['cost_estimate'],
         'item_formset': item_formset,

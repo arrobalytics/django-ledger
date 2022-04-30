@@ -16,7 +16,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for cj in customer_job_list %}
+        {% for cj in ce_list %}
             <tr id="{{ cj.get_html_id }}">
                 <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
@@ -50,7 +50,7 @@
                         </div>
                         <div class="dropdown-menu" id="dropdown-menu-{{ cj.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug customer_job_pk=cj.uuid %}"
+                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug ce_pk=cj.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
                                 {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
                                 {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}

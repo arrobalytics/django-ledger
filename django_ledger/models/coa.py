@@ -61,6 +61,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.OneToOneField('django_ledger.EntityModel',
+                                  editable=False,
                                   related_name='coa',
                                   verbose_name=_('Entity'),
                                   on_delete=models.CASCADE)

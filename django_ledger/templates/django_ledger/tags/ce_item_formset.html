@@ -1,7 +1,7 @@
 {% load trans from i18n %}
 {% load django_ledger %}
 
-<form action="{% url 'django_ledger:customer-estimate-update-items' entity_slug=entity_slug customer_job_pk=customer_job_pk %}"
+<form action="{% url 'django_ledger:customer-estimate-update-items' entity_slug=entity_slug ce_pk=ce_pk %}"
       method="post">
     <div class="columns is-multiline">
         <div class="column is-12">

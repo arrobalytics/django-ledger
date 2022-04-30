@@ -182,15 +182,16 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     tx_type = models.CharField(max_length=10, choices=TX_TYPE, verbose_name=_('Tx Type'))
     journal_entry = models.ForeignKey('django_ledger.JournalEntryModel',
+                                      editable=False,
                                       related_name='txs',
                                       verbose_name=_('Journal Entry'),
                                       help_text=_('Journal Entry to be associated with this transaction.'),
-                                      on_delete=models.CASCADE)
+                                      on_delete=models.PROTECT)
     account = models.ForeignKey('django_ledger.AccountModel',
                                 related_name='txs',
                                 verbose_name=_('Account'),
                                 help_text=_('Account from Chart of Accounts to be associated with this transaction.'),
-                                on_delete=models.CASCADE)
+                                on_delete=models.PROTECT)
     amount = models.DecimalField(decimal_places=2,
                                  max_digits=20,
                                  null=True,

@@ -93,6 +93,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                       through_fields=('po_model', 'item_model'),
                                       verbose_name=_('Purchase Order Items'))
 
+    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+                                 on_delete=models.RESTRICT,
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Associated Customer Job/Estimate'))
+
     objects = PurchaseOrderModelManager()
 
     class Meta:

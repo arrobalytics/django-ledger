@@ -16,8 +16,8 @@ from django_ledger.views import LoginRequiredMixIn
 
 class CustomerJobModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/customer_estimate/customer_estimate_list.html'
-    context_object_name = 'customer_job_list'
-    PAGE_TITLE = _('Customer Jobs')
+    context_object_name = 'ce_list'
+    PAGE_TITLE = _('Customer Estimates')
     date_field = 'created'
     paginate_by = 20
     paginate_orphans = 2
@@ -61,7 +61,7 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
         return reverse('django_ledger:customer-estimate-detail',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
-                           'customer_job_pk': cj_model.uuid
+                           'ce_pk': cj_model.uuid
                        })
 
     def form_valid(self, form):
@@ -76,7 +76,7 @@ class CustomerJobModelCreateView(LoginRequiredMixIn, CreateView):
 
 
 class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
-    pk_url_kwarg = 'customer_job_pk'
+    pk_url_kwarg = 'ce_pk'
     template_name = 'django_ledger/customer_estimate/customer_estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
     context_object_name = 'customer_job'
@@ -104,7 +104,7 @@ class CustomerJobModelDetailView(LoginRequiredMixIn, DetailView):
 
 class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/customer_estimate/customer_estimate_update.html'
-    pk_url_kwarg = 'customer_job_pk'
+    pk_url_kwarg = 'ce_pk'
     context_object_name = 'customer_estimate'
     PAGE_TITLE = _('Customer Estimate Update')
     http_method_names = ['get', 'post']
@@ -133,23 +133,25 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         if not item_formset:
             item_through_qs, aggregate_data = cj_model.get_itemthrough_data()
-            if cj_model.can_update_items():
-                item_formset = CustomerEstimateItemFormset(
-                    entity_slug=self.kwargs['entity_slug'],
-                    user_model=self.request.user,
-                    customer_job_model=cj_model,
-                    queryset=item_through_qs
-                )
-            else:
-                item_formset = CustomerEstimateItemFormsetReadOnly(
-                    entity_slug=self.kwargs['entity_slug'],
-                    user_model=self.request.user,
-                    customer_job_model=cj_model,
-                    queryset=item_through_qs
-                )
-
         else:
-            item_through_qs: ItemThroughModel = item_formset.queryset
+            item_through_qs, aggregate_data = cj_model.get_itemthrough_data(
+                queryset=item_formset.queryset
+            )
+
+        if cj_model.can_update_items():
+            item_formset = CustomerEstimateItemFormset(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                customer_job_model=cj_model,
+                queryset=item_through_qs
+            )
+        else:
+            item_formset = CustomerEstimateItemFormsetReadOnly(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                customer_job_model=cj_model,
+                queryset=item_through_qs
+            )
 
         context['customer_job_item_list'] = item_through_qs
         context['revenue_estimate'] = aggregate_data['revenue_estimate']
@@ -167,10 +169,10 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
         return reverse('django_ledger:customer-estimate-detail',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
-                           'customer_job_pk': self.kwargs['customer_job_pk']
+                           'ce_pk': self.kwargs['ce_pk']
                        })
 
-    def get(self, request, entity_slug, customer_job_pk, *args, **kwargs):
+    def get(self, request, entity_slug, ce_pk, *args, **kwargs):
         response = super(CustomerJobModelUpdateView, self).get(request, *args, **kwargs)
 
         # this action can only be used via POST request...
@@ -179,7 +181,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         return response
 
-    def post(self, request, entity_slug, customer_job_pk, *args, **kwargs):
+    def post(self, request, entity_slug, ce_pk, *args, **kwargs):
         response = super(CustomerJobModelUpdateView, self).post(request, *args, **kwargs)
         cj_model: CustomerEstimateModel = self.object
 
@@ -194,7 +196,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
                     cj_items = item_formset.save(commit=False)
                     cj_model_qs = CustomerEstimateModel.objects.for_entity(user_model=self.request.user,
                                                                            entity_slug=entity_slug)
-                    cj_model: CustomerEstimateModel = get_object_or_404(cj_model_qs, uuid__exact=customer_job_pk)
+                    cj_model: CustomerEstimateModel = get_object_or_404(cj_model_qs, uuid__exact=ce_pk)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
@@ -216,14 +218,14 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
                     ])
 
                     messages.add_message(request,
-                                         message=f'Customer Job items saved.',
+                                         message=f'Customer estimate items saved.',
                                          level=messages.SUCCESS,
                                          extra_tags='is-success')
 
                     return HttpResponseRedirect(reverse('django_ledger:customer-estimate-update',
                                                         kwargs={
                                                             'entity_slug': entity_slug,
-                                                            'customer_job_pk': customer_job_pk
+                                                            'ce_pk': ce_pk
                                                         }))
 
 
@@ -238,7 +240,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
 class BaseCustomerEstimateActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
-    pk_url_kwarg = 'customer_job_pk'
+    pk_url_kwarg = 'ce_pk'
     action_name = None
     commit = True
 
@@ -248,11 +250,11 @@ class BaseCustomerEstimateActionView(LoginRequiredMixIn, RedirectView, SingleObj
             user_model=self.request.user
         )
 
-    def get_redirect_url(self, entity_slug, customer_job_pk, *args, **kwargs):
+    def get_redirect_url(self, entity_slug, ce_pk, *args, **kwargs):
         return reverse('django_ledger:customer-estimate-update',
                        kwargs={
                            'entity_slug': entity_slug,
-                           'customer_job_pk': customer_job_pk
+                           'ce_pk': ce_pk
                        })
 
     def get(self, request, *args, **kwargs):

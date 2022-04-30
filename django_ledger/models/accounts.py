@@ -104,6 +104,7 @@ class AccountModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     active = models.BooleanField(default=False, verbose_name=_('Active'))
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.CASCADE,
+                            editable=False,
                             verbose_name=_('Chart of Accounts'),
                             related_name='accounts')
     on_coa = AccountModelManager()

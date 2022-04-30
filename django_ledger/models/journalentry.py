@@ -75,7 +75,7 @@ class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     date = models.DateField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.PROTECT,
+                                    on_delete=models.RESTRICT,
                                     blank=True,
                                     null=True,
                                     verbose_name=_('Associated Entity Unit'))
