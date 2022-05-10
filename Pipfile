@@ -10,7 +10,7 @@ ofxtools = "~=0.9.4"
 markdown = "~=3.3.4"
 faker = "~=8.12"
 pillow = ">=8.4.0"
-graphene_django = { git = "https://github.com/graphql-python/graphene-django.git@v3.0.0b7", extras = ["graphql"] }
+graphene_django = { version = "*", extras = ["graphql"] }
 django-graphql-auth = { version = "*", extras = ["graphql"] }
 
 [dev-packages]
