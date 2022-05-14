@@ -11,17 +11,17 @@
 
     <div class="card-content">
         <h3 class="is-size-4">{{ customer_job.estimate_number }}</h3>
-        <h3 class="is-size-3">{{ customer_job.customer.customer_name }}</h3>
-        <h3 class="is-size-3 has-text-weight-light">{{ customer_job.title }}</h3>
-        <h3 class="is-size-3">{% trans 'Terms' %}: {{ customer_job.get_terms_display }}</h3>
-        <h3 class="is-size-3 has-text-weight-light has-text-info">{% trans 'Status' %}: {{ customer_job.get_status_display }}</h3>
+        <h3 class="is-size-3">{{ estimate_model.customer.customer_name }}</h3>
+        <h3 class="is-size-3 has-text-weight-light">{{ estimate_model.title }}</h3>
+        <h3 class="is-size-3">{% trans 'Terms' %}: {{ estimate_model.get_terms_display }}</h3>
+        <h3 class="is-size-3 has-text-weight-light has-text-info">{% trans 'Status' %}: {{ estimate_model.get_status_display }}</h3>
 
-        {% if customer_job.date_approved %}
-            <h4 class="is-size-4">{% trans 'Date Approved:' %} {{ customer_job.date_approved }}</h4>
+        {% if estimate_model.date_approved %}
+            <h4 class="is-size-4">{% trans 'Date Approved:' %} {{ estimate_model.date_approved }}</h4>
         {% endif %}
 
-        {% if customer_job.date_completed %}
-            <h4>{% trans 'Date Completed:' %} {{ customer_job.date_completed }}</h4>
+        {% if estimate_model.date_completed %}
+            <h4>{% trans 'Date Completed:' %} {{ estimate_model.date_completed }}</h4>
         {% endif %}
 
         {# MARK AS PAID MODAL #}

@@ -38,7 +38,7 @@ def generate_estimate_number(length: int = 10, prefix: bool = True) -> str:
     return estimate_number
 
 
-class CustomerEstimateModelManager(models.Manager):
+class EstimateModelManager(models.Manager):
 
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
         qs = self.get_queryset()
@@ -58,7 +58,7 @@ class CustomerEstimateModelManager(models.Manager):
             )
 
 
-class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
+class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     CJ_STATUS_DRAFT = 'draft'
     CJ_STATUS_REVIEW = 'in_review'
     CJ_STATUS_APPROVED = 'approved'
@@ -141,9 +141,10 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
                                          help_text=_('Estimated equipment cost to complete the quoted work.'),
                                          validators=[MinValueValidator(0)])
 
-    objects = CustomerEstimateModelManager()
+    objects = EstimateModelManager()
 
     class Meta:
+        abstract = True
         ordering = ['-updated']
         verbose_name = _('Customer Job')
         verbose_name_plural = _('Customer Jobs')
@@ -160,6 +161,7 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     def __str__(self):
         return f'Customer Estimate: {self.estimate_number} | {self.title}'
 
+    # Configuration...
     def configure(self,
                   entity_slug: Union[EntityModel, UUID, str],
                   user_model,
@@ -179,6 +181,7 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.estimate_number = generate_estimate_number()
         return self
 
+    # State....
     def is_draft(self):
         return self.status == self.CJ_STATUS_DRAFT
 
@@ -194,6 +197,7 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_canceled(self):
         return self.status == self.CJ_STATUS_CANCELED
 
+    # Permissions...
     def can_draft(self):
         return self.is_review()
 
@@ -217,6 +221,21 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def can_update_terms(self):
         return self.is_draft()
+
+    def can_change_status(self, new_status: str, raise_exception: bool = True) -> bool:
+        if any([
+            new_status == EstimateModel.CJ_STATUS_DRAFT and not self.can_draft(),
+            new_status == EstimateModel.CJ_STATUS_REVIEW and not self.can_review(),
+            new_status == EstimateModel.CJ_STATUS_APPROVED and not self.can_approve(),
+            new_status == EstimateModel.CJ_STATUS_COMPLETED and not self.can_complete(),
+            new_status == EstimateModel.CJ_STATUS_CANCELED and not self.can_cancel()
+        ]):
+            if raise_exception:
+                raise ValidationError(
+                    message=f'Cannot change status to {new_status} from {self.get_status_display()}.'
+                )
+            return False
+        return True
 
     # Actions...
     def mark_as_draft(self, commit: bool = False, raise_exception: bool = True) -> bool:
@@ -323,21 +342,6 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
             )
         return False
 
-    def can_change_status(self, new_status: str, raise_exception: bool = True) -> bool:
-        if any([
-            new_status == CustomerEstimateModel.CJ_STATUS_DRAFT and not self.can_draft(),
-            new_status == CustomerEstimateModel.CJ_STATUS_REVIEW and not self.can_review(),
-            new_status == CustomerEstimateModel.CJ_STATUS_APPROVED and not self.can_approve(),
-            new_status == CustomerEstimateModel.CJ_STATUS_COMPLETED and not self.can_complete(),
-            new_status == CustomerEstimateModel.CJ_STATUS_CANCELED and not self.can_cancel()
-        ]):
-            if raise_exception:
-                raise ValidationError(
-                    message=f'Cannot change status to {new_status} from {self.get_status_display()}.'
-                )
-            return False
-        return True
-
     # HTML Tags...
     def get_html_id(self):
         return f'djl-customer-estimate-id-{self.uuid}'
@@ -377,7 +381,7 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.update_cost_estimate(queryset)
         self.update_revenue_estimate(queryset)
 
-    # Metrics...
+    # Features...
     def cost_estimate(self):
         return sum([
             self.labor_estimate,
@@ -412,6 +416,9 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
         if self.is_completed() and not self.date_completed:
             self.date_completed = localdate()
 
+        if self.is_completed() and not self.is_approved():
+            raise ValidationError(f'Cannot complete estimate {self.estimate_number} before is approved...')
+
         if self.is_approved() and self.is_completed():
             if self.date_approved < self.date_completed:
                 raise ValidationError(
@@ -421,3 +428,9 @@ class CustomerEstimateModel(CreateUpdateMixIn, MarkdownNotesMixIn):
         if self.is_canceled():
             self.date_approved = None
             self.date_completed = None
+
+
+class EstimateModel(CustomerEstimateModelAbstract):
+    """
+    Base Estimate Model Class
+    """

@@ -19,7 +19,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel, TransactionModel,
-                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel, CustomerEstimateModel,
+                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel, EstimateModel,
                                   ItemModel)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,

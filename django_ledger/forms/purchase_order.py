@@ -46,31 +46,31 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
+        self.PO_MODEL: PurchaseOrderModel = self.instance
 
-        if self.instance.po_status == PurchaseOrderModel.PO_STATUS_REVIEW:
-            self.fields['po_date'].disabled = True
-            self.fields['fulfillment_date'].disabled = True
-            self.fields['fulfilled'].disabled = True
-        elif self.instance.po_status == PurchaseOrderModel.PO_STATUS_APPROVED:
-            self.fields['po_status'].disabled = True
-            self.fields['po_date'].disabled = True
-            if self.instance.fulfilled:
-                self.fields['fulfilled'].disabled = True
-                self.fields['fulfillment_date'].disabled = True
-        # PO is Draft
-        else:
-            self.fields['fulfillment_date'].disabled = True
-            self.fields['fulfilled'].disabled = True
+        # if self.PO_MODEL.is_review():
+        #     self.fields['po_date'].disabled = True
+        #     self.fields['fulfillment_date'].disabled = True
+        #     self.fields['fulfilled'].disabled = True
+        # elif self.PO_MODEL.is_approved():
+        #     self.fields['po_date'].disabled = True
+        #     if self.instance.fulfilled:
+        #         self.fields['fulfilled'].disabled = True
+        #         self.fields['fulfillment_date'].disabled = True
+        # # PO is Draft
+        # else:
+        #     self.fields['fulfillment_date'].disabled = True
+        #     self.fields['fulfilled'].disabled = True
 
     class Meta:
         model = PurchaseOrderModel
         fields = [
             'po_date',
             'po_title',
-            'po_status',
+            # 'po_status',
             'markdown_notes',
-            'fulfillment_date',
-            'fulfilled'
+            # 'fulfillment_date',
+            # 'fulfilled'
         ]
 
         widgets = {
@@ -207,7 +207,7 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 form.fields['po_quantity'].disabled = True
                 form.fields['entity_unit'].disabled = True
                 form.fields['item_model'].disabled = True
-                if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED or self.PO_MODEL.fulfilled:
+                if not self.PO_MODEL.is_approved() or self.PO_MODEL.is_fulfilled():
                     form.fields['po_item_status'].disabled = True
                     form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
             # PO is Draft

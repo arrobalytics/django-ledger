@@ -6,16 +6,19 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView,
-                                  UpdateView, DeleteView)
+                                  UpdateView, DeleteView, RedirectView)
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.purchase_order import PurchaseOrderModelCreateForm, PurchaseOrderModelUpdateForm, \
     get_po_item_formset
-from django_ledger.models import PurchaseOrderModel, ItemThroughModel
+from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -70,10 +73,26 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'uil:bill'
     }
+    for_estimate = False
+
+    def get_context_data(self, **kwargs):
+        context = super(PurchaseOrderModelCreateView, self).get_context_data(**kwargs)
+
+        if self.for_estimate:
+            context['form_action_url'] = reverse('django_ledger:po-create-estimate',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug'],
+                                                     'ce_pk': self.kwargs['ce_pk']
+                                                 })
+        else:
+            context['form_action_url'] = reverse('django_ledger:po-create',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug']
+                                                 })
+        return context
 
     def get_initial(self):
         return {
-            'for_inventory': False,
             'po_date': localdate()
         }
 
@@ -90,11 +109,27 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         )
-        form.instance = po_model
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            po_model.ce_model = estimate_model
         return super().form_valid(form=form)
 
     def get_success_url(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            return reverse('django_ledger:customer-estimate-detail',
+                           kwargs={
+                               'entity_slug': self.kwargs['entity_slug'],
+                               'ce_pk': ce_pk
+                           })
         return reverse('django_ledger:po-list',
                        kwargs={
                            'entity_slug': entity_slug
@@ -356,7 +391,7 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('ce_model')
 
 
 class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
@@ -406,3 +441,59 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
         success_url = self.get_success_url()
         self.object.delete()
         return HttpResponseRedirect(success_url)
+
+
+# ACTIONS...
+class BasePurchaseOrderActionActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'po_pk'
+    action_name = None
+    commit = True
+
+    def get_queryset(self):
+        return PurchaseOrderModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_redirect_url(self, entity_slug, po_pk, *args, **kwargs):
+        return reverse('django_ledger:po-update',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'po_pk': po_pk
+                       })
+
+    def get(self, request, *args, **kwargs):
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
+        po_model: PurchaseOrderModel = self.get_object()
+
+        try:
+            getattr(po_model, self.action_name)(commit=self.commit)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class PurchaseOrderMarkAsDraftView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_draft'
+
+
+class PurchaseOrderMarkAsReviewView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_review'
+
+
+class PurchaseOrderMarkAsApprovedView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_approved'
+
+
+class PurchaseOrderMarkAsFulfilledView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_fulfilled'
+
+
+class PurchaseOrderMarkAsCanceledView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_canceled'

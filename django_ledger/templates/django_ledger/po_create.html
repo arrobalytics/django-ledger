@@ -5,7 +5,7 @@
 
 {% block view_content %}
 
-    <form action="{% url 'django_ledger:po-create' entity_slug=view.kwargs.entity_slug %}"
+    <form action="{{ form_action_url }}"
           method="post">
 
         <div class="columns is-multiline is-centered">
@@ -13,7 +13,8 @@
             <div class="column is-6">
                 {{ form }}
                 <button type="submit"
-                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
+                        class="button is-primary is-outlined is-fullwidth djetler_my_1">
+                    {% trans 'Create' %}
                 </button>
             </div>
         </div>

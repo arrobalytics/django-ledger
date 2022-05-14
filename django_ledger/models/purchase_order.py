@@ -54,6 +54,8 @@ class PurchaseOrderModelManager(models.Manager):
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+    # todo: having a fulfilled field is not necessary if PO can have a PO_STATUS_FULFILLED.
+
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -88,12 +90,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     fulfilled = models.BooleanField(default=False, verbose_name=_('Is Fulfilled'))
     fulfillment_date = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
 
+    # todo: sIs this M2M field???....
     po_items = models.ManyToManyField('django_ledger.ItemModel',
                                       through='django_ledger.ItemThroughModel',
                                       through_fields=('po_model', 'item_model'),
                                       verbose_name=_('Purchase Order Items'))
 
-    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+    ce_model = models.ForeignKey('django_ledger.EstimateModel',
                                  on_delete=models.RESTRICT,
                                  null=True,
                                  blank=True,
@@ -108,6 +111,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         # pylint: disable=no-member
         return f'PO Model: {self.po_number} | {self.get_po_status_display()}'
 
+    # Configuration...
     def configure(self,
                   entity_slug: str or EntityModel,
                   user_model,
@@ -126,20 +130,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.po_date = po_date
         self.entity = entity_model
         return self
-
-    def clean(self):
-        if self.fulfilled and self.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-            raise ValidationError('Can only fulfill POs thjat have been approved.')
-
-        if not self.po_number:
-            self.po_number = generate_po_number()
-
-        if self.fulfillment_date:
-            self.fulfilled = True
-        if self.fulfilled:
-            self.po_amount_received = self.po_amount
-        if self.fulfilled and not self.fulfillment_date:
-            self.fulfillment_date = localdate()
 
     def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
@@ -187,14 +177,86 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.po_amount_received = total_received
             return item_queryset, item_data
 
-    def is_approved(self):
-        return self.po_status == PurchaseOrderModel.PO_STATUS_APPROVED
+    # State...
+    def is_draft(self):
+        return self.po_status == self.PO_STATUS_DRAFT
 
-    def can_mark_as_fulfilled(self):
-        self.is_approved() and not self.fulfilled
+    def is_review(self):
+        return self.po_status == self.PO_STATUS_REVIEW
+
+    def is_approved(self):
+        return self.po_status == self.PO_STATUS_APPROVED
+
+    def is_canceled(self):
+        return self.po_status == self.PO_STATUS_CANCELED
+
+    def is_fulfilled(self):
+        return self.fulfilled
+
+    # Permissions...
+    def can_draft(self):
+        return self.is_review()
+
+    def can_review(self):
+        return self.is_draft()
+
+    def can_approve(self):
+        return self.is_review()
+
+    def can_cancel(self):
+        return self.is_approved()
+
+    def can_fulfill(self):
+        self.is_approved() and not self.is_fulfilled()
+
+    def can_delete(self):
+        return self.po_status in {
+            self.PO_STATUS_DRAFT,
+            self.PO_STATUS_REVIEW
+        }
+
+    def can_void(self):
+        raise NotImplementedError()
+
+    # todo: implement!
+    # Actions...
+    def mark_as_draft(self, commit: bool = False):
+        if not self.can_draft():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as draft.')
+        self.po_status = self.PO_STATUS_DRAFT
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'po_status',
+                'updated'
+            ])
+
+    def mark_as_review(self, commit: bool = False):
+        if not self.can_review():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as in review.')
+        self.po_status = self.PO_STATUS_REVIEW
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'po_status',
+                'updated'
+            ])
 
     def mark_as_approved(self, commit: bool = False):
+        if not self.can_approve():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as approved.')
         self.po_status = self.PO_STATUS_APPROVED
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'po_status',
+                'updated'
+            ])
+
+    def mark_as_canceled(self, commit: bool = False):
+        if not self.can_approve():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
+        self.po_status = self.PO_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -240,6 +302,21 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ]
             self.save(update_fields=update_fields)
+
+    # Validation...
+    def clean(self):
+        if self.is_fulfilled() and not self.is_approved():
+            raise ValidationError('Can only fulfill POs that has been approved.')
+
+        if not self.po_number:
+            self.po_number = generate_po_number()
+
+        if self.fulfillment_date:
+            self.fulfilled = True
+        if self.fulfilled:
+            self.po_amount_received = self.po_amount
+        if self.is_fulfilled() and not self.fulfillment_date:
+            self.fulfillment_date = localdate()
 
 
 class PurchaseOrderModel(PurchaseOrderModelAbstract):

@@ -6,7 +6,7 @@
 
     <div class="columns is-multiline">
         <div class="column is-4">
-            {% include "django_ledger/includes/card_customer_estimate.html" with  customer_job=object %}
+            {% include "django_ledger/includes/card_customer_estimate.html" with  estimate_model=estimate_model %}
         </div>
         <div class="column is-8">
             <div class="columns is-multiline">
@@ -16,28 +16,28 @@
                             <div>
                                 <p class="heading">{% trans 'Revenue Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-revenue">
-                                    {% currency_symbol %}{{ customer_job.revenue_estimate  | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.revenue_estimate  | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
                             <div>
                                 <p class="heading">{% trans 'Cost Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ customer_job.cost_estimate  | absolute | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.cost_estimate  | absolute | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
                             <div>
                                 <p class="heading">{% trans 'Profit Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ customer_job.profit_estimate | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.profit_estimate | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
                             <div>
                                 <p class="heading">{% trans 'Gross Margin Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ customer_job.gross_margin_estimate  | percentage }}</p>
+                                    {% currency_symbol %}{{ estimate_model.gross_margin_estimate  | percentage }}</p>
                             </div>
                         </div>
                     </nav>
@@ -47,7 +47,7 @@
                         <div class="card-header">
                             <h2 class="card-header-title has-text-weight-light is-size-3">
                                 <span class="icon is-large">{% icon 'teenyicons:cost-estimate-outline' 36 %}</span>
-                                {% trans 'Estimates' %}
+                                {% trans 'Estimate Items' %}
                             </h2>
                         </div>
                         <div class="card-content">
@@ -74,9 +74,11 @@
                                                 {{ cji.entity_unit }}{% endif %}</td>
                                             <td>{{ cji.quantity }}</td>
                                             <td>{% currency_symbol %}{{ cji.unit_cost | currency_format }}</td>
-                                            <td>{% currency_symbol %}{{ cji.ce_unit_revenue_estimate | currency_format }}</td>
+                                            <td>
+                                                {% currency_symbol %}{{ cji.ce_unit_revenue_estimate | currency_format }}</td>
                                             <td>{% currency_symbol %}{{ cji.total_amount | currency_format }}</td>
-                                            <td>{% currency_symbol %}{{ cji.ce_revenue_estimate | currency_format }}</td>
+                                            <td>
+                                                {% currency_symbol %}{{ cji.ce_revenue_estimate | currency_format }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>
@@ -89,10 +91,10 @@
                                         <th></th>
                                         <th>{% trans 'Total' %}</th>
                                         <th>
-                                            {% currency_symbol %}{{ customer_job.cost_estimate | currency_format }}
+                                            {% currency_symbol %}{{ estimate_model.cost_estimate | currency_format }}
                                         </th>
                                         <th>
-                                            {% currency_symbol %}{{ customer_job.revenue_estimate | currency_format }}
+                                            {% currency_symbol %}{{ estimate_model.revenue_estimate | currency_format }}
                                         </th>
                                     </tr>
                                     </tfoot>
@@ -105,6 +107,24 @@
                 <div class="column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Notes' notes_html=object.notes_html %}
                 </div>
+
+                {% if estimate_model.is_approved %}
+                    <div class="column is-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-header-title has-text-weight-light is-size-3">
+                                    <span class="icon is-large">{% icon 'teenyicons:cost-estimate-outline' 36 %}</span>
+                                    {% trans 'Purchase Orders' %}
+                                </h2>
+                            </div>
+                            <div class="card-content">
+                                {% po_table estimate_po_model_queryset %}
+                                <a href="{% url 'django_ledger:po-create-estimate' entity_slug=view.kwargs.entity_slug ce_pk=estimate_model.uuid %}"
+                                   class="button is-info">{% trans 'Initiate PO' %}</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
 
         </div>

@@ -9,6 +9,7 @@
         <div class="column has-text-centered is-12">
             <h1 class="is-size-1 has-text-weight-light">{% trans 'Update Purchase Order' %}</h1>
             <h2 class="title">{{ po_model.po_number }}</h2>
+            <h2 class="subtitle">{% trans 'Status' %}: {{ po_model.get_po_status_display }}</h2>
         </div>
     </div>
 
@@ -63,6 +64,29 @@
                 <button type="submit" class="button is-medium is-primary">{% trans 'Update PO' %}</button>
                 <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
                    class="button is-medium is-info">{% trans 'Back to PO' %}</a>
+
+                {% if po_model.can_draft %}
+                    <a href="{% url 'django_ledger:po-action-mark-as-draft' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-info">{% trans 'Mark as Draft' %}</a>
+                {% endif %}
+                {% if po_model.can_review %}
+                    <a href="{% url 'django_ledger:po-action-mark-as-review' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-info">{% trans 'Mark as Review' %}</a>
+                {% endif %}
+                {% if po_model.can_approve %}
+                    <a href="{% url 'django_ledger:po-action-mark-as-approved' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-success">{% trans 'Approve' %}</a>
+                {% endif %}
+                {% if po_model.can_fulfill %}
+                    <a href="{% url 'django_ledger:po-action-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-success">{% trans 'Fulfill' %}</a>
+                {% endif %}
+                {% if po_model.can_cancel %}
+                    <a href="{% url 'django_ledger:po-action-mark-as-canceled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-danger">{% trans 'Cancel' %}</a>
+                {% endif %}
+
+
                 <a href="{% url 'django_ledger:po-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
                    class="button is-medium is-warning">{% trans 'Mark as FulFilled' %}</a>
                 <a href="{% url 'django_ledger:po-delete' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"

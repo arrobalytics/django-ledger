@@ -11,7 +11,7 @@ from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelfo
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel, EntityUnitModel
-from django_ledger.models.customer_estimate import CustomerEstimateModel
+from django_ledger.models.estimate import EstimateModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -30,7 +30,7 @@ class CustomerEstimateCreateForm(forms.ModelForm):
         )
 
     class Meta:
-        model = CustomerEstimateModel
+        model = EstimateModel
         fields = ['customer', 'title', 'terms']
         widgets = {
             'customer': forms.Select(attrs={
@@ -55,7 +55,7 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.ENTITY_SLUG = entity_slug
-        self.CUSTOMER_ESTIMATE_MODEL: CustomerEstimateModel = self.instance
+        self.CUSTOMER_ESTIMATE_MODEL: EstimateModel = self.instance
 
         if not self.CUSTOMER_ESTIMATE_MODEL.can_update_terms():
             self.fields['terms'].disabled = True
@@ -63,13 +63,13 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super(CustomerEstimateModelUpdateForm, self).clean()
         if 'status' in self.changed_data:
-            ce_model: CustomerEstimateModel = self.instance
+            ce_model: EstimateModel = self.instance
             new_status = cleaned_data['status']
             ce_model.can_change_status(new_status=new_status)
         return cleaned_data
 
     class Meta:
-        model = CustomerEstimateModel
+        model = EstimateModel
         fields = [
             'terms',
             'markdown_notes'
@@ -113,7 +113,7 @@ class CustomerEstimateItemForm(ModelForm):
 
 class BaseCustomerEstimateItemFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, customer_job_model: CustomerEstimateModel, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, customer_job_model: EstimateModel, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.CUSTOMER_JOB_MODEL = customer_job_model

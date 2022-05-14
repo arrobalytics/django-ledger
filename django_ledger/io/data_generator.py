@@ -20,7 +20,7 @@ from django_ledger.io import INCOME_SALES, ASSET_CA_INVENTORY, COGS, ASSET_CA_CA
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemThroughModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
-    create_entity_unit_slug, CustomerEstimateModel, generate_estimate_number
+    create_entity_unit_slug, EstimateModel, generate_estimate_number
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -288,9 +288,9 @@ class EntityDataGenerator:
 
     def create_estimates(self, date_approved: date):
         estimate_number = generate_estimate_number()
-        customer_estimate: CustomerEstimateModel = CustomerEstimateModel(
+        customer_estimate: EstimateModel = EstimateModel(
             estimate_number=estimate_number,
-            terms=choice(CustomerEstimateModel.CONTRACT_TERMS)[0],
+            terms=choice(EstimateModel.CONTRACT_TERMS)[0],
             title=f'Customer Estimate {estimate_number}',
         )
         customer_estimate.configure(entity_slug=self.entity_model,

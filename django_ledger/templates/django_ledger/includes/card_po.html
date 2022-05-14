@@ -31,6 +31,16 @@
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                     {% endif %}
                 </h3>
+            {% if po_model.ce_model_id %}
+                <h3 class="is-size-4 has-text-weight-light">{% trans 'Estimate' %}:
+                    {{ po_model.ce_model.estimate_number }}
+                    <a class="button is-small is-round is-outlined"
+                       href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=po_model.ce_model.uuid %}">
+                        {% trans 'View' %}
+                    </a></h3>
+
+
+            {% endif %}
 
             </div>
 

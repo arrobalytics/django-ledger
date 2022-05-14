@@ -529,7 +529,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                           validators=[MinValueValidator(0)])
 
     # Customer Job / Contract fields...
-    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+    ce_model = models.ForeignKey('django_ledger.EstimateModel',
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Customer Estimate'),

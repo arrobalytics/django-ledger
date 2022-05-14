@@ -13,7 +13,7 @@ from django_ledger.views.home import *
 from django_ledger.views.bill import *
 from django_ledger.views.coa import *
 from django_ledger.views.customer import *
-from django_ledger.views.customer_estimate import *
+from django_ledger.views.estimate import *
 from django_ledger.views.data_import import *
 from django_ledger.views.djl_api import *
 from django_ledger.views.entity import *
