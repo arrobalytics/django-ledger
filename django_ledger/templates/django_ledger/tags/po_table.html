@@ -8,7 +8,8 @@
         <tr>
             <th>PO Number</th>
             <th>Description</th>
-            <th>PO Date</th>
+            <th>Created</th>
+            <th>Approved Date</th>
             <th>PO Status</th>
             <th>Fulfilment Date</th>
             <th>PO Amount</th>
@@ -20,6 +21,7 @@
             <tr>
                 <td>{{ po.po_number }}</td>
                 <td>{{ po.po_title }}</td>
+                <td>{{ po.created | date }}</td>
                 <td>{{ po.po_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
                 <td class="has-text-success">{% if po.fulfilled %}{{ po.fulfillment_date }}{% else %}

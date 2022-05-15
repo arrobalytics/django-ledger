@@ -16,8 +16,10 @@ from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView,
                                   UpdateView, DeleteView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.purchase_order import PurchaseOrderModelCreateForm, PurchaseOrderModelUpdateForm, \
-    get_po_item_formset
+from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
+                                                get_po_item_formset, DraftPurchaseOrderModelUpdateForm,
+                                                ReviewPurchaseOrderModelUpdateForm,
+                                                ApprovedPurchaseOrderModelUpdateForm)
 from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -26,7 +28,7 @@ class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
-    date_field = 'po_date'
+    date_field = 'created'
     paginate_by = 10
     paginate_orphans = 2
     allow_empty = True
@@ -40,7 +42,7 @@ class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).order_by('-po_date')
+        ).order_by('-created')
 
     def get_allow_future(self):
         allow_future = self.request.GET.get('allow_future')
@@ -90,11 +92,6 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
                                                      'entity_slug': self.kwargs['entity_slug']
                                                  })
         return context
-
-    def get_initial(self):
-        return {
-            'po_date': localdate()
-        }
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
@@ -257,12 +254,31 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
             else:
                 return self.render_to_response(context)
         elif self.mark_as_fulfilled:
-            po_model.mark_as_fulfilled(commit=True, date=localdate())
+            po_model.mark_as_fulfilled(commit=True, fulfilled_date=localdate())
         # fixme: the super call needs to be executed first...?
         return super().post(request, *args, **kwargs)
 
     def get_form(self, form_class=None):
-        return PurchaseOrderModelUpdateForm(
+        po_model: PurchaseOrderModel = self.object
+        if po_model.is_draft():
+            return DraftPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        elif po_model.is_review():
+            return ReviewPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        elif po_model.is_approved():
+            return ApprovedPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        return BasePurchaseOrderModelUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             **self.get_form_kwargs()
@@ -306,7 +322,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         po_pk = self.kwargs['po_pk']
-        return reverse('django_ledger:po-update',
+        return reverse('django_ledger:po-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'po_pk': po_pk
@@ -318,7 +334,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
             user_model=self.request.user
         ).select_related('entity')
 
-    def form_valid(self, form: PurchaseOrderModelUpdateForm):
+    def form_valid(self, form: BasePurchaseOrderModelUpdateForm):
         po_model: PurchaseOrderModel = form.save(commit=False)
 
         if form.has_changed():
@@ -357,6 +373,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                              messages.SUCCESS,
                              f'{self.object.po_number} successfully updated.',
                              extra_tags='is-success')
+
         return super().form_valid(form)
 
 

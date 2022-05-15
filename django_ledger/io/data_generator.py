@@ -488,7 +488,7 @@ class EntityDataGenerator:
                     # itemthrough_queryset=po_items
                 )
 
-                po_model.mark_as_fulfilled(date=fulfilled_dt, commit=True, po_items=po_items)
+                po_model.mark_as_fulfilled(fulfilled_date=fulfilled_dt, commit=True, po_items=po_items)
 
     def create_invoice(self,
                        is_accruable: bool,

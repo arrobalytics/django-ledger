@@ -10,56 +10,24 @@
             <h1 class="is-size-1 has-text-weight-light">{% trans 'Update Purchase Order' %}</h1>
             <h2 class="title">{{ po_model.po_number }}</h2>
             <h2 class="subtitle">{% trans 'Status' %}: {{ po_model.get_po_status_display }}</h2>
+            {% if po_model.is_approved %}
+                <h2 class="subtitle">{% trans 'Approved' %}: {{ po_model.po_date }}</h2>
+                {% if po_model.is_fulfilled %}
+                    <h2 class="subtitle">{% trans 'Fulfilled' %}: {{ po_model.fulfillment_date }}</h2>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 
     <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
           method="post">
 
-        {% csrf_token %}
-        {% if form.errors %}
-            {{ form.errors }}
-        {% endif %}
-
         <div class="columns is-multiline">
-            <div class="column is-6">
-                <div class="field">
-                    <label for="{{ form.po_title.id_for_label }}" class="label">{{ form.po_title.label }}</label>
-                    <div class="control">
-                        {{ form.po_title }}
-                    </div>
-                </div>
-                <div class="field">
-                    <label for="{{ form.po_date.id_for_label }}"
-                           class="label">{{ form.po_date.label }}</label>
-                    <div class="control">
-                        {{ form.po_date }}
-                    </div>
-                </div>
-                <div class="field">
-                    <label for="{{ form.po_status.id_for_label }}" class="label">{{ form.po_status.label }}</label>
-                    <div class="control">
-                        {{ form.po_status }}
-                    </div>
-                </div>
-                <div class="field">
-                    <label for="{{ form.fulfillment_date.id_for_label }}"
-                           class="label">{{ form.fulfillment_date.label }}</label>
-                    <div class="control">{{ form.fulfillment_date }}</div>
-                </div>
-                <div class="field">
-                    <label for="{{ form.fulfilled.id_for_label }}"
-                           class="label">{{ form.fulfilled.label }}</label>
-                    <div class="control">{{ form.fulfilled }}</div>
-                </div>
+            <div class="column is-12">
+                {% csrf_token %}
+                {{ form }}
             </div>
-            <div class="column is-6">
-                <div class="field">
-                    <label for="{{ form.markdown_notes.id_for_label }}" class="label">{{ form.markdown_notes.label }}
-                        <span class="icon is-medium has-text-grey">{% icon 'logos:markdown' 16 %}</span></label>
-                    {{ form.markdown_notes }}
-                </div>
-            </div>
+
             <div class="column is-12 has-text-centered">
                 <button type="submit" class="button is-medium is-primary">{% trans 'Update PO' %}</button>
                 <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
@@ -75,22 +43,20 @@
                 {% endif %}
                 {% if po_model.can_approve %}
                     <a href="{% url 'django_ledger:po-action-mark-as-approved' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-success">{% trans 'Approve' %}</a>
+                       class="button is-medium is-success">{% trans 'Approve PO' %}</a>
                 {% endif %}
                 {% if po_model.can_fulfill %}
                     <a href="{% url 'django_ledger:po-action-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-success">{% trans 'Fulfill' %}</a>
+                       class="button is-medium is-success">{% trans 'Fulfill PO' %}</a>
                 {% endif %}
                 {% if po_model.can_cancel %}
                     <a href="{% url 'django_ledger:po-action-mark-as-canceled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-danger">{% trans 'Cancel' %}</a>
+                       class="button is-medium is-danger">{% trans 'Cancel PO' %}</a>
                 {% endif %}
-
-
-                <a href="{% url 'django_ledger:po-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                   class="button is-medium is-warning">{% trans 'Mark as FulFilled' %}</a>
-                <a href="{% url 'django_ledger:po-delete' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                   class="button is-medium is-danger">{% trans 'Delete PO' %}</a>
+                {% if po_model.can_delete %}
+                    <a href="{% url 'django_ledger:po-delete' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                       class="button is-medium is-danger">{% trans 'Delete PO' %}</a>
+                {% endif %}
             </div>
             <div class="column is-12 has-text-centered">
                 <h3 class="is-size-3 has-text-weight-light">{% trans 'Purchase Order Amount' %}:

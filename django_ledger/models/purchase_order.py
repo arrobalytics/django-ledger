@@ -60,17 +60,19 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
     PO_STATUS_CANCELED = 'canceled'
+    PO_STATUS_FULFILLED = 'fulfilled'
 
     PO_STATUS = [
         (PO_STATUS_DRAFT, _('Draft')),
         (PO_STATUS_REVIEW, _('In Review')),
         (PO_STATUS_APPROVED, _('Approved')),
         (PO_STATUS_CANCELED, _('Canceled')),
+        (PO_STATUS_FULFILLED, _('Fulfilled')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
-    po_date = models.DateField(verbose_name=_('Purchase Order Date'))
+    po_date = models.DateField(verbose_name=_('Purchase Order Date'), null=True, blank=True)
     po_title = models.CharField(max_length=250,
                                 verbose_name=_('Purchase Order Title'),
                                 validators=[
@@ -191,7 +193,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.po_status == self.PO_STATUS_CANCELED
 
     def is_fulfilled(self):
-        return self.fulfilled
+        return self.po_status == self.PO_STATUS_FULFILLED
 
     # Permissions...
     def can_draft(self):
@@ -201,13 +203,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.is_draft()
 
     def can_approve(self):
-        return self.is_review()
+        return self.is_review() and self.po_date
 
     def can_cancel(self):
         return self.is_approved()
 
     def can_fulfill(self):
-        self.is_approved() and not self.is_fulfilled()
+        return self.is_approved()
 
     def can_delete(self):
         return self.po_status in {
@@ -217,6 +219,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def can_void(self):
         raise NotImplementedError()
+
+    def can_edit_items(self):
+        return self.is_draft()
 
     # todo: implement!
     # Actions...
@@ -234,6 +239,11 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def mark_as_review(self, commit: bool = False):
         if not self.can_review():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as in review.')
+        if not self.po_amount:
+            raise ValidationError(message='PO amount is zero.')
+        itemthrough_qs = self.itemthroughmodel_set.all()
+        if not itemthrough_qs.count():
+            raise ValidationError(message='Cannot review a PO without items...')
         self.po_status = self.PO_STATUS_REVIEW
         self.clean()
         if commit:
@@ -254,7 +264,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def mark_as_canceled(self, commit: bool = False):
-        if not self.can_approve():
+        if not self.can_cancel():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
         self.po_status = self.PO_STATUS_CANCELED
         self.clean()
@@ -265,16 +275,19 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def mark_as_fulfilled(self,
-                          date: datetime.date = None,
+                          fulfilled_date: datetime.date = None,
                           po_items: Union[QuerySet, List[ItemThroughModel]] = None,
                           commit=False):
-        self.clean()
+        if not self.can_fulfill():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')
+        if not fulfilled_date:
+            self.fulfillment_date = localdate()
 
-        if not date and not self.po_date:
-            date = localdate()
+        if not fulfilled_date and not self.po_date:
+            fulfilled_date = localdate()
 
-        elif date and self.po_date:
-            if date < self.po_date:
+        elif fulfilled_date and self.po_date:
+            if fulfilled_date < self.po_date:
                 raise ValidationError(f'Cannot fulfill PO with date earlier than PO date {self.po_date}')
 
         if not po_items:
@@ -290,8 +303,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not all_bills_paid:
             raise ValidationError('All Bills must be paid before PO can be fulfilled.')
 
-        self.fulfillment_date = date
+        self.fulfillment_date = fulfilled_date
         self.fulfilled = True
+        self.po_status = self.PO_STATUS_FULFILLED
 
         self.clean()
 
@@ -299,18 +313,19 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             update_fields = [
                 'fulfilled',
                 'fulfillment_date',
+                'po_status',
                 'updated'
             ]
             self.save(update_fields=update_fields)
 
     # Validation...
     def clean(self):
-        if self.is_fulfilled() and not self.is_approved():
-            raise ValidationError('Can only fulfill POs that has been approved.')
-
         if not self.po_number:
             self.po_number = generate_po_number()
-
+        if self.is_fulfilled() and not self.is_approved():
+            raise ValidationError('Can only fulfill POs that has been approved.')
+        if self.is_approved() and not self.po_date:
+            self.po_date = localdate()
         if self.fulfillment_date:
             self.fulfilled = True
         if self.fulfilled:
