@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
@@ -17,6 +18,7 @@ from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
@@ -81,13 +83,17 @@ class BillModelAbstract(LedgerPlugInMixIn,
     BILL_STATUS_DRAFT = 'draft'
     BILL_STATUS_REVIEW = 'in_review'
     BILL_STATUS_APPROVED = 'approved'
+    BILL_STATUS_PAID = 'paid'
     BILL_STATUS_CANCELED = 'canceled'
+    BILL_STATUS_VOID = 'void'
 
     BILL_STATUS = [
         (BILL_STATUS_DRAFT, _('Draft')),
         (BILL_STATUS_REVIEW, _('In Review')),
         (BILL_STATUS_APPROVED, _('Approved')),
-        (BILL_STATUS_CANCELED, _('Canceled'))
+        (BILL_STATUS_PAID, _('Paid')),
+        (BILL_STATUS_CANCELED, _('Canceled')),
+        (BILL_STATUS_VOID, _('Void'))
     ]
 
     # todo: implement Void Bill (& Invoice)....
@@ -124,8 +130,9 @@ class BillModelAbstract(LedgerPlugInMixIn,
     def __str__(self):
         return f'Bill: {self.bill_number}'
 
+    # Configuration...
     def configure(self,
-                  entity_slug: str or EntityModel,
+                  entity_slug: Union[str, EntityModel],
                   user_model,
                   ledger_posted: bool = False,
                   bill_desc: str = None):
@@ -155,34 +162,13 @@ class BillModelAbstract(LedgerPlugInMixIn,
         self.ledger = ledger_model
         return ledger_model, self
 
-    def get_document_id(self):
-        return self.bill_number
-
-    def get_html_id(self):
-        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
-
-    def get_html_amount_due_id(self):
-        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due'
-
-    def get_html_amount_paid_id(self):
-        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid'
-
-    def get_html_form_name(self):
-        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
-
+    # State..
     def get_migrate_state_desc(self):
         """
         Must be implemented.
         :return:
         """
         return f'Bill {self.bill_number} account adjustment.'
-
-    def get_mark_paid_url(self, entity_slug):
-        return reverse('django_ledger:bill-mark-paid',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': self.uuid
-                       })
 
     def get_itemthrough_data(self, queryset=None) -> tuple:
         if not queryset:
@@ -221,50 +207,295 @@ class BillModelAbstract(LedgerPlugInMixIn,
         self.amount_due = item_data['amount_due']
         return queryset, item_data
 
+    def get_amount_open(self):
+        if any([
+            self.is_draft(),
+            self.is_review(),
+            self.is_canceled(),
+            self.is_void()
+        ]):
+            return 0
+        elif self.accrue:
+            amount_due = self.amount_due or 0
+            return amount_due - self.get_amount_earned()
+        else:
+            amount_due = self.amount_due or 0
+            payments = self.amount_paid or 0
+            return amount_due - payments
+
+    # State
+    def is_draft(self):
+        return self.bill_status == self.BILL_STATUS_DRAFT
+
+    def is_review(self):
+        return self.bill_status == self.BILL_STATUS_REVIEW
+
     def is_approved(self):
         return self.bill_status == self.BILL_STATUS_APPROVED
 
-    def is_draft(self):
-        return self.bill_status == self.BILL_STATUS_DRAFT
+    def is_paid(self):
+        # todo: use PAID status instead
+        return self.bill_status == self.BILL_STATUS_PAID
+
+    def is_void(self):
+        # todo: use VOID status instead
+        return self.bill_status == self.BILL_STATUS_VOID
+
+    def is_canceled(self):
+        return self.bill_status == self.BILL_STATUS_CANCELED
+
+    # Permissions....
+    def can_draft(self):
+        return self.is_review()
+
+    def can_review(self):
+        return all([
+            self.is_configured(),
+            self.is_draft()
+        ])
+
+    def can_approve(self):
+        return self.is_review()
+
+    def can_pay(self):
+        return self.is_approved() and not self.is_paid()
+
+    def can_delete(self):
+        return any([
+            self.is_review(),
+            self.is_draft()
+        ])
+
+    def can_void(self):
+        return any([
+            self.is_approved(),
+            self.is_paid()
+        ])
 
     def can_edit_items(self):
         return self.is_draft()
 
-    def can_update_items(self):
-        return self.bill_status not in [
-            self.BILL_STATUS_APPROVED,
-            self.BILL_STATUS_CANCELED
-        ]
+    # --> ACTIONS <---
+    def mark_as_draft(self, commit: bool = False, **kwargs):
+        if not self.can_draft():
+            raise ValidationError(
+                f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
+            )
+        self.bill_status = self.BILL_STATUS_DRAFT
+        if commit:
+            self.save(
+                update_fields=[
+                    'bill_status',
+                    'updated'
+                ]
+            )
 
-    def make_payment(self,
-                     amt: Union[float, Decimal],
-                     entity_slug,
+    def get_mark_as_draft_html_id(self):
+        return f'djl-{self.uuid}-mark-as-draft'
+
+    def get_mark_as_draft_url(self):
+        return reverse('django_ledger:bill-action-mark-as-draft',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_draft_message(self):
+        return _('Do you want to mark Bill %s as Draft?') % self.bill_number
+
+    # IN REVIEW ACTIONS....
+    def mark_as_review(self, commit: bool = False, **kwargs):
+        if not self.can_review():
+            raise ValidationError(
+                f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
+            )
+        if not self.amount_due:
+            raise ValidationError(
+                f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
+            )
+
+        self.bill_status = self.BILL_STATUS_REVIEW
+        if commit:
+            self.save(
+                update_fields=[
+                    'bill_status',
+                    'updated'
+                ]
+            )
+
+    def get_mark_as_review_html_id(self):
+        return f'djl-{self.uuid}-mark-as-review'
+
+    def get_mark_as_review_url(self):
+        return reverse('django_ledger:bill-action-mark-as-review',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_review_message(self):
+        return _('Do you want to mark Bill %s as In Review?') % self.bill_number
+
+    # APPROVED ACTIONS....
+    def mark_as_approved(self, commit: bool = False, **kwargs):
+        if not self.can_approve():
+            raise ValidationError(
+                f'Bill {self.bill_number} cannot be marked as in approved.'
+            )
+        self.bill_status = self.BILL_STATUS_APPROVED
+        if commit:
+            self.ledger.post(commit=commit)
+            self.save(update_fields=[
+                'bill_status',
+                'updated'
+            ])
+
+    def get_mark_as_approved_html_id(self):
+        return f'djl-{self.uuid}-mark-as-approved'
+
+    def get_mark_as_approved_url(self):
+        return reverse('django_ledger:bill-action-mark-as-approved',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_approved_message(self):
+        return _('Do you want to mark Bill %s as Approved?') % self.bill_number
+
+    # DELETE ACTIONS...
+    def mark_as_delete(self, **kwargs):
+        if not self.can_delete():
+            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
+        self.delete(**kwargs)
+
+    def get_mark_as_delete_html_id(self):
+        return f'djl-{self.uuid}-void'
+
+    def get_mark_as_delete_url(self):
+        return reverse('django_ledger:bill-action-mark-as-void',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_delete_message(self):
+        return _('Do you want to void Bill %s?') % self.bill_number
+
+    # PAY ACTIONS....
+    def mark_as_paid(self,
                      user_model,
-                     as_additional: bool = True,
-                     commit: bool = False):
-        if isinstance(amt, float):
-            amt = Decimal.from_float(amt)
-        if as_additional:
-            self.amount_paid += amt
-        else:
-            self.amount_paid = amt
+                     entity_slug: str,
+                     paid_date: date = None,
+                     itemthrough_queryset=None,
+                     commit: bool = False,
+                     **kwargs):
 
-        if self.amount_paid > self.amount_due:
-            raise ValidationError(f'Payments {self.amount_paid} cannot exceed amount due {self.amount_due}.')
+        if not self.can_pay():
+            raise (f'Cannot mark Bill {self.bill_number} as paid...')
 
-        self.update_state()
+        self.paid = True
+        self.bill_status = self.BILL_STATUS_PAID
+        self.progress = Decimal.from_float(1.0)
+        self.amount_paid = self.amount_due
+        paid_dt = localdate() if not paid_date else paid_date
+
+        if not self.paid_date:
+            self.paid_date = paid_dt
+        if self.paid_date > paid_dt:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        if self.paid_date < self.date:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+                                  f' date {self.date}.')
+
+        self.new_state(commit=True)
+        self.clean()
         if commit:
             self.save(update_fields=[
-                'amount_earned',
-                'amount_unearned',
-                'amount_receivable',
+                'paid',
+                'progress',
                 'amount_paid',
+                'bill_status',
                 'updated'
             ])
             self.migrate_state(
                 user_model=user_model,
-                entity_slug=entity_slug
+                entity_slug=entity_slug,
+                itemthrough_queryset=itemthrough_queryset
             )
+            ledger_model = self.ledger
+            ledger_model.lock(commit=commit)
+
+    def get_mark_as_paid_html_id(self):
+        return f'djl-{self.uuid}-mark-as-approved'
+
+    def get_mark_as_paid_url(self):
+        return reverse('django_ledger:bill-action-mark-as-paid',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_paid_message(self):
+        return _('Do you want to mark Bill %s as Paid?') % self.bill_number
+
+    # VOID Actions...
+
+    def mark_as_void(self, user_model, entity_slug, void_date: date = None, commit: bool = False, **kwargs):
+        if not self.can_void():
+            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
+
+        self.void_date = void_date if void_date else localdate()
+        self.void = True
+        self.bill_status = self.BILL_STATUS_VOID
+        self.void_state(commit=True)
+
+        if commit:
+            self.save()
+            self.unlock_ledger(commit=True, raise_exception=False)
+            self.migrate_state(
+                entity_slug=entity_slug,
+                user_model=user_model,
+                void=True,
+                void_date=self.void_date
+            )
+            self.lock_ledger(commit=True, raise_exception=False)
+
+    def get_mark_as_void_html_id(self):
+        return f'djl-{self.uuid}-delete'
+
+    def get_mark_as_void_url(self):
+        return reverse('django_ledger:bill-action-mark-as-void',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_void_message(self):
+        return _('Do you want to void Bill %s?') % self.bill_number
+
+    # HTML Tags...
+    def get_document_id(self):
+        return self.bill_number
+
+    def get_html_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_html_amount_due_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-due'
+
+    def get_html_amount_paid_id(self):
+        return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}-amount-paid'
+
+    def get_html_form_name(self):
+        return f'djl-form-{self.REL_NAME_PREFIX}-{self.uuid}'
+
+    def get_mark_paid_url(self, entity_slug):
+        return reverse('django_ledger:bill-action-mark-as-paid',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'bill_pk': self.uuid
+                       })
 
     def clean(self):
         if not self.bill_number:

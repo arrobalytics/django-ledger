@@ -15,7 +15,7 @@ from django_ledger.models.estimate import EstimateModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-class CustomerEstimateCreateForm(forms.ModelForm):
+class EstimateModelCreateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +49,7 @@ class CustomerEstimateCreateForm(forms.ModelForm):
         }
 
 
-class CustomerEstimateModelUpdateForm(forms.ModelForm):
+class EstimateModelUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -61,7 +61,7 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
             self.fields['terms'].disabled = True
 
     def clean(self):
-        cleaned_data = super(CustomerEstimateModelUpdateForm, self).clean()
+        cleaned_data = super(EstimateModelUpdateForm, self).clean()
         if 'status' in self.changed_data:
             ce_model: EstimateModel = self.instance
             new_status = cleaned_data['status']
@@ -82,7 +82,7 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
         }
 
 
-class CustomerEstimateItemForm(ModelForm):
+class EstimateItemModelForm(ModelForm):
     class Meta:
         model = ItemThroughModel
         fields = [
@@ -111,7 +111,7 @@ class CustomerEstimateItemForm(ModelForm):
         }
 
 
-class BaseCustomerEstimateItemFormset(BaseModelFormSet):
+class BaseEstimateItemModelFormset(BaseModelFormSet):
 
     def __init__(self, *args, entity_slug, user_model, customer_job_model: EstimateModel, **kwargs):
         super().__init__(*args, **kwargs)
@@ -142,18 +142,18 @@ class BaseCustomerEstimateItemFormset(BaseModelFormSet):
 
 
 # todo: add instance where can_delete = False
-CustomerEstimateItemFormset = modelformset_factory(
+CanEditEstimateItemModelFormset = modelformset_factory(
     model=ItemThroughModel,
-    form=CustomerEstimateItemForm,
-    formset=BaseCustomerEstimateItemFormset,
+    form=EstimateItemModelForm,
+    formset=BaseEstimateItemModelFormset,
     can_delete=True,
     extra=5
 )
 
-CustomerEstimateItemFormsetReadOnly = modelformset_factory(
+ReadOnlyEstimateItemModelFormset = modelformset_factory(
     model=ItemThroughModel,
-    form=CustomerEstimateItemForm,
-    formset=BaseCustomerEstimateItemFormset,
+    form=EstimateItemModelForm,
+    formset=BaseEstimateItemModelFormset,
     can_delete=False,
     extra=0
 )

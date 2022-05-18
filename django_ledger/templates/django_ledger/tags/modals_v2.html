@@ -1,0 +1,22 @@
+{% load i18n %}
+<div id="{{ html_id }}" class="modal">
+    <div class="modal-background"></div>
+    <div class="modal-content">
+        <div class="card">
+            <div class="card-content"><p class="is-size-4 has-font-weight-light">{{ message }}</p></div>
+            <div class="card-footer">
+                <a onclick="djLedger.toggleModal('{{ html_id }}')"
+                   class="card-footer-item has-background-success-light">{% trans 'Cancel' %}</a>
+                <a href="{{ action_url }}"
+                   class="card-footer-item has-background-info-light">{% trans 'Confirm' %}</a>
+            </div>
+        </div>
+    </div>
+
+    <button class="modal-close is-large"
+            aria-label="close"
+            onclick="djLedger.toggleModal('{{ html_id }}')">
+    </button>
+</div>
+
+

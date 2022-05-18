@@ -24,7 +24,7 @@
                 <td>{{ po.created | date }}</td>
                 <td>{{ po.po_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
-                <td class="has-text-success">{% if po.fulfilled %}{{ po.fulfillment_date }}{% else %}
+                <td class="has-text-success">{% if po.is_fulfilled %}{{ po.fulfillment_date }}{% else %}
                     <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
                 {% endif %}</td>
                 <td>{% currency_symbol %}{{ po.po_amount | currency_format }}</td>

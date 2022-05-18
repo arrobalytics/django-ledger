@@ -88,6 +88,40 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'ledger_pk': self.uuid
                        })
 
+    def post(self, commit: bool = False):
+        if not self.posted:
+            self.posted = True
+            if commit:
+                self.save(update_fields=[
+                    'posted',
+                    'updated'
+                ])
+
+    def unpost(self, commit: bool = False):
+        if self.posted:
+            self.posted = False
+            if commit:
+                self.save(update_fields=[
+                    'posted',
+                    'updated'
+                ])
+
+    def lock(self, commit=False):
+        self.locked = True
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
+
+    def unlock(self, commit=False):
+        self.locked = False
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
+
 
 class LedgerModel(LedgerModelAbstract):
     """

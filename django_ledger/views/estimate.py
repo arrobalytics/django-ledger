@@ -7,8 +7,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView, RedirectView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.estimate import (CustomerEstimateCreateForm, CustomerEstimateModelUpdateForm,
-                                          CustomerEstimateItemFormset, CustomerEstimateItemFormsetReadOnly)
+from django_ledger.forms.estimate import (EstimateModelCreateForm, EstimateModelUpdateForm,
+                                          CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset)
 from django_ledger.models import EntityModel, ItemThroughModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import LoginRequiredMixIn
@@ -48,7 +48,7 @@ class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
     template_name = 'django_ledger/customer_estimate/customer_estimate_create.html'
 
     def get_form_class(self):
-        return CustomerEstimateCreateForm
+        return EstimateModelCreateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -109,7 +109,7 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
         ).select_related('customer')
 
 
-class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
+class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
     template_name = 'django_ledger/customer_estimate/customer_estimate_update.html'
     pk_url_kwarg = 'ce_pk'
     context_object_name = 'customer_estimate'
@@ -119,7 +119,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
     action_update_items = False
 
     def get_form_class(self):
-        return CustomerEstimateModelUpdateForm
+        return EstimateModelUpdateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -129,8 +129,8 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
             **self.get_form_kwargs()
         )
 
-    def get_context_data(self, item_formset: CustomerEstimateItemFormset = None, **kwargs):
-        context = super(CustomerJobModelUpdateView, self).get_context_data(**kwargs)
+    def get_context_data(self, item_formset: CanEditEstimateItemModelFormset = None, **kwargs):
+        context = super(EstimateModelUpdateView, self).get_context_data(**kwargs)
         cj_model: EstimateModel = self.object
 
         context['page_title'] = self.PAGE_TITLE,
@@ -146,14 +146,14 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
             )
 
         if cj_model.can_update_items():
-            item_formset = CustomerEstimateItemFormset(
+            item_formset = CanEditEstimateItemModelFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 customer_job_model=cj_model,
                 queryset=item_through_qs
             )
         else:
-            item_formset = CustomerEstimateItemFormsetReadOnly(
+            item_formset = ReadOnlyEstimateItemModelFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 customer_job_model=cj_model,
@@ -180,7 +180,7 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
                        })
 
     def get(self, request, entity_slug, ce_pk, *args, **kwargs):
-        response = super(CustomerJobModelUpdateView, self).get(request, *args, **kwargs)
+        response = super(EstimateModelUpdateView, self).get(request, *args, **kwargs)
 
         # this action can only be used via POST request...
         if self.action_update_items:
@@ -189,14 +189,14 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
         return response
 
     def post(self, request, entity_slug, ce_pk, *args, **kwargs):
-        response = super(CustomerJobModelUpdateView, self).post(request, *args, **kwargs)
+        response = super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
         cj_model: EstimateModel = self.object
 
         if self.action_update_items:
-            item_formset: CustomerEstimateItemFormset = CustomerEstimateItemFormset(request.POST,
-                                                                                    user_model=self.request.user,
-                                                                                    customer_job_model=cj_model,
-                                                                                    entity_slug=entity_slug)
+            item_formset: CanEditEstimateItemModelFormset = CanEditEstimateItemModelFormset(request.POST,
+                                                                                            user_model=self.request.user,
+                                                                                            customer_job_model=cj_model,
+                                                                                            entity_slug=entity_slug)
             if item_formset.is_valid():
                 if item_formset.has_changed():
                     cleaned_data = [d for d in item_formset.cleaned_data if d]
@@ -244,8 +244,6 @@ class CustomerJobModelUpdateView(LoginRequiredMixIn, UpdateView):
 
 
 # ---- ACTION VIEWS ----
-
-# todo: replicate this approach on the other views.. PO, Bill & Invoice...
 class BaseEstimateActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'ce_pk'

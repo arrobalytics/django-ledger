@@ -173,7 +173,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
-        if invoice_model.migrate_allowed():
+        if invoice_model.can_migrate():
             invoice_model.migrate_state(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']

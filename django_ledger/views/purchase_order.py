@@ -17,9 +17,10 @@ from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView,
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
-                                                get_po_item_formset, DraftPurchaseOrderModelUpdateForm,
+                                                DraftPurchaseOrderModelUpdateForm, CanEditPurchaseOrderItemFormset,
+                                                CanDeletePurchaseOrderItemFormset,
                                                 ReviewPurchaseOrderModelUpdateForm,
-                                                ApprovedPurchaseOrderModelUpdateForm)
+                                                ApprovedPurchaseOrderModelUpdateForm, get_po_item_formset)
 from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -144,27 +145,9 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     update_items = False
     create_bills = False
-    mark_as_fulfilled = False
-
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        po_model: PurchaseOrderModel = self.object
-        if self.mark_as_fulfilled:
-            po_model.mark_as_fulfilled(commit=True)
-            messages.add_message(request,
-                                 level=messages.SUCCESS,
-                                 message=f'Successfully marked {po_model.po_number} as fulfilled.',
-                                 extra_tags='is-success')
-            return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:po-update',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug'],
-                                        'po_pk': self.kwargs['po_pk']
-                                    }))
-        return super().get(request, *args, **kwargs)
 
     def post(self, request, entity_slug, *args, **kwargs):
-        self.object = self.get_object()
+        response = super().post(request, *args, **kwargs)
         po_model: PurchaseOrderModel = self.object
         if self.update_items:
             PurchaseOrderItemFormset = get_po_item_formset(po_model)
@@ -175,6 +158,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
             context = self.get_context_data(item_formset=po_item_formset)
 
+            # todo: revisit this workflow and conform to API
             if po_item_formset.is_valid():
                 if po_item_formset.has_changed():
                     po_items = po_item_formset.save(commit=False)
@@ -216,14 +200,18 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                             return self.render_to_response(context)
 
                     elif all_received and not po_model.fulfillment_date:
-                        po_model.fulfillment_date = localdate()
-                        po_model.fulfilled = True
-                        po_model.clean()
-                        po_model.save(update_fields=[
-                            'fulfillment_date',
-                            'fulfilled',
-                            'updated'
-                        ])
+                        po_model.mark_as_fulfilled(
+                            fulfilled_date=localdate(),
+                            commit=True
+                        )
+                        # po_model.fulfillment_date = localdate()
+                        # po_model.fulfilled = True
+                        # po_model.clean()
+                        # po_model.save(update_fields=[
+                        #     'fulfillment_date',
+                        #     'fulfilled',
+                        #     'updated'
+                        # ])
 
                     create_bill_uuids = [
                         str(i['uuid'].uuid) for i in po_item_formset.cleaned_data if i and i['create_bill'] is True
@@ -253,10 +241,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
             else:
                 return self.render_to_response(context)
-        elif self.mark_as_fulfilled:
-            po_model.mark_as_fulfilled(commit=True, fulfilled_date=localdate())
-        # fixme: the super call needs to be executed first...?
-        return super().post(request, *args, **kwargs)
+        return response
 
     def get_form(self, form_class=None):
         po_model: PurchaseOrderModel = self.object
@@ -359,7 +344,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                     return self.get(self.request)
 
                 else:
-                    if not all([i.bill_model.paid for i in po_items_qs]):
+                    if not all([i.bill_model.is_paid() for i in po_items_qs]):
                         messages.add_message(self.request,
                                              messages.SUCCESS,
                                              f'All bills must be paid before marking'

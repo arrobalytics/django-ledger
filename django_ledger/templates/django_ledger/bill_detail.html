@@ -29,7 +29,7 @@
                         <nav class="level">
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">Cash Account:
+                                    <p class="heading">{% trans 'Cash Account' %}:
                                         <a href="{% url 'django_ledger:account-detail' account_pk=bill.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                            class="has-text-danger">{{ bill.cash_account.code }}</a>
                                     <p class="title" id="djl-bill-detail-amount-paid">
@@ -40,7 +40,7 @@
                             {% if bill.accrue %}
                                 <div class="level-item has-text-centered">
                                     <div>
-                                        <p class="heading">Prepaid Account:
+                                        <p class="heading">{% trans 'Prepaid Account' %}:
                                             <a href="{% url 'django_ledger:account-detail' account_pk=bill.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                                class="has-text-danger">{{ bill.prepaid_account.code }}</a>
                                         </p>
@@ -50,7 +50,7 @@
                                 </div>
                                 <div class="level-item has-text-centered">
                                     <div>
-                                        <p class="heading">Unearned Account:
+                                        <p class="heading">{% trans 'Deferred Revenue' %}:
                                             <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                                class="has-text-danger">{{ bill.unearned_account.code }}</a>
                                         </p>
@@ -61,7 +61,7 @@
 
                                 <div class="level-item has-text-centered">
                                     <div>
-                                        <p class="heading">Accrued {{ bill.get_progress | percentage }}</p>
+                                        <p class="heading">{% trans 'Accrued' %} {{ bill.get_progress | percentage }}</p>
                                         <p class="title">
                                             {% currency_symbol %}{{ bill.get_amount_earned | currency_format }}</p>
                                     </div>
@@ -69,7 +69,7 @@
                             {% else %}
                                 <div class="level-item has-text-centered">
                                     <div>
-                                        <p class="heading">You Still Owe</p>
+                                        <p class="heading">{% trans 'You Still Owe' %}</p>
                                         <p class="title has-text-danger" id="djl-bill-detail-amount-owed">
                                             {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>
                                     </div>

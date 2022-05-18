@@ -59,8 +59,8 @@
                                     <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"
                                        class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
                                 {% endif %}
-                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"
-                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
+{#                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"#}
+{#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
                             </div>
                         </div>
                     </div>

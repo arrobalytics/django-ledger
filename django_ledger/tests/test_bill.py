@@ -148,14 +148,14 @@ class BillModelTests(DjangoLedgerBaseTest):
             # contains bill-delete url
             self.assertContains(response, bill_delete_url)
 
-            if bill_model.is_approved() and not bill_model.paid:
+            if bill_model.is_approved() and not bill_model.is_paid():
                 # shows link to mark as paid...
                 self.assertContains(response, mark_as_paid_url)
                 with self.assertNumQueries(11):
                     paid_response = self.CLIENT.get(mark_as_paid_url, follow=False)
                 self.assertRedirects(paid_response, expected_url=bill_update_url)
 
-            elif bill_model.is_approved() and bill_model.paid:
+            elif bill_model.is_approved() and bill_model.is_paid():
                 # if paid, it cannot be paid
                 self.assertNotContains(response, mark_as_paid_url)
 

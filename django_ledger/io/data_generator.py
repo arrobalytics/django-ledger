@@ -563,7 +563,7 @@ class EntityDataGenerator:
         # pylint: disable=no-member
         invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
 
-        if invoice_model.migrate_allowed():
+        if invoice_model.can_migrate():
             invoice_model.migrate_state(
                 user_model=self.user_model,
                 entity_slug=self.entity_model.slug,

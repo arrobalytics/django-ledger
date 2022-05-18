@@ -1,7 +1,7 @@
 from django.urls import path
 
 from django_ledger.views import (EstimateModelListView, EstimateModelCreateView,
-                                 EstimateModelDetailView, CustomerJobModelUpdateView,
+                                 EstimateModelDetailView, EstimateModelUpdateView,
                                  EstimateActionMarkAsDraftView, EstimateActionMarkAsReviewView,
                                  EstimateActionMarkAsApprovedView, EstimateActionMarkAsCompletedView,
                                  EstimateActionMarkAsCanceledView)
@@ -13,10 +13,10 @@ urlpatterns = [
          EstimateModelDetailView.as_view(),
          name='customer-estimate-detail'),
     path('<slug:entity_slug>/update/<uuid:ce_pk>/',
-         CustomerJobModelUpdateView.as_view(),
+         EstimateModelUpdateView.as_view(),
          name='customer-estimate-update'),
     path('<slug:entity_slug>/update/<uuid:ce_pk>/items/',
-         CustomerJobModelUpdateView.as_view(action_update_items=True),
+         EstimateModelUpdateView.as_view(action_update_items=True),
          name='customer-estimate-update-items'),
 
     # Actions....

@@ -194,19 +194,32 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 form.fields['po_item_status'].disabled = True
 
 
+CanDeletePurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=True,
+    extra=5
+)
+
+CanEditPurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=True,
+    extra=5
+)
+
+ReadOnlyPurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=False,
+    extra=0
+)
+
+
 def get_po_item_formset(po_model: PurchaseOrderModel):
-    if po_model.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-        return modelformset_factory(
-            model=ItemThroughModel,
-            form=PurchaseOrderItemForm,
-            formset=BasePurchaseOrderItemFormset,
-            can_delete=True,
-            extra=5
-        )
-    return modelformset_factory(
-        model=ItemThroughModel,
-        form=PurchaseOrderItemForm,
-        formset=BasePurchaseOrderItemFormset,
-        can_delete=False,
-        extra=0
-    )
+    if po_model.is_draft():
+        return CanEditPurchaseOrderItemFormset
+    return ReadOnlyPurchaseOrderItemFormset

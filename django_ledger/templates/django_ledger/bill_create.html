@@ -4,111 +4,41 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
-    <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
-        <div class="columns is-multiline is-centered">
-            {% csrf_token %}
-            {% if po_model %}
-                <div class="column is-12 has-text-centered">
-                    <h2 class="title">{% trans 'Bill for' %} {{ po_model.po_number }}</h2>
-                    <h3 class="subtitle has-text-weight-light">{% trans 'Bill for' %} {{ po_model.po_title }}</h3>
-                    {% for po_item in po_items %}
-                        <p>{{ po_item }}</p>
-                    {% endfor %}
+    <div class="columns is-multiline is-centered">
+        <div class="column is-6-desktop">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Bill' %}</h2>
                 </div>
-            {% endif %}
-            {% if form.errors %}
-                <div class="column is-12">
-                    {{ form.errors }}
-                </div>
-            {% endif %}
-            <div class="column is-6">
-                <div class="columns is-multiline">
-                    <div class="column is-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Vendor Information' %}</p>
-                            </div>
-                            <div class="card-content">
-                                <div class="field">
-                                    <div class="control">
-                                        {{ form.vendor }}
-                                    </div>
+                <div class="card-content">
+                    <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
+                        <div class="columns is-multiline is-centered">
+                            {% csrf_token %}
+                            {% if po_model %}
+                                <div class="column is-12 has-text-centered">
+                                    <h2 class="title">{% trans 'Bill for' %} {{ po_model.po_number }}</h2>
+                                    <h3 class="subtitle has-text-weight-light">{% trans 'Bill for' %} {{ po_model.po_title }}</h3>
+                                    {% for po_item in po_items %}
+                                        <p>{{ po_item }}</p>
+                                    {% endfor %}
                                 </div>
-
+                            {% endif %}
+                            {{ form }}
+                            <div class="column is-4">
+                                <button type="submit"
+                                        id="djl-bill-create-button"
+                                        class="button is-primary is-outlined is-fullwidth my-2">Create
+                                </button>
+                                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                   id="djl-bill-create-back-button"
+                                   class="button is-small is-dark is-fullwidth">{% trans 'Cancel' %}</a>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
-            </div>
-            <div class="column is-6">
-                <div class="card">
-                    <div class="card-header">
-                        <p class="card-header-title">{% trans 'Bill Amount & Terms' %}</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="field">
-                            <div class="control">
-                                {{ form.xref }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <div class="control">
-                                {{ form.date }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label for="{{ form.terms.id_for_label }}"
-                                   class="label is-small">{{ form.terms.label }}</label>
-                            <div class="control">
-                                {{ form.terms }}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-            <div class="column is-12">
-                <div class="card">
-                    <div class="card-header">
-                        <p class="card-header-title">{% trans 'Connected Accounts' %}</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="field">
-                            <label for="{{ form.terms.cash_account }}"
-                                   class="label is-small">{{ form.cash_account.label }}</label>
-                            <div class="control">
-                                {{ form.cash_account }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label for="{{ form.terms.prepaid_account }}"
-                                   class="label is-small">{{ form.prepaid_account.label }}</label>
-                            <div class="control">
-                                {{ form.prepaid_account }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label for="{{ form.terms.unearned_account }}"
-                                   class="label is-small">{{ form.unearned_account.label }}</label>
-                            <div class="control">
-                                {{ form.unearned_account }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="column is-4">
-                <button type="submit"
-                        id="djl-bill-create-button"
-                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
-                </button>
-                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                   id="djl-bill-create-back-button"
-                   class="button is-small is-dark is-fullwidth">Back</a>
             </div>
         </div>
-    </form>
+    </div>
 {% endblock %}
 
 

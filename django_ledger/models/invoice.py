@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
@@ -17,6 +18,7 @@ from django.db.models import Q, Sum, Count
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import LazyLoader
@@ -69,6 +71,7 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
     INVOICE_STATUS_DRAFT = 'draft'
     INVOICE_STATUS_REVIEW = 'in_review'
     INVOICE_STATUS_APPROVED = 'approved'
+    # todo: add PAID status....
     INVOICE_STATUS_CANCELED = 'canceled'
 
     INVOICE_STATUS = [
@@ -152,6 +155,12 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         self.ledger = ledger_model
         return ledger_model, self
 
+    def is_paid(self):
+        return self.paid
+
+    def is_void(self):
+        return self.void
+
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
 
@@ -190,7 +199,7 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
             total_items=Count('uuid')
         )
 
-    def migrate_allowed(self) -> bool:
+    def can_migrate(self) -> bool:
         return self.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED
 
     def get_item_data(self, entity_slug: str, queryset=None):
@@ -238,6 +247,39 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
             self.INVOICE_STATUS_APPROVED,
             self.INVOICE_STATUS_CANCELED
         ]
+
+    def mark_as_paid(self,
+                     user_model,
+                     entity_slug: str,
+                     paid_date: date = None,
+                     itemthrough_queryset=None,
+                     commit: bool = False):
+
+        self.paid = True
+        self.progress = Decimal.from_float(1.0)
+        self.amount_paid = self.amount_due
+        paid_dt = localdate() if not paid_date else paid_date
+
+        if not self.paid_date:
+            self.paid_date = paid_dt
+        if self.paid_date > paid_dt:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        if self.paid_date < self.date:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+                                  f' date {self.date}.')
+        self.update_state()
+        self.clean()
+        if commit:
+            self.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                itemthrough_queryset=itemthrough_queryset
+            )
+            ledger_model = self.ledger
+            ledger_model.locked = True
+            # pylint: disable=no-member
+            ledger_model.save(update_fields=['locked', 'updated'])
+            self.save()
 
     def clean(self):
         if not self.invoice_number:

@@ -404,6 +404,17 @@ def modal_action(context, model, http_method: str = 'post', entity_slug: str = N
     }
 
 
+@register.inclusion_tag('django_ledger/tags/modals_v2.html', takes_context=True)
+def modal_action_v2(context, model, action_url: str, message: str, html_id: str, http_method: str = 'get'):
+    return {
+        'object': model,
+        'action_url': action_url,
+        'http_method': http_method,
+        'message': message,
+        'html_id': html_id
+    }
+
+
 @register.simple_tag
 def fin_ratio_max_value(ratio: str):
     params = DJANGO_LEDGER_FINANCIAL_ANALYSIS['ratios'][ratio]['ranges']
