@@ -223,7 +223,6 @@ class BillModelConfigureForm(BillModelUpdateForm):
             'xref',
             'amount_due',
             'amount_paid',
-            'paid',
             'paid_date',
             'progress',
             'accrue',

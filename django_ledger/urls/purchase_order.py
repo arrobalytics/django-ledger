@@ -49,5 +49,7 @@ urlpatterns = [
     path('<slug:entity_slug>/action/<uuid:po_pk>/mark-as-canceled/',
          views.PurchaseOrderMarkAsCanceledView.as_view(),
          name='po-action-mark-as-canceled'),
-
+    path('<slug:entity_slug>/action/<uuid:po_pk>/mark-as-void/',
+         views.PurchaseOrderMarkAsVoidView.as_view(),
+         name='po-action-mark-as-void'),
 ]

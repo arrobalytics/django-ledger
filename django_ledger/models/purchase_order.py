@@ -6,24 +6,26 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 import datetime
-from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
 from typing import Tuple, List, Union
 from uuid import uuid4
 
-from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q, Sum, Count, QuerySet
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, ItemThroughModel
+from django_ledger.models import EntityModel, ItemThroughModel, LazyLoader, BillModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
+
+lazy_loader = LazyLoader()
 
 
 def generate_po_number(length: int = 10, prefix: bool = True) -> str:
@@ -60,6 +62,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
     PO_STATUS_CANCELED = 'canceled'
+    PO_STATUS_VOID = 'void'
     PO_STATUS_FULFILLED = 'fulfilled'
 
     PO_STATUS = [
@@ -67,6 +70,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         (PO_STATUS_REVIEW, _('In Review')),
         (PO_STATUS_APPROVED, _('Approved')),
         (PO_STATUS_CANCELED, _('Canceled')),
+        (PO_STATUS_VOID, _('Void')),
         (PO_STATUS_FULFILLED, _('Fulfilled')),
     ]
 
@@ -91,6 +95,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                verbose_name=_('Entity'))
     # fulfilled = models.BooleanField(default=False, verbose_name=_('Is Fulfilled'))
     fulfillment_date = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
+    void_date = models.DateField(blank=True, null=True, verbose_name=_('Void Date'))
 
     # todo: sIs this M2M field???....
     po_items = models.ManyToManyField('django_ledger.ItemModel',
@@ -155,14 +160,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             # self.po_amount = Decimal.from_float(
             #     round(sum(a.po_total_amount for a in item_list
             #               if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2))
-            self.po_amount = sum(
-                a.po_total_amount for a in item_list if a.po_item_status != ItemThroughModel.STATUS_CANCELED)
-
-            # self.po_amount_received = Decimal.from_float(
-            #     round(sum(a.po_total_amount for a in item_list
-            #               if a.po_item_status == ItemThroughModel.STATUS_RECEIVED), 2))
-            self.po_amount_received = sum(
-                a.po_total_amount for a in item_list if a.po_item_status == ItemThroughModel.STATUS_RECEIVED)
+            self.po_amount = round(sum(
+                a.po_total_amount for a in item_list if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2)
+            self.po_amount_received = round(sum(
+                a.po_total_amount for a in item_list if a.po_item_status == ItemThroughModel.STATUS_RECEIVED), 2)
         else:
 
             # todo: explore if queryset can be passed from PO Update View...
@@ -170,12 +171,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             qs_values = item_queryset.values(
                 'po_total_amount', 'po_item_status'
             )
-            total_po_amount = sum(
+            total_po_amount = round(sum(
                 i['po_total_amount'] for i in qs_values if i['po_item_status'] != ItemThroughModel.STATUS_CANCELED
-            )
-            total_received = sum(
+            ), 2)
+            total_received = round(sum(
                 i['po_total_amount'] for i in qs_values if i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
-            )
+            ), 2)
             self.po_amount = total_po_amount
             self.po_amount_received = total_received
             return item_queryset, item_data
@@ -196,6 +197,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_fulfilled(self):
         return self.po_status == self.PO_STATUS_FULFILLED
 
+    def is_void(self):
+        return self.po_status == self.PO_STATUS_VOID
+
     # Permissions...
     def can_draft(self):
         return self.is_review()
@@ -207,7 +211,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.is_review() and self.po_date
 
     def can_cancel(self):
-        return self.is_approved()
+        return any([
+            self.is_draft(),
+            self.is_review()
+        ])
 
     def can_fulfill(self):
         return self.is_approved()
@@ -219,13 +226,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         }
 
     def can_void(self):
-        raise NotImplementedError()
+        return self.is_approved()
 
     def can_edit_items(self):
         return self.is_draft()
 
     # Actions...
-    def mark_as_draft(self, commit: bool = False):
+    # DRAFT...
+    def mark_as_draft(self, commit: bool = False, **kwargs):
         if not self.can_draft():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as draft.')
         self.po_status = self.PO_STATUS_DRAFT
@@ -236,6 +244,20 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
+    def get_mark_as_draft_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-draft'
+
+    def get_mark_as_draft_url(self):
+        return reverse('django_ledger:po-action-mark-as-draft',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_draft_message(self):
+        return _('Do you want to mark Purchase Order %s as Draft?') % self.po_number
+
+    # REVIEW...
     def mark_as_review(self, commit: bool = False):
         if not self.can_review():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as in review.')
@@ -252,17 +274,46 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
+    def get_mark_as_review_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-review'
+
+    def get_mark_as_review_url(self):
+        return reverse('django_ledger:po-action-mark-as-review',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_review_message(self):
+        return _('Do you want to mark Purchase Order %s as In Review?') % self.po_number
+
+    # APPROVED...
     def mark_as_approved(self, commit: bool = False):
         if not self.can_approve():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as approved.')
         self.po_status = self.PO_STATUS_APPROVED
         self.clean()
         if commit:
+            self.itemthroughmodel_set.all().update(po_item_status=ItemThroughModel.STATUS_NOT_ORDERED)
             self.save(update_fields=[
                 'po_status',
                 'updated'
             ])
 
+    def get_mark_as_approved_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-approved'
+
+    def get_mark_as_approved_url(self):
+        return reverse('django_ledger:po-action-mark-as-approved',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_approved_message(self):
+        return _('Do you want to mark Purchase Order %s as Approved?') % self.po_number
+
+    # CANCEL...
     def mark_as_canceled(self, commit: bool = False):
         if not self.can_cancel():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
@@ -274,6 +325,20 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
+    def get_mark_as_canceled_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-canceled'
+
+    def get_mark_as_canceled_url(self):
+        return reverse('django_ledger:po-action-mark-as-canceled',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_canceled_message(self):
+        return _('Do you want to mark Purchase Order %s as Canceled?') % self.po_number
+
+    # FULFILL...
     def mark_as_fulfilled(self,
                           fulfilled_date: datetime.date = None,
                           po_items: Union[QuerySet, List[ItemThroughModel]] = None,
@@ -291,8 +356,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 raise ValidationError(f'Cannot fulfill PO with date earlier than PO date {self.po_date}')
 
         if not po_items:
-            po_items, agg = self.get_po_item_data()
-
+            po_items = self.itemthroughmodel_set.all().select_related('bill_model')
         bill_models = [i.bill_model for i in po_items]
 
         all_items_billed = all(bill_models)
@@ -303,33 +367,88 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not all_bills_paid:
             raise ValidationError('All Bills must be paid before PO can be fulfilled.')
 
+        all_items_received = all(i.is_received() for i in po_items)
+        if not all_items_received:
+            raise ValidationError('All items must be received before PO is fulfilled.')
+
         self.fulfillment_date = fulfilled_date
         self.po_status = self.PO_STATUS_FULFILLED
-
         self.clean()
 
         if commit:
-            update_fields = [
+            po_items.update(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+            self.save(update_fields=[
                 'fulfillment_date',
                 'po_status',
                 'updated'
-            ]
-            self.save(update_fields=update_fields)
+            ])
+
+    def get_mark_as_fulfilled_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-fulfilled'
+
+    def get_mark_as_fulfilled_url(self):
+        return reverse('django_ledger:po-action-mark-as-fulfilled',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_fulfilled_message(self):
+        return _('Do you want to mark Purchase Order %s as Fulfilled?') % self.po_number
+
+    # VOID...
+    def mark_as_void(self,
+                     entity_slug: str,
+                     user_model,
+                     void_date: datetime.date = None,
+                     commit=False,
+                     **kwargs):
+        if not self.can_void():
+            raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as void.')
+
+        # all bills associated with this PO...
+        bill_model_qs = BillModel.objects.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug
+        ).filter(bill_items__purchaseordermodel__uuid__exact=self.uuid).only('bill_status')
+
+        if not all(b.is_void() for b in bill_model_qs):
+            raise ValidationError('Must void all PO bills before PO can be voided.')
+
+        if not void_date:
+            void_date = localdate()
+
+        self.void_date = void_date
+
+        if commit:
+            self.save(update_fields=[
+                'void_date',
+                'po_status',
+                'updated'
+            ])
+
+    def get_mark_as_void_html_id(self):
+        return f'djl-{self.uuid}-po-mark-as-void'
+
+    def get_mark_as_void_url(self):
+        return reverse('django_ledger:po-action-mark-as-void',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'po_pk': self.uuid
+                       })
+
+    def get_mark_as_void_message(self):
+        return _('Do you want to mark Purchase Order %s as Void?') % self.po_number
 
     # Validation...
     def clean(self):
         if not self.po_number:
             self.po_number = generate_po_number()
-        # if self.is_fulfilled() and not self.is_approved():
-        #     raise ValidationError('Can only fulfill POs that has been approved.')
-
         if self.is_approved() and self.po_date:
             if self.po_date > localdate():
                 raise ValidationError('PO cannot have a future approval date.')
         if self.is_approved() and not self.po_date:
             self.po_date = localdate()
-        # if self.fulfillment_date:
-        #     self.fulfilled = True
         if self.is_fulfilled():
             self.po_amount_received = self.po_amount
         if self.is_fulfilled() and not self.fulfillment_date:

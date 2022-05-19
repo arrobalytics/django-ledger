@@ -126,7 +126,6 @@
                                 <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
                             {% endif %}
 
-
                         {% elif bill.is_paid %}
                             <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-success">{% trans 'This bill is' %} {{ bill.get_bill_status_display }}</h3>
                             <p class="is-size-3 has-text-dark">{% trans 'Amount Paid' %}:
@@ -199,6 +198,7 @@
                         {% modal_action_v2 bill bill.get_mark_as_delete_url bill.get_mark_as_delete_message bill.get_mark_as_delete_html_id %}
                     {% endif %}
 
+                    {# VOID BUTTON #}
                     {% if bill.can_void %}
                         <a onclick="djLedger.toggleModal('{{ bill.get_mark_as_void_html_id }}')"
                            id="{{ bill.get_mark_as_void_html_id }}-button"
@@ -206,10 +206,7 @@
                         {# MARK AS VOID MODAL #}
                         {% modal_action_v2 bill bill.get_mark_as_void_url bill.get_mark_as_void_message bill.get_mark_as_void_html_id %}
                     {% endif %}
-
-
                 </footer>
-
             </div>
         {% endif %}
     {% else %}
@@ -221,86 +218,3 @@
         </div>
     {% endif %}
 </div>
-
-
-{#                        {% if not bill.is_past_due %}#}
-{#                            <p class="has-text-danger has-text-weight-bold is-size-3">{% trans 'Past Due' %}:#}
-{#                                {{ bill.due_date | timesince }} ago</p>#}
-{#                        {% endif %}#}
-{##}
-{#                        {% if not bill.is_paid %}#}
-{#                            <p class="is-size-5 has-text-danger">{% trans 'You Still Owe' %}:#}
-{#                                {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>#}
-{#                        {% endif %}#}
-{##}
-{#                        {% if bill.accrue %}#}
-{#                            <p>Is Accrued: <span#}
-{#                                    class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>#}
-{#                            </p>#}
-{#                        {% else %}#}
-{#                            <p>Is Accrued:#}
-{#                                <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>#}
-{#                            </p>#}
-{#                        {% endif %}#}
-{#                        <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>#}
-{#                        <p>Progressed: {{ bill.get_progress | percentage }}</p><br>#}
-{#                        <progress class="progress is-medium is-success"#}
-{#                                  value="{{ bill.get_progress_percent }}"#}
-{#                                  max="100">#}
-{#                            {{ bill.get_progress | percentage }}#}
-{#                        </progress>#}
-{# todo: fix card footer #}
-
-
-{#                    {% if not bill.is_approved %}#}
-{#                        <p class="is-size-3">{% trans 'Not Approved' %}</p>#}
-{#                    {% else %}#}
-{#                        {% if bill.is_paid %}#}
-{#                            <p class="is-size-3 has-text-dark">Is Paid#}
-{#                                <span class="icon is-large has-text-success-dark">#}
-{#                            {% icon 'ant-design:check-circle-filled' 48 %}#}
-{#                        </span>#}
-{#                            </p>#}
-{#                            <p class="is-size-4">Amount Paid:#}
-{#                                <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</span>#}
-{#                            </p>#}
-{#                        {% else %}#}
-{#                            {% if not bill.void %}#}
-{#                                <h3 class="is-size-2 has-text-weight-light">{{ bill.bill_number }}</h3>#}
-{#                                <p class="is-size-3 has-text-dark">Bill Amount:#}
-{#                                    <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>#}
-{#                                </p>#}
-{#                                {% if not bill.is_past_due %}#}
-{#                                    <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>#}
-{#                                {% else %}#}
-{#                                    <p class="is-size-4 has-text-info">Due in: {{ bill.due_date | date }}</p>#}
-{#                                    <p class="has-text-danger has-text-weight-bold is-size-3">Past#}
-{#                                        Due: {{ bill.due_date | timesince }} ago</p>#}
-{#                                {% endif %}#}
-{#                                <p class="is-size-5 has-text-danger">You Still Owe:#}
-{#                                    {% currency_symbol %}{{ bill.get_amount_open | currency_format }}</p>#}
-{#                                {% if bill.accrue %}#}
-{#                                    <p>Is Accrued: <span#}
-{#                                            class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>#}
-{#                                    </p>#}
-{#                                {% else %}#}
-{#                                    <p>Is Accrued:#}
-{#                                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>#}
-{#                                    </p>#}
-{#                                {% endif %}#}
-{#                                <p>Amount Paid: {% currency_symbol %}{{ bill.amount_paid | currency_format }}</p>#}
-{#                                <p>Progressed: {{ bill.get_progress | percentage }}</p><br>#}
-{#                                <progress class="progress is-medium is-success"#}
-{#                                          value="{{ bill.get_progress_percent }}"#}
-{#                                          max="100">#}
-{#                                    {{ bill.get_progress | percentage }}#}
-{#                                </progress>#}
-{# todo: fix card footer #}
-{#                            {% else %}#}
-{#                                <p class="is-size-3 has-text-dark">Bill Amount:#}
-{#                                    <span class="has-text-weight-bold">{% currency_symbol %}{{ bill.amount_due | currency_format }}</span>#}
-{#                                </p>#}
-{#                                <p class="is-size-3 has-text-warning-dark">VOIDED {{ bill.void_date | date }}</p>#}
-{#                            {% endif %}#}
-{#                        {% endif %}#}
-{#                    {% endif %}#}

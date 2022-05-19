@@ -10,16 +10,13 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView,
                                   UpdateView, DeleteView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
-                                                DraftPurchaseOrderModelUpdateForm, CanEditPurchaseOrderItemFormset,
-                                                CanDeletePurchaseOrderItemFormset,
-                                                ReviewPurchaseOrderModelUpdateForm,
+                                                DraftPurchaseOrderModelUpdateForm, ReviewPurchaseOrderModelUpdateForm,
                                                 ApprovedPurchaseOrderModelUpdateForm, get_po_item_formset)
 from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -142,9 +139,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
-
     update_items = False
-    create_bills = False
 
     def post(self, request, entity_slug, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -161,58 +156,8 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
             # todo: revisit this workflow and conform to API
             if po_item_formset.is_valid():
                 if po_item_formset.has_changed():
+
                     po_items = po_item_formset.save(commit=False)
-                    all_received = all([
-                        i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
-                        for i in po_item_formset.cleaned_data if i
-                    ])
-
-                    for f in po_item_formset.forms:
-                        i: ItemThroughModel = f.instance
-                        if i:
-                            if all([
-                                i.po_item_status in [
-                                    ItemThroughModel.STATUS_RECEIVED,
-                                    ItemThroughModel.STATUS_IN_TRANSIT
-                                ],
-                                i.bill_model is None
-                            ]):
-                                messages.add_message(
-                                    request=self.request,
-                                    level=messages.ERROR,
-                                    message=f'Item {i.item_model.__str__()} must be billed'
-                                            f' before {i.get_po_item_status_display()}...',
-                                    extra_tags='is-danger')
-                                return self.render_to_response(context)
-
-                    if all_received and po_model.fulfillment_date:
-
-                        all_bills_paid = all([
-                            f.instance.bill_model.paid_date for f in po_item_formset.forms
-                        ])
-
-                        if not all_bills_paid:
-                            messages.add_message(
-                                request=self.request,
-                                level=messages.ERROR,
-                                message=f'All Bills must be paid before PO being fulfilled..',
-                                extra_tags='is-danger')
-                            return self.render_to_response(context)
-
-                    elif all_received and not po_model.fulfillment_date:
-                        po_model.mark_as_fulfilled(
-                            fulfilled_date=localdate(),
-                            commit=True
-                        )
-                        # po_model.fulfillment_date = localdate()
-                        # po_model.fulfilled = True
-                        # po_model.clean()
-                        # po_model.save(update_fields=[
-                        #     'fulfillment_date',
-                        #     'fulfilled',
-                        #     'updated'
-                        # ])
-
                     create_bill_uuids = [
                         str(i['uuid'].uuid) for i in po_item_formset.cleaned_data if i and i['create_bill'] is True
                     ]
@@ -230,7 +175,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                         return HttpResponseRedirect(redirect_url)
 
                     for item in po_items:
-                        if not item.po_model:
+                        if not item.po_model_id:
                             item.po_model = po_model
                     po_item_formset.save()
                     po_model.update_po_state()
@@ -238,9 +183,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                     po_model.save(update_fields=['po_amount',
                                                  'po_amount_received',
                                                  'updated'])
-
-            else:
-                return self.render_to_response(context)
+            return self.render_to_response(context)
         return response
 
     def get_form(self, form_class=None):
@@ -393,7 +336,7 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('ce_model')
+        ).select_related('ce_model', 'entity')
 
 
 class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
@@ -466,13 +409,14 @@ class BasePurchaseOrderActionActionView(LoginRequiredMixIn, RedirectView, Single
                        })
 
     def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
         response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
         po_model: PurchaseOrderModel = self.get_object()
 
         try:
-            getattr(po_model, self.action_name)(commit=self.commit)
+            getattr(po_model, self.action_name)(commit=self.commit, **kwargs)
         except ValidationError as e:
             messages.add_message(request,
                                  message=e.message,
@@ -499,3 +443,7 @@ class PurchaseOrderMarkAsFulfilledView(BasePurchaseOrderActionActionView):
 
 class PurchaseOrderMarkAsCanceledView(BasePurchaseOrderActionActionView):
     action_name = 'mark_as_canceled'
+
+
+class PurchaseOrderMarkAsVoidView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_void'

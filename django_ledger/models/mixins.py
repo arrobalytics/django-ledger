@@ -104,23 +104,36 @@ class LedgerPlugInMixIn(models.Model):
                              choices=TERMS,
                              verbose_name=_('Terms'))
 
-    amount_due = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
-    amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Paid'))
+    amount_due = models.DecimalField(default=0,
+                                     max_digits=20,
+                                     decimal_places=2,
+                                     verbose_name=_('Amount Due'))
 
-    amount_receivable = models.DecimalField(default=0, max_digits=20, decimal_places=2,
-                                            verbose_name=_('Amount Receivable'))
-    amount_unearned = models.DecimalField(default=0, max_digits=20, decimal_places=2,
-                                          verbose_name=_('Amount Unearned'))
-    amount_earned = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Earned'))
+    amount_paid = models.DecimalField(default=0,
+                                      max_digits=20,
+                                      decimal_places=2,
+                                      verbose_name=_('Amount Paid'),
+                                      validators=[MinValueValidator(limit_value=0)])
 
-    # todo: remove this field, not necessary if PAID status...
-    paid = models.BooleanField(default=False, verbose_name=_('Paid'))
-    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    amount_receivable = models.DecimalField(default=0,
+                                            max_digits=20,
+                                            decimal_places=2,
+                                            verbose_name=_('Amount Receivable'),
+                                            validators=[MinValueValidator(limit_value=0)])
+    amount_unearned = models.DecimalField(default=0,
+                                          max_digits=20,
+                                          decimal_places=2,
+                                          verbose_name=_('Amount Unearned'),
+                                          validators=[MinValueValidator(limit_value=0)])
+    amount_earned = models.DecimalField(default=0,
+                                        max_digits=20,
+                                        decimal_places=2,
+                                        verbose_name=_('Amount Earned'),
+                                        validators=[MinValueValidator(limit_value=0)])
+
     date = models.DateField(verbose_name=_('Date'))
     due_date = models.DateField(verbose_name=_('Due Date'))
-
-    # todo: remove this field, not necessary if VOID status...
-    void = models.BooleanField(default=False, verbose_name=_('Void'))
+    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
     void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
 
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
@@ -520,6 +533,7 @@ class LedgerPlugInMixIn(models.Model):
 
     def new_state(self, commit: bool = False):
         new_state = {
+            # todo: amount paid really a cash difference...
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_prepaid(),
             'amount_unearned': self.get_amount_unearned(),
@@ -532,7 +546,7 @@ class LedgerPlugInMixIn(models.Model):
     def update_state(self, state: dict = None):
         if not state:
             state = self.new_state()
-        self.amount_paid = state['amount_paid']
+        self.amount_paid = abs(state['amount_paid'])
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
@@ -602,9 +616,6 @@ class LedgerPlugInMixIn(models.Model):
         else:
             self.due_date = self.date
 
-        # if self.amount_due and self.amount_paid == self.amount_due:
-        #     self.paid = True
-        #     self.pa
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
 

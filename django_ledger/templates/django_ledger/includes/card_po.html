@@ -12,6 +12,13 @@
             </div>
             <div class="card-content">
                 <h2 class="is-size-3">{{ po_model.po_number }}</h2>
+                <h3 class="is-size-3 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                    {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
+                <h3 class="is-size-3 has-text-weight-light">{% trans 'Received Amount' %}:
+                    {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
+                <h3 class="is-size-3 has-text-weight-light">{% trans 'Paid Amount' %}:
+                    {% currency_symbol %}{{ total_paid | currency_format }}</h3>
+
                 <h3 class="is-size-4 has-text-weight-light">
                     Status: <span
                         class="{% if po_model.po_status == 'draft' %}has-text-danger{% elif po_model.po_status == 'approved' %}has-text-success{% endif %}">
@@ -31,28 +38,84 @@
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                     {% endif %}
                 </h3>
-            {% if po_model.ce_model_id %}
-                <h3 class="is-size-4 has-text-weight-light">{% trans 'Estimate' %}:
-                    {{ po_model.ce_model.estimate_number }}
-                    <a class="button is-small is-round is-outlined"
-                       href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=po_model.ce_model.uuid %}">
-                        {% trans 'View' %}
-                    </a></h3>
-
-
-            {% endif %}
-
+                {% if po_model.ce_model_id %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Estimate' %}:
+                        {{ po_model.ce_model.estimate_number }}
+                        <a class="button is-small is-round is-outlined"
+                           href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=po_model.ce_model.uuid %}">
+                            {% trans 'View' %}
+                        </a></h3>
+                {% endif %}
             </div>
 
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:po-update' entity_slug=entity_slug po_pk=po_model.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-                {% if po_model.can_mark_as_fulfilled %}
-                    <a onclick="djLedger.toggleModal('{{ po_model.get_html_id }}')"
-                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Fulfilled' %}</a>
+
+                {# MARK DRAFT #}
+                {% if po_model.can_draft %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_draft_html_id }}')"
+                       id="{{ po_model.get_mark_as_review_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>
+                    {# MARK AS DRAFT MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_draft_url po_model.get_mark_as_draft_message po_model.get_mark_as_draft_html_id %}
                 {% endif %}
-                <a href="{% url 'django_ledger:po-delete' entity_slug=entity_slug po_pk=po_model.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
+
+                {# MARK REVIEW #}
+                {% if po_model.can_review %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_review_html_id }}')"
+                       id="{{ po_model.get_mark_as_review_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Review' %}</a>
+                    {# MARK AS REVIEW MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_review_url po_model.get_mark_as_review_message po_model.get_mark_as_review_html_id %}
+                {% endif %}
+
+                {# MARK APPROVED #}
+                {% if po_model.can_approve %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_approved_html_id }}')"
+                       id="{{ po_model.get_mark_as_approved_html_id }}-button"
+                       class="card-footer-item has-text-success has-text-centered">{% trans 'Mark as Approved' %}</a>
+                    {# MARK AS APPROVED MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_approved_url po_model.get_mark_as_approved_message po_model.get_mark_as_approved_html_id %}
+                {% endif %}
+
+                {# FULFILL BUTTON #}
+                {% if po_model.can_fulfill %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_fulfilled_html_id }}')"
+                       id="{{ po_model.get_mark_as_fulfilled_html_id }}-button"
+                       class="card-footer-item has-text-success has-text-centered">{% trans 'Fulfill' %}</a>
+                    {# MARK AS DELETE MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_fulfilled_url po_model.get_mark_as_fulfilled_message po_model.get_mark_as_fulfilled_html_id %}
+                {% endif %}
+
+                {# DELETE BUTTON #}
+                {% if po_model.can_delete %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_delete_html_id }}')"
+                       id="{{ po_model.get_mark_as_delete_html_id }}-button"
+                       class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
+                    {# MARK AS DELETE MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_delete_url po_model.get_mark_as_delete_message po_model.get_mark_as_delete_html_id %}
+                {% endif %}
+
+                {# VOID BUTTON #}
+                {% if po_model.can_void %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_void_html_id }}')"
+                       id="{{ po_model.get_mark_as_void_html_id }}-button"
+                       class="card-footer-item has-text-danger has-text-centered">{% trans 'Void' %}</a>
+                    {# MARK AS VOID MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_void_url po_model.get_mark_as_void_message po_model.get_mark_as_void_html_id %}
+                {% endif %}
+
+                {# CANCEL BUTTON #}
+                {% if po_model.can_cancel %}
+                    <a onclick="djLedger.toggleModal('{{ po_model.get_mark_as_canceled_html_id }}')"
+                       id="{{ po_model.get_mark_as_canceled_html_id }}-button"
+                       class="card-footer-item has-text-danger has-text-centered">{% trans 'Cancel' %}</a>
+                    {# MARK AS CANCELED MODAL #}
+                    {% modal_action_v2 bill po_model.get_mark_as_canceled_url po_model.get_mark_as_canceled_message po_model.get_mark_as_canceled_html_id %}
+                {% endif %}
+
+
             </footer>
 
         </div>

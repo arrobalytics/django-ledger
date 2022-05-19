@@ -119,7 +119,6 @@ class InvoiceModelUpdateForm(ModelForm):
         model = InvoiceModel
         fields = [
             'amount_paid',
-            'paid',
             'paid_date',
             'progress',
             'accrue',

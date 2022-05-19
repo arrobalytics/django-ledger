@@ -32,7 +32,7 @@ class CustomerModelManager(models.Manager):
 
 class CustomerModel(ContactInfoMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    customer_name = models.CharField(max_length=100, unique=True)
+    customer_name = models.CharField(max_length=100)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -53,6 +53,9 @@ class CustomerModel(ContactInfoMixIn, CreateUpdateMixIn):
             models.Index(fields=['updated']),
             models.Index(fields=['active']),
             models.Index(fields=['hidden']),
+        ]
+        unique_together = [
+            ('entity', 'customer_name')
         ]
 
     def __str__(self):

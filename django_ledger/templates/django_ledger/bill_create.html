@@ -11,6 +11,7 @@
                     <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Bill' %}</h2>
                 </div>
                 <div class="card-content">
+                    {# todo: why pass form action url?? #}
                     <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
                         <div class="columns is-multiline is-centered">
                             {% csrf_token %}
@@ -29,7 +30,7 @@
                                         id="djl-bill-create-button"
                                         class="button is-primary is-outlined is-fullwidth my-2">Create
                                 </button>
-                                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"
                                    id="djl-bill-create-back-button"
                                    class="button is-small is-dark is-fullwidth">{% trans 'Cancel' %}</a>
                             </div>

@@ -45,7 +45,19 @@ def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
     return invoice_number
 
 
+class InvoiceModelQuerySet(models.QuerySet):
+
+    def paid(self):
+        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
+
+    def approved(self):
+        return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
+
+
 class InvoiceModelManager(models.Manager):
+
+    def get_queryset(self):
+        return InvoiceModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug, user_model):
         qs = self.get_queryset().filter(
@@ -71,7 +83,8 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
     INVOICE_STATUS_DRAFT = 'draft'
     INVOICE_STATUS_REVIEW = 'in_review'
     INVOICE_STATUS_APPROVED = 'approved'
-    # todo: add PAID status....
+    INVOICE_STATUS_PAID = 'paid'
+    INVOICE_STATUS_VOID = 'void'
     INVOICE_STATUS_CANCELED = 'canceled'
 
     INVOICE_STATUS = [
@@ -102,7 +115,9 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
                                          verbose_name=_('Unearned Account'),
                                          related_name=f'{REL_NAME_PREFIX}_unearned_account')
 
-    additional_info = models.JSONField(default=dict, verbose_name=_('Invoice Additional Info'))
+    additional_info = models.JSONField(blank=True,
+                                       null=True,
+                                       verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
                                            through='django_ledger.ItemThroughModel',
                                            through_fields=('invoice_model', 'item_model'),
@@ -116,12 +131,13 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         verbose_name = _('Invoice')
         verbose_name_plural = _('Invoices')
         indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['invoice_status']),
+            models.Index(fields=['terms']),
             models.Index(fields=['cash_account']),
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
-            models.Index(fields=['date']),
-            models.Index(fields=['due_date']),
-            models.Index(fields=['paid']),
         ]
 
     def __str__(self):
@@ -152,14 +168,69 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
             name=f'Invoice {self.invoice_number}',
         )
         ledger_model.clean()
+        self.clean()
         self.ledger = ledger_model
         return ledger_model, self
 
-    def is_paid(self):
-        return self.paid
+    # STATE...
+    def is_draft(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_DRAFT
 
-    def is_void(self):
-        return self.void
+    def is_review(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_REVIEW
+
+    def is_approved(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_APPROVED
+
+    def is_paid(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_PAID
+
+    def is_void(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_VOID
+
+    def is_canceled(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_CANCELED
+
+    # PERMISSIONS....
+    def can_draft(self):
+        return self.is_review()
+
+    def can_review(self):
+        return all([
+            self.is_configured(),
+            self.is_draft()
+        ])
+
+    def can_approve(self):
+        return self.is_review()
+
+    def can_pay(self):
+        return self.is_approved()
+
+    def can_delete(self):
+        return any([
+            self.is_review(),
+            self.is_draft()
+        ])
+
+    def can_void(self):
+        return any([
+            self.is_approved(),
+            self.is_paid()
+        ])
+
+    def can_edit_items(self):
+        return self.is_draft()
+
+    def can_update_items(self):
+        return self.invoice_status not in [
+            self.INVOICE_STATUS_APPROVED,
+            self.INVOICE_STATUS_CANCELED
+        ]
+
+    # ACTIONS...
+
+
 
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
@@ -227,26 +298,11 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = sum(a.total_amount for a in item_list)
+            self.amount_due = round(sum(a.total_amount for a in item_list), 2)
             return
         queryset, item_data = self.get_invoice_item_data(queryset=queryset)
-        self.amount_due = item_data['amount_due']
+        self.amount_due = round(item_data['amount_due'], 2)
         return queryset, item_data
-
-    def is_approved(self):
-        return self.invoice_status == self.INVOICE_STATUS_APPROVED
-
-    def is_draft(self):
-        return self.invoice_status == self.INVOICE_STATUS_DRAFT
-
-    def can_edit_items(self):
-        return self.is_draft()
-
-    def can_update_items(self):
-        return self.invoice_status not in [
-            self.INVOICE_STATUS_APPROVED,
-            self.INVOICE_STATUS_CANCELED
-        ]
 
     def mark_as_paid(self,
                      user_model,

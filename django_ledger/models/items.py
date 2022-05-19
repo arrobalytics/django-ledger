@@ -573,6 +573,9 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Customer Job Through Model: {self.uuid} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {amount}'
 
+    def is_received(self):
+        return self.po_item_status == self.STATUS_RECEIVED
+
     def update_total_amount(self):
         qty = self.quantity
         if not isinstance(qty, Decimal):
@@ -582,7 +585,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         if not isinstance(uc, Decimal):
             uc = Decimal.from_float(uc)
 
-        total_amount = uc * qty
+        total_amount = round(uc * qty, 2)
 
         if self.po_total_amount > 0:
             if total_amount > self.po_total_amount:

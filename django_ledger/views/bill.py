@@ -161,13 +161,14 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             bill_model.update_amount_due(queryset=po_model_items_qs)
             bill_model.new_state(commit=True)
             bill_model.clean()
+            bill_model.save()
             po_model_items_qs.update(bill_model=bill_model)
             bill_model.migrate_state(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug'],
                 itemthrough_queryset=po_model_items_qs
             )
-
+            return HttpResponseRedirect(self.get_success_url())
         return super(BillModelCreateView, self).form_valid(form)
 
     def get_success_url(self):

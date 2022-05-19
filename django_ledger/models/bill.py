@@ -43,7 +43,19 @@ def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
     return bill_number
 
 
+class BillModelQuerySet(models.QuerySet):
+
+    def paid(self):
+        return self.filter(bill_status__exact=BillModel.BILL_STATUS_PAID)
+
+    def approved(self):
+        return self.filter(bill_status__exact=BillModel.BILL_STATUS_APPROVED)
+
+
 class BillModelManager(models.Manager):
+
+    def get_queryset(self):
+        return BillModelQuerySet(self.model, using=self._db)
 
     def for_user(self, user_model):
         return self.get_queryset().filter(
@@ -105,7 +117,9 @@ class BillModelAbstract(LedgerPlugInMixIn,
     vendor = models.ForeignKey('django_ledger.VendorModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Vendor'))
-    additional_info = models.JSONField(default=dict, verbose_name=_('Bill Additional Info'))
+    additional_info = models.JSONField(blank=True,
+                                       null=True,
+                                       verbose_name=_('Bill Additional Info'))
     bill_items = models.ManyToManyField('django_ledger.ItemModel',
                                         through='django_ledger.ItemThroughModel',
                                         through_fields=('bill_model', 'item_model'),
@@ -119,12 +133,13 @@ class BillModelAbstract(LedgerPlugInMixIn,
         verbose_name = _('Bill')
         verbose_name_plural = _('Bills')
         indexes = [
+            models.Index(fields=['date']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['bill_status']),
+            models.Index(fields=['terms']),
             models.Index(fields=['cash_account']),
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
-            models.Index(fields=['date']),
-            models.Index(fields=['due_date']),
-            models.Index(fields=['paid']),
         ]
 
     def __str__(self):
@@ -160,6 +175,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
         )
         ledger_model.clean()
         self.ledger = ledger_model
+        self.clean()
         return ledger_model, self
 
     # State..
@@ -201,27 +217,27 @@ class BillModelAbstract(LedgerPlugInMixIn,
     def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
         if item_list:
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = sum(a.total_amount for a in item_list)
+            self.amount_due = round(sum(a.total_amount for a in item_list), 2)
             return
         queryset, item_data = self.get_itemthrough_data(queryset=queryset)
-        self.amount_due = item_data['amount_due']
+        self.amount_due = round(item_data['amount_due'], 2)
         return queryset, item_data
 
-    def get_amount_open(self):
-        if any([
-            self.is_draft(),
-            self.is_review(),
-            self.is_canceled(),
-            self.is_void()
-        ]):
-            return 0
-        elif self.accrue:
-            amount_due = self.amount_due or 0
-            return amount_due - self.get_amount_earned()
-        else:
-            amount_due = self.amount_due or 0
-            payments = self.amount_paid or 0
-            return amount_due - payments
+    # def get_amount_open(self):
+    #     if any([
+    #         self.is_draft(),
+    #         self.is_review(),
+    #         self.is_canceled(),
+    #         self.is_void()
+    #     ]):
+    #         return 0
+    #     elif self.accrue:
+    #         amount_due = self.amount_due or 0
+    #         return amount_due - self.get_amount_earned()
+    #     else:
+    #         amount_due = self.amount_due or 0
+    #         payments = self.amount_paid or 0
+    #         return amount_due - payments
 
     # State
     def is_draft(self):
@@ -258,7 +274,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
         return self.is_review()
 
     def can_pay(self):
-        return self.is_approved() and not self.is_paid()
+        return self.is_approved()
 
     def can_delete(self):
         return any([
@@ -282,6 +298,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
                 f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
             )
         self.bill_status = self.BILL_STATUS_DRAFT
+        self.clean()
         if commit:
             self.save(
                 update_fields=[
@@ -392,17 +409,15 @@ class BillModelAbstract(LedgerPlugInMixIn,
                      **kwargs):
 
         if not self.can_pay():
-            raise (f'Cannot mark Bill {self.bill_number} as paid...')
+            raise ValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
 
         self.paid = True
         self.bill_status = self.BILL_STATUS_PAID
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        paid_dt = localdate() if not paid_date else paid_date
+        self.paid_date = localdate() if not paid_date else paid_date
 
-        if not self.paid_date:
-            self.paid_date = paid_dt
-        if self.paid_date > paid_dt:
+        if self.paid_date > localdate():
             raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
         if self.paid_date < self.date:
             raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
@@ -410,21 +425,28 @@ class BillModelAbstract(LedgerPlugInMixIn,
 
         self.new_state(commit=True)
         self.clean()
+
+        if not itemthrough_queryset:
+            itemthrough_queryset = self.itemthroughmodel_set.all()
+
         if commit:
             self.save(update_fields=[
                 'paid',
+                'paid_date',
                 'progress',
                 'amount_paid',
                 'bill_status',
                 'updated'
             ])
+            ItemThroughModel = lazy_loader.get_item_through_model()
+            # update this field only if there's a PO assigned
+            itemthrough_queryset.update(po_item_status=ItemThroughModel.STATUS_ORDERED)
             self.migrate_state(
                 user_model=user_model,
                 entity_slug=entity_slug,
                 itemthrough_queryset=itemthrough_queryset
             )
-            ledger_model = self.ledger
-            ledger_model.lock(commit=commit)
+            self.lock_ledger(commit=True)
 
     def get_mark_as_paid_html_id(self):
         return f'djl-{self.uuid}-mark-as-approved'
@@ -506,6 +528,9 @@ class BillModelAbstract(LedgerPlugInMixIn,
             self.paid = False
             self.paid_date = None
             self.progress = 0
+
+        if not self.additional_info:
+            self.additional_info = dict()
 
         super().clean()
 

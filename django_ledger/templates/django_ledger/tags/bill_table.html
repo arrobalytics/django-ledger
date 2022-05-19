@@ -8,6 +8,7 @@
         <tr>
             <th>Bill Number</th>
             <th>Bill Date</th>
+            <th>Status</th>
             <th>Bill From</th>
             <th>Amount</th>
             <th>Payments</th>
@@ -20,6 +21,7 @@
         {% for bill in bills %}
             <tr id="{{ bill.get_html_id }}">
                 <td>{{ bill.bill_number }}</td>
+                <td>{{ bill.get_bill_status_display }}</td>
                 <td>{{ bill.date }}</td>
                 <td>{{ bill.vendor.vendor_name }}</td>
                 <td id="{{ bill.get_html_amount_due_id }}">{% currency_symbol %}{{ bill.amount_due | currency_format }}</td>

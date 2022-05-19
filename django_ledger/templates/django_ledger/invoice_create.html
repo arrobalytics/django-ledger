@@ -4,95 +4,32 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
-    <form action="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}"
-          method="post">
-        <div class="columns is-multiline is-centered">
-            {% csrf_token %}
-            <div class="column is-6">
-                <div class="columns is-multiline">
-                    <div class="column is-12">
-                        <div class="card">
-                            <div class="card-header">
-                                <p class="card-header-title">{% trans 'Customer Information' %}</p>
-                            </div>
-                            <div class="card-content">
-                                <div class="field">
-                                    <div class="control">
-                                        {{ form.customer }}
-                                    </div>
-                                </div>
-
+    <div class="columns is-multiline is-centered">
+        <div class="column is-6-desktop">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Invoice' %}</h2>
+                </div>
+                <div class="card-content">
+                    <form action="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}"
+                          method="post" id="djl-bill-create-form-id">
+                        <div class="columns is-multiline is-centered">
+                            {% csrf_token %}
+                            {{ form }}
+                            <div class="column is-4">
+                                <button type="submit"
+                                        id="djl-invoice-create-button"
+                                        class="button is-primary is-outlined is-fullwidth my-2">{% trans 'Create' %}
+                                </button>
+                                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                                   id="djl-invoice-create-back-button"
+                                   class="button is-small is-dark is-fullwidth">{% trans 'Cancel' %}</a>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
             </div>
-            <div class="column is-6">
-                <div class="card">
-                    <div class="card-header">
-                        <p class="card-header-title">{% trans 'Invoice Amount & Terms' %}</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="field">
-                            <div class="control">
-                                {{ form.date }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label for="{{ form.terms.id_for_label }}"
-                                   class="label is-small">{{ form.terms.label }}</label>
-                            <div class="control">
-                                {{ form.terms }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="column is-12">
-                <div class="card">
-                    <div class="card-header">
-                        <p class="card-header-title">{% trans 'Connected Accounts' %}</p>
-                    </div>
-                    <div class="card-content">
-                        <div class="field">
-                            <label for="{{ form.terms.cash_account }}"
-                                   class="label is-small">{{ form.cash_account.label }}</label>
-                            <div class="control">
-                                {{ form.cash_account }}
-                            </div>
-                        </div>
-                        <div class="field">
-
-                            <label for="{{ form.terms.prepaid_account }}"
-                                   class="label is-small">{{ form.prepaid_account.label }}</label>
-                            <div class="control">
-                                {{ form.prepaid_account }}
-                            </div>
-                        </div>
-                        <div class="field">
-                            <label for="{{ form.terms.unearned_account }}"
-                                   class="label is-small">{{ form.unearned_account.label }}</label>
-                            <div class="control">
-                                {{ form.unearned_account }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="column is-4">
-                <button type="submit"
-                        class="button is-primary is-outlined is-fullwidth djetler_my_1">Create
-                </button>
-                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                   class="button is-small is-dark is-fullwidth">Back</a>
-            </div>
-
         </div>
-    </form>
-
+    </div>
 {% endblock %}
-
-
-
 

@@ -116,12 +116,13 @@ class EntityDataGenerator:
                 email=self.fk.email(),
                 website=self.fk.url(),
                 active=True,
-                hidden=False
+                hidden=False,
+                description='A cool vendor description.'
             ) for _ in range(vendor_count)
         ]
 
         for vendor in vendor_models:
-            vendor.clean()
+            vendor.full_clean()
 
         self.vendor_models = VendorModel.objects.bulk_create(vendor_models, ignore_conflicts=True)
 
@@ -141,12 +142,13 @@ class EntityDataGenerator:
                 email=self.fk.email(),
                 website=self.fk.url(),
                 active=True,
-                hidden=False
+                hidden=False,
+                description=f'A cool customer description. We love customers!'
             ) for _ in range(customer_count)
         ]
 
         for customer in customer_models:
-            customer.clean()
+            customer.full_clean()
 
         self.customer_models = CustomerModel.objects.bulk_create(customer_models, ignore_conflicts=True)
 
@@ -204,32 +206,32 @@ class EntityDataGenerator:
             is_inventory = random() > 0.75
             if is_inventory:
                 product_models.append(ItemModel(
-                        name=f'Product or Service {randint(1000, 9999)}',
-                        uom=choice(self.uom_models),
-                        item_type=choice(ItemModel.ITEM_CHOICES)[0],
-                        sku=generate_random_sku(),
-                        upc=generate_random_upc(),
-                        item_id=generate_random_item_id(),
-                        entity=self.entity_model,
-                        for_inventory=is_inventory,
-                        is_product_or_service=True,
-                        earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
-                        cogs_account=choice(self.accounts_by_role[COGS]),
-                        inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY])
-                    ))
+                    name=f'Product or Service {randint(1000, 9999)}',
+                    uom=choice(self.uom_models),
+                    item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                    sku=generate_random_sku(),
+                    upc=generate_random_upc(),
+                    item_id=generate_random_item_id(),
+                    entity=self.entity_model,
+                    for_inventory=is_inventory,
+                    is_product_or_service=True,
+                    earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                    cogs_account=choice(self.accounts_by_role[COGS]),
+                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY])
+                ))
             else:
                 product_models.append(ItemModel(
-                        name=f'Product or Service {randint(1000, 9999)}',
-                        uom=choice(self.uom_models),
-                        item_type=choice(ItemModel.ITEM_CHOICES)[0],
-                        sku=generate_random_sku(),
-                        upc=generate_random_upc(),
-                        item_id=generate_random_item_id(),
-                        entity=self.entity_model,
-                        for_inventory=is_inventory,
-                        is_product_or_service=True,
-                        earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
-                    ))
+                    name=f'Product or Service {randint(1000, 9999)}',
+                    uom=choice(self.uom_models),
+                    item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                    sku=generate_random_sku(),
+                    upc=generate_random_upc(),
+                    item_id=generate_random_item_id(),
+                    entity=self.entity_model,
+                    for_inventory=is_inventory,
+                    is_product_or_service=True,
+                    earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                ))
 
         for im in product_models:
             im.clean()
@@ -311,21 +313,21 @@ class EntityDataGenerator:
         for i in estimate_items:
             i.clean()
 
-        customer_estimate.update_state(queryset=estimate_items)
-        customer_estimate.clean()
+        customer_estimate.full_clean()
         customer_estimate.save()
+        customer_estimate.update_state(queryset=estimate_items)
 
         estimate_items = customer_estimate.itemthroughmodel_set.bulk_create(objs=estimate_items)
 
         if random() < 0.2:
             customer_estimate.mark_as_review(commit=True)
-        elif random() < 0.55:
-            customer_estimate.mark_as_approved(commit=True, date_approved=date_approved)
-            if random() < 0.80:
-                date_completed = date_approved + timedelta(days=randint(10, 45))
-                customer_estimate.mark_as_completed(commit=True, date_completed=date_completed)
-        else:
-            customer_estimate.mark_as_canceled(commit=True, date_canceled=date_approved)
+            if random() < 0.55:
+                customer_estimate.mark_as_approved(commit=True, date_approved=date_approved)
+                if random() < 0.80:
+                    date_completed = date_approved + timedelta(days=randint(10, 45))
+                    customer_estimate.mark_as_completed(commit=True, date_completed=date_completed)
+            else:
+                customer_estimate.mark_as_canceled(commit=True, date_canceled=date_approved)
 
     def create_bill(self,
                     is_accruable: bool,
@@ -346,7 +348,8 @@ class EntityDataGenerator:
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date=issue_dt,
             paid=is_paid,
-            paid_date=paid_dt
+            paid_date=paid_dt,
+            additional_info=dict()
         )
 
         ledger_model, bill_model = bill_model.configure(
@@ -354,8 +357,8 @@ class EntityDataGenerator:
             user_model=self.user_model,
             ledger_posted=True)
 
-        if random() > 0.3:
-            bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
+        bill_model.full_clean()
+        bill_model.save()
 
         bill_items = [
             ItemThroughModel(
@@ -368,34 +371,55 @@ class EntityDataGenerator:
         ]
 
         for bi in bill_items:
-            bi.clean()
+            bi.full_clean()
 
         bill_model.update_amount_due(item_list=bill_items)
-        bill_model.amount_paid = Decimal.from_float(round(random() * float(bill_model.amount_due), 2))
-        bill_model.new_state(commit=True)
-        bill_model.clean()
+        bill_model.itemthroughmodel_set.bulk_create(bill_items)
+        bill_model.full_clean()
         bill_model.save()
 
-        # pylint: disable=no-member
-        bill_model.itemthroughmodel_set.bulk_create(bill_items)
-        bill_model.migrate_state(
-            user_model=self.user_model,
-            entity_slug=self.entity_model.slug,
-            je_date=issue_dt)
+        if random() > 0.15:
+            # bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
+            bill_model.mark_as_review(commit=True)
 
-        if is_paid:
-            ledger_model.locked = True
-            ledger_model.save(update_fields=['locked'])
+            if random() > 0.35:
+                bill_model.mark_as_approved(commit=True)
+
+                # todo: needs new method for bill payment???...
+                bill_model.amount_paid = Decimal.from_float(round(random() * float(bill_model.amount_due), 2))
+                bill_model.new_state(commit=True)
+                bill_model.clean()
+                bill_model.save()
+
+                # pylint: disable=no-member
+                bill_model.migrate_state(
+                    user_model=self.user_model,
+                    entity_slug=self.entity_model.slug,
+                    je_date=issue_dt)
+
+                if random() > 0.40:
+                    bill_model.mark_as_paid(
+                        user_model=self.user_model,
+                        entity_slug=self.entity_model.slug,
+                        commit=True
+                    )
+                    if random() > .90:
+                        bill_model.mark_as_void(
+                            user_model=self.user_model,
+                            entity_slug=self.entity_model.slug,
+                            commit=True
+                        )
 
     def create_po(self, po_date: date):
 
-        po_model: PurchaseOrderModel = PurchaseOrderModel()
+        po_model: PurchaseOrderModel = PurchaseOrderModel(po_date=po_date)
         po_model = po_model.configure(
             entity_slug=self.entity_model,
             user_model=self.user_model,
             po_date=po_date
         )
         po_model.po_title = f'PO Title for {po_model.po_number}'
+        po_model.save()
 
         po_items = [
             ItemThroughModel(
@@ -408,87 +432,97 @@ class EntityDataGenerator:
         ]
 
         for poi in po_items:
-            poi.clean()
+            poi.full_clean()
 
         po_model.update_po_state(item_list=po_items)
-
-        po_model.clean()
+        po_model.full_clean()
         po_model.save()
 
         # pylint: disable=no-member
         po_items = po_model.itemthroughmodel_set.bulk_create(po_items)
 
         # mark as approved...
-        if random() > 0.3:
-            po_model.mark_as_approved(commit=True)
-
-            # mark as fulfilled...
+        if random() > 0.15:
+            po_model.mark_as_review(commit=True)
             if random() > 0.5:
-                ldt = self.localtime.date()
-                fulfilled_dt = po_date + timedelta(days=randint(4, 10))
-                bill_dt = po_date + timedelta(days=randint(1, 3))
+                po_model.mark_as_approved(commit=True)
+                if random() > 0.5:
+                    # add a PO bill...
+                    ldt = self.localtime.date()
+                    fulfilled_dt = po_date + timedelta(days=randint(4, 10))
+                    bill_dt = po_date + timedelta(days=randint(1, 3))
 
-                if bill_dt > ldt:
-                    bill_dt = ldt
+                    if bill_dt > ldt:
+                        bill_dt = ldt
 
-                bill_model: BillModel = BillModel(
-                    bill_number=f'Bill for {po_model.po_number}',
-                    date=bill_dt,
-                    vendor=choice(self.vendor_models))
-                ledger_model, bill_model = bill_model.configure(
-                    ledger_posted=True,
-                    entity_slug=self.entity_model.slug,
-                    user_model=self.user_model
-                )
-                bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
-                bill_model.amount_due = po_model.po_amount
-                bill_model.paid = True
+                    bill_model: BillModel = BillModel(
+                        bill_number=generate_bill_number(),
+                        date=bill_dt,
+                        vendor=choice(self.vendor_models))
 
-                paid_date = bill_dt + timedelta(days=1)
-                if paid_date > ldt:
-                    paid_date = ldt
-                bill_model.paid_date = paid_date
+                    bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
+                    bill_model.prepaid_account = choice(self.accounts_by_role[ASSET_CA_PREPAID])
+                    bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
 
-                bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
-                bill_model.prepaid_account = choice(self.accounts_by_role[ASSET_CA_PREPAID])
-                bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
+                    ledger_model, bill_model = bill_model.configure(
+                        # ledger_posted=True,
+                        entity_slug=self.entity_model.slug,
+                        user_model=self.user_model
+                    )
 
-                bill_model.terms = choice([
-                    BillModel.TERMS_ON_RECEIPT,
-                    BillModel.TERMS_NET_30,
-                    BillModel.TERMS_NET_60,
-                    BillModel.TERMS_NET_60,
-                    # BillModel.TERMS_NET_90_PLUS,
-                ])
-                bill_model.clean()
-                bill_model.update_state()
-                bill_model.save()
+                    bill_model.terms = choice([
+                        BillModel.TERMS_ON_RECEIPT,
+                        BillModel.TERMS_NET_30,
+                        BillModel.TERMS_NET_60,
+                        BillModel.TERMS_NET_90
+                    ])
+                    bill_model.save()
 
-                for po_i in po_items:
-                    po_i.total_amount = po_i.po_total_amount
-                    po_i.quantity = po_i.po_quantity
-                    po_i.unit_cost = po_i.po_unit_cost
-                    po_i.bill_model = bill_model
-                    po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
-                    po_i.clean()
-                ItemThroughModel.objects.bulk_update(
-                    po_items,
-                    fields=[
-                        'po_total_amount',
-                        'total_amount',
-                        'po_quantity',
-                        'quantity',
-                        'po_unit_cost',
-                        'unit_cost',
-                        'bill_model',
-                        'po_item_status'])
-                bill_model.migrate_state(
-                    user_model=self.user_model,
-                    entity_slug=self.entity_model.slug,
-                    # itemthrough_queryset=po_items
-                )
+                    for po_i in po_items:
+                        po_i.po_total_amount = round(po_i.po_total_amount, 2)
+                        po_i.total_amount = round(po_i.po_total_amount, 2)
+                        po_i.quantity = round(po_i.po_quantity, 2)
+                        po_i.unit_cost = round(po_i.po_unit_cost, 2)
+                        po_i.bill_model = bill_model
+                        po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
+                        po_i.full_clean()
 
-                po_model.mark_as_fulfilled(fulfilled_date=fulfilled_dt, commit=True, po_items=po_items)
+                    bill_model.update_amount_due(item_list=po_items)
+                    bill_model.full_clean()
+                    bill_model.update_state()
+                    bill_model.save()
+
+                    po_model.itemthroughmodel_set.bulk_update(
+                        po_items,
+                        fields=[
+                            'po_total_amount',
+                            'total_amount',
+                            'po_quantity',
+                            'quantity',
+                            'po_unit_cost',
+                            'unit_cost',
+                            'bill_model',
+                            'po_item_status'
+                        ])
+
+                    if random() > 0.15:
+                        bill_model.mark_as_review(commit=True)
+                        if random() > 0.20:
+                            bill_model.mark_as_approved(commit=True)
+                            if random() > 0.25:
+                                paid_date = bill_dt + timedelta(days=1)
+                                if paid_date > ldt:
+                                    paid_date = ldt
+                                bill_model.mark_as_paid(
+                                    user_model=self.user_model,
+                                    entity_slug=self.entity_model.slug,
+                                    commit=True,
+                                    paid_date=paid_date)
+                                if random() > 0.20:
+                                    po_model.mark_as_fulfilled(
+                                        fulfilled_date=fulfilled_dt,
+                                        # po_items=po_items,
+                                        commit=True)
 
     def create_invoice(self,
                        is_accruable: bool,
@@ -509,13 +543,16 @@ class EntityDataGenerator:
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date=issue_dt,
             paid=is_paid,
-            paid_date=paid_dt
+            paid_date=paid_dt,
+            additional_info=dict()
         )
 
         ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.entity_model,
             user_model=self.user_model,
             post_ledger=True)
+
+        invoice_model.save()
 
         invoice_items = list()
 
@@ -552,16 +589,14 @@ class EntityDataGenerator:
             invoice_items.append(itm)
 
         invoice_model.update_amount_due(item_list=invoice_items)
-        invoice_model.amount_paid = Decimal.from_float(round(random() * float(invoice_model.amount_due), 2))
-        invoice_model.new_state(commit=True)
+        invoice_model.amount_paid = round(Decimal.from_float(round(random() * float(invoice_model.amount_due), 2)), 2)
         is_approved = random() > 0.2
         if is_approved:
             invoice_model.invoice_status = InvoiceModel.INVOICE_STATUS_APPROVED
-        invoice_model.clean()
+        invoice_model.full_clean()
         invoice_model.save()
 
         # pylint: disable=no-member
-        invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
 
         if invoice_model.can_migrate():
             invoice_model.migrate_state(

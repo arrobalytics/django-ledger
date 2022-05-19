@@ -205,7 +205,7 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.is_draft()
 
     def can_approve(self):
-        return any([self.is_draft(), self.is_review()])
+        return self.is_review()
 
     def can_complete(self):
         return self.is_approved()
@@ -277,26 +277,21 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return False
 
     def mark_as_approved(self, commit=False, raise_exception: bool = True, date_approved: date = None) -> bool:
-        if self.is_approved():
-            return True
-        elif self.can_approve():
-            self.status = self.CJ_STATUS_APPROVED
-            if not date_approved:
-                date_approved = localdate()
-            self.date_approved = date_approved
-            if commit:
-                self.clean()
-                self.save(update_fields=[
-                    'status',
-                    'date_approved',
-                    'updated'
-                ])
-            return True
-        if raise_exception:
+        if not self.can_approve():
             raise ValidationError(
-                f'Could not mark Customer Estimate {self.estimate_number} as approved.'
+                f'Estimate {self.estimate_number} cannot be marked as approved.'
             )
-        return False
+        self.status = self.CJ_STATUS_APPROVED
+        if not date_approved:
+            date_approved = localdate()
+        self.date_approved = date_approved
+        if commit:
+            self.clean()
+            self.save(update_fields=[
+                'status',
+                'date_approved',
+                'updated'
+            ])
 
     def mark_as_completed(self, commit=False, raise_exception: bool = True, date_completed: date = None) -> bool:
         if self.is_completed():
@@ -415,15 +410,6 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         if self.is_completed() and not self.date_completed:
             self.date_completed = localdate()
-
-        if self.is_completed() and not self.is_approved():
-            raise ValidationError(f'Cannot complete estimate {self.estimate_number} before is approved...')
-
-        if self.is_approved() and self.is_completed():
-            if self.date_approved < self.date_completed:
-                raise ValidationError(
-                    f'Cannot complete on {self.date_completed} before date approved {self.date_approved}'
-                )
 
         if self.is_canceled():
             self.date_approved = None

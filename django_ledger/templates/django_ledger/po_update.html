@@ -4,72 +4,23 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
-    <div class="columns">
-        <div class="column has-text-centered is-12">
-            <h1 class="is-size-1 has-text-weight-light">{% trans 'Update Purchase Order' %}</h1>
-            <h2 class="title">{{ po_model.po_number }}</h2>
-            <h2 class="subtitle">{% trans 'Status' %}: {{ po_model.get_po_status_display }}</h2>
-            {% if po_model.is_approved %}
-                <h2 class="subtitle">{% trans 'Approved' %}: {{ po_model.po_date }}</h2>
-                {% if po_model.is_fulfilled %}
-                    <h2 class="subtitle">{% trans 'Fulfilled' %}: {{ po_model.fulfillment_date }}</h2>
-                {% endif %}
-            {% endif %}
+    <div class="container">
+        <div class="columns is-multiline">
+            <div class="column">
+                {% include 'django_ledger/includes/card_po.html' with style='po-detail' po_model=po_model entity_slug=view.kwargs.entity_slug %}
+            </div>
+            <div class="column is-12">
+                <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                      method="post">
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% csrf_token %}
+                            {{ form }}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% po_item_formset_table item_formset %}
         </div>
     </div>
-
-    <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-          method="post">
-
-        <div class="columns is-multiline">
-            <div class="column is-12">
-                {% csrf_token %}
-                {{ form }}
-            </div>
-
-            <div class="column is-12 has-text-centered">
-                <button type="submit" class="button is-medium is-primary">{% trans 'Update PO' %}</button>
-                <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                   class="button is-medium is-info">{% trans 'Back to PO' %}</a>
-
-                {% if po_model.can_draft %}
-                    <a href="{% url 'django_ledger:po-action-mark-as-draft' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-info">{% trans 'Mark as Draft' %}</a>
-                {% endif %}
-                {% if po_model.can_review %}
-                    <a href="{% url 'django_ledger:po-action-mark-as-review' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-info">{% trans 'Mark as Review' %}</a>
-                {% endif %}
-                {% if po_model.can_approve %}
-                    <a href="{% url 'django_ledger:po-action-mark-as-approved' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-success">{% trans 'Approve PO' %}</a>
-                {% endif %}
-                {% if po_model.can_fulfill %}
-                    <a href="{% url 'django_ledger:po-action-mark-as-fulfilled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-success">{% trans 'Fulfill PO' %}</a>
-                {% endif %}
-                {% if po_model.can_cancel %}
-                    <a href="{% url 'django_ledger:po-action-mark-as-canceled' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-danger">{% trans 'Cancel PO' %}</a>
-                {% endif %}
-                {% if po_model.can_delete %}
-                    <a href="{% url 'django_ledger:po-delete' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                       class="button is-medium is-danger">{% trans 'Delete PO' %}</a>
-                {% endif %}
-            </div>
-            <div class="column is-12 has-text-centered">
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
-                    {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Received Amount' %}:
-                    {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Paid Amount' %}:
-                    {% currency_symbol %}{{ total_paid | currency_format }}</h3>
-            </div>
-        </div>
-    </form>
-    <hr>
-
-    {% po_item_formset_table item_formset %}
-
 {% endblock %}
