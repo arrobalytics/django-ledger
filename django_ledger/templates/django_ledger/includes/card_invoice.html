@@ -32,7 +32,7 @@
                           max="100">{{ invoice.get_progress | percentage }}
                 </progress>
                 {# MARK AS PAID MODAL #}
-                {% modal_action invoice 'get' entity_slug %}
+                {#                {% modal_action invoice 'get' entity_slug %}#}
             </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
@@ -98,18 +98,68 @@
                 {% endif %}
 
                 {# MARK AS PAID MODAL #}
-                {% modal_action invoice 'get' entity_slug %}
+                {#                {% modal_action invoice 'get' entity_slug %}#}
 
             </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
-                {% if not invoice.paid %}
-                    <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"
-                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>
+
+                {# MARK DRAFT #}
+                {% if invoice.can_draft %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_draft_html_id }}')"
+                       id="{{ invoice.get_mark_as_review_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>
+                    {# MARK AS DRAFT MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_draft_url invoice.get_mark_as_draft_message invoice.get_mark_as_draft_html_id %}
                 {% endif %}
-                <a href="{% url 'django_ledger:invoice-delete' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                   class="card-footer-item has-text-danger has-text-centered">{% trans 'Delete' %}</a>
+
+                {# MARK REVIEW #}
+                {% if invoice.can_review %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_review_html_id }}')"
+                       id="{{ invoice.get_mark_as_review_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Review' %}</a>
+                    {# MARK AS REVIEW MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_review_url invoice.get_mark_as_review_message invoice.get_mark_as_review_html_id %}
+                {% endif %}
+
+                {# MARK APPROVED #}
+                {% if invoice.can_approve %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_approved_html_id }}')"
+                       id="{{ invoice.get_mark_as_approved_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered has-text-success">{% trans 'Approve' %}</a>
+                    {# MARK AS APPROVED MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_approved_url invoice.get_mark_as_approved_message invoice.get_mark_as_approved_html_id %}
+                {% endif %}
+
+                {# MARK PAID #}
+                {% if invoice.can_pay %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_paid_html_id }}')"
+                       id="{{ invoice.get_mark_as_paid_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered has-text-success">{% trans 'Pay' %}</a>
+                    {# MARK AS PAID MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_paid_url invoice.get_mark_as_paid_message invoice.get_mark_as_paid_html_id %}
+                {% endif %}
+
+                {# MARK VOID #}
+                {% if invoice.can_void %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_void_html_id }}')"
+                       id="{{ invoice.get_mark_as_void_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered has-text-danger">{% trans 'Void' %}</a>
+                    {# MARK AS PAID MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_void_url invoice.get_mark_as_void_message invoice.get_mark_as_void_html_id %}
+                {% endif %}
+
+                {# MARK CANCELED #}
+                {% if invoice.can_cancel %}
+                    <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_canceled_html_id }}')"
+                       id="{{ invoice.get_mark_as_canceled_html_id }}-button"
+                       class="card-footer-item has-text-info has-text-centered has-text-danger">{% trans 'Cancel' %}</a>
+                    {# MARK AS PAID MODAL #}
+                    {% modal_action_v2 invoice invoice.get_mark_as_canceled_url invoice.get_mark_as_canceled_message invoice.get_mark_as_canceled_html_id %}
+                {% endif %}
+
+
             </footer>
         </div>
 

@@ -357,8 +357,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         if not po_items:
             po_items = self.itemthroughmodel_set.all().select_related('bill_model')
-        bill_models = [i.bill_model for i in po_items]
 
+        bill_models = [i.bill_model for i in po_items]
         all_items_billed = all(bill_models)
         if not all_items_billed:
             raise ValidationError('All items must be billed before PO can be fulfilled.')
@@ -407,10 +407,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as void.')
 
         # all bills associated with this PO...
-        bill_model_qs = BillModel.objects.for_entity(
-            user_model=user_model,
-            entity_slug=entity_slug
-        ).filter(bill_items__purchaseordermodel__uuid__exact=self.uuid).only('bill_status')
+        bill_model_qs = self.get_po_bill_queryset()
+        bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
             raise ValidationError('Must void all PO bills before PO can be voided.')
@@ -440,7 +438,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_mark_as_void_message(self):
         return _('Do you want to mark Purchase Order %s as Void?') % self.po_number
 
-    # Validation...
+    # Conevience Methods...
+
+    def get_po_bill_queryset(self, user_model, entity_slug):
+        return BillModel.objects.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug
+        ).filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
+
     def clean(self):
         if not self.po_number:
             self.po_number = generate_po_number()

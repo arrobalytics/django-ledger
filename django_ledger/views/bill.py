@@ -19,7 +19,7 @@ from django.views.generic import (UpdateView, CreateView, DeleteView,
                                   DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.bill import (BillModelCreateForm, BillModelUpdateForm, DraftBillModelUpdateForm,
+from django_ledger.forms.bill import (BillModelCreateForm, BaseBillModelUpdateForm, DraftBillModelUpdateForm,
                                       BillItemFormset, BillModelConfigureForm, InReviewBillModelUpdateForm,
                                       ApprovedBillModelUpdateForm, AccruedAndApprovedBillModelUpdateForm,
                                       PaidBillModelUpdateForm)
@@ -288,7 +288,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             return AccruedAndApprovedBillModelUpdateForm
         elif bill_model.is_paid():
             return PaidBillModelUpdateForm
-        return BillModelUpdateForm
+        return BaseBillModelUpdateForm
 
     def get_context_data(self, *, object_list=None,
                          item_formset: BillItemFormset = None,
@@ -303,6 +303,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         context['header_title'] = title
         context['header_subtitle'] = bill_model.get_bill_status_display()
 
+        # todo: this logic is different for invoice... revisit...
         if not bill_model.is_configured():
             messages.add_message(
                 request=self.request,

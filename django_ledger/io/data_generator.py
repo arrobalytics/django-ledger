@@ -13,7 +13,7 @@ from random import randint, random, choice
 from typing import Union
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, localdate
 
 from django_ledger.io import INCOME_SALES, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID, \
     LIABILITY_CL_DEFERRED_REVENUE
@@ -347,7 +347,6 @@ class EntityDataGenerator:
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date=issue_dt,
-            paid=is_paid,
             paid_date=paid_dt,
             additional_info=dict()
         )
@@ -519,6 +518,14 @@ class EntityDataGenerator:
                                     commit=True,
                                     paid_date=paid_date)
                                 if random() > 0.20:
+                                    for po_i in po_items:
+                                        po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
+                                        po_i.full_clean()
+                                    po_model.itemthroughmodel_set.bulk_update(po_items,
+                                                                              fields=[
+                                                                                  'po_item_status',
+                                                                                  'updated'
+                                                                              ])
                                     po_model.mark_as_fulfilled(
                                         fulfilled_date=fulfilled_dt,
                                         # po_items=po_items,
@@ -528,8 +535,10 @@ class EntityDataGenerator:
                        is_accruable: bool,
                        progress: float,
                        issue_dt: date,
-                       is_paid: bool,
                        paid_dt: date):
+
+        if not paid_dt:
+            paid_dt = localdate()
 
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
@@ -537,21 +546,18 @@ class EntityDataGenerator:
             progress=progress,
             terms=choice(InvoiceModel.TERMS)[0],
             invoice_number=generate_invoice_number(),
-            amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date=issue_dt,
-            paid=is_paid,
-            paid_date=paid_dt,
             additional_info=dict()
         )
 
         ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model,
-            post_ledger=True)
+            user_model=self.user_model)
 
+        invoice_model.full_clean()
         invoice_model.save()
 
         invoice_items = list()
@@ -560,17 +566,16 @@ class EntityDataGenerator:
             item_model: ItemModel = choice(self.product_models)
             quantity = Decimal.from_float(round(random() * randint(1, 5), 2))
             entity_unit = choice(self.entity_unit_models) if random() > .75 else None
-            margin = Decimal(random() + 1)
+            margin = Decimal(random() + 1.5)
             avg_cost = item_model.get_average_cost()
             unit_cost = round(random() * randint(100, 999), 2)
 
             if item_model.for_inventory and item_model.is_product_or_service:
                 if item_model.inventory_received is not None and item_model.inventory_received > 0.0:
-
                     if quantity > item_model.inventory_received:
                         quantity = item_model.inventory_received
 
-                        # reducing inventory qty...
+                    # reducing inventory qty...
                     item_model.inventory_received -= quantity
                     item_model.inventory_received_value -= avg_cost * quantity
                     unit_cost = avg_cost * margin
@@ -585,28 +590,35 @@ class EntityDataGenerator:
                 unit_cost=unit_cost,
                 entity_unit=entity_unit
             )
-            itm.clean()
+            itm.full_clean()
             invoice_items.append(itm)
 
+        invoice_items = invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
         invoice_model.update_amount_due(item_list=invoice_items)
-        invoice_model.amount_paid = round(Decimal.from_float(round(random() * float(invoice_model.amount_due), 2)), 2)
-        is_approved = random() > 0.2
-        if is_approved:
-            invoice_model.invoice_status = InvoiceModel.INVOICE_STATUS_APPROVED
         invoice_model.full_clean()
         invoice_model.save()
 
-        # pylint: disable=no-member
-
-        if invoice_model.can_migrate():
-            invoice_model.migrate_state(
-                user_model=self.user_model,
-                entity_slug=self.entity_model.slug,
-                je_date=issue_dt)
-
-        if is_paid:
-            ledger_model.locked = True
-            ledger_model.save(update_fields=['locked'])
+        if random() > 0.15:
+            invoice_model.mark_as_review(commit=True)
+            if random() > 0.15:
+                invoice_model.mark_as_approved(commit=True)
+                if random() > 0.3:
+                    print(issue_dt, paid_dt)
+                    invoice_model.mark_as_paid(
+                        entity_slug=self.entity_model.slug,
+                        user_model=self.user_model,
+                        paid_date=paid_dt,
+                        commit=True
+                    )
+                    if random() > 0.80:
+                        invoice_model.mark_as_void(
+                            entity_slug=self.entity_model.slug,
+                            user_model=self.user_model,
+                            void_date=paid_dt + timedelta(days=randint(1, 6)),
+                            commit=True
+                        )
+            else:
+                invoice_model.mark_as_canceled(commit=True)
 
     def fund_entity(self):
 
@@ -704,7 +716,6 @@ class EntityDataGenerator:
                     is_accruable=is_accruable,
                     progress=progress,
                     issue_dt=issue_dt,
-                    is_paid=is_paid,
                     paid_dt=paid_dt
                 )
 

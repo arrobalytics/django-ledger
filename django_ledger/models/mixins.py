@@ -75,7 +75,7 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
 
-class LedgerPlugInMixIn(models.Model):
+class LedgerWrapperMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -307,6 +307,21 @@ class LedgerPlugInMixIn(models.Model):
                 raise ValidationError(f'Bill ledger {ledger_model.name} is already unlocked...')
         ledger_model.unlock(commit)
 
+    # POST/UNPOST Ledger...
+    def post_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if ledger_model.posted:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is already posted...')
+        ledger_model.post(commit)
+
+    def unpost_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if not ledger_model.posted:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is not posted...')
+        ledger_model.post(commit)
+
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
@@ -317,6 +332,7 @@ class LedgerPlugInMixIn(models.Model):
                       je_date: date = None,
                       **kwargs):
 
+        # todo: add migration logic if ledger is locked...
         if not self.can_migrate() and not force_migrate:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
@@ -522,10 +538,10 @@ class LedgerPlugInMixIn(models.Model):
 
     def void_state(self, commit: bool = False):
         void_state = {
-            'amount_paid': 0,
-            'amount_receivable': 0,
-            'amount_unearned': 0,
-            'amount_earned': 0
+            'amount_paid': Decimal.from_float(0.0),
+            'amount_receivable': Decimal.from_float(0.0),
+            'amount_unearned': Decimal.from_float(0.0),
+            'amount_earned': Decimal.from_float(0.0),
         }
         if commit:
             self.update_state(void_state)
@@ -634,13 +650,16 @@ class LedgerPlugInMixIn(models.Model):
         else:
             self.paid_date = None
 
-        if self.is_void() and not all([
-            self.amount_paid == 0,
-            self.amount_earned == 0,
-            self.amount_unearned == 0,
-            self.amount_due == 0
-        ]):
-            raise ValidationError('Voided element cannot have any balance.')
+        if self.is_void():
+            if any([
+                self.amount_paid,
+                self.amount_earned,
+                self.amount_unearned,
+                self.amount_receivable
+            ]):
+                raise ValidationError('Voided element cannot have any balance.')
+
+            self.progress = 0
 
         if self.can_migrate():
             self.update_state()

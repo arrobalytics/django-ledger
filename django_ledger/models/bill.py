@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
 from django_ledger.models import LazyLoader
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn, MarkdownNotesMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn
 
 lazy_loader = LazyLoader()
 
@@ -82,10 +82,10 @@ class BillModelManager(models.Manager):
     def for_entity_unpaid(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug,
                              user_model=user_model)
-        return qs.filter(paid=False)
+        return qs.approved()
 
 
-class BillModelAbstract(LedgerPlugInMixIn,
+class BillModelAbstract(LedgerWrapperMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'
@@ -291,6 +291,9 @@ class BillModelAbstract(LedgerPlugInMixIn,
     def can_edit_items(self):
         return self.is_draft()
 
+    def can_migrate(self) -> bool:
+        return self.is_approved()
+
     # --> ACTIONS <---
     def mark_as_draft(self, commit: bool = False, **kwargs):
         if not self.can_draft():
@@ -411,8 +414,6 @@ class BillModelAbstract(LedgerPlugInMixIn,
         if not self.can_pay():
             raise ValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
 
-        self.paid = True
-        self.bill_status = self.BILL_STATUS_PAID
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
         self.paid_date = localdate() if not paid_date else paid_date
@@ -423,6 +424,7 @@ class BillModelAbstract(LedgerPlugInMixIn,
             raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
                                   f' date {self.date}.')
 
+        self.bill_status = self.BILL_STATUS_PAID
         self.new_state(commit=True)
         self.clean()
 
@@ -431,7 +433,6 @@ class BillModelAbstract(LedgerPlugInMixIn,
 
         if commit:
             self.save(update_fields=[
-                'paid',
                 'paid_date',
                 'progress',
                 'amount_paid',
@@ -444,7 +445,8 @@ class BillModelAbstract(LedgerPlugInMixIn,
             self.migrate_state(
                 user_model=user_model,
                 entity_slug=entity_slug,
-                itemthrough_queryset=itemthrough_queryset
+                itemthrough_queryset=itemthrough_queryset,
+                force_migrate=True
             )
             self.lock_ledger(commit=True)
 
@@ -468,19 +470,19 @@ class BillModelAbstract(LedgerPlugInMixIn,
             raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
 
         self.void_date = void_date if void_date else localdate()
-        self.void = True
         self.bill_status = self.BILL_STATUS_VOID
         self.void_state(commit=True)
+        self.clean()
 
         if commit:
-            self.save()
             self.unlock_ledger(commit=True, raise_exception=False)
             self.migrate_state(
                 entity_slug=entity_slug,
                 user_model=user_model,
                 void=True,
-                void_date=self.void_date
-            )
+                void_date=self.void_date,
+                force_migrate=True)
+            self.save()
             self.lock_ledger(commit=True, raise_exception=False)
 
     def get_mark_as_void_html_id(self):

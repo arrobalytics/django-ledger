@@ -573,6 +573,11 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Customer Job Through Model: {self.uuid} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {amount}'
 
+    # def can_order(self):
+    #     if not self.po_model_id:
+    #         return False
+    #
+
     def is_received(self):
         return self.po_item_status == self.STATUS_RECEIVED
 
@@ -600,7 +605,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         self.total_amount = total_amount
 
     def update_po_total_amount(self):
-        self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
+        self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost), 2)
 
     def update_revenue_estimate(self):
         if self.ce_model_id:
@@ -671,6 +676,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             if self.total_amount > self.po_total_amount:
                 raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
                                       f'PO amount {self.po_total_amount}')
+        else:
+            self.po_item_status = None
 
 
 class ItemThroughModel(ItemThroughModelAbstract):

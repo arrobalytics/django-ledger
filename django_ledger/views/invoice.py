@@ -17,7 +17,10 @@ from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchi
                                   ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
+from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset,
+                                         DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
+                                         ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
+                                         AccruedAndApprovedInvoiceModelUpdateForm)
 from django_ledger.models import EntityModel, LedgerModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import LoginRequiredMixIn
@@ -97,7 +100,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_field = 'uuid'
     context_object_name = 'invoice'
     template_name = 'django_ledger/invoice_update.html'
-    form_class = InvoiceModelUpdateForm
+    form_class = BaseInvoiceModelUpdateForm
     http_method_names = ['get', 'post']
 
     action_update_items = False
@@ -105,6 +108,21 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     action_lock_ledger = False
     action_unlock_ledger = False
     action_force_migrate = False
+
+    def get_form_class(self):
+        invoice_model: InvoiceModel = self.object
+
+        if invoice_model.is_draft():
+            return DraftInvoiceModelUpdateForm
+        elif invoice_model.is_review():
+            return InReviewInvoiceModelUpdateForm
+        elif invoice_model.is_approved():
+            if invoice_model.accrue:
+                return AccruedAndApprovedInvoiceModelUpdateForm
+            return ApprovedInvoiceModelUpdateForm
+        elif invoice_model.is_paid():
+            return PaidInvoiceModelUpdateForm
+        return BaseInvoiceModelUpdateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -129,7 +147,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         ledger_model: LedgerModel = self.object.ledger
 
-        if ledger_model.locked and not invoice_model.paid:
+        if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
                                  f'Warning! This Invoice is Locked. Must unlock before making any changes.',
@@ -297,7 +315,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                                                   invoice_model=invoice_model,
                                                                   entity_slug=entity_slug)
 
-            if not invoice_model.can_update_items():
+            if not invoice_model.can_edit_items():
                 messages.add_message(
                     request,
                     message=f'Cannot update items once Invoice is {invoice_model.get_invoice_status_display()}',
@@ -434,22 +452,21 @@ class BaseInvoiceActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin)
         )
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:bill-update',
+        return reverse('django_ledger:invoice-update',
                        kwargs={
                            'entity_slug': kwargs['entity_slug'],
-                           'bill_pk': kwargs['bill_pk']
+                           'invoice_pk': kwargs['invoice_pk']
                        })
 
-    def get(self, request, invoice_pk, *args, **kwargs):
-        kwargs['invoice_pk'] = invoice_pk
+    def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
         response = super(BaseInvoiceActionView, self).get(request, *args, **kwargs)
-        ce_model: InvoiceModel = self.get_object()
+        invoice_model: InvoiceModel = self.get_object()
 
         try:
-            getattr(ce_model, self.action_name)(commit=self.commit, **kwargs)
+            getattr(invoice_model, self.action_name)(commit=self.commit, **kwargs)
         except ValidationError as e:
             messages.add_message(request,
                                  message=e.message,

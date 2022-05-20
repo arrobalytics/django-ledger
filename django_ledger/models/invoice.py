@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerPlugInMixIn, MarkdownNotesMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn
 
 UserModel = get_user_model()
 
@@ -71,10 +71,10 @@ class InvoiceModelManager(models.Manager):
 
     def for_entity_unpaid(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(paid=False)
+        return qs.approved()
 
 
-class InvoiceModelAbstract(LedgerPlugInMixIn,
+class InvoiceModelAbstract(LedgerWrapperMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
@@ -91,6 +91,8 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         (INVOICE_STATUS_DRAFT, _('Draft')),
         (INVOICE_STATUS_REVIEW, _('In Review')),
         (INVOICE_STATUS_APPROVED, _('Approved')),
+        (INVOICE_STATUS_PAID, _('Paid')),
+        (INVOICE_STATUS_VOID, _('Void')),
         (INVOICE_STATUS_CANCELED, _('Canceled'))
     ]
 
@@ -219,18 +221,226 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
             self.is_paid()
         ])
 
+    def can_cancel(self):
+        return any([
+            self.is_draft(),
+            self.is_review()
+        ])
+
     def can_edit_items(self):
         return self.is_draft()
 
-    def can_update_items(self):
-        return self.invoice_status not in [
-            self.INVOICE_STATUS_APPROVED,
-            self.INVOICE_STATUS_CANCELED
-        ]
-
     # ACTIONS...
 
+    # DRAFT...
+    def mark_as_draft(self, commit: bool = False, **kwargs):
+        if not self.can_draft():
+            raise ValidationError(f'Cannot mark PO {self.uuid} as draft...')
+        self.invoice_status = self.INVOICE_STATUS_DRAFT
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'invoice_status',
+                'updated'
+            ])
 
+    def get_mark_as_draft_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-draft'
+
+    def get_mark_as_draft_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-draft',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_draft_message(self):
+        return _('Do you want to mark Invoice %s as Draft?') % self.invoice_number
+
+    # REVIEW...
+    def mark_as_review(self, commit: bool = False, **kwargs):
+        if not self.can_review():
+            raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
+        if not self.amount_due:
+            raise ValidationError(
+                f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
+            )
+        self.invoice_status = self.INVOICE_STATUS_REVIEW
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'invoice_status',
+                'updated'
+            ])
+
+    def get_mark_as_review_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-review'
+
+    def get_mark_as_review_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-review',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_review_message(self):
+        return _('Do you want to mark Invoice %s as In Review?') % self.invoice_number
+
+    # APPROVED...
+    def mark_as_approved(self, commit: bool = False, **kwargs):
+        if not self.can_approve():
+            raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+        self.invoice_status = self.INVOICE_STATUS_APPROVED
+        self.clean()
+        if commit:
+            self.ledger.post(commit=True)
+            self.save(update_fields=[
+                'invoice_status',
+                'updated'
+            ])
+
+    def get_mark_as_approved_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-approved'
+
+    def get_mark_as_approved_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-approved',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_approved_message(self):
+        return _('Do you want to mark Invoice %s as Approved?') % self.invoice_number
+
+    # PAID...
+    def mark_as_paid(self,
+                     entity_slug: str,
+                     user_model,
+                     paid_date: date = None,
+                     commit: bool = False,
+                     **kwargs):
+
+        if not self.can_pay():
+            raise ValidationError(f'Cannot mark PO {self.uuid} as Paid...')
+
+        self.progress = Decimal.from_float(1.0)
+        self.amount_paid = self.amount_due
+        self.paid_date = localdate() if not paid_date else paid_date
+
+        if self.paid_date > localdate():
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        if self.paid_date < self.date:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+                                  f' date {self.date}.')
+
+        self.new_state(commit=True)
+        self.invoice_status = self.INVOICE_STATUS_PAID
+        self.clean()
+
+        if commit:
+            self.save(update_fields=[
+                'paid_date',
+                'progress',
+                'amount_paid',
+                'invoice_status',
+                'updated'
+            ])
+            self.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                force_migrate=True,
+                je_date=paid_date
+            )
+            self.lock_ledger(commit=True)
+
+    def get_mark_as_paid_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-paid'
+
+    def get_mark_as_paid_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-paid',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_paid_message(self):
+        return _('Do you want to mark Invoice %s as Paid?') % self.invoice_number
+
+    # VOID...
+    def mark_as_void(self,
+                     entity_slug: str,
+                     user_model,
+                     void_date: date = None,
+                     commit: bool = False,
+                     **kwargs):
+
+        if not self.can_void():
+            raise ValidationError(f'Cannot mark PO {self.uuid} as Void...')
+
+        self.void_date = localdate() if not void_date else void_date
+        self.void_state(commit=True)
+        self.invoice_status = self.INVOICE_STATUS_VOID
+        self.clean()
+
+        # todo: add custom logic for void date...
+        # if self.paid_date > localdate():
+        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        # if self.paid_date < self.date:
+        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+        #                           f' date {self.date}.')
+
+        if commit:
+            self.unlock_ledger(commit=True, raise_exception=False)
+            self.migrate_state(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                void=True,
+                void_date=self.void_date,
+                force_migrate=True
+            )
+            self.save()
+            self.lock_ledger(commit=True, raise_exception=False)
+
+    def get_mark_as_void_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-void'
+
+    def get_mark_as_void_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-void',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_void_message(self):
+        return _('Do you want to mark Invoice %s as Void?') % self.invoice_number
+
+    # CANCEL
+    def mark_as_canceled(self, commit: bool = False, **kwargs):
+        if not self.can_cancel():
+            raise ValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
+
+        self.invoice_status = self.INVOICE_STATUS_CANCELED
+
+        if commit:
+            self.save(update_fields=[
+                'invoice_status',
+                'updated'
+            ])
+            self.lock_ledger(commit=True, raise_exception=False)
+            self.unpost_ledger(commit=True, raise_exception=False)
+
+    def get_mark_as_canceled_html_id(self):
+        return f'djl-{self.uuid}-invoice-mark-as-canceled'
+
+    def get_mark_as_canceled_url(self):
+        return reverse('django_ledger:invoice-action-mark-as-canceled',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
+
+    def get_mark_as_canceled_message(self):
+        return _('Do you want to mark Invoice %s as Canceled?') % self.invoice_number
 
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
@@ -271,7 +481,7 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         )
 
     def can_migrate(self) -> bool:
-        return self.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED
+        return self.is_approved()
 
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
@@ -304,38 +514,38 @@ class InvoiceModelAbstract(LedgerPlugInMixIn,
         self.amount_due = round(item_data['amount_due'], 2)
         return queryset, item_data
 
-    def mark_as_paid(self,
-                     user_model,
-                     entity_slug: str,
-                     paid_date: date = None,
-                     itemthrough_queryset=None,
-                     commit: bool = False):
-
-        self.paid = True
-        self.progress = Decimal.from_float(1.0)
-        self.amount_paid = self.amount_due
-        paid_dt = localdate() if not paid_date else paid_date
-
-        if not self.paid_date:
-            self.paid_date = paid_dt
-        if self.paid_date > paid_dt:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        if self.paid_date < self.date:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                  f' date {self.date}.')
-        self.update_state()
-        self.clean()
-        if commit:
-            self.migrate_state(
-                user_model=user_model,
-                entity_slug=entity_slug,
-                itemthrough_queryset=itemthrough_queryset
-            )
-            ledger_model = self.ledger
-            ledger_model.locked = True
-            # pylint: disable=no-member
-            ledger_model.save(update_fields=['locked', 'updated'])
-            self.save()
+    # def mark_as_paid(self,
+    #                  user_model,
+    #                  entity_slug: str,
+    #                  paid_date: date = None,
+    #                  itemthrough_queryset=None,
+    #                  commit: bool = False):
+    #
+    #     self.paid = True
+    #     self.progress = Decimal.from_float(1.0)
+    #     self.amount_paid = self.amount_due
+    #     paid_dt = localdate() if not paid_date else paid_date
+    #
+    #     if not self.paid_date:
+    #         self.paid_date = paid_dt
+    #     if self.paid_date > paid_dt:
+    #         raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+    #     if self.paid_date < self.date:
+    #         raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+    #                               f' date {self.date}.')
+    #     self.update_state()
+    #     self.clean()
+    #     if commit:
+    #         self.migrate_state(
+    #             user_model=user_model,
+    #             entity_slug=entity_slug,
+    #             itemthrough_queryset=itemthrough_queryset
+    #         )
+    #         ledger_model = self.ledger
+    #         ledger_model.locked = True
+    #         # pylint: disable=no-member
+    #         ledger_model.save(update_fields=['locked', 'updated'])
+    #         self.save()
 
     def clean(self):
         if not self.invoice_number:

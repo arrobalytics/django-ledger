@@ -106,7 +106,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
-    def lock(self, commit=False):
+    def lock(self, commit: bool = False):
         self.locked = True
         if commit:
             self.save(update_fields=[
@@ -114,7 +114,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'updated'
             ])
 
-    def unlock(self, commit=False):
+    def unlock(self, commit: bool = False):
         self.locked = False
         if commit:
             self.save(update_fields=[

@@ -99,7 +99,7 @@ class BillModelCreateForm(ModelForm):
         }
 
 
-class BillModelUpdateForm(BillModelCreateForm):
+class BaseBillModelUpdateForm(BillModelCreateForm):
 
     def __init__(self,
                  *args,
@@ -123,15 +123,6 @@ class BillModelUpdateForm(BillModelCreateForm):
     class Meta:
         model = BillModel
         fields = [
-            # 'xref',
-            # 'amount_due',
-            # 'amount_paid',
-            # 'paid',
-            # 'paid_date',
-            # 'progress',
-            # 'accrue',
-            # 'bill_status',
-            # 'terms',
             'markdown_notes'
         ]
         widgets = {
@@ -171,36 +162,35 @@ class BillModelUpdateForm(BillModelCreateForm):
         }
 
 
-class DraftBillModelUpdateForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class DraftBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'vendor',
             'terms',
             'xref',
-            # 'amount_due',
             'accrue',
             'markdown_notes'
         ]
 
 
-class InReviewBillModelUpdateForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class InReviewBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'xref',
             'markdown_notes'
         ]
 
 
-class ApprovedBillModelUpdateForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class ApprovedBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'amount_paid',
             'markdown_notes'
         ]
 
 
-class AccruedAndApprovedBillModelUpdateForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class AccruedAndApprovedBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'progress',
             'amount_paid',
@@ -208,17 +198,15 @@ class AccruedAndApprovedBillModelUpdateForm(BillModelUpdateForm):
         ]
 
 
-class PaidBillModelUpdateForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class PaidBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
-            # 'progress',
-            # 'amount_paid',
             'markdown_notes'
         ]
 
 
-class BillModelConfigureForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class BillModelConfigureForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'xref',
             'amount_due',

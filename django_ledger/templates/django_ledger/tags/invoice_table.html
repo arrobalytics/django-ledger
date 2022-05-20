@@ -7,10 +7,10 @@
         <tr>
             <th>Invoice Number</th>
             <th>Invoice Date</th>
+            <th>Status</th>
             <th>Invoiced To</th>
             <th>Amount</th>
             <th>Payments</th>
-            <th>Is Paid?</th>
             <th>Past Due?</th>
             <th>Actions</th>
         </tr>
@@ -20,19 +20,14 @@
             <tr>
                 <td>{{ invoice.invoice_number }}</td>
                 <td>{{ invoice.date }}</td>
+                <td>{{ invoice.get_invoice_status_display }}</td>
                 <td>{{ invoice.customer.customer_name }}</td>
                 <td>${{ invoice.amount_due | currency_format }}</td>
                 <td>${{ invoice.amount_paid | currency_format }}</td>
-                <td>{% if invoice.paid %}
-                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                {% else %}
-                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                {% endif %} </td>
-                <td>{% if invoice.is_past_due %}
-                    <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                {% else %}
-                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                {% endif %}
+                <td>
+                    {% if invoice.is_past_due %}
+                        <span class="icon is-small has-text-danger">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% endif %}
                 </td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
@@ -52,16 +47,6 @@
                                    class="dropdown-item has-text-success">Details</a>
                                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                                    class="dropdown-item has-text-success">Update</a>
-
-                                {% if not invoice.paid %}
-                                    <a onclick="djLedger.showModal('{{ invoice.get_html_id }}')"
-                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
-                                    {% modal_action invoice 'get' entity_slug %}
-                                {% endif %}
-
-                                <a href="{% url 'django_ledger:invoice-delete' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
-                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>
-
                             </div>
                         </div>
                     </div>
