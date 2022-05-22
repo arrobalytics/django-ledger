@@ -415,7 +415,6 @@ class EntityDataGenerator:
         po_model = po_model.configure(
             entity_slug=self.entity_model,
             user_model=self.user_model,
-            po_date=po_date
         )
         po_model.po_title = f'PO Title for {po_model.po_number}'
         po_model.save()
@@ -444,7 +443,7 @@ class EntityDataGenerator:
         if random() > 0.15:
             po_model.mark_as_review(commit=True)
             if random() > 0.5:
-                po_model.mark_as_approved(commit=True)
+                po_model.mark_as_approved(commit=True, po_date=po_date)
                 if random() > 0.5:
                     # add a PO bill...
                     ldt = self.localtime.date()

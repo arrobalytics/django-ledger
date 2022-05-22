@@ -26,7 +26,9 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
-class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
+class InvoiceModelCreateView(LoginRequiredMixIn,
+                             CreateView):
+    # todo: views that dont have a bill/invoice/etc/etc are not protected!
     template_name = 'django_ledger/invoice_create.html'
     PAGE_TITLE = _('Create Invoice')
     extra_context = {

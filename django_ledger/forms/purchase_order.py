@@ -89,8 +89,6 @@ class DraftPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
 class ReviewPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
     class Meta(BasePurchaseOrderModelUpdateForm.Meta):
         fields = [
-            'po_date',
-            'po_title',
             'markdown_notes',
         ]
 

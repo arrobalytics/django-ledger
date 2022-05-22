@@ -8,43 +8,42 @@
                 <h2 class="card-header-title has-text-weight-light is-size-3">
             <span class="icon is-large">
                     {% icon 'uil:bill' 36 %}</span>
-                    {% trans 'Purchase Order Info' %}</h2>
+                    {{ po_model.po_number }}
+                </h2>
             </div>
             <div class="card-content">
-                <h2 class="is-size-3">{{ po_model.po_number }}</h2>
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
-                    {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Received Amount' %}:
-                    {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
-                <h3 class="is-size-3 has-text-weight-light">{% trans 'Paid Amount' %}:
-                    {% currency_symbol %}{{ total_paid | currency_format }}</h3>
 
-                <h3 class="is-size-4 has-text-weight-light">
-                    Status: <span
-                        class="{% if po_model.po_status == 'draft' %}has-text-danger{% elif po_model.po_status == 'approved' %}has-text-success{% endif %}">
-                    {{ po_model.get_po_status_display }}</span></h3>
-                <h3 class="is-size-4 has-text-weight-light">Inventory Purchase:
-                    {% if po_model.for_inventory %}
+                {% if po_model.is_draft %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
+                {% endif %}
+
+                {% if po_model.is_review %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
+                {% endif %}
+
+                {% if po_model.is_approved %}
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
+                        {{ po_model.po_date | date }}</h3>
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Received Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_amount_received | currency_format }}</h3>
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Paid Amount' %}:
+                        {% currency_symbol %}{{ total_paid | currency_format }}</h3>
+                {% endif %}
+
+                {% if po_model.is_fulfilled %}
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
+                        {{ po_model.po_date | date }}</h3>
+                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
+                        {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled' %}:
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}
-                </h3>
-                <h3 class="is-size-4 has-text-weight-light">Fulfilled:
-                    {% if po_model.fulfilled %}
-                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                        {{ po_model.fulfillment_date | date }}
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                    {% endif %}
-                </h3>
-                {% if po_model.ce_model_id %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Estimate' %}:
-                        {{ po_model.ce_model.estimate_number }}
-                        <a class="button is-small is-round is-outlined"
-                           href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=po_model.ce_model.uuid %}">
-                            {% trans 'View' %}
-                        </a></h3>
+                    </h3>
                 {% endif %}
             </div>
 
@@ -114,7 +113,6 @@
                     {# MARK AS CANCELED MODAL #}
                     {% modal_action_v2 bill po_model.get_mark_as_canceled_url po_model.get_mark_as_canceled_message po_model.get_mark_as_canceled_html_id %}
                 {% endif %}
-
 
             </footer>
 

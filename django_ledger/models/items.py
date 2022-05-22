@@ -581,6 +581,9 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
     def is_received(self):
         return self.po_item_status == self.STATUS_RECEIVED
 
+    def is_canceled(self):
+        return self.po_item_status == self.STATUS_CANCELED
+
     def update_total_amount(self):
         qty = self.quantity
         if not isinstance(qty, Decimal):

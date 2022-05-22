@@ -446,6 +446,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 user_model=user_model,
                 entity_slug=entity_slug,
                 itemthrough_queryset=itemthrough_queryset,
+                je_date=paid_date,
                 force_migrate=True
             )
             self.lock_ledger(commit=True)

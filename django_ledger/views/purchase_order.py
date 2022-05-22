@@ -178,7 +178,8 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                         if not item.po_model_id:
                             item.po_model = po_model
                     po_item_formset.save()
-                    po_model.update_po_state()
+                    # todo: check that update state methods are accepting queryset from formsets...
+                    po_model.update_po_state(item_queryset=po_item_formset.queryset)
                     po_model.clean()
                     po_model.save(update_fields=['po_amount',
                                                  'po_amount_received',

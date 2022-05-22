@@ -16,6 +16,16 @@
                         <div class="column is-12">
                             {% csrf_token %}
                             {{ form }}
+                            <button type="submit"
+                                    class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save PO' %}
+                            </button>
+                            <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                               class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to PO Detail' %}</a>
+                            <a href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}"
+                               class="button is-small is-info is-fullwidth mt-2">{% trans 'PO List' %}</a>
+                            <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                               class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
+
                         </div>
                     </div>
                 </form>

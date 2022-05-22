@@ -304,7 +304,6 @@ class FromToDatesMixIn:
 
 
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
-    redirect_field_name = 'next'
 
     def get_login_url(self):
         return reverse('django_ledger:login')
@@ -436,5 +435,3 @@ class BaseDateNavigationUrlMixIn:
                                                      k: v for k, v in self.kwargs.items() if
                                                      k in self.BASE_DATE_URL_KWARGS
                                                  })
-
-
