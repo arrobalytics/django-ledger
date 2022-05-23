@@ -96,8 +96,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
     BILL_STATUS_REVIEW = 'in_review'
     BILL_STATUS_APPROVED = 'approved'
     BILL_STATUS_PAID = 'paid'
-    BILL_STATUS_CANCELED = 'canceled'
     BILL_STATUS_VOID = 'void'
+    BILL_STATUS_CANCELED = 'canceled'
 
     BILL_STATUS = [
         (BILL_STATUS_DRAFT, _('Draft')),
@@ -223,22 +223,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.amount_due = round(item_data['amount_due'], 2)
         return queryset, item_data
 
-    # def get_amount_open(self):
-    #     if any([
-    #         self.is_draft(),
-    #         self.is_review(),
-    #         self.is_canceled(),
-    #         self.is_void()
-    #     ]):
-    #         return 0
-    #     elif self.accrue:
-    #         amount_due = self.amount_due or 0
-    #         return amount_due - self.get_amount_earned()
-    #     else:
-    #         amount_due = self.amount_due or 0
-    #         payments = self.amount_paid or 0
-    #         return amount_due - payments
-
     # State
     def is_draft(self):
         return self.bill_status == self.BILL_STATUS_DRAFT
@@ -250,15 +234,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return self.bill_status == self.BILL_STATUS_APPROVED
 
     def is_paid(self):
-        # todo: use PAID status instead
         return self.bill_status == self.BILL_STATUS_PAID
+
+    def is_canceled(self):
+        return self.bill_status == self.BILL_STATUS_CANCELED
 
     def is_void(self):
         # todo: use VOID status instead
         return self.bill_status == self.BILL_STATUS_VOID
-
-    def is_canceled(self):
-        return self.bill_status == self.BILL_STATUS_CANCELED
 
     # Permissions....
     def can_draft(self):
@@ -284,15 +267,17 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     def can_void(self):
         return any([
-            self.is_approved(),
-            self.is_paid()
+            self.is_approved()
         ])
 
     def can_edit_items(self):
         return self.is_draft()
 
     def can_migrate(self) -> bool:
-        return self.is_approved()
+        if not self.is_approved():
+            return False
+        return super(BillModelAbstract, self).can_migrate()
+
 
     # --> ACTIONS <---
     def mark_as_draft(self, commit: bool = False, **kwargs):
@@ -335,6 +320,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             )
 
         self.bill_status = self.BILL_STATUS_REVIEW
+        self.clean()
         if commit:
             self.save(
                 update_fields=[
@@ -363,6 +349,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 f'Bill {self.bill_number} cannot be marked as in approved.'
             )
         self.bill_status = self.BILL_STATUS_APPROVED
+        self.clean()
         if commit:
             self.ledger.post(commit=commit)
             self.save(update_fields=[
@@ -410,7 +397,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
                      itemthrough_queryset=None,
                      commit: bool = False,
                      **kwargs):
-
         if not self.can_pay():
             raise ValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
 

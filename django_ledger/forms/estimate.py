@@ -31,25 +31,25 @@ class EstimateModelCreateForm(forms.ModelForm):
 
     class Meta:
         model = EstimateModel
-        fields = ['customer', 'title', 'terms']
+        fields = ['title', 'customer', 'terms']
         widgets = {
             'customer': forms.Select(attrs={
                 'id': 'djl-customer-estimate-customer-input',
-                'class': 'input'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'terms': forms.Select(attrs={
                 'id': 'djl-customer-estimate-terms-input',
-                'class': 'input'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'title': forms.TextInput(attrs={
                 'id': 'djl-customer-job-title-input',
-                'class': 'input',
-                'placeholder': _('Enter title...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
+                'placeholder': _('Estimate title...')
             })
         }
 
 
-class EstimateModelUpdateForm(forms.ModelForm):
+class BaseEstimateModelUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,21 +57,9 @@ class EstimateModelUpdateForm(forms.ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.CUSTOMER_ESTIMATE_MODEL: EstimateModel = self.instance
 
-        if not self.CUSTOMER_ESTIMATE_MODEL.can_update_terms():
-            self.fields['terms'].disabled = True
-
-    def clean(self):
-        cleaned_data = super(EstimateModelUpdateForm, self).clean()
-        if 'status' in self.changed_data:
-            ce_model: EstimateModel = self.instance
-            new_status = cleaned_data['status']
-            ce_model.can_change_status(new_status=new_status)
-        return cleaned_data
-
     class Meta:
         model = EstimateModel
         fields = [
-            'terms',
             'markdown_notes'
         ]
         widgets = {
@@ -80,6 +68,14 @@ class EstimateModelUpdateForm(forms.ModelForm):
                 'class': 'textarea'
             })
         }
+
+
+class DraftEstimateModelUpdateForm(BaseEstimateModelUpdateForm):
+    class Meta(BaseEstimateModelUpdateForm.Meta):
+        fields = [
+            'terms',
+            'markdown_notes'
+        ]
 
 
 class EstimateItemModelForm(ModelForm):

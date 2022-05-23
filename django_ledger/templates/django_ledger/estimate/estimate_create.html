@@ -16,7 +16,7 @@
                     <form action="{% url 'django_ledger:customer-estimate-create' entity_slug=view.kwargs.entity_slug %}"
                           method="post">
                         {% csrf_token %}
-                        {{ form.as_p }}
+                        {{ form }}
                         <button type="submit"
                                 class="button is-primary is-outlined is-fullwidth djetler_my_1">
                             {% trans 'Create' %}

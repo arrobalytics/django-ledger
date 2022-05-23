@@ -1,0 +1,36 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load django_ledger %}
+
+
+{% block view_content %}
+    <div class="container">
+        <div class="columns is-multiline">
+            <div class="column is-12">
+                {% include 'django_ledger/includes/card_customer.html' with customer=estimate.customer %}
+            </div>
+            <div class="column is-12">
+                {% include 'django_ledger/includes/card_estimate.html' with estimate_model=estimate style='estimate-detail' entity_slug=view.kwargs.entity_slug %}
+                <form action="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
+                      method="post">
+                    {% csrf_token %}
+                    {{ form }}
+                    <button type="submit"
+                            class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save Estimate' %}</button>
+
+                    {#                    <a href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"#}
+                    {#                       class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to Bill Detail' %}</a>#}
+                    {#                    <a href="{% url 'django_ledger:bill-list' entity_slug=view.kwargs.entity_slug %}"#}
+                    {#                       class="button is-small is-info is-fullwidth mt-2">{% trans 'Bill List' %}</a>#}
+                    {#                    <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"#}
+                    {#                       class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>#}
+
+                </form>
+            </div>
+
+            <div class="column is-12">
+                {% cj_item_formset_table cj_formset %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

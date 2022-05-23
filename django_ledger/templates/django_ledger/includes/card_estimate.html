@@ -1,0 +1,85 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-header-title has-text-weight-light is-size-3">
+            <span class="icon is-large">
+                    {% icon 'eos-icons:job' 36 %}</span>
+            {% trans 'Estimate' %} {{ estimate_model.estimate_number }}</h2>
+    </div>
+
+    <div class="card-content">
+        <h2 class="is-size-3">{% trans 'Status' %}: {{ estimate_model.get_status_display }}</h2>
+        <h3 class="has-text-weight-bold is-size-4 has-text-success">
+            {% trans 'Estimated Revenue' %}:
+            {% currency_symbol %}{{ estimate_model.revenue_estimate }}</h3>
+        <h3 class="is-size-4 has-text-info">{% trans 'Profit Estimate' %}:
+            {% currency_symbol %}{{ estimate_model.profit_estimate }}</h3>
+        <br>
+
+        <br>
+        <p class="has-text-weight-bold">{% trans 'Cost Breakdown' %}:</p>
+        <h3 class="has-text-weight-light is-italic is-size-5">
+            {% trans 'Labor Cost' %}:
+            {% currency_symbol %}{{ estimate_model.labor_estimate }}</h3>
+        <h3 class="has-text-weight-light is-italic is-size-5">
+            {% trans 'Materials Cost' %}:
+            {% currency_symbol %}{{ estimate_model.material_estimate }}</h3>
+        <h3 class="has-text-weight-light is-italic is-size-5">
+            {% trans 'Equipment Cost' %}:
+            {% currency_symbol %}{{ estimate_model.equipment_estimate }}</h3>
+        <h3 class="has-text-weight-light is-italic is-size-5">
+            {% trans 'Other Cost' %}:
+            {% currency_symbol %}{{ estimate_model.other_estimate }}</h3>
+        <h3 class="is-size-4">{% trans 'Total Cost' %}:
+            {% currency_symbol %}{{ estimate_model.cost_estimate }}</h3>
+        <br>
+        <h3 class="is-size-4 has-text-weight-light is-italic">
+            {% trans 'Estimated Gross Margin' %}: {{ estimate_model.gross_margin_percent_estimate | floatformat:2 }}%</h3>
+
+
+    </div>
+    <footer class="card-footer">
+        <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
+           class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>
+
+        {# MARK DRAFT #}
+        {% if estimate_model.can_draft %}
+            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_draft_html_id }}')"
+               id="{{ estimate_model.get_mark_as_draft_html_id }}-button"
+               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>
+            {# MARK AS DRAFT MODAL #}
+            {% modal_action_v2 estimate_model estimate_model.get_mark_as_draft_url estimate_model.get_mark_as_draft_message estimate_model.get_mark_as_draft_html_id %}
+        {% endif %}
+
+        {# MARK REVIEW #}
+        {% if estimate_model.can_review %}
+            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_review_html_id }}')"
+               id="{{ estimate_model.get_mark_as_review_html_id }}-button"
+               class="card-footer-item has-text-warning has-text-centered">{% trans 'Mark as Review' %}</a>
+            {# MARK AS DRAFT MODAL #}
+            {% modal_action_v2 estimate_model estimate_model.get_mark_as_review_url estimate_model.get_mark_as_review_message estimate_model.get_mark_as_review_html_id %}
+        {% endif %}
+
+        {# MARK APPROVE #}
+        {% if estimate_model.can_approve %}
+            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_approved_html_id }}')"
+               id="{{ estimate_model.get_mark_as_approved_html_id }}-button"
+               class="card-footer-item has-text-success has-text-centered">{% trans 'Approve' %}</a>
+            {# MARK AS DRAFT MODAL #}
+            {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}
+        {% endif %}
+
+        {# MARK APPROVE #}
+{#        {% if estimate_model.can_approve %}#}
+{#            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_approved_html_id }}')"#}
+{#               id="{{ estimate_model.get_mark_as_approved_html_id }}-button"#}
+{#               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>#}
+            {# MARK AS DRAFT MODAL #}
+{#            {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}#}
+{#        {% endif %}#}
+
+    </footer>
+</div>
+

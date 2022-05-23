@@ -771,7 +771,7 @@ def inventory_table(context, queryset):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/tags/customer_estimate_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/tags/estimate_table.html', takes_context=True)
 def customer_estimate_table(context, queryset=None):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],

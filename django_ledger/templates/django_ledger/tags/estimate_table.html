@@ -8,10 +8,9 @@
         <tr>
             <th>{% trans 'Customer' %}</th>
             <th>{% trans 'Title' %}</th>
+            <th>{% trans 'Status' %}</th>
             <th>{% trans 'Sales Price' %}</th>
             <th>{% trans 'GM%' %}</th>
-            <th>{% trans 'Approved' %}</th>
-            <th>{% trans 'Completed' %}</th>
             <th>{% trans 'Actions' %}</th>
         </tr>
         </thead>
@@ -20,22 +19,23 @@
             <tr id="{{ cj.get_html_id }}">
                 <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
+                <td>{{ cj.get_status_display }}</td>
                 <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
                 <td class="has-text-centered">{% currency_symbol %}{{ cj.gross_margin_estimate | percentage }}</td>
-                <td class="has-text-centered">
-                    {% if cj.is_approved %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
-                    {% if cj.is_completed %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                    {% endif %}
-                </td>
+{#                <td class="has-text-centered">#}
+{#                    {% if cj.is_approved %}#}
+{#                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>#}
+{#                    {% else %}#}
+{#                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>#}
+{#                    {% endif %}#}
+{#                </td>#}
+{#                <td class="has-text-centered">#}
+{#                    {% if cj.is_completed %}#}
+{#                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>#}
+{#                    {% else %}#}
+{#                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>#}
+{#                    {% endif %}#}
+{#                </td>#}
 
                 {# ACTIONS #}
                 <td class="has-text-centered">

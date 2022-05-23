@@ -188,12 +188,6 @@ class LedgerWrapperMixIn(models.Model):
     def is_past_due(self):
         return not self.is_paid() if self.is_paid() else self.due_date < localdate()
 
-    def is_paid(self):
-        raise NotImplementedError()
-
-    def is_void(self):
-        raise NotImplementedError()
-
     # OTHERS...
     def get_progress(self):
         if self.accrue:

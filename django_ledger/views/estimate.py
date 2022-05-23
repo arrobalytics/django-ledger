@@ -7,15 +7,16 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView, RedirectView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.estimate import (EstimateModelCreateForm, EstimateModelUpdateForm,
-                                          CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset)
+from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
+                                          CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
+                                          DraftEstimateModelUpdateForm)
 from django_ledger.models import EntityModel, ItemThroughModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import LoginRequiredMixIn
 
 
 class EstimateModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/customer_estimate/customer_estimate_list.html'
+    template_name = 'django_ledger/estimate/customer_estimate_list.html'
     context_object_name = 'ce_list'
     PAGE_TITLE = _('Customer Estimates')
     date_field = 'created'
@@ -45,7 +46,7 @@ class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'eos-icons:job'
     }
-    template_name = 'django_ledger/customer_estimate/customer_estimate_create.html'
+    template_name = 'django_ledger/estimate/estimate_create.html'
 
     def get_form_class(self):
         return EstimateModelCreateForm
@@ -77,7 +78,7 @@ class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
 
 class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
     pk_url_kwarg = 'ce_pk'
-    template_name = 'django_ledger/customer_estimate/customer_estimate_detail.html'
+    template_name = 'django_ledger/estimate/customer_estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
     context_object_name = 'estimate_model'
     extra_context = {
@@ -110,16 +111,19 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
 
 
 class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
-    template_name = 'django_ledger/customer_estimate/customer_estimate_update.html'
+    template_name = 'django_ledger/estimate/estimate_update.html'
     pk_url_kwarg = 'ce_pk'
-    context_object_name = 'customer_estimate'
+    context_object_name = 'estimate'
     PAGE_TITLE = _('Customer Estimate Update')
     http_method_names = ['get', 'post']
 
     action_update_items = False
 
     def get_form_class(self):
-        return EstimateModelUpdateForm
+        estimate_model: EstimateModel = self.object
+        if estimate_model.is_draft():
+            return DraftEstimateModelUpdateForm
+        return BaseEstimateModelUpdateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -213,7 +217,7 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
 
                     item_formset.save()
 
-                    cj_model.update_state()
+                    cj_model.update_state(queryset=item_formset.queryset)
                     cj_model.clean()
                     cj_model.save(update_fields=[
                         'revenue_estimate',

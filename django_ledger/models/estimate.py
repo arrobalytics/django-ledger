@@ -17,6 +17,7 @@ from django.core.validators import MinValueValidator, MinLengthValidator
 from django.db import models
 from django.db.models import Q, Sum, Count
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
@@ -58,17 +59,19 @@ class EstimateModelManager(models.Manager):
             )
 
 
-class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     CJ_STATUS_DRAFT = 'draft'
     CJ_STATUS_REVIEW = 'in_review'
     CJ_STATUS_APPROVED = 'approved'
     CJ_STATUS_COMPLETED = 'completed'
+    CJ_STATUS_VOID = 'void'
     CJ_STATUS_CANCELED = 'canceled'
     CJ_STATUS = [
         (CJ_STATUS_DRAFT, _('Draft')),
         (CJ_STATUS_REVIEW, _('In Review')),
         (CJ_STATUS_APPROVED, _('Approved')),
         (CJ_STATUS_COMPLETED, _('Completed')),
+        (CJ_STATUS_COMPLETED, _('Void')),
         (CJ_STATUS_CANCELED, _('Canceled')),
     ]
 
@@ -197,6 +200,9 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_canceled(self):
         return self.status == self.CJ_STATUS_CANCELED
 
+    def is_void(self):
+        return self.status == self.CJ_STATUS_VOID
+
     # Permissions...
     def can_draft(self):
         return self.is_review()
@@ -219,6 +225,7 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_update_items(self):
         return self.is_draft()
 
+    # todo: is this necessary?...
     def can_update_terms(self):
         return self.is_draft()
 
@@ -238,104 +245,116 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return True
 
     # Actions...
-    def mark_as_draft(self, commit: bool = False, raise_exception: bool = True) -> bool:
-        if self.is_draft():
-            return True
-        elif self.can_draft():
-            self.status = self.CJ_STATUS_DRAFT
-            if commit:
-                self.clean()
-                self.save(update_fields=[
-                    'status',
-                    'updated'
-                ])
-            return True
+    def mark_as_draft(self, commit: bool = False) -> bool:
+        if not self.can_draft():
+            raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as draft...')
+        self.status = self.CJ_STATUS_DRAFT
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'status',
+                'updated'
+            ])
 
-        if raise_exception:
-            raise ValidationError(
-                f'Could not mark Customer Estimate {self.estimate_number} as draft.'
-            )
-        return False
+    def get_mark_as_draft_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-draft'
 
-    def mark_as_review(self, commit: bool = True, raise_exception: bool = True) -> bool:
-        if self.is_review():
-            return True
-        elif self.can_review():
-            self.status = self.CJ_STATUS_REVIEW
-            if commit:
-                self.clean()
-                self.save(update_fields=[
-                    'status',
-                    'updated'
-                ])
-            return True
+    def get_mark_as_draft_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-draft',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
 
-        if raise_exception:
-            raise ValidationError(
-                f'Could not mark Customer Estimate {self.estimate_number} as in review.'
-            )
-        return False
+    def get_mark_as_draft_message(self):
+        return _('Do you want to mark Estimate %s as Draft?') % self.estimate_number
 
-    def mark_as_approved(self, commit=False, raise_exception: bool = True, date_approved: date = None) -> bool:
+    def mark_as_review(self, commit: bool = True) -> bool:
+        if not self.can_review():
+            raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
+        self.status = self.CJ_STATUS_REVIEW
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'status',
+                'updated'
+            ])
+
+    def get_mark_as_review_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-review'
+
+    def get_mark_as_review_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-review',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
+
+    def get_mark_as_review_message(self):
+        return _('Do you want to mark Estimate %s as In Review?') % self.estimate_number
+
+    def mark_as_approved(self, commit=False, date_approved: date = None) -> bool:
         if not self.can_approve():
             raise ValidationError(
                 f'Estimate {self.estimate_number} cannot be marked as approved.'
             )
-        self.status = self.CJ_STATUS_APPROVED
         if not date_approved:
             date_approved = localdate()
         self.date_approved = date_approved
+        self.status = self.CJ_STATUS_APPROVED
+        self.clean()
         if commit:
-            self.clean()
             self.save(update_fields=[
                 'status',
                 'date_approved',
                 'updated'
             ])
 
-    def mark_as_completed(self, commit=False, raise_exception: bool = True, date_completed: date = None) -> bool:
-        if self.is_completed():
-            return True
-        elif self.can_complete():
-            self.status = self.CJ_STATUS_COMPLETED
-            if not date_completed:
-                date_completed = localdate()
-            self.date_completed = date_completed
-            if commit:
-                self.clean()
-                self.save(update_fields=[
-                    'status',
-                    'date_completed',
-                    'updated'
-                ])
-            return True
-        if raise_exception:
-            raise ValidationError(
-                f'Could not mark Customer Estimate {self.estimate_number} as complete.'
-            )
-        return False
+    def get_mark_as_approved_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-approved'
+
+    def get_mark_as_approved_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-approved',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
+
+    def get_mark_as_approved_message(self):
+        return _('Do you want to mark Estimate %s as Approved?') % self.estimate_number
+
+
+    def mark_as_completed(self, commit=False, date_completed: date = None) -> bool:
+
+        if not self.can_complete():
+            f'Estimate {self.estimate_number} cannot be marked as completed.'
+        if not date_completed:
+            date_completed = localdate()
+        self.date_completed = date_completed
+        self.status = self.CJ_STATUS_COMPLETED
+        self.clean()
+        if commit:
+            self.clean()
+            self.save(update_fields=[
+                'status',
+                'date_completed',
+                'updated'
+            ])
 
     def mark_as_canceled(self, commit=False, raise_exception: bool = True, date_canceled: date = None) -> bool:
-        if self.is_canceled():
-            return True
-        elif self.can_cancel():
-            self.status = self.CJ_STATUS_CANCELED
-            if not date_canceled:
-                date_canceled = localdate()
-            self.date_canceled = date_canceled
-            if commit:
-                self.clean()
-                self.save(update_fields=[
-                    'status',
-                    'date_canceled',
-                    'updated'
-                ])
-            return True
-        if raise_exception:
-            raise ValidationError(
-                f'Could not mark Customer Estimate {self.estimate_number} as canceled.'
-            )
-        return False
+        if not self.can_cancel():
+            raise ValidationError(f'Estimate {self.estimate_number} cannot be canceled...')
+        if not date_canceled:
+            date_canceled = localdate()
+        self.date_canceled = date_canceled
+        self.status = self.CJ_STATUS_CANCELED
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'status',
+                'date_canceled',
+                'updated'
+            ])
 
     # HTML Tags...
     def get_html_id(self):
@@ -357,12 +376,12 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def update_cost_estimate(self, queryset):
         estimates = {
-            'labor': sum(a.total_amount for a in queryset if a.item_model.item_type == ItemModel.LABOR_TYPE),
-            'material': sum(a.total_amount for a in queryset if a.item_model.item_type == ItemModel.MATERIAL_TYPE),
-            'equipment': sum(a.total_amount for a in queryset if a.item_model.item_type == ItemModel.EQUIPMENT_TYPE),
+            'labor': sum(a.total_amount for a in queryset if a.item_model.is_labor()),
+            'material': sum(a.total_amount for a in queryset if a.item_model.is_material()),
+            'equipment': sum(a.total_amount for a in queryset if a.item_model.is_equipment()),
             'other': sum(
                 a.total_amount for a in queryset
-                if a.item_model.item_type == ItemModel.OTHER_TYPE or not a.item_model.item_type
+                if a.item_type.is_other() or not a.item_model.item_type or a.item_model.is_lump_sum()
             ),
         }
         self.labor_estimate = estimates['labor']
@@ -416,7 +435,7 @@ class CustomerEstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.date_completed = None
 
 
-class EstimateModel(CustomerEstimateModelAbstract):
+class EstimateModel(EstimateModelAbstract):
     """
     Base Estimate Model Class
     """

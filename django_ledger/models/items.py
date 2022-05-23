@@ -263,6 +263,21 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def is_inventory(self):
         return self.for_inventory is True
 
+    def is_labor(self):
+        return self.item_type == self.LABOR_TYPE
+
+    def is_material(self):
+        return self.item_type == self.MATERIAL_TYPE
+
+    def is_equipment(self):
+        return self.item_type == self.EQUIPMENT_TYPE
+
+    def is_lump_sum(self):
+        return self.item_type == self.LUMP_SUM
+
+    def is_other(self):
+        return self.item_type == self.OTHER_TYPE
+
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:
             try:

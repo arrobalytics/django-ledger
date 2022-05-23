@@ -187,11 +187,11 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def is_paid(self) -> bool:
         return self.invoice_status == self.INVOICE_STATUS_PAID
 
-    def is_void(self) -> bool:
-        return self.invoice_status == self.INVOICE_STATUS_VOID
-
     def is_canceled(self) -> bool:
         return self.invoice_status == self.INVOICE_STATUS_CANCELED
+
+    def is_void(self) -> bool:
+        return self.invoice_status == self.INVOICE_STATUS_VOID
 
     # PERMISSIONS....
     def can_draft(self):
@@ -209,26 +209,30 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def can_pay(self):
         return self.is_approved()
 
-    def can_delete(self):
-        return any([
-            self.is_review(),
-            self.is_draft()
-        ])
-
-    def can_void(self):
-        return any([
-            self.is_approved(),
-            self.is_paid()
-        ])
-
     def can_cancel(self):
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
+    def can_void(self):
+        return any([
+            self.is_approved()
+        ])
+
+    def can_delete(self):
+        return any([
+            self.is_review(),
+            self.is_draft()
+        ])
+
     def can_edit_items(self):
         return self.is_draft()
+
+    def can_migrate(self):
+        if not self.is_approved():
+            return False
+        return super(InvoiceModelAbstract, self).can_migrate()
 
     # ACTIONS...
 
@@ -319,7 +323,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                      paid_date: date = None,
                      commit: bool = False,
                      **kwargs):
-
         if not self.can_pay():
             raise ValidationError(f'Cannot mark PO {self.uuid} as Paid...')
 
@@ -420,7 +423,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
 
         self.invoice_status = self.INVOICE_STATUS_CANCELED
-
+        self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',

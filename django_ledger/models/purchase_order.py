@@ -61,9 +61,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
-    PO_STATUS_CANCELED = 'canceled'
-    PO_STATUS_VOID = 'void'
     PO_STATUS_FULFILLED = 'fulfilled'
+    PO_STATUS_VOID = 'void'
+    PO_STATUS_CANCELED = 'canceled'
 
     PO_STATUS = [
         (PO_STATUS_DRAFT, _('Draft')),
@@ -182,11 +182,11 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_approved(self):
         return self.po_status == self.PO_STATUS_APPROVED
 
-    def is_canceled(self):
-        return self.po_status == self.PO_STATUS_CANCELED
-
     def is_fulfilled(self):
         return self.po_status == self.PO_STATUS_FULFILLED
+
+    def is_canceled(self):
+        return self.po_status == self.PO_STATUS_CANCELED
 
     def is_void(self):
         return self.po_status == self.PO_STATUS_VOID
@@ -201,16 +201,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_approve(self):
         return self.is_review()
 
-    def can_cancel(self):
-        return any([
-            self.is_draft(),
-            self.is_review()
-        ])
-
     def can_fulfill(self):
         return self.is_approved()
 
-    def can_delete(self):
+    def can_cancel(self):
         return any([
             self.is_draft(),
             self.is_review()
@@ -218,6 +212,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def can_void(self):
         return self.is_approved()
+
+    def can_delete(self):
+        return any([
+            self.is_draft(),
+            self.is_review()
+        ])
 
     def can_edit_items(self):
         return self.is_draft()
@@ -282,10 +282,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def mark_as_approved(self, commit: bool = False, po_date: date = None, **kwargs):
         if not self.can_approve():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as approved.')
-        self.po_status = self.PO_STATUS_APPROVED
         if not po_date:
             po_date = localdate()
         self.po_date = po_date
+        self.po_status = self.PO_STATUS_APPROVED
         self.clean()
         if commit:
             self.itemthroughmodel_set.all().update(po_item_status=ItemThroughModel.STATUS_NOT_ORDERED)
@@ -403,7 +403,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as void.')
 
         # all bills associated with this PO...
-        bill_model_qs = self.get_po_bill_queryset()
+        bill_model_qs = self.get_po_bill_queryset(
+            entity_slug=entity_slug,
+            user_model=user_model
+        )
         bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
@@ -413,6 +416,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             void_date = localdate()
 
         self.void_date = void_date
+        self.po_status = self.PO_STATUS_VOID
+        self.clean()
 
         if commit:
             self.save(update_fields=[
