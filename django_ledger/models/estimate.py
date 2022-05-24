@@ -381,7 +381,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             'equipment': sum(a.total_amount for a in queryset if a.item_model.is_equipment()),
             'other': sum(
                 a.total_amount for a in queryset
-                if a.item_type.is_other() or not a.item_model.item_type or a.item_model.is_lump_sum()
+                if a.item_model.is_other() or not a.item_model_id or not a.item_model.item_type or a.item_model.is_lump_sum()
             ),
         }
         self.labor_estimate = estimates['labor']

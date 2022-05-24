@@ -133,9 +133,6 @@ class LedgerWrapperMixIn(models.Model):
 
     date = models.DateField(verbose_name=_('Date'))
     due_date = models.DateField(verbose_name=_('Due Date'))
-    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
-    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
-
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
     # todo: change progress method from percent to currency amount...

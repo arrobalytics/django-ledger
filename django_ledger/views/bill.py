@@ -470,8 +470,7 @@ class BaseBillActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
                            'bill_pk': kwargs['bill_pk']
                        })
 
-    def get(self, request, bill_pk, *args, **kwargs):
-        kwargs['bill_pk'] = bill_pk
+    def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')

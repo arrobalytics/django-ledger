@@ -332,9 +332,11 @@ class EntityDataGenerator:
     def create_bill(self,
                     is_accruable: bool,
                     progress: float,
-                    issue_dt: date,
-                    is_paid: bool,
-                    paid_dt: date):
+                    issue_dt: date):
+
+        ld = localdate()
+        if issue_dt > ld:
+            issue_dt = ld
 
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
@@ -347,14 +349,12 @@ class EntityDataGenerator:
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date=issue_dt,
-            paid_date=paid_dt,
             additional_info=dict()
         )
 
         ledger_model, bill_model = bill_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model,
-            ledger_posted=True)
+            user_model=self.user_model)
 
         bill_model.full_clean()
         bill_model.save()
@@ -378,38 +378,50 @@ class EntityDataGenerator:
         bill_model.save()
 
         if random() > 0.15:
-            # bill_model.bill_status = BillModel.BILL_STATUS_APPROVED
+            # todo: add review_date param...
             bill_model.mark_as_review(commit=True)
 
             if random() > 0.35:
-                bill_model.mark_as_approved(commit=True)
-
-                # todo: needs new method for bill payment???...
-                bill_model.amount_paid = Decimal.from_float(round(random() * float(bill_model.amount_due), 2))
-                bill_model.new_state(commit=True)
-                bill_model.clean()
-                bill_model.save()
-
-                # pylint: disable=no-member
-                bill_model.migrate_state(
-                    user_model=self.user_model,
-                    entity_slug=self.entity_model.slug,
-                    je_date=issue_dt)
+                approved_date = issue_dt + timedelta(days=randint(3, 8))
+                if approved_date > ld:
+                    approved_date = ld
+                bill_model.mark_as_approved(commit=True,
+                                            entity_slug=self.entity_model.slug,
+                                            user_model=self.user_model,
+                                            approved_date=approved_date)
 
                 if random() > 0.40:
+                    paid_date = approved_date + timedelta(days=randint(3, 8))
+                    if paid_date > ld:
+                        paid_date = ld
                     bill_model.mark_as_paid(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
+                        paid_date=paid_date,
                         commit=True
                     )
-                    if random() > .90:
-                        bill_model.mark_as_void(
-                            user_model=self.user_model,
-                            entity_slug=self.entity_model.slug,
-                            commit=True
-                        )
+
+                else:
+                    void_date = approved_date + timedelta(days=randint(3, 8))
+                    if void_date > ld:
+                        void_date = ld
+                    bill_model.mark_as_void(
+                        user_model=self.user_model,
+                        entity_slug=self.entity_model.slug,
+                        void_date=void_date,
+                        commit=True
+                    )
+            else:
+                canceled_date = issue_dt + timedelta(days=randint(3, 8))
+                if canceled_date > ld:
+                    canceled_date = ld
+                bill_model.mark_as_canceled(canceled_date=canceled_date)
 
     def create_po(self, po_date: date):
+
+        ld = localdate()
+        if po_date > ld:
+            po_date = ld
 
         po_model: PurchaseOrderModel = PurchaseOrderModel(po_date=po_date)
         po_model = po_model.configure(
@@ -443,15 +455,17 @@ class EntityDataGenerator:
         if random() > 0.15:
             po_model.mark_as_review(commit=True)
             if random() > 0.5:
-                po_model.mark_as_approved(commit=True, po_date=po_date)
+                approved_date = po_date + timedelta(days=randint(3, 8))
+                if approved_date > ld:
+                    approved_date = ld
+                po_model.mark_as_approved(commit=True, po_date=approved_date)
                 if random() > 0.5:
                     # add a PO bill...
-                    ldt = self.localtime.date()
                     fulfilled_dt = po_date + timedelta(days=randint(4, 10))
                     bill_dt = po_date + timedelta(days=randint(1, 3))
 
-                    if bill_dt > ldt:
-                        bill_dt = ldt
+                    if bill_dt > ld:
+                        bill_dt = ld
 
                     bill_model: BillModel = BillModel(
                         bill_number=generate_bill_number(),
@@ -506,11 +520,17 @@ class EntityDataGenerator:
                     if random() > 0.15:
                         bill_model.mark_as_review(commit=True)
                         if random() > 0.20:
-                            bill_model.mark_as_approved(commit=True)
+                            bill_approve_date = bill_dt + timedelta(days=randint(3, 8))
+                            if bill_approve_date > ld:
+                                bill_approve_date = ld
+                            bill_model.mark_as_approved(commit=True,
+                                                        entity_slug=self.entity_model.slug,
+                                                        user_model=self.user_model,
+                                                        approved_date=bill_approve_date)
                             if random() > 0.25:
-                                paid_date = bill_dt + timedelta(days=1)
-                                if paid_date > ldt:
-                                    paid_date = ldt
+                                paid_date = bill_dt + timedelta(days=randint(3, 8))
+                                if paid_date > ld:
+                                    paid_date = ld
                                 bill_model.mark_as_paid(
                                     user_model=self.user_model,
                                     entity_slug=self.entity_model.slug,
@@ -520,6 +540,8 @@ class EntityDataGenerator:
                                     for po_i in po_items:
                                         po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
                                         po_i.full_clean()
+
+                                    # todo: can pass po items??..
                                     po_model.itemthroughmodel_set.bulk_update(po_items,
                                                                               fields=[
                                                                                   'po_item_status',
@@ -609,13 +631,13 @@ class EntityDataGenerator:
                         paid_date=paid_dt,
                         commit=True
                     )
-                    if random() > 0.80:
-                        invoice_model.mark_as_void(
-                            entity_slug=self.entity_model.slug,
-                            user_model=self.user_model,
-                            void_date=paid_dt + timedelta(days=randint(1, 6)),
-                            commit=True
-                        )
+                else:
+                    invoice_model.mark_as_void(
+                        entity_slug=self.entity_model.slug,
+                        user_model=self.user_model,
+                        void_date=paid_dt + timedelta(days=randint(1, 6)),
+                        commit=True
+                    )
             else:
                 invoice_model.mark_as_canceled(commit=True)
 
@@ -697,9 +719,7 @@ class EntityDataGenerator:
                 self.create_bill(
                     is_accruable=is_accruable,
                     progress=progress,
-                    issue_dt=issue_dt,
-                    is_paid=is_paid,
-                    paid_dt=paid_dt
+                    issue_dt=issue_dt
                 )
 
                 if random() > 0.4:

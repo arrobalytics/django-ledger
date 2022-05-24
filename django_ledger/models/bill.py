@@ -125,6 +125,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                         through_fields=('bill_model', 'item_model'),
                                         verbose_name=_('Bill Items'))
 
+    in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
+    approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
+    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
+    canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+
     objects = BillModelManager()
 
     class Meta:
@@ -266,8 +272,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
         ])
 
     def can_void(self):
+        return self.is_approved()
+
+    def can_cancel(self):
         return any([
-            self.is_approved()
+            self.is_draft(),
+            self.is_review()
         ])
 
     def can_edit_items(self):
@@ -277,7 +287,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if not self.is_approved():
             return False
         return super(BillModelAbstract, self).can_migrate()
-
 
     # --> ACTIONS <---
     def mark_as_draft(self, commit: bool = False, **kwargs):
@@ -343,14 +352,28 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Bill %s as In Review?') % self.bill_number
 
     # APPROVED ACTIONS....
-    def mark_as_approved(self, commit: bool = False, **kwargs):
+    def mark_as_approved(self,
+                         entity_slug,
+                         user_model,
+                         approved_date: date,
+                         commit: bool = False,
+                         **kwargs):
         if not self.can_approve():
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as in approved.'
             )
+        self.amount_paid = self.amount_due
         self.bill_status = self.BILL_STATUS_APPROVED
+
+        self.date = localdate() if not approved_date else approved_date
+        self.new_state(commit=True)
         self.clean()
         if commit:
+            self.migrate_state(
+                entity_slug=entity_slug,
+                user_model=user_model,
+                je_date=approved_date,
+            )
             self.ledger.post(commit=commit)
             self.save(update_fields=[
                 'bill_status',
@@ -454,7 +477,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     def mark_as_void(self, user_model, entity_slug, void_date: date = None, commit: bool = False, **kwargs):
         if not self.can_void():
-            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
+            raise ValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
 
         self.void_date = void_date if void_date else localdate()
         self.bill_status = self.BILL_STATUS_VOID
@@ -484,6 +507,49 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     def get_mark_as_void_message(self):
         return _('Do you want to void Bill %s?') % self.bill_number
+
+    # Cancel Actions...
+    def mark_as_canceled(self, canceled_date: date,  commit: bool = False, **kwargs):
+        if not self.can_cancel():
+            raise ValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
+
+        self.canceled_date = localdate() if not canceled_date else canceled_date
+        self.bill_status = self.BILL_STATUS_CANCELED
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'bill_status',
+                'canceled_date'
+            ])
+
+        # self.void_date = void_date if void_date else localdate()
+        # self.bill_status = self.BILL_STATUS_VOID
+        # self.void_state(commit=True)
+        # self.clean()
+        #
+        # if commit:
+        #     self.unlock_ledger(commit=True, raise_exception=False)
+        #     self.migrate_state(
+        #         entity_slug=entity_slug,
+        #         user_model=user_model,
+        #         void=True,
+        #         void_date=self.void_date,
+        #         force_migrate=True)
+        #     self.save()
+        #     self.lock_ledger(commit=True, raise_exception=False)
+
+    def get_mark_as_canceled_html_id(self):
+        return f'djl-{self.uuid}-mark-as-canceled'
+
+    def get_mark_as_canceled_url(self):
+        return reverse('django_ledger:bill-action-mark-as-canceled',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_canceled_message(self):
+        return _('Do you want to void as Canceled %s?') % self.bill_number
 
     # HTML Tags...
     def get_document_id(self):

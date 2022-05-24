@@ -125,6 +125,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                                            through_fields=('invoice_model', 'item_model'),
                                            verbose_name=_('Invoice Items'))
 
+    in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
+    approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
+    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
+    canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+
     objects = InvoiceModelManager()
 
     class Meta:
@@ -216,9 +222,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         ])
 
     def can_void(self):
-        return any([
-            self.is_approved()
-        ])
+        return self.is_approved()
 
     def can_delete(self):
         return any([
@@ -378,7 +382,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                      **kwargs):
 
         if not self.can_void():
-            raise ValidationError(f'Cannot mark PO {self.uuid} as Void...')
+            raise ValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
         self.void_date = localdate() if not void_date else void_date
         self.void_state(commit=True)
