@@ -29,7 +29,7 @@ from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/bill_list.html'
+    template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
     date_field = 'date'
@@ -72,7 +72,7 @@ class BillModelMonthListView(MonthArchiveView, BillModelListView):
 
 
 class BillModelCreateView(LoginRequiredMixIn, CreateView):
-    template_name = 'django_ledger/bill_create.html'
+    template_name = 'django_ledger/bills/bill_create.html'
     PAGE_TITLE = _('Create Bill')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -192,7 +192,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
-    template_name = 'django_ledger/bill_detail.html'
+    template_name = 'django_ledger/bills/bill_detail.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill',
         'hide_menu': True
@@ -241,7 +241,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill_model'
-    template_name = 'django_ledger/bill_update.html'
+    template_name = 'django_ledger/bills/bill_update.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }

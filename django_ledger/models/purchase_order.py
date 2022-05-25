@@ -117,6 +117,20 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     class Meta:
         abstract = True
+        indexes = [
+            models.Index(fields=['entity']),
+            models.Index(fields=['po_status']),
+            models.Index(fields=['ce_model']),
+            models.Index(fields=['draft_date']),
+            models.Index(fields=['in_review_date']),
+            models.Index(fields=['approved_date']),
+            models.Index(fields=['fulfillment_date']),
+            models.Index(fields=['canceled_date']),
+            models.Index(fields=['void_date']),
+        ]
+        unique_together = [
+            ('entity', 'po_number')
+        ]
 
     def __str__(self):
         # pylint: disable=no-member
@@ -441,14 +455,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             entity_slug=entity_slug
         ).filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
 
+    def get_status_action_date(self):
+        if self.is_fulfilled():
+            return self.fulfillment_date
+        return getattr(self, f'{self.po_status}_date')
+
     def clean(self):
         if not self.po_number:
             self.po_number = generate_po_number()
-        # if self.is_approved() and self.po_date:
-        #     if self.po_date > localdate():
-        #         raise ValidationError('PO cannot have a future approval date.')
-        # if self.is_approved() and not self.po_date:
-        #     self.po_date = localdate()
         if self.is_fulfilled():
             self.po_amount_received = self.po_amount
         if self.is_fulfilled() and not self.fulfillment_date:

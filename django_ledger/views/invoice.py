@@ -29,7 +29,7 @@ from django_ledger.views.mixins import LoginRequiredMixIn
 class InvoiceModelCreateView(LoginRequiredMixIn,
                              CreateView):
     # todo: views that dont have a bill/invoice/etc/etc are not protected!
-    template_name = 'django_ledger/invoice_create.html'
+    template_name = 'django_ledger/invoice/invoice_create.html'
     PAGE_TITLE = _('Create Invoice')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -68,7 +68,7 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
 
 
 class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/invoice_list.html'
+    template_name = 'django_ledger/invoice/invoice_list.html'
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
@@ -101,7 +101,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
-    template_name = 'django_ledger/invoice_update.html'
+    template_name = 'django_ledger/invoice/invoice_update.html'
     form_class = BaseInvoiceModelUpdateForm
     http_method_names = ['get', 'post']
 
@@ -385,7 +385,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
-    template_name = 'django_ledger/invoice_detail.html'
+    template_name = 'django_ledger/invoice/invoice_detail.html'
     extra_context = {
         'hide_menu': True
     }
@@ -415,7 +415,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
-    template_name = 'django_ledger/invoice_delete.html'
+    template_name = 'django_ledger/invoice/invoice_delete.html'
     context_object_name = 'invoice'
     extra_context = {
         'hide_menu': True

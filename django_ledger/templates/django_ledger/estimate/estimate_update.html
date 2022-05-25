@@ -10,7 +10,7 @@
                 {% include 'django_ledger/includes/card_customer.html' with customer=estimate.customer %}
             </div>
             <div class="column is-12">
-                {% include 'django_ledger/includes/card_estimate.html' with estimate_model=estimate style='estimate-detail' entity_slug=view.kwargs.entity_slug %}
+                {% include 'django_ledger/estimate/includes/card_estimate.html' with estimate_model=estimate style='estimate-detail' entity_slug=view.kwargs.entity_slug %}
                 <form action="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
                       method="post">
                     {% csrf_token %}

@@ -158,9 +158,14 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         verbose_name_plural = _('Customer Jobs')
         indexes = [
             models.Index(fields=['status']),
+            models.Index(fields=['customer']),
+            models.Index(fields=['terms']),
+            models.Index(fields=['entity']),
+            models.Index(fields=['date_draft']),
+            models.Index(fields=['date_in_review']),
             models.Index(fields=['date_approved']),
-            models.Index(fields=['date_completed']),
-            models.Index(fields=['entity', 'estimate_number'])
+            models.Index(fields=['date_canceled']),
+            models.Index(fields=['date_void']),
         ]
         unique_together = [
             ('entity', 'estimate_number')
@@ -260,7 +265,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _('Do you want to mark Estimate %s as Draft?') % self.estimate_number
 
     # REVIEW...
-    def mark_as_review(self, date_in_review: date = None, commit: bool = True) :
+    def mark_as_review(self, date_in_review: date = None, commit: bool = True):
         if not self.can_review():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
 
@@ -479,6 +484,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def gross_margin_percent_estimate(self) -> float:
         return self.gross_margin_estimate(as_percent=True)
+
+    def get_status_action_date(self):
+        return getattr(self, f'date_{self.status}')
 
     def clean(self):
 

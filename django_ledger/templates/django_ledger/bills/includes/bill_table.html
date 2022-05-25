@@ -6,14 +6,14 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Bill Number</th>
-            <th>Status</th>
-            <th>Bill Date</th>
-            <th>Vendor</th>
-            <th>Amount Due</th>
-            <th>Payments</th>
-            <th>Past Due?</th>
-            <th>Actions</th>
+            <th>{% trans 'Number' %}</th>
+            <th>{% trans 'Status' %}</th>
+            <th>{% trans 'Status Date' %}</th>
+            <th>{% trans 'Vendor' %}</th>
+            <th>{% trans 'Amount Due' %}</th>
+            <th>{% trans 'Payments' %}</th>
+            <th>{% trans 'Past Due' %}</th>
+            <th>{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
@@ -21,15 +21,15 @@
             <tr id="{{ bill.get_html_id }}">
                 <td>{{ bill.bill_number }}</td>
                 <td>{{ bill.get_bill_status_display }}</td>
-                <td>{{ bill.date }}</td>
+                <td>{{ bill.get_status_action_date }}</td>
                 <td>{{ bill.vendor.vendor_name }}</td>
-                <td id="{{ bill.get_html_amount_due_id }}">{% currency_symbol %}{{ bill.amount_due | currency_format }}</td>
-                <td id="{{ bill.get_html_amount_paid_id }}">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</td>
+                <td id="{{ bill.get_html_amount_due_id }}">
+                    {% currency_symbol %}{{ bill.amount_due | currency_format }}</td>
+                <td id="{{ bill.get_html_amount_paid_id }}">
+                    {% currency_symbol %}{{ bill.amount_paid | currency_format }}</td>
                 <td class="has-text-centered">
                     {% if bill.is_past_due %}
                         <span class="icon is-small has-text-danger">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-success">{% icon 'clarity:no-access-solid' 24 %}</span>
                     {% endif %}
                 </td>
                 <td class="has-text-centered">
@@ -48,13 +48,6 @@
                                    class="dropdown-item has-text-success">Details</a>
                                 <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
                                    class="dropdown-item has-text-warning-dark">Update</a>
-{#                                {% if not bill.paid %}#}
-{#                                    {% modal_action bill 'get' entity_slug %}#}
-{#                                    <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"#}
-{#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
-{#                                {% endif %}#}
-{#                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"#}
-{#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
                             </div>
                         </div>
                     </div>

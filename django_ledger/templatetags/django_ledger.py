@@ -228,7 +228,7 @@ def ledgers_table(context):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/invoice_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/invoice/includes/invoice_table.html', takes_context=True)
 def invoice_table(context):
     return {
         'invoices': context['invoices'],
@@ -236,7 +236,7 @@ def invoice_table(context):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/bill_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/bills/includes/bill_table.html', takes_context=True)
 def bill_table(context, bill_qs):
     return {
         'bills': bill_qs,
@@ -244,7 +244,7 @@ def bill_table(context, bill_qs):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/po_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_table.html', takes_context=True)
 def po_table(context, purchase_order_qs):
     return {
         'po_list': purchase_order_qs,
@@ -722,7 +722,7 @@ def inventory_item_table(context, queryset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/invoice_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/invoice/includes/invoice_item_formset.html', takes_context=True)
 def invoice_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -743,7 +743,7 @@ def bill_item_formset_table(context, item_formset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/po_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_item_formset.html', takes_context=True)
 def po_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -771,7 +771,7 @@ def inventory_table(context, queryset):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/tags/estimate_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/estimate/includes/estimate_table.html', takes_context=True)
 def customer_estimate_table(context, queryset=None):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],

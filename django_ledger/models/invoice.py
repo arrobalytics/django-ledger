@@ -140,13 +140,21 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         verbose_name = _('Invoice')
         verbose_name_plural = _('Invoices')
         indexes = [
-            models.Index(fields=['date']),
             models.Index(fields=['due_date']),
             models.Index(fields=['invoice_status']),
             models.Index(fields=['terms']),
+            models.Index(fields=['customer']),
+
             models.Index(fields=['cash_account']),
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
+
+            models.Index(fields=['draft_date']),
+            models.Index(fields=['in_review_date']),
+            models.Index(fields=['approved_date']),
+            models.Index(fields=['paid_date']),
+            models.Index(fields=['void_date']),
+            models.Index(fields=['canceled_date']),
         ]
 
     def __str__(self):
@@ -458,6 +466,11 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as Canceled?') % self.invoice_number
 
     # ACTIONS END....
+
+    def get_status_action_date(self):
+        return getattr(self, f'{self.invoice_status}_date')
+
+
 
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'

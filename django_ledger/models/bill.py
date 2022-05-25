@@ -140,13 +140,22 @@ class BillModelAbstract(LedgerWrapperMixIn,
         verbose_name = _('Bill')
         verbose_name_plural = _('Bills')
         indexes = [
-            models.Index(fields=['date']),
-            models.Index(fields=['due_date']),
             models.Index(fields=['bill_status']),
             models.Index(fields=['terms']),
+
             models.Index(fields=['cash_account']),
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
+
+            models.Index(fields=['due_date']),
+            models.Index(fields=['draft_date']),
+            models.Index(fields=['in_review_date']),
+            models.Index(fields=['approved_date']),
+            models.Index(fields=['paid_date']),
+            models.Index(fields=['canceled_date']),
+            models.Index(fields=['void_date']),
+
+            models.Index(fields=['vendor']),
         ]
 
     def __str__(self):
@@ -517,7 +526,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to void Bill %s?') % self.bill_number
 
     # Cancel Actions...
-    def mark_as_canceled(self, canceled_date: date,  commit: bool = False, **kwargs):
+    def mark_as_canceled(self, canceled_date: date, commit: bool = False, **kwargs):
         if not self.can_cancel():
             raise ValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
 
@@ -558,6 +567,9 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     def get_mark_as_canceled_message(self):
         return _('Do you want to void as Canceled %s?') % self.bill_number
+
+    def get_status_action_date(self):
+        return getattr(self, f'{self.bill_status}_date')
 
     # HTML Tags...
     def get_document_id(self):

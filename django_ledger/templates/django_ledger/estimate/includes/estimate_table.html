@@ -6,9 +6,11 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
+            <th>{% trans 'Estimate' %}</th>
             <th>{% trans 'Customer' %}</th>
             <th>{% trans 'Title' %}</th>
             <th>{% trans 'Status' %}</th>
+            <th>{% trans 'Status Date' %}</th>
             <th>{% trans 'Sales Price' %}</th>
             <th>{% trans 'GM%' %}</th>
             <th>{% trans 'Actions' %}</th>
@@ -17,11 +19,14 @@
         <tbody>
         {% for cj in ce_list %}
             <tr id="{{ cj.get_html_id }}">
+                <td>{{ cj.estimate_number }}</td>
                 <td>{{ cj.customer.customer_name }}</td>
                 <td>{{ cj.title }}</td>
                 <td>{{ cj.get_status_display }}</td>
+                <td>{{ cj.get_status_action_date }}</td>
                 <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
                 <td class="has-text-centered">{% currency_symbol %}{{ cj.gross_margin_estimate | percentage }}</td>
+
 {#                <td class="has-text-centered">#}
 {#                    {% if cj.is_approved %}#}
 {#                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>#}

@@ -6,7 +6,7 @@
         <thead>
         <tr>
             <th>Invoice Number</th>
-            <th>Invoice Date</th>
+            <th>Status Date</th>
             <th>Status</th>
             <th>Invoiced To</th>
             <th>Amount</th>
@@ -19,7 +19,7 @@
         {% for invoice in invoices %}
             <tr>
                 <td>{{ invoice.invoice_number }}</td>
-                <td>{{ invoice.date }}</td>
+                <td>{{ invoice.get_status_action_date }}</td>
                 <td>{{ invoice.get_invoice_status_display }}</td>
                 <td>{{ invoice.customer.customer_name }}</td>
                 <td>${{ invoice.amount_due | currency_format }}</td>

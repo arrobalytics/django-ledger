@@ -23,7 +23,7 @@ from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/po_list.html'
+    template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
     date_field = 'created'
@@ -66,7 +66,7 @@ class PurchaseOrderModelMonthListView(MonthArchiveView, PurchaseOrderModelListVi
 
 
 class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
-    template_name = 'django_ledger/po_create.html'
+    template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -135,7 +135,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_update.html'
+    template_name = 'django_ledger/purchase_order/po_update.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
@@ -310,7 +310,7 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_detail.html'
+    template_name = 'django_ledger/purchase_order/po_detail.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill',
         'hide_menu': True
@@ -344,7 +344,7 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_delete.html'
+    template_name = 'django_ledger/purchase_order/po_delete.html'
     extra_context = {
         'hide_menu': True,
         'header_subtitle_icon': 'uil:bill'

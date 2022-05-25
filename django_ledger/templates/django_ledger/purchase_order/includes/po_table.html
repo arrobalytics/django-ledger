@@ -8,10 +8,8 @@
         <tr>
             <th>PO Number</th>
             <th>Description</th>
-            <th>Created</th>
-            <th>Approved Date</th>
+            <th>Status Date</th>
             <th>PO Status</th>
-            <th>Fulfilment Date</th>
             <th>PO Amount</th>
             <th>Actions</th>
         </tr>
@@ -21,12 +19,8 @@
             <tr>
                 <td>{{ po.po_number }}</td>
                 <td>{{ po.po_title }}</td>
-                <td>{{ po.created | date }}</td>
-                <td>{{ po.po_date }}</td>
+                <td>{{ po.get_status_action_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>
-                <td class="has-text-success">{% if po.is_fulfilled %}{{ po.fulfillment_date }}{% else %}
-                    <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                {% endif %}</td>
                 <td>{% currency_symbol %}{{ po.po_amount | currency_format }}</td>
                 <td class="has-text-centered">
                     <div class="dropdown is-right is-hoverable" id="bill-action-{{ po.uuid }}">
