@@ -112,10 +112,10 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
     def __init__(self, *args, entity_slug, user_model, customer_job_model: EstimateModel, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
-        self.CUSTOMER_JOB_MODEL = customer_job_model
+        self.ESTIMATE_MODEL = customer_job_model
         self.ENTITY_SLUG = entity_slug
 
-        items_qs = ItemModel.objects.for_cj(
+        items_qs = ItemModel.objects.for_estimate(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
@@ -125,11 +125,12 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        # todo: use different forms instead...
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
             form.fields['entity_unit'].queryset = unit_qs
 
-            if not self.CUSTOMER_JOB_MODEL.can_update_items():
+            if not self.ESTIMATE_MODEL.can_update_items():
                 form.fields['item_model'].disabled = True
                 form.fields['quantity'].disabled = True
                 form.fields['unit_cost'].disabled = True

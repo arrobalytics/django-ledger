@@ -125,6 +125,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                         through_fields=('bill_model', 'item_model'),
                                         verbose_name=_('Bill Items'))
 
+    draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
     in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
     approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
     paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
@@ -289,17 +290,19 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return super(BillModelAbstract, self).can_migrate()
 
     # --> ACTIONS <---
-    def mark_as_draft(self, commit: bool = False, **kwargs):
+    def mark_as_draft(self, date_draft: date = None, commit: bool = False, **kwargs):
         if not self.can_draft():
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
             )
         self.bill_status = self.BILL_STATUS_DRAFT
+        self.draft_date = localdate() if not date_draft else date_draft
         self.clean()
         if commit:
             self.save(
                 update_fields=[
                     'bill_status',
+                    'draft_date',
                     'updated'
                 ]
             )
@@ -318,7 +321,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Bill %s as Draft?') % self.bill_number
 
     # IN REVIEW ACTIONS....
-    def mark_as_review(self, commit: bool = False, **kwargs):
+    def mark_as_review(self, commit: bool = False, date_in_review: date = None, **kwargs):
         if not self.can_review():
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
@@ -328,11 +331,16 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
 
+        if not date_in_review:
+            date_in_review = localdate()
+
         self.bill_status = self.BILL_STATUS_REVIEW
+        self.in_review_date = date_in_review
         self.clean()
         if commit:
             self.save(
                 update_fields=[
+                    'in_review_date',
                     'bill_status',
                     'updated'
                 ]
@@ -355,7 +363,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     def mark_as_approved(self,
                          entity_slug,
                          user_model,
-                         approved_date: date,
+                         approved_date: date = None,
                          commit: bool = False,
                          **kwargs):
         if not self.can_approve():
@@ -364,8 +372,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             )
         self.amount_paid = self.amount_due
         self.bill_status = self.BILL_STATUS_APPROVED
-
-        self.date = localdate() if not approved_date else approved_date
+        self.approved_date = localdate() if not approved_date else approved_date
         self.new_state(commit=True)
         self.clean()
         if commit:
@@ -377,6 +384,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             self.ledger.post(commit=commit)
             self.save(update_fields=[
                 'bill_status',
+                'approved_date',
                 'updated'
             ])
 
@@ -416,7 +424,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     def mark_as_paid(self,
                      user_model,
                      entity_slug: str,
-                     paid_date: date = None,
+                     date_paid: date = None,
                      itemthrough_queryset=None,
                      commit: bool = False,
                      **kwargs):
@@ -425,13 +433,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.paid_date = localdate() if not paid_date else paid_date
+        self.paid_date = localdate() if not date_paid else date_paid
 
-        if self.paid_date > localdate():
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        if self.paid_date < self.date:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                  f' date {self.date}.')
+        # if self.paid_date > localdate():
+        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        # if self.paid_date < self.date:
+        #     raise ValidationError(f'{self.date} Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+        #                           f' date {self.date}.')
 
         self.bill_status = self.BILL_STATUS_PAID
         self.new_state(commit=True)
@@ -455,7 +463,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 user_model=user_model,
                 entity_slug=entity_slug,
                 itemthrough_queryset=itemthrough_queryset,
-                je_date=paid_date,
+                je_date=date_paid,
                 force_migrate=True
             )
             self.lock_ledger(commit=True)
@@ -485,7 +493,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.clean()
 
         if commit:
-            self.unlock_ledger(commit=True, raise_exception=False)
+            self.unlock_ledger(commit=False, raise_exception=False)
             self.migrate_state(
                 entity_slug=entity_slug,
                 user_model=user_model,
@@ -493,7 +501,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 void_date=self.void_date,
                 force_migrate=True)
             self.save()
-            self.lock_ledger(commit=True, raise_exception=False)
+            self.lock_ledger(commit=False, raise_exception=False)
 
     def get_mark_as_void_html_id(self):
         return f'djl-{self.uuid}-delete'

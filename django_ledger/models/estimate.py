@@ -71,7 +71,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         (CJ_STATUS_REVIEW, _('In Review')),
         (CJ_STATUS_APPROVED, _('Approved')),
         (CJ_STATUS_COMPLETED, _('Completed')),
-        (CJ_STATUS_COMPLETED, _('Void')),
+        (CJ_STATUS_VOID, _('Void')),
         (CJ_STATUS_CANCELED, _('Canceled')),
     ]
 
@@ -106,9 +106,14 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                               choices=CJ_STATUS,
                               verbose_name=_('Customer Estimate Status'),
                               default=CJ_STATUS_DRAFT)
+
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Date Draft'))
+    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('Date In Review'))
     date_approved = models.DateField(null=True, blank=True, verbose_name=_('Date Approved'))
     date_completed = models.DateField(null=True, blank=True, verbose_name=_('Date Completed'))
     date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Date Canceled'))
+    date_void = models.DateField(null=True, blank=True, verbose_name=_('Date Void'))
+
     revenue_estimate = models.DecimalField(decimal_places=2,
                                            max_digits=20,
                                            default=Decimal('0.00'),
@@ -179,9 +184,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.estimate_number = generate_estimate_number()
         self.entity = entity_model
         self.customer = customer_model
-
         if not self.estimate_number:
             self.estimate_number = generate_estimate_number()
+        self.clean()
         return self
 
     # State....
@@ -222,30 +227,15 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.is_review()
         ])
 
+    def can_void(self):
+        return self.is_approved()
+
     def can_update_items(self):
         return self.is_draft()
 
-    # todo: is this necessary?...
-    def can_update_terms(self):
-        return self.is_draft()
-
-    def can_change_status(self, new_status: str, raise_exception: bool = True) -> bool:
-        if any([
-            new_status == EstimateModel.CJ_STATUS_DRAFT and not self.can_draft(),
-            new_status == EstimateModel.CJ_STATUS_REVIEW and not self.can_review(),
-            new_status == EstimateModel.CJ_STATUS_APPROVED and not self.can_approve(),
-            new_status == EstimateModel.CJ_STATUS_COMPLETED and not self.can_complete(),
-            new_status == EstimateModel.CJ_STATUS_CANCELED and not self.can_cancel()
-        ]):
-            if raise_exception:
-                raise ValidationError(
-                    message=f'Cannot change status to {new_status} from {self.get_status_display()}.'
-                )
-            return False
-        return True
-
     # Actions...
-    def mark_as_draft(self, commit: bool = False) -> bool:
+    # DRAFT...
+    def mark_as_draft(self, commit: bool = False):
         if not self.can_draft():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as draft...')
         self.status = self.CJ_STATUS_DRAFT
@@ -269,13 +259,27 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_mark_as_draft_message(self):
         return _('Do you want to mark Estimate %s as Draft?') % self.estimate_number
 
-    def mark_as_review(self, commit: bool = True) -> bool:
+    # REVIEW...
+    def mark_as_review(self, date_in_review: date = None, commit: bool = True) :
         if not self.can_review():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
+
+        itemthrough_qs = self.itemthroughmodel_set.all()
+        if not itemthrough_qs.count():
+            raise ValidationError(message='Cannot review an Estimate without items...')
+        if not self.cost_estimate():
+            raise ValidationError(message='Cost amount is zero!.')
+        if not self.revenue_estimate:
+            raise ValidationError(message='Revenue amount is zero!.')
+
+        if not date_in_review:
+            date_in_review = localdate()
+        self.date_in_review = date_in_review
         self.status = self.CJ_STATUS_REVIEW
         self.clean()
         if commit:
             self.save(update_fields=[
+                'date_in_review',
                 'status',
                 'updated'
             ])
@@ -323,8 +327,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_mark_as_approved_message(self):
         return _('Do you want to mark Estimate %s as Approved?') % self.estimate_number
 
-
-    def mark_as_completed(self, commit=False, date_completed: date = None) -> bool:
+    # COMPLETED
+    def mark_as_completed(self, commit=False, date_completed: date = None):
 
         if not self.can_complete():
             f'Estimate {self.estimate_number} cannot be marked as completed.'
@@ -341,7 +345,21 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
-    def mark_as_canceled(self, commit=False, raise_exception: bool = True, date_canceled: date = None) -> bool:
+    def get_mark_as_completed_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-completed'
+
+    def get_mark_as_completed_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-completed',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
+
+    def get_mark_as_completed_message(self):
+        return _('Do you want to mark Estimate %s as Completed?') % self.estimate_number
+
+    # CANCEL
+    def mark_as_canceled(self, commit: bool = False, date_canceled: date = None):
         if not self.can_cancel():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be canceled...')
         if not date_canceled:
@@ -355,6 +373,48 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'date_canceled',
                 'updated'
             ])
+
+    def get_mark_as_canceled_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-canceled'
+
+    def get_mark_as_canceled_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-canceled',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
+
+    def get_mark_as_canceled_message(self):
+        return _('Do you want to mark Estimate %s as Canceled?') % self.estimate_number
+
+    # VOID
+    def mark_as_void(self, commit: bool = False, date_void: date = None):
+        if not self.can_void():
+            raise ValidationError(f'Estimate {self.estimate_number} cannot be void...')
+        if not date_void:
+            date_void = localdate()
+        self.date_void = date_void
+        self.status = self.CJ_STATUS_VOID
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'status',
+                'date_void',
+                'updated'
+            ])
+
+    def get_mark_as_void_html_id(self):
+        return f'djl-{self.uuid}-estimate-mark-as-void'
+
+    def get_mark_as_void_url(self):
+        return reverse('django_ledger:customer-estimate-action-mark-as-void',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ce_pk': self.uuid
+                       })
+
+    def get_mark_as_void_message(self):
+        return _('Do you want to mark Estimate %s as Void?') % self.estimate_number
 
     # HTML Tags...
     def get_html_id(self):
@@ -381,7 +441,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             'equipment': sum(a.total_amount for a in queryset if a.item_model.is_equipment()),
             'other': sum(
                 a.total_amount for a in queryset
-                if a.item_model.is_other() or not a.item_model_id or not a.item_model.item_type or a.item_model.is_lump_sum()
+                if
+                a.item_model.is_other() or not a.item_model_id or not a.item_model.item_type or a.item_model.is_lump_sum()
             ),
         }
         self.labor_estimate = estimates['labor']

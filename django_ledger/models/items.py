@@ -128,7 +128,7 @@ class ItemModelManager(models.Manager):
             Q(for_inventory=True)
         )
 
-    def for_cj(self, entity_slug: str, user_model):
+    def for_estimate(self, entity_slug: str, user_model):
         return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
 
 
@@ -223,7 +223,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
         help_text=_('Expense account where cost will be recognized on Income Statement.'),
         on_delete=models.RESTRICT)
 
-    additional_info = models.JSONField(default=dict, verbose_name=_('Item Additional Info'))
+    additional_info = models.JSONField(blank=True,
+                                       null=True,
+                                       verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                related_name='items',
@@ -371,7 +373,7 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def for_cj(self, user_model, entity_slug, cj_pk):
+    def for_estimate(self, user_model, entity_slug, cj_pk):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return self.filter(ce_model_id__exact=cj_pk)
 

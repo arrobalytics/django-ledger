@@ -69,9 +69,9 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
             entity_generator = EntityDataGenerator(
                 entity_model=entity_model,
                 user_model=self.request.user,
-                start_date=localtime() - timedelta(days=30 * 8),
+                start_date=localdate() - timedelta(days=30 * 8),
                 capital_contribution=50000,
-                days_forward=30 * 9,
+                days_forward=30 * 7,
                 tx_quantity=50
             )
             entity_generator.populate_entity()

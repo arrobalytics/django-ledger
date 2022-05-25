@@ -16,8 +16,8 @@ from django_ledger.views import LoginRequiredMixIn
 
 
 class EstimateModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/estimate/customer_estimate_list.html'
-    context_object_name = 'ce_list'
+    template_name = 'django_ledger/estimate/estimate_list.html'
+    context_object_name = 'estimate_list'
     PAGE_TITLE = _('Customer Estimates')
     date_field = 'created'
     paginate_by = 20
@@ -78,7 +78,7 @@ class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
 
 class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
     pk_url_kwarg = 'ce_pk'
-    template_name = 'django_ledger/estimate/customer_estimate_detail.html'
+    template_name = 'django_ledger/estimate/estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
     context_object_name = 'estimate_model'
     extra_context = {

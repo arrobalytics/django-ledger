@@ -7,12 +7,11 @@
         <thead>
         <tr>
             <th>Bill Number</th>
-            <th>Bill Date</th>
             <th>Status</th>
-            <th>Bill From</th>
-            <th>Amount</th>
+            <th>Bill Date</th>
+            <th>Vendor</th>
+            <th>Amount Due</th>
             <th>Payments</th>
-            <th>Is Paid?</th>
             <th>Past Due?</th>
             <th>Actions</th>
         </tr>
@@ -27,17 +26,10 @@
                 <td id="{{ bill.get_html_amount_due_id }}">{% currency_symbol %}{{ bill.amount_due | currency_format }}</td>
                 <td id="{{ bill.get_html_amount_paid_id }}">{% currency_symbol %}{{ bill.amount_paid | currency_format }}</td>
                 <td class="has-text-centered">
-                    {% if bill.paid %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
-                    {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td class="has-text-centered">
                     {% if bill.is_past_due %}
-                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                        <span class="icon is-small has-text-danger">{% icon 'bi:check-circle-fill' 24 %}</span>
                     {% else %}
-                        <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>
+                        <span class="icon is-small has-text-success">{% icon 'clarity:no-access-solid' 24 %}</span>
                     {% endif %}
                 </td>
                 <td class="has-text-centered">
@@ -56,11 +48,11 @@
                                    class="dropdown-item has-text-success">Details</a>
                                 <a href="{% url 'django_ledger:bill-update' entity_slug=entity_slug bill_pk=bill.uuid %}"
                                    class="dropdown-item has-text-warning-dark">Update</a>
-                                {% if not bill.paid %}
-                                    {% modal_action bill 'get' entity_slug %}
-                                    <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"
-                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>
-                                {% endif %}
+{#                                {% if not bill.paid %}#}
+{#                                    {% modal_action bill 'get' entity_slug %}#}
+{#                                    <a onclick="djLedger.showModal('{{ bill.get_html_id }}')"#}
+{#                                       class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Mark as Paid' %}</a>#}
+{#                                {% endif %}#}
 {#                                <a href="{% url 'django_ledger:bill-delete' entity_slug=entity_slug bill_pk=bill.uuid %}"#}
 {#                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans ' Delete' %}</a>#}
                             </div>

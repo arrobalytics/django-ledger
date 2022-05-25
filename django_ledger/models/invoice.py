@@ -125,6 +125,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                                            through_fields=('invoice_model', 'item_model'),
                                            verbose_name=_('Invoice Items'))
 
+    draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
     in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
     approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
     paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
@@ -266,18 +267,26 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as Draft?') % self.invoice_number
 
     # REVIEW...
-    def mark_as_review(self, commit: bool = False, **kwargs):
+    def mark_as_review(self, date_review: date = None, commit: bool = False, **kwargs):
         if not self.can_review():
             raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
+
+        # todo: revisit this logic...
+        itemthrough_qs = self.itemthroughmodel_set.all()
+        if not itemthrough_qs.count():
+            raise ValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
             raise ValidationError(
                 f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
+
+        self.in_review_date = localdate() if not date_review else date_review
         self.invoice_status = self.INVOICE_STATUS_REVIEW
         self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',
+                'in_review_date',
                 'updated'
             ])
 
@@ -295,15 +304,18 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as In Review?') % self.invoice_number
 
     # APPROVED...
-    def mark_as_approved(self, commit: bool = False, **kwargs):
+    def mark_as_approved(self, date_approved: date = None, commit: bool = False, **kwargs):
         if not self.can_approve():
             raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+
         self.invoice_status = self.INVOICE_STATUS_APPROVED
+        self.approved_date = localdate() if not date_approved else date_approved
         self.clean()
         if commit:
             self.ledger.post(commit=True)
             self.save(update_fields=[
                 'invoice_status',
+                'approved_date',
                 'updated'
             ])
 
@@ -324,7 +336,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def mark_as_paid(self,
                      entity_slug: str,
                      user_model,
-                     paid_date: date = None,
+                     date_paid: date = None,
                      commit: bool = False,
                      **kwargs):
         if not self.can_pay():
@@ -332,31 +344,25 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.paid_date = localdate() if not paid_date else paid_date
+        self.paid_date = localdate() if not date_paid else date_paid
 
         if self.paid_date > localdate():
             raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        if self.paid_date < self.date:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                  f' date {self.date}.')
+        # if self.paid_date < self.date:
+        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+        #                           f' date {self.date}.')
 
         self.new_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
         self.clean()
 
         if commit:
-            self.save(update_fields=[
-                'paid_date',
-                'progress',
-                'amount_paid',
-                'invoice_status',
-                'updated'
-            ])
+            self.save()
             self.migrate_state(
                 user_model=user_model,
                 entity_slug=entity_slug,
                 force_migrate=True,
-                je_date=paid_date
+                je_date=date_paid
             )
             self.lock_ledger(commit=True)
 
@@ -377,14 +383,14 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def mark_as_void(self,
                      entity_slug: str,
                      user_model,
-                     void_date: date = None,
+                     date_void: date = None,
                      commit: bool = False,
                      **kwargs):
 
         if not self.can_void():
             raise ValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
-        self.void_date = localdate() if not void_date else void_date
+        self.void_date = localdate() if not date_void else date_void
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
         self.clean()
@@ -422,15 +428,17 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as Void?') % self.invoice_number
 
     # CANCEL
-    def mark_as_canceled(self, commit: bool = False, **kwargs):
+    def mark_as_canceled(self, date_canceled: date = None, commit: bool = False, **kwargs):
         if not self.can_cancel():
             raise ValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
 
+        self.canceled_date = localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',
+                'canceled_date',
                 'updated'
             ])
             self.lock_ledger(commit=True, raise_exception=False)
@@ -448,6 +456,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
     def get_mark_as_canceled_message(self):
         return _('Do you want to mark Invoice %s as Canceled?') % self.invoice_number
+
+    # ACTIONS END....
 
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'

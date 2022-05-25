@@ -55,6 +55,7 @@ class EntityDataGenerator:
         self.fk.add_provider(bank)
 
         self.start_date: date = start_date
+        self.local_date = localdate()
         self.tx_quantity = tx_quantity
         self.localtime = localtime()
         self.COUNT_INVENTORY = True
@@ -72,8 +73,8 @@ class EntityDataGenerator:
         self.bank_account_models = None
         self.entity_unit_models = None
         self.uom_models = None
-        self.product_models = None
         self.expense_models = None
+        self.product_and_services_models = None
         self.inventory_models = None
 
         self.account_models = None
@@ -84,6 +85,72 @@ class EntityDataGenerator:
 
         self.PRODUCTS_MIN = 20
         self.PRODUCTS_MAX = 40
+        self.MIN_DAYS_FORWARD = 1
+        self.MAX_DAYS_FORWARD = 8
+
+    def populate_entity(self):
+
+        txs_qs = TransactionModel.objects.for_entity(
+            entity_model=self.entity_model,
+            user_model=self.user_model
+        )
+
+        if txs_qs.count() > 0:
+            raise ValidationError(
+                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
+
+        self.account_models = AccountModel.on_coa.for_entity_available(
+            entity_slug=self.entity_model.slug,
+            user_model=self.user_model
+        ).order_by('role')
+
+        self.accounts_by_role = {
+            g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)
+        }
+
+        self.create_vendors()
+        self.create_customers()
+        self.create_entity_units()
+        self.create_bank_accounts()
+        self.create_uom_models()
+        self.create_products()
+        self.create_expenses()
+        self.create_inventories()
+        self.fund_entity()
+
+        count_inventory = True
+
+        for i in range(self.tx_quantity):
+            start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
+            self.create_estimates(date_draft=start_dttm)
+            self.create_bill(date_draft=start_dttm)
+            self.create_invoice(date_draft=start_dttm)
+            if random() > 0.4:
+                self.create_po(date_draft=start_dttm)
+
+            else:
+                if count_inventory:
+                    self.recount_inventory()
+                    count_inventory = False
+                    self.update_products()
+
+            #
+            # ItemModel.objects.bulk_update(self.product_models,
+            #                               fields=[
+            #                                   'inventory_received',
+            #                                   'inventory_received_value'
+            #                               ])
+
+    def get_next_date(self, prev_date: date = None) -> date:
+        if not prev_date:
+            prev_date = self.start_date
+        next_date = prev_date + timedelta(days=randint(
+            self.MIN_DAYS_FORWARD,
+            self.MAX_DAYS_FORWARD
+        ))
+        if next_date > self.local_date:
+            next_date = self.local_date
+        return next_date
 
     def create_entity_units(self, nb_units: int = None):
         nb_units = self.NB_UNITS if not nb_units else nb_units
@@ -217,7 +284,8 @@ class EntityDataGenerator:
                     is_product_or_service=True,
                     earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
                     cogs_account=choice(self.accounts_by_role[COGS]),
-                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY])
+                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
+                    additional_info=dict()
                 ))
             else:
                 product_models.append(ItemModel(
@@ -231,15 +299,23 @@ class EntityDataGenerator:
                     for_inventory=is_inventory,
                     is_product_or_service=True,
                     earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                    additional_info=dict()
                 ))
 
         for im in product_models:
-            im.clean()
+            im.full_clean()
 
-        self.product_models = self.entity_model.items.bulk_create(product_models, ignore_conflicts=True)
+        self.entity_model.items.bulk_create(product_models, ignore_conflicts=True)
+        self.update_products()
 
     def update_products(self):
-        self.product_models = ItemModel.objects.products_and_services(
+        self.product_and_services_models = ItemModel.objects.products_and_services(
+            entity_slug=self.entity_model.slug,
+            user_model=self.user_model
+        )
+
+    def update_inventory(self):
+        self.inventory_models = ItemModel.objects.inventory(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
@@ -286,23 +362,27 @@ class EntityDataGenerator:
         for i in inventory_models:
             i.clean()
 
-        self.inventory_models = self.entity_model.items.bulk_create(inventory_models)
+        self.entity_model.items.bulk_create(inventory_models)
+        self.update_inventory()
 
-    def create_estimates(self, date_approved: date):
+    def create_estimates(self, date_draft: date):
         estimate_number = generate_estimate_number()
         customer_estimate: EstimateModel = EstimateModel(
             estimate_number=estimate_number,
             terms=choice(EstimateModel.CONTRACT_TERMS)[0],
             title=f'Customer Estimate {estimate_number}',
+            date_draft=date_draft
         )
         customer_estimate.configure(entity_slug=self.entity_model,
                                     user_model=self.user_model,
                                     customer_model=choice(self.customer_models))
 
+        customer_estimate.save()
+
         estimate_items = [
             ItemThroughModel(
                 ce_model=customer_estimate,
-                item_model=choice(self.product_models),
+                item_model=choice(self.product_and_services_models),
                 quantity=round(random() * randint(5, 15), 2),
                 unit_cost=round(random() * randint(50, 100), 2),
                 ce_unit_revenue_estimate=round(random() * randint(80, 120) * (1 + 0.2 * random()), 2),
@@ -311,44 +391,43 @@ class EntityDataGenerator:
         ]
 
         for i in estimate_items:
-            i.clean()
+            i.full_clean()
 
         customer_estimate.full_clean()
-        customer_estimate.save()
         customer_estimate.update_state(queryset=estimate_items)
+        customer_estimate.save()
 
         estimate_items = customer_estimate.itemthroughmodel_set.bulk_create(objs=estimate_items)
 
-        if random() < 0.2:
-            customer_estimate.mark_as_review(commit=True)
-            if random() < 0.55:
+        if random() > 0.25:
+            date_in_review = self.get_next_date(date_draft)
+            customer_estimate.mark_as_review(commit=True, date_in_review=date_in_review)
+            if random() > 0.50:
+                date_approved = self.get_next_date(date_in_review)
                 customer_estimate.mark_as_approved(commit=True, date_approved=date_approved)
-                if random() < 0.80:
-                    date_completed = date_approved + timedelta(days=randint(10, 45))
+                if random() > 0.25:
+                    date_completed = self.get_next_date(date_approved)
                     customer_estimate.mark_as_completed(commit=True, date_completed=date_completed)
-            else:
-                customer_estimate.mark_as_canceled(commit=True, date_canceled=date_approved)
+                elif random() > 0.8:
+                    date_void = self.get_next_date(date_approved)
+                    customer_estimate.mark_as_void(commit=True, date_void=date_void)
+            elif random() > 0.8:
+                date_canceled = self.get_next_date(date_in_review)
+                customer_estimate.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
-    def create_bill(self,
-                    is_accruable: bool,
-                    progress: float,
-                    issue_dt: date):
-
-        ld = localdate()
-        if issue_dt > ld:
-            issue_dt = ld
+    def create_bill(self, date_draft):
 
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
-            accrue=is_accruable,
-            progress=progress,
+            accrue=random() > 0.65,
+            progress=random(),
             terms=choice(BillModel.TERMS)[0],
             bill_number=generate_bill_number(),
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
-            date=issue_dt,
+            draft_date=date_draft,
             additional_info=dict()
         )
 
@@ -377,57 +456,41 @@ class EntityDataGenerator:
         bill_model.full_clean()
         bill_model.save()
 
-        if random() > 0.15:
-            # todo: add review_date param...
-            bill_model.mark_as_review(commit=True)
+        if random() > 0.25:
+            date_in_review = self.get_next_date(date_draft)
+            bill_model.mark_as_review(commit=True, date_in_review=date_in_review)
 
-            if random() > 0.35:
-                approved_date = issue_dt + timedelta(days=randint(3, 8))
-                if approved_date > ld:
-                    approved_date = ld
+            if random() > 0.50:
+                approved_date = self.get_next_date(date_in_review)
                 bill_model.mark_as_approved(commit=True,
                                             entity_slug=self.entity_model.slug,
                                             user_model=self.user_model,
                                             approved_date=approved_date)
 
-                if random() > 0.40:
-                    paid_date = approved_date + timedelta(days=randint(3, 8))
-                    if paid_date > ld:
-                        paid_date = ld
+                if random() > 0.25:
+                    paid_date = self.get_next_date(approved_date)
                     bill_model.mark_as_paid(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
-                        paid_date=paid_date,
+                        date_paid=paid_date,
                         commit=True
                     )
-
-                else:
-                    void_date = approved_date + timedelta(days=randint(3, 8))
-                    if void_date > ld:
-                        void_date = ld
+                elif random() > 0.8:
+                    void_date = self.get_next_date(approved_date)
                     bill_model.mark_as_void(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
                         void_date=void_date,
                         commit=True
                     )
-            else:
-                canceled_date = issue_dt + timedelta(days=randint(3, 8))
-                if canceled_date > ld:
-                    canceled_date = ld
+            elif random() > 0.8:
+                canceled_date = self.get_next_date(date_in_review)
                 bill_model.mark_as_canceled(canceled_date=canceled_date)
 
-    def create_po(self, po_date: date):
+    def create_po(self, date_draft: date):
 
-        ld = localdate()
-        if po_date > ld:
-            po_date = ld
-
-        po_model: PurchaseOrderModel = PurchaseOrderModel(po_date=po_date)
-        po_model = po_model.configure(
-            entity_slug=self.entity_model,
-            user_model=self.user_model,
-        )
+        po_model: PurchaseOrderModel = PurchaseOrderModel(draft_date=date_draft)
+        po_model = po_model.configure(entity_slug=self.entity_model, user_model=self.user_model)
         po_model.po_title = f'PO Title for {po_model.po_number}'
         po_model.save()
 
@@ -452,24 +515,20 @@ class EntityDataGenerator:
         po_items = po_model.itemthroughmodel_set.bulk_create(po_items)
 
         # mark as approved...
-        if random() > 0.15:
-            po_model.mark_as_review(commit=True)
+        if random() > 0.25:
+            date_review = self.get_next_date(date_draft)
+            po_model.mark_as_review(commit=True, date_review=date_review)
             if random() > 0.5:
-                approved_date = po_date + timedelta(days=randint(3, 8))
-                if approved_date > ld:
-                    approved_date = ld
-                po_model.mark_as_approved(commit=True, po_date=approved_date)
-                if random() > 0.5:
+                date_approved = self.get_next_date(date_review)
+                po_model.mark_as_approved(commit=True, date_approved=date_approved)
+                if random() > 0.25:
                     # add a PO bill...
-                    fulfilled_dt = po_date + timedelta(days=randint(4, 10))
-                    bill_dt = po_date + timedelta(days=randint(1, 3))
-
-                    if bill_dt > ld:
-                        bill_dt = ld
+                    date_fulfilled = self.get_next_date(date_approved)
+                    date_bill_draft = date_fulfilled - timedelta(days=randint(1, 3))
 
                     bill_model: BillModel = BillModel(
                         bill_number=generate_bill_number(),
-                        date=bill_dt,
+                        draft_date=date_bill_draft,
                         vendor=choice(self.vendor_models))
 
                     bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
@@ -477,7 +536,6 @@ class EntityDataGenerator:
                     bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
 
                     ledger_model, bill_model = bill_model.configure(
-                        # ledger_posted=True,
                         entity_slug=self.entity_model.slug,
                         user_model=self.user_model
                     )
@@ -517,25 +575,23 @@ class EntityDataGenerator:
                             'po_item_status'
                         ])
 
-                    if random() > 0.15:
-                        bill_model.mark_as_review(commit=True)
-                        if random() > 0.20:
-                            bill_approve_date = bill_dt + timedelta(days=randint(3, 8))
-                            if bill_approve_date > ld:
-                                bill_approve_date = ld
+                    if random() > 0.25:
+                        date_bill_review = self.get_next_date(date_bill_draft)
+                        bill_model.mark_as_review(commit=True, date_in_review=date_bill_review)
+                        if random() > 0.50:
+                            bill_approve_date = self.get_next_date(date_bill_review)
                             bill_model.mark_as_approved(commit=True,
                                                         entity_slug=self.entity_model.slug,
                                                         user_model=self.user_model,
                                                         approved_date=bill_approve_date)
                             if random() > 0.25:
-                                paid_date = bill_dt + timedelta(days=randint(3, 8))
-                                if paid_date > ld:
-                                    paid_date = ld
+                                bill_paid_date = self.get_next_date(bill_approve_date)
                                 bill_model.mark_as_paid(
                                     user_model=self.user_model,
                                     entity_slug=self.entity_model.slug,
                                     commit=True,
-                                    paid_date=paid_date)
+                                    date_paid=bill_paid_date)
+
                                 if random() > 0.20:
                                     for po_i in po_items:
                                         po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
@@ -548,29 +604,26 @@ class EntityDataGenerator:
                                                                                   'updated'
                                                                               ])
                                     po_model.mark_as_fulfilled(
-                                        fulfilled_date=fulfilled_dt,
-                                        # po_items=po_items,
+                                        date_fulfilled=date_fulfilled,
                                         commit=True)
+                                    self.entity_model.update_inventory(
+                                        user_model=self.user_model,
+                                        commit=True)
+                                    self.update_products()
+                                    self.update_inventory()
 
-    def create_invoice(self,
-                       is_accruable: bool,
-                       progress: float,
-                       issue_dt: date,
-                       paid_dt: date):
-
-        if not paid_dt:
-            paid_dt = localdate()
+    def create_invoice(self, date_draft: date):
 
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
-            accrue=is_accruable,
-            progress=progress,
+            accrue=random() > 0.75,
+            progress=random(),
             terms=choice(InvoiceModel.TERMS)[0],
             invoice_number=generate_invoice_number(),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
-            date=issue_dt,
+            draft_date=date_draft,
             additional_info=dict()
         )
 
@@ -584,7 +637,7 @@ class EntityDataGenerator:
         invoice_items = list()
 
         for i in range(randint(1, 10)):
-            item_model: ItemModel = choice(self.product_models)
+            item_model: ItemModel = choice(self.product_and_services_models)
             quantity = Decimal.from_float(round(random() * randint(1, 5), 2))
             entity_unit = choice(self.entity_unit_models) if random() > .75 else None
             margin = Decimal(random() + 1.5)
@@ -619,27 +672,37 @@ class EntityDataGenerator:
         invoice_model.full_clean()
         invoice_model.save()
 
-        if random() > 0.15:
-            invoice_model.mark_as_review(commit=True)
-            if random() > 0.15:
-                invoice_model.mark_as_approved(commit=True)
-                if random() > 0.3:
-                    print(issue_dt, paid_dt)
+        if random() > 0.25:
+            date_review = self.get_next_date(date_draft)
+            invoice_model.mark_as_review(commit=True, date_review=date_review)
+            if random() > 0.50:
+                date_approved = self.get_next_date(date_review)
+                invoice_model.mark_as_approved(commit=True, date_approved=date_approved)
+                if random() > 0.25:
+                    date_paid = self.get_next_date(date_approved)
                     invoice_model.mark_as_paid(
                         entity_slug=self.entity_model.slug,
                         user_model=self.user_model,
-                        paid_date=paid_dt,
+                        date_paid=date_paid,
                         commit=True
                     )
-                else:
+                    self.entity_model.update_inventory(
+                        user_model=self.user_model,
+                        commit=True
+                    )
+                    self.update_inventory()
+                    self.update_products()
+                elif random() > 0.8:
+                    date_void = self.get_next_date(date_approved)
                     invoice_model.mark_as_void(
                         entity_slug=self.entity_model.slug,
                         user_model=self.user_model,
-                        void_date=paid_dt + timedelta(days=randint(1, 6)),
+                        date_void=date_void,
                         commit=True
                     )
-            else:
-                invoice_model.mark_as_canceled(commit=True)
+            elif random() > 0.8:
+                date_canceled = self.get_next_date(date_review)
+                invoice_model.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
     def fund_entity(self):
 
@@ -662,84 +725,3 @@ class EntityDataGenerator:
             user_model=self.user_model,
             commit=True
         )
-
-    def populate_entity(self):
-
-        txs_qs = TransactionModel.objects.for_entity(
-            entity_model=self.entity_model,
-            user_model=self.user_model
-        )
-
-        if txs_qs.count() > 0:
-            raise ValidationError(
-                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
-
-        self.account_models = AccountModel.on_coa.for_entity_available(
-            entity_slug=self.entity_model.slug,
-            user_model=self.user_model
-        ).order_by('role')
-
-        self.accounts_by_role = {
-            g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)
-        }
-
-        self.create_vendors()
-        self.create_customers()
-        self.create_entity_units()
-        self.create_bank_accounts()
-        self.create_uom_models()
-        self.create_products()
-        self.create_expenses()
-        self.create_inventories()
-        self.fund_entity()
-
-        count_inventory = True
-
-        for i in range(self.tx_quantity):
-
-            issue_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
-            if issue_dttm > self.localtime:
-                issue_dttm = self.localtime
-
-            is_accruable = random() < self.is_accruable_probability
-            progress = Decimal(round(random(), 2)) if is_accruable else 0
-
-            is_paid = random() < self.is_paid_probability
-            paid_dttm = issue_dttm + timedelta(days=randint(0, 60)) if is_paid else None
-            if paid_dttm and paid_dttm >= self.localtime:
-                paid_dttm = None
-                is_paid = False
-
-            issue_dt = issue_dttm.date()
-            paid_dt = paid_dttm.date() if paid_dttm else None
-
-            self.create_estimates(date_approved=issue_dt)
-
-            if i < self.tx_quantity / 2:
-                self.create_bill(
-                    is_accruable=is_accruable,
-                    progress=progress,
-                    issue_dt=issue_dt
-                )
-
-                if random() > 0.4:
-                    self.create_po(po_date=issue_dt)
-
-            else:
-                if count_inventory:
-                    self.recount_inventory()
-                    count_inventory = False
-                    self.update_products()
-
-                self.create_invoice(
-                    is_accruable=is_accruable,
-                    progress=progress,
-                    issue_dt=issue_dt,
-                    paid_dt=paid_dt
-                )
-
-            ItemModel.objects.bulk_update(self.product_models,
-                                          fields=[
-                                              'inventory_received',
-                                              'inventory_received_value'
-                                          ])

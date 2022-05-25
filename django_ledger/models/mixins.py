@@ -635,9 +635,9 @@ class LedgerWrapperMixIn(models.Model):
                 self.paid_date = today
             if self.paid_date > today:
                 raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-            if self.paid_date < self.date:
-                raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                      f' date {self.date}.')
+            # if self.paid_date < self.date:
+            #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+            #                           f' date {self.date}.')
         else:
             self.paid_date = None
 

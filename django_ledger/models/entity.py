@@ -343,6 +343,7 @@ class EntityModelAbstract(NodeTreeMixIn,
             item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
             item_model.inventory_received = i['counted']
             item_model.inventory_received_value = i['counted_value']
+            item_model.clean()
             updated_items.append(item_model)
 
         if commit:
