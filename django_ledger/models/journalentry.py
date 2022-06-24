@@ -14,7 +14,7 @@ from django.db.models import Q, Sum, QuerySet
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, NodeTreeMixIn
+from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
 
 
 class JournalEntryModelQuerySet(QuerySet):
@@ -54,7 +54,7 @@ class JournalEntryModelManager(models.Manager):
         return qs.filter(ledger__uuid__exact=ledger_pk)
 
 
-class JournalEntryModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
+class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     ACTIVITY_IGNORE = ['all']
     ACTIVITIES = [
         ('op', _('Operating')),

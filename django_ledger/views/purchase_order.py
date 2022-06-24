@@ -84,6 +84,13 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
                                                      'entity_slug': self.kwargs['entity_slug'],
                                                      'ce_pk': self.kwargs['ce_pk']
                                                  })
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer')
+            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            context['estimate_model'] = estimate_model
+
         else:
             context['form_action_url'] = reverse('django_ledger:po-create',
                                                  kwargs={
@@ -113,6 +120,7 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
             )
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             po_model.ce_model = estimate_model
+            po_model.clean()
         return super().form_valid(form=form)
 
     def get_success_url(self):

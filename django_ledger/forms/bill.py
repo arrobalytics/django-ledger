@@ -20,7 +20,7 @@ class BillModelCreateForm(ModelForm):
         self.get_accounts_queryset()
 
     def get_vendor_queryset(self):
-
+        # todo: can we apply same logic on the other forms...
         if 'vendor' in self.fields:
             vendor_qs = VendorModel.objects.for_entity(
                 user_model=self.USER_MODEL,
@@ -51,7 +51,7 @@ class BillModelCreateForm(ModelForm):
         model = BillModel
         fields = [
             'vendor',
-            # 'xref',
+            'xref',
             'date',
             'terms',
             'cash_account',
@@ -97,6 +97,19 @@ class BillModelCreateForm(ModelForm):
                     'id': 'djl-bill-unearned-account-input'
                 }),
         }
+
+
+# class BillModelCreateForm(BillModelCreateForEstimateForm):
+#     class Meta(BillModelCreateForEstimateForm.Meta):
+#         fields = [
+#             'vendor',
+#             # 'xref',
+#             'date',
+#             'terms',
+#             'cash_account',
+#             'prepaid_account',
+#             'unearned_account',
+#         ]
 
 
 class BaseBillModelUpdateForm(BillModelCreateForm):

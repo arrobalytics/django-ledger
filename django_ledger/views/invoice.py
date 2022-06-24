@@ -17,11 +17,11 @@ from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchi
                                   ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset,
+from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm, get_invoice_item_formset,
                                          DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
                                          ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
-                                         AccruedAndApprovedInvoiceModelUpdateForm)
-from django_ledger.models import EntityModel, LedgerModel
+                                         AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
+from django_ledger.models import EntityModel, LedgerModel, EstimateModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -35,6 +35,29 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    for_estimate = False
+
+    def get_context_data(self, **kwargs):
+        context = super(InvoiceModelCreateView, self).get_context_data(**kwargs)
+
+        if self.for_estimate:
+            context['form_action_url'] = reverse('django_ledger:invoice-create-estimate',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug'],
+                                                     'ce_pk': self.kwargs['ce_pk']
+                                                 })
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer')
+            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            context['estimate_model'] = estimate_model
+        else:
+            context['form_action_url'] = reverse('django_ledger:invoice-create',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug']
+                                                 })
+        return context
 
     def get_initial(self):
         return {
@@ -43,11 +66,17 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
-        form = InvoiceModelCreateForm(
+        if self.for_estimate:
+            InvoiceModelCreateForm(
+                entity_slug=entity_slug,
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        return InvoiceModelCreateForEstimateForm(
             entity_slug=entity_slug,
             user_model=self.request.user,
-            **self.get_form_kwargs())
-        return form
+            **self.get_form_kwargs()
+        )
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
@@ -55,11 +84,29 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         )
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            invoice_model.customer_id = estimate_model.customer_id
+            invoice_model.ce_model = estimate_model
+            invoice_model.clean()
+
         return super().form_valid(form=form)
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         invoice_model: InvoiceModel = self.object
+        if self.for_estimate:
+            return reverse('django_ledger:customer-estimate-detail',
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'ce_pk': self.kwargs['ce_pk']
+                           })
         return reverse('django_ledger:invoice-detail',
                        kwargs={
                            'entity_slug': entity_slug,
@@ -216,6 +263,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         invoice_model = self.object
         ledger_model: LedgerModel = invoice_model.ledger
 
+        # todo: remove actions from view...
         if self.action_mark_as_paid:
             invoice_model: InvoiceModel = self.get_object()
             invoice_model.mark_as_paid(

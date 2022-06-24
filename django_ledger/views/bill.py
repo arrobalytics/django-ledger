@@ -23,7 +23,7 @@ from django_ledger.forms.bill import (BillModelCreateForm, BaseBillModelUpdateFo
                                       BillItemFormset, BillModelConfigureForm, InReviewBillModelUpdateForm,
                                       ApprovedBillModelUpdateForm, AccruedAndApprovedBillModelUpdateForm,
                                       PaidBillModelUpdateForm)
-from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel
+from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel, EstimateModel
 from django_ledger.models.bill import BillModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -80,9 +80,11 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
         'header_subtitle_icon': 'uil:bill'
     }
     for_purchase_order = False
+    for_estimate = False
 
     def get_context_data(self, **kwargs):
         context = super(BillModelCreateView, self).get_context_data(**kwargs)
+
         # todo: revisit this in case there's better way...
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
@@ -111,6 +113,18 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                                       'entity_slug': self.kwargs['entity_slug'],
                                       'po_pk': po_model.uuid
                                   }) + f'?item_uuids={po_item_uuids_qry_param}'
+        elif self.for_estimate:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            estimate_uuid = self.kwargs['ce_pk']
+            estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=estimate_uuid)
+            form_action = reverse('django_ledger:bill-create-estimate',
+                                  kwargs={
+                                      'entity_slug': self.kwargs['entity_slug'],
+                                      'ce_pk': estimate_model.uuid
+                                  })
         else:
             form_action = reverse('django_ledger:bill-create',
                                   kwargs={
@@ -136,6 +150,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             entity_slug=self.kwargs['entity_slug'],
             ledger_posted=False,
             user_model=self.request.user)
+
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
             item_uuids = self.request.GET.get('item_uuids')
@@ -169,6 +184,16 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                 itemthrough_queryset=po_model_items_qs
             )
             return HttpResponseRedirect(self.get_success_url())
+        elif self.for_estimate:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            bill_model.ce_model = estimate_model
+            bill_model.clean()
+            bill_model.save()
+            return HttpResponseRedirect(self.get_success_url())
         return super(BillModelCreateView, self).form_valid(form)
 
     def get_success_url(self):
@@ -179,6 +204,12 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                            kwargs={
                                'entity_slug': entity_slug,
                                'po_pk': po_pk
+                           })
+        elif self.for_estimate:
+            return reverse('django_ledger:customer-estimate-detail',
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'ce_pk': self.kwargs['ce_pk']
                            })
         bill_model: BillModel = self.object
         return reverse('django_ledger:bill-detail',

@@ -88,8 +88,12 @@ class YearlyReportMixIn(YearMixin, EntityReportManager):
         year_end = self.get_year_end_date(year)
         context['year_start'] = year_start
         context['year_end'] = year_end
-        context['from_date'] = year_start
-        context['to_date'] = year_end
+
+        if 'from_date' not in context:
+            context['from_date'] = year_start
+        if 'to_date' not in context:
+            context['to_date'] = year_end
+
         context['has_year'] = True
         return context
 
@@ -163,8 +167,12 @@ class QuarterlyReportMixIn(YearMixin, EntityReportManager):
         quarter_end = self.get_quarter_end_date(year=year, quarter=quarter)
         context['quarter_start'] = quarter_start
         context['quarter_end'] = quarter_end
-        context['from_date'] = quarter_start
-        context['to_date'] = quarter_end
+
+        if 'from_date' not in context:
+            context['from_date'] = quarter_start
+        if 'to_date' not in context:
+            context['to_date'] = quarter_end
+
         context['has_quarter'] = True
         return context
 
@@ -326,11 +334,6 @@ class EntityUnitMixIn:
 
 
 class EntityDigestMixIn:
-
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context = self.get_entity_digest(context)
-    #     return context
 
     def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
         by_period = self.request.GET.get('by_period')

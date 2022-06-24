@@ -229,9 +229,9 @@ def ledgers_table(context):
 
 
 @register.inclusion_tag('django_ledger/invoice/includes/invoice_table.html', takes_context=True)
-def invoice_table(context):
+def invoice_table(context, invoice_qs):
     return {
-        'invoices': context['invoices'],
+        'invoices': invoice_qs,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 

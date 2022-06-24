@@ -5,13 +5,23 @@
 
 {% block view_content %}
     <div class="columns is-multiline is-centered">
+        {% if estimate_model %}
+            <div class="column is-12 has-text-centered">
+                <h2 class="is-size-2">{% trans 'Invoice for Estimate' %}: {{ estimate_model.title }}</h2>
+                <h3 class="is-size-3">{{ estimate_model.estimate_number }}</h3>
+                <h4 class="is-size-4 mt-2">{{ estimate_model.customer }}</h4>
+                <a class="button is-dark mt-2"
+                   href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=estimate_model.uuid %}">
+                    {% trans 'Back to Estimate' %}</a>
+            </div>
+        {% endif %}
         <div class="column is-6-desktop">
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Invoice' %}</h2>
                 </div>
                 <div class="card-content">
-                    <form action="{% url 'django_ledger:invoice-create' entity_slug=view.kwargs.entity_slug %}"
+                    <form action="{{ form_action_url }}"
                           method="post" id="djl-bill-create-form-id">
                         <div class="columns is-multiline is-centered">
                             {% csrf_token %}

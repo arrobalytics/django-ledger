@@ -108,7 +108,6 @@
                 <div class="column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Notes' notes_html=object.notes_html %}
                 </div>
-
                 {% if estimate_model.is_approved %}
                     <div class="column is-12">
                         <div class="card">
@@ -122,6 +121,36 @@
                                 {% po_table estimate_po_model_queryset %}
                                 <a href="{% url 'django_ledger:po-create-estimate' entity_slug=view.kwargs.entity_slug ce_pk=estimate_model.uuid %}"
                                    class="button is-info">{% trans 'Initiate PO' %}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-header-title has-text-weight-light is-size-3">
+                                    <span class="icon is-large">{% icon 'teenyicons:cost-estimate-outline' 36 %}</span>
+                                    {% trans 'Bills' %}
+                                </h2>
+                            </div>
+                            <div class="card-content">
+                                {% bill_table estimate_bill_model_queryset %}
+                                <a href="{% url 'django_ledger:bill-create-estimate' entity_slug=view.kwargs.entity_slug ce_pk=estimate_model.uuid %}"
+                                   class="button is-info">{% trans 'Initiate Bill' %}</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="column is-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-header-title has-text-weight-light is-size-3">
+                                    <span class="icon is-large">{% icon 'teenyicons:cost-estimate-outline' 36 %}</span>
+                                    {% trans 'Invoices' %}
+                                </h2>
+                            </div>
+                            <div class="card-content">
+                                {% invoice_table estimate_invoice_model_queryset %}
+                                <a href="{% url 'django_ledger:invoice-create-estimate' entity_slug=view.kwargs.entity_slug ce_pk=estimate_model.uuid %}"
+                                   class="button is-info">{% trans 'Initiate Invoice' %}</a>
                             </div>
                         </div>
                     </div>

@@ -18,7 +18,7 @@ from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 # todo: need to add entity_unit to form...
 
-class InvoiceModelCreateForm(ModelForm):
+class InvoiceModelCreateForEstimateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,16 +36,10 @@ class InvoiceModelCreateForm(ModelForm):
         self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
         self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
-        customer_qs = CustomerModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['customer'].queryset = customer_qs
-
     class Meta:
         model = InvoiceModel
         fields = [
-            'customer',
+            # 'customer',
             'date',
             'terms',
             'cash_account',
@@ -74,6 +68,27 @@ class InvoiceModelCreateForm(ModelForm):
             'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
 
         }
+
+
+class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
+
+    def __init__(self, **kwargs):
+        super(InvoiceModelCreateForm, self).__init__(**kwargs)
+        customer_qs = CustomerModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+        self.fields['customer'].queryset = customer_qs
+
+    class Meta(InvoiceModelCreateForEstimateForm.Meta):
+        fields = [
+            'customer',
+            'date',
+            'terms',
+            'cash_account',
+            'prepaid_account',
+            'unearned_account'
+        ]
 
 
 class BaseInvoiceModelUpdateForm(ModelForm):

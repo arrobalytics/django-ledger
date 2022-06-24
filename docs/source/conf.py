@@ -19,7 +19,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, '../../django_ledger')
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "tests.settings"
+os.environ["DJANGO_SETTINGS_MODULE"] = "dev_env.settings"
 django.setup()
 
 # sys.path.insert(0, os.path.abspath('.'))
@@ -28,7 +28,7 @@ django.setup()
 # -- Project information -----------------------------------------------------
 
 project = 'Django Ledger'
-copyright = '2021, EDMA Group Inc'
+copyright = '2022, EDMA Group Inc'
 author = 'Miguel Sanda'
 
 # -- General configuration ---------------------------------------------------
@@ -53,7 +53,7 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'furo'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

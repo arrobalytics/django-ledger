@@ -12,14 +12,12 @@ urlpatterns = [
     path('<slug:entity_slug>/month/<int:year>/<int:month>/',
          views.PurchaseOrderModelMonthListView.as_view(),
          name='po-list-month'),
-
     path('<slug:entity_slug>/create/',
          views.PurchaseOrderModelCreateView.as_view(),
          name='po-create'),
     path('<slug:entity_slug>/create/estimate/<uuid:ce_pk>/',
          views.PurchaseOrderModelCreateView.as_view(for_estimate=True),
          name='po-create-estimate'),
-
     path('<slug:entity_slug>/detail/<uuid:po_pk>/',
          views.PurchaseOrderModelDetailView.as_view(),
          name='po-detail'),

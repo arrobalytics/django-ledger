@@ -55,6 +55,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
   * Average Cost.
 * __0.5.1__: Customer estimates & contract tracking.
   * Link Estimate/PO/Bill/Invoice workflow.
+  * Journal Entry (or trial balance) import.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
 * __0.5.4__: Testing framework implementation that will include:

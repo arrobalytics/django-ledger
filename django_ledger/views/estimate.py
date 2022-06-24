@@ -101,6 +101,16 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.purchaseordermodel_set.none()
 
+        context['estimate_invoice_model_queryset'] = ce_model.invoicemodel_set.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ) if ce_model.is_approved() else ce_model.invoicemodel_set.none()
+
+        context['estimate_bill_model_queryset'] = ce_model.billmodel_set.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug']
+        ) if ce_model.is_approved() else ce_model.billmodel_set.none()
+
         return context
 
     def get_queryset(self):
@@ -194,32 +204,31 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def post(self, request, entity_slug, ce_pk, *args, **kwargs):
         response = super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
-        cj_model: EstimateModel = self.object
+        ce_model: EstimateModel = self.object
 
         if self.action_update_items:
             item_formset: CanEditEstimateItemModelFormset = CanEditEstimateItemModelFormset(request.POST,
                                                                                             user_model=self.request.user,
-                                                                                            customer_job_model=cj_model,
+                                                                                            customer_job_model=ce_model,
                                                                                             entity_slug=entity_slug)
             if item_formset.is_valid():
                 if item_formset.has_changed():
-                    cleaned_data = [d for d in item_formset.cleaned_data if d]
                     cj_items = item_formset.save(commit=False)
                     cj_model_qs = EstimateModel.objects.for_entity(user_model=self.request.user,
                                                                    entity_slug=entity_slug)
-                    cj_model: EstimateModel = get_object_or_404(cj_model_qs, uuid__exact=ce_pk)
+                    ce_model: EstimateModel = get_object_or_404(cj_model_qs, uuid__exact=ce_pk)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
                     for item in cj_items:
                         item.entity = entity_model
-                        item.ce_model = cj_model
+                        item.ce_model = ce_model
 
                     item_formset.save()
 
-                    cj_model.update_state(queryset=item_formset.queryset)
-                    cj_model.clean()
-                    cj_model.save(update_fields=[
+                    ce_model.update_state(queryset=item_formset.queryset)
+                    ce_model.clean()
+                    ce_model.save(update_fields=[
                         'revenue_estimate',
                         'labor_estimate',
                         'equipment_estimate',

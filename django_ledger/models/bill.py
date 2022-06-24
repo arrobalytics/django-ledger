@@ -125,6 +125,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                         through_fields=('bill_model', 'item_model'),
                                         verbose_name=_('Bill Items'))
 
+    ce_model = models.ForeignKey('django_ledger.EstimateModel',
+                                 on_delete=models.RESTRICT,
+                                 null=True,
+                                 blank=True,
+                                 verbose_name=_('Associated Customer Job/Estimate'))
+
     draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
     in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
     approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))

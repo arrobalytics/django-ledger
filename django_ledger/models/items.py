@@ -16,7 +16,7 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, 
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
 from django_ledger.settings import (DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol,
                                     DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
 
@@ -470,7 +470,7 @@ class ItemThroughModelManager(models.Manager):
         raise NotImplementedError
 
 
-class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
+class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     STATUS_NOT_ORDERED = 'not_ordered'
     STATUS_ORDERED = 'ordered'
     STATUS_IN_TRANSIT = 'in_transit'

@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_INVOICE, GROUP_BILL
-from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
 
 DEBIT = 'debit'
 CREDIT = 'credit'
@@ -86,7 +86,7 @@ class AccountModelManager(models.Manager):
         return qs.filter(role__in=GROUP_BILL)
 
 
-class AccountModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
+class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     """
     Djetler's Base Account Model Abstract
     """

@@ -668,7 +668,7 @@ class MarkdownNotesMixIn(models.Model):
         return markdown(force_str(self.markdown_notes))
 
 
-class NodeTreeMixIn(models.Model):
+class ParentChildMixIn(models.Model):
     parent = models.ForeignKey('self',
                                null=True,
                                blank=True,

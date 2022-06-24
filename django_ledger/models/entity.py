@@ -22,6 +22,7 @@ from django.db.models.signals import post_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from treebeard.mp_tree import MP_Node
 
 from django_ledger.io import IOMixIn
 from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
@@ -29,8 +30,9 @@ from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_
 from django_ledger.models.accounts import AccountModel, CREDIT
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, NodeTreeMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
 from django_ledger.models.utils import LazyLoader
+
 
 UserModel = get_user_model()
 lazy_loader = LazyLoader()
@@ -168,7 +170,7 @@ class EntityModelManager(Manager):
         )
 
 
-class EntityModelAbstract(NodeTreeMixIn,
+class EntityModelAbstract(MP_Node,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
@@ -209,8 +211,7 @@ class EntityModelAbstract(NodeTreeMixIn,
         verbose_name = _('Entity')
         verbose_name_plural = _('Entities')
         indexes = [
-            models.Index(fields=['admin']),
-            models.Index(fields=['parent'])
+            models.Index(fields=['admin'])
         ]
 
     def __str__(self):
