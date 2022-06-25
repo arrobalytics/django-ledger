@@ -238,6 +238,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_update_items(self):
         return self.is_draft()
 
+    def can_bind(self):
+        return self.is_approved()
+
     # Actions...
     # DRAFT...
     def mark_as_draft(self, commit: bool = False):

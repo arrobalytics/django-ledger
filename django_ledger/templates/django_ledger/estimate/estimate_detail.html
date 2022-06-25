@@ -104,10 +104,10 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Notes' notes_html=object.notes_html %}
                 </div>
+
                 {% if estimate_model.is_approved %}
                     <div class="column is-12">
                         <div class="card">
@@ -155,6 +155,7 @@
                         </div>
                     </div>
                 {% endif %}
+
             </div>
 
         </div>

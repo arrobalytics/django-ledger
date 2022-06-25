@@ -151,8 +151,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
         self.po_number = generate_po_number()
-        # if po_date:
-        #     self.po_date = po_date
+        if po_date:
+            self.po_date = po_date
         self.entity = entity_model
         return self
 
@@ -189,56 +189,82 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             return item_queryset, item_data
 
     # State...
-    def is_draft(self):
+    def is_draft(self) -> bool:
         return self.po_status == self.PO_STATUS_DRAFT
 
-    def is_review(self):
+    def is_review(self) -> bool:
         return self.po_status == self.PO_STATUS_REVIEW
 
-    def is_approved(self):
+    def is_approved(self) -> bool:
         return self.po_status == self.PO_STATUS_APPROVED
 
-    def is_fulfilled(self):
+    def is_fulfilled(self) -> bool:
         return self.po_status == self.PO_STATUS_FULFILLED
 
-    def is_canceled(self):
+    def is_canceled(self) -> bool:
         return self.po_status == self.PO_STATUS_CANCELED
 
-    def is_void(self):
+    def is_void(self) -> bool:
         return self.po_status == self.PO_STATUS_VOID
 
     # Permissions...
-    def can_draft(self):
+    def can_draft(self) -> bool:
         return self.is_review()
 
-    def can_review(self):
+    def can_review(self) -> bool:
         return self.is_draft()
 
-    def can_approve(self):
+    def can_approve(self) -> bool:
         return self.is_review()
 
-    def can_fulfill(self):
+    def can_fulfill(self) -> bool:
         return self.is_approved()
 
-    def can_cancel(self):
+    def can_cancel(self) -> bool:
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
-    def can_void(self):
+    def can_void(self) -> bool:
         return self.is_approved()
 
-    def can_delete(self):
+    def can_delete(self) -> bool:
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
-    def can_edit_items(self):
+    def can_edit_items(self) -> bool:
         return self.is_draft()
+
+    def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
+        if self.ce_model_id:
+            if raise_exception:
+                raise ValidationError(f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
+            return False
+        # check if estimate_model is passed and raise exception if needed...
+        is_approved = estimate_model.is_approved()
+        if not is_approved and raise_exception:
+            raise ValidationError(f'Cannot bind estimate that is not approved.')
+        return all([
+            is_approved
+        ])
 
     # Actions...
+    def action_bind_estimate(self, estimate_model, commit: bool = False):
+        try:
+            self.can_bind_estimate(estimate_model, raise_exception=True)
+        except ValueError as e:
+            raise e
+        self.ce_model = estimate_model
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'ce_model',
+                'updated'
+            ])
+
     # DRAFT...
     def mark_as_draft(self, commit: bool = False, **kwargs):
         if not self.can_draft():

@@ -8,7 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -36,6 +36,18 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
         'header_title': PAGE_TITLE
     }
     for_estimate = False
+
+    def get(self, request, entity_slug, **kwargs):
+        response = super(InvoiceModelCreateView, self).get(request, entity_slug, **kwargs)
+        if self.for_estimate and 'ce_pk' in self.kwargs:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=entity_slug,
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            if not estimate_model.can_bind():
+                return HttpResponseNotFound('404 Not Found')
+        return response
 
     def get_context_data(self, **kwargs):
         context = super(InvoiceModelCreateView, self).get_context_data(**kwargs)
@@ -86,6 +98,15 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
         )
 
         if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user)
+
+            estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            invoice_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
+
+        elif self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],

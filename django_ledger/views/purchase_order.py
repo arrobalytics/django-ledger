@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -75,6 +75,20 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
     }
     for_estimate = False
 
+    def get(self, request, entity_slug, **kwargs):
+        response = super(PurchaseOrderModelCreateView, self).get(request, entity_slug, **kwargs)
+        if self.for_estimate and 'ce_pk' in self.kwargs:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=entity_slug,
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            if not estimate_model.can_bind():
+                return HttpResponseNotFound('404 Not Found')
+        return response
+
+
+
     def get_context_data(self, **kwargs):
         context = super(PurchaseOrderModelCreateView, self).get_context_data(**kwargs)
 
@@ -109,18 +123,16 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
         po_model: PurchaseOrderModel = form.save(commit=False)
         po_model = po_model.configure(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        )
+            user_model=self.request.user)
 
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
+                user_model=self.request.user)
+
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
-            po_model.ce_model = estimate_model
-            po_model.clean()
+            po_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
         return super().form_valid(form=form)
 
     def get_success_url(self):

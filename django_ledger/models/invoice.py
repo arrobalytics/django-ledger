@@ -253,7 +253,33 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             return False
         return super(InvoiceModelAbstract, self).can_migrate()
 
+    def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
+        if self.ce_model_id:
+            if raise_exception:
+                raise ValidationError(f'Invoice {self.invoice_number} already bound to '
+                                      f'Estimate {self.ce_model.estimate_number}')
+            return False
+        is_approved = estimate_model.is_approved()
+        if not is_approved and raise_exception:
+            raise ValidationError(f'Cannot bind estimate that is not approved.')
+        return all([
+            is_approved
+        ])
+
     # ACTIONS...
+    def action_bind_estimate(self, estimate_model, commit: bool = False):
+        try:
+            self.can_bind_estimate(estimate_model, raise_exception=True)
+        except ValueError as e:
+            raise e
+        self.ce_model = estimate_model
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'ce_model',
+                'updated'
+            ])
+
 
     # DRAFT...
     def mark_as_draft(self, commit: bool = False, **kwargs):
