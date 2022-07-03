@@ -20,52 +20,14 @@ from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
 from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-
-
-class LazyLoader:
-    # todo: find other implementations of Lazy Loaders and replace with this one...
-    ACCOUNT_MODEL = None
-    BILL_MODEL = None
-    INVOICE_MODEL = None
-    JOURNAL_ENTRY_MODEL = None
-    TXS_MODEL = None
-
-    def get_account_model(self):
-        if not self.ACCOUNT_MODEL:
-            from django_ledger.models.accounts import AccountModel
-            self.ACCOUNT_MODEL = AccountModel
-        return self.ACCOUNT_MODEL
-
-    def get_bill_model(self):
-        if not self.BILL_MODEL:
-            from django_ledger.models import BillModel
-            self.BILL_MODEL = BillModel
-        return self.BILL_MODEL
-
-    def get_invoice_model(self):
-        if not self.INVOICE_MODEL:
-            from django_ledger.models import InvoiceModel
-            self.INVOICE_MODEL = InvoiceModel
-        return self.INVOICE_MODEL
-
-    def get_journal_entry_model(self):
-        if not self.JOURNAL_ENTRY_MODEL:
-            from django_ledger.models import JournalEntryModel
-            self.JOURNAL_ENTRY_MODEL = JournalEntryModel
-        return self.JOURNAL_ENTRY_MODEL
-
-    def get_transaction_model(self):
-        if not self.TXS_MODEL:
-            from django_ledger.models import TransactionModel
-            self.TXS_MODEL = TransactionModel
-        return self.TXS_MODEL
-
+from django_ledger.models.utils import LazyLoader
 
 lazy_loader = LazyLoader()
 
 
 class SlugNameMixIn(models.Model):
     slug = models.SlugField(max_length=50,
+                            editable=False,
                             unique=True,
                             validators=[
                                 MinLengthValidator(limit_value=10,
@@ -113,7 +75,7 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
 
-class LedgerPlugInMixIn(models.Model):
+class LedgerWrapperMixIn(models.Model):
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -142,23 +104,36 @@ class LedgerPlugInMixIn(models.Model):
                              choices=TERMS,
                              verbose_name=_('Terms'))
 
-    amount_due = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Due'))
-    amount_paid = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Paid'))
+    amount_due = models.DecimalField(default=0,
+                                     max_digits=20,
+                                     decimal_places=2,
+                                     verbose_name=_('Amount Due'))
 
-    amount_receivable = models.DecimalField(default=0, max_digits=20, decimal_places=2,
-                                            verbose_name=_('Amount Receivable'))
-    amount_unearned = models.DecimalField(default=0, max_digits=20, decimal_places=2,
-                                          verbose_name=_('Amount Unearned'))
-    amount_earned = models.DecimalField(default=0, max_digits=20, decimal_places=2, verbose_name=_('Amount Earned'))
+    amount_paid = models.DecimalField(default=0,
+                                      max_digits=20,
+                                      decimal_places=2,
+                                      verbose_name=_('Amount Paid'),
+                                      validators=[MinValueValidator(limit_value=0)])
 
-    paid = models.BooleanField(default=False, verbose_name=_('Paid'))
-    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    amount_receivable = models.DecimalField(default=0,
+                                            max_digits=20,
+                                            decimal_places=2,
+                                            verbose_name=_('Amount Receivable'),
+                                            validators=[MinValueValidator(limit_value=0)])
+    amount_unearned = models.DecimalField(default=0,
+                                          max_digits=20,
+                                          decimal_places=2,
+                                          verbose_name=_('Amount Unearned'),
+                                          validators=[MinValueValidator(limit_value=0)])
+    amount_earned = models.DecimalField(default=0,
+                                        max_digits=20,
+                                        decimal_places=2,
+                                        verbose_name=_('Amount Earned'),
+                                        validators=[MinValueValidator(limit_value=0)])
+
     date = models.DateField(verbose_name=_('Date'))
     due_date = models.DateField(verbose_name=_('Due Date'))
-    void = models.BooleanField(default=False, verbose_name=_('Void'))
-    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
-
-    accrue = models.BooleanField(default=False, verbose_name=_('Progressible'))
+    accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
     # todo: change progress method from percent to currency amount...
     progress = models.DecimalField(default=0,
@@ -171,22 +146,23 @@ class LedgerPlugInMixIn(models.Model):
                                    ])
 
     ledger = models.OneToOneField('django_ledger.LedgerModel',
+                                  editable=False,
                                   verbose_name=_('Ledger'),
                                   on_delete=models.CASCADE)
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.PROTECT,
+                                     on_delete=models.RESTRICT,
                                      blank=True,
                                      null=True,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     prepaid_account = models.ForeignKey('django_ledger.AccountModel',
-                                        on_delete=models.PROTECT,
+                                        on_delete=models.RESTRICT,
                                         blank=True,
                                         null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
-                                         on_delete=models.PROTECT,
+                                         on_delete=models.RESTRICT,
                                          blank=True,
                                          null=True,
                                          verbose_name=_('Unearned Account'),
@@ -195,6 +171,21 @@ class LedgerPlugInMixIn(models.Model):
     class Meta:
         abstract = True
 
+    # STATES..
+    def is_configured(self):
+        return all([
+            self.cash_account_id is not None,
+            self.unearned_account_id is not None,
+            self.prepaid_account_id is not None
+        ])
+
+    def is_posted(self):
+        return self.ledger.posted
+
+    def is_past_due(self):
+        return not self.is_paid() if self.is_paid() else self.due_date < localdate()
+
+    # OTHERS...
     def get_progress(self):
         if self.accrue:
             return self.progress
@@ -259,12 +250,15 @@ class LedgerPlugInMixIn(models.Model):
         :return:
         """
 
-    def migrate_allowed(self) -> bool:
+    def can_migrate(self) -> bool:
+        # todo: can migrate can be dependent upon states... No need to configure until APPROVED...?
         """
         Function returning if model state can be migrated to related accounts.
         :return:
         """
-        return self.ALLOW_MIGRATE
+        if not self.ledger_id:
+            return False
+        return not self.ledger.locked
 
     def get_tx_type(self,
                     acc_bal_type: dict,
@@ -289,45 +283,35 @@ class LedgerPlugInMixIn(models.Model):
                 running_alloc += alloc
         return split_results
 
-    def is_configured(self):
-        return all([
-            self.cash_account_id is not None,
-            self.unearned_account_id is not None,
-            self.prepaid_account_id is not None
-        ])
+    # LOCK/UNLOCK Ledger...
+    def lock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if ledger_model.locked:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is already locked...')
+        ledger_model.lock(commit)
 
-    def mark_as_paid(self,
-                     user_model,
-                     entity_slug: str,
-                     paid_date: date = None,
-                     itemthrough_queryset=None,
-                     commit: bool = False):
+    def unlock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if not ledger_model.locked:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is already unlocked...')
+        ledger_model.unlock(commit)
 
-        self.paid = True
-        self.progress = Decimal.from_float(1.0)
-        self.amount_paid = self.amount_due
-        paid_dt = localdate() if not paid_date else paid_date
+    # POST/UNPOST Ledger...
+    def post_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if ledger_model.posted:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is already posted...')
+        ledger_model.post(commit)
 
-        if not self.paid_date:
-            self.paid_date = paid_dt
-        if self.paid_date > paid_dt:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        if self.paid_date < self.date:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                  f' date {self.date}.')
-        self.update_state()
-        self.clean()
-        if commit:
-            self.migrate_state(
-                user_model=user_model,
-                entity_slug=entity_slug,
-                itemthrough_queryset=itemthrough_queryset
-            )
-            ledger_model = self.ledger
-            ledger_model.locked = True
-            # pylint: disable=no-member
-            ledger_model.save(update_fields=['locked', 'updated'])
-            self.save()
+    def unpost_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        ledger_model = self.ledger
+        if not ledger_model.posted:
+            if raise_exception:
+                raise ValidationError(f'Bill ledger {ledger_model.name} is not posted...')
+        ledger_model.post(commit)
 
     def migrate_state(self,
                       user_model,
@@ -336,9 +320,11 @@ class LedgerPlugInMixIn(models.Model):
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
-                      je_date: date = None):
+                      je_date: date = None,
+                      **kwargs):
 
-        if not self.migrate_allowed() and not force_migrate:
+        # todo: add migration logic if ledger is locked...
+        if not self.can_migrate() and not force_migrate:
             raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
         # getting current ledger state
@@ -484,8 +470,12 @@ class LedgerPlugInMixIn(models.Model):
 
         # difference between new vs current
         diff_idx = {
-            k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in
-            idx_keys if new_ledger_state.get(k, Decimal('0.00')) != Decimal('0.00')
+            k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in idx_keys
+        }
+
+        # eliminates transactions with no amount...
+        diff_idx = {
+            k: v for k, v in diff_idx.items() if v
         }
 
         if commit:
@@ -539,10 +529,10 @@ class LedgerPlugInMixIn(models.Model):
 
     def void_state(self, commit: bool = False):
         void_state = {
-            'amount_paid': 0,
-            'amount_receivable': 0,
-            'amount_unearned': 0,
-            'amount_earned': 0
+            'amount_paid': Decimal.from_float(0.0),
+            'amount_receivable': Decimal.from_float(0.0),
+            'amount_unearned': Decimal.from_float(0.0),
+            'amount_earned': Decimal.from_float(0.0),
         }
         if commit:
             self.update_state(void_state)
@@ -550,6 +540,7 @@ class LedgerPlugInMixIn(models.Model):
 
     def new_state(self, commit: bool = False):
         new_state = {
+            # todo: amount paid really a cash difference...
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_prepaid(),
             'amount_unearned': self.get_amount_unearned(),
@@ -562,6 +553,7 @@ class LedgerPlugInMixIn(models.Model):
     def update_state(self, state: dict = None):
         if not state:
             state = self.new_state()
+        self.amount_paid = abs(state['amount_paid'])
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
@@ -571,9 +563,6 @@ class LedgerPlugInMixIn(models.Model):
         if td.days < 0:
             return 0
         return td.days
-
-    def is_past_due(self):
-        return not self.paid if self.paid else self.due_date < localdate()
 
     def net_due_group(self):
         due_in = self.due_in_days()
@@ -634,12 +623,10 @@ class LedgerPlugInMixIn(models.Model):
         else:
             self.due_date = self.date
 
-        if self.amount_due and self.amount_paid == self.amount_due:
-            self.paid = True
-        elif self.amount_paid > self.amount_due:
+        if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
 
-        if self.paid:
+        if self.is_paid():
             self.progress = Decimal(1.0)
             self.amount_paid = self.amount_due
             today = localdate()
@@ -648,21 +635,24 @@ class LedgerPlugInMixIn(models.Model):
                 self.paid_date = today
             if self.paid_date > today:
                 raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-            if self.paid_date < self.date:
-                raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-                                      f' date {self.date}.')
+            # if self.paid_date < self.date:
+            #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
+            #                           f' date {self.date}.')
         else:
             self.paid_date = None
 
-        if self.void and not all([
-            self.amount_paid == 0,
-            self.amount_earned == 0,
-            self.amount_unearned == 0,
-            self.amount_due == 0
-        ]):
-            raise ValidationError('Voided element cannot have any balance.')
+        if self.is_void():
+            if any([
+                self.amount_paid,
+                self.amount_earned,
+                self.amount_unearned,
+                self.amount_receivable
+            ]):
+                raise ValidationError('Voided element cannot have any balance.')
 
-        if self.migrate_allowed():
+            self.progress = 0
+
+        if self.can_migrate():
             self.update_state()
 
 
@@ -678,7 +668,7 @@ class MarkdownNotesMixIn(models.Model):
         return markdown(force_str(self.markdown_notes))
 
 
-class NodeTreeMixIn(models.Model):
+class ParentChildMixIn(models.Model):
     parent = models.ForeignKey('self',
                                null=True,
                                blank=True,

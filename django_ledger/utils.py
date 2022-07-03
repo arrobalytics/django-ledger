@@ -8,7 +8,7 @@ from django.db.models import QuerySet
 from django.utils.dateparse import parse_date
 from django.utils.timezone import localdate
 
-from django_ledger.models import (LedgerPlugInMixIn, EntityModel, AccountModel)
+from django_ledger.models import (LedgerWrapperMixIn, EntityModel, AccountModel)
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 
 UserModel = get_user_model()

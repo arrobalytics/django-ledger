@@ -1,0 +1,36 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="container">
+        <div class="columns is-multiline">
+            <div class="column">
+                {% include 'django_ledger/includes/card_po.html' with style='po-detail' po_model=po_model entity_slug=view.kwargs.entity_slug %}
+            </div>
+            <div class="column is-12">
+                <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                      method="post">
+                    <div class="columns is-multiline">
+                        <div class="column is-12">
+                            {% csrf_token %}
+                            {{ form }}
+                            <button type="submit"
+                                    class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save PO' %}
+                            </button>
+                            <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                               class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to PO Detail' %}</a>
+                            <a href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}"
+                               class="button is-small is-info is-fullwidth mt-2">{% trans 'PO List' %}</a>
+                            <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                               class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
+
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% po_item_formset_table item_formset %}
+        </div>
+    </div>
+{% endblock %}

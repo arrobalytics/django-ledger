@@ -18,7 +18,7 @@ from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 # todo: need to add entity_unit to form...
 
-class InvoiceModelCreateForm(ModelForm):
+class InvoiceModelCreateForEstimateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,16 +36,10 @@ class InvoiceModelCreateForm(ModelForm):
         self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
         self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
-        customer_qs = CustomerModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['customer'].queryset = customer_qs
-
     class Meta:
         model = InvoiceModel
         fields = [
-            'customer',
+            # 'customer',
             'date',
             'terms',
             'cash_account',
@@ -66,7 +60,7 @@ class InvoiceModelCreateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': '$$$'}),
             'terms': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
 
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
@@ -76,7 +70,28 @@ class InvoiceModelCreateForm(ModelForm):
         }
 
 
-class InvoiceModelUpdateForm(ModelForm):
+class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
+
+    def __init__(self, **kwargs):
+        super(InvoiceModelCreateForm, self).__init__(**kwargs)
+        customer_qs = CustomerModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
+        self.fields['customer'].queryset = customer_qs
+
+    class Meta(InvoiceModelCreateForEstimateForm.Meta):
+        fields = [
+            'customer',
+            'date',
+            'terms',
+            'cash_account',
+            'prepaid_account',
+            'unearned_account'
+        ]
+
+
+class BaseInvoiceModelUpdateForm(ModelForm):
 
     def __init__(self,
                  *args,
@@ -86,55 +101,23 @@ class InvoiceModelUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-
-        invoice_model: InvoiceModel = self.instance
-
-        if any([
-            invoice_model.invoice_status != InvoiceModel.INVOICE_STATUS_APPROVED,
-            invoice_model.paid,
-            invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_CANCELED
-        ]):
-            self.fields['amount_paid'].disabled = True
-            self.fields['paid'].disabled = True
-            self.fields['paid_date'].disabled = True
-            self.fields['progress'].disabled = True
-
-        if any([
-            invoice_model.invoice_status != InvoiceModel.INVOICE_STATUS_DRAFT,
-            invoice_model.paid,
-            invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_CANCELED
-        ]):
-            self.fields['terms'].disabled = True
-            self.fields['accrue'].disabled = True
-
-        if invoice_model.invoice_status == InvoiceModel.INVOICE_STATUS_APPROVED:
-            self.fields['invoice_status'].disabled = True
-
-    def clean(self):
-        # todo: add validation...
-        self._validate_unique = True
-        return self.cleaned_data
+        self.INVOICE_MODEL: InvoiceModel = self.instance
 
     class Meta:
         model = InvoiceModel
         fields = [
-            'amount_paid',
-            'paid',
-            'paid_date',
-            'progress',
-            'accrue',
-            'invoice_status',
-            'terms',
             'markdown_notes'
         ]
         labels = {
             'progress': _('Progress Amount 0.00 -> 1.00 (percent)'),
+            'accrue': _('Will this Bill be Accrued?'),
             'amount_paid': _('Amount Received')
         }
         widgets = {
             'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'paid_date': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -154,6 +137,47 @@ class InvoiceModelUpdateForm(ModelForm):
         }
 
 
+class DraftInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
+    class Meta(BaseInvoiceModelUpdateForm.Meta):
+        fields = [
+            'customer',
+            'terms',
+            'accrue',
+            'markdown_notes'
+        ]
+
+
+class InReviewInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
+    class Meta(BaseInvoiceModelUpdateForm.Meta):
+        fields = [
+            'markdown_notes'
+        ]
+
+
+class ApprovedInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
+    class Meta(BaseInvoiceModelUpdateForm.Meta):
+        fields = [
+            'amount_paid',
+            'markdown_notes'
+        ]
+
+
+class AccruedAndApprovedInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
+    class Meta(BaseInvoiceModelUpdateForm.Meta):
+        fields = [
+            'progress',
+            'amount_paid',
+            'markdown_notes'
+        ]
+
+
+class PaidInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
+    class Meta(BaseInvoiceModelUpdateForm.Meta):
+        fields = [
+            'markdown_notes'
+        ]
+
+
 class InvoiceItemForm(ModelForm):
 
     def __init__(self,
@@ -166,10 +190,6 @@ class InvoiceItemForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.INVOICE_MODEL = invoice_model
-
-        if not self.instance.item_model_id:
-            self.fields['unit_cost'].disabled = True
-            self.fields['quantity'].disabled = True
 
     def clean(self):
         cleaned_data = super(InvoiceItemForm, self).clean()

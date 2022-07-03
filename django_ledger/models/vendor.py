@@ -31,7 +31,7 @@ class VendorModelManager(models.Manager):
 
 class VendorModel(ContactInfoMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    vendor_name = models.CharField(max_length=100, unique=True)
+    vendor_name = models.CharField(max_length=100)
     entity = models.ForeignKey('django_ledger.EntityModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Vendor Entity'),
@@ -51,6 +51,9 @@ class VendorModel(ContactInfoMixIn, CreateUpdateMixIn):
             models.Index(fields=['updated']),
             models.Index(fields=['active']),
             models.Index(fields=['hidden']),
+        ]
+        unique_together = [
+            ('entity', 'vendor_name')
         ]
 
     def __str__(self):

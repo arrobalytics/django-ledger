@@ -16,7 +16,7 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, 
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import CreateUpdateMixIn, NodeTreeMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
 from django_ledger.settings import (DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol,
                                     DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
 
@@ -128,7 +128,7 @@ class ItemModelManager(models.Manager):
             Q(for_inventory=True)
         )
 
-    def for_cj(self, entity_slug: str, user_model):
+    def for_estimate(self, entity_slug: str, user_model):
         return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
 
 
@@ -138,12 +138,15 @@ class ItemModelAbstract(CreateUpdateMixIn):
     LABOR_TYPE = 'L'
     MATERIAL_TYPE = 'M'
     EQUIPMENT_TYPE = 'E'
+    LUMP_SUM = 'S'
     OTHER_TYPE = 'O'
 
     ITEM_CHOICES = [
         (LABOR_TYPE, _('Labor')),
         (MATERIAL_TYPE, _('Material')),
-        (EQUIPMENT_TYPE, _('Equipment'))
+        (EQUIPMENT_TYPE, _('Equipment')),
+        (LUMP_SUM, _('Lump Sum')),
+        (OTHER_TYPE, _('Other')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -152,7 +155,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     uom = models.ForeignKey('django_ledger.UnitOfMeasureModel',
                             verbose_name=_('Unit of Measure'),
-                            on_delete=models.PROTECT)
+                            on_delete=models.RESTRICT)
 
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
@@ -182,7 +185,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Inventory Account'),
         related_name=f'{REL_NAME_PREFIX}_inventory_account',
         help_text=_('Inventory account where cost will be capitalized.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     inventory_received = models.DecimalField(
         null=True,
         blank=True,
@@ -202,7 +205,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('COGS Account'),
         related_name=f'{REL_NAME_PREFIX}_cogs_account',
         help_text=_('COGS account where cost will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     earnings_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -210,7 +213,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Earnings Account'),
         related_name=f'{REL_NAME_PREFIX}_earnings_account',
         help_text=_('Earnings account where revenue will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
     expense_account = models.ForeignKey(
         'django_ledger.AccountModel',
         null=True,
@@ -218,9 +221,11 @@ class ItemModelAbstract(CreateUpdateMixIn):
         verbose_name=_('Expense Account'),
         related_name=f'{REL_NAME_PREFIX}_expense_account',
         help_text=_('Expense account where cost will be recognized on Income Statement.'),
-        on_delete=models.PROTECT)
+        on_delete=models.RESTRICT)
 
-    additional_info = models.JSONField(default=dict, verbose_name=_('Item Additional Info'))
+    additional_info = models.JSONField(blank=True,
+                                       null=True,
+                                       verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                related_name='items',
@@ -259,6 +264,21 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def is_inventory(self):
         return self.for_inventory is True
+
+    def is_labor(self):
+        return self.item_type == self.LABOR_TYPE
+
+    def is_material(self):
+        return self.item_type == self.MATERIAL_TYPE
+
+    def is_equipment(self):
+        return self.item_type == self.EQUIPMENT_TYPE
+
+    def is_lump_sum(self):
+        return self.item_type == self.LUMP_SUM
+
+    def is_other(self):
+        return self.item_type == self.OTHER_TYPE
 
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:
@@ -353,7 +373,7 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def for_cj(self, user_model, entity_slug, cj_pk):
+    def for_estimate(self, user_model, entity_slug, cj_pk):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return self.filter(ce_model_id__exact=cj_pk)
 
@@ -450,7 +470,7 @@ class ItemThroughModelManager(models.Manager):
         raise NotImplementedError
 
 
-class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
+class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     STATUS_NOT_ORDERED = 'not_ordered'
     STATUS_ORDERED = 'ordered'
     STATUS_IN_TRANSIT = 'in_transit'
@@ -467,7 +487,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.SET_NULL,
+                                    on_delete=models.PROTECT,
                                     blank=True,
                                     null=True,
                                     verbose_name=_('Associated Entity Unit'))
@@ -475,12 +495,12 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                    on_delete=models.PROTECT,
                                    verbose_name=_('Item Model'))
     bill_model = models.ForeignKey('django_ledger.BillModel',
-                                   on_delete=models.CASCADE,
+                                   on_delete=models.PROTECT,
                                    null=True,
                                    blank=True,
                                    verbose_name=_('Bill Model'))
     invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
-                                      on_delete=models.CASCADE,
+                                      on_delete=models.PROTECT,
                                       null=True, blank=True,
                                       verbose_name=_('Invoice Model'))
 
@@ -499,7 +519,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
 
     # Purchase Order fields...
     po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.SET_NULL,
+                                 on_delete=models.PROTECT,
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Purchase Order Model'))
@@ -513,6 +533,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                     help_text=_('Authorized item quantity for purchasing.'),
                                     validators=[MinValueValidator(0)])
     po_unit_cost = models.FloatField(default=0.0,
+                                     null=True,
+                                     blank=True,
                                      verbose_name=_('PO Unit Cost'),
                                      help_text=_('Purchase Order unit cost.'),
                                      validators=[MinValueValidator(0)])
@@ -524,12 +546,13 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
                                           validators=[MinValueValidator(0)])
 
     # Customer Job / Contract fields...
-    ce_model = models.ForeignKey('django_ledger.CustomerEstimateModel',
+    ce_model = models.ForeignKey('django_ledger.EstimateModel',
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Customer Estimate'),
                                  on_delete=models.PROTECT)
-    ce_unit_revenue_estimate = models.FloatField(null=True,
+    ce_unit_revenue_estimate = models.FloatField(default=0.0,
+                                                 null=True,
                                                  blank=True,
                                                  verbose_name=_('Customer Estimate Revenue per Unit.'),
                                                  validators=[MinValueValidator(0)])
@@ -567,6 +590,17 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             return f'Customer Job Through Model: {self.uuid} | {amount}'
         return f'Orphan Item Through Model: {self.uuid} | {amount}'
 
+    # def can_order(self):
+    #     if not self.po_model_id:
+    #         return False
+    #
+
+    def is_received(self):
+        return self.po_item_status == self.STATUS_RECEIVED
+
+    def is_canceled(self):
+        return self.po_item_status == self.STATUS_CANCELED
+
     def update_total_amount(self):
         qty = self.quantity
         if not isinstance(qty, Decimal):
@@ -576,7 +610,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         if not isinstance(uc, Decimal):
             uc = Decimal.from_float(uc)
 
-        total_amount = uc * qty
+        total_amount = round(uc * qty, 2)
 
         if self.po_total_amount > 0:
             if total_amount > self.po_total_amount:
@@ -591,7 +625,7 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
         self.total_amount = total_amount
 
     def update_po_total_amount(self):
-        self.po_total_amount = Decimal.from_float(round(self.po_quantity * self.po_unit_cost, 2))
+        self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost), 2)
 
     def update_revenue_estimate(self):
         if self.ce_model_id:
@@ -662,6 +696,8 @@ class ItemThroughModelAbstract(NodeTreeMixIn, CreateUpdateMixIn):
             if self.total_amount > self.po_total_amount:
                 raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
                                       f'PO amount {self.po_total_amount}')
+        else:
+            self.po_item_status = None
 
 
 class ItemThroughModel(ItemThroughModelAbstract):

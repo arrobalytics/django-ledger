@@ -15,7 +15,7 @@
                             <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
                                 Bills</h1>
                         {% else %}
-                            <h1 class="is-size-1 has-text-weight-thin">{% trans 'Latest Customer Estimates' %}</h1>
+                            <h1 class="is-size-1 has-text-weight-thin">{% trans 'Latest Estimates' %}</h1>
                         {% endif %}
                     </div>
                     <div class="level-item">
@@ -89,7 +89,7 @@
                 </div>
             </div>
 
-            {% customer_estimate_table %}
+            {% customer_estimate_table estimate_list %}
 
             {% if year %}
                 <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>

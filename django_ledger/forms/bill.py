@@ -15,11 +15,12 @@ class BillModelCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
+        self.BILL_MODEL: BillModel = self.instance
         self.get_vendor_queryset()
         self.get_accounts_queryset()
 
     def get_vendor_queryset(self):
-
+        # todo: can we apply same logic on the other forms...
         if 'vendor' in self.fields:
             vendor_qs = VendorModel.objects.for_entity(
                 user_model=self.USER_MODEL,
@@ -73,7 +74,7 @@ class BillModelCreateForm(ModelForm):
                 'id': 'djl-bill-xref-input'
             }),
             'terms': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'id': 'djl-bill-create-terms-select-input'
             }),
             'vendor': Select(attrs={
@@ -98,7 +99,20 @@ class BillModelCreateForm(ModelForm):
         }
 
 
-class BillModelUpdateForm(BillModelCreateForm):
+# class BillModelCreateForm(BillModelCreateForEstimateForm):
+#     class Meta(BillModelCreateForEstimateForm.Meta):
+#         fields = [
+#             'vendor',
+#             # 'xref',
+#             'date',
+#             'terms',
+#             'cash_account',
+#             'prepaid_account',
+#             'unearned_account',
+#         ]
+
+
+class BaseBillModelUpdateForm(BillModelCreateForm):
 
     def __init__(self,
                  *args,
@@ -108,33 +122,11 @@ class BillModelUpdateForm(BillModelCreateForm):
         super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-
-        bill_model: BillModel = self.instance
-
-        if any([
-            bill_model.bill_status != BillModel.BILL_STATUS_APPROVED,
-            bill_model.paid,
-            bill_model.bill_status == BillModel.BILL_STATUS_CANCELED
-        ]):
-            self.fields['amount_paid'].disabled = True
-            self.fields['paid'].disabled = True
-            self.fields['paid_date'].disabled = True
-            self.fields['progress'].disabled = True
-
-        if any([
-            bill_model.bill_status != BillModel.BILL_STATUS_DRAFT,
-            bill_model.paid,
-            bill_model.bill_status == BillModel.BILL_STATUS_CANCELED
-        ]):
-            self.fields['terms'].disabled = True
-            self.fields['accrue'].disabled = True
-            self.fields['xref'].disabled = True
-
-        if bill_model.bill_status == BillModel.BILL_STATUS_APPROVED:
-            self.fields['bill_status'].disabled = True
+        self.BILL_MODEL: BillModel = self.instance
 
     def save(self, commit=True):
         if commit:
+            self.BILL_MODEL.update_state()
             self.instance.migrate_state(
                 user_model=self.USER_MODEL,
                 entity_slug=self.ENTITY_SLUG
@@ -144,15 +136,6 @@ class BillModelUpdateForm(BillModelCreateForm):
     class Meta:
         model = BillModel
         fields = [
-            'xref',
-            'amount_due',
-            'amount_paid',
-            'paid',
-            'paid_date',
-            'progress',
-            'accrue',
-            'bill_status',
-            'terms',
             'markdown_notes'
         ]
         widgets = {
@@ -179,20 +162,68 @@ class BillModelUpdateForm(BillModelCreateForm):
             'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-danger'}),
             'markdown_notes': Textarea(attrs={
                 'class': 'textarea'
-            })
+            }),
+            'vendor': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'id': 'djl-bill-create-vendor-select-input'
+            }),
         }
         labels = {
-            'progress': 'Bill Progress Amount (%)'
+            'progress': _('Bill Progress Amount (%)'),
+            'accrue': _('Will this Bill be Accrued?'),
+            'markdown_notes': _('Notes')
         }
 
 
-class BillModelConfigureForm(BillModelUpdateForm):
-    class Meta(BillModelUpdateForm.Meta):
+class DraftBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
+        fields = [
+            'vendor',
+            'terms',
+            'xref',
+            'accrue',
+            'markdown_notes'
+        ]
+
+
+class InReviewBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
+        fields = [
+            'xref',
+            'markdown_notes'
+        ]
+
+
+class ApprovedBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
+        fields = [
+            'amount_paid',
+            'markdown_notes'
+        ]
+
+
+class AccruedAndApprovedBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
+        fields = [
+            'progress',
+            'amount_paid',
+            'markdown_notes'
+        ]
+
+
+class PaidBillModelUpdateForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
+        fields = [
+            'markdown_notes'
+        ]
+
+
+class BillModelConfigureForm(BaseBillModelUpdateForm):
+    class Meta(BaseBillModelUpdateForm.Meta):
         fields = [
             'xref',
             'amount_due',
             'amount_paid',
-            'paid',
             'paid_date',
             'progress',
             'accrue',

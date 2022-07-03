@@ -7,22 +7,136 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
-                                  ArchiveIndexView, YearArchiveView, DetailView)
+                                  ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
+from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import InvoiceModelUpdateForm, InvoiceModelCreateForm, get_invoice_item_formset
-from django_ledger.models import EntityModel, LedgerModel
+from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm, get_invoice_item_formset,
+                                         DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
+                                         ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
+                                         AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
+from django_ledger.models import EntityModel, LedgerModel, EstimateModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
+class InvoiceModelCreateView(LoginRequiredMixIn,
+                             CreateView):
+    # todo: views that dont have a bill/invoice/etc/etc are not protected!
+    template_name = 'django_ledger/invoice/invoice_create.html'
+    PAGE_TITLE = _('Create Invoice')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
+    for_estimate = False
+
+    def get(self, request, entity_slug, **kwargs):
+        response = super(InvoiceModelCreateView, self).get(request, entity_slug, **kwargs)
+        if self.for_estimate and 'ce_pk' in self.kwargs:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=entity_slug,
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            if not estimate_model.can_bind():
+                return HttpResponseNotFound('404 Not Found')
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super(InvoiceModelCreateView, self).get_context_data(**kwargs)
+
+        if self.for_estimate:
+            context['form_action_url'] = reverse('django_ledger:invoice-create-estimate',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug'],
+                                                     'ce_pk': self.kwargs['ce_pk']
+                                                 })
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer')
+            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            context['estimate_model'] = estimate_model
+        else:
+            context['form_action_url'] = reverse('django_ledger:invoice-create',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug']
+                                                 })
+        return context
+
+    def get_initial(self):
+        return {
+            'date': localdate()
+        }
+
+    def get_form(self, form_class=None):
+        entity_slug = self.kwargs['entity_slug']
+        if self.for_estimate:
+            InvoiceModelCreateForm(
+                entity_slug=entity_slug,
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        return InvoiceModelCreateForEstimateForm(
+            entity_slug=entity_slug,
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def form_valid(self, form):
+        invoice_model: InvoiceModel = form.save(commit=False)
+        ledger_model, invoice_model = invoice_model.configure(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+        )
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user)
+
+            estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            invoice_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
+
+        elif self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            invoice_model.customer_id = estimate_model.customer_id
+            invoice_model.ce_model = estimate_model
+            invoice_model.clean()
+
+        return super().form_valid(form=form)
+
+    def get_success_url(self):
+        entity_slug = self.kwargs['entity_slug']
+        invoice_model: InvoiceModel = self.object
+        if self.for_estimate:
+            return reverse('django_ledger:customer-estimate-detail',
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'ce_pk': self.kwargs['ce_pk']
+                           })
+        return reverse('django_ledger:invoice-detail',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'invoice_pk': invoice_model.uuid
+                       })
+
+
 class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/invoice_list.html'
+    template_name = 'django_ledger/invoice/invoice_list.html'
     context_object_name = 'invoices'
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
@@ -38,7 +152,7 @@ class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('customer').order_by('-date')
+        ).select_related('customer').order_by('-created')
 
 
 class InvoiceModelYearlyListView(YearArchiveView, InvoiceModelListView):
@@ -51,50 +165,12 @@ class InvoiceModelMonthlyListView(MonthArchiveView, InvoiceModelListView):
     month_format = '%m'
 
 
-class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
-    template_name = 'django_ledger/invoice_create.html'
-    PAGE_TITLE = _('Create Invoice')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-
-    def get_initial(self):
-        return {
-            'date': localdate()
-        }
-
-    def get_form(self, form_class=None):
-        entity_slug = self.kwargs['entity_slug']
-        form = InvoiceModelCreateForm(
-            entity_slug=entity_slug,
-            user_model=self.request.user,
-            **self.get_form_kwargs())
-        return form
-
-    def form_valid(self, form):
-        invoice_model: InvoiceModel = form.instance
-        ledger_model, invoice_model = invoice_model.configure(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        )
-        form.instance = invoice_model
-        return super().form_valid(form=form)
-
-    def get_success_url(self):
-        entity_slug = self.kwargs['entity_slug']
-        return reverse('django_ledger:invoice-list',
-                       kwargs={
-                           'entity_slug': entity_slug
-                       })
-
-
 class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
-    template_name = 'django_ledger/invoice_update.html'
-    form_class = InvoiceModelUpdateForm
+    template_name = 'django_ledger/invoice/invoice_update.html'
+    form_class = BaseInvoiceModelUpdateForm
     http_method_names = ['get', 'post']
 
     action_update_items = False
@@ -102,6 +178,21 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
     action_lock_ledger = False
     action_unlock_ledger = False
     action_force_migrate = False
+
+    def get_form_class(self):
+        invoice_model: InvoiceModel = self.object
+
+        if invoice_model.is_draft():
+            return DraftInvoiceModelUpdateForm
+        elif invoice_model.is_review():
+            return InReviewInvoiceModelUpdateForm
+        elif invoice_model.is_approved():
+            if invoice_model.accrue:
+                return AccruedAndApprovedInvoiceModelUpdateForm
+            return ApprovedInvoiceModelUpdateForm
+        elif invoice_model.is_paid():
+            return PaidInvoiceModelUpdateForm
+        return BaseInvoiceModelUpdateForm
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -126,7 +217,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         ledger_model: LedgerModel = self.object.ledger
 
-        if ledger_model.locked and not invoice_model.paid:
+        if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
                                  f'Warning! This Invoice is Locked. Must unlock before making any changes.',
@@ -173,7 +264,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
-        if invoice_model.migrate_allowed():
+        if invoice_model.can_migrate():
             invoice_model.migrate_state(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
@@ -193,6 +284,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         invoice_model = self.object
         ledger_model: LedgerModel = invoice_model.ledger
 
+        # todo: remove actions from view...
         if self.action_mark_as_paid:
             invoice_model: InvoiceModel = self.get_object()
             invoice_model.mark_as_paid(
@@ -294,7 +386,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                                                   invoice_model=invoice_model,
                                                                   entity_slug=entity_slug)
 
-            if not invoice_model.can_update_items():
+            if not invoice_model.can_edit_items():
                 messages.add_message(
                     request,
                     message=f'Cannot update items once Invoice is {invoice_model.get_invoice_status_display()}',
@@ -362,7 +454,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
-    template_name = 'django_ledger/invoice_detail.html'
+    template_name = 'django_ledger/invoice/invoice_detail.html'
     extra_context = {
         'hide_menu': True
     }
@@ -392,7 +484,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
 class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
-    template_name = 'django_ledger/invoice_delete.html'
+    template_name = 'django_ledger/invoice/invoice_delete.html'
     context_object_name = 'invoice'
     extra_context = {
         'hide_menu': True
@@ -415,3 +507,83 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
+
+
+# ACTION VIEWS...
+class BaseInvoiceActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'invoice_pk'
+    action_name = None
+    commit = True
+
+    def get_queryset(self):
+        return InvoiceModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:invoice-update',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug'],
+                           'invoice_pk': kwargs['invoice_pk']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BaseInvoiceActionView, self).get(request, *args, **kwargs)
+        invoice_model: InvoiceModel = self.get_object()
+
+        try:
+            getattr(invoice_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class InvoiceModelActionMarkAsDraftView(BaseInvoiceActionView):
+    action_name = 'mark_as_draft'
+
+
+class InvoiceModelActionMarkAsReviewView(BaseInvoiceActionView):
+    action_name = 'mark_as_review'
+
+
+class InvoiceModelActionMarkAsApprovedView(BaseInvoiceActionView):
+    action_name = 'mark_as_approved'
+
+
+class InvoiceModelActionMarkAsPaidView(BaseInvoiceActionView):
+    action_name = 'mark_as_paid'
+
+
+class InvoiceModelActionMarkAsCanceledView(BaseInvoiceActionView):
+    action_name = 'mark_as_canceled'
+
+
+class InvoiceModelActionMarkAsVoidView(BaseInvoiceActionView):
+    action_name = 'mark_as_void'
+
+
+class InvoiceModelActionLockLedgerView(BaseInvoiceActionView):
+    action_name = 'lock_ledger'
+
+
+class InvoiceModelActionUnlockLedgerView(BaseInvoiceActionView):
+    action_name = 'unlock_ledger'
+
+
+class InvoiceModelActionForceMigrateView(BaseInvoiceActionView):
+    action_name = 'migrate_state'
+
+    def get_redirect_url(self, entity_slug, invoice_pk, *args, **kwargs):
+        return reverse('django_ledger:invoice-update',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'invoice_pk': invoice_pk
+                       })

@@ -23,7 +23,6 @@ class PurchaseOrderModelCreateForm(ModelForm):
     class Meta:
         model = PurchaseOrderModel
         fields = [
-            'po_date',
             'po_title',
         ]
         widgets = {
@@ -40,39 +39,19 @@ class PurchaseOrderModelCreateForm(ModelForm):
         }
 
 
-class PurchaseOrderModelUpdateForm(ModelForm):
+class BasePurchaseOrderModelUpdateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-
-        if self.instance.po_status == PurchaseOrderModel.PO_STATUS_REVIEW:
-            self.fields['po_date'].disabled = True
-            self.fields['fulfillment_date'].disabled = True
-            self.fields['fulfilled'].disabled = True
-        elif self.instance.po_status == PurchaseOrderModel.PO_STATUS_APPROVED:
-            self.fields['po_status'].disabled = True
-            self.fields['po_date'].disabled = True
-            if self.instance.fulfilled:
-                self.fields['fulfilled'].disabled = True
-                self.fields['fulfillment_date'].disabled = True
-        # PO is Draft
-        else:
-            self.fields['fulfillment_date'].disabled = True
-            self.fields['fulfilled'].disabled = True
+        self.PO_MODEL: PurchaseOrderModel = self.instance
 
     class Meta:
         model = PurchaseOrderModel
         fields = [
-            'po_date',
-            'po_title',
-            'po_status',
-            'markdown_notes',
-            'fulfillment_date',
-            'fulfilled'
+            'markdown_notes'
         ]
-
         widgets = {
             'po_title': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large'
@@ -94,32 +73,33 @@ class PurchaseOrderModelUpdateForm(ModelForm):
         labels = {
             'po_status': _('PO Status'),
             'fulfilled': _('Mark as Fulfilled'),
-            'markdown_notes': _('PO Notes')
+            'markdown_notes': _('PO Notes'),
+            'po_date': _('Approved Date')
         }
 
-    def clean(self):
-        cleaned_data = super(PurchaseOrderModelUpdateForm, self).clean()
-        is_fulfilled = cleaned_data['fulfilled']
-        new_status = cleaned_data['po_status']
 
-        if 'fulfilled' in self.changed_data:
-            if not is_fulfilled:
-                raise ValidationError(
-                    message=f'Cannot change status to un-fulfilled once fulfilled. Void instead.'
-                )
-            if new_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-                raise ValidationError(
-                    message=f'Cannot fulfill a PO that has not been approved.'
-                )
+class DraftPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
+    class Meta(BasePurchaseOrderModelUpdateForm.Meta):
+        fields = [
+            'po_title',
+            'markdown_notes',
+        ]
 
-        if 'po_status' in self.changed_data:
-            initial_status = self.initial['po_status']
-            if initial_status == PurchaseOrderModel.PO_STATUS_APPROVED:
-                raise ValidationError(
-                    message=f'Cannot change form status to {new_status} '
-                            f'from {initial_status}'
-                )
-        return cleaned_data
+
+class ReviewPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
+    class Meta(BasePurchaseOrderModelUpdateForm.Meta):
+        fields = [
+            'markdown_notes',
+        ]
+
+
+class ApprovedPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
+    class Meta(BasePurchaseOrderModelUpdateForm.Meta):
+        fields = [
+            # 'fulfillment_date',
+            'po_title',
+            'markdown_notes',
+        ]
 
 
 class PurchaseOrderItemForm(ModelForm):
@@ -199,15 +179,12 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
             form.PO_MODEL = self.PO_MODEL
             form.fields['item_model'].queryset = items_qs
             form.fields['entity_unit'].queryset = unit_qs
-            if self.PO_MODEL.po_status in [
-                PurchaseOrderModel.PO_STATUS_APPROVED,
-                PurchaseOrderModel.PO_STATUS_REVIEW
-            ]:
+            if not self.PO_MODEL.can_edit_items():
                 form.fields['po_unit_cost'].disabled = True
                 form.fields['po_quantity'].disabled = True
                 form.fields['entity_unit'].disabled = True
                 form.fields['item_model'].disabled = True
-                if self.PO_MODEL.po_status != PurchaseOrderModel.PO_STATUS_APPROVED or self.PO_MODEL.fulfilled:
+                if not self.PO_MODEL.is_approved() or self.PO_MODEL.is_fulfilled():
                     form.fields['po_item_status'].disabled = True
                     form.fields['po_item_status'].widget.attrs['class'] += form.instance.get_status_css_class()
             # PO is Draft
@@ -215,19 +192,32 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 form.fields['po_item_status'].disabled = True
 
 
+CanDeletePurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=True,
+    extra=5
+)
+
+CanEditPurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=True,
+    extra=5
+)
+
+ReadOnlyPurchaseOrderItemFormset = modelformset_factory(
+    model=ItemThroughModel,
+    form=PurchaseOrderItemForm,
+    formset=BasePurchaseOrderItemFormset,
+    can_delete=False,
+    extra=0
+)
+
+
 def get_po_item_formset(po_model: PurchaseOrderModel):
-    if po_model.po_status != PurchaseOrderModel.PO_STATUS_APPROVED:
-        return modelformset_factory(
-            model=ItemThroughModel,
-            form=PurchaseOrderItemForm,
-            formset=BasePurchaseOrderItemFormset,
-            can_delete=True,
-            extra=5
-        )
-    return modelformset_factory(
-        model=ItemThroughModel,
-        form=PurchaseOrderItemForm,
-        formset=BasePurchaseOrderItemFormset,
-        can_delete=False,
-        extra=0
-    )
+    if po_model.is_draft():
+        return CanEditPurchaseOrderItemFormset
+    return ReadOnlyPurchaseOrderItemFormset

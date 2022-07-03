@@ -228,15 +228,15 @@ def ledgers_table(context):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/invoice_table.html', takes_context=True)
-def invoice_table(context):
+@register.inclusion_tag('django_ledger/invoice/includes/invoice_table.html', takes_context=True)
+def invoice_table(context, invoice_qs):
     return {
-        'invoices': context['invoices'],
+        'invoices': invoice_qs,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 
 
-@register.inclusion_tag('django_ledger/tags/bill_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/bills/includes/bill_table.html', takes_context=True)
 def bill_table(context, bill_qs):
     return {
         'bills': bill_qs,
@@ -244,7 +244,7 @@ def bill_table(context, bill_qs):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/po_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_table.html', takes_context=True)
 def po_table(context, purchase_order_qs):
     return {
         'po_list': purchase_order_qs,
@@ -415,6 +415,17 @@ def modal_action(context, model, http_method: str = 'post', entity_slug: str = N
         'action_url': action_url,
         'http_method': http_method,
         'message': f'Do you want to mark {model.__class__._meta.verbose_name} {model.get_document_id()} as paid?'
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/modals_v2.html', takes_context=True)
+def modal_action_v2(context, model, action_url: str, message: str, html_id: str, http_method: str = 'get'):
+    return {
+        'object': model,
+        'action_url': action_url,
+        'http_method': http_method,
+        'message': message,
+        'html_id': html_id
     }
 
 
@@ -725,7 +736,7 @@ def inventory_item_table(context, queryset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/invoice_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/invoice/includes/invoice_item_formset.html', takes_context=True)
 def invoice_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -746,7 +757,7 @@ def bill_item_formset_table(context, item_formset):
     }
 
 
-@register.inclusion_tag('django_ledger/tags/po_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/purchase_order/includes/po_item_formset.html', takes_context=True)
 def po_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
@@ -774,19 +785,19 @@ def inventory_table(context, queryset):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/tags/customer_estimate_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/estimate/includes/estimate_table.html', takes_context=True)
 def customer_estimate_table(context, queryset=None):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'customer_job_list': queryset if queryset else context['object_list']
+        'ce_list': queryset if queryset else context['object_list']
     }
 
 
-@register.inclusion_tag('django_ledger/tags/customer_job_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/tags/ce_item_formset.html', takes_context=True)
 def cj_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'customer_job_pk': context['view'].kwargs['customer_job_pk'],
+        'ce_pk': context['view'].kwargs['ce_pk'],
         'revenue_estimate': context['revenue_estimate'],
         'cost_estimate': context['cost_estimate'],
         'item_formset': item_formset,

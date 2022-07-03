@@ -89,8 +89,12 @@ class YearlyReportMixIn(YearMixin, EntityReportManager):
         year_end = self.get_year_end_date(year)
         context['year_start'] = year_start
         context['year_end'] = year_end
-        context['from_date'] = year_start
-        context['to_date'] = year_end
+
+        if 'from_date' not in context:
+            context['from_date'] = year_start
+        if 'to_date' not in context:
+            context['to_date'] = year_end
+
         context['has_year'] = True
         return context
 
@@ -164,8 +168,12 @@ class QuarterlyReportMixIn(YearMixin, EntityReportManager):
         quarter_end = self.get_quarter_end_date(year=year, quarter=quarter)
         context['quarter_start'] = quarter_start
         context['quarter_end'] = quarter_end
-        context['from_date'] = quarter_start
-        context['to_date'] = quarter_end
+
+        if 'from_date' not in context:
+            context['from_date'] = quarter_start
+        if 'to_date' not in context:
+            context['to_date'] = quarter_end
+
         context['has_quarter'] = True
         return context
 
@@ -305,7 +313,6 @@ class FromToDatesMixIn:
 
 
 class LoginRequiredMixIn(DJLoginRequiredMixIn):
-    redirect_field_name = 'next'
 
     def get_login_url(self):
         return reverse('django_ledger:login')
@@ -328,11 +335,6 @@ class EntityUnitMixIn:
 
 
 class EntityDigestMixIn:
-
-    # def get_context_data(self, **kwargs):
-    #     context = super().get_context_data(**kwargs)
-    #     context = self.get_entity_digest(context)
-    #     return context
 
     def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
         by_period = self.request.GET.get('by_period')
@@ -385,10 +387,14 @@ class UnpaidElementsMixIn:
             qs = InvoiceModel.objects.for_entity(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
-            ).filter(
+            ).approved().filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
+<<<<<<< HEAD
             ).select_related('customer').order_by('due_date')
+=======
+            ).select_related('customer').order_by('-due_date')[:3]
+>>>>>>> arrobalytics-develop
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
@@ -404,10 +410,14 @@ class UnpaidElementsMixIn:
             qs = BillModel.objects.for_entity(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
-            ).filter(
+            ).approved().filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
+<<<<<<< HEAD
             ).select_related('vendor').order_by('due_date')
+=======
+            ).select_related('vendor').order_by('-due_date')[:3]
+>>>>>>> arrobalytics-develop
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
@@ -437,5 +447,3 @@ class BaseDateNavigationUrlMixIn:
                                                      k: v for k, v in self.kwargs.items() if
                                                      k in self.BASE_DATE_URL_KWARGS
                                                  })
-
-

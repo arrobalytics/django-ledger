@@ -17,7 +17,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_mixin import IOMixIn
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, NodeTreeMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ParentChildMixIn
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -43,10 +43,13 @@ class EntityUnitModelManager(models.Manager):
         )
 
 
-class EntityUnitModelAbstract(IOMixIn, NodeTreeMixIn, SlugNameMixIn, CreateUpdateMixIn):
+class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
-    entity = models.ForeignKey('django_ledger.EntityModel', on_delete=models.CASCADE, verbose_name=_('Unit Entity'))
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Unit Entity'))
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 

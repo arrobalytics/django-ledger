@@ -6,24 +6,27 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (CreateView, ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView,
-                                  UpdateView, DeleteView)
+                                  UpdateView, DeleteView, RedirectView)
+from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.purchase_order import PurchaseOrderModelCreateForm, PurchaseOrderModelUpdateForm, \
-    get_po_item_formset
-from django_ledger.models import PurchaseOrderModel, ItemThroughModel
+from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
+                                                DraftPurchaseOrderModelUpdateForm, ReviewPurchaseOrderModelUpdateForm,
+                                                ApprovedPurchaseOrderModelUpdateForm, get_po_item_formset)
+from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
 class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/po_list.html'
+    template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
-    date_field = 'po_date'
+    date_field = 'created'
     paginate_by = 10
     paginate_orphans = 2
     allow_empty = True
@@ -37,7 +40,7 @@ class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).order_by('-po_date')
+        ).order_by('-created')
 
     def get_allow_future(self):
         allow_future = self.request.GET.get('allow_future')
@@ -63,19 +66,51 @@ class PurchaseOrderModelMonthListView(MonthArchiveView, PurchaseOrderModelListVi
 
 
 class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
-    template_name = 'django_ledger/po_create.html'
+    template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'uil:bill'
     }
+    for_estimate = False
 
-    def get_initial(self):
-        return {
-            'for_inventory': False,
-            'po_date': localdate()
-        }
+    def get(self, request, entity_slug, **kwargs):
+        response = super(PurchaseOrderModelCreateView, self).get(request, entity_slug, **kwargs)
+        if self.for_estimate and 'ce_pk' in self.kwargs:
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=entity_slug,
+                user_model=self.request.user
+            )
+            estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            if not estimate_model.can_bind():
+                return HttpResponseNotFound('404 Not Found')
+        return response
+
+
+
+    def get_context_data(self, **kwargs):
+        context = super(PurchaseOrderModelCreateView, self).get_context_data(**kwargs)
+
+        if self.for_estimate:
+            context['form_action_url'] = reverse('django_ledger:po-create-estimate',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug'],
+                                                     'ce_pk': self.kwargs['ce_pk']
+                                                 })
+            estimate_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer')
+            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
+            context['estimate_model'] = estimate_model
+
+        else:
+            context['form_action_url'] = reverse('django_ledger:po-create',
+                                                 kwargs={
+                                                     'entity_slug': self.kwargs['entity_slug']
+                                                 })
+        return context
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
@@ -88,13 +123,28 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
         po_model: PurchaseOrderModel = form.save(commit=False)
         po_model = po_model.configure(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        )
-        form.instance = po_model
+            user_model=self.request.user)
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            estimate_model_qs = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user)
+
+            estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
+            po_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
         return super().form_valid(form=form)
 
     def get_success_url(self):
-        entity_slug = self.kwargs.get('entity_slug')
+        entity_slug = self.kwargs['entity_slug']
+
+        if self.for_estimate:
+            ce_pk = self.kwargs['ce_pk']
+            return reverse('django_ledger:customer-estimate-detail',
+                           kwargs={
+                               'entity_slug': self.kwargs['entity_slug'],
+                               'ce_pk': ce_pk
+                           })
         return reverse('django_ledger:po-list',
                        kwargs={
                            'entity_slug': entity_slug
@@ -105,34 +155,14 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_update.html'
+    template_name = 'django_ledger/purchase_order/po_update.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
-
     update_items = False
-    create_bills = False
-    mark_as_fulfilled = False
-
-    def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        po_model: PurchaseOrderModel = self.object
-        if self.mark_as_fulfilled:
-            po_model.mark_as_fulfilled(commit=True)
-            messages.add_message(request,
-                                 level=messages.SUCCESS,
-                                 message=f'Successfully marked {po_model.po_number} as fulfilled.',
-                                 extra_tags='is-success')
-            return HttpResponseRedirect(
-                redirect_to=reverse('django_ledger:po-update',
-                                    kwargs={
-                                        'entity_slug': self.kwargs['entity_slug'],
-                                        'po_pk': self.kwargs['po_pk']
-                                    }))
-        return super().get(request, *args, **kwargs)
 
     def post(self, request, entity_slug, *args, **kwargs):
-        self.object = self.get_object()
+        response = super().post(request, *args, **kwargs)
         po_model: PurchaseOrderModel = self.object
         if self.update_items:
             PurchaseOrderItemFormset = get_po_item_formset(po_model)
@@ -143,56 +173,11 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
             context = self.get_context_data(item_formset=po_item_formset)
 
+            # todo: revisit this workflow and conform to API
             if po_item_formset.is_valid():
                 if po_item_formset.has_changed():
+
                     po_items = po_item_formset.save(commit=False)
-                    all_received = all([
-                        i['po_item_status'] == ItemThroughModel.STATUS_RECEIVED
-                        for i in po_item_formset.cleaned_data if i
-                    ])
-
-                    for f in po_item_formset.forms:
-                        i: ItemThroughModel = f.instance
-                        if i:
-                            if all([
-                                i.po_item_status in [
-                                    ItemThroughModel.STATUS_RECEIVED,
-                                    ItemThroughModel.STATUS_IN_TRANSIT
-                                ],
-                                i.bill_model is None
-                            ]):
-                                messages.add_message(
-                                    request=self.request,
-                                    level=messages.ERROR,
-                                    message=f'Item {i.item_model.__str__()} must be billed'
-                                            f' before {i.get_po_item_status_display()}...',
-                                    extra_tags='is-danger')
-                                return self.render_to_response(context)
-
-                    if all_received and po_model.fulfillment_date:
-
-                        all_bills_paid = all([
-                            f.instance.bill_model.paid_date for f in po_item_formset.forms
-                        ])
-
-                        if not all_bills_paid:
-                            messages.add_message(
-                                request=self.request,
-                                level=messages.ERROR,
-                                message=f'All Bills must be paid before PO being fulfilled..',
-                                extra_tags='is-danger')
-                            return self.render_to_response(context)
-
-                    elif all_received and not po_model.fulfillment_date:
-                        po_model.fulfillment_date = localdate()
-                        po_model.fulfilled = True
-                        po_model.clean()
-                        po_model.save(update_fields=[
-                            'fulfillment_date',
-                            'fulfilled',
-                            'updated'
-                        ])
-
                     create_bill_uuids = [
                         str(i['uuid'].uuid) for i in po_item_formset.cleaned_data if i and i['create_bill'] is True
                     ]
@@ -210,24 +195,39 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                         return HttpResponseRedirect(redirect_url)
 
                     for item in po_items:
-                        if not item.po_model:
+                        if not item.po_model_id:
                             item.po_model = po_model
                     po_item_formset.save()
-                    po_model.update_po_state()
+                    # todo: check that update state methods are accepting queryset from formsets...
+                    po_model.update_po_state(item_queryset=po_item_formset.queryset)
                     po_model.clean()
                     po_model.save(update_fields=['po_amount',
                                                  'po_amount_received',
                                                  'updated'])
-
-            else:
-                return self.render_to_response(context)
-        elif self.mark_as_fulfilled:
-            po_model.mark_as_fulfilled(commit=True, date=localdate())
-        # fixme: the super call needs to be executed first...?
-        return super().post(request, *args, **kwargs)
+            return self.render_to_response(context)
+        return response
 
     def get_form(self, form_class=None):
-        return PurchaseOrderModelUpdateForm(
+        po_model: PurchaseOrderModel = self.object
+        if po_model.is_draft():
+            return DraftPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        elif po_model.is_review():
+            return ReviewPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        elif po_model.is_approved():
+            return ApprovedPurchaseOrderModelUpdateForm(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        return BasePurchaseOrderModelUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             **self.get_form_kwargs()
@@ -271,7 +271,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         po_pk = self.kwargs['po_pk']
-        return reverse('django_ledger:po-update',
+        return reverse('django_ledger:po-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'po_pk': po_pk
@@ -283,7 +283,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
             user_model=self.request.user
         ).select_related('entity')
 
-    def form_valid(self, form: PurchaseOrderModelUpdateForm):
+    def form_valid(self, form: BasePurchaseOrderModelUpdateForm):
         po_model: PurchaseOrderModel = form.save(commit=False)
 
         if form.has_changed():
@@ -308,7 +308,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                     return self.get(self.request)
 
                 else:
-                    if not all([i.bill_model.paid for i in po_items_qs]):
+                    if not all([i.bill_model.is_paid() for i in po_items_qs]):
                         messages.add_message(self.request,
                                              messages.SUCCESS,
                                              f'All bills must be paid before marking'
@@ -322,6 +322,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                              messages.SUCCESS,
                              f'{self.object.po_number} successfully updated.',
                              extra_tags='is-success')
+
         return super().form_valid(form)
 
 
@@ -329,7 +330,7 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_detail.html'
+    template_name = 'django_ledger/purchase_order/po_detail.html'
     extra_context = {
         'header_subtitle_icon': 'uil:bill',
         'hide_menu': True
@@ -356,14 +357,14 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('ce_model', 'entity')
 
 
 class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
-    template_name = 'django_ledger/po_delete.html'
+    template_name = 'django_ledger/purchase_order/po_delete.html'
     extra_context = {
         'hide_menu': True,
         'header_subtitle_icon': 'uil:bill'
@@ -406,3 +407,64 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
         success_url = self.get_success_url()
         self.object.delete()
         return HttpResponseRedirect(success_url)
+
+
+# ACTIONS...
+class BasePurchaseOrderActionActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'po_pk'
+    action_name = None
+    commit = True
+
+    def get_queryset(self):
+        return PurchaseOrderModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_redirect_url(self, entity_slug, po_pk, *args, **kwargs):
+        return reverse('django_ledger:po-update',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'po_pk': po_pk
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
+        po_model: PurchaseOrderModel = self.get_object()
+
+        try:
+            getattr(po_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class PurchaseOrderMarkAsDraftView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_draft'
+
+
+class PurchaseOrderMarkAsReviewView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_review'
+
+
+class PurchaseOrderMarkAsApprovedView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_approved'
+
+
+class PurchaseOrderMarkAsFulfilledView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_fulfilled'
+
+
+class PurchaseOrderMarkAsCanceledView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_canceled'
+
+
+class PurchaseOrderMarkAsVoidView(BasePurchaseOrderActionActionView):
+    action_name = 'mark_as_void'

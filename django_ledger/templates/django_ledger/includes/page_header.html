@@ -3,8 +3,53 @@
 {% load django_ledger %}
 
 {% if not header_style %}
+<<<<<<< HEAD
     <section class="mb-1 p-1">
         <div class="p-0">
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+    <section class="section p-0">
+    <div class="container is-fluid px-1">
+    <div class="columns">
+        <div class="columns is-3 p-2 m-4">
+            <span id="info-toggle" class="icon is-large ml-3" onclick="showCard('info-card', 'info-toggle')">{% icon "ci:hamburger" 30 %} </span>
+            <button id="new-btn" class="button is-primary is-darker is-outlined is-fullwidth" onclick="showCard('info-card2', 'new-btn')">
+                    <span class="icon">{% icon 'carbon:add' 60 %}</span>
+                    <span>{% trans 'New' %}</span>
+
+                </button>
+        </div>
+        <div class="column is-12">
+            <h1 class="title mt-3">{{ header_title }}</h1>
+        </div>
+        <!-- <h2 class="subtitle">{{ header_subtitle }}</h2>
+        <div class="hero-body">
+=======
+    <section class="hero is-primary is-bold is-small mb-2">
+<<<<<<< HEAD
+        <div class="hero-body p-2">
+>>>>>>> f1a0c1a (fixed some changes)
+=======
+=======
+    <section class="hero is-primary is-bold is-small mb-2">
+>>>>>>> 1a5ab7e (fixed some changes)
+        <div class="hero-body">
+=======
+    <section class="hero  is-bold is-small mb-2 p-4">
+=======
+    <section class="hero  is-bold is-small mb-1 p-1">
+>>>>>>> 044d477 (fixed some changes)
+        <div class="hero-body p-0">
+>>>>>>> 667a383 (fixed some changes)
+=======
+    <section class="mb-1 p-1">
+        <div class="p-0">
+>>>>>>> bc35e2e (fixed things)
+>>>>>>> arrobalytics-develop
         <div class="columns">
             <div class="column is-2">
                 <div class="columns is-mobile mt-0">
@@ -14,6 +59,7 @@
                     <span class="icon">{% icon 'carbon:add' 60 %}</span>
                     <span>{% trans 'New Transaction' %}</span>
 
+<<<<<<< HEAD
                 </button>
                     </div>
 
@@ -21,6 +67,47 @@
 
 
 
+=======
+<<<<<<< HEAD
+                </button></div></div>
+<<<<<<< HEAD
+>>>>>>> f674e5b (fixed some changes)
+=======
+=======
+                </button>
+<<<<<<< HEAD
+                    </div></div>
+>>>>>>> 6760aae (fixed things)
+=======
+                    </div>
+
+            </div>
+>>>>>>> b895ff3 (fixed some changes)
+
+
+
+<<<<<<< HEAD
+>>>>>>> 667a383 (fixed some changes)
+            <div class="container">
+                <div class="columns is-mobile">
+                    {% if header_subtitle_icon %}
+                        <div class="column is-3 has-text-centered is-hidden-tablet">
+                            {% icon header_subtitle_icon 36 %}
+                        </div>
+                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-desktop">
+                            {% icon header_subtitle_icon 48 %}
+                        </div>
+                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-tablet-only">
+                            {% icon header_subtitle_icon 60 %}
+                        </div>
+                    {% endif %}
+                    <div>
+
+                    </div>
+                    <div class="column is-9">
+                        <h1 class="title has-text-weight-light">{{ header_title }}</h1>
+=======
+>>>>>>> arrobalytics-develop
 {#            <div class="container">#}
 {#                <div class="columns is-mobile">#}
 {#                    {% if header_subtitle_icon %}#}
@@ -38,7 +125,20 @@
 {##}
 {#                    </div>#}
                     <div class="column mt-1">
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+{#                        <h1 class="title has-text-weight-light is-4">{{ header_title }}</h1>#}
+>>>>>>> 044d477 (fixed some changes)
+=======
+                        <h1 class="title has-text-weight-light is-3">{{ header_title }}</h1>
+>>>>>>> 01e601c (fixed app menu on top left to align to hamburger, page titles weren't showing so I removed the commenting.  Dashboard is setup as subtitle so we should change that.)
+=======
+
+>>>>>>> ef9d321 (fixed some changes)
+>>>>>>> arrobalytics-develop
                         {% if header_subtitle %}
                             <h1 class="title has-text-weight-normal ">{{ header_subtitle }}</h1>
                         {% else %}
@@ -47,9 +147,30 @@
                     </div>
                 </div>
             </div>
+<<<<<<< HEAD
         </div>
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+<<<<<<< HEAD
+            -->
+    </div>
+    </div>
+    </section>
+<!-- {% else %}
+=======
+=======
+=======
+>>>>>>> 1a5ab7e (fixed some changes)
+        </div>
+>>>>>>> f674e5b (fixed some changes)
+>>>>>>> arrobalytics-develop
     </section>
 {% else %}
+<<<<<<< HEAD
+>>>>>>> f1a0c1a (fixed some changes)
+=======
+>>>>>>> 1a5ab7e (fixed some changes)
     <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
         <div class="hero-body">
             <div class="container">

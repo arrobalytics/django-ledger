@@ -11,11 +11,11 @@ from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelfo
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel, EntityUnitModel
-from django_ledger.models.customer_estimate import CustomerEstimateModel
+from django_ledger.models.estimate import EstimateModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-class CustomerEstimateCreateForm(forms.ModelForm):
+class EstimateModelCreateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,48 +30,36 @@ class CustomerEstimateCreateForm(forms.ModelForm):
         )
 
     class Meta:
-        model = CustomerEstimateModel
-        fields = ['customer', 'title', 'terms']
+        model = EstimateModel
+        fields = ['title', 'customer', 'terms']
         widgets = {
             'customer': forms.Select(attrs={
                 'id': 'djl-customer-estimate-customer-input',
-                'class': 'input'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'terms': forms.Select(attrs={
                 'id': 'djl-customer-estimate-terms-input',
-                'class': 'input'
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'title': forms.TextInput(attrs={
                 'id': 'djl-customer-job-title-input',
-                'class': 'input',
-                'placeholder': _('Enter title...')
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
+                'placeholder': _('Estimate title...')
             })
         }
 
 
-class CustomerEstimateModelUpdateForm(forms.ModelForm):
+class BaseEstimateModelUpdateForm(forms.ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.ENTITY_SLUG = entity_slug
-        self.CUSTOMER_ESTIMATE_MODEL: CustomerEstimateModel = self.instance
-
-        if not self.CUSTOMER_ESTIMATE_MODEL.can_update_terms():
-            self.fields['terms'].disabled = True
-
-    def clean(self):
-        cleaned_data = super(CustomerEstimateModelUpdateForm, self).clean()
-        if 'status' in self.changed_data:
-            ce_model: CustomerEstimateModel = self.instance
-            new_status = cleaned_data['status']
-            ce_model.can_change_status(new_status=new_status)
-        return cleaned_data
+        self.CUSTOMER_ESTIMATE_MODEL: EstimateModel = self.instance
 
     class Meta:
-        model = CustomerEstimateModel
+        model = EstimateModel
         fields = [
-            'terms',
             'markdown_notes'
         ]
         widgets = {
@@ -82,7 +70,15 @@ class CustomerEstimateModelUpdateForm(forms.ModelForm):
         }
 
 
-class CustomerEstimateItemForm(ModelForm):
+class DraftEstimateModelUpdateForm(BaseEstimateModelUpdateForm):
+    class Meta(BaseEstimateModelUpdateForm.Meta):
+        fields = [
+            'terms',
+            'markdown_notes'
+        ]
+
+
+class EstimateItemModelForm(ModelForm):
     class Meta:
         model = ItemThroughModel
         fields = [
@@ -111,15 +107,15 @@ class CustomerEstimateItemForm(ModelForm):
         }
 
 
-class BaseCustomerEstimateItemFormset(BaseModelFormSet):
+class BaseEstimateItemModelFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, customer_job_model: CustomerEstimateModel, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, customer_job_model: EstimateModel, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
-        self.CUSTOMER_JOB_MODEL = customer_job_model
+        self.ESTIMATE_MODEL = customer_job_model
         self.ENTITY_SLUG = entity_slug
 
-        items_qs = ItemModel.objects.for_cj(
+        items_qs = ItemModel.objects.for_estimate(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
@@ -129,30 +125,32 @@ class BaseCustomerEstimateItemFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
+        # todo: use different forms instead...
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
             form.fields['entity_unit'].queryset = unit_qs
 
-            if not self.CUSTOMER_JOB_MODEL.can_update_items():
+            if not self.ESTIMATE_MODEL.can_update_items():
                 form.fields['item_model'].disabled = True
                 form.fields['quantity'].disabled = True
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
+                form.fields['ce_unit_revenue_estimate'].disabled = True
 
 
 # todo: add instance where can_delete = False
-CustomerEstimateItemFormset = modelformset_factory(
+CanEditEstimateItemModelFormset = modelformset_factory(
     model=ItemThroughModel,
-    form=CustomerEstimateItemForm,
-    formset=BaseCustomerEstimateItemFormset,
+    form=EstimateItemModelForm,
+    formset=BaseEstimateItemModelFormset,
     can_delete=True,
     extra=5
 )
 
-CustomerEstimateItemFormsetReadOnly = modelformset_factory(
+ReadOnlyEstimateItemModelFormset = modelformset_factory(
     model=ItemThroughModel,
-    form=CustomerEstimateItemForm,
-    formset=BaseCustomerEstimateItemFormset,
+    form=EstimateItemModelForm,
+    formset=BaseEstimateItemModelFormset,
     can_delete=False,
     extra=0
 )

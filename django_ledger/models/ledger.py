@@ -47,6 +47,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
     entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger Entity'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
@@ -86,6 +87,40 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
+
+    def post(self, commit: bool = False):
+        if not self.posted:
+            self.posted = True
+            if commit:
+                self.save(update_fields=[
+                    'posted',
+                    'updated'
+                ])
+
+    def unpost(self, commit: bool = False):
+        if self.posted:
+            self.posted = False
+            if commit:
+                self.save(update_fields=[
+                    'posted',
+                    'updated'
+                ])
+
+    def lock(self, commit: bool = False):
+        self.locked = True
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
+
+    def unlock(self, commit: bool = False):
+        self.locked = False
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
 
 
 class LedgerModel(LedgerModelAbstract):

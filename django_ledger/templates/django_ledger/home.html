@@ -18,6 +18,32 @@
 {##}
 {#                </button></div>#}
             </div>
+<<<<<<< HEAD
+
+
+
+{#            <div class="container">#}
+{#                <div class="columns is-mobile">#}
+{#                    {% if header_subtitle_icon %}#}
+{#                        <div class="column is-3 has-text-centered is-hidden-tablet">#}
+{#                            {% icon header_subtitle_icon 36 %}#}
+{#                        </div>#}
+{#                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-desktop">#}
+{#                            {% icon header_subtitle_icon 48 %}#}
+{#                        </div>#}
+{#                        <div class="column is-3 has-text-centered is-hidden-mobile is-hidden-tablet-only">#}
+{#                            {% icon header_subtitle_icon 60 %}#}
+{#                        </div>#}
+{#                    {% endif %}#}
+{#                    <div>#}
+{##}
+{#                    </div>#}
+                    <div class="column mt-1">
+{#                        <h1 class="title has-text-weight-light is-4">{{ header_title }}</h1>#}
+                        {% if header_subtitle %}
+                            <h1 class="title has-text-weight-normal ">{{ header_subtitle }}</h1>
+                        {% endif %}
+=======
 
 
 
@@ -44,6 +70,66 @@
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+{% else %}
+    <section class="hero is-light is-bold is-hidden-mobile is-hidden-tablet">
+        <div class="hero-body">
+            <div class="container">
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <figure class="image">
+                            <a target="_blank"
+                               href="https://arrobalytics.com"><img
+                                    src="{% static 'django_ledger/logo/django-ledger-logo.png' %}"
+                                    alt=""></a>
+                        </figure>
+                    </div>
+                </div>
+                {% if header_title %}
+                    <div class="columns is-centered">
+                        <div class="column is-12 has-text-centered">
+                            <h1 class="title is-size-4 has-text-weight-light">{{ header_title }}</h1>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <div class="columns is-multiline">
+<<<<<<< HEAD
+                {% for entity in entities %}
+                    <div class="column is-6-tablet">
+                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
+                    </div>
+                {% endfor %}
+                <div class="column is-6-tablet has-text-centered">
+                    <div class="box">
+=======
+                <div class="column is-one-third-widescreen is-half-tablet is-one-quarter-fullhd">
+                    <div class="box hyperlink-card is-flex is-justify-content-center is-align-items-center entity-card">
+>>>>>>> beac8ac (fixed some changes)
+                        <a href="{% url 'django_ledger:entity-create' %}">
+                            <span class="icon is-large has-text-grey">{% icon "ic:baseline-add-circle-outline" 48 %}</span></a>
+                        <h2 class="is-size-3">{% trans 'New Entity' %}</h2>
+>>>>>>> arrobalytics-develop
+                    </div>
+                </div>
+
+                {% for entity in entities %}
+                    <div class="column is-one-third-widescreen is-half-tablet is-one-quarter-fullhd">
+                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
+                    </div>
+                {% endfor %}
+
+
             </div>
         </div>
     </section>

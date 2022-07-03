@@ -4,6 +4,26 @@
 {% load django_ledger %}
 
 {% block view_content %}
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+    <div class="columns is-centered">
+        <div class="column is-6-desktop">
+            <div class="box">
+                <form action="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}"
+                      method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit"
+                            class="button is-primary is-outlined is-fullwidth djetler_my_1">{% trans 'Create' %}
+                    </button>
+                    <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}"
+                       class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
+                </form>
+            </div>
+        </div>
+=======
+>>>>>>> arrobalytics-develop
     <div class="box">
         <form method="post">
             {% csrf_token %}
@@ -14,6 +34,10 @@
             <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                class="button is-small is-dark is-fullwidth">Back</a>
         </form>
+<<<<<<< HEAD
+=======
+>>>>>>> 57331cf (new bank account form: add csrf, include items in form post form.)
+>>>>>>> arrobalytics-develop
     </div>
 
 {% endblock %}

@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.forms import (ModelForm, TextInput, BooleanField, ValidationError,
-                          EmailInput, URLInput, CheckboxInput, Select)
+                          EmailInput, URLInput, CheckboxInput, Select, Form)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
