@@ -13,7 +13,7 @@ from typing import Tuple
 from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db.models import Q
-from django.http import Http404, HttpRequest, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import Http404, HttpRequest, HttpResponseBadRequest
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -21,7 +21,6 @@ from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
 from django_ledger.models.entity import EntityReportManager
-from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.utils import set_default_entity
 
 
@@ -390,11 +389,7 @@ class UnpaidElementsMixIn:
             ).approved().filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
-<<<<<<< HEAD
             ).select_related('customer').order_by('due_date')
-=======
-            ).select_related('customer').order_by('-due_date')[:3]
->>>>>>> arrobalytics-develop
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
@@ -413,11 +408,7 @@ class UnpaidElementsMixIn:
             ).approved().filter(
                 Q(date__gte=from_date) &
                 Q(date__lte=to_date)
-<<<<<<< HEAD
             ).select_related('vendor').order_by('due_date')
-=======
-            ).select_related('vendor').order_by('-due_date')[:3]
->>>>>>> arrobalytics-develop
 
             unit_slug = self.get_unit_slug()
             if unit_slug:

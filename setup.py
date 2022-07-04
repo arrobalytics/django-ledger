@@ -16,7 +16,6 @@ setup(
     description="Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, "
                 + "Chart of Accounts, Entities",
     include_package_data=True,
-<<<<<<< HEAD
     install_requires=['aniso8601==7.0.0', "asgiref==3.5.2; python_version >= '3.7'", 'django==3.2.13',
                       "django-filter==22.1; python_version >= '3.7'", 'django-graphql-auth[graphql]==0.3.16',
                       "django-graphql-jwt==0.3.0; python_version >= '3.6' and python_version < '4'",
@@ -28,16 +27,6 @@ setup(
                       'pytz==2022.1', 'rx==1.6.1', "singledispatch==3.7.0; python_version >= '2.6'",
                       "six==1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
                       "sqlparse==0.4.2; python_version >= '3.5'", 'text-unidecode==1.3'],
-=======
-    use_pipfile=True,
-    install_requires=[
-        'django',
-        'ofxtools',
-        'faker',
-        'markdown',
-        'jsonschema',
-    ],
->>>>>>> aff5596 (Added missing packages)
     project_urls={
         "Bug Tracker": "https://github.com/arrobalytics/django-ledger/issues",
         # 'Documentation': 'https://docs.example.com/HelloWorld/',
