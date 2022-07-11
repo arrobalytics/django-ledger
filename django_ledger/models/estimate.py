@@ -39,7 +39,31 @@ def generate_estimate_number(length: int = 10, prefix: bool = True) -> str:
     return estimate_number
 
 
+class EstimateModelQuerySet(models.QuerySet):
+
+    def approved(self):
+        return self.filter(
+            Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
+            Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
+        )
+
+    def not_approved(self):
+        return self.exclude(
+            Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
+            Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
+        )
+
+    def contracts(self):
+        return self.approved()
+
+    def estimates(self):
+        return self.not_approved()
+
+
 class EstimateModelManager(models.Manager):
+
+    def get_queryset(self):
+        return EstimateModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
         qs = self.get_queryset()
@@ -172,7 +196,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ]
 
     def __str__(self):
-        return f'Customer Estimate: {self.estimate_number} | {self.title}'
+        if self.is_contract():
+            return f'Contract {self.estimate_number} | {self.title}'
+        return f'Estimate {self.estimate_number} | {self.title}'
 
     # Configuration...
     def configure(self,
@@ -212,6 +238,12 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def is_void(self):
         return self.status == self.CJ_STATUS_VOID
+
+    def is_contract(self):
+        return any([
+            self.is_approved(),
+            self.is_completed()
+        ])
 
     # Permissions...
     def can_draft(self):

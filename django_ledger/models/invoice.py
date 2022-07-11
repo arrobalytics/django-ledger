@@ -259,6 +259,13 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                 raise ValidationError(f'Invoice {self.invoice_number} already bound to '
                                       f'Estimate {self.ce_model.estimate_number}')
             return False
+
+        if self.customer_id:
+            if raise_exception:
+                raise ValidationError(f'Cannot bind estimate {estimate_model.estimate_number} '
+                                      f'Invoice model already has a customer {self.customer}')
+            return False
+
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
             raise ValidationError(f'Cannot bind estimate that is not approved.')
@@ -272,11 +279,14 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
             raise e
+
         self.ce_model = estimate_model
+        self.customer_id = estimate_model.customer_id
         self.clean()
         if commit:
             self.save(update_fields=[
                 'ce_model',
+                'customer_id',
                 'updated'
             ])
 

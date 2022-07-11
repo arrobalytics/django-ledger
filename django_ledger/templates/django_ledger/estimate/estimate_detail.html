@@ -50,57 +50,12 @@
                                 {% trans 'Estimate Items' %}
                             </h2>
                         </div>
+
                         {# todo: create estimate item table #}
                         <div class="card-content">
-                            <div class="table-container">
-                                <table class="table is-fullwidth is-narrow is-striped is-bordered">
 
-                                    <thead>
-                                    <tr>
-                                        <th>{% trans 'Item' %}</th>
-                                        <th>{% trans 'Entity Unit' %}</th>
-                                        <th>{% trans 'Quantity' %}</th>
-                                        <th>{% trans 'Unit Cost' %}</th>
-                                        <th>{% trans 'Sale Price' %}</th>
-                                        <th>{% trans 'Total Cost' %}</th>
-                                        <th>{% trans 'Total Revenue' %}</th>
-                                    </tr>
-                                    </thead>
+                            {% customer_estimate_item_table customer_job_item_list %}
 
-                                    <tbody>
-                                    {% for cji in customer_job_item_list %}
-                                        <tr>
-                                            <td>{{ cji.item_model }}</td>
-                                            <td>{% if cji.entity_unit %}
-                                                {{ cji.entity_unit }}{% endif %}</td>
-                                            <td>{{ cji.quantity }}</td>
-                                            <td>{% currency_symbol %}{{ cji.unit_cost | currency_format }}</td>
-                                            <td>
-                                                {% currency_symbol %}{{ cji.ce_unit_revenue_estimate | currency_format }}</td>
-                                            <td>{% currency_symbol %}{{ cji.total_amount | currency_format }}</td>
-                                            <td>
-                                                {% currency_symbol %}{{ cji.ce_revenue_estimate | currency_format }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-
-                                    <tfoot>
-                                    <tr>
-                                        <th></th>
-                                        <th></th>
-                                        <th></th>
-                                        <th></th>
-                                        <th>{% trans 'Total' %}</th>
-                                        <th>
-                                            {% currency_symbol %}{{ estimate_model.cost_estimate | currency_format }}
-                                        </th>
-                                        <th>
-                                            {% currency_symbol %}{{ estimate_model.revenue_estimate | currency_format }}
-                                        </th>
-                                    </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
                         </div>
                     </div>
                 </div>

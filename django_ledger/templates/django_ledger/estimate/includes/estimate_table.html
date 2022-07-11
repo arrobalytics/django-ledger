@@ -17,15 +17,15 @@
         </tr>
         </thead>
         <tbody>
-        {% for cj in ce_list %}
-            <tr id="{{ cj.get_html_id }}">
-                <td>{{ cj.estimate_number }}</td>
-                <td>{{ cj.customer.customer_name }}</td>
-                <td>{{ cj.title }}</td>
-                <td>{{ cj.get_status_display }}</td>
-                <td>{{ cj.get_status_action_date }}</td>
-                <td class="has-text-centered">{% currency_symbol %}{{ cj.revenue_estimate | currency_format }}</td>
-                <td class="has-text-centered">{% currency_symbol %}{{ cj.gross_margin_estimate | percentage }}</td>
+        {% for ce_model in ce_list %}
+            <tr id="{{ ce_model.get_html_id }}">
+                <td>{{ ce_model.estimate_number }}</td>
+                <td>{{ ce_model.customer.customer_name }}</td>
+                <td>{{ ce_model.title }}</td>
+                <td>{{ ce_model.get_status_display }}</td>
+                <td>{{ ce_model.get_status_action_date }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ ce_model.revenue_estimate | currency_format }}</td>
+                <td class="has-text-centered">{% currency_symbol %}{{ ce_model.gross_margin_estimate | percentage }}</td>
 
 {#                <td class="has-text-centered">#}
 {#                    {% if cj.is_approved %}#}
@@ -44,7 +44,7 @@
 
                 {# ACTIONS #}
                 <td class="has-text-centered">
-                    <div class="dropdown is-right is-hoverable" id="cj-action-{{ cj.uuid }}">
+                    <div class="dropdown is-right is-hoverable" id="cj-action-{{ ce_model.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
@@ -53,9 +53,9 @@
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
-                        <div class="dropdown-menu" id="dropdown-menu-{{ cj.uuid }}" role="menu">
+                        <div class="dropdown-menu" id="dropdown-menu-{{ ce_model.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug ce_pk=cj.uuid %}"
+                                <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=entity_slug ce_pk=ce_model.uuid %}"
                                    class="dropdown-item has-text-success">Details</a>
                                 {#                                <a href="{% url 'django_ledger:cj-update' entity_slug=entity_slug cj_pk=cj.uuid %}"#}
                                 {#                                   class="dropdown-item has-text-warning-dark">Update</a>#}

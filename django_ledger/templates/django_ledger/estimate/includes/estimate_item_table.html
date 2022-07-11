@@ -1,0 +1,49 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered">
+        <thead>
+        <tr>
+            <th>{% trans 'Item' %}</th>
+            <th>{% trans 'Entity Unit' %}</th>
+            <th>{% trans 'Quantity' %}</th>
+            <th>{% trans 'Unit Cost' %}</th>
+            <th>{% trans 'Sale Price' %}</th>
+            <th>{% trans 'Total Cost' %}</th>
+            <th>{% trans 'Total Revenue' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ce_item in ce_item_list %}
+            <tr>
+                <td>{{ ce_item.item_model }}</td>
+                <td>{% if ce_item.entity_unit %}
+                    {{ ce_item.entity_unit }}{% endif %}</td>
+                <td>{{ ce_item.quantity }}</td>
+                <td>{% currency_symbol %}{{ ce_item.unit_cost | currency_format }}</td>
+                <td>
+                    {% currency_symbol %}{{ ce_item.ce_unit_revenue_estimate | currency_format }}</td>
+                <td>{% currency_symbol %}{{ ce_item.total_amount | currency_format }}</td>
+                <td>
+                    {% currency_symbol %}{{ ce_item.ce_revenue_estimate | currency_format }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th>{% trans 'Total' %}</th>
+            <th>
+                {% currency_symbol %}{{ ce_model.cost_estimate | currency_format }}
+            </th>
+            <th>
+                {% currency_symbol %}{{ ce_model.revenue_estimate | currency_format }}
+            </th>
+        </tr>
+        </tfoot>
+    </table>
+</div>

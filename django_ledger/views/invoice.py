@@ -17,7 +17,8 @@ from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchi
                                   ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm, get_invoice_item_formset,
+from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm,
+                                         get_invoice_item_formset,
                                          DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
                                          ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
                                          AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
@@ -105,17 +106,6 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             invoice_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
-
-        elif self.for_estimate:
-            ce_pk = self.kwargs['ce_pk']
-            estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
-            estimate_model: EstimateModel = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
-            invoice_model.customer_id = estimate_model.customer_id
-            invoice_model.ce_model = estimate_model
-            invoice_model.clean()
 
         return super().form_valid(form=form)
 

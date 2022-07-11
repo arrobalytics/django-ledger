@@ -579,7 +579,7 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'Estimates',
+                        'title': 'Estimates & Contracts',
                         'url': reverse('django_ledger:customer-estimate-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
@@ -772,15 +772,24 @@ def inventory_table(context, queryset):
 
 
 @register.inclusion_tag('django_ledger/estimate/includes/estimate_table.html', takes_context=True)
-def customer_estimate_table(context, queryset=None):
+def customer_estimate_table(context, queryset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'ce_list': queryset if queryset else context['object_list']
+        'ce_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/estimate/includes/estimate_item_table.html', takes_context=True)
+def customer_estimate_item_table(context, queryset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'ce_model': context['estimate_model'],
+        'ce_item_list': queryset
     }
 
 
 @register.inclusion_tag('django_ledger/tags/ce_item_formset.html', takes_context=True)
-def cj_item_formset_table(context, item_formset):
+def customer_estimate_item_formset(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'ce_pk': context['view'].kwargs['ce_pk'],
