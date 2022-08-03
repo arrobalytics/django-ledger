@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView
 
 from django_ledger.models import EntityModel, inventory_adjustment
-from django_ledger.models.items import ItemThroughModel
+from django_ledger.models.items import ItemTransactionModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -40,7 +40,7 @@ class InventoryListView(LoginRequiredMixIn, ListView):
         return context
 
     def get_queryset(self):
-        return ItemThroughModel.objects.inventory_pipeline_aggregate(
+        return ItemTransactionModel.objects.inventory_pipeline_aggregate(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
@@ -59,7 +59,7 @@ class InventoryRecountView(LoginRequiredMixIn, DetailView):
     def counted_inventory(self):
         entity_slug = self.kwargs['entity_slug']
         user_model = self.request.user
-        return ItemThroughModel.objects.inventory_count(
+        return ItemTransactionModel.objects.inventory_count(
             entity_slug=entity_slug,
             user_model=user_model
         )

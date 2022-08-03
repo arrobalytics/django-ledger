@@ -621,7 +621,7 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'Things I Pay For',
+                        'title': 'Business Expenses',
                         'url': reverse('django_ledger:expense-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {

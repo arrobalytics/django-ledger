@@ -10,7 +10,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
                                           CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
                                           DraftEstimateModelUpdateForm)
-from django_ledger.models import EntityModel, ItemThroughModel
+from django_ledger.models import EntityModel, ItemTransactionModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import LoginRequiredMixIn
 
@@ -93,23 +93,37 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = ce_model.estimate_number
         context['header_subtitle_icon'] = 'eos-icons:job'
-        context['customer_job_item_list'] = ce_model.itemthroughmodel_set.all()
+        context['customer_job_item_list'] = ce_model.itemtransactionmodel_set.all()
 
         # PO Model Queryset...
-        context['estimate_po_model_queryset'] = ce_model.purchaseordermodel_set.for_entity(
+        po_qs = ce_model.purchaseordermodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.purchaseordermodel_set.none()
+        context['estimate_po_model_queryset'] = po_qs
 
-        context['estimate_invoice_model_queryset'] = ce_model.invoicemodel_set.for_entity(
+        invoice_qs = ce_model.invoicemodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.invoicemodel_set.none()
+        context['estimate_invoice_model_queryset'] = invoice_qs
 
-        context['estimate_bill_model_queryset'] = ce_model.billmodel_set.for_entity(
+        bill_qs = ce_model.billmodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
+        context['estimate_bill_model_queryset'] = bill_qs
+
+        context['contract_items'] = ce_model.get_contract_transactions(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+        context['contract_progress'] = ce_model.get_contract_summary(
+            po_qs=po_qs,
+            invoice_qs=invoice_qs,
+            bill_qs=bill_qs
+        )
 
         return context
 
@@ -153,9 +167,9 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
         context['header_subtitle_icon'] = 'eos-icons:job'
 
         if not item_formset:
-            item_through_qs, aggregate_data = cj_model.get_itemthrough_data()
+            item_through_qs, aggregate_data = cj_model.get_itemtransaction_data()
         else:
-            item_through_qs, aggregate_data = cj_model.get_itemthrough_data(
+            item_through_qs, aggregate_data = cj_model.get_itemtransaction_data(
                 queryset=item_formset.queryset
             )
 

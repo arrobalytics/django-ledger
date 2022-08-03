@@ -18,11 +18,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Manager, Q
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from treebeard.mp_tree import MP_Node
+from treebeard.mp_tree import MP_Node, MP_NodeManager
 
 from django_ledger.io import IOMixIn
 from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
@@ -32,7 +32,6 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
 from django_ledger.models.utils import LazyLoader
-
 
 UserModel = get_user_model()
 lazy_loader = LazyLoader()
@@ -107,6 +106,13 @@ def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
     return adjustment
 
 
+def generate_entity_slug(name: str) -> str:
+    slug = slugify(name)
+    suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
+    entity_slug = f'{slug}-{suffix}'
+    return entity_slug
+
+
 class EntityReportManager:
     VALID_QUARTERS = list(range(1, 5))
 
@@ -160,7 +166,7 @@ class EntityReportManager:
         return qs, qe
 
 
-class EntityModelManager(Manager):
+class EntityModelManager(MP_NodeManager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -197,13 +203,17 @@ class EntityModelAbstract(MP_Node,
                               on_delete=models.CASCADE,
                               related_name='admin_of',
                               verbose_name=_('Admin'))
-    managers = models.ManyToManyField(UserModel, through='EntityManagementModel',
-                                      related_name='managed_by', verbose_name=_('Managers'))
+    managers = models.ManyToManyField(UserModel,
+                                      through='EntityManagementModel',
+                                      related_name='managed_by',
+                                      verbose_name=_('Managers'))
 
     hidden = models.BooleanField(default=False)
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager()
+
+    node_order_by = ['uuid']
 
     class Meta:
         abstract = True
@@ -303,10 +313,7 @@ class EntityModelAbstract(MP_Node,
             raise ValidationError(
                 message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
             )
-        slug = slugify(self.name)
-        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
-        entity_slug = f'{slug}-{suffix}'
-        self.slug = entity_slug
+        self.slug = generate_entity_slug(self.name)
 
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
@@ -324,7 +331,7 @@ class EntityModelAbstract(MP_Node,
 
     def update_inventory(self, user_model, commit: bool = False):
 
-        ItemThroughModel = lazy_loader.get_item_through_model()
+        ItemThroughModel = lazy_loader.get_item_transaction_model()
         ItemModel = lazy_loader.get_item_model()
 
         counted_qs = ItemThroughModel.objects.inventory_count(
@@ -473,6 +480,7 @@ class EntityModelAbstract(MP_Node,
         return ledger
 
     def clean(self):
+        super(EntityModelAbstract, self).clean()
         if not self.name:
             raise ValidationError(message=_('Must provide a name for EntityModel'))
 
@@ -518,7 +526,15 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-def entitymodel_postsave(instance, **kwargs):
+def entitymodel_presave(instance: EntityModel, **kwargs):
+    if not instance.slug:
+        instance.slug = instance.generate_slug()
+
+
+pre_save.connect(entitymodel_presave, EntityModel)
+
+
+def entitymodel_postsave(instance: EntityModel, **kwargs):
     if not getattr(instance, 'coa', None):
         ChartOfAccountModel.objects.create(
             slug=instance.slug + '-coa',

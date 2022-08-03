@@ -5,7 +5,7 @@ from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemThroughModel,
+from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel,
                                   VendorModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -237,7 +237,7 @@ class BillItemForm(ModelForm):
 
     def clean(self):
         cleaned_data = super(BillItemForm, self).clean()
-        bill_item_model: ItemThroughModel = self.instance
+        bill_item_model: ItemTransactionModel = self.instance
         if bill_item_model.po_model is not None:
             quantity = cleaned_data['quantity']
             if quantity > bill_item_model.po_quantity:
@@ -245,7 +245,7 @@ class BillItemForm(ModelForm):
         return cleaned_data
 
     class Meta:
-        model = ItemThroughModel
+        model = ItemTransactionModel
         fields = [
             'item_model',
             'unit_cost',
@@ -296,14 +296,14 @@ class BaseBillItemFormset(BaseModelFormSet):
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
-            instance: ItemThroughModel = form.instance
+            instance: ItemTransactionModel = form.instance
             if instance.po_model_id:
                 form.fields['item_model'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
 
 BillItemFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=BillItemForm,
     formset=BaseBillItemFormset,
     can_delete=True,

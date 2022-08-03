@@ -53,6 +53,13 @@ class InvoiceModelQuerySet(models.QuerySet):
     def approved(self):
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
 
+    def active(self):
+        return self.filter(
+            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID) |
+            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
+        )
+
+
 
 class InvoiceModelManager(models.Manager):
 
@@ -121,7 +128,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                                        null=True,
                                        verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
-                                           through='django_ledger.ItemThroughModel',
+                                           through='django_ledger.ItemTransactionModel',
                                            through_fields=('invoice_model', 'item_model'),
                                            verbose_name=_('Invoice Items'))
 
@@ -184,7 +191,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.invoice_number = generate_invoice_number()
 
         LedgerModel = lazy_loader.get_ledger_model()
-
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
             posted=post_ledger,
@@ -322,7 +328,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
         # todo: revisit this logic...
-        itemthrough_qs = self.itemthroughmodel_set.all()
+        itemthrough_qs = self.itemtransactionmodel_set.all()
         if not itemthrough_qs.count():
             raise ValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
@@ -546,7 +552,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def get_invoice_item_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all().select_related('item_model')
+            queryset = self.itemtransactionmodel_set.all().select_related('item_model')
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
             total_items=Count('uuid')
@@ -558,7 +564,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all()
+            queryset = self.itemtransactionmodel_set.all()
             queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                                               'entity_unit__uuid',

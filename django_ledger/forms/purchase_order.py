@@ -10,7 +10,7 @@ from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelForm
                           modelformset_factory, Textarea, BooleanField, ValidationError)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemThroughModel, EntityUnitModel)
+from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemTransactionModel, EntityUnitModel, EstimateModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -106,7 +106,7 @@ class PurchaseOrderItemForm(ModelForm):
     create_bill = BooleanField(required=False)
 
     class Meta:
-        model = ItemThroughModel
+        model = ItemTransactionModel
         fields = [
             'item_model',
             'po_unit_cost',
@@ -136,7 +136,7 @@ class PurchaseOrderItemForm(ModelForm):
     def clean(self):
         cleaned_data = super(PurchaseOrderItemForm, self).clean()
         po_item_status = cleaned_data['po_item_status']
-        po_item_model: ItemThroughModel = self.instance
+        po_item_model: ItemTransactionModel = self.instance
         if 'po_item_status' in self.changed_data:
             po_model: PurchaseOrderModel = getattr(self, 'PO_MODEL')
             if po_model.po_status == po_model.PO_STATUS_APPROVED:
@@ -144,12 +144,12 @@ class PurchaseOrderItemForm(ModelForm):
                     raise ValidationError('Cannot assign null status to approved PO.')
                 if all([
                     self.instance.bill_model_id,
-                    po_item_status == ItemThroughModel.STATUS_NOT_ORDERED
+                    po_item_status == ItemTransactionModel.STATUS_NOT_ORDERED
                 ]):
                     raise ValidationError('Cannot assign not ordered status to a billed item. '
                                           'Void or delete bill first')
             if all([
-                po_item_status in [ItemThroughModel.STATUS_IN_TRANSIT, ItemThroughModel.STATUS_RECEIVED],
+                po_item_status in [ItemTransactionModel.STATUS_IN_TRANSIT, ItemTransactionModel.STATUS_RECEIVED],
                 not po_item_model.bill_model_id
             ]):
                 raise ValidationError(f'Cannot mark as {po_item_status.upper()}. '
@@ -165,15 +165,25 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         self.ENTITY_SLUG = entity_slug
         self.PO_MODEL = po_model
 
-        items_qs = ItemModel.objects.for_po(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
+        if self.PO_MODEL.is_contract_bound():
+            items_qs = ItemModel.objects.for_contract(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL,
+                ce_model_uuid=self.PO_MODEL.ce_model_id)
+        else:
+            items_qs = ItemModel.objects.for_po(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
+
+        # self.PO_MODEL.is_contract_bound():
+        #     ce_model = self.PO_MODEL.ce_model.
 
         unit_qs = EntityUnitModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
+
 
         for form in self.forms:
             form.PO_MODEL = self.PO_MODEL
@@ -191,9 +201,12 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
             else:
                 form.fields['po_item_status'].disabled = True
 
+    def get_queryset(self):
+        po_item_queryset, _ = self.PO_MODEL.get_itemtransaction_data()
+        return po_item_queryset
 
 CanDeletePurchaseOrderItemFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=PurchaseOrderItemForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=True,
@@ -201,7 +214,7 @@ CanDeletePurchaseOrderItemFormset = modelformset_factory(
 )
 
 CanEditPurchaseOrderItemFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=PurchaseOrderItemForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=True,
@@ -209,7 +222,7 @@ CanEditPurchaseOrderItemFormset = modelformset_factory(
 )
 
 ReadOnlyPurchaseOrderItemFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=PurchaseOrderItemForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=False,

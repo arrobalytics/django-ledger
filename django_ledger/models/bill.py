@@ -51,6 +51,12 @@ class BillModelQuerySet(models.QuerySet):
     def approved(self):
         return self.filter(bill_status__exact=BillModel.BILL_STATUS_APPROVED)
 
+    def active(self):
+        return self.filter(
+            Q(bill_status__exact=BillModel.BILL_STATUS_APPROVED) |
+            Q(bill_status__exact=BillModel.BILL_STATUS_PAID)
+        )
+
 
 class BillModelManager(models.Manager):
 
@@ -111,7 +117,9 @@ class BillModelAbstract(LedgerWrapperMixIn,
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
-    bill_status = models.CharField(max_length=10, choices=BILL_STATUS, default=BILL_STATUS[0][0],
+    bill_status = models.CharField(max_length=10,
+                                   choices=BILL_STATUS,
+                                   default=BILL_STATUS[0][0],
                                    verbose_name=_('Bill Status'))
     xref = models.SlugField(null=True, blank=True, verbose_name=_('External Reference Number'))
     vendor = models.ForeignKey('django_ledger.VendorModel',
@@ -121,7 +129,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                        null=True,
                                        verbose_name=_('Bill Additional Info'))
     bill_items = models.ManyToManyField('django_ledger.ItemModel',
-                                        through='django_ledger.ItemThroughModel',
+                                        through='django_ledger.ItemTransactionModel',
                                         through_fields=('bill_model', 'item_model'),
                                         verbose_name=_('Bill Items'))
 
@@ -211,7 +219,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     def get_itemthrough_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.select_related(
+            queryset = self.itemtransactionmodel_set.select_related(
                 'item_model', 'po_model', 'bill_model').all()
         return queryset, queryset.aggregate(
             amount_due=Sum('total_amount'),
@@ -221,7 +229,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     def get_item_data(self, entity_slug, queryset=None):
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all()
+            queryset = self.itemtransactionmodel_set.all()
             queryset = queryset.filter(bill_model__ledger__entity__slug__exact=entity_slug)
         return queryset.order_by('item_model__expense_account__uuid',
                                  'entity_unit__uuid',
@@ -487,7 +495,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.clean()
 
         if not itemthrough_queryset:
-            itemthrough_queryset = self.itemthroughmodel_set.all()
+            itemthrough_queryset = self.itemtransactionmodel_set.all()
 
         if commit:
             self.save(update_fields=[
@@ -497,7 +505,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 'bill_status',
                 'updated'
             ])
-            ItemThroughModel = lazy_loader.get_item_through_model()
+            ItemThroughModel = lazy_loader.get_item_transaction_model()
             # update this field only if there's a PO assigned
             itemthrough_queryset.update(po_item_status=ItemThroughModel.STATUS_ORDERED)
             self.migrate_state(

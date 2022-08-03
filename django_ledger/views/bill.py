@@ -113,9 +113,9 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             po_qs = PurchaseOrderModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).prefetch_related('itemthroughmodel_set')
+            ).prefetch_related('itemtransactionmodel_set')
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
-            po_items = po_model.itemthroughmodel_set.filter(
+            po_items = po_model.itemtransactionmodel_set.filter(
                 bill_model__isnull=True,
                 uuid__in=po_item_uuids
             )
@@ -193,7 +193,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                                      extra_tags='is-danger')
                 return self.render_to_response(self.get_context_data(form=form))
 
-            po_model_items_qs = po_model.itemthroughmodel_set.filter(uuid__in=item_uuids)
+            po_model_items_qs = po_model.itemtransactionmodel_set.filter(uuid__in=item_uuids)
 
             bill_model.update_amount_due(queryset=po_model_items_qs)
             bill_model.new_state(commit=True)
@@ -260,7 +260,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
 
         bill_model: BillModel = self.object
         bill_items_qs, item_data = bill_model.get_itemthrough_data(
-            queryset=bill_model.itemthroughmodel_set.all()
+            queryset=bill_model.itemtransactionmodel_set.all()
         )
         context['bill_items'] = bill_items_qs
         context['total_amount_due'] = item_data['amount_due']
@@ -285,7 +285,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'itemthroughmodel_set',
+            'itemtransactionmodel_set',
             'ledger__journal_entries__entity_unit'
         ).select_related('ledger', 'ledger__entity', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
 
@@ -308,7 +308,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     def get_item_through_queryset(self):
         bill_model: BillModel = self.object
         if not self.item_through_qs:
-            self.item_through_qs = bill_model.itemthroughmodel_set.select_related(
+            self.item_through_qs = bill_model.itemtransactionmodel_set.select_related(
                 'item_model', 'po_model', 'bill_model').order_by('-total_amount')
         return self.item_through_qs
 

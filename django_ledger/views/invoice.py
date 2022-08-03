@@ -127,7 +127,7 @@ class InvoiceModelCreateView(LoginRequiredMixIn,
 
 class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/invoice/invoice_list.html'
-    context_object_name = 'invoices'
+    context_object_name = 'invoice_list'
     PAGE_TITLE = _('Invoice List')
     date_field = 'date'
     paginate_by = 20
@@ -220,7 +220,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  extra_tags='is-info')
 
         if not item_formset:
-            invoice_item_qs = invoice_model.itemthroughmodel_set.all().select_related('item_model')
+            invoice_item_qs = invoice_model.itemtransactionmodel_set.all().select_related('item_model')
             invoice_item_qs, item_data = invoice_model.get_invoice_item_data(queryset=invoice_item_qs)
             InvoiceItemFormset = get_invoice_item_formset(invoice_model)
             item_formset = InvoiceItemFormset(
@@ -249,7 +249,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         return InvoiceModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related('itemthroughmodel_set').select_related(
+        ).prefetch_related('itemtransactionmodel_set').select_related(
             'ledger', 'customer')
 
     def form_valid(self, form):
@@ -467,7 +467,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'itemthroughmodel_set'
+            'itemtransactionmodel_set'
         ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
 
 

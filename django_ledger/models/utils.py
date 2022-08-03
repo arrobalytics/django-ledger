@@ -18,7 +18,7 @@ class LazyLoader:
     TXS_MODEL = None
     JE_MODEL = None
     ITEM_MODEL = None
-    ITEM_THROUGH_MODEL = None
+    ITEM_TRANSACTION_MODEL = None
     CUSTOMER_MODEL = None
     INVOICE_MODEL = None
     BILL_MODEL = None
@@ -82,11 +82,11 @@ class LazyLoader:
             self.ITEM_MODEL = ItemModel
         return self.ITEM_MODEL
 
-    def get_item_through_model(self):
-        if not self.ITEM_THROUGH_MODEL:
-            from django_ledger.models import ItemThroughModel
-            self.ITEM_THROUGH_MODEL = ItemThroughModel
-        return self.ITEM_THROUGH_MODEL
+    def get_item_transaction_model(self):
+        if not self.ITEM_TRANSACTION_MODEL:
+            from django_ledger.models import ItemTransactionModel
+            self.ITEM_TRANSACTION_MODEL = ItemTransactionModel
+        return self.ITEM_TRANSACTION_MODEL
 
     def get_customer_model(self):
         if not self.CUSTOMER_MODEL:
