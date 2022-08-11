@@ -4,7 +4,7 @@ django-filter==21.1; python_version >= '3.6'
 django-graphql-auth[graphql]==0.3.7
 django-graphql-jwt==0.3.4; python_version >= '3.6' and python_version < '4'
 django-treebeard==4.5.1
-django==4.0.4
+django==3.2.15
 faker==8.16.0
 graphene-django[graphql]==3.0.0b7
 graphene==3.0

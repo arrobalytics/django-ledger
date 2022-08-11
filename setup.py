@@ -16,7 +16,7 @@ setup(
     description="Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, "
                 + "Chart of Accounts, Entities",
     include_package_data=True,
-    install_requires=['aniso8601==7.0.0', "asgiref==3.5.2; python_version >= '3.7'", 'django==3.2.13',
+    install_requires=['aniso8601==7.0.0', "asgiref==3.5.2; python_version >= '3.7'", 'django==3.2.15',
                       "django-filter==22.1; python_version >= '3.7'", 'django-graphql-auth[graphql]==0.3.16',
                       "django-graphql-jwt==0.3.0; python_version >= '3.6' and python_version < '4'",
                       'django-treebeard==4.5.1', 'faker==8.16.0', 'graphene==2.1.9', 'graphene-django[graphql]==2.15.0',
