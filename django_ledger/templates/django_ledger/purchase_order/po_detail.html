@@ -46,53 +46,11 @@
                 <div class="column is-12">
                     <h3 class="is-size-3 has-text-weight-light">{{ po_model.po_title }}</h3>
                 </div>
+
                 <div class="column is-12">
-                    <div class="table-container">
-                        <table class="table is-fullwidth is-striped is-narrow is-bordered">
-                            <thead>
-                            <tr class="has-text-centered">
-                                <th>{% trans 'Item' %}</th>
-                                <th>{% trans 'PO Qty' %}</th>
-                                <th>{% trans 'Unit Cost' %}</th>
-                                <th>{% trans 'Amount' %}</th>
-                                <th>{% trans 'Status' %}</th>
-                                <th>{% trans 'Billed' %}</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for item in po_items %}
-                                <tr>
-                                    <td>{{ item.item_model }}</td>
-                                    <td class="has-text-centered">{{ item.po_quantity }}</td>
-                                    <td class="has-text-centered">{{ item.po_unit_cost }}</td>
-                                    <td class="{% if item.is_cancelled %}djl-is-strikethrough{% endif %} has-text-centered">
-                                        {% currency_symbol %}{{ item.po_total_amount | currency_format }}</td>
-                                    <td class="has-text-weight-bold has-text-centered {% if item.is_cancelled %}has-text-danger{% endif %}">
-                                        {% if item.po_item_status %}
-                                            {{ item.get_po_item_status_display }}
-                                        {% endif %}
-                                    </td>
-                                    <td class="has-text-centered">{% if item.bill_model_id %}
-                                        <a class="is-small is-info button"
-                                           href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=item.bill_model_id %}">View Bill</a>{% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                            <tfoot>
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td class="has-text-right">{% trans 'Total PO Amount' %}</td>
-                                <td class="has-text-weight-bold has-text-centered">
-                                    {% currency_symbol %}{{ po_total_amount | currency_format }}</td>
-                                <td></td>
-                                <td></td>
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
+                    {% po_item_table po_items %}
                 </div>
+
                 <div class=" column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='PO Notes' notes_html=po_model.notes_html %}
                 </div>

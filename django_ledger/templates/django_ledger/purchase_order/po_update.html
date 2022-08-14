@@ -58,11 +58,11 @@
                                         <th></th>
                                         <th></th>
                                         <th></th>
-                                        <th>{% currency_symbol %}{{ ce_cost_estimate_total | currency_format }}</th>
+                                        <th>{% currency_symbol %}{{ ce_cost_estimate__sum | currency_format }}</th>
                                     </tr>
                                     </tfoot>
                                     <tbody>
-                                    {% for i in ce_itemtransaction_agg %}
+                                    {% for i in ce_itemtxs_agg %}
                                         <tr>
                                             <td>{{ i.item_model__name }}</td>
                                             <td>{{ i.ce_quantity__sum }}</td>
@@ -81,7 +81,7 @@
             <div class="column is-12">
                 <div class="card">
                     <div class="card-content">
-                        {% po_item_formset_table item_formset %}
+                        {% po_item_formset_table po_model itemtxs_formset %}
                     </div>
                 </div>
             </div>

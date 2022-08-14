@@ -1,7 +1,7 @@
 {% load trans from i18n %}
 {% load django_ledger %}
 
-<form action="{% url 'django_ledger:po-update-items' entity_slug=entity_slug po_pk=po_pk %}"
+<form action="{% url 'django_ledger:po-update-items' entity_slug=entity_slug po_pk=po_model.uuid %}"
       method="post">
     <div class="columns is-multiline">
         <div class="column is-12">
@@ -10,8 +10,8 @@
         <div class="column is-12">
             <div class="table-container">
                 {% csrf_token %}
-                {{ item_formset.non_form_errors }}
-                {{ item_formset.management_form }}
+                {{ itemtxs_formset.non_form_errors }}
+                {{ itemtxs_formset.management_form }}
                 <table class="table is-fullwidth is-narrow is-striped1 is-bordered">
                     <thead>
                     <tr>
@@ -21,7 +21,7 @@
                         <th>{% trans 'Unit' %}</th>
                         <th>{% trans 'Amount' %}</th>
                         <th>{% trans 'Status' %}</th>
-                        {% if item_formset.can_delete %}
+                        {% if itemtxs_formset.can_delete %}
                             <th>{% trans 'Delete' %}</th>
                         {% endif %}
                         <th>{% trans 'Create Bill' %}</th>
@@ -29,7 +29,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for f in item_formset %}
+                    {% for f in itemtxs_formset %}
                         <tr>
                             <td>
                                 {% for hidden_field in f.hidden_fields %}
@@ -47,7 +47,7 @@
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.po_total_amount | currency_format }}</td>
                             <td>{{ f.po_item_status }}</td>
-                            {% if item_formset.can_delete %}
+                            {% if itemtxs_formset.can_delete %}
                                 <td class="has-text-centered">
                                     {{ f.DELETE }}
                                 </td>
@@ -82,9 +82,9 @@
                         <th></th>
                         <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>
-                        <th class="has-text-right">{% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ po_model.po_amount | currency_format }}</th>
                         <th></th>
-                        {% if item_formset.can_delete %}
+                        {% if itemtxs_formset.can_delete %}
                             <th></th>
                         {% endif %}
                         <th></th>

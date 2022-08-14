@@ -9,9 +9,9 @@
             <th>{% trans 'Entity Unit' %}</th>
             <th>{% trans 'Quantity' %}</th>
             <th>{% trans 'Unit Cost' %}</th>
-            <th>{% trans 'Sale Price' %}</th>
-            <th>{% trans 'Total Cost' %}</th>
-            <th>{% trans 'Total Revenue' %}</th>
+            <th>{% trans 'Unit Sale Price' %}</th>
+            <th>{% trans 'Total Cost Estimate' %}</th>
+            <th>{% trans 'Total Revenue Estimate' %}</th>
         </tr>
         </thead>
         <tbody>
@@ -20,11 +20,11 @@
                 <td>{{ ce_item.item_model }}</td>
                 <td>{% if ce_item.entity_unit %}
                     {{ ce_item.entity_unit }}{% endif %}</td>
-                <td>{{ ce_item.quantity }}</td>
-                <td>{% currency_symbol %}{{ ce_item.unit_cost | currency_format }}</td>
+                <td>{{ ce_item.ce_quantity }}</td>
+                <td>{% currency_symbol %}{{ ce_item.ce_unit_cost_estimate | currency_format }}</td>
                 <td>
                     {% currency_symbol %}{{ ce_item.ce_unit_revenue_estimate | currency_format }}</td>
-                <td>{% currency_symbol %}{{ ce_item.total_amount | currency_format }}</td>
+                <td>{% currency_symbol %}{{ ce_item.ce_cost_estimate | currency_format }}</td>
                 <td>
                     {% currency_symbol %}{{ ce_item.ce_revenue_estimate | currency_format }}</td>
             </tr>

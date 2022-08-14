@@ -15,6 +15,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
+from django.db.models.functions import Coalesce
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -216,13 +217,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'Bill {self.bill_number} account adjustment.'
 
-    def get_itemthrough_data(self, queryset=None) -> tuple:
+    def get_itemtxs_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemtransactionmodel_set.select_related(
-                'item_model', 'po_model', 'bill_model').all()
+            queryset = self.itemtransactionmodel_set.select_related('item_model', 'po_model', 'bill_model').all()
         return queryset, queryset.aggregate(
-            amount_due=Sum('total_amount'),
+            Sum('total_amount'),
             total_items=Count('uuid')
         )
 
@@ -244,14 +244,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
             account_unit_total=Sum('total_amount')
         )
 
-    def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
-        if item_list:
+    def update_amount_due(self, itemtxs_qs=None, itemtxs_list: list = None) -> None or tuple:
+        if itemtxs_list:
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = round(sum(a.total_amount for a in item_list), 2)
+            self.amount_due = round(sum(a.total_amount for a in itemtxs_list), 2)
             return
-        queryset, item_data = self.get_itemthrough_data(queryset=queryset)
-        self.amount_due = round(item_data['amount_due'], 2)
-        return queryset, item_data
+        itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+        self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
+        return itemtxs_qs, itemtxs_agg
 
     # State
     def is_draft(self):
@@ -324,6 +324,19 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return all([
             is_approved
         ])
+
+    def can_bind_po(self, po_model, raise_exception: bool = False):
+        if not po_model.is_approved():
+            if raise_exception:
+                raise ValidationError(f'Cannot bind an unapproved PO.')
+            return False
+
+        if po_model.approved_date > self.draft_date:
+            if raise_exception:
+                raise ValidationError(f'Approved PO date cannot be greater than Bill draft date.')
+            return False
+
+        return True
 
     # --> ACTIONS <---
     def action_bind_estimate(self, estimate_model, commit: bool = False):
@@ -414,22 +427,24 @@ class BillModelAbstract(LedgerWrapperMixIn,
                          user_model,
                          approved_date: date = None,
                          commit: bool = False,
+                         force_migrate: bool = False,
                          **kwargs):
         if not self.can_approve():
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as in approved.'
             )
-        self.amount_paid = self.amount_due
         self.bill_status = self.BILL_STATUS_APPROVED
         self.approved_date = localdate() if not approved_date else approved_date
         self.new_state(commit=True)
         self.clean()
         if commit:
-            self.migrate_state(
-                entity_slug=entity_slug,
-                user_model=user_model,
-                je_date=approved_date,
-            )
+            if force_migrate:
+                # normally no transactions will be present when marked as approved...
+                self.migrate_state(
+                    entity_slug=entity_slug,
+                    user_model=user_model,
+                    je_date=approved_date,
+                )
             self.ledger.post(commit=commit)
             self.save(update_fields=[
                 'bill_status',
@@ -474,7 +489,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                      user_model,
                      entity_slug: str,
                      date_paid: date = None,
-                     itemthrough_queryset=None,
+                     itemtxs_queryset=None,
                      commit: bool = False,
                      **kwargs):
         if not self.can_pay():
@@ -494,8 +509,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.new_state(commit=True)
         self.clean()
 
-        if not itemthrough_queryset:
-            itemthrough_queryset = self.itemtransactionmodel_set.all()
+        if not itemtxs_queryset:
+            itemtxs_queryset = self.itemtransactionmodel_set.all()
 
         if commit:
             self.save(update_fields=[
@@ -505,13 +520,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 'bill_status',
                 'updated'
             ])
-            ItemThroughModel = lazy_loader.get_item_transaction_model()
-            # update this field only if there's a PO assigned
-            itemthrough_queryset.update(po_item_status=ItemThroughModel.STATUS_ORDERED)
+
+            ItemTransactionModel = lazy_loader.get_item_transaction_model()
+            # todo: update this field only if there's a PO assigned
+            itemtxs_queryset.update(po_item_status=ItemTransactionModel.STATUS_ORDERED)
             self.migrate_state(
                 user_model=user_model,
                 entity_slug=entity_slug,
-                itemthrough_queryset=itemthrough_queryset,
+                itemtxs_qs=itemtxs_queryset,
                 je_date=date_paid,
                 force_migrate=True
             )
@@ -578,22 +594,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 'bill_status',
                 'canceled_date'
             ])
-
-        # self.void_date = void_date if void_date else localdate()
-        # self.bill_status = self.BILL_STATUS_VOID
-        # self.void_state(commit=True)
-        # self.clean()
-        #
-        # if commit:
-        #     self.unlock_ledger(commit=True, raise_exception=False)
-        #     self.migrate_state(
-        #         entity_slug=entity_slug,
-        #         user_model=user_model,
-        #         void=True,
-        #         void_date=self.void_date,
-        #         force_migrate=True)
-        #     self.save()
-        #     self.lock_ledger(commit=True, raise_exception=False)
 
     def get_mark_as_canceled_html_id(self):
         return f'djl-{self.uuid}-mark-as-canceled'

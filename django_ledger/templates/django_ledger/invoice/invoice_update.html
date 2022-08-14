@@ -16,19 +16,19 @@
                     {% csrf_token %}
                     {{ form }}
                     <button type="submit"
-                            class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save Bill' %}</button>
+                            class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save Invoice' %}</button>
 
                     <a href="{% url 'django_ledger:invoice-detail' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
-                       class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to Bill Detail' %}</a>
+                       class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to Invoice Detail' %}</a>
                     <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                       class="button is-small is-info is-fullwidth mt-2">{% trans 'Bill List' %}</a>
+                       class="button is-small is-info is-fullwidth mt-2">{% trans 'Invoice List' %}</a>
                     <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
                        class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
 
                 </form>
             </div>
             <div class="column is-12">
-                {% invoice_item_formset_table item_formset %}
+                {% invoice_item_formset_table itemtxs_formset %}
             </div>
 
             {% if invoice.is_configured %}

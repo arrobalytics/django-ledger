@@ -95,8 +95,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
-    # todo: remove PO date from model in favor of state dates... (draft)...
-    po_date = models.DateField(verbose_name=_('Purchase Order Date'), null=True, blank=True)
     po_title = models.CharField(max_length=250,
                                 verbose_name=_('Purchase Order Title'),
                                 validators=[
@@ -159,7 +157,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def configure(self,
                   entity_slug: str or EntityModel,
                   user_model,
-                  po_date: date = None):
+                  draft_date: date = None):
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
                 user_model=user_model)
@@ -170,13 +168,15 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
         self.po_number = generate_po_number()
-        if po_date:
-            self.po_date = po_date
+        if draft_date:
+            self.draft_date = draft_date
+        else:
+            self.draft_date = localdate()
         self.entity = entity_model
         return self
 
     # State Update...
-    def get_itemtransaction_data(self, queryset: QuerySet = None) -> Tuple:
+    def get_itemtxs_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
             # pylint: disable=no-member
             queryset = self.itemtransactionmodel_set.all().select_related('bill_model', 'item_model')
@@ -198,7 +198,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.po_amount = round(sum(a.po_total_amount for a in itemtxs_list if not a.is_canceled()), 2)
             self.po_amount_received = round(sum(a.po_total_amount for a in itemtxs_list if a.is_received()), 2)
         else:
-            itemtxs_qs, itemtxs_agg = self.get_itemtransaction_data(queryset=itemtxs_qs)
+            itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
             total_po_amount = round(sum(i.po_total_amount for i in itemtxs_qs if not i.is_canceled()), 2)
             total_received = round(sum(i.po_total_amount for i in itemtxs_qs if i.is_received()), 2)
             self.po_amount = total_po_amount

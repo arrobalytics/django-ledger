@@ -549,12 +549,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
-    def get_invoice_item_data(self, queryset=None) -> tuple:
+    def get_itemtxs_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
             queryset = self.itemtransactionmodel_set.all().select_related('item_model')
         return queryset, queryset.aggregate(
-            amount_due=Sum('total_amount'),
+            Sum('total_amount'),
             total_items=Count('uuid')
         )
 
@@ -583,14 +583,14 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
-        if item_list:
+    def update_amount_due(self, itemtxs_qs=None, itemtxs_list: list = None) -> None or tuple:
+        if itemtxs_list:
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = round(sum(a.total_amount for a in item_list), 2)
+            self.amount_due = round(sum(a.total_amount for a in itemtxs_list), 2)
             return
-        queryset, item_data = self.get_invoice_item_data(queryset=queryset)
-        self.amount_due = round(item_data['amount_due'], 2)
-        return queryset, item_data
+        itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+        self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
+        return itemtxs_qs, itemtxs_agg
 
     # def mark_as_paid(self,
     #                  user_model,

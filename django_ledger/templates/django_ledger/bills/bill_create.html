@@ -19,8 +19,8 @@
                                 <div class="column is-12 has-text-centered">
                                     <h2 class="title">{% trans 'Bill for' %} {{ po_model.po_number }}</h2>
                                     <h3 class="subtitle has-text-weight-light">{% trans 'Bill for' %} {{ po_model.po_title }}</h3>
-                                    {% for po_item in po_items %}
-                                        <p>{{ po_item }}</p>
+                                    {% for itemtxs in po_itemtxs_qs %}
+                                        <p>{{ itemtxs }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}

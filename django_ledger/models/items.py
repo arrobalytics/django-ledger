@@ -86,7 +86,7 @@ class ItemModelManager(models.Manager):
                     Q(entity__managers__in=[user_model]) |
                     Q(entity__admin=user_model)
             )
-        )
+        ).select_related('uom')
 
     def for_entity_active(self, entity_slug: str, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
@@ -107,23 +107,21 @@ class ItemModelManager(models.Manager):
         )
 
     def inventory(self, entity_slug: str, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(for_inventory=True).select_related('uom')
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(for_inventory=True)
 
     def for_bill(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
-            Q(is_product_or_service=False, for_inventory=False) |
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=False)
+            ) |
             Q(for_inventory=True)
         )
 
-    # todo: check if this is correct!....
     def for_po(self, entity_slug: str, user_model):
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            Q(is_product_or_service=True) |
-            Q(for_inventory=True)
-        )
+        return self.inventory(entity_slug=entity_slug, user_model=user_model)
 
     def for_estimate(self, entity_slug: str, user_model):
         return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
@@ -133,7 +131,8 @@ class ItemModelManager(models.Manager):
             entity_slug=entity_slug,
             user_model=user_model
         )
-        return qs.filter(itemtransactionmodel__ce_model_id=ce_model_uuid)
+        qs = qs.filter(itemtransactionmodel__ce_model_id=ce_model_uuid)
+        return qs.distinct('uuid')
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -633,17 +632,17 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     def __str__(self):
         # pylint: disable=no-member
 
-        amount = f'{currency_symbol}{self.total_amount}'
+        # amount = f'{currency_symbol}{self.total_amount}'
         if self.po_model_id:
             po_status_display = self.get_po_item_status_display()
-            return f'PO Model: {self.po_model_id} | {po_status_display} | {amount}'
+            return f'PO Model: {self.po_model_id} | {po_status_display} | {self.po_total_amount}'
         elif self.bill_model_id:
-            return f'Bill Model: {self.bill_model_id} | {amount}'
+            return f'Bill Model: {self.bill_model_id} | {self.total_amount}'
         elif self.invoice_model_id:
-            return f'Invoice Model: {self.invoice_model_id} | {amount}'
+            return f'Invoice Model: {self.invoice_model_id} | {self.total_amount}'
         elif self.ce_model_id:
-            return f'Estimate/Contract Model: {self.ce_model_id} | {amount}'
-        return f'Orphan {self.__class__.__name__}: {self.uuid} | {amount}'
+            return f'Estimate/Contract Model: {self.ce_model_id} | {self.ce_cost_estimate}'
+        return f'Orphan {self.__class__.__name__}: {self.uuid}'
 
     def is_received(self):
         return self.po_item_status == self.STATUS_RECEIVED
@@ -682,14 +681,18 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
 
     # TRANSACTIONS...
     def update_total_amount(self):
-        if self.for_bill() or self.for_invoice():
+        if any([
+            self.for_bill(),
+            self.for_invoice(),
+            self.for_po()
+        ]):
             if self.quantity is None:
                 self.quantity = 0.0
 
             if self.unit_cost is None:
                 self.unit_cost = 0.0
 
-            total_amount = round(
+            self.total_amount = round(
                 Decimal.from_float(self.quantity * self.unit_cost), self.DECIMAL_PLACES
             )
 
@@ -707,12 +710,10 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                     diff = self.total_amount - self.po_total_amount
                     if diff > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
                         raise ValidationError(
-                            f'Difference between PO Amount {self.po_total_amount} and Bill {total_amount} '
+                            f'Difference between PO Amount {self.po_total_amount} and Bill {self.total_amount} '
                             f'exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}')
                     self.total_amount = self.po_total_amount
                     return
-
-            self.total_amount = total_amount
 
     # PURCHASE ORDER...
     def update_po_total_amount(self):
@@ -724,7 +725,6 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
 
             self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost),
                                          self.DECIMAL_PLACES)
-
 
     # ESTIMATE/CONTRACTS...
     def update_cost_estimate(self):
@@ -741,7 +741,7 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             if self.ce_quantity is None:
                 self.ce_quantity = 0.00
             if self.ce_unit_revenue_estimate is None:
-                self.ce_unit_cost_estimate = 0.00
+                self.ce_unit_revenue_estimate = 0.00
             self.ce_revenue_estimate = Decimal.from_float(self.ce_quantity * self.ce_unit_revenue_estimate)
 
     # HTML TAGS...
@@ -774,10 +774,11 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
 
     def clean(self):
 
-        self.update_total_amount()
         self.update_po_total_amount()
         self.update_cost_estimate()
         self.update_revenue_estimate()
+
+        self.update_total_amount()
 
 
 # FINAL MODEL CLASSES....

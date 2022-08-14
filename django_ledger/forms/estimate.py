@@ -84,8 +84,8 @@ class EstimateItemModelForm(ModelForm):
         fields = [
             'item_model',
             'entity_unit',
-            'unit_cost',
             'ce_quantity',
+            'ce_unit_cost_estimate',
             'ce_unit_revenue_estimate',
         ]
         widgets = {
@@ -95,7 +95,7 @@ class EstimateItemModelForm(ModelForm):
             'entity_unit': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'unit_cost': TextInput(attrs={
+            'ce_unit_cost_estimate': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'ce_unit_revenue_estimate': TextInput(attrs={
@@ -132,7 +132,7 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
 
             if not self.ESTIMATE_MODEL.can_update_items():
                 form.fields['item_model'].disabled = True
-                form.fields['unit_cost'].disabled = True
+                form.fields['ce_unit_cost_estimate'].disabled = True
                 form.fields['ce_quantity'].disabled = True
                 form.fields['ce_unit_revenue_estimate'].disabled = True
                 form.fields['entity_unit'].disabled = True

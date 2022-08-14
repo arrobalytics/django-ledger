@@ -136,7 +136,7 @@
                 {% if invoice.can_pay %}
                     <a onclick="djLedger.toggleModal('{{ invoice.get_mark_as_paid_html_id }}')"
                        id="{{ invoice.get_mark_as_paid_html_id }}-button"
-                       class="card-footer-item has-text-info has-text-centered has-text-success">{% trans 'Pay' %}</a>
+                       class="card-footer-item has-text-info has-text-centered has-text-success">{% trans 'Mark as Paid' %}</a>
                     {# MARK AS PAID MODAL #}
                     {% modal_action_v2 invoice invoice.get_mark_as_paid_url invoice.get_mark_as_paid_message invoice.get_mark_as_paid_html_id %}
                 {% endif %}

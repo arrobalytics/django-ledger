@@ -26,10 +26,6 @@ class PurchaseOrderModelCreateForm(ModelForm):
             'po_title',
         ]
         widgets = {
-            'po_date': DateInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('PO Date (YYYY-MM-DD)...')
-            }),
             'po_title': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
                 'placeholder': 'What this PO is about...'})
@@ -62,10 +58,6 @@ class BasePurchaseOrderModelUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Fulfillment Date (YYYY-MM-DD)...')
             }),
-            'po_date': DateInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('PO Date (YYYY-MM-DD)...')
-            }),
             'markdown_notes': Textarea(attrs={
                 'class': 'textarea'
             })
@@ -74,7 +66,6 @@ class BasePurchaseOrderModelUpdateForm(ModelForm):
             'po_status': _('PO Status'),
             'fulfilled': _('Mark as Fulfilled'),
             'markdown_notes': _('PO Notes'),
-            'po_date': _('Approved Date')
         }
 
 
@@ -96,13 +87,11 @@ class ReviewPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
 class ApprovedPurchaseOrderModelUpdateForm(BasePurchaseOrderModelUpdateForm):
     class Meta(BasePurchaseOrderModelUpdateForm.Meta):
         fields = [
-            # 'fulfillment_date',
-            'po_title',
             'markdown_notes',
         ]
 
 
-class PurchaseOrderItemForm(ModelForm):
+class PurchaseOrderItemTransactionForm(ModelForm):
     create_bill = BooleanField(required=False)
 
     class Meta:
@@ -134,7 +123,7 @@ class PurchaseOrderItemForm(ModelForm):
         }
 
     def clean(self):
-        cleaned_data = super(PurchaseOrderItemForm, self).clean()
+        cleaned_data = super(PurchaseOrderItemTransactionForm, self).clean()
         po_item_status = cleaned_data['po_item_status']
         po_item_model: ItemTransactionModel = self.instance
         if 'po_item_status' in self.changed_data:
@@ -165,25 +154,15 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         self.ENTITY_SLUG = entity_slug
         self.PO_MODEL = po_model
 
-        if self.PO_MODEL.is_contract_bound():
-            items_qs = ItemModel.objects.for_contract(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL,
-                ce_model_uuid=self.PO_MODEL.ce_model_id)
-        else:
-            items_qs = ItemModel.objects.for_po(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL
-            )
-
-        # self.PO_MODEL.is_contract_bound():
-        #     ce_model = self.PO_MODEL.ce_model.
+        items_qs = ItemModel.objects.for_po(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
 
         unit_qs = EntityUnitModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )
-
 
         for form in self.forms:
             form.PO_MODEL = self.PO_MODEL
@@ -202,20 +181,13 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
                 form.fields['po_item_status'].disabled = True
 
     def get_queryset(self):
-        po_item_queryset, _ = self.PO_MODEL.get_itemtransaction_data()
+        po_item_queryset, _ = self.PO_MODEL.get_itemtxs_data()
         return po_item_queryset
 
-CanDeletePurchaseOrderItemFormset = modelformset_factory(
-    model=ItemTransactionModel,
-    form=PurchaseOrderItemForm,
-    formset=BasePurchaseOrderItemFormset,
-    can_delete=True,
-    extra=5
-)
 
 CanEditPurchaseOrderItemFormset = modelformset_factory(
     model=ItemTransactionModel,
-    form=PurchaseOrderItemForm,
+    form=PurchaseOrderItemTransactionForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=True,
     extra=5
@@ -223,14 +195,15 @@ CanEditPurchaseOrderItemFormset = modelformset_factory(
 
 ReadOnlyPurchaseOrderItemFormset = modelformset_factory(
     model=ItemTransactionModel,
-    form=PurchaseOrderItemForm,
+    form=PurchaseOrderItemTransactionForm,
     formset=BasePurchaseOrderItemFormset,
     can_delete=False,
     extra=0
 )
 
 
-def get_po_item_formset(po_model: PurchaseOrderModel):
+# todo: incorporate this functionality into models...
+def get_po_itemtxs_formset_class(po_model: PurchaseOrderModel):
     if po_model.is_draft():
         return CanEditPurchaseOrderItemFormset
     return ReadOnlyPurchaseOrderItemFormset

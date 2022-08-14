@@ -264,7 +264,7 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
         }
 
 
-def get_invoice_item_formset(invoice_model: InvoiceModel):
+def get_bill_itemtxs_formset_class(invoice_model: InvoiceModel):
     can_delete = invoice_model.can_edit_items()
     return modelformset_factory(
         model=ItemTransactionModel,

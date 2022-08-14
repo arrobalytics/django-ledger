@@ -309,8 +309,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not self.can_review():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
 
-        itemthrough_qs = self.itemtransactionmodel_set.all()
-        if not itemthrough_qs.count():
+        itemtxs_qs = self.itemtransactionmodel_set.all()
+        if not itemtxs_qs.count():
             raise ValidationError(message='Cannot review an Estimate without items...')
         if not self.cost_estimate():
             raise ValidationError(message='Cost amount is zero!.')
@@ -476,12 +476,12 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             # pylint: disable=no-member
             queryset = self.itemtransactionmodel_set.select_related('item_model').all()
         return queryset, queryset.aggregate(
-            cost_estimate=Sum('total_amount'),
-            revenue_estimate=Sum('ce_revenue_estimate'),
+            Sum('ce_cost_estimate'),
+            Sum('ce_revenue_estimate'),
             total_items=Count('uuid')
         )
 
-    def get_itemtransaction_aggregate(self, queryset=None):
+    def get_itemtxs_aggregate(self, queryset=None):
         """
         Returns all ItemThroughModel associated with EstimateModel and a total aggregate by ItemModel.
         @param queryset: ItemThrough Queryset to use. If None a new queryset will be evaluated.

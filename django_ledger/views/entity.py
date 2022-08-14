@@ -92,7 +92,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
                 start_date=localdate() - timedelta(days=30 * 8),
                 capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
-                tx_quantity=50
+                tx_quantity=cleaned_data['tx_quantity']
             )
             entity_generator.populate_entity()
 

@@ -121,7 +121,6 @@ class EntityDataGenerator:
         count_inventory = True
 
         for i in range(self.tx_quantity):
-            print(i)
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
             self.create_estimates(date_draft=start_dttm)
 
@@ -443,7 +442,7 @@ class EntityDataGenerator:
         for bi in bill_items:
             bi.full_clean()
 
-        bill_model.update_amount_due(item_list=bill_items)
+        bill_model.update_amount_due(itemtxs_list=bill_items)
         bill_model.itemtransactionmodel_set.bulk_create(bill_items)
         bill_model.full_clean()
         bill_model.save()
@@ -549,7 +548,7 @@ class EntityDataGenerator:
                         po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                         po_i.full_clean()
 
-                    bill_model.update_amount_due(item_list=po_items)
+                    bill_model.update_amount_due(itemtxs_list=po_items)
                     bill_model.full_clean()
                     bill_model.update_state()
                     bill_model.save()
@@ -660,7 +659,7 @@ class EntityDataGenerator:
             invoice_items.append(itm)
 
         invoice_items = invoice_model.itemtransactionmodel_set.bulk_create(invoice_items)
-        invoice_model.update_amount_due(item_list=invoice_items)
+        invoice_model.update_amount_due(itemtxs_list=invoice_items)
         invoice_model.full_clean()
         invoice_model.save()
 

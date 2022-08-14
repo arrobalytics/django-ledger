@@ -6,19 +6,29 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import (ModelForm, TextInput, BooleanField, ValidationError,
+from django.forms import (ModelForm, TextInput, BooleanField, ValidationError, IntegerField,
                           EmailInput, URLInput, CheckboxInput, Select, Form)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class EntityModelCreateForm(ModelForm):
     default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
     activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))
     generate_sample_data = BooleanField(required=False, initial=False, label=_('Fill With Sample Data?'))
+    tx_quantity = IntegerField(required=True, initial=50, label=_('Number of Transaction Loops'),
+                               validators=[
+                                   MinValueValidator(limit_value=0),
+                                   MaxValueValidator(limit_value=100)
+                               ],
+                               widget=TextInput(attrs={
+                                   'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                               }))
+
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
