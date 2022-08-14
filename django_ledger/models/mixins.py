@@ -578,12 +578,6 @@ class LedgerWrapperMixIn(models.Model):
         if self.accrue and self.progress is None:
             self.progress = 0
 
-        # if self.terms != self.TERMS_ON_RECEIPT:
-        #     # pylint: disable=no-member
-        #     self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
-        # else:
-        #     self.due_date = self.date
-
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
 
@@ -596,9 +590,6 @@ class LedgerWrapperMixIn(models.Model):
                 self.paid_date = today
             if self.paid_date > today:
                 raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-            # if self.paid_date < self.date:
-            #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-            #                           f' date {self.date}.')
         else:
             self.paid_date = None
 
