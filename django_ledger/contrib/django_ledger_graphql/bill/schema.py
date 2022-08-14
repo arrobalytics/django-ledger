@@ -12,7 +12,7 @@ class BillNode(DjangoObjectType):
         filter_fields = {
             'vendor' : ['exact'],
             'xref' : ['exact', 'icontains', 'istartswith'],
-            'date' : ['exact', 'icontains', 'istartswith'],
+            'draft_date' : ['exact', 'icontains', 'istartswith'],
             'terms' : ['exact', 'icontains', 'istartswith'],
             'cash_account' : ['exact'],
             'prepaid_account' : ['exact'],

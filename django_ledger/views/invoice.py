@@ -8,7 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -31,7 +31,7 @@ class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/invoice/invoice_list.html'
     context_object_name = 'invoice_list'
     PAGE_TITLE = _('Invoice List')
-    date_field = 'date'
+    date_field = 'created'
     paginate_by = 20
     paginate_orphans = 2
     allow_empty = True

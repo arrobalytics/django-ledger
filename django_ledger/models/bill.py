@@ -24,7 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel
 from django_ledger.models import LazyLoader
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 
 lazy_loader = LazyLoader()
 
@@ -93,6 +93,7 @@ class BillModelManager(models.Manager):
 
 
 class BillModelAbstract(LedgerWrapperMixIn,
+                        PaymentTermsMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
     REL_NAME_PREFIX = 'bill'
@@ -449,6 +450,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             self.save(update_fields=[
                 'bill_status',
                 'approved_date',
+                'due_date',
                 'updated'
             ])
 
@@ -634,7 +636,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
                            'bill_pk': self.uuid
                        })
 
+    def get_terms_start_date(self) -> date:
+        return self.approved_date
+
     def clean(self):
+        super(LedgerWrapperMixIn, self).clean()
+        super(PaymentTermsMixIn, self).clean()
+
         if not self.bill_number:
             self.bill_number = generate_bill_number()
 
@@ -646,8 +654,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         if not self.additional_info:
             self.additional_info = dict()
-
-        super().clean()
 
 
 class BillModel(BillModelAbstract):

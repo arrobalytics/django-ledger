@@ -6,9 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, date
 from decimal import Decimal
 from itertools import groupby
+from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
@@ -86,24 +87,6 @@ class LedgerWrapperMixIn(models.Model):
         'di': 'debit',
     }
 
-    TERMS_ON_RECEIPT = 'on_receipt'
-    TERMS_NET_30 = 'net_30'
-    TERMS_NET_60 = 'net_60'
-    TERMS_NET_90 = 'net_90'
-    TERMS_NET_90_PLUS = 'net_90+'
-
-    TERMS = [
-        (TERMS_ON_RECEIPT, 'Due On Receipt'),
-        (TERMS_NET_30, 'Net 30 Days'),
-        (TERMS_NET_60, 'Net 60 Days'),
-        (TERMS_NET_90, 'Net 90 Days'),
-    ]
-
-    terms = models.CharField(max_length=10,
-                             default='on_receipt',
-                             choices=TERMS,
-                             verbose_name=_('Terms'))
-
     amount_due = models.DecimalField(default=0,
                                      max_digits=20,
                                      decimal_places=2,
@@ -131,8 +114,6 @@ class LedgerWrapperMixIn(models.Model):
                                         verbose_name=_('Amount Earned'),
                                         validators=[MinValueValidator(limit_value=0)])
 
-    date = models.DateField(verbose_name=_('Date'))
-    due_date = models.DateField(verbose_name=_('Due Date'))
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
     # todo: change progress method from percent to currency amount...
@@ -181,9 +162,6 @@ class LedgerWrapperMixIn(models.Model):
 
     def is_posted(self):
         return self.ledger.posted
-
-    def is_past_due(self):
-        return not self.is_paid() if self.is_paid() else self.due_date < localdate()
 
     # OTHERS...
     def get_progress(self):
@@ -470,7 +448,8 @@ class LedgerWrapperMixIn(models.Model):
 
             # difference between new vs current
             diff_idx = {
-                k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in idx_keys
+                k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in
+                idx_keys
             }
 
             # eliminates transactions with no amount...
@@ -561,31 +540,10 @@ class LedgerWrapperMixIn(models.Model):
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
 
-    def due_in_days(self):
-        td = self.due_date - localdate()
-        if td.days < 0:
-            return 0
-        return td.days
-
-    def net_due_group(self):
-        due_in = self.due_in_days()
-        if due_in == 0:
-            return self.TERMS_ON_RECEIPT
-        elif due_in <= 30:
-            return self.TERMS_NET_30
-        elif due_in <= 60:
-            return self.TERMS_NET_60
-        elif due_in <= 90:
-            return self.TERMS_NET_90
-        return self.TERMS_NET_90_PLUS
-
     def clean(self):
 
         if not self.amount_due:
             self.amount_due = 0
-
-        if not self.date:
-            self.date = localdate()
 
         if self.cash_account_id is None:
             raise ValidationError('Must provide a cash account.')
@@ -620,11 +578,11 @@ class LedgerWrapperMixIn(models.Model):
         if self.accrue and self.progress is None:
             self.progress = 0
 
-        if self.terms != self.TERMS_ON_RECEIPT:
-            # pylint: disable=no-member
-            self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
-        else:
-            self.due_date = self.date
+        # if self.terms != self.TERMS_ON_RECEIPT:
+        #     # pylint: disable=no-member
+        #     self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
+        # else:
+        #     self.due_date = self.date
 
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
@@ -657,6 +615,68 @@ class LedgerWrapperMixIn(models.Model):
 
         if self.can_migrate():
             self.update_state()
+
+
+class PaymentTermsMixIn(models.Model):
+    TERMS_ON_RECEIPT = 'on_receipt'
+    TERMS_NET_30 = 'net_30'
+    TERMS_NET_60 = 'net_60'
+    TERMS_NET_90 = 'net_90'
+    TERMS_NET_90_PLUS = 'net_90+'
+
+    TERMS = [
+        (TERMS_ON_RECEIPT, 'Due On Receipt'),
+        (TERMS_NET_30, 'Net 30 Days'),
+        (TERMS_NET_60, 'Net 60 Days'),
+        (TERMS_NET_90, 'Net 90 Days'),
+    ]
+
+    terms = models.CharField(max_length=10,
+                             default='on_receipt',
+                             choices=TERMS,
+                             verbose_name=_('Terms'))
+    due_date = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def get_terms_start_date(self) -> Optional[date]:
+        raise NotImplementedError(
+            f'Must implement get_terms_start_date() for {self.__class__.__name__}'
+        )
+
+    def due_in_days(self) -> Optional[int]:
+        if self.due_date:
+            td = self.due_date - localdate()
+            if td.days < 0:
+                return 0
+            return td.days
+
+    def net_due_group(self):
+        due_in = self.due_in_days()
+        if due_in == 0:
+            return self.TERMS_ON_RECEIPT
+        elif due_in <= 30:
+            return self.TERMS_NET_30
+        elif due_in <= 60:
+            return self.TERMS_NET_60
+        elif due_in <= 90:
+            return self.TERMS_NET_90
+        return self.TERMS_NET_90_PLUS
+
+    def is_past_due(self) -> bool:
+        if self.due_date:
+            return self.due_date < localdate()
+        return False
+
+    def clean(self):
+        terms_start_date = self.get_terms_start_date()
+        if terms_start_date:
+            if self.terms != self.TERMS_ON_RECEIPT:
+                # pylint: disable=no-member
+                self.due_date = terms_start_date + timedelta(days=int(self.terms.split('_')[-1]))
+            else:
+                self.due_date = terms_start_date
 
 
 class MarkdownNotesMixIn(models.Model):

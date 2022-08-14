@@ -39,8 +39,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
     class Meta:
         model = InvoiceModel
         fields = [
-            # 'customer',
-            'date',
             'terms',
             'cash_account',
             'prepaid_account',
@@ -51,11 +49,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         }
         widgets = {
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-
-            'date': DateInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Invoice Date (YYYY-MM-DD)...')
-            }),
             'amount_due': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': '$$$'}),
@@ -83,7 +76,7 @@ class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
     class Meta(InvoiceModelCreateForEstimateForm.Meta):
         fields = [
             'customer',
-            'date',
+            'draft_date',
             'terms',
             'cash_account',
             'prepaid_account',
