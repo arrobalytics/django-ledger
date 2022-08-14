@@ -25,7 +25,7 @@ urlpatterns = [
          views.PurchaseOrderModelUpdateView.as_view(),
          name='po-update'),
     path('<slug:entity_slug>/update/<uuid:po_pk>/update-items/',
-         views.PurchaseOrderModelUpdateView.as_view(update_items=True),
+         views.PurchaseOrderModelUpdateView.as_view(action_update_items=True),
          name='po-update-items'),
     path('<slug:entity_slug>/delete/<uuid:po_pk>/',
          views.PurchaseOrderModelDeleteView.as_view(),

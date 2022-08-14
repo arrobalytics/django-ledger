@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -17,8 +17,9 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, BasePurchaseOrderModelUpdateForm,
                                                 DraftPurchaseOrderModelUpdateForm, ReviewPurchaseOrderModelUpdateForm,
-                                                ApprovedPurchaseOrderModelUpdateForm, get_po_item_formset)
-from django_ledger.models import PurchaseOrderModel, ItemThroughModel, EstimateModel
+                                                ApprovedPurchaseOrderModelUpdateForm,
+                                                get_po_itemtxs_formset_class)
+from django_ledger.models import PurchaseOrderModel, ItemTransactionModel, EstimateModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
 
@@ -86,8 +87,6 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
             if not estimate_model.can_bind():
                 return HttpResponseNotFound('404 Not Found')
         return response
-
-
 
     def get_context_data(self, **kwargs):
         context = super(PurchaseOrderModelCreateView, self).get_context_data(**kwargs)
@@ -159,27 +158,73 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
     extra_context = {
         'header_subtitle_icon': 'uil:bill'
     }
-    update_items = False
+    action_update_items = False
+
+    def get_context_data(self, itemtxs_formset=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        po_model: PurchaseOrderModel = self.object
+        title = f'Purchase Order {po_model.po_number}'
+        context['page_title'] = title
+        context['header_title'] = title
+
+        # continue here: pass item QS to item_form...
+        if not itemtxs_formset:
+            itemtxs_qs = self.get_po_itemtxs_qs(po_model)
+            itemtxs_qs, itemtxs_agg = po_model.get_itemtxs_data(queryset=itemtxs_qs)
+            po_itemtxs_formset_class = get_po_itemtxs_formset_class(po_model)
+            itemtxs_formset = po_itemtxs_formset_class(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+                po_model=po_model,
+                queryset=itemtxs_qs,
+            )
+        else:
+            itemtxs_qs, itemtxs_agg = po_model.get_itemtxs_data()
+
+        context['po_total_amount__sum'] = itemtxs_agg['po_total_amount__sum']
+        context['bill_amount_paid__sum'] = itemtxs_agg['bill_amount_paid__sum']
+        context['itemtxs_qs'] = itemtxs_qs
+        context['itemtxs_formset'] = itemtxs_formset
+
+        if po_model.is_contract_bound():
+            ce_model: EstimateModel = po_model.ce_model
+            ce_itemtxs_qs, ce_itemtxs_agg = ce_model.get_itemtxs_aggregate()
+            context['ce_itemtxs_agg'] = ce_itemtxs_agg
+            context['ce_cost_estimate__sum'] = sum(i['ce_cost_estimate__sum'] for i in ce_itemtxs_agg)
+
+        return context
+
+    def get(self, request, entity_slug, po_pk, *args, **kwargs):
+        if self.action_update_items:
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:po-update',
+                                    kwargs={
+                                        'entity_slug': entity_slug,
+                                        'po_pk': po_pk
+                                    })
+            )
+        return super(PurchaseOrderModelUpdateView, self).get(request, entity_slug, po_pk, *args, **kwargs)
 
     def post(self, request, entity_slug, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        po_model: PurchaseOrderModel = self.object
-        if self.update_items:
-            PurchaseOrderItemFormset = get_po_item_formset(po_model)
-            po_item_formset: PurchaseOrderItemFormset = PurchaseOrderItemFormset(request.POST,
-                                                                                 user_model=self.request.user,
-                                                                                 po_model=po_model,
-                                                                                 entity_slug=entity_slug)
+        if self.action_update_items:
+            
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden()
+            
+            queryset = self.get_queryset()
+            po_model: PurchaseOrderModel = self.get_object(queryset=queryset)
+            self.object = po_model
+            po_itemtxs_formset_class = get_po_itemtxs_formset_class(po_model)
+            itemtxs_formset = po_itemtxs_formset_class(request.POST,
+                                                       user_model=self.request.user,
+                                                       po_model=po_model,
+                                                       entity_slug=entity_slug)
 
-            context = self.get_context_data(item_formset=po_item_formset)
-
-            # todo: revisit this workflow and conform to API
-            if po_item_formset.is_valid():
-                if po_item_formset.has_changed():
-
-                    po_items = po_item_formset.save(commit=False)
+            if itemtxs_formset.has_changed():
+                if itemtxs_formset.is_valid():
+                    itemtxs_list = itemtxs_formset.save(commit=False)
                     create_bill_uuids = [
-                        str(i['uuid'].uuid) for i in po_item_formset.cleaned_data if i and i['create_bill'] is True
+                        str(i['uuid'].uuid) for i in itemtxs_formset.cleaned_data if i and i['create_bill'] is True
                     ]
 
                     if create_bill_uuids:
@@ -194,18 +239,22 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                         redirect_url += f'?item_uuids={item_uuids}'
                         return HttpResponseRedirect(redirect_url)
 
-                    for item in po_items:
-                        if not item.po_model_id:
-                            item.po_model = po_model
-                    po_item_formset.save()
-                    # todo: check that update state methods are accepting queryset from formsets...
-                    po_model.update_po_state(item_queryset=po_item_formset.queryset)
+                    for itemtxs in itemtxs_list:
+                        if not itemtxs.po_model_id:
+                            itemtxs.po_model_id = po_model.uuid
+                        itemtxs.clean()
+
+                    itemtxs_list = itemtxs_formset.save()
+                    po_model.update_po_state()
                     po_model.clean()
                     po_model.save(update_fields=['po_amount',
                                                  'po_amount_received',
                                                  'updated'])
-            return self.render_to_response(context)
-        return response
+                    # if valid get saved formset from DB
+                    return self.render_to_response(context=self.get_context_data())
+                # if not valid, return formset with errors...
+                return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
+        return super(PurchaseOrderModelUpdateView, self).post(request, **kwargs)
 
     def get_form(self, form_class=None):
         po_model: PurchaseOrderModel = self.object
@@ -234,39 +283,13 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
         )
 
     def get_form_kwargs(self):
-        if self.update_items:
+        if self.action_update_items:
             return {
                 'initial': self.get_initial(),
                 'prefix': self.get_prefix(),
                 'instance': self.object
             }
         return super(PurchaseOrderModelUpdateView, self).get_form_kwargs()
-
-    def get_context_data(self, *, object_list=None, item_formset=None, **kwargs):
-        context = super().get_context_data(object_list=object_list, **kwargs)
-        po_model: PurchaseOrderModel = self.object
-        title = f'Purchase Order {po_model.po_number}'
-        context['page_title'] = title
-        context['header_title'] = title
-        if not item_formset:
-            po_item_queryset, item_data = po_model.get_po_item_data(
-                queryset=po_model.itemthroughmodel_set.select_related('bill_model', 'po_model').order_by(
-                    'created'
-                )
-            )
-            PurchaseOrderItemFormset = get_po_item_formset(po_model)
-            context['item_formset'] = PurchaseOrderItemFormset(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
-                po_model=po_model,
-                queryset=po_item_queryset,
-            )
-            context['total_amount_due'] = item_data['amount_due']
-            context['total_paid'] = item_data['total_paid']
-        else:
-            context['item_formset'] = item_formset
-            context['total_amount_due'] = po_model.po_amount
-        return context
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
@@ -281,13 +304,16 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
         return PurchaseOrderModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('entity')
+        ).select_related('entity', 'ce_model')
+
+    def get_po_itemtxs_qs(self, po_model: PurchaseOrderModel):
+        return po_model.itemtransactionmodel_set.select_related('bill_model', 'po_model').order_by('created')
 
     def form_valid(self, form: BasePurchaseOrderModelUpdateForm):
         po_model: PurchaseOrderModel = form.save(commit=False)
 
         if form.has_changed():
-            po_items_qs = ItemThroughModel.objects.for_po(
+            po_items_qs = ItemTransactionModel.objects.for_po(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 po_pk=po_model.uuid,
@@ -295,7 +321,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
 
             if all(['po_status' in form.changed_data,
                     po_model.po_status == po_model.PO_STATUS_APPROVED]):
-                po_items_qs.update(po_item_status=ItemThroughModel.STATUS_NOT_ORDERED)
+                po_items_qs.update(po_item_status=ItemTransactionModel.STATUS_NOT_ORDERED)
 
             if 'fulfilled' in form.changed_data:
 
@@ -316,7 +342,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                                              extra_tags='is-success')
                         return self.get(self.request)
 
-                po_items_qs.update(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+                po_items_qs.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
         messages.add_message(self.request,
                              messages.SUCCESS,
@@ -344,8 +370,8 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = title
 
         po_model: PurchaseOrderModel = self.object
-        po_items_qs, item_data = po_model.get_po_item_data(
-            queryset=po_model.itemthroughmodel_set.all().select_related('item_model')
+        po_items_qs, item_data = po_model.get_itemtxs_data(
+            queryset=po_model.itemtransactionmodel_set.all().select_related('item_model')
         )
         context['po_items'] = po_items_qs
         context['po_total_amount'] = sum(
@@ -392,7 +418,7 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
     def delete(self, request, *args, **kwargs):
         po_model: PurchaseOrderModel = self.get_object()
         self.object = po_model
-        po_items_qs = po_model.itemthroughmodel_set.filter(bill_model__isnull=False)
+        po_items_qs = po_model.itemtransactionmodel_set.filter(bill_model__isnull=False)
         if po_items_qs.exists():
             messages.add_message(request,
                                  message=f'Cannot delete {po_model.po_number} because it has related bills.',

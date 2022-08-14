@@ -6,9 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict
-from datetime import timedelta
+from datetime import timedelta, date
 from decimal import Decimal
 from itertools import groupby
+from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
@@ -86,24 +87,6 @@ class LedgerWrapperMixIn(models.Model):
         'di': 'debit',
     }
 
-    TERMS_ON_RECEIPT = 'on_receipt'
-    TERMS_NET_30 = 'net_30'
-    TERMS_NET_60 = 'net_60'
-    TERMS_NET_90 = 'net_90'
-    TERMS_NET_90_PLUS = 'net_90+'
-
-    TERMS = [
-        (TERMS_ON_RECEIPT, 'Due On Receipt'),
-        (TERMS_NET_30, 'Net 30 Days'),
-        (TERMS_NET_60, 'Net 60 Days'),
-        (TERMS_NET_90, 'Net 90 Days'),
-    ]
-
-    terms = models.CharField(max_length=10,
-                             default='on_receipt',
-                             choices=TERMS,
-                             verbose_name=_('Terms'))
-
     amount_due = models.DecimalField(default=0,
                                      max_digits=20,
                                      decimal_places=2,
@@ -131,8 +114,6 @@ class LedgerWrapperMixIn(models.Model):
                                         verbose_name=_('Amount Earned'),
                                         validators=[MinValueValidator(limit_value=0)])
 
-    date = models.DateField(verbose_name=_('Date'))
-    due_date = models.DateField(verbose_name=_('Due Date'))
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
     # todo: change progress method from percent to currency amount...
@@ -181,9 +162,6 @@ class LedgerWrapperMixIn(models.Model):
 
     def is_posted(self):
         return self.ledger.posted
-
-    def is_past_due(self):
-        return not self.is_paid() if self.is_paid() else self.due_date < localdate()
 
     # OTHERS...
     def get_progress(self):
@@ -316,216 +294,220 @@ class LedgerWrapperMixIn(models.Model):
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
-                      itemthrough_queryset: QuerySet = None,
+                      itemtxs_qs: QuerySet = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
                       je_date: date = None,
+                      raise_exception: bool = True,
                       **kwargs):
 
         # todo: add migration logic if ledger is locked...
-        if not self.can_migrate() and not force_migrate:
-            raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+        if self.can_migrate() or force_migrate:
 
-        # getting current ledger state
-        # pylint: disable=no-member
-        txs_qs, txs_digest = self.ledger.digest(
-            user_model=user_model,
-            process_groups=True,
-            process_roles=False,
-            process_ratios=False,
-            signs=False,
-            by_unit=True
-        )
-
-        digest_data = txs_digest['tx_digest']['accounts']
-
-        # Index (account_uuid, unit_uuid, balance_type, role)
-        current_ledger_state = {
-            (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
-            # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
-        }
-
-        item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemthrough_queryset))
-        cogs_adjustment = defaultdict(lambda: Decimal('0.00'))
-        inventory_adjustment = defaultdict(lambda: Decimal('0.00'))
-        progress = self.get_progress()
-
-        if isinstance(self, lazy_loader.get_bill_model()):
-
-            for item in item_data:
-                account_uuid_expense = item.get('item_model__expense_account__uuid')
-                account_uuid_inventory = item.get('item_model__inventory_account__uuid')
-                if account_uuid_expense:
-                    item['account_uuid'] = account_uuid_expense
-                    item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
-                elif account_uuid_inventory:
-                    item['account_uuid'] = account_uuid_inventory
-                    item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
-
-        elif isinstance(self, lazy_loader.get_invoice_model()):
-
-            for item in item_data:
-
-                account_uuid_earnings = item.get('item_model__earnings_account__uuid')
-                account_uuid_cogs = item.get('item_model__cogs_account__uuid')
-                account_uuid_inventory = item.get('item_model__inventory_account__uuid')
-
-                if account_uuid_earnings:
-                    item['account_uuid'] = account_uuid_earnings
-                    item['account_balance_type'] = item.get('item_model__earnings_account__balance_type')
-
-                if account_uuid_cogs and account_uuid_inventory:
-
-                    try:
-                        irq = item.get('item_model__inventory_received')
-                        irv = item.get('item_model__inventory_received_value')
-                        tot_amt = 0
-                        if irq is not None and irv is not None and irq != 0:
-                            qty = item.get('quantity', Decimal('0.00'))
-                            if not isinstance(qty, Decimal):
-                                qty = Decimal.from_float(qty)
-                            cogs_unit_cost = irv / irq
-                            tot_amt = round(cogs_unit_cost * qty, 2)
-                    except ZeroDivisionError:
-                        tot_amt = 0
-
-                    if tot_amt != 0:
-                        # keeps track of necessary transactions to increase COGS account...
-                        cogs_adjustment[(
-                            account_uuid_cogs,
-                            item.get('entity_unit__uuid'),
-                            item.get('item_model__cogs_account__balance_type')
-                        )] += tot_amt * progress
-
-                        # keeps track of necessary transactions to reduce inventory account...
-                        inventory_adjustment[(
-                            account_uuid_inventory,
-                            item.get('entity_unit__uuid'),
-                            item.get('item_model__inventory_account__balance_type')
-                        )] -= tot_amt * progress
-
-        item_data_gb = groupby(item_data,
-                               key=lambda a: (a['account_uuid'],
-                                              a['entity_unit__uuid'],
-                                              a['account_balance_type']))
-
-        # scaling down item amount based on progress...
-        progress_item_idx = {
-            idx: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for idx, ad in item_data_gb
-        }
-
-        # tuple ( unit_uuid, total_amount ) sorted by uuid...
-        # sorting before group by...
-        ua_gen = list((k[1], v) for k, v in progress_item_idx.items())
-        ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
-
-        unit_amounts = {
-            u: sum(a[1] for a in l) for u, l in groupby(ua_gen, key=lambda x: x[0])
-        }
-        total_amount = sum(unit_amounts.values())
-
-        # { unit_uuid: float (percent) }
-        unit_percents = {
-            k: (v / total_amount) if progress and total_amount else Decimal('0.00') for k, v in unit_amounts.items()
-        }
-
-        if not void:
-            new_state = self.new_state(commit=commit)
-        else:
-            new_state = self.void_state(commit=commit)
-
-        amount_paid_split = self.split_amount(
-            amount=new_state['amount_paid'],
-            unit_split=unit_percents,
-            account_uuid=self.cash_account_id,
-            account_balance_type='debit'
-        )
-        amount_prepaid_split = self.split_amount(
-            amount=new_state['amount_receivable'],
-            unit_split=unit_percents,
-            account_uuid=self.prepaid_account_id,
-            account_balance_type='debit'
-        )
-        amount_unearned_split = self.split_amount(
-            amount=new_state['amount_unearned'],
-            unit_split=unit_percents,
-            account_uuid=self.unearned_account_id,
-            account_balance_type='credit'
-        )
-
-        new_ledger_state = dict()
-        new_ledger_state.update(amount_paid_split)
-        new_ledger_state.update(amount_prepaid_split)
-        new_ledger_state.update(amount_unearned_split)
-
-        if inventory_adjustment and cogs_adjustment:
-            new_ledger_state.update(cogs_adjustment)
-            new_ledger_state.update(inventory_adjustment)
-
-        new_ledger_state.update(progress_item_idx)
-
-        # list of all keys involved
-        idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
-
-        # difference between new vs current
-        diff_idx = {
-            k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in idx_keys
-        }
-
-        # eliminates transactions with no amount...
-        diff_idx = {
-            k: v for k, v in diff_idx.items() if v
-        }
-
-        if commit:
-            JournalEntryModel = lazy_loader.get_journal_entry_model()
-            TransactionModel = lazy_loader.get_transaction_model()
-
-            unit_uuids = list(set(k[1] for k in idx_keys))
-            now_date = localdate() if not je_date else je_date
-            je_list = {
-                u: JournalEntryModel(
-                    entity_unit_id=u,
-                    date=now_date,
-                    description=self.get_migrate_state_desc(),
-                    activity='op',
-                    origin='migration',
-                    locked=True,
-                    posted=True,
-                    ledger_id=self.ledger_id
-                ) for u in unit_uuids
-            }
-
-            for u, je in je_list.items():
-                je.clean(verify_txs=False)
-
-            JournalEntryModel.objects.bulk_create(
-                je for _, je in je_list.items()
+            # getting current ledger state
+            # pylint: disable=no-member
+            txs_qs, txs_digest = self.ledger.digest(
+                user_model=user_model,
+                process_groups=True,
+                process_roles=False,
+                process_ratios=False,
+                signs=False,
+                by_unit=True
             )
 
-            txs_list = [
-                (unit_uuid, TransactionModel(
-                    journal_entry=je_list.get(unit_uuid),
-                    amount=abs(round(amt, 2)),
-                    tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
-                    account_id=acc_uuid,
-                    description=self.get_migrate_state_desc()
-                )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
-            ]
+            digest_data = txs_digest['tx_digest']['accounts']
 
-            for unit_uuid, tx in txs_list:
-                tx.clean()
+            # Index (account_uuid, unit_uuid, balance_type, role)
+            current_ledger_state = {
+                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
+                # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
+            }
 
-            for uid in unit_uuids:
-                # validates each unit txs independently...
-                balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
+            item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemtxs_qs))
+            cogs_adjustment = defaultdict(lambda: Decimal('0.00'))
+            inventory_adjustment = defaultdict(lambda: Decimal('0.00'))
+            progress = self.get_progress()
 
-            # validates all txs as a whole (for safety)...
-            txs = [tx for ui, tx in txs_list]
-            balance_tx_data(tx_data=txs, perform_correction=True)
-            TransactionModel.objects.bulk_create(txs)
-        return item_data, digest_data
+            if isinstance(self, lazy_loader.get_bill_model()):
+
+                for item in item_data:
+                    account_uuid_expense = item.get('item_model__expense_account__uuid')
+                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+                    if account_uuid_expense:
+                        item['account_uuid'] = account_uuid_expense
+                        item['account_balance_type'] = item.get('item_model__expense_account__balance_type')
+                    elif account_uuid_inventory:
+                        item['account_uuid'] = account_uuid_inventory
+                        item['account_balance_type'] = item.get('item_model__inventory_account__balance_type')
+
+            elif isinstance(self, lazy_loader.get_invoice_model()):
+
+                for item in item_data:
+
+                    account_uuid_earnings = item.get('item_model__earnings_account__uuid')
+                    account_uuid_cogs = item.get('item_model__cogs_account__uuid')
+                    account_uuid_inventory = item.get('item_model__inventory_account__uuid')
+
+                    if account_uuid_earnings:
+                        item['account_uuid'] = account_uuid_earnings
+                        item['account_balance_type'] = item.get('item_model__earnings_account__balance_type')
+
+                    if account_uuid_cogs and account_uuid_inventory:
+
+                        try:
+                            irq = item.get('item_model__inventory_received')
+                            irv = item.get('item_model__inventory_received_value')
+                            tot_amt = 0
+                            if irq is not None and irv is not None and irq != 0:
+                                qty = item.get('quantity', Decimal('0.00'))
+                                if not isinstance(qty, Decimal):
+                                    qty = Decimal.from_float(qty)
+                                cogs_unit_cost = irv / irq
+                                tot_amt = round(cogs_unit_cost * qty, 2)
+                        except ZeroDivisionError:
+                            tot_amt = 0
+
+                        if tot_amt != 0:
+                            # keeps track of necessary transactions to increase COGS account...
+                            cogs_adjustment[(
+                                account_uuid_cogs,
+                                item.get('entity_unit__uuid'),
+                                item.get('item_model__cogs_account__balance_type')
+                            )] += tot_amt * progress
+
+                            # keeps track of necessary transactions to reduce inventory account...
+                            inventory_adjustment[(
+                                account_uuid_inventory,
+                                item.get('entity_unit__uuid'),
+                                item.get('item_model__inventory_account__balance_type')
+                            )] -= tot_amt * progress
+
+            item_data_gb = groupby(item_data,
+                                   key=lambda a: (a['account_uuid'],
+                                                  a['entity_unit__uuid'],
+                                                  a['account_balance_type']))
+
+            # scaling down item amount based on progress...
+            progress_item_idx = {
+                idx: round(sum(a['account_unit_total'] for a in ad) * progress, 2) for idx, ad in item_data_gb
+            }
+
+            # tuple ( unit_uuid, total_amount ) sorted by uuid...
+            # sorting before group by...
+            ua_gen = list((k[1], v) for k, v in progress_item_idx.items())
+            ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
+
+            unit_amounts = {
+                u: sum(a[1] for a in l) for u, l in groupby(ua_gen, key=lambda x: x[0])
+            }
+            total_amount = sum(unit_amounts.values())
+
+            # { unit_uuid: float (percent) }
+            unit_percents = {
+                k: (v / total_amount) if progress and total_amount else Decimal('0.00') for k, v in unit_amounts.items()
+            }
+
+            if not void:
+                new_state = self.new_state(commit=commit)
+            else:
+                new_state = self.void_state(commit=commit)
+
+            amount_paid_split = self.split_amount(
+                amount=new_state['amount_paid'],
+                unit_split=unit_percents,
+                account_uuid=self.cash_account_id,
+                account_balance_type='debit'
+            )
+            amount_prepaid_split = self.split_amount(
+                amount=new_state['amount_receivable'],
+                unit_split=unit_percents,
+                account_uuid=self.prepaid_account_id,
+                account_balance_type='debit'
+            )
+            amount_unearned_split = self.split_amount(
+                amount=new_state['amount_unearned'],
+                unit_split=unit_percents,
+                account_uuid=self.unearned_account_id,
+                account_balance_type='credit'
+            )
+
+            new_ledger_state = dict()
+            new_ledger_state.update(amount_paid_split)
+            new_ledger_state.update(amount_prepaid_split)
+            new_ledger_state.update(amount_unearned_split)
+
+            if inventory_adjustment and cogs_adjustment:
+                new_ledger_state.update(cogs_adjustment)
+                new_ledger_state.update(inventory_adjustment)
+
+            new_ledger_state.update(progress_item_idx)
+
+            # list of all keys involved
+            idx_keys = set(list(current_ledger_state) + list(new_ledger_state))
+
+            # difference between new vs current
+            diff_idx = {
+                k: new_ledger_state.get(k, Decimal('0.00')) - current_ledger_state.get(k, Decimal('0.00')) for k in
+                idx_keys
+            }
+
+            # eliminates transactions with no amount...
+            diff_idx = {
+                k: v for k, v in diff_idx.items() if v
+            }
+
+            if commit:
+                JournalEntryModel = lazy_loader.get_journal_entry_model()
+                TransactionModel = lazy_loader.get_transaction_model()
+
+                unit_uuids = list(set(k[1] for k in idx_keys))
+                now_date = localdate() if not je_date else je_date
+                je_list = {
+                    u: JournalEntryModel(
+                        entity_unit_id=u,
+                        date=now_date,
+                        description=self.get_migrate_state_desc(),
+                        activity='op',
+                        origin='migration',
+                        locked=True,
+                        posted=True,
+                        ledger_id=self.ledger_id
+                    ) for u in unit_uuids
+                }
+
+                for u, je in je_list.items():
+                    je.clean(verify_txs=False)
+
+                JournalEntryModel.objects.bulk_create(
+                    je for _, je in je_list.items()
+                )
+
+                txs_list = [
+                    (unit_uuid, TransactionModel(
+                        journal_entry=je_list.get(unit_uuid),
+                        amount=abs(round(amt, 2)),
+                        tx_type=self.get_tx_type(acc_bal_type=bal_type, adjustment_amount=amt),
+                        account_id=acc_uuid,
+                        description=self.get_migrate_state_desc()
+                    )) for (acc_uuid, unit_uuid, bal_type), amt in diff_idx.items() if amt
+                ]
+
+                for unit_uuid, tx in txs_list:
+                    tx.clean()
+
+                for uid in unit_uuids:
+                    # validates each unit txs independently...
+                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
+
+                # validates all txs as a whole (for safety)...
+                txs = [tx for ui, tx in txs_list]
+                balance_tx_data(tx_data=txs, perform_correction=True)
+                TransactionModel.objects.bulk_create(txs)
+            return item_data, digest_data
+        else:
+            if raise_exception:
+                raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
     def void_state(self, commit: bool = False):
         void_state = {
@@ -558,31 +540,10 @@ class LedgerWrapperMixIn(models.Model):
         self.amount_unearned = state['amount_unearned']
         self.amount_earned = state['amount_earned']
 
-    def due_in_days(self):
-        td = self.due_date - localdate()
-        if td.days < 0:
-            return 0
-        return td.days
-
-    def net_due_group(self):
-        due_in = self.due_in_days()
-        if due_in == 0:
-            return self.TERMS_ON_RECEIPT
-        elif due_in <= 30:
-            return self.TERMS_NET_30
-        elif due_in <= 60:
-            return self.TERMS_NET_60
-        elif due_in <= 90:
-            return self.TERMS_NET_90
-        return self.TERMS_NET_90_PLUS
-
     def clean(self):
 
         if not self.amount_due:
             self.amount_due = 0
-
-        if not self.date:
-            self.date = localdate()
 
         if self.cash_account_id is None:
             raise ValidationError('Must provide a cash account.')
@@ -617,12 +578,6 @@ class LedgerWrapperMixIn(models.Model):
         if self.accrue and self.progress is None:
             self.progress = 0
 
-        if self.terms != self.TERMS_ON_RECEIPT:
-            # pylint: disable=no-member
-            self.due_date = self.date + timedelta(days=int(self.terms.split('_')[-1]))
-        else:
-            self.due_date = self.date
-
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
 
@@ -635,9 +590,6 @@ class LedgerWrapperMixIn(models.Model):
                 self.paid_date = today
             if self.paid_date > today:
                 raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-            # if self.paid_date < self.date:
-            #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-            #                           f' date {self.date}.')
         else:
             self.paid_date = None
 
@@ -654,6 +606,68 @@ class LedgerWrapperMixIn(models.Model):
 
         if self.can_migrate():
             self.update_state()
+
+
+class PaymentTermsMixIn(models.Model):
+    TERMS_ON_RECEIPT = 'on_receipt'
+    TERMS_NET_30 = 'net_30'
+    TERMS_NET_60 = 'net_60'
+    TERMS_NET_90 = 'net_90'
+    TERMS_NET_90_PLUS = 'net_90+'
+
+    TERMS = [
+        (TERMS_ON_RECEIPT, 'Due On Receipt'),
+        (TERMS_NET_30, 'Net 30 Days'),
+        (TERMS_NET_60, 'Net 60 Days'),
+        (TERMS_NET_90, 'Net 90 Days'),
+    ]
+
+    terms = models.CharField(max_length=10,
+                             default='on_receipt',
+                             choices=TERMS,
+                             verbose_name=_('Terms'))
+    due_date = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+    def get_terms_start_date(self) -> Optional[date]:
+        raise NotImplementedError(
+            f'Must implement get_terms_start_date() for {self.__class__.__name__}'
+        )
+
+    def due_in_days(self) -> Optional[int]:
+        if self.due_date:
+            td = self.due_date - localdate()
+            if td.days < 0:
+                return 0
+            return td.days
+
+    def net_due_group(self):
+        due_in = self.due_in_days()
+        if due_in == 0:
+            return self.TERMS_ON_RECEIPT
+        elif due_in <= 30:
+            return self.TERMS_NET_30
+        elif due_in <= 60:
+            return self.TERMS_NET_60
+        elif due_in <= 90:
+            return self.TERMS_NET_90
+        return self.TERMS_NET_90_PLUS
+
+    def is_past_due(self) -> bool:
+        if self.due_date:
+            return self.due_date < localdate()
+        return False
+
+    def clean(self):
+        terms_start_date = self.get_terms_start_date()
+        if terms_start_date:
+            if self.terms != self.TERMS_ON_RECEIPT:
+                # pylint: disable=no-member
+                self.due_date = terms_start_date + timedelta(days=int(self.terms.split('_')[-1]))
+            else:
+                self.due_date = terms_start_date
 
 
 class MarkdownNotesMixIn(models.Model):

@@ -15,13 +15,15 @@ from uuid import uuid4, UUID
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.db import models
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn, ItemModel, CustomerModel
+from django_ledger.models import (CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn,
+                                  CustomerModel, LazyLoader)
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -37,6 +39,9 @@ def generate_estimate_number(length: int = 10, prefix: bool = True) -> str:
     if prefix:
         estimate_number = 'E-' + estimate_number
     return estimate_number
+
+
+lazy_loader = LazyLoader()
 
 
 class EstimateModelQuerySet(models.QuerySet):
@@ -304,8 +309,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not self.can_review():
             raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
 
-        itemthrough_qs = self.itemthroughmodel_set.all()
-        if not itemthrough_qs.count():
+        itemtxs_qs = self.itemtransactionmodel_set.all()
+        if not itemtxs_qs.count():
             raise ValidationError(message='Cannot review an Estimate without items...')
         if not self.cost_estimate():
             raise ValidationError(message='Cost amount is zero!.')
@@ -460,15 +465,43 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_html_id(self):
         return f'djl-customer-estimate-id-{self.uuid}'
 
-    # State Update....
-    def get_itemthrough_data(self, queryset=None) -> tuple:
+    # ItemThroughModels...
+    def get_itemtransaction_data(self, queryset=None) -> tuple:
+        """
+        Returns all ItemThroughModel associated with EstimateModel and a total aggregate.
+        @param queryset: ItemThrough Queryset to use. If None a new queryset will be evaluated.
+        @return: Tuple of ItemThroughModel Queryset and Aggregate.
+        """
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.select_related('item_model').all()
+            queryset = self.itemtransactionmodel_set.select_related('item_model').all()
         return queryset, queryset.aggregate(
-            cost_estimate=Sum('total_amount'),
-            revenue_estimate=Sum('ce_revenue_estimate'),
+            Sum('ce_cost_estimate'),
+            Sum('ce_revenue_estimate'),
             total_items=Count('uuid')
+        )
+
+    def get_itemtxs_aggregate(self, queryset=None):
+        """
+        Returns all ItemThroughModel associated with EstimateModel and a total aggregate by ItemModel.
+        @param queryset: ItemThrough Queryset to use. If None a new queryset will be evaluated.
+        @return: Tuple of ItemThroughModel Queryset and Aggregate.
+        """
+        queryset, _ = self.get_itemtransaction_data(queryset)
+        return queryset, queryset.values(
+            'item_model_id', 'item_model__name'
+        ).annotate(
+            Sum('ce_quantity'),
+            Sum('ce_cost_estimate'),
+            Sum('ce_revenue_estimate'),
+            avg_unit_cost=ExpressionWrapper(
+                expression=Sum('ce_cost_estimate') / Sum('ce_quantity'),
+                output_field=FloatField()
+            ),
+            avg_unit_revenue=ExpressionWrapper(
+                expression=Sum('ce_revenue_estimate') / Sum('ce_quantity'),
+                output_field=FloatField()
+            )
         )
 
     def update_revenue_estimate(self, queryset):
@@ -476,11 +509,11 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def update_cost_estimate(self, queryset):
         estimates = {
-            'labor': sum(a.total_amount for a in queryset if a.item_model.is_labor()),
-            'material': sum(a.total_amount for a in queryset if a.item_model.is_material()),
-            'equipment': sum(a.total_amount for a in queryset if a.item_model.is_equipment()),
+            'labor': sum(a.ce_cost_estimate for a in queryset if a.item_model.is_labor()),
+            'material': sum(a.ce_cost_estimate for a in queryset if a.item_model.is_material()),
+            'equipment': sum(a.ce_cost_estimate for a in queryset if a.item_model.is_equipment()),
             'other': sum(
-                a.total_amount for a in queryset
+                a.ce_cost_estimate for a in queryset
                 if
                 a.item_model.is_other() or not a.item_model_id or not a.item_model.item_type or a.item_model.is_lump_sum()
             ),
@@ -492,7 +525,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def update_state(self, queryset=None):
         if not queryset:
-            queryset, _ = self.get_itemthrough_data()
+            queryset, _ = self.get_itemtransaction_data()
         self.update_cost_estimate(queryset)
         self.update_revenue_estimate(queryset)
 
@@ -522,6 +555,65 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def get_status_action_date(self):
         return getattr(self, f'date_{self.status}')
+
+    # --- CONTRACT METHODS ---
+    def get_po_amount(self, po_qs=None) -> dict:
+        if not po_qs:
+            PurchaseOrderModel = lazy_loader.get_purchase_order_model()
+            po_qs = self.purchaseordermodel_set.all().active()
+        return po_qs.aggregate(
+            po_amount__sum=Coalesce(Sum('po_amount'), 0.0,
+                                    output_field=models.FloatField())
+        )
+
+    def get_billed_amount(self, bill_qs=None) -> dict:
+        if not bill_qs:
+            BillModel = lazy_loader.get_bill_model()
+            bill_qs = self.billmodel_set.all().active()
+        return bill_qs.aggregate(
+            bill_amount_due__sum=Coalesce(Sum('amount_due'), 0.0, output_field=models.FloatField()),
+            bill_amount_paid__sum=Coalesce(Sum('amount_paid'), 0.0, output_field=models.FloatField()),
+            bill_amount_receivable__sum=Coalesce(Sum('amount_receivable'), 0.0, output_field=models.FloatField()),
+            bill_amount_earned__sum=Coalesce(Sum('amount_earned'), 0.0, output_field=models.FloatField()),
+            bill_amount_unearned__sum=Coalesce(Sum('amount_unearned'), 0.0, output_field=models.FloatField()),
+        )
+
+    def get_invoiced_amount(self, invoice_qs=None) -> dict:
+        if not invoice_qs:
+            InvoiceModel = lazy_loader.get_invoice_model()
+            invoice_qs = self.invoicemodel_set.all().active()
+
+        return invoice_qs.aggregate(
+            invoice_amount_due__sum=Coalesce(Sum('amount_due'), 0.0, output_field=models.FloatField()),
+            invoice_amount_paid__sum=Coalesce(Sum('amount_paid'), 0.0, output_field=models.FloatField()),
+            invoice_amount_receivable__sum=Coalesce(Sum('amount_receivable'), 0.0, output_field=models.FloatField()),
+            invoice_amount_earned__sum=Coalesce(Sum('amount_earned'), 0.0, output_field=models.FloatField()),
+            invoice_amount_unearned__sum=Coalesce(Sum('amount_unearned'), 0.0, output_field=models.FloatField()),
+        )
+
+    def get_contract_summary(self, po_qs=None, bill_qs=None, invoice_qs=None) -> dict:
+        """
+        Returns an aggregate of all related ItemTransactionModels summarizing
+        original contract amounts, amounts authorized, amounts billed and amount invoiced.
+        @return: A dictionary of aggregated values.
+        """
+        stats = {
+            'cost_estimate': self.cost_estimate(),
+            'revenue_estimate': self.revenue_estimate
+        }
+
+        po_status = self.get_po_amount(po_qs)
+        billing_status = self.get_billed_amount(bill_qs)
+        invoice_status = self.get_invoiced_amount(invoice_qs)
+        return stats | po_status | billing_status | invoice_status
+
+    def get_contract_transactions(self, entity_slug, user_model):
+        ItemTransactionModel = lazy_loader.get_item_transaction_model()
+        return ItemTransactionModel.objects.for_contract(
+            entity_slug=entity_slug,
+            user_model=user_model,
+            ce_pk=self.uuid
+        )
 
     def clean(self):
 

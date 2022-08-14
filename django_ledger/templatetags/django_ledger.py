@@ -621,7 +621,7 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'Things I Pay For',
+                        'title': 'Business Expenses',
                         'url': reverse('django_ledger:expense-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
@@ -723,13 +723,12 @@ def inventory_item_table(context, queryset):
 
 
 @register.inclusion_tag('django_ledger/invoice/includes/invoice_item_formset.html', takes_context=True)
-def invoice_item_formset_table(context, item_formset):
+def invoice_item_formset_table(context, itemtxs_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'invoice_pk': context['view'].kwargs['invoice_pk'],
         'invoice_model': context['invoice'],
-        'total_amount_due': context['total_amount_due'],
-        'item_formset': item_formset,
+        'total_amount__sum': context['total_amount__sum'],
+        'itemtxs_formset': itemtxs_formset,
     }
 
 
@@ -738,18 +737,17 @@ def bill_item_formset_table(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'bill_pk': context['view'].kwargs['bill_pk'],
-        'total_amount_due': context['total_amount_due'],
+        'total_amount__sum': context['total_amount__sum'],
         'item_formset': item_formset,
     }
 
 
 @register.inclusion_tag('django_ledger/purchase_order/includes/po_item_formset.html', takes_context=True)
-def po_item_formset_table(context, item_formset):
+def po_item_formset_table(context, po_model, itemtxs_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
-        'po_pk': context['view'].kwargs['po_pk'],
-        'total_amount_due': context['total_amount_due'],
-        'item_formset': item_formset,
+        'po_model': po_model,
+        'itemtxs_formset': itemtxs_formset,
     }
 
 
@@ -780,11 +778,20 @@ def customer_estimate_table(context, queryset):
 
 
 @register.inclusion_tag('django_ledger/estimate/includes/estimate_item_table.html', takes_context=True)
-def customer_estimate_item_table(context, queryset):
+def estimate_item_table(context, queryset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'ce_model': context['estimate_model'],
         'ce_item_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/tags/po_item_table.html', takes_context=True)
+def po_item_table(context, queryset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'po_model': context['po_model'],
+        'po_item_list': queryset
     }
 
 
@@ -793,7 +800,7 @@ def customer_estimate_item_formset(context, item_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'ce_pk': context['view'].kwargs['ce_pk'],
-        'revenue_estimate': context['revenue_estimate'],
-        'cost_estimate': context['cost_estimate'],
+        'ce_revenue_estimate__sum': context['ce_revenue_estimate__sum'],
+        'ce_cost_estimate__sum': context['ce_cost_estimate__sum'],
         'item_formset': item_formset,
     }

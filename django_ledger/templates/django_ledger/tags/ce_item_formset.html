@@ -37,12 +37,12 @@
                                     <span class="has-text-danger">{{ f.errors }}</span>
                                 {% endif %}
                             </td>
-                            <td id="{{ f.instance.html_id_quantity }}">{{ f.quantity }}</td>
-                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.unit_cost }}</td>
+                            <td id="{{ f.instance.html_id_quantity }}">{{ f.ce_quantity }}</td>
+                            <td id="{{ f.instance.html_id_unit_cost }}">{{ f.ce_unit_cost_estimate }}</td>
                             <td>{{ f.ce_unit_revenue_estimate }}</td>
                             <td>{{ f.entity_unit }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
-                                {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
+                                {% currency_symbol %}{{ f.instance.ce_cost_estimate | currency_format }}</td>
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.ce_revenue_estimate | currency_format }}</td>
                             <td class="has-text-centered">
@@ -60,8 +60,8 @@
                         <th></th>
                         <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>
-                        <th class="has-text-right">{% currency_symbol %}{{ cost_estimate | currency_format }}</th>
-                        <th class="has-text-right">{% currency_symbol %}{{ revenue_estimate | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ ce_cost_estimate__sum | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ ce_revenue_estimate__sum | currency_format }}</th>
                         <th></th>
                     </tr>
                     </tfoot>

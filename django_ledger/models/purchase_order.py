@@ -15,12 +15,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q, Sum, Count, QuerySet
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, ItemThroughModel, LazyLoader, BillModel
+from django_ledger.models import EntityModel, ItemTransactionModel, LazyLoader, BillModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
@@ -41,7 +42,25 @@ def generate_po_number(length: int = 10, prefix: bool = True) -> str:
     return po_number
 
 
+class PurchaseOrderModelQueryset(models.QuerySet):
+
+    def approved(self):
+        return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_APPROVED)
+
+    def fulfilled(self):
+        return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_FULFILLED)
+
+    def active(self):
+        return self.filter(
+            Q(po_status__exact=PurchaseOrderModel.PO_STATUS_APPROVED) |
+            Q(po_status__exact=PurchaseOrderModel.PO_STATUS_FULFILLED)
+        )
+
+
 class PurchaseOrderModelManager(models.Manager):
+
+    def get_queryset(self):
+        return PurchaseOrderModelQueryset(self.model, using=self._db)
 
     def for_entity(self, entity_slug, user_model):
         qs = self.get_queryset()
@@ -76,8 +95,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
-    # todo: remove PO date from model in favor of state dates... (draft)...
-    po_date = models.DateField(verbose_name=_('Purchase Order Date'), null=True, blank=True)
     po_title = models.CharField(max_length=250,
                                 verbose_name=_('Purchase Order Title'),
                                 validators=[
@@ -103,7 +120,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
 
     po_items = models.ManyToManyField('django_ledger.ItemModel',
-                                      through='django_ledger.ItemThroughModel',
+                                      through='django_ledger.ItemTransactionModel',
                                       through_fields=('po_model', 'item_model'),
                                       verbose_name=_('Purchase Order Items'))
 
@@ -140,7 +157,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def configure(self,
                   entity_slug: str or EntityModel,
                   user_model,
-                  po_date: date = None):
+                  draft_date: date = None):
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
                 user_model=user_model)
@@ -151,42 +168,42 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
         self.po_number = generate_po_number()
-        if po_date:
-            self.po_date = po_date
+        if draft_date:
+            self.draft_date = draft_date
+        else:
+            self.draft_date = localdate()
         self.entity = entity_model
         return self
 
     # State Update...
-    def get_po_item_data(self, queryset: QuerySet = None) -> Tuple:
+    def get_itemtxs_data(self, queryset: QuerySet = None) -> Tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all().select_related('bill_model')
+            queryset = self.itemtransactionmodel_set.all().select_related('bill_model', 'item_model')
 
         return queryset, queryset.aggregate(
-            amount_due=Sum('po_total_amount'),
-            total_paid=Sum('bill_model__amount_paid'),
+            po_total_amount__sum=Coalesce(Sum('po_total_amount'), 0.0, output_field=models.FloatField()),
+            bill_amount_paid__sum=Coalesce(Sum('bill_model__amount_paid'), 0.0, output_field=models.FloatField()),
             total_items=Count('uuid')
         )
 
     # todo: check if all update ste methods can accept a queryset only...
     def update_po_state(self,
-                        item_queryset: QuerySet = None,
-                        item_list: List[ItemThroughModel] = None) -> Union[Tuple, None]:
-        if item_queryset and item_list:
+                        itemtxs_qs: QuerySet = None,
+                        itemtxs_list: List[ItemTransactionModel] = None) -> Union[Tuple, None]:
+        if itemtxs_qs and itemtxs_list:
             raise ValidationError('Either queryset or list can be used.')
 
-        if item_list:
-            self.po_amount = round(sum(
-                a.po_total_amount for a in item_list if a.po_item_status != ItemThroughModel.STATUS_CANCELED), 2)
-            self.po_amount_received = round(sum(
-                a.po_total_amount for a in item_list if a.is_received()), 2)
+        if itemtxs_list:
+            self.po_amount = round(sum(a.po_total_amount for a in itemtxs_list if not a.is_canceled()), 2)
+            self.po_amount_received = round(sum(a.po_total_amount for a in itemtxs_list if a.is_received()), 2)
         else:
-            item_queryset, item_data = self.get_po_item_data(queryset=item_queryset)
-            total_po_amount = round(sum(i.po_total_amount for i in item_queryset if not i.is_canceled()), 2)
-            total_received = round(sum(i.po_total_amount for i in item_queryset if i.is_received()), 2)
+            itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+            total_po_amount = round(sum(i.po_total_amount for i in itemtxs_qs if not i.is_canceled()), 2)
+            total_received = round(sum(i.po_total_amount for i in itemtxs_qs if i.is_received()), 2)
             self.po_amount = total_po_amount
             self.po_amount_received = total_received
-            return item_queryset, item_data
+            return itemtxs_qs, itemtxs_agg
 
     # State...
     def is_draft(self) -> bool:
@@ -238,8 +255,11 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_edit_items(self) -> bool:
         return self.is_draft()
 
+    def is_contract_bound(self):
+        return self.ce_model_id is not None
+
     def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
-        if self.ce_model_id:
+        if self.is_contract_bound():
             if raise_exception:
                 raise ValidationError(f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
             return False
@@ -294,7 +314,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def mark_as_review(self, date_review: date = None, commit: bool = False, **kwargs):
         if not self.can_review():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as in review.')
-        itemthrough_qs = self.itemthroughmodel_set.all()
+        itemthrough_qs = self.itemtransactionmodel_set.all()
         if not itemthrough_qs.count():
             raise ValidationError(message='Cannot review a PO without items...')
         if not self.po_amount:
@@ -331,7 +351,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.po_status = self.PO_STATUS_APPROVED
         self.clean()
         if commit:
-            self.itemthroughmodel_set.all().update(po_item_status=ItemThroughModel.STATUS_NOT_ORDERED)
+            self.itemtransactionmodel_set.all().update(po_item_status=ItemTransactionModel.STATUS_NOT_ORDERED)
             self.save(update_fields=[
                 'approved_date',
                 'po_status',
@@ -381,7 +401,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # FULFILL...
     def mark_as_fulfilled(self,
                           date_fulfilled: date = None,
-                          po_items: Union[QuerySet, List[ItemThroughModel]] = None,
+                          po_items: Union[QuerySet, List[ItemTransactionModel]] = None,
                           commit=False,
                           **kwargs):
         if not self.can_fulfill():
@@ -389,7 +409,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.fulfillment_date = localdate() if not date_fulfilled else date_fulfilled
 
         if not po_items:
-            po_items = self.itemthroughmodel_set.all().select_related('bill_model')
+            po_items = self.itemtransactionmodel_set.all().select_related('bill_model')
 
         bill_models = [i.bill_model for i in po_items]
         all_items_billed = all(bill_models)
@@ -409,7 +429,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.clean()
 
         if commit:
-            po_items.update(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+            po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
                 'fulfillment_date',
                 'po_status',
@@ -487,6 +507,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return getattr(self, f'{self.po_status}_date')
 
     def clean(self):
+
+        # if self.is_draft() and not self.draft_date:
+        #     raise ValidationError('')
+
         if not self.po_number:
             self.po_number = generate_po_number()
         if self.is_fulfilled():

@@ -6,31 +6,85 @@
 {% block view_content %}
     <div class="container">
         <div class="columns is-multiline">
-            <div class="column">
+            <div class="column is-12">
                 {% include 'django_ledger/includes/card_po.html' with style='po-detail' po_model=po_model entity_slug=view.kwargs.entity_slug %}
             </div>
             <div class="column is-12">
-                <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                      method="post">
-                    <div class="columns is-multiline">
-                        <div class="column is-12">
-                            {% csrf_token %}
-                            {{ form }}
-                            <button type="submit"
-                                    class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save PO' %}
-                            </button>
-                            <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
-                               class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to PO Detail' %}</a>
-                            <a href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}"
-                               class="button is-small is-info is-fullwidth mt-2">{% trans 'PO List' %}</a>
-                            <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-                               class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
+                <div class="card">
+                    <div class="card-content">
+                        <form action="{% url 'django_ledger:po-update' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                              method="post">
+                            <div class="columns is-multiline">
+                                <div class="column is-12">
+                                    {% csrf_token %}
+                                    {{ form }}
+                                    <button type="submit"
+                                            class="button is-primary is-fullwidth djetler_my_1">{% trans 'Save PO' %}
+                                    </button>
+                                    <a href="{% url 'django_ledger:po-detail' entity_slug=view.kwargs.entity_slug po_pk=po_model.uuid %}"
+                                       class="button is-small is-dark is-fullwidth mt-2">{% trans 'Back to PO Detail' %}</a>
+                                    <a href="{% url 'django_ledger:po-list' entity_slug=view.kwargs.entity_slug %}"
+                                       class="button is-small is-info is-fullwidth mt-2">{% trans 'PO List' %}</a>
+                                    <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                                       class="button is-small is-info is-outlined is-fullwidth mt-2">{% trans 'Go To Dashboard' %}</a>
 
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% if po_model.is_contract_bound %}
+                <div class="column is-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-header-title is-size-3">
+                                {% trans 'Contract' %} {{ po_model.ce_model.estimate_number }}
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="table-container">
+                                <table class="table is-fullwidth is-striped is-narrow is-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>{% trans 'Item' %}</th>
+                                        <th>{% trans 'Quantity' %}</th>
+                                        <th>{% trans 'Avg Unit Price' %}</th>
+                                        <th>{% trans 'Total Contracted Cost' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tfoot>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        <th></th>
+                                        <th>{% currency_symbol %}{{ ce_cost_estimate__sum | currency_format }}</th>
+                                    </tr>
+                                    </tfoot>
+                                    <tbody>
+                                    {% for i in ce_itemtxs_agg %}
+                                        <tr>
+                                            <td>{{ i.item_model__name }}</td>
+                                            <td>{{ i.ce_quantity__sum }}</td>
+                                            <td>{% currency_symbol %}{{ i.avg_unit_cost | currency_format }}</td>
+                                            <td>{% currency_symbol %}{{ i.ce_cost_estimate__sum | currency_format }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </form>
+                </div>
+
+            {% endif %}
+            <div class="column is-12">
+                <div class="card">
+                    <div class="card-content">
+                        {% po_item_formset_table po_model itemtxs_formset %}
+                    </div>
+                </div>
             </div>
-            {% po_item_formset_table item_formset %}
         </div>
     </div>
 {% endblock %}

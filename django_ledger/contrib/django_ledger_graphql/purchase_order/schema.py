@@ -9,7 +9,7 @@ class PurchaseOrderNode(DjangoObjectType):
     class Meta:
         model = PurchaseOrderModel
         filter_fields = {
-            'po_date': ['exact'],
+            'draft_date': ['exact'],
             'po_title': ['exact', 'icontains', 'istartswith'],
         }
         interfaces = (relay.Node,)
@@ -24,7 +24,7 @@ class PurchaseOrderQuery(graphene.ObjectType):
             return PurchaseOrderModel.objects.for_entity(
                 entity_slug=slug_name,
                 user_model=info.context.user
-            ).order_by('-po_date')
+            ).order_by('-draft_date')
 
         else:
             return PurchaseOrderModel.objects.none()

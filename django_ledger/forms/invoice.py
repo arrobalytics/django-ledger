@@ -12,7 +12,7 @@ from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemThroughModel, ItemModel)
+from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemTransactionModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -39,8 +39,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
     class Meta:
         model = InvoiceModel
         fields = [
-            # 'customer',
-            'date',
             'terms',
             'cash_account',
             'prepaid_account',
@@ -51,11 +49,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         }
         widgets = {
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-
-            'date': DateInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
-                'placeholder': _('Invoice Date (YYYY-MM-DD)...')
-            }),
             'amount_due': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': '$$$'}),
@@ -83,7 +76,7 @@ class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
     class Meta(InvoiceModelCreateForEstimateForm.Meta):
         fields = [
             'customer',
-            'date',
+            'draft_date',
             'terms',
             'cash_account',
             'prepaid_account',
@@ -201,7 +194,7 @@ class InvoiceItemForm(ModelForm):
         return cleaned_data
 
     class Meta:
-        model = ItemThroughModel
+        model = ItemTransactionModel
         fields = [
             'item_model',
             'unit_cost',
@@ -247,13 +240,13 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemThroughModel.objects.for_invoice(
+            self.queryset = ItemTransactionModel.objects.for_invoice(
                 entity_slug=self.ENTITY_SLUG,
                 user_model=self.USER_MODEL,
                 invoice_pk=self.INVOICE_MODEL.uuid
             )
         else:
-            self.queryset = self.INVOICE_MODEL.itemthroughmodel_set.all()
+            self.queryset = self.INVOICE_MODEL.itemtransactionmodel_set.all()
         return self.queryset
 
     def get_form_kwargs(self, index):
@@ -264,10 +257,10 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
         }
 
 
-def get_invoice_item_formset(invoice_model: InvoiceModel):
+def get_bill_itemtxs_formset_class(invoice_model: InvoiceModel):
     can_delete = invoice_model.can_edit_items()
     return modelformset_factory(
-        model=ItemThroughModel,
+        model=ItemTransactionModel,
         form=InvoiceItemForm,
         formset=BaseInvoiceItemFormset,
         can_delete=can_delete,

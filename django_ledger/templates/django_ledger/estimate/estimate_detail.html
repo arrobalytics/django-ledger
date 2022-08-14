@@ -6,7 +6,11 @@
 
     <div class="columns is-multiline">
         <div class="column is-4">
-            {% include "django_ledger/estimate/includes/card_estimate.html" with  estimate_model=estimate_model %}
+            {% include "django_ledger/estimate/includes/card_estimate.html" with  estimate_model=estimate_model contract_progress=contract_progress %}
+{#            <p>{{ contract_items }}</p>#}
+{#            <p>{{ contract_items.count }}</p>#}
+{#            <br>#}
+{#            <p>{{ contract_progress }}</p>#}
         </div>
         <div class="column is-8">
             <div class="columns is-multiline">
@@ -51,11 +55,8 @@
                             </h2>
                         </div>
 
-                        {# todo: create estimate item table #}
                         <div class="card-content">
-
-                            {% customer_estimate_item_table customer_job_item_list %}
-
+                            {% estimate_item_table estimate_item_list %}
                         </div>
                     </div>
                 </div>
@@ -110,9 +111,7 @@
                         </div>
                     </div>
                 {% endif %}
-
             </div>
-
         </div>
     </div>
 

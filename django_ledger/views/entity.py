@@ -7,20 +7,21 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from random import randint
 
 from django.contrib.messages import add_message, ERROR
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localtime, localdate
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import (EntityModel, EntityUnitModel, ItemThroughModel, TransactionModel,
-                                  JournalEntryModel, PurchaseOrderModel, BillModel, InvoiceModel, EstimateModel,
-                                  ItemModel)
+from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel,
+                                  generate_entity_slug)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
@@ -56,11 +57,30 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
         return reverse('django_ledger:home')
 
     def form_valid(self, form):
-        user = self.request.user
-        form.instance.admin = user
-        entity_model = form.save()
-        default_coa = form.cleaned_data.get('default_coa')
-        activate_accounts = form.cleaned_data.get('activate_all_accounts')
+        cleaned_data = form.cleaned_data
+        user_model = self.request.user
+        FIELDS_GEN = (f.name for f in EntityModel._meta.get_fields())
+
+        entity_model: EntityModel = EntityModel.add_root(
+            name=cleaned_data['name'],
+            slug=generate_entity_slug(name=cleaned_data['name']),
+            address_1=cleaned_data['address_1'],
+            address_2=cleaned_data['address_2'],
+            city=cleaned_data['city'],
+            state=cleaned_data['state'],
+            zip_code=cleaned_data['zip_code'],
+            country=cleaned_data['country'],
+            email=cleaned_data['email'],
+            website=cleaned_data['website'],
+            phone=cleaned_data['phone'],
+            fy_start_month=cleaned_data['fy_start_month'],
+            admin=user_model
+        )
+        # entity_model = EntityModel.objects.get(pk=entity_model.uuid)
+
+        default_coa = cleaned_data.get('default_coa')
+        activate_accounts = cleaned_data.get('activate_all_accounts')
+
         if default_coa:
             entity_model.populate_default_coa(activate_accounts=activate_accounts)
 
@@ -70,12 +90,15 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
                 entity_model=entity_model,
                 user_model=self.request.user,
                 start_date=localdate() - timedelta(days=30 * 8),
-                capital_contribution=50000,
+                capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
-                tx_quantity=50
+                tx_quantity=cleaned_data['tx_quantity']
             )
             entity_generator.populate_entity()
-        return super().form_valid(form)
+
+        return HttpResponseRedirect(
+            redirect_to=self.get_success_url()
+        )
 
 
 class EntityModelUpdateView(LoginRequiredMixIn, UpdateView):
@@ -133,7 +156,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
                             message=_('Entity has %s children. Must delete children first.' % c))
                 return self.get(request, *args, **kwargs)
 
-        ItemThroughModel.objects.for_entity(
+        ItemTransactionModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ).delete()
@@ -368,7 +391,6 @@ class DateModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeS
     """
     Date Income Statement View.
     """
-
 
 # ENTITY MISC VIEWS ---
 # class SetDefaultEntityView(LoginRequiredMixIn, RedirectView):

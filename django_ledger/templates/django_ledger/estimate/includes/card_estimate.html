@@ -8,7 +8,6 @@
                     {% icon 'eos-icons:job' 36 %}</span>
             {% trans 'Estimate' %} {{ estimate_model.estimate_number }}</h2>
     </div>
-
     <div class="card-content">
         <h2 class="is-size-3">{% trans 'Status' %}: {{ estimate_model.get_status_display }}</h2>
         <h3 class="has-text-weight-bold is-size-4 has-text-success">
@@ -35,8 +34,6 @@
         <br>
         <h3 class="is-size-4 has-text-weight-light is-italic">
             {% trans 'Estimated Gross Margin' %}: {{ estimate_model.gross_margin_percent_estimate | floatformat:2 }}%</h3>
-
-
     </div>
     <footer class="card-footer">
         <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"
@@ -70,13 +67,13 @@
         {% endif %}
 
         {# MARK APPROVE #}
-{#        {% if estimate_model.can_approve %}#}
-{#            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_approved_html_id }}')"#}
-{#               id="{{ estimate_model.get_mark_as_approved_html_id }}-button"#}
-{#               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>#}
-            {# MARK AS DRAFT MODAL #}
-{#            {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}#}
-{#        {% endif %}#}
+        {#        {% if estimate_model.can_approve %}#}
+        {#            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_approved_html_id }}')"#}
+        {#               id="{{ estimate_model.get_mark_as_approved_html_id }}-button"#}
+        {#               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>#}
+        {# MARK AS DRAFT MODAL #}
+        {#            {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}#}
+        {#        {% endif %}#}
 
     </footer>
 </div>

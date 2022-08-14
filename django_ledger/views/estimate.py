@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError, ImproperlyConfigured
-from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -10,7 +10,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
                                           CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
                                           DraftEstimateModelUpdateForm)
-from django_ledger.models import EntityModel, ItemThroughModel
+from django_ledger.models import EntityModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import LoginRequiredMixIn
 
@@ -93,23 +93,37 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = ce_model.estimate_number
         context['header_subtitle_icon'] = 'eos-icons:job'
-        context['customer_job_item_list'] = ce_model.itemthroughmodel_set.all()
+        context['estimate_item_list'] = ce_model.itemtransactionmodel_set.all()
 
         # PO Model Queryset...
-        context['estimate_po_model_queryset'] = ce_model.purchaseordermodel_set.for_entity(
+        po_qs = ce_model.purchaseordermodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.purchaseordermodel_set.none()
+        context['estimate_po_model_queryset'] = po_qs
 
-        context['estimate_invoice_model_queryset'] = ce_model.invoicemodel_set.for_entity(
+        invoice_qs = ce_model.invoicemodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.invoicemodel_set.none()
+        context['estimate_invoice_model_queryset'] = invoice_qs
 
-        context['estimate_bill_model_queryset'] = ce_model.billmodel_set.for_entity(
+        bill_qs = ce_model.billmodel_set.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
+        context['estimate_bill_model_queryset'] = bill_qs
+
+        context['contract_items'] = ce_model.get_contract_transactions(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+        context['contract_progress'] = ce_model.get_contract_summary(
+            po_qs=po_qs,
+            invoice_qs=invoice_qs,
+            bill_qs=bill_qs
+        )
 
         return context
 
@@ -143,41 +157,38 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
             **self.get_form_kwargs()
         )
 
-    def get_context_data(self, item_formset: CanEditEstimateItemModelFormset = None, **kwargs):
+    def get_context_data(self, itemtxs_formset=None, **kwargs):
         context = super(EstimateModelUpdateView, self).get_context_data(**kwargs)
-        cj_model: EstimateModel = self.object
+        ce_model: EstimateModel = self.object
 
         context['page_title'] = self.PAGE_TITLE,
         context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = cj_model.title
+        context['header_subtitle'] = ce_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
 
-        if not item_formset:
-            item_through_qs, aggregate_data = cj_model.get_itemthrough_data()
+        if not itemtxs_formset:
+            itemtxs_qs, itemtxs_agg = ce_model.get_itemtransaction_data()
+            if ce_model.can_update_items():
+                itemtxs_formset = CanEditEstimateItemModelFormset(
+                    entity_slug=self.kwargs['entity_slug'],
+                    user_model=self.request.user,
+                    customer_job_model=ce_model,
+                    queryset=itemtxs_qs
+                )
+            else:
+                itemtxs_formset = ReadOnlyEstimateItemModelFormset(
+                    entity_slug=self.kwargs['entity_slug'],
+                    user_model=self.request.user,
+                    customer_job_model=ce_model,
+                    queryset=itemtxs_qs
+                )
         else:
-            item_through_qs, aggregate_data = cj_model.get_itemthrough_data(
-                queryset=item_formset.queryset
-            )
+            itemtxs_qs, itemtxs_agg = ce_model.get_itemtransaction_data(queryset=itemtxs_formset.queryset)
 
-        if cj_model.can_update_items():
-            item_formset = CanEditEstimateItemModelFormset(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
-                customer_job_model=cj_model,
-                queryset=item_through_qs
-            )
-        else:
-            item_formset = ReadOnlyEstimateItemModelFormset(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
-                customer_job_model=cj_model,
-                queryset=item_through_qs
-            )
-
-        context['customer_job_item_list'] = item_through_qs
-        context['revenue_estimate'] = aggregate_data['revenue_estimate']
-        context['cost_estimate'] = aggregate_data['cost_estimate']
-        context['cj_formset'] = item_formset
+        context['ce_revenue_estimate__sum'] = itemtxs_agg['ce_revenue_estimate__sum']
+        context['ce_cost_estimate__sum'] = itemtxs_agg['ce_cost_estimate__sum']
+        context['itemtxs_qs'] = itemtxs_qs
+        context['itemtxs_formset'] = itemtxs_formset
         return context
 
     def get_queryset(self):
@@ -194,39 +205,41 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
                        })
 
     def get(self, request, entity_slug, ce_pk, *args, **kwargs):
-        response = super(EstimateModelUpdateView, self).get(request, *args, **kwargs)
-
-        # this action can only be used via POST request...
         if self.action_update_items:
-            return HttpResponseBadRequest()
-
-        return response
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:customer-estimate-update',
+                                    kwargs={
+                                        'entity_slug': entity_slug,
+                                        'ce_pk': ce_pk
+                                    })
+            )
+        return super(EstimateModelUpdateView, self).get(request, entity_slug, ce_pk, *args, **kwargs)
 
     def post(self, request, entity_slug, ce_pk, *args, **kwargs):
-        response = super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
-        ce_model: EstimateModel = self.object
-
         if self.action_update_items:
-            item_formset: CanEditEstimateItemModelFormset = CanEditEstimateItemModelFormset(request.POST,
-                                                                                            user_model=self.request.user,
-                                                                                            customer_job_model=ce_model,
-                                                                                            entity_slug=entity_slug)
-            if item_formset.is_valid():
-                if item_formset.has_changed():
-                    cj_items = item_formset.save(commit=False)
-                    cj_model_qs = EstimateModel.objects.for_entity(user_model=self.request.user,
-                                                                   entity_slug=entity_slug)
-                    ce_model: EstimateModel = get_object_or_404(cj_model_qs, uuid__exact=ce_pk)
+
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden()
+            queryset = self.get_queryset()
+            ce_model: EstimateModel = self.get_object(queryset=queryset)
+            self.object = ce_model
+            itemtxs_formset: CanEditEstimateItemModelFormset = CanEditEstimateItemModelFormset(request.POST,
+                                                                                               user_model=self.request.user,
+                                                                                               customer_job_model=ce_model,
+                                                                                               entity_slug=entity_slug)
+            if itemtxs_formset.has_changed():
+                if itemtxs_formset.is_valid():
+                    itemtxs_list = itemtxs_formset.save(commit=False)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
-                    for item in cj_items:
-                        item.entity = entity_model
-                        item.ce_model = ce_model
+                    for itemtxs in itemtxs_list:
+                        itemtxs.ce_model_id = ce_model.uuid
+                        itemtxs.clean()
 
-                    item_formset.save()
+                    itemtxs_list = itemtxs_formset.save()
 
-                    ce_model.update_state(queryset=item_formset.queryset)
+                    ce_model.update_state()
                     ce_model.clean()
                     ce_model.save(update_fields=[
                         'revenue_estimate',
@@ -242,18 +255,10 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
                                          level=messages.SUCCESS,
                                          extra_tags='is-success')
 
-                    return HttpResponseRedirect(reverse('django_ledger:customer-estimate-update',
-                                                        kwargs={
-                                                            'entity_slug': entity_slug,
-                                                            'ce_pk': ce_pk
-                                                        }))
-
-
-            else:
-                context = self.get_context_data(item_formset=item_formset)
+                    return self.render_to_response(context=self.get_context_data())
+                context = self.get_context_data(itemtxs_formset=itemtxs_formset)
                 return self.render_to_response(context=context)
-
-        return response
+        return super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
 
 
 # ---- ACTION VIEWS ----

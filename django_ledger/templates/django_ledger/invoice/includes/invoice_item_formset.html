@@ -1,7 +1,7 @@
 {% load trans from i18n %}
 {% load django_ledger %}
 
-<form action="{% url 'django_ledger:invoice-update-items' entity_slug=entity_slug invoice_pk=invoice_pk %}"
+<form action="{% url 'django_ledger:invoice-update-items' entity_slug=entity_slug invoice_pk=invoice_model.uuid %}"
       method="post">
     <div class="columns is-multiline">
         <div class="column is-12">
@@ -10,8 +10,8 @@
         <div class="column is-12">
             <div class="table-container">
                 {% csrf_token %}
-                {{ item_formset.non_form_errors }}
-                {{ item_formset.management_form }}
+                {{ itemtxs_formset.non_form_errors }}
+                {{ itemtxs_formset.management_form }}
                 <table class="table is-fullwidth is-narrow is-striped is-bordered">
                     <thead>
                     <tr>
@@ -24,7 +24,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for f in item_formset %}
+                    {% for f in itemtxs_formset %}
                         <tr>
                             <td>
                                 {% for hidden_field in f.hidden_fields %}
@@ -43,7 +43,7 @@
                             <td class="has-text-right" id="{{ f.instance.html_id_total_amount }}">
                                 {% currency_symbol %}{{ f.instance.total_amount | currency_format }}</td>
                             <td class="has-text-centered">
-                                {% if item_formset.can_delete %}
+                                {% if itemtxs_formset.can_delete %}
                                     {{ f.DELETE }}
                                 {% endif %}
                             </td>
@@ -56,7 +56,7 @@
                         <th></th>
                         <th></th>
                         <th class="has-text-right">{% trans 'Total' %}</th>
-                        <th class="has-text-right">{% currency_symbol %}{{ total_amount_due | currency_format }}</th>
+                        <th class="has-text-right">{% currency_symbol %}{{ total_amount__sum | currency_format }}</th>
                         <th></th>
                     </tr>
                     </tfoot>

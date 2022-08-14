@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 
 UserModel = get_user_model()
 
@@ -53,6 +53,12 @@ class InvoiceModelQuerySet(models.QuerySet):
     def approved(self):
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
 
+    def active(self):
+        return self.filter(
+            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID) |
+            Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
+        )
+
 
 class InvoiceModelManager(models.Manager):
 
@@ -75,6 +81,7 @@ class InvoiceModelManager(models.Manager):
 
 
 class InvoiceModelAbstract(LedgerWrapperMixIn,
+                           PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
     IS_DEBIT_BALANCE = True
@@ -121,7 +128,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                                        null=True,
                                        verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
-                                           through='django_ledger.ItemThroughModel',
+                                           through='django_ledger.ItemTransactionModel',
                                            through_fields=('invoice_model', 'item_model'),
                                            verbose_name=_('Invoice Items'))
 
@@ -184,7 +191,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.invoice_number = generate_invoice_number()
 
         LedgerModel = lazy_loader.get_ledger_model()
-
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,
             posted=post_ledger,
@@ -290,7 +296,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                 'updated'
             ])
 
-
     # DRAFT...
     def mark_as_draft(self, commit: bool = False, **kwargs):
         if not self.can_draft():
@@ -322,7 +327,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
         # todo: revisit this logic...
-        itemthrough_qs = self.itemthroughmodel_set.all()
+        itemthrough_qs = self.itemtransactionmodel_set.all()
         if not itemthrough_qs.count():
             raise ValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
@@ -366,6 +371,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.save(update_fields=[
                 'invoice_status',
                 'approved_date',
+                'due_date',
                 'updated'
             ])
 
@@ -512,8 +518,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def get_status_action_date(self):
         return getattr(self, f'{self.invoice_status}_date')
 
-
-
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
 
@@ -543,12 +547,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
-    def get_invoice_item_data(self, queryset=None) -> tuple:
+    def get_itemtxs_data(self, queryset=None) -> tuple:
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all().select_related('item_model')
+            queryset = self.itemtransactionmodel_set.all().select_related('item_model')
         return queryset, queryset.aggregate(
-            amount_due=Sum('total_amount'),
+            Sum('total_amount'),
             total_items=Count('uuid')
         )
 
@@ -558,7 +562,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def get_item_data(self, entity_slug: str, queryset=None):
         if not queryset:
             # pylint: disable=no-member
-            queryset = self.itemthroughmodel_set.all()
+            queryset = self.itemtransactionmodel_set.all()
             queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                                               'entity_unit__uuid',
@@ -577,49 +581,21 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self, queryset=None, item_list: list = None) -> None or tuple:
-        if item_list:
+    def update_amount_due(self, itemtxs_qs=None, itemtxs_list: list = None) -> None or tuple:
+        if itemtxs_list:
             # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = round(sum(a.total_amount for a in item_list), 2)
+            self.amount_due = round(sum(a.total_amount for a in itemtxs_list), 2)
             return
-        queryset, item_data = self.get_invoice_item_data(queryset=queryset)
-        self.amount_due = round(item_data['amount_due'], 2)
-        return queryset, item_data
+        itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+        self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
+        return itemtxs_qs, itemtxs_agg
 
-    # def mark_as_paid(self,
-    #                  user_model,
-    #                  entity_slug: str,
-    #                  paid_date: date = None,
-    #                  itemthrough_queryset=None,
-    #                  commit: bool = False):
-    #
-    #     self.paid = True
-    #     self.progress = Decimal.from_float(1.0)
-    #     self.amount_paid = self.amount_due
-    #     paid_dt = localdate() if not paid_date else paid_date
-    #
-    #     if not self.paid_date:
-    #         self.paid_date = paid_dt
-    #     if self.paid_date > paid_dt:
-    #         raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-    #     if self.paid_date < self.date:
-    #         raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-    #                               f' date {self.date}.')
-    #     self.update_state()
-    #     self.clean()
-    #     if commit:
-    #         self.migrate_state(
-    #             user_model=user_model,
-    #             entity_slug=entity_slug,
-    #             itemthrough_queryset=itemthrough_queryset
-    #         )
-    #         ledger_model = self.ledger
-    #         ledger_model.locked = True
-    #         # pylint: disable=no-member
-    #         ledger_model.save(update_fields=['locked', 'updated'])
-    #         self.save()
+    def get_terms_start_date(self) -> date:
+        return self.approved_date
 
     def clean(self):
+        super(LedgerWrapperMixIn, self).clean()
+        super(PaymentTermsMixIn, self).clean()
         if not self.invoice_number:
             self.invoice_number = generate_invoice_number()
         if self.is_draft():
@@ -627,7 +603,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.paid = False
             self.paid_date = None
             self.progress = 0
-        super().clean()
+
 
 
 class InvoiceModel(InvoiceModelAbstract):

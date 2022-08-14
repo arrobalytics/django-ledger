@@ -23,6 +23,7 @@ from django_ledger.settings import (DJANGO_LEDGER_CURRENCY_SYMBOL as currency_sy
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
+# UNIT OF MEASURES MODEL....
 class UnitOfMeasureModelManager(models.Manager):
 
     def for_entity(self, entity_slug: str, user_model):
@@ -65,12 +66,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
         return f'{self.name} ({self.unit_abbr})'
 
 
-class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
-    """
-    Base Unit of Measure Model from Abstract.
-    """
-
-
+# ITEM MODEL....
 class ItemModelQuerySet(models.QuerySet):
 
     def active(self):
@@ -90,7 +86,7 @@ class ItemModelManager(models.Manager):
                     Q(entity__managers__in=[user_model]) |
                     Q(entity__admin=user_model)
             )
-        )
+        ).select_related('uom')
 
     def for_entity_active(self, entity_slug: str, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
@@ -111,25 +107,32 @@ class ItemModelManager(models.Manager):
         )
 
     def inventory(self, entity_slug: str, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(for_inventory=True).select_related('uom')
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(for_inventory=True)
 
     def for_bill(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
-            Q(is_product_or_service=False, for_inventory=False) |
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=False)
+            ) |
             Q(for_inventory=True)
         )
 
     def for_po(self, entity_slug: str, user_model):
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            Q(is_product_or_service=False, for_inventory=False) |
-            Q(for_inventory=True)
-        )
+        return self.inventory(entity_slug=entity_slug, user_model=user_model)
 
     def for_estimate(self, entity_slug: str, user_model):
         return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
+
+    def for_contract(self, entity_slug: str, user_model, ce_model_uuid):
+        qs = self.for_estimate(
+            entity_slug=entity_slug,
+            user_model=user_model
+        )
+        qs = qs.filter(itemtransactionmodel__ce_model_id=ce_model_uuid)
+        return qs.distinct('uuid')
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -334,22 +337,23 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.cogs_account = None
 
 
-class ItemThroughModelQueryset(models.QuerySet):
+# ITEM TRANSACTION MODELS...
+class ItemTransactionModelQuerySet(models.QuerySet):
 
     def is_received(self):
-        return self.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+        return self.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
     def in_transit(self):
-        return self.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+        return self.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
 
     def is_ordered(self):
-        return self.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+        return self.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
 
-class ItemThroughModelManager(models.Manager):
+class ItemTransactionModelManager(models.Manager):
 
     def get_queryset(self):
-        return ItemThroughModelQueryset(self.model, using=self._db)
+        return ItemTransactionModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, user_model, entity_slug):
         qs = self.get_queryset()
@@ -377,15 +381,34 @@ class ItemThroughModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return self.filter(ce_model_id__exact=cj_pk)
 
+    def for_contract(self, user_model, entity_slug, ce_pk):
+        """
+        Returns all ItemTransactionModels associated with an EstimateModel.
+        @param user_model: UserModel requesting data.
+        @param entity_slug: EntityModel slug field value.
+        @param ce_pk: EstimateModel UUID.
+        @return: ItemTransactionModel QuerySet
+        """
+        qs = self.for_entity(
+            entity_slug=entity_slug,
+            user_model=user_model
+        )
+        return qs.filter(
+            Q(ce_model_id__exact=ce_pk) |
+            Q(po_model__ce_model_id__exact=ce_pk) |
+            Q(bill_model__ce_model_id__exact=ce_pk) |
+            Q(invoice_model__ce_model_id__exact=ce_pk)
+        )
+
     def inventory_pipeline(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             Q(item_model__for_inventory=True) &
             Q(bill_model__isnull=False) &
             Q(po_item_status__in=[
-                ItemThroughModel.STATUS_ORDERED,
-                ItemThroughModel.STATUS_IN_TRANSIT,
-                ItemThroughModel.STATUS_RECEIVED,
+                ItemTransactionModel.STATUS_ORDERED,
+                ItemTransactionModel.STATUS_IN_TRANSIT,
+                ItemTransactionModel.STATUS_RECEIVED,
             ])
         )
 
@@ -401,15 +424,15 @@ class ItemThroughModelManager(models.Manager):
 
     def inventory_pipeline_ordered(self, entity_slug, user_model):
         qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_ORDERED)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
     def inventory_pipeline_intransit(self, entity_slug, user_model):
         qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_IN_TRANSIT)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
 
     def inventory_pipeline_received(self, entity_slug, user_model):
         qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemThroughModel.STATUS_RECEIVED)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
     def inventory_invoiced(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
@@ -427,7 +450,7 @@ class ItemThroughModelManager(models.Manager):
                     (
                             Q(bill_model__isnull=False) &
                             Q(po_model__po_status='approved') &
-                            Q(po_item_status__exact=ItemThroughModel.STATUS_RECEIVED)
+                            Q(po_item_status__exact=ItemTransactionModel.STATUS_RECEIVED)
                     ) |
 
                     # invoiced inventory...
@@ -470,7 +493,9 @@ class ItemThroughModelManager(models.Manager):
         raise NotImplementedError
 
 
-class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+    DECIMAL_PLACES = 2
+
     STATUS_NOT_ORDERED = 'not_ordered'
     STATUS_ORDERED = 'ordered'
     STATUS_IN_TRANSIT = 'in_transit'
@@ -486,84 +511,112 @@ class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    parent = models.ForeignKey('self',
+                               null=True,
+                               blank=True,
+                               on_delete=models.RESTRICT,
+                               related_name='children',
+                               verbose_name=_('Parent Item'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.PROTECT,
+                                    on_delete=models.RESTRICT,
                                     blank=True,
                                     null=True,
                                     verbose_name=_('Associated Entity Unit'))
     item_model = models.ForeignKey('django_ledger.ItemModel',
-                                   on_delete=models.PROTECT,
+                                   on_delete=models.RESTRICT,
                                    verbose_name=_('Item Model'))
     bill_model = models.ForeignKey('django_ledger.BillModel',
-                                   on_delete=models.PROTECT,
+                                   on_delete=models.RESTRICT,
                                    null=True,
                                    blank=True,
                                    verbose_name=_('Bill Model'))
     invoice_model = models.ForeignKey('django_ledger.InvoiceModel',
-                                      on_delete=models.PROTECT,
-                                      null=True, blank=True,
+                                      on_delete=models.RESTRICT,
+                                      null=True,
+                                      blank=True,
                                       verbose_name=_('Invoice Model'))
 
-    # Bill/ Invoice fields....
-    quantity = models.FloatField(default=0.0,
+    # LEDGER TRANSACTION Fields (Bill/Invoice)....
+    quantity = models.FloatField(null=True,
+                                 blank=True,
                                  verbose_name=_('Quantity'),
-                                 validators=[MinValueValidator(0)])
-    unit_cost = models.FloatField(default=0.0,
+                                 validators=[MinValueValidator(limit_value=0.0)])
+    unit_cost = models.FloatField(null=True,
+                                  blank=True,
                                   verbose_name=_('Cost Per Unit'),
-                                  validators=[MinValueValidator(0)])
+                                  validators=[MinValueValidator(limit_value=0.0)])
     total_amount = models.DecimalField(max_digits=20,
                                        editable=False,
-                                       decimal_places=2,
+                                       null=True,
+                                       blank=True,
+                                       decimal_places=DECIMAL_PLACES,
                                        verbose_name=_('Total Amount QTY x UnitCost'),
-                                       validators=[MinValueValidator(0)])
+                                       validators=[MinValueValidator(limit_value=0.0)])
 
     # Purchase Order fields...
     po_model = models.ForeignKey('django_ledger.PurchaseOrderModel',
-                                 on_delete=models.PROTECT,
+                                 on_delete=models.RESTRICT,
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Purchase Order Model'))
+    po_quantity = models.FloatField(null=True,
+                                    blank=True,
+                                    verbose_name=_('PO Quantity'),
+                                    help_text=_('Authorized item quantity for purchasing.'),
+                                    validators=[MinValueValidator(limit_value=0.0)])
+    po_unit_cost = models.FloatField(null=True,
+                                     blank=True,
+                                     verbose_name=_('PO Unit Cost'),
+                                     help_text=_('Purchase Order unit cost.'),
+                                     validators=[MinValueValidator(limit_value=0.0)])
+    po_total_amount = models.DecimalField(max_digits=20,
+                                          decimal_places=DECIMAL_PLACES,
+                                          null=True,
+                                          blank=True,
+                                          editable=False,
+                                          verbose_name=_('Authorized maximum item cost per Purchase Order'),
+                                          help_text=_('Maximum authorized cost per Purchase Order.'),
+                                          validators=[MinValueValidator(limit_value=0.0)])
     po_item_status = models.CharField(max_length=15,
                                       choices=PO_ITEM_STATUS,
                                       blank=True,
                                       null=True,
                                       verbose_name=_('PO Item Status'))
-    po_quantity = models.FloatField(default=0.0,
-                                    verbose_name=_('PO Quantity'),
-                                    help_text=_('Authorized item quantity for purchasing.'),
-                                    validators=[MinValueValidator(0)])
-    po_unit_cost = models.FloatField(default=0.0,
-                                     null=True,
-                                     blank=True,
-                                     verbose_name=_('PO Unit Cost'),
-                                     help_text=_('Purchase Order unit cost.'),
-                                     validators=[MinValueValidator(0)])
-    po_total_amount = models.DecimalField(max_digits=20,
-                                          default=Decimal('0.00'),
-                                          decimal_places=2,
-                                          verbose_name=_('Authorized maximum item cost per Purchase Order'),
-                                          help_text=_('Maximum authorized cost per Purchase Order.'),
-                                          validators=[MinValueValidator(0)])
 
-    # Customer Job / Contract fields...
+    # Estimate/Contract fields...
     ce_model = models.ForeignKey('django_ledger.EstimateModel',
                                  null=True,
                                  blank=True,
                                  verbose_name=_('Customer Estimate'),
-                                 on_delete=models.PROTECT)
-    ce_unit_revenue_estimate = models.FloatField(default=0.0,
-                                                 null=True,
+                                 on_delete=models.RESTRICT)
+    ce_quantity = models.FloatField(null=True,
+                                    blank=True,
+                                    verbose_name=_('Estimated/Contract Quantity'),
+                                    validators=[MinValueValidator(limit_value=0.0)])
+    ce_unit_cost_estimate = models.FloatField(null=True,
+                                              blank=True,
+                                              verbose_name=_('Estimate/Contract Cost per Unit.'),
+                                              validators=[MinValueValidator(limit_value=0.0)])
+    ce_cost_estimate = models.DecimalField(max_digits=20,
+                                           null=True,
+                                           blank=True,
+                                           decimal_places=DECIMAL_PLACES,
+                                           editable=False,
+                                           verbose_name=_('Total Estimate/Contract Cost.'),
+                                           validators=[MinValueValidator(limit_value=0.0)])
+    ce_unit_revenue_estimate = models.FloatField(null=True,
                                                  blank=True,
-                                                 verbose_name=_('Customer Estimate Revenue per Unit.'),
-                                                 validators=[MinValueValidator(0)])
+                                                 verbose_name=_('Estimate/Contract Revenue per Unit.'),
+                                                 validators=[MinValueValidator(limit_value=0.0)])
     ce_revenue_estimate = models.DecimalField(max_digits=20,
                                               null=True,
                                               blank=True,
-                                              decimal_places=2,
-                                              verbose_name=_('Total customer estimate revenue.'),
-                                              validators=[MinValueValidator(0)])
-
-    objects = ItemThroughModelManager()
+                                              decimal_places=DECIMAL_PLACES,
+                                              editable=False,
+                                              verbose_name=_('Total Estimate/Contract Revenue.'),
+                                              validators=[MinValueValidator(limit_value=0.0)])
+    item_notes = models.CharField(max_length=400, null=True, blank=True, verbose_name=_('Description'))
+    objects = ItemTransactionModelManager()
 
     class Meta:
         abstract = True
@@ -573,27 +626,23 @@ class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             models.Index(fields=['po_model', 'item_model']),
             models.Index(fields=['ce_model', 'item_model']),
             models.Index(fields=['po_item_status']),
+            models.Index(fields=['parent'])
         ]
 
     def __str__(self):
         # pylint: disable=no-member
 
-        amount = f'{currency_symbol}{self.total_amount}'
+        # amount = f'{currency_symbol}{self.total_amount}'
         if self.po_model_id:
             po_status_display = self.get_po_item_status_display()
-            return f'PO Through Model: {self.uuid} | {po_status_display} | {amount}'
+            return f'PO Model: {self.po_model_id} | {po_status_display} | {self.po_total_amount}'
         elif self.bill_model_id:
-            return f'Bill Through Model: {self.uuid} | {amount}'
+            return f'Bill Model: {self.bill_model_id} | {self.total_amount}'
         elif self.invoice_model_id:
-            return f'Invoice Through Model: {self.uuid} | {amount}'
+            return f'Invoice Model: {self.invoice_model_id} | {self.total_amount}'
         elif self.ce_model_id:
-            return f'Customer Job Through Model: {self.uuid} | {amount}'
-        return f'Orphan Item Through Model: {self.uuid} | {amount}'
-
-    # def can_order(self):
-    #     if not self.po_model_id:
-    #         return False
-    #
+            return f'Estimate/Contract Model: {self.ce_model_id} | {self.ce_cost_estimate}'
+        return f'Orphan {self.__class__.__name__}: {self.uuid}'
 
     def is_received(self):
         return self.po_item_status == self.STATUS_RECEIVED
@@ -601,47 +650,101 @@ class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     def is_canceled(self):
         return self.po_item_status == self.STATUS_CANCELED
 
+    # ItemTransactionModel Associations...
+    def for_estimate(self) -> bool:
+        """
+        True if ItemTransactionModel is associated with an EstimateModel, else False.
+        @return: True/False
+        """
+        return self.ce_model_id is not None
+
+    def for_po(self):
+        """
+        True if ItemTransactionModel is associated with a PurchaseOrderModel, else False.
+        @return:  True/False
+        """
+        return self.po_model_id is not None
+
+    def for_invoice(self):
+        """
+        True if ItemTransactionModel is associated with an InvoiceModel, else False.
+        @return:  True/False
+        """
+        return self.invoice_model_id is not None
+
+    def for_bill(self):
+        """
+        True if ItemTransactionModel is associated with a BillModel, else False.
+        @return:  True/False
+        """
+        return self.bill_model_id is not None
+
+    # TRANSACTIONS...
     def update_total_amount(self):
-        qty = self.quantity
-        if not isinstance(qty, Decimal):
-            qty = Decimal.from_float(qty)
+        if any([
+            self.for_bill(),
+            self.for_invoice(),
+            self.for_po()
+        ]):
+            if self.quantity is None:
+                self.quantity = 0.0
 
-        uc = self.unit_cost
-        if not isinstance(uc, Decimal):
-            uc = Decimal.from_float(uc)
+            if self.unit_cost is None:
+                self.unit_cost = 0.0
 
-        total_amount = round(uc * qty, 2)
+            self.total_amount = round(
+                Decimal.from_float(self.quantity * self.unit_cost), self.DECIMAL_PLACES
+            )
 
-        if self.po_total_amount > 0:
-            if total_amount > self.po_total_amount:
-                # checks if difference is within tolerance...
-                diff = total_amount - self.po_total_amount
-                if diff > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
-                    raise ValidationError(
-                        f'Difference between PO Amount {self.po_total_amount} and Bill {total_amount} '
-                        f'exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}')
-                self.total_amount = self.po_total_amount
-                return
-        self.total_amount = total_amount
+            if self.for_po():
 
+                if self.quantity > self.po_quantity:
+                    raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
+                                          f'PO quantity {self.po_quantity}')
+                if self.total_amount > self.po_total_amount:
+                    raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
+                                          f'PO amount {self.po_total_amount}')
+
+                if self.total_amount > self.po_total_amount:
+                    # checks if difference is within tolerance...
+                    diff = self.total_amount - self.po_total_amount
+                    if diff > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+                        raise ValidationError(
+                            f'Difference between PO Amount {self.po_total_amount} and Bill {self.total_amount} '
+                            f'exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}')
+                    self.total_amount = self.po_total_amount
+                    return
+
+    # PURCHASE ORDER...
     def update_po_total_amount(self):
-        self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost), 2)
+        if self.for_po():
+            if self.po_quantity is None:
+                self.po_quantity = 0.0
+            if self.po_unit_cost is None:
+                self.po_unit_cost = 0.0
+
+            self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost),
+                                         self.DECIMAL_PLACES)
+
+    # ESTIMATE/CONTRACTS...
+    def update_cost_estimate(self):
+        if self.for_estimate():
+            if self.ce_quantity is None:
+                self.ce_quantity = 0.00
+            if self.ce_unit_cost_estimate is None:
+                self.ce_unit_cost_estimate = 0.00
+            self.ce_cost_estimate = round(Decimal.from_float(self.ce_quantity * self.ce_unit_cost_estimate),
+                                          self.DECIMAL_PLACES)
 
     def update_revenue_estimate(self):
-        if self.ce_model_id:
-            qty = self.quantity
-            if not isinstance(qty, Decimal):
-                qty = Decimal.from_float(qty)
+        if self.for_estimate():
+            if self.ce_quantity is None:
+                self.ce_quantity = 0.00
+            if self.ce_unit_revenue_estimate is None:
+                self.ce_unit_revenue_estimate = 0.00
+            self.ce_revenue_estimate = Decimal.from_float(self.ce_quantity * self.ce_unit_revenue_estimate)
 
-            if not self.ce_unit_revenue_estimate:
-                raise ValidationError('Must provide unit sales price estimate.')
-
-            uc = self.ce_unit_revenue_estimate
-            if not isinstance(uc, Decimal):
-                uc = Decimal.from_float(uc)
-
-            self.ce_revenue_estimate = uc * qty
-
+    # HTML TAGS...
     def html_id(self):
         return f'djl-item-{self.uuid}'
 
@@ -671,38 +774,24 @@ class ItemThroughModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
 
     def clean(self):
 
-        # pylint: disable=no-member
-        if self.ce_model_id:
-            if self.ce_unit_revenue_estimate is None:
-                self.ce_unit_revenue_estimate = 0.00
-            if self.ce_revenue_estimate is None:
-                self.ce_revenue_estimate = 0.00
-            self.po_model = None
-            self.bill_model = None
-            self.ce_revenue_estimate = self.ce_unit_revenue_estimate * self.quantity
-        else:
-            self.ce_revenue_estimate = None
-            self.ce_unit_revenue_estimate = None
-
         self.update_po_total_amount()
-        self.update_total_amount()
+        self.update_cost_estimate()
         self.update_revenue_estimate()
 
-        # pylint: disable=no-member
-        if self.po_model_id:
-            if self.quantity > self.po_quantity:
-                raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
-                                      f'PO quantity {self.po_quantity}')
-            if self.total_amount > self.po_total_amount:
-                raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
-                                      f'PO amount {self.po_total_amount}')
-        else:
-            self.po_item_status = None
+        self.update_total_amount()
 
 
-class ItemThroughModel(ItemThroughModelAbstract):
+# FINAL MODEL CLASSES....
+
+class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
-    Base Item Model Through Model for Many to Many Relationships
+    Base Unit of Measure Model from Abstract.
+    """
+
+
+class ItemTransactionModel(ItemTransactionModelAbstract):
+    """
+    Base Item Transaction Model.
     """
 
 

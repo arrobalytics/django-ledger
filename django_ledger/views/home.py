@@ -22,7 +22,7 @@ class RootUrlView(RedirectView):
         return reverse('django_ledger:home')
 
 
-class DasboardView(LoginRequiredMixIn, ListView):
+class DashboardView(LoginRequiredMixIn, ListView):
     template_name = 'django_ledger/home.html'
     PAGE_TITLE = _('My Dashboard')
     context_object_name = 'entities'
@@ -40,4 +40,4 @@ class DasboardView(LoginRequiredMixIn, ListView):
     def get_queryset(self):
         return EntityModel.objects.for_user(
             user_model=self.request.user
-        )
+        ).order_by('-created')

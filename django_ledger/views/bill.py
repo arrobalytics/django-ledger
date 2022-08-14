@@ -8,22 +8,21 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import (UpdateView, CreateView, DeleteView,
-                                  ArchiveIndexView, MonthArchiveView, YearArchiveView,
+from django.views.generic import (UpdateView, CreateView, ArchiveIndexView, MonthArchiveView, YearArchiveView,
                                   DetailView, RedirectView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import (BillModelCreateForm, BaseBillModelUpdateForm, DraftBillModelUpdateForm,
-                                      BillItemFormset, BillModelConfigureForm, InReviewBillModelUpdateForm,
+                                      BillItemTransactionFormset, BillModelConfigureForm, InReviewBillModelUpdateForm,
                                       ApprovedBillModelUpdateForm, AccruedAndApprovedBillModelUpdateForm,
                                       PaidBillModelUpdateForm)
-from django_ledger.models import EntityModel, PurchaseOrderModel, LedgerModel, EstimateModel
+from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel
 from django_ledger.models.bill import BillModel
 from django_ledger.views.mixins import LoginRequiredMixIn
 
@@ -32,7 +31,7 @@ class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
     template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
-    date_field = 'date'
+    date_field = 'created'
     paginate_by = 20
     paginate_orphans = 2
     allow_empty = True
@@ -94,7 +93,6 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                 return HttpResponseNotFound('404 Not Found')
         return response
 
-
     def get_context_data(self, **kwargs):
         context = super(BillModelCreateView, self).get_context_data(**kwargs)
 
@@ -113,14 +111,14 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             po_qs = PurchaseOrderModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).prefetch_related('itemthroughmodel_set')
+            ).prefetch_related('itemtransactionmodel_set')
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
-            po_items = po_model.itemthroughmodel_set.filter(
+            po_itemtxs_qs = po_model.itemtransactionmodel_set.filter(
                 bill_model__isnull=True,
                 uuid__in=po_item_uuids
             )
             context['po_model'] = po_model
-            context['po_items'] = po_items
+            context['po_itemtxs_qs'] = po_itemtxs_qs
             form_action = reverse('django_ledger:bill-create-po',
                                   kwargs={
                                       'entity_slug': self.kwargs['entity_slug'],
@@ -148,7 +146,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
 
     def get_initial(self):
         return {
-            'date': localdate()
+            'draft_date': localdate()
         }
 
     def get_form(self, form_class=None):
@@ -172,7 +170,6 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             bill_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
-
         elif self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
             item_uuids = self.request.GET.get('item_uuids')
@@ -185,26 +182,25 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             )
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
 
-            if po_model.po_date > bill_model.date:
+            try:
+                bill_model.can_bind_po(po_model, raise_exception=True)
+            except ValidationError as e:
                 messages.add_message(self.request,
-                                     message=f'Bill Date {bill_model.date} cannot be'
-                                             f' earlier than PO Date {po_model.po_date}',
+                                     message=e.message,
                                      level=messages.ERROR,
                                      extra_tags='is-danger')
                 return self.render_to_response(self.get_context_data(form=form))
 
-            po_model_items_qs = po_model.itemthroughmodel_set.filter(uuid__in=item_uuids)
+            po_model_items_qs = po_model.itemtransactionmodel_set.filter(uuid__in=item_uuids)
 
-            bill_model.update_amount_due(queryset=po_model_items_qs)
+            if po_model.is_contract_bound():
+                bill_model.ce_model_id = po_model.ce_model_id
+
+            bill_model.update_amount_due(itemtxs_qs=po_model_items_qs)
             bill_model.new_state(commit=True)
             bill_model.clean()
             bill_model.save()
             po_model_items_qs.update(bill_model=bill_model)
-            bill_model.migrate_state(
-                user_model=self.request.user,
-                entity_slug=self.kwargs['entity_slug'],
-                itemthrough_queryset=po_model_items_qs
-            )
             return HttpResponseRedirect(self.get_success_url())
         elif self.for_estimate:
             estimate_qs = EstimateModel.objects.for_entity(
@@ -212,7 +208,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                 user_model=self.request.user
             )
             estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
-            bill_model.ce_model = estimate_model
+            bill_model.ce_model_id = estimate_model.uuid
             bill_model.clean()
             bill_model.save()
             return HttpResponseRedirect(self.get_success_url())
@@ -259,11 +255,11 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
         context['header_title'] = title
 
         bill_model: BillModel = self.object
-        bill_items_qs, item_data = bill_model.get_itemthrough_data(
-            queryset=bill_model.itemthroughmodel_set.all()
+        bill_items_qs, item_data = bill_model.get_itemtxs_data(
+            queryset=bill_model.itemtransactionmodel_set.all()
         )
         context['bill_items'] = bill_items_qs
-        context['total_amount_due'] = item_data['amount_due']
+        context['total_amount__sum'] = item_data['total_amount__sum']
 
         if not bill_model.is_configured():
             link = format_html(f"""
@@ -285,7 +281,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).prefetch_related(
-            'itemthroughmodel_set',
+            'itemtransactionmodel_set',
             'ledger__journal_entries__entity_unit'
         ).select_related('ledger', 'ledger__entity', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
 
@@ -303,14 +299,15 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.item_through_qs = None
+        # todo: investigate why you need this...?
+        self.itemtxs_qs = None
 
-    def get_item_through_queryset(self):
+    def get_itemtxs_qs(self):
         bill_model: BillModel = self.object
-        if not self.item_through_qs:
-            self.item_through_qs = bill_model.itemthroughmodel_set.select_related(
+        if not self.itemtxs_qs:
+            self.itemtxs_qs = bill_model.itemtransactionmodel_set.select_related(
                 'item_model', 'po_model', 'bill_model').order_by('-total_amount')
-        return self.item_through_qs
+        return self.itemtxs_qs
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -330,7 +327,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         bill_model: BillModel = self.object
         if not bill_model.is_configured():
             return BillModelConfigureForm
-
         if bill_model.is_draft():
             return DraftBillModelUpdateForm
         elif bill_model.is_review():
@@ -344,12 +340,11 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         return BaseBillModelUpdateForm
 
     def get_context_data(self, *, object_list=None,
-                         item_formset: BillItemFormset = None,
+                         itemtxs_formset: BillItemTransactionFormset = None,
                          **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
-        bill_model: BillModel = self.object
+        bill_model: BillModel = self.get_object()
         ledger_model = bill_model.ledger
-        item_through_qs = self.get_item_through_queryset()
 
         title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
@@ -378,29 +373,25 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                  f'This bill has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
-        if not item_formset:
-            _, aggregate_data = bill_model.get_itemthrough_data(
-                queryset=item_through_qs
-            )
-
-            item_formset = BillItemFormset(
+        if not itemtxs_formset:
+            itemtxs_qs = self.get_itemtxs_qs()
+            itemtxs_qs, itemtxs_agg = bill_model.get_itemtxs_data(queryset=itemtxs_qs)
+            itemtxs_formset = BillItemTransactionFormset(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 bill_model=bill_model,
-                queryset=item_through_qs
+                queryset=itemtxs_qs
             )
         else:
-            _, aggregate_data = bill_model.get_itemthrough_data(
-                queryset=item_formset.queryset
-            )
+            itemtxs_qs, itemtxs_agg = bill_model.get_itemtxs_data(queryset=itemtxs_formset.queryset)
 
-        has_po = any(i.po_model_id for i in item_through_qs)
+        has_po = any(i.po_model_id for i in itemtxs_qs)
         if has_po:
-            item_formset.can_delete = False
-            item_formset.has_po = has_po
+            itemtxs_formset.can_delete = False
+            itemtxs_formset.has_po = has_po
 
-        context['item_formset'] = item_formset
-        context['total_amount_due'] = aggregate_data['amount_due']
+        context['itemtxs_formset'] = itemtxs_formset
+        context['total_amount__sum'] = itemtxs_agg['total_amount__sum']
         context['has_po'] = has_po
         return context
 
@@ -429,47 +420,43 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                              extra_tags='is-success')
         return super().form_valid(form)
 
-    def get(self, request, *args, **kwargs):
-        response = super(BillModelUpdateView, self).get(request, *args, **kwargs)
-
-        # this action can only be used via POST request...
+    def get(self, request, entity_slug, bill_pk, *args, **kwargs):
         if self.action_update_items:
-            return HttpResponseBadRequest()
-
-        return response
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:bill-update',
+                                    kwargs={
+                                        'entity_slug': entity_slug,
+                                        'bill_pk': bill_pk
+                                    })
+            )
+        return super(BillModelUpdateView, self).get(request, entity_slug, bill_pk, *args, **kwargs)
 
     def post(self, request, bill_pk, entity_slug, *args, **kwargs):
-
-        response = super(BillModelUpdateView, self).post(request, *args, **kwargs)
-        bill_model: BillModel = self.object
-
-        # todo: can this be a separate FormView view???
         if self.action_update_items:
-            item_formset: BillItemFormset = BillItemFormset(request.POST,
-                                                            user_model=self.request.user,
-                                                            bill_model=bill_model,
-                                                            entity_slug=entity_slug)
 
-            if item_formset.is_valid():
-                if item_formset.has_changed():
-                    invoice_items = item_formset.save(commit=False)
-                    bill_qs = BillModel.objects.for_entity(
-                        user_model=self.request.user,
-                        entity_slug=entity_slug
-                    )
-                    bill_model: BillModel = get_object_or_404(bill_qs, uuid__exact=bill_pk)
+            if not request.user.is_authenticated:
+                return HttpResponseForbidden()
 
-                    entity_qs = EntityModel.objects.for_user(
-                        user_model=self.request.user
-                    )
+            queryset = self.get_queryset()
+            bill_model: BillModel = self.get_object(queryset=queryset)
+            self.object = bill_model
+            itemtxs_formset: BillItemTransactionFormset = BillItemTransactionFormset(request.POST,
+                                                                                     user_model=self.request.user,
+                                                                                     bill_model=bill_model,
+                                                                                     entity_slug=entity_slug)
+
+            if itemtxs_formset.has_changed():
+                if itemtxs_formset.is_valid():
+                    itemtxs_list = itemtxs_formset.save(commit=False)
+                    entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
-                    for item in invoice_items:
-                        item.entity = entity_model
-                        item.bill_model = bill_model
+                    for itemtxs in itemtxs_list:
+                        itemtxs.bill_model_id = bill_model.uuid
+                        itemtxs.clean()
 
-                    item_formset.save()
-                    bill_model.update_amount_due()
+                    itemtxs_list = itemtxs_formset.save()
+                    itemtxs_qs, itemtxs_agg = bill_model.update_amount_due()
                     bill_model.new_state(commit=True)
                     bill_model.clean()
                     bill_model.save(update_fields=['amount_due',
@@ -481,8 +468,8 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                     bill_model.migrate_state(
                         entity_slug=entity_slug,
                         user_model=self.request.user,
-                        # itemthrough_models=bill_item_list,
-                        force_migrate=True
+                        itemtxs_qs=itemtxs_qs,
+                        raise_exception=False
                     )
 
                     messages.add_message(request,
@@ -490,17 +477,17 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                          level=messages.SUCCESS,
                                          extra_tags='is-success')
 
-                    return HttpResponseRedirect(reverse('django_ledger:bill-update',
-                                                        kwargs={
-                                                            'entity_slug': entity_slug,
-                                                            'bill_pk': bill_pk
-                                                        }))
-
-            else:
-                context = self.get_context_data(item_formset=item_formset)
-                return self.render_to_response(context=context)
-
-        return response
+                    # if valid get saved formset from DB
+                    return HttpResponseRedirect(
+                        redirect_to=reverse('django_ledger:bill-update',
+                                            kwargs={
+                                                'entity_slug': entity_slug,
+                                                'bill_pk': bill_pk
+                                            })
+                    )
+                # if not valid, return formset with errors...
+                return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
+        return super(BillModelUpdateView, self).post(request, **kwargs)
 
 
 # ACTION VIEWS...
@@ -528,10 +515,10 @@ class BaseBillActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
         response = super(BaseBillActionView, self).get(request, *args, **kwargs)
-        ce_model: BillModel = self.get_object()
+        bill_model: BillModel = self.get_object()
 
         try:
-            getattr(ce_model, self.action_name)(commit=self.commit, **kwargs)
+            getattr(bill_model, self.action_name)(commit=self.commit, **kwargs)
         except ValidationError as e:
             messages.add_message(request,
                                  message=e.message,

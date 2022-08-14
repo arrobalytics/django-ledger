@@ -40,22 +40,22 @@ class ActivityFilterForm(Form):
                            ))
 
 
-class AsOfDateFilterForm(Form):
-
-    def __init__(self, *args, form_id=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.form_id = form_id
-        if form_id:
-            self.fields['date'].widget.attrs['class'] += f' djetler-end-date-filter-input-{self.form_id}'
-
-    entity_slug = CharField(
-        max_length=150,
-        widget=HiddenInput()
-    )
-    date = DateField(
-        widget=DateInput(
-            attrs={
-                'class': 'is-hidden',
-                'data-input': True,
-            }
-        ))
+# class AsOfDateFilterForm(Form):
+#
+#     def __init__(self, *args, form_id=None, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.form_id = form_id
+#         if form_id:
+#             self.fields['date'].widget.attrs['class'] += f' djetler-end-date-filter-input-{self.form_id}'
+#
+#     entity_slug = CharField(
+#         max_length=150,
+#         widget=HiddenInput()
+#     )
+#     date = DateField(
+#         widget=DateInput(
+#             attrs={
+#                 'class': 'is-hidden',
+#                 'data-input': True,
+#             }
+#         ))

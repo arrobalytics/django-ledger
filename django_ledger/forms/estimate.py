@@ -10,7 +10,7 @@ from django import forms
 from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CustomerModel, ItemThroughModel, ItemModel, EntityUnitModel
+from django_ledger.models import CustomerModel, ItemTransactionModel, ItemModel, EntityUnitModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -80,12 +80,12 @@ class DraftEstimateModelUpdateForm(BaseEstimateModelUpdateForm):
 
 class EstimateItemModelForm(ModelForm):
     class Meta:
-        model = ItemThroughModel
+        model = ItemTransactionModel
         fields = [
             'item_model',
             'entity_unit',
-            'unit_cost',
-            'quantity',
+            'ce_quantity',
+            'ce_unit_cost_estimate',
             'ce_unit_revenue_estimate',
         ]
         widgets = {
@@ -95,13 +95,13 @@ class EstimateItemModelForm(ModelForm):
             'entity_unit': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'unit_cost': TextInput(attrs={
+            'ce_unit_cost_estimate': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
             'ce_unit_revenue_estimate': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
-            'quantity': TextInput(attrs={
+            'ce_quantity': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
@@ -132,15 +132,15 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
 
             if not self.ESTIMATE_MODEL.can_update_items():
                 form.fields['item_model'].disabled = True
-                form.fields['quantity'].disabled = True
-                form.fields['unit_cost'].disabled = True
-                form.fields['entity_unit'].disabled = True
+                form.fields['ce_unit_cost_estimate'].disabled = True
+                form.fields['ce_quantity'].disabled = True
                 form.fields['ce_unit_revenue_estimate'].disabled = True
+                form.fields['entity_unit'].disabled = True
 
 
 # todo: add instance where can_delete = False
 CanEditEstimateItemModelFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=EstimateItemModelForm,
     formset=BaseEstimateItemModelFormset,
     can_delete=True,
@@ -148,7 +148,7 @@ CanEditEstimateItemModelFormset = modelformset_factory(
 )
 
 ReadOnlyEstimateItemModelFormset = modelformset_factory(
-    model=ItemThroughModel,
+    model=ItemTransactionModel,
     form=EstimateItemModelForm,
     formset=BaseEstimateItemModelFormset,
     can_delete=False,

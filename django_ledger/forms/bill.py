@@ -1,3 +1,5 @@
+from typing import Optional
+
 from django.forms import (ModelForm, DateInput, TextInput, Select,
                           CheckboxInput, BaseModelFormSet,
                           modelformset_factory, Textarea)
@@ -5,7 +7,7 @@ from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemThroughModel,
+from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel, PurchaseOrderModel,
                                   VendorModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -52,14 +54,17 @@ class BillModelCreateForm(ModelForm):
         fields = [
             'vendor',
             'xref',
-            'date',
+            'draft_date',
             'terms',
             'cash_account',
             'prepaid_account',
             'unearned_account',
         ]
+        labels = {
+            'draft_date': _('Date')
+        }
         widgets = {
-            'date': DateInput(attrs={
+            'draft_date': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Bill Date (YYYY-MM-DD)...'),
                 'id': 'djl-bill-date-input'
@@ -99,19 +104,6 @@ class BillModelCreateForm(ModelForm):
         }
 
 
-# class BillModelCreateForm(BillModelCreateForEstimateForm):
-#     class Meta(BillModelCreateForEstimateForm.Meta):
-#         fields = [
-#             'vendor',
-#             # 'xref',
-#             'date',
-#             'terms',
-#             'cash_account',
-#             'prepaid_account',
-#             'unearned_account',
-#         ]
-
-
 class BaseBillModelUpdateForm(BillModelCreateForm):
 
     def __init__(self,
@@ -129,7 +121,8 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
             self.BILL_MODEL.update_state()
             self.instance.migrate_state(
                 user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
+                entity_slug=self.ENTITY_SLUG,
+                raise_exception=False
             )
         super().save(commit=commit)
 
@@ -233,19 +226,19 @@ class BillModelConfigureForm(BaseBillModelUpdateForm):
         ]
 
 
-class BillItemForm(ModelForm):
+class BillItemTransactionForm(ModelForm):
 
     def clean(self):
-        cleaned_data = super(BillItemForm, self).clean()
-        bill_item_model: ItemThroughModel = self.instance
-        if bill_item_model.po_model is not None:
+        cleaned_data = super(BillItemTransactionForm, self).clean()
+        itemtxs_model: ItemTransactionModel = self.instance
+        if itemtxs_model.po_model is not None:
             quantity = cleaned_data['quantity']
-            if quantity > bill_item_model.po_quantity:
-                raise ValidationError(f'Cannot bill more than {bill_item_model.po_quantity} authorized.')
+            if quantity > itemtxs_model.po_quantity:
+                raise ValidationError(f'Cannot bill more than {itemtxs_model.po_quantity} authorized.')
         return cleaned_data
 
     class Meta:
-        model = ItemThroughModel
+        model = ItemTransactionModel
         fields = [
             'item_model',
             'unit_cost',
@@ -268,9 +261,13 @@ class BillItemForm(ModelForm):
         }
 
 
-class BaseBillItemFormset(BaseModelFormSet):
+class BaseBillItemTransactionFormset(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, bill_model: BillModel, user_model, **kwargs):
+    def __init__(self, *args,
+                 entity_slug,
+                 bill_model: BillModel,
+                 user_model,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
         self.BILL_MODEL = bill_model
@@ -296,16 +293,16 @@ class BaseBillItemFormset(BaseModelFormSet):
                 form.fields['unit_cost'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
-            instance: ItemThroughModel = form.instance
+            instance: ItemTransactionModel = form.instance
             if instance.po_model_id:
                 form.fields['item_model'].disabled = True
                 form.fields['entity_unit'].disabled = True
 
 
-BillItemFormset = modelformset_factory(
-    model=ItemThroughModel,
-    form=BillItemForm,
-    formset=BaseBillItemFormset,
+BillItemTransactionFormset = modelformset_factory(
+    model=ItemTransactionModel,
+    form=BillItemTransactionForm,
+    formset=BaseBillItemTransactionFormset,
     can_delete=True,
     extra=5
 )

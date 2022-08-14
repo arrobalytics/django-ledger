@@ -12,22 +12,32 @@
                 </h2>
             </div>
             <div class="card-content">
+                <h2 class="is-size-2 has-text-weight-Bold">{% trans 'Status' %}: {{ po_model.get_po_status_display }}</h2>
+
+                {# Display PO Contract Information #}
+                {% if po_model.is_contract_bound %}
+                    <h3 class="is-size-4 has-text-weight-light is-italic">{% trans 'Contract' %}:
+                        {{ po_model.ce_model.estimate_number }}</h3>
+                    <a href="{% url 'django_ledger:customer-estimate-detail' entity_slug=view.kwargs.entity_slug ce_pk=po_model.ce_model_id %}"
+                       class="button is-small">{% trans 'View' %}</a>
+                {% endif %}
 
                 {% if po_model.is_draft %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
-                        {% currency_symbol %}{{ po_model.po_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Draft Date' %}:{{ po_model.draft_date | date }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                 {% endif %}
 
                 {% if po_model.is_review %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Review Date' %}:{{ po_model.in_review_date | date }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                 {% endif %}
 
                 {% if po_model.is_approved %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Approved Date' %}:{{ po_model.approved_date | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
-                        {{ po_model.po_date | date }}</h3>
+                        {{ po_model.approved_date | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Received Amount' %}:
@@ -37,8 +47,9 @@
                 {% endif %}
 
                 {% if po_model.is_fulfilled %}
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled Date' %}:{{ po_model.fulfillment_date | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
-                        {{ po_model.po_date | date }}</h3>
+                        {{ po_model.approved_date | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled' %}:

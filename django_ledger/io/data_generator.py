@@ -19,7 +19,7 @@ from django_ledger.io import INCOME_SALES, ASSET_CA_INVENTORY, COGS, ASSET_CA_CA
     LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
-    BillModel, generate_bill_number, ItemThroughModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
+    BillModel, generate_bill_number, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
     create_entity_unit_slug, EstimateModel, generate_estimate_number
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
@@ -123,23 +123,14 @@ class EntityDataGenerator:
         for i in range(self.tx_quantity):
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
             self.create_estimates(date_draft=start_dttm)
-            self.create_bill(date_draft=start_dttm)
-            self.create_invoice(date_draft=start_dttm)
+
             if random() > 0.4:
                 self.create_po(date_draft=start_dttm)
+                self.recount_inventory()
+                self.update_products()
 
-            else:
-                if count_inventory:
-                    self.recount_inventory()
-                    count_inventory = False
-                    self.update_products()
-
-            #
-            # ItemModel.objects.bulk_update(self.product_models,
-            #                               fields=[
-            #                                   'inventory_received',
-            #                                   'inventory_received_value'
-            #                               ])
+            self.create_bill(date_draft=start_dttm)
+            self.create_invoice(date_draft=start_dttm)
 
     def get_next_date(self, prev_date: date = None) -> date:
         if not prev_date:
@@ -380,11 +371,11 @@ class EntityDataGenerator:
         customer_estimate.save()
 
         estimate_items = [
-            ItemThroughModel(
+            ItemTransactionModel(
                 ce_model=customer_estimate,
                 item_model=choice(self.product_and_services_models),
-                quantity=round(random() * randint(5, 15), 2),
-                unit_cost=round(random() * randint(50, 100), 2),
+                ce_quantity=round(random() * randint(5, 15), 2),
+                ce_unit_cost_estimate=round(random() * randint(50, 100), 2),
                 ce_unit_revenue_estimate=round(random() * randint(80, 120) * (1 + 0.2 * random()), 2),
                 entity_unit=choice(self.entity_unit_models) if random() > .75 else None
             ) for _ in range(randint(1, 10))
@@ -397,7 +388,7 @@ class EntityDataGenerator:
         customer_estimate.update_state(queryset=estimate_items)
         customer_estimate.save()
 
-        estimate_items = customer_estimate.itemthroughmodel_set.bulk_create(objs=estimate_items)
+        estimate_items = customer_estimate.itemtransactionmodel_set.bulk_create(objs=estimate_items)
 
         if random() > 0.25:
             date_in_review = self.get_next_date(date_draft)
@@ -439,7 +430,7 @@ class EntityDataGenerator:
         bill_model.save()
 
         bill_items = [
-            ItemThroughModel(
+            ItemTransactionModel(
                 bill_model=bill_model,
                 item_model=choice(self.expense_models),
                 quantity=round(random() * randint(5, 15), 2),
@@ -451,8 +442,8 @@ class EntityDataGenerator:
         for bi in bill_items:
             bi.full_clean()
 
-        bill_model.update_amount_due(item_list=bill_items)
-        bill_model.itemthroughmodel_set.bulk_create(bill_items)
+        bill_model.update_amount_due(itemtxs_list=bill_items)
+        bill_model.itemtransactionmodel_set.bulk_create(bill_items)
         bill_model.full_clean()
         bill_model.save()
 
@@ -495,7 +486,7 @@ class EntityDataGenerator:
         po_model.save()
 
         po_items = [
-            ItemThroughModel(
+            ItemTransactionModel(
                 po_model=po_model,
                 item_model=choice(self.inventory_models),
                 po_quantity=round(random() * randint(3, 10), 2),
@@ -507,12 +498,12 @@ class EntityDataGenerator:
         for poi in po_items:
             poi.full_clean()
 
-        po_model.update_po_state(item_list=po_items)
+        po_model.update_po_state(itemtxs_list=po_items)
         po_model.full_clean()
         po_model.save()
 
         # pylint: disable=no-member
-        po_items = po_model.itemthroughmodel_set.bulk_create(po_items)
+        po_items = po_model.itemtransactionmodel_set.bulk_create(po_items)
 
         # mark as approved...
         if random() > 0.25:
@@ -554,15 +545,15 @@ class EntityDataGenerator:
                         po_i.quantity = round(po_i.po_quantity, 2)
                         po_i.unit_cost = round(po_i.po_unit_cost, 2)
                         po_i.bill_model = bill_model
-                        po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
+                        po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                         po_i.full_clean()
 
-                    bill_model.update_amount_due(item_list=po_items)
+                    bill_model.update_amount_due(itemtxs_list=po_items)
                     bill_model.full_clean()
                     bill_model.update_state()
                     bill_model.save()
 
-                    po_model.itemthroughmodel_set.bulk_update(
+                    po_model.itemtransactionmodel_set.bulk_update(
                         po_items,
                         fields=[
                             'po_total_amount',
@@ -594,11 +585,11 @@ class EntityDataGenerator:
 
                                 if random() > 0.20:
                                     for po_i in po_items:
-                                        po_i.po_item_status = ItemThroughModel.STATUS_RECEIVED
+                                        po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                                         po_i.full_clean()
 
                                     # todo: can pass po items??..
-                                    po_model.itemthroughmodel_set.bulk_update(po_items,
+                                    po_model.itemtransactionmodel_set.bulk_update(po_items,
                                                                               fields=[
                                                                                   'po_item_status',
                                                                                   'updated'
@@ -657,7 +648,7 @@ class EntityDataGenerator:
                     quantity = 0.0
                     unit_cost = 0.0
 
-            itm = ItemThroughModel(
+            itm = ItemTransactionModel(
                 invoice_model=invoice_model,
                 item_model=item_model,
                 quantity=quantity,
@@ -667,8 +658,8 @@ class EntityDataGenerator:
             itm.full_clean()
             invoice_items.append(itm)
 
-        invoice_items = invoice_model.itemthroughmodel_set.bulk_create(invoice_items)
-        invoice_model.update_amount_due(item_list=invoice_items)
+        invoice_items = invoice_model.itemtransactionmodel_set.bulk_create(invoice_items)
+        invoice_model.update_amount_due(itemtxs_list=invoice_items)
         invoice_model.full_clean()
         invoice_model.save()
 
