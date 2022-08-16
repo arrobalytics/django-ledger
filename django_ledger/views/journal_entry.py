@@ -14,11 +14,11 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
 from django_ledger.models.journalentry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 # JE Views ---
-class JournalEntryListView(LoginRequiredMixIn, ListView):
+class JournalEntryListView(DjangoLedgerSecurityMixIn, ListView):
     context_object_name = 'journal_entries'
     template_name = 'django_ledger/je_list.html'
     PAGE_TITLE = _('Journal Entries')
@@ -39,7 +39,7 @@ class JournalEntryListView(LoginRequiredMixIn, ListView):
         ).order_by(sort)
 
 
-class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
+class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_detail.html'
     slug_url_kwarg = 'je_pk'
@@ -60,7 +60,7 @@ class JournalEntryDetailView(LoginRequiredMixIn, DetailView):
         ).prefetch_related('txs', 'txs__account')
 
 
-class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
+class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/je_update.html'
     slug_url_kwarg = 'je_pk'
@@ -116,7 +116,7 @@ class JournalEntryUpdateView(LoginRequiredMixIn, UpdateView):
         return response
 
 
-class JournalEntryCreateView(LoginRequiredMixIn, CreateView):
+class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
     extra_context = {

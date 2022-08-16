@@ -10,10 +10,10 @@ from calendar import monthrange
 from datetime import timedelta, date
 from typing import Tuple
 
-from django.contrib.auth.mixins import LoginRequiredMixin as DJLoginRequiredMixIn
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, PermissionRequiredMixin
+from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import Http404, HttpRequest, HttpResponseBadRequest
+from django.http import Http404
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
@@ -311,10 +311,20 @@ class FromToDatesMixIn:
         return param_date
 
 
-class LoginRequiredMixIn(DJLoginRequiredMixIn):
+class DjangoLedgerAccessMixIn(AccessMixin):
 
     def get_login_url(self):
         return reverse('django_ledger:login')
+
+
+class DjangoLedgerPermissionMixIn(PermissionRequiredMixin):
+
+    def has_permission(self):
+        return self.request.user.is_authenticated
+
+
+class DjangoLedgerSecurityMixIn(DjangoLedgerPermissionMixIn, DjangoLedgerAccessMixIn, LoginRequiredMixin):
+    pass
 
 
 class EntityUnitMixIn:

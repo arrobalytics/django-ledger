@@ -15,7 +15,6 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, Count
-from django.db.models.functions import Coalesce
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -271,7 +270,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return self.bill_status == self.BILL_STATUS_CANCELED
 
     def is_void(self):
-        # todo: use VOID status instead
         return self.bill_status == self.BILL_STATUS_VOID
 
     # Permissions....
@@ -384,18 +382,26 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Bill %s as Draft?') % self.bill_number
 
     # IN REVIEW ACTIONS....
-    def mark_as_review(self, commit: bool = False, date_in_review: date = None, **kwargs):
+    def mark_as_review(self,
+                       commit: bool = False,
+                       itemtxs_qs=None,
+                       date_in_review: date = None,
+                       **kwargs):
+        self.in_review_date = localdate() if not date_in_review else date_in_review
+
         if not self.can_review():
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
             )
+
+        if not itemtxs_qs:
+            itemtxs_qs = self.itemtransactionmodel_set.all()
+        if not itemtxs_qs.count():
+            raise ValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
         if not self.amount_due:
             raise ValidationError(
                 f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
-
-        if not date_in_review:
-            date_in_review = localdate()
 
         self.bill_status = self.BILL_STATUS_REVIEW
         self.in_review_date = date_in_review
@@ -501,11 +507,10 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.amount_paid = self.amount_due
         self.paid_date = localdate() if not date_paid else date_paid
 
-        # if self.paid_date > localdate():
-        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        # if self.paid_date < self.date:
-        #     raise ValidationError(f'{self.date} Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-        #                           f' date {self.date}.')
+        if self.paid_date > localdate():
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+        if self.paid_date < self.approved_date:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before approved date {self.approved_date}.')
 
         self.bill_status = self.BILL_STATUS_PAID
         self.new_state(commit=True)
@@ -524,8 +529,9 @@ class BillModelAbstract(LedgerWrapperMixIn,
             ])
 
             ItemTransactionModel = lazy_loader.get_item_transaction_model()
-            # todo: update this field only if there's a PO assigned
-            itemtxs_queryset.update(po_item_status=ItemTransactionModel.STATUS_ORDERED)
+            itemtxs_queryset.filter(
+                po_model_id__isnull=False
+            ).update(po_item_status=ItemTransactionModel.STATUS_ORDERED)
             self.migrate_state(
                 user_model=user_model,
                 entity_slug=entity_slug,

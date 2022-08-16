@@ -6,10 +6,10 @@ from django.views.generic import ListView, DetailView
 
 from django_ledger.models import EntityModel, inventory_adjustment
 from django_ledger.models.items import ItemTransactionModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class InventoryListView(LoginRequiredMixIn, ListView):
+class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/inventory_list.html'
     context_object_name = 'inventory_list'
     http_method_names = ['get']
@@ -46,7 +46,7 @@ class InventoryListView(LoginRequiredMixIn, ListView):
         )
 
 
-class InventoryRecountView(LoginRequiredMixIn, DetailView):
+class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
     template_name = 'django_ledger/inventory_recount.html'
     http_method_names = ['get']
     slug_url_kwarg = 'entity_slug'

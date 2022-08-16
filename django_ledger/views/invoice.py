@@ -18,16 +18,16 @@ from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchi
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm,
-                                         get_bill_itemtxs_formset_class,
+                                         get_invoice_itemtxs_formset_class,
                                          DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
                                          ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
                                          AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
 from django_ledger.models import EntityModel, LedgerModel, EstimateModel
 from django_ledger.models.invoice import InvoiceModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class InvoiceModelListView(LoginRequiredMixIn, ArchiveIndexView):
+class InvoiceModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
     template_name = 'django_ledger/invoice/invoice_list.html'
     context_object_name = 'invoice_list'
     PAGE_TITLE = _('Invoice List')
@@ -57,8 +57,7 @@ class InvoiceModelMonthlyListView(MonthArchiveView, InvoiceModelListView):
     month_format = '%m'
 
 
-class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
-    # todo: views that dont have a bill/invoice/etc/etc are not protected!
+class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/invoice/invoice_create.html'
     PAGE_TITLE = _('Create Invoice')
     extra_context = {
@@ -68,7 +67,10 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
     for_estimate = False
 
     def get(self, request, entity_slug, **kwargs):
-        response = super(InvoiceModelCreateView, self).get(request, entity_slug, **kwargs)
+
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()
+
         if self.for_estimate and 'ce_pk' in self.kwargs:
             estimate_qs = EstimateModel.objects.for_entity(
                 entity_slug=entity_slug,
@@ -77,7 +79,7 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
                 return HttpResponseNotFound('404 Not Found')
-        return response
+        return super(InvoiceModelCreateView, self).get(request, entity_slug, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(InvoiceModelCreateView, self).get_context_data(**kwargs)
@@ -103,7 +105,7 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
 
     def get_initial(self):
         return {
-            'date': localdate()
+            'draft_date': localdate()
         }
 
     def get_form(self, form_class=None):
@@ -154,7 +156,7 @@ class InvoiceModelCreateView(LoginRequiredMixIn, CreateView):
                        })
 
 
-class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
+class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -202,6 +204,21 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
 
         ledger_model: LedgerModel = self.object.ledger
 
+        if not invoice_model.is_configured():
+            messages.add_message(
+                request=self.request,
+                message=f'Invoice {invoice_model.invoice_number} must have all accounts configured.',
+                level=messages.ERROR,
+                extra_tags='is-danger'
+            )
+
+        if not invoice_model.is_paid():
+            if ledger_model.locked:
+                messages.add_message(self.request,
+                                     messages.ERROR,
+                                     f'Warning! This invoice is locked. Must unlock before making any changes.',
+                                     extra_tags='is-danger')
+
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
@@ -217,8 +234,8 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         if not itemtxs_formset:
             itemtxs_qs = invoice_model.itemtransactionmodel_set.all().select_related('item_model')
             itemtxs_qs, itemtxs_agg = invoice_model.get_itemtxs_data(queryset=itemtxs_qs)
-            bill_itemtxs_formset_class = get_bill_itemtxs_formset_class(invoice_model)
-            itemtxs_formset = bill_itemtxs_formset_class(
+            invoice_itemtxs_formset_class = get_invoice_itemtxs_formset_class(invoice_model)
+            itemtxs_formset = invoice_itemtxs_formset_class(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 invoice_model=invoice_model,
@@ -275,15 +292,15 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         if self.action_update_items:
             if not request.user.is_authenticated:
                 return HttpResponseForbidden()
-            
-            queryset= self.get_queryset()
+
+            queryset = self.get_queryset()
             invoice_model = self.get_object(queryset=queryset)
             self.object = invoice_model
-            bill_itemtxs_formset_class = get_bill_itemtxs_formset_class(invoice_model)
-            itemtxs_formset = bill_itemtxs_formset_class(request.POST,
-                                                         user_model=self.request.user,
-                                                         invoice_model=invoice_model,
-                                                         entity_slug=entity_slug)
+            invoice_itemtxs_formset_class = get_invoice_itemtxs_formset_class(invoice_model)
+            itemtxs_formset = invoice_itemtxs_formset_class(request.POST,
+                                                            user_model=self.request.user,
+                                                            invoice_model=invoice_model,
+                                                            entity_slug=entity_slug)
 
             if not invoice_model.can_edit_items():
                 messages.add_message(
@@ -336,7 +353,7 @@ class InvoiceModelUpdateView(LoginRequiredMixIn, UpdateView):
         return super(InvoiceModelUpdateView, self).post(request, **kwargs)
 
 
-class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
+class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -367,7 +384,7 @@ class InvoiceModelDetailView(LoginRequiredMixIn, DetailView):
         ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
 
 
-class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
+class InvoiceModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     template_name = 'django_ledger/invoice/invoice_delete.html'
@@ -396,7 +413,7 @@ class InvoiceModelDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # ACTION VIEWS...
-class BaseInvoiceActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+class BaseInvoiceActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'invoice_pk'
     action_name = None

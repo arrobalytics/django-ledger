@@ -30,10 +30,26 @@
             {% trans 'Other Cost' %}:
             {% currency_symbol %}{{ estimate_model.other_estimate }}</h3>
         <h3 class="is-size-4">{% trans 'Total Cost' %}:
-            {% currency_symbol %}{{ estimate_model.cost_estimate }}</h3>
-        <br>
+            {% currency_symbol %}{{ estimate_model.get_cost_estimate | currency_format }}</h3>
         <h3 class="is-size-4 has-text-weight-light is-italic">
             {% trans 'Estimated Gross Margin' %}: {{ estimate_model.gross_margin_percent_estimate | floatformat:2 }}%</h3>
+
+        {# PROGRESS BARS #}
+        {% if estimate_model.is_approved and contract_progress %}
+            {# todo: still needs to be properly populated #}
+            <h2 class="mt-2">{% trans 'Cost Progress' %}</h2>
+            <progress class="progress is-warning is-large"
+                      value="{{ contract_progress.bill_amount_paid__sum }}"
+                      max="{{ contract_progress.cost_estimate }}"></progress>
+            <h2>{% trans 'Invoice Progress' %}</h2>
+            <progress class="progress is-info is-large"
+                      value="{{ contract_progress.bill_amount_paid__sum }}"
+                      max="{{ contract_progress.revenue_estimate }}"></progress>
+            <h2>{% trans 'Received Progress' %}</h2>
+            <progress class="progress is-success is-large"
+                      value="{{ contract_progress.bill_amount_paid__sum }}"
+                      max="{{ contract_progress.po_amount__sum }}"></progress>
+        {% endif %}
     </div>
     <footer class="card-footer">
         <a href="{% url 'django_ledger:customer-estimate-update' entity_slug=view.kwargs.entity_slug ce_pk=view.kwargs.ce_pk %}"

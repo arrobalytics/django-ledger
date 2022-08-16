@@ -19,15 +19,16 @@ from django.views.generic import (UpdateView, CreateView, ArchiveIndexView, Mont
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import (BillModelCreateForm, BaseBillModelUpdateForm, DraftBillModelUpdateForm,
-                                      BillItemTransactionFormset, BillModelConfigureForm, InReviewBillModelUpdateForm,
+                                      get_bill_itemtxs_formset_class, BillModelConfigureForm,
+                                      InReviewBillModelUpdateForm,
                                       ApprovedBillModelUpdateForm, AccruedAndApprovedBillModelUpdateForm,
                                       PaidBillModelUpdateForm)
 from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel
 from django_ledger.models.bill import BillModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class BillModelListView(LoginRequiredMixIn, ArchiveIndexView):
+class BillModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
     template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
@@ -70,7 +71,7 @@ class BillModelMonthListView(MonthArchiveView, BillModelListView):
     date_list_period = 'year'
 
 
-class BillModelCreateView(LoginRequiredMixIn, CreateView):
+class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/bills/bill_create.html'
     PAGE_TITLE = _('Create Bill')
     extra_context = {
@@ -82,7 +83,9 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
     for_estimate = False
 
     def get(self, request, entity_slug, **kwargs):
-        response = super(BillModelCreateView, self).get(request, entity_slug, **kwargs)
+        if not request.user.is_authenticated:
+            return HttpResponseForbidden()
+
         if self.for_estimate and 'ce_pk' in self.kwargs:
             estimate_qs = EstimateModel.objects.for_entity(
                 entity_slug=entity_slug,
@@ -91,12 +94,11 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
                 return HttpResponseNotFound('404 Not Found')
-        return response
+        return super(BillModelCreateView, self).get(request, entity_slug, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(BillModelCreateView, self).get_context_data(**kwargs)
 
-        # todo: revisit this in case there's better way...
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
             po_item_uuids_qry_param = self.request.GET.get('item_uuids')
@@ -237,7 +239,7 @@ class BillModelCreateView(LoginRequiredMixIn, CreateView):
                        })
 
 
-class BillModelDetailView(LoginRequiredMixIn, DetailView):
+class BillModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill'
@@ -286,7 +288,7 @@ class BillModelDetailView(LoginRequiredMixIn, DetailView):
         ).select_related('ledger', 'ledger__entity', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
 
 
-class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
+class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
     context_object_name = 'bill_model'
@@ -297,17 +299,11 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
     http_method_names = ['get', 'post']
     action_update_items = False
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # todo: investigate why you need this...?
-        self.itemtxs_qs = None
-
     def get_itemtxs_qs(self):
         bill_model: BillModel = self.object
-        if not self.itemtxs_qs:
-            self.itemtxs_qs = bill_model.itemtransactionmodel_set.select_related(
-                'item_model', 'po_model', 'bill_model').order_by('-total_amount')
-        return self.itemtxs_qs
+        return bill_model.itemtransactionmodel_set.select_related(
+            'item_model', 'po_model', 'bill_model').order_by(
+            '-total_amount')
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
@@ -340,10 +336,10 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         return BaseBillModelUpdateForm
 
     def get_context_data(self, *, object_list=None,
-                         itemtxs_formset: BillItemTransactionFormset = None,
+                         itemtxs_formset=None,
                          **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
-        bill_model: BillModel = self.get_object()
+        bill_model: BillModel = self.object
         ledger_model = bill_model.ledger
 
         title = f'Bill {bill_model.bill_number}'
@@ -351,7 +347,6 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         context['header_title'] = title
         context['header_subtitle'] = bill_model.get_bill_status_display()
 
-        # todo: this logic is different for invoice... revisit...
         if not bill_model.is_configured():
             messages.add_message(
                 request=self.request,
@@ -367,6 +362,12 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
                                      f'Warning! This bill is locked. Must unlock before making any changes.',
                                      extra_tags='is-danger')
 
+        if ledger_model.locked:
+            messages.add_message(self.request,
+                                 messages.ERROR,
+                                 f'Warning! This bill is locked. Must unlock before making any changes.',
+                                 extra_tags='is-danger')
+
         if not ledger_model.posted:
             messages.add_message(self.request,
                                  messages.INFO,
@@ -376,7 +377,8 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
         if not itemtxs_formset:
             itemtxs_qs = self.get_itemtxs_qs()
             itemtxs_qs, itemtxs_agg = bill_model.get_itemtxs_data(queryset=itemtxs_qs)
-            itemtxs_formset = BillItemTransactionFormset(
+            invoice_itemtxs_formset_class = get_bill_itemtxs_formset_class(bill_model)
+            itemtxs_formset = invoice_itemtxs_formset_class(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 bill_model=bill_model,
@@ -440,10 +442,11 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
             queryset = self.get_queryset()
             bill_model: BillModel = self.get_object(queryset=queryset)
             self.object = bill_model
-            itemtxs_formset: BillItemTransactionFormset = BillItemTransactionFormset(request.POST,
-                                                                                     user_model=self.request.user,
-                                                                                     bill_model=bill_model,
-                                                                                     entity_slug=entity_slug)
+            bill_itemtxs_formset_class = get_bill_itemtxs_formset_class(bill_model)
+            itemtxs_formset = bill_itemtxs_formset_class(request.POST,
+                                                         user_model=self.request.user,
+                                                         bill_model=bill_model,
+                                                         entity_slug=entity_slug)
 
             if itemtxs_formset.has_changed():
                 if itemtxs_formset.is_valid():
@@ -491,7 +494,7 @@ class BillModelUpdateView(LoginRequiredMixIn, UpdateView):
 
 
 # ACTION VIEWS...
-class BaseBillActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+class BaseBillActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'bill_pk'
     action_name = None

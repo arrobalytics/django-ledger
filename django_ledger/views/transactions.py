@@ -14,10 +14,10 @@ from django.views.generic import TemplateView
 from django_ledger.forms.transactions import TransactionModelFormSet
 from django_ledger.models import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class TXSJournalEntryView(LoginRequiredMixIn, TemplateView):
+class TXSJournalEntryView(DjangoLedgerSecurityMixIn, TemplateView):
     template_name = 'django_ledger/txs.html'
     PAGE_TITLE = _('Edit Transactions')
     extra_context = {

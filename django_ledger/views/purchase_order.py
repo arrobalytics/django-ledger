@@ -20,10 +20,10 @@ from django_ledger.forms.purchase_order import (PurchaseOrderModelCreateForm, Ba
                                                 ApprovedPurchaseOrderModelUpdateForm,
                                                 get_po_itemtxs_formset_class)
 from django_ledger.models import PurchaseOrderModel, ItemTransactionModel, EstimateModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class PurchaseOrderModelListView(LoginRequiredMixIn, ArchiveIndexView):
+class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
     template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
@@ -66,7 +66,7 @@ class PurchaseOrderModelMonthListView(MonthArchiveView, PurchaseOrderModelListVi
     date_list_period = 'year'
 
 
-class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
+class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
@@ -150,7 +150,7 @@ class PurchaseOrderModelCreateView(LoginRequiredMixIn, CreateView):
                        })
 
 
-class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
+class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -245,7 +245,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
                         itemtxs.clean()
 
                     itemtxs_list = itemtxs_formset.save()
-                    po_model.update_po_state()
+                    po_model.update_state()
                     po_model.clean()
                     po_model.save(update_fields=['po_amount',
                                                  'po_amount_received',
@@ -352,7 +352,7 @@ class PurchaseOrderModelUpdateView(LoginRequiredMixIn, UpdateView):
         return super().form_valid(form)
 
 
-class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
+class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -386,7 +386,7 @@ class PurchaseOrderModelDetailView(LoginRequiredMixIn, DetailView):
         ).select_related('ce_model', 'entity')
 
 
-class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
+class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -436,7 +436,7 @@ class PurchaseOrderModelDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # ACTIONS...
-class BasePurchaseOrderActionActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+class BasePurchaseOrderActionActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'po_pk'
     action_name = None

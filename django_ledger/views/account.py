@@ -17,13 +17,13 @@ from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCrea
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import (
-    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn,
+    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn,
     BaseDateNavigationUrlMixIn, EntityUnitMixIn, DateReportMixIn
 )
 
 
 # Account Views ----
-class AccountModelListView(LoginRequiredMixIn, ListView):
+class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/account_list.html'
     context_object_name = 'accounts'
     PAGE_TITLE = _('Entity Accounts')
@@ -47,7 +47,7 @@ class AccountModelListView(LoginRequiredMixIn, ListView):
         ).select_related('parent').order_by('code')
 
 
-class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
+class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'account'
     template_name = 'django_ledger/account_update.html'
     slug_url_kwarg = 'account_pk'
@@ -81,7 +81,7 @@ class AccountModelUpdateView(LoginRequiredMixIn, UpdateView):
         ).select_related('parent')
 
 
-class AccountModelCreateView(LoginRequiredMixIn, CreateView):
+class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/account_create.html'
     PAGE_TITLE = _('Create Account')
     extra_context = {
@@ -152,7 +152,7 @@ class AccountModelCreateChildView(AccountModelCreateView):
         )
 
 
-class AccountModelDetailView(LoginRequiredMixIn, RedirectView):
+class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -165,7 +165,7 @@ class AccountModelDetailView(LoginRequiredMixIn, RedirectView):
                        })
 
 
-class AccountModelYearDetailView(LoginRequiredMixIn,
+class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
                                  SessionConfigurationMixIn,
                                  BaseDateNavigationUrlMixIn,
                                  EntityUnitMixIn,

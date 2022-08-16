@@ -10,7 +10,7 @@ from django.forms import (ModelForm, DateInput, TextInput, Select, BaseModelForm
                           modelformset_factory, Textarea, BooleanField, ValidationError)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemTransactionModel, EntityUnitModel, EstimateModel)
+from django_ledger.models import (ItemModel, PurchaseOrderModel, ItemTransactionModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -202,7 +202,6 @@ ReadOnlyPurchaseOrderItemFormset = modelformset_factory(
 )
 
 
-# todo: incorporate this functionality into models...
 def get_po_itemtxs_formset_class(po_model: PurchaseOrderModel):
     if po_model.is_draft():
         return CanEditPurchaseOrderItemFormset

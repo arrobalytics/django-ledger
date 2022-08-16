@@ -4,14 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "~=3.2"
+django = ">=3.2"
 django-treebeard = "~=4.5.1"
 ofxtools = "~=0.9.4"
 markdown = "~=3.3.4"
 faker = "~=8.12"
 pillow = ">=8.4.0"
-graphene_django = { version = "*", extras = ["graphql"] }
-django-graphql-auth = { version = "*", extras = ["graphql"] }
 
 [dev-packages]
 sphinx = "~=4.5.0"

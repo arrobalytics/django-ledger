@@ -12,10 +12,10 @@ from django.views.generic import UpdateView
 
 from django_ledger.forms.coa import ChartOfAccountsModelUpdateForm
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class ChartOfAccountsUpdateView(LoginRequiredMixIn, UpdateView):
+class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/coa_update.html'

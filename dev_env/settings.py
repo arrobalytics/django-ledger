@@ -1,6 +1,17 @@
 import os
+
+try:
+    import graphene_django
+
+    GRAPHENE_SUPPORT = True
+except ImportError:
+    GRAPHENE_SUPPORT = False
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SECRET_KEY = 'djangoledger1234!DoNotUse!'
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    SECRET_KEY = 'djangoledger1234!DoNotUse!BadIdea!VeryInsecure!'
 DEBUG = True
 
 ALLOWED_HOSTS = ['192.168.1.101']
@@ -12,10 +23,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'graphene_django',
     'django_ledger',
-    'graphql_auth', #  api authentication
 ]
+
+if GRAPHENE_SUPPORT:
+    INSTALLED_APPS += [
+        'graphene_django',
+        'graphql_auth',
+    ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -32,8 +47,7 @@ ROOT_URLCONF = 'dev_env.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -93,37 +107,41 @@ USE_TZ = True
 STATIC_URL = '/static/'
 LOGIN_URL = '/auth/login/'
 
-GRAPHENE = {
-    'SCHEMA': 'django_ledger.contrib.django_ledger_graphql.api.schema',
-    'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphql/schema.graphql',  # defaults to schema.json,
-    # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
-    'MIDDLEWARE': [
-        'graphql_jwt.middleware.JSONWebTokenMiddleware',
-    ],
-}
-
 AUTHENTICATION_BACKENDS = [
-    'graphql_jwt.backends.JSONWebTokenBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-GRAPHQL_JWT = {
-    'JWT_ALLOW_ARGUMENT': True,
-    #...
-    "JWT_ALLOW_ANY_CLASSES": [
-        "graphql_auth.mutations.Register",
-        "graphql_auth.mutations.VerifyAccount",
-        "graphql_auth.mutations.ResendActivationEmail",
-        "graphql_auth.mutations.SendPasswordResetEmail",
-        "graphql_auth.mutations.PasswordReset",
-        "graphql_auth.mutations.ObtainJSONWebToken",
-        "graphql_auth.mutations.VerifyToken",
-        "graphql_auth.mutations.RefreshToken",
-        "graphql_auth.mutations.RevokeToken",
-        "graphql_auth.mutations.VerifySecondaryEmail",
-        
-    ],
-}
+if GRAPHENE_SUPPORT:
+    GRAPHENE = {
+        'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
+        'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,
+        # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
+        'MIDDLEWARE': [
+            'graphql_jwt.middleware.JSONWebTokenMiddleware',
+        ],
+    }
+
+    AUTHENTICATION_BACKENDS += [
+        'graphql_jwt.backends.JSONWebTokenBackend'
+    ]
+
+    GRAPHQL_JWT = {
+        'JWT_ALLOW_ARGUMENT': True,
+        # ...
+        "JWT_ALLOW_ANY_CLASSES": [
+            "graphql_auth.mutations.Register",
+            "graphql_auth.mutations.VerifyAccount",
+            "graphql_auth.mutations.ResendActivationEmail",
+            "graphql_auth.mutations.SendPasswordResetEmail",
+            "graphql_auth.mutations.PasswordReset",
+            "graphql_auth.mutations.ObtainJSONWebToken",
+            "graphql_auth.mutations.VerifyToken",
+            "graphql_auth.mutations.RefreshToken",
+            "graphql_auth.mutations.RevokeToken",
+            "graphql_auth.mutations.VerifySecondaryEmail",
+
+        ],
+    }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

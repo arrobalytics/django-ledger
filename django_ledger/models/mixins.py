@@ -229,7 +229,6 @@ class LedgerWrapperMixIn(models.Model):
         """
 
     def can_migrate(self) -> bool:
-        # todo: can migrate can be dependent upon states... No need to configure until APPROVED...?
         """
         Function returning if model state can be migrated to related accounts.
         :return:
@@ -302,7 +301,6 @@ class LedgerWrapperMixIn(models.Model):
                       raise_exception: bool = True,
                       **kwargs):
 
-        # todo: add migration logic if ledger is locked...
         if self.can_migrate() or force_migrate:
 
             # getting current ledger state
@@ -522,7 +520,6 @@ class LedgerWrapperMixIn(models.Model):
 
     def new_state(self, commit: bool = False):
         new_state = {
-            # todo: amount paid really a cash difference...
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_prepaid(),
             'amount_unearned': self.get_amount_unearned(),

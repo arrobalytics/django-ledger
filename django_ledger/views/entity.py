@@ -24,13 +24,13 @@ from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionM
                                   generate_entity_slug)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, LoginRequiredMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
+    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
     EntityDigestMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
 
 # Entity CRUD Views ----
-class EntityModelListView(LoginRequiredMixIn, ListView):
+class EntityModelListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
@@ -44,7 +44,7 @@ class EntityModelListView(LoginRequiredMixIn, ListView):
             user_model=self.request.user)
 
 
-class EntityModelCreateView(LoginRequiredMixIn, CreateView):
+class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
@@ -101,7 +101,7 @@ class EntityModelCreateView(LoginRequiredMixIn, CreateView):
         )
 
 
-class EntityModelUpdateView(LoginRequiredMixIn, UpdateView):
+class EntityModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -120,7 +120,7 @@ class EntityModelUpdateView(LoginRequiredMixIn, UpdateView):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
 
-class EntityDeleteView(LoginRequiredMixIn, DeleteView):
+class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity_delete.html'
@@ -170,7 +170,7 @@ class EntityDeleteView(LoginRequiredMixIn, DeleteView):
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(LoginRequiredMixIn,
+class EntityModelDetailView(DjangoLedgerSecurityMixIn,
                             EntityUnitMixIn,
                             RedirectView):
 
@@ -193,7 +193,7 @@ class EntityModelDetailView(LoginRequiredMixIn,
                        })
 
 
-class FiscalYearEntityModelDashboardView(LoginRequiredMixIn,
+class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
                                          SessionConfigurationMixIn,
                                          BaseDateNavigationUrlMixIn,
                                          UnpaidElementsMixIn,
@@ -272,7 +272,7 @@ class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixI
 
 
 # BALANCE SHEET -----------
-class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
+class EntityModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -283,7 +283,7 @@ class EntityModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityModelBalanceSheetView(LoginRequiredMixIn,
+class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
                                             SessionConfigurationMixIn,
                                             BaseDateNavigationUrlMixIn,
                                             EntityUnitMixIn,
@@ -336,7 +336,7 @@ class DateEntityModelBalanceSheetView(DateReportMixIn, FiscalYearEntityModelBala
 
 
 # INCOME STATEMENT ------------
-class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
+class EntityModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
         return reverse('django_ledger:entity-ic-year',
@@ -346,7 +346,7 @@ class EntityModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityModelIncomeStatementView(LoginRequiredMixIn,
+class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                SessionConfigurationMixIn,
                                                BaseDateNavigationUrlMixIn,
                                                EntityUnitMixIn,

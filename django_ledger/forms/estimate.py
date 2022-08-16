@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django import forms
-from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea, ValidationError
+from django.forms import ModelForm, Select, TextInput, BaseModelFormSet, modelformset_factory, Textarea
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CustomerModel, ItemTransactionModel, ItemModel, EntityUnitModel
@@ -125,7 +125,6 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
             user_model=self.USER_MODEL
         )
 
-        # todo: use different forms instead...
         for form in self.forms:
             form.fields['item_model'].queryset = items_qs
             form.fields['entity_unit'].queryset = unit_qs
@@ -138,7 +137,6 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
                 form.fields['entity_unit'].disabled = True
 
 
-# todo: add instance where can_delete = False
 CanEditEstimateItemModelFormset = modelformset_factory(
     model=ItemTransactionModel,
     form=EstimateItemModelForm,

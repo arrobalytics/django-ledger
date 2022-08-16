@@ -75,8 +75,6 @@ class PurchaseOrderModelManager(models.Manager):
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
-    # todo: having a fulfilled field is not necessary if PO can have a PO_STATUS_FULFILLED.
-
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -187,10 +185,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             total_items=Count('uuid')
         )
 
-    # todo: check if all update ste methods can accept a queryset only...
-    def update_po_state(self,
-                        itemtxs_qs: QuerySet = None,
-                        itemtxs_list: List[ItemTransactionModel] = None) -> Union[Tuple, None]:
+    def update_state(self,
+                     itemtxs_qs: QuerySet = None,
+                     itemtxs_list: List[ItemTransactionModel] = None) -> Union[Tuple, None]:
         if itemtxs_qs and itemtxs_list:
             raise ValidationError('Either queryset or list can be used.')
 
