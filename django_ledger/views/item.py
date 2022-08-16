@@ -1,6 +1,8 @@
 from django.contrib.messages import add_message, ERROR
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
+from django.db.models import RestrictedError
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -124,6 +126,25 @@ class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
             user_model=self.request.user
         )
 
+    def form_valid(self, form):
+        try:
+            return super(UnitOfMeasureModelDeleteView, self).form_valid(form)
+        except RestrictedError:
+
+            uom_model: UnitOfMeasureModel = self.object
+            add_message(self.request,
+                        level=ERROR,
+                        message=f'Unable to delete UOM {uom_model.name}. '
+                                'Remove dependencies before deleting.',
+                        extra_tags='is-danger')
+
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:uom-list',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug']
+                                    })
+            )
+
     def get_success_url(self):
         return reverse('django_ledger:uom-list',
                        kwargs={
@@ -131,6 +152,7 @@ class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
                        })
 
 
+# PRODUCTS AND SERVICES VIEW...
 class ProductsAndServicesListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/product_list.html'
     PAGE_TITLE = _('Products & Services')
@@ -194,8 +216,7 @@ class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     template_name = 'django_ledger/product_update.html'
     PAGE_TITLE = _('Update Product or Service')
     context_object_name = 'item'
-    slug_field = 'uuid'
-    slug_url_kwarg = 'item_pk'
+    pk_url_kwarg = 'item_pk'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
@@ -222,6 +243,45 @@ class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        })
 
 
+class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+    template_name = 'django_ledger/product_delete.html'
+    pk_url_kwarg = 'item_pk'
+    context_object_name = 'item_model'
+
+    def get_queryset(self):
+        return ItemModel.objects.products_and_services(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def form_valid(self, form):
+        try:
+            # todo: add success message...
+            return super(ProductOrServiceDeleteView, self).form_valid(form)
+        except RestrictedError:
+
+            item_model: ItemModel = self.object
+            add_message(self.request,
+                        level=ERROR,
+                        message=f'Unable to delete Product or Service {item_model.name}. '
+                                'Remove dependencies before deleting.',
+                        extra_tags='is-danger')
+
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:product-list',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug']
+                                    })
+            )
+
+    def get_success_url(self):
+        return reverse('django_ledger:product-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+# EXPENSE ITEMS VIEW...
 class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/expense_list.html'
     PAGE_TITLE = _('Expense Items')
