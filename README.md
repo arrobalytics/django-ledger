@@ -159,6 +159,14 @@ urlpatterns = [
 ]
 ```
 
+* Add Django SuperUser if necessary.
+```shell
+python manage.py createsuperuser
+```
+
+* Navigate to Django Ledger root view assigned in your project urlpattern setting.
+* Use your user credentials.
+
 # How To Set Up Django Ledger for Development
 Django Ledger comes with a basic development environment already configured under __dev_env/__ folder not to be used
 for production environments. If you want to contribute to the project perform the following steps:
