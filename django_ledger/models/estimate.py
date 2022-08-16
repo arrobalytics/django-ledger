@@ -312,7 +312,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         itemtxs_qs = self.itemtransactionmodel_set.all()
         if not itemtxs_qs.count():
             raise ValidationError(message='Cannot review an Estimate without items...')
-        if not self.cost_estimate():
+        if not self.get_cost_estimate():
             raise ValidationError(message='Cost amount is zero!.')
         if not self.revenue_estimate:
             raise ValidationError(message='Revenue amount is zero!.')
@@ -530,20 +530,28 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.update_revenue_estimate(queryset)
 
     # Features...
-    def cost_estimate(self):
-        return sum([
+    def get_cost_estimate(self, as_float: bool = False):
+        estimate = sum([
             self.labor_estimate,
             self.material_estimate,
             self.equipment_estimate,
             self.other_estimate
         ])
+        if as_float:
+            return float(estimate)
+        return estimate
+
+    def get_revenue_estimate(self, as_float: bool = False):
+        if as_float:
+            return float(self.revenue_estimate)
+        return self.revenue_estimate
 
     def profit_estimate(self):
-        return self.revenue_estimate - self.cost_estimate()
+        return self.revenue_estimate - self.get_cost_estimate()
 
     def gross_margin_estimate(self, as_percent: bool = False) -> float:
         try:
-            gm = float(self.revenue_estimate) / float(self.cost_estimate()) - 1.00
+            gm = float(self.revenue_estimate) / float(self.get_cost_estimate()) - 1.00
             if as_percent:
                 return gm * 100
             return gm
@@ -598,8 +606,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         @return: A dictionary of aggregated values.
         """
         stats = {
-            'cost_estimate': self.cost_estimate(),
-            'revenue_estimate': self.revenue_estimate
+            'cost_estimate': self.get_cost_estimate(as_float=True),
+            'revenue_estimate': self.get_revenue_estimate(as_float=True)
         }
 
         po_status = self.get_po_amount(po_qs)

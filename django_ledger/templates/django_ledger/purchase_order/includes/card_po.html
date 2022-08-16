@@ -36,8 +36,6 @@
 
                 {% if po_model.is_approved %}
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Approved Date' %}:{{ po_model.approved_date | date }}</h3>
-                    <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
-                        {{ po_model.approved_date | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Received Amount' %}:

@@ -12,18 +12,18 @@
                 <div class="card">
                     <div class="card-content has-text-centered">
                         <p class="title has-text-weight-light">Are you sure you want to delete
-                            Bill {{ bill.bill_number }}</p>
+                            {{ item_model }}</p>
                     </div>
+{#                    <div class="card-content has-text-centered">#}
+{#                        <p class="subtitle">All transactions associated with this Bill will be deleted.#}
+{#                            If you want to void the bill instead, click <a#}
+{#                                    href="{% url 'django_ledger:bill-void' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}">#}
+{#                                here#}
+{#                            </a>#}
+{#                        </p>#}
+{#                    </div>#}
                     <div class="card-content has-text-centered">
-                        <p class="subtitle">All transactions associated with this Bill will be deleted.
-                            If you want to void the bill instead, click <a
-                                    href="{% url 'django_ledger:bill-void' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}">
-                                here
-                            </a>
-                        </p>
-                    </div>
-                    <div class="card-content has-text-centered">
-                        <a href="{% url 'django_ledger:bill-detail' entity_slug=view.kwargs.entity_slug bill_pk=bill.uuid %}"
+                        <a href="{% url 'django_ledger:uom-list' entity_slug=view.kwargs.entity_slug %}"
                            class="button is-primary">{% trans 'Go Back' %}</a>
                         <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
                     </div>

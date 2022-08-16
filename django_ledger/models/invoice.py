@@ -322,20 +322,24 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as Draft?') % self.invoice_number
 
     # REVIEW...
-    def mark_as_review(self, date_review: date = None, commit: bool = False, **kwargs):
+    def mark_as_review(self,
+                       date_in_review: date = None,
+                       itemtxs_qs=None,
+                       commit: bool = False, **kwargs):
         if not self.can_review():
             raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
-        # todo: revisit this logic...
-        itemthrough_qs = self.itemtransactionmodel_set.all()
-        if not itemthrough_qs.count():
+        self.in_review_date = localdate() if not date_in_review else date_in_review
+
+        if not itemtxs_qs:
+            itemtxs_qs = self.itemtransactionmodel_set.all()
+        if not itemtxs_qs.count():
             raise ValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
             raise ValidationError(
                 f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
 
-        self.in_review_date = localdate() if not date_review else date_review
         self.invoice_status = self.INVOICE_STATUS_REVIEW
         self.clean()
         if commit:
@@ -447,16 +451,15 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
         self.void_date = localdate() if not date_void else date_void
+
+        if self.void_date > localdate():
+            raise ValidationError(f'Cannot void {self.__class__.__name__} in the future.')
+        if self.void_date < self.approved_date:
+            raise ValidationError(f'Cannot void {self.__class__.__name__} before approved {self.approved_date}')
+
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
         self.clean()
-
-        # todo: add custom logic for void date...
-        # if self.paid_date > localdate():
-        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        # if self.paid_date < self.date:
-        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-        #                           f' date {self.date}.')
 
         if commit:
             self.unlock_ledger(commit=True, raise_exception=False)
@@ -603,7 +606,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.paid = False
             self.paid_date = None
             self.progress = 0
-
 
 
 class InvoiceModel(InvoiceModelAbstract):

@@ -190,7 +190,7 @@ class IOMixIn:
                 else:
                     txs_qs = TransactionModel.objects.for_entity(
                         user_model=user_model,
-                        entity_model=self
+                        entity_slug=self
                     )
 
             # If IO is on ledger model....

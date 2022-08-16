@@ -11,10 +11,10 @@ from django.views.generic import FormView
 
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.settings import DJANGO_LEDGER_FEEDBACK_EMAIL_LIST, DJANGO_LEDGER_FEEDBACK_FROM_EMAIL
-from django_ledger.views.mixins import LoginRequiredMixIn, SuccessUrlNextMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, SuccessUrlNextMixIn
 
 
-class BugReportView(LoginRequiredMixIn,
+class BugReportView(DjangoLedgerSecurityMixIn,
                     SuccessUrlNextMixIn,
                     FormView):
     http_method_names = ['post']
@@ -37,7 +37,7 @@ class BugReportView(LoginRequiredMixIn,
         return super().form_valid(form)
 
 
-class RequestNewFeatureView(LoginRequiredMixIn,
+class RequestNewFeatureView(DjangoLedgerSecurityMixIn,
                             SuccessUrlNextMixIn,
                             FormView):
     http_method_names = ['post']

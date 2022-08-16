@@ -13,13 +13,13 @@ from django.views.generic import View
 
 from django_ledger.models import BillModel, EntityModel, InvoiceModel
 from django_ledger.utils import accruable_net_summary
-from django_ledger.views.mixins import LoginRequiredMixIn, EntityUnitMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, EntityUnitMixIn
 
 
 # from jsonschema import validate, ValidationError
 
 
-class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
+class PnLAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -63,7 +63,7 @@ class PnLAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
         }, status=401)
 
 
-class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
+class PayableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):
@@ -95,7 +95,7 @@ class PayableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
         }, status=401)
 
 
-class ReceivableNetAPIView(LoginRequiredMixIn, EntityUnitMixIn, View):
+class ReceivableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
     http_method_names = ['get']
 
     def get(self, request, *args, **kwargs):

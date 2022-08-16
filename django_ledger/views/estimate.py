@@ -12,10 +12,10 @@ from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateM
                                           DraftEstimateModelUpdateForm)
 from django_ledger.models import EntityModel
 from django_ledger.models.estimate import EstimateModel
-from django_ledger.views import LoginRequiredMixIn
+from django_ledger.views import DjangoLedgerSecurityMixIn
 
 
-class EstimateModelListView(LoginRequiredMixIn, ArchiveIndexView):
+class EstimateModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
     template_name = 'django_ledger/estimate/estimate_list.html'
     context_object_name = 'estimate_list'
     PAGE_TITLE = _('Customer Estimates')
@@ -39,7 +39,7 @@ class EstimateModelListView(LoginRequiredMixIn, ArchiveIndexView):
         return 'created'
 
 
-class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
+class EstimateModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     PAGE_TITLE = _('Create Customer Estimate')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -76,7 +76,7 @@ class EstimateModelCreateView(LoginRequiredMixIn, CreateView):
         return super(EstimateModelCreateView, self).form_valid(form)
 
 
-class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
+class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     pk_url_kwarg = 'ce_pk'
     template_name = 'django_ledger/estimate/estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
@@ -134,7 +134,7 @@ class EstimateModelDetailView(LoginRequiredMixIn, DetailView):
         ).select_related('customer')
 
 
-class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
+class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     template_name = 'django_ledger/estimate/estimate_update.html'
     pk_url_kwarg = 'ce_pk'
     context_object_name = 'estimate'
@@ -262,7 +262,7 @@ class EstimateModelUpdateView(LoginRequiredMixIn, UpdateView):
 
 
 # ---- ACTION VIEWS ----
-class BaseEstimateActionView(LoginRequiredMixIn, RedirectView, SingleObjectMixin):
+class BaseEstimateActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'ce_pk'
     action_name = None

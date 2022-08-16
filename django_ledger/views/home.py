@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _
 from django.views.generic import RedirectView, ListView
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class RootUrlView(RedirectView):
@@ -22,7 +22,7 @@ class RootUrlView(RedirectView):
         return reverse('django_ledger:home')
 
 
-class DashboardView(LoginRequiredMixIn, ListView):
+class DashboardView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/home.html'
     PAGE_TITLE = _('My Dashboard')
     context_object_name = 'entities'

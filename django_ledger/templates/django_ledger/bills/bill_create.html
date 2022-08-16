@@ -11,7 +11,6 @@
                     <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Bill' %}</h2>
                 </div>
                 <div class="card-content">
-                    {# todo: why pass form action url?? #}
                     <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
                         <div class="columns is-multiline is-centered">
                             {% csrf_token %}

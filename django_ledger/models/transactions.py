@@ -8,7 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from datetime import datetime
 from typing import List
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -68,38 +68,23 @@ class TransactionModelAdmin(models.Manager):
             Q(journal_entry__ledger__entity__managers__in=[user_model])
         )
 
-    # todo: can change to entity only and determine which type it is?...
     def for_entity(self,
                    user_model,
-                   entity_model: EntityModel = None,
                    entity_slug: str = None):
-
-        if not entity_model and not entity_slug:
-            raise ValueError(f'None entity_model or entity_slug were provided.')
-        elif entity_model and entity_slug:
-            raise ValueError(f'Must pass either entity_model or entity_slug, not both.')
-
         qs = self.for_user(user_model=user_model)
-        if entity_model and isinstance(entity_model, EntityModel):
-            return qs.filter(journal_entry__ledger__entity=entity_model)
-        elif entity_slug and isinstance(entity_slug, str):
+        if isinstance(entity_slug, EntityModel):
+            return qs.filter(journal_entry__ledger__entity=entity_slug)
+        elif isinstance(entity_slug, str):
             return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
     def for_ledger(self,
                    user_model,
-                   ledger_model: LedgerModel = None,
-                   ledger_pk: str = None):
-
-        if not ledger_model and not ledger_pk:
-            raise ValueError(f'None leger_model or ledger_slug were provided.')
-        elif ledger_model and ledger_pk:
-            raise ValueError(f'Must pass either ledger_model or ledger_slug, not both.')
-
+                   ledger_model: LedgerModel = None):
         qs = self.for_user(user_model=user_model)
-        if ledger_model and isinstance(ledger_model, LedgerModel):
+        if isinstance(ledger_model, LedgerModel):
             return qs.filter(journal_entry__ledger=ledger_model)
-        elif ledger_pk and isinstance(ledger_pk, str):
-            return qs.filter(journal_entry__ledger__uuid__exact=ledger_pk)
+        elif isinstance(ledger_model, str) or isinstance(ledger_model, UUID):
+            return qs.filter(journal_entry__ledger__uuid__exact=ledger_model)
 
     def for_unit(self,
                  user_model,

@@ -17,8 +17,7 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
-from django_ledger.settings import (DJANGO_LEDGER_CURRENCY_SYMBOL as currency_symbol,
-                                    DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
+from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -489,8 +488,12 @@ class ItemTransactionModelManager(models.Manager):
         )
 
     def is_orphan(self, entity_slug, user_model):
-        # todo: implement is orphans...
-        raise NotImplementedError
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(bill_model_id__isnull=True) &
+            Q(po_model_id__isnull=True) &
+            Q(ce_model_id__isnull=True)
+        )
 
 
 class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):

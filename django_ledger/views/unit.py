@@ -7,10 +7,10 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, R
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.models import EntityUnitModel, EntityModel
 from django_ledger.views.entity import FiscalYearEntityModelBalanceSheetView, FiscalYearEntityModelIncomeStatementView
-from django_ledger.views.mixins import LoginRequiredMixIn, QuarterlyReportMixIn, MonthlyReportMixIn, DateReportMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn, DateReportMixIn
 
 
-class EntityUnitModelListView(LoginRequiredMixIn, ListView):
+class EntityUnitModelListView(DjangoLedgerSecurityMixIn, ListView):
     template_name = 'django_ledger/unit_list.html'
     PAGE_TITLE = _('Entity Unit List')
     extra_context = {
@@ -27,7 +27,7 @@ class EntityUnitModelListView(LoginRequiredMixIn, ListView):
         )
 
 
-class EntityUnitModelDetailView(LoginRequiredMixIn, DetailView):
+class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     template_name = 'django_ledger/unit_detail.html'
     PAGE_TITLE = _('Entity Unit Detail')
     slug_url_kwarg = 'unit_slug'
@@ -45,7 +45,7 @@ class EntityUnitModelDetailView(LoginRequiredMixIn, DetailView):
         )
 
 
-class EntityUnitModelCreateView(LoginRequiredMixIn, CreateView):
+class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/unit_create.html'
     PAGE_TITLE = _('Entity Unit Create')
     extra_context = {
@@ -76,7 +76,7 @@ class EntityUnitModelCreateView(LoginRequiredMixIn, CreateView):
         return super().form_valid(form=form)
 
 
-class EntityUnitUpdateView(LoginRequiredMixIn, UpdateView):
+class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     template_name = 'django_ledger/unit_update.html'
     PAGE_TITLE = _('Entity Unit Update')
     slug_url_kwarg = 'unit_slug'
@@ -113,7 +113,7 @@ class EntityUnitUpdateView(LoginRequiredMixIn, UpdateView):
         return super().form_valid(form=form)
 
 
-class EntityUnitModelBalanceSheetView(LoginRequiredMixIn, RedirectView):
+class EntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -167,7 +167,7 @@ class DateEntityUnitModelBalanceSheetView(DateReportMixIn, MonthlyEntityUnitMode
     """
 
 
-class EntityUnitModelIncomeStatementView(LoginRequiredMixIn, RedirectView):
+class EntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year

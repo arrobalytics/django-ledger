@@ -16,25 +16,41 @@ from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, Ite
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
-# todo: need to add entity_unit to form...
-
 class InvoiceModelCreateForEstimateForm(ModelForm):
 
     def __init__(self, *args, entity_slug, user_model, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
+        self.get_customer_queryset()
+        self.get_accounts_queryset()
 
-        account_qs = AccountModel.on_coa.for_invoice(
-            user_model=self.USER_MODEL,
-            entity_slug=self.ENTITY_SLUG)
+    def get_customer_queryset(self):
+        if 'customer' in self.fields:
+            customer_qs = CustomerModel.objects.for_entity(
+                user_model=self.USER_MODEL,
+                entity_slug=self.ENTITY_SLUG
+            )
+            self.fields['customer'].queryset = customer_qs
 
-        # forcing evaluation of qs to cache results for fields... (avoids 4 database queries, vs 1)
-        len(account_qs)
+    def get_accounts_queryset(self):
 
-        self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
-        self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
-        self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
+        if all([
+            'cash_account' in self.fields,
+            'prepaid_account' in self.fields,
+            'unearned_account' in self.fields,
+        ]):
+            account_qs = AccountModel.on_coa.for_invoice(
+                user_model=self.USER_MODEL,
+                entity_slug=self.ENTITY_SLUG
+            )
+
+            # forcing evaluation of qs to cache results for fields... (avoids multiple database queries)
+            len(account_qs)
+
+            self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
+            self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
+            self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
     class Meta:
         model = InvoiceModel
@@ -45,34 +61,29 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
             'unearned_account'
         ]
         labels = {
-            'terms': _('Invoice Terms')
+            'terms': _('Invoice Terms'),
+            'draft_date': _('Draft Date')
         }
         widgets = {
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'draft_date': DateInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('Invoice Date (YYYY-MM-DD)...'),
+                'id': 'djl-invoice-draft-date-input'
+            }),
             'amount_due': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': '$$$'}),
             'terms': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-
             'cash_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'prepaid_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'unearned_account': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-
         }
 
 
 class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
-
-    def __init__(self, **kwargs):
-        super(InvoiceModelCreateForm, self).__init__(**kwargs)
-        customer_qs = CustomerModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['customer'].queryset = customer_qs
-
     class Meta(InvoiceModelCreateForEstimateForm.Meta):
         fields = [
             'customer',
@@ -257,7 +268,7 @@ class BaseInvoiceItemFormset(BaseModelFormSet):
         }
 
 
-def get_bill_itemtxs_formset_class(invoice_model: InvoiceModel):
+def get_invoice_itemtxs_formset_class(invoice_model: InvoiceModel):
     can_delete = invoice_model.can_edit_items()
     return modelformset_factory(
         model=ItemTransactionModel,

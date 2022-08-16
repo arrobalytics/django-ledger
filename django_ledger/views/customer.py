@@ -13,10 +13,10 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django_ledger.forms.customer import CustomerModelForm
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.views.mixins import LoginRequiredMixIn
+from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class CustomerModelListView(LoginRequiredMixIn,
+class CustomerModelListView(DjangoLedgerSecurityMixIn,
                             ListView):
     template_name = 'django_ledger/customer_list.html'
     PAGE_TITLE = _('Customer List')
@@ -34,7 +34,7 @@ class CustomerModelListView(LoginRequiredMixIn,
         ).order_by('-updated')
 
 
-class CustomerModelCreateView(LoginRequiredMixIn,
+class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
                               CreateView):
     template_name = 'django_ledger/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
@@ -68,7 +68,7 @@ class CustomerModelCreateView(LoginRequiredMixIn,
         return super().form_valid(form)
 
 
-class CustomerModelUpdateView(LoginRequiredMixIn,
+class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
                               UpdateView):
     template_name = 'django_ledger/customer_update.html'
     PAGE_TITLE = _('Customer Update')

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from django.forms import (ModelForm, DateInput, TextInput, Select,
                           CheckboxInput, BaseModelFormSet,
                           modelformset_factory, Textarea)
@@ -7,7 +5,7 @@ from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel, PurchaseOrderModel,
+from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel,
                                   VendorModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -22,7 +20,6 @@ class BillModelCreateForm(ModelForm):
         self.get_accounts_queryset()
 
     def get_vendor_queryset(self):
-        # todo: can we apply same logic on the other forms...
         if 'vendor' in self.fields:
             vendor_qs = VendorModel.objects.for_entity(
                 user_model=self.USER_MODEL,
@@ -61,13 +58,13 @@ class BillModelCreateForm(ModelForm):
             'unearned_account',
         ]
         labels = {
-            'draft_date': _('Date')
+            'draft_date': _('Draft Date'),
         }
         widgets = {
             'draft_date': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Bill Date (YYYY-MM-DD)...'),
-                'id': 'djl-bill-date-input'
+                'id': 'djl-bill-draft-date-input'
             }),
             'amount_due': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
@@ -299,10 +296,12 @@ class BaseBillItemTransactionFormset(BaseModelFormSet):
                 form.fields['entity_unit'].disabled = True
 
 
-BillItemTransactionFormset = modelformset_factory(
-    model=ItemTransactionModel,
-    form=BillItemTransactionForm,
-    formset=BaseBillItemTransactionFormset,
-    can_delete=True,
-    extra=5
-)
+def get_bill_itemtxs_formset_class(bill_model: BillModel):
+    BillItemTransactionFormset = modelformset_factory(
+        model=ItemTransactionModel,
+        form=BillItemTransactionForm,
+        formset=BaseBillItemTransactionFormset,
+        can_delete=True,
+        extra=5
+    )
+    return BillItemTransactionFormset

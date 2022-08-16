@@ -91,7 +91,7 @@ class EntityDataGenerator:
     def populate_entity(self):
 
         txs_qs = TransactionModel.objects.for_entity(
-            entity_model=self.entity_model,
+            entity_slug=self.entity_model,
             user_model=self.user_model
         )
 
@@ -498,7 +498,7 @@ class EntityDataGenerator:
         for poi in po_items:
             poi.full_clean()
 
-        po_model.update_po_state(itemtxs_list=po_items)
+        po_model.update_state(itemtxs_list=po_items)
         po_model.full_clean()
         po_model.save()
 
@@ -590,10 +590,10 @@ class EntityDataGenerator:
 
                                     # todo: can pass po items??..
                                     po_model.itemtransactionmodel_set.bulk_update(po_items,
-                                                                              fields=[
-                                                                                  'po_item_status',
-                                                                                  'updated'
-                                                                              ])
+                                                                                  fields=[
+                                                                                      'po_item_status',
+                                                                                      'updated'
+                                                                                  ])
                                     po_model.mark_as_fulfilled(
                                         date_fulfilled=date_fulfilled,
                                         commit=True)
@@ -665,7 +665,7 @@ class EntityDataGenerator:
 
         if random() > 0.25:
             date_review = self.get_next_date(date_draft)
-            invoice_model.mark_as_review(commit=True, date_review=date_review)
+            invoice_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.50:
                 date_approved = self.get_next_date(date_review)
                 invoice_model.mark_as_approved(commit=True, date_approved=date_approved)

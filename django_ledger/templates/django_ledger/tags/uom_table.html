@@ -39,6 +39,8 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:uom-update' entity_slug=entity_slug uom_pk=uom.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                                <a href="{% url 'django_ledger:uom-delete' entity_slug=entity_slug uom_pk=uom.uuid %}"
+                                   class="dropdown-item has-text-danger">{% trans 'Delete' %}</a>
                             </div>
                         </div>
                     </div>
