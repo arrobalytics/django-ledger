@@ -7,10 +7,10 @@
     <div class="container">
         <div class="columns is-multiline">
             <div class="column is-12">
-                {% include 'django_ledger/includes/card_customer.html' with customer=invoice.customer %}
+                {% include 'django_ledger/customer/includes/card_customer.html' with customer=invoice.customer %}
             </div>
             <div class="column is-12">
-                {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice style='invoice-detail' entity_slug=view.kwargs.entity_slug %}
+                {% include 'django_ledger/invoice/includes/card_invoice.html' with invoice=invoice style='invoice-detail' entity_slug=view.kwargs.entity_slug %}
                 <form action="{% url 'django_ledger:invoice-update' entity_slug=view.kwargs.entity_slug invoice_pk=invoice.uuid %}"
                       method="post">
                     {% csrf_token %}
@@ -30,7 +30,6 @@
             <div class="column is-12">
                 {% invoice_item_formset_table itemtxs_formset %}
             </div>
-
             {% if invoice.is_configured %}
                 <div class="column is-12">
                     <div class="card">

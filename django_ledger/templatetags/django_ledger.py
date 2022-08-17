@@ -108,7 +108,7 @@ def balance_sheet_table(context, io_model, to_date):
     return digest
 
 
-@register.inclusion_tag('django_ledger/tags/income_statement.html', takes_context=True)
+@register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, io_model, from_date, to_date):
     user_model: EntityUnitModel = context['user']
     activity = context['request'].GET.get('activity')
@@ -228,7 +228,7 @@ def ledgers_table(context):
     }
 
 
-@register.inclusion_tag('django_ledger/invoice/includes/invoice_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/invoice/tags/invoice_table.html', takes_context=True)
 def invoice_table(context, invoice_qs):
     return {
         'invoices': invoice_qs,
@@ -722,7 +722,7 @@ def inventory_item_table(context, queryset):
     }
 
 
-@register.inclusion_tag('django_ledger/invoice/includes/invoice_item_formset.html', takes_context=True)
+@register.inclusion_tag('django_ledger/invoice/tags/invoice_item_formset.html', takes_context=True)
 def invoice_item_formset_table(context, itemtxs_formset):
     return {
         'entity_slug': context['view'].kwargs['entity_slug'],
