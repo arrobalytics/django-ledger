@@ -10,6 +10,7 @@
     "chart.js": "^2.9.4",
     "json-schema": "^0.4.0",
     "pikaday": "^1.8.2",
+    "scss-tokenizer": "^0.4.3",
     "trim-newlines": "^4.0.2",
     "vue": "^2.6.12",
     "vue-class-component": "^7.2.6"
