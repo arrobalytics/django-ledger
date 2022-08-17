@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=3.2"
+django = ">=3.2.15"
 django-treebeard = "~=4.5.1"
 ofxtools = "~=0.9.4"
 markdown = "~=3.3.4"

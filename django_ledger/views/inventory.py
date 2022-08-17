@@ -10,7 +10,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/inventory_list.html'
+    template_name = 'django_ledger/inventory/inventory_list.html'
     context_object_name = 'inventory_list'
     http_method_names = ['get']
 
@@ -47,7 +47,7 @@ class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
-    template_name = 'django_ledger/inventory_recount.html'
+    template_name = 'django_ledger/inventory/inventory_recount.html'
     http_method_names = ['get']
     slug_url_kwarg = 'entity_slug'
 

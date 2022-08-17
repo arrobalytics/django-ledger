@@ -1,4 +1,4 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/base.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
@@ -10,7 +10,7 @@
             <div class="columns is-multiline">
                 {% for entity in entities %}
                     <div class="column is-6-tablet">
-                        {% include 'django_ledger/includes/card_entity.html' with entity=entity %}
+                        {% include 'django_ledger/entity/includes/card_entity.html' with entity=entity %}
                     </div>
                 {% endfor %}
                 <div class="column is-6-tablet has-text-centered">

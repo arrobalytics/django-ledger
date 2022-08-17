@@ -31,7 +31,7 @@ from django_ledger.views.mixins import (
 
 # Entity CRUD Views ----
 class EntityModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/entitiy_list.html'
+    template_name = 'django_ledger/entity/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
     extra_context = {
@@ -45,7 +45,7 @@ class EntityModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/entity_create.html'
+    template_name = 'django_ledger/entity/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
     extra_context = {
@@ -103,7 +103,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 class EntityModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'entity'
-    template_name = 'django_ledger/entity_update.html'
+    template_name = 'django_ledger/entity/entity_update.html'
     form_class = EntityModelUpdateForm
     slug_url_kwarg = 'entity_slug'
 
@@ -123,7 +123,7 @@ class EntityModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
-    template_name = 'django_ledger/entity_delete.html'
+    template_name = 'django_ledger/entity/entity_delete.html'
     verify_descendants = False
 
     def get_context_data(self, *, object_list=None, **kwargs):
@@ -203,7 +203,7 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
                                          DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/entity_dashboard.html'
+    template_name = 'django_ledger/entity/entity_dashboard.html'
     DJL_NO_FROM_DATE_RAISE_404 = False
     DJL_NO_TO_DATE_RAISE_404 = False
 
@@ -291,7 +291,7 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
                                             DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/balance_sheet.html'
+    template_name = 'django_ledger/financial_statements/balance_sheet.html'
 
     def get_context_data(self, **kwargs):
         context = super(FiscalYearEntityModelBalanceSheetView, self).get_context_data(**kwargs)
@@ -354,7 +354,7 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/income_statement.html'
+    template_name = 'django_ledger/financial_statements/income_statement.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

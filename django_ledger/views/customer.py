@@ -18,7 +18,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 class CustomerModelListView(DjangoLedgerSecurityMixIn,
                             ListView):
-    template_name = 'django_ledger/customer_list.html'
+    template_name = 'django_ledger/customer/customer_list.html'
     PAGE_TITLE = _('Customer List')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -36,7 +36,7 @@ class CustomerModelListView(DjangoLedgerSecurityMixIn,
 
 class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
                               CreateView):
-    template_name = 'django_ledger/customer_create.html'
+    template_name = 'django_ledger/customer/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
     form_class = CustomerModelForm
     context_object_name = 'customer'
@@ -70,7 +70,7 @@ class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
 
 class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
                               UpdateView):
-    template_name = 'django_ledger/customer_update.html'
+    template_name = 'django_ledger/customer/customer_update.html'
     PAGE_TITLE = _('Customer Update')
     form_class = CustomerModelForm
     context_object_name = 'customer'

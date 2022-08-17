@@ -7,10 +7,10 @@
     <div class="container">
         <div class="columns is-multiline">
             <div class="column is-12">
-                {% include 'django_ledger/includes/card_vendor.html' with vendor=bill_model.vendor %}
+                {% include 'django_ledger/includes/../vendor/includes/card_vendor.html' with vendor=bill_model.vendor %}
             </div>
             <div class="column is-12">
-                {% include 'django_ledger/includes/card_bill.html' with bill=bill_model style='bill-detail' entity_slug=view.kwargs.entity_slug %}
+                {% include 'django_ledger/bills/includes/card_bill.html' with bill=bill_model style='bill-detail' entity_slug=view.kwargs.entity_slug %}
                 <form action="{% url 'django_ledger:bill-update' entity_slug=view.kwargs.entity_slug bill_pk=bill_model.uuid %}"
                       method="post">
                     {% csrf_token %}

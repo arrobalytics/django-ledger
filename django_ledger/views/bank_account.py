@@ -16,7 +16,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class BankAccountModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/bank_account_list.html'
+    template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
     extra_context = {
@@ -33,7 +33,7 @@ class BankAccountModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/bank_account_create.html'
+    template_name = 'django_ledger/bank_account/bank_account_create.html'
     form_class = BankAccountCreateForm
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
@@ -66,7 +66,7 @@ class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/bank_account_update.html'
+    template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
     context_object_name = 'bank_account'

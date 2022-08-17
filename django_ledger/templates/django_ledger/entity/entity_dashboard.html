@@ -1,4 +1,4 @@
-{% extends 'django_ledger/base.html' %}
+{% extends 'django_ledger/layouts/base.html' %}
 {% load i18n %}
 {% load static %}
 {% load django_ledger %}
@@ -65,11 +65,11 @@
                 {% endif %}
                 {% for invoice in invoices %}
                     <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug style='dashboard' %}
+                        {% include 'django_ledger/invoice/includes/card_invoice.html' with invoice=invoice entity_slug=entity.slug style='dashboard' %}
                     </div>
                 {% endfor %}
                 <div class="column is-6-tablet is-4-desktop">
-                    {% include 'django_ledger/includes/card_invoice.html' with create_invoice=True entity_slug=entity.slug %}
+                    {% include 'django_ledger/invoice/includes/card_invoice.html' with create_invoice=True entity_slug=entity.slug %}
                 </div>
             </div>
         </div>
@@ -98,11 +98,11 @@
                 {% endif %}
                 {% for bill in bills %}
                     <div class="column is-6-tablet is-4-desktop">
-                        {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=entity.slug style='dashboard' %}
+                        {% include 'django_ledger/includes/../bills/includes/card_bill.html' with bill=bill entity_slug=entity.slug style='dashboard' %}
                     </div>
                 {% endfor %}
                 <div class="column is-6-tablet is-4-desktop">
-                    {% include 'django_ledger/includes/card_bill.html' with create_bill=True entity_slug=entity.slug style='dashboard' %}
+                    {% include 'django_ledger/includes/../bills/includes/card_bill.html' with create_bill=True entity_slug=entity.slug style='dashboard' %}
                 </div>
             </div>
         </div>

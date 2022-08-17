@@ -24,7 +24,7 @@ from django_ledger.views.mixins import (
 
 # Account Views ----
 class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/account_list.html'
+    template_name = 'django_ledger/account/account_list.html'
     context_object_name = 'accounts'
     PAGE_TITLE = _('Entity Accounts')
     extra_context = {
@@ -49,7 +49,7 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'account'
-    template_name = 'django_ledger/account_update.html'
+    template_name = 'django_ledger/account/account_update.html'
     slug_url_kwarg = 'account_pk'
     slug_field = 'uuid'
 
@@ -82,7 +82,7 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/account_create.html'
+    template_name = 'django_ledger/account/account_create.html'
     PAGE_TITLE = _('Create Account')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -129,7 +129,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class AccountModelCreateChildView(AccountModelCreateView):
-    template_name = 'django_ledger/account_create_child.html'
+    template_name = 'django_ledger/account/account_create_child.html'
     slug_url_kwarg = 'parent_account_pk'
     slug_field = 'uuid'
     PAGE_TITLE = _('Create Child Account')
@@ -172,7 +172,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
                                  YearlyReportMixIn,
                                  DetailView):
     context_object_name = 'account'
-    template_name = 'django_ledger/account_detail.html'
+    template_name = 'django_ledger/account/account_detail.html'
     slug_url_kwarg = 'account_pk'
     slug_field = 'uuid'
     DEFAULT_TXS_DAYS = 30

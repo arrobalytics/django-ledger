@@ -9,10 +9,10 @@
         <div class="column is-4">
             <div class="columns is-multiline">
                 <div class="column is-12">
-                    {% include 'django_ledger/includes/card_bill.html' with bill=bill entity_slug=view.kwargs.entity_slug style='bill-detail' %}
+                    {% include 'django_ledger/bills/includes/card_bill.html' with bill=bill entity_slug=view.kwargs.entity_slug style='bill-detail' %}
                 </div>
                 <div class="column is-12">
-                    {% include 'django_ledger/includes/card_vendor.html' with vendor=bill.vendor %}
+                    {% include 'django_ledger/vendor/includes/card_vendor.html' with vendor=bill.vendor %}
                 </div>
                 <div class="column is-12">
                     <a class="button is-info is-fullwidth is-outlined"

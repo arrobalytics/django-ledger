@@ -4,16 +4,14 @@
 {% load django_ledger %}
 
 {% block view_content %}
-
     <div class="columns">
-
         <div class="column is-4">
             <div class="columns is-multiline">
                 <div class="column is-12">
-                    {% include 'django_ledger/includes/card_invoice.html' with invoice=invoice entity_slug=view.kwargs.entity_slug style='invoice-detail' %}
+                    {% include 'django_ledger/invoice/includes/card_invoice.html' with invoice=invoice entity_slug=view.kwargs.entity_slug style='invoice-detail' %}
                 </div>
                 <div class="column is-12">
-                    {% include 'django_ledger/includes/card_customer.html' with customer=invoice.customer %}
+                    {% include 'django_ledger/customer/includes/card_customer.html' with customer=invoice.customer %}
                 </div>
                 <div class="column is-12">
                     <a class="button is-info is-fullwidth is-outlined"
@@ -23,7 +21,6 @@
                 </div>
             </div>
         </div>
-
         <div class="column is-8">
             <div class="columns is-multiline">
                 <div class="column is-12">
@@ -87,7 +84,7 @@
                                 {% trans 'Invoice Items' %}
                             </h2>
                         </div>
-                    {# todo: make this table a template... #}
+                        {# todo: make this table a template... #}
                         <div class="card-content">
                             <div class="table-container">
                                 <table class="table is-fullwidth is-narrow is-stripped is-bordered">
@@ -140,11 +137,10 @@
                         </div>
                     </div>
                 </div>
-                <div class=" column is-12">
+                <div class="column is-12">
                     {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Invoice Notes' notes_html=invoice.notes_html %}
                 </div>
             </div>
         </div>
     </div>
-
 {% endblock %}
