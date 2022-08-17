@@ -18,7 +18,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
-    template_name = 'django_ledger/coa_update.html'
+    template_name = 'django_ledger/code_of_accounts/coa_update.html'
     form_class = ChartOfAccountsModelUpdateForm
 
     def get_context_data(self, **kwargs):

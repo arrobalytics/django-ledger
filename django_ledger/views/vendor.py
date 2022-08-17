@@ -17,7 +17,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class VendorModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/vendor_list.html'
+    template_name = 'django_ledger/vendor/vendor_list.html'
     context_object_name = 'vendors'
     PAGE_TITLE = _('Vendor List')
     extra_context = {
@@ -34,7 +34,7 @@ class VendorModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/vendor_create.html'
+    template_name = 'django_ledger/vendor/vendor_create.html'
     PAGE_TITLE = _('Create New Vendor')
     form_class = VendorModelForm
     context_object_name = 'vendor'
@@ -67,7 +67,7 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class VendorModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/vendor_update.html'
+    template_name = 'django_ledger/vendor/vendor_update.html'
     PAGE_TITLE = _('Vendor Update')
     context_object_name = 'vendor'
     form_class = VendorModelForm

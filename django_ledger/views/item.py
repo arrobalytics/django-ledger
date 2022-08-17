@@ -154,7 +154,7 @@ class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
 
 # PRODUCTS AND SERVICES VIEW...
 class ProductsAndServicesListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/product_list.html'
+    template_name = 'django_ledger/product/product_list.html'
     PAGE_TITLE = _('Products & Services')
     context_object_name = 'pns_list'
     extra_context = {
@@ -171,7 +171,7 @@ class ProductsAndServicesListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/product_create.html'
+    template_name = 'django_ledger/product/product_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Product or Service')
     extra_context = {
@@ -213,7 +213,7 @@ class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/product_update.html'
+    template_name = 'django_ledger/product/product_update.html'
     PAGE_TITLE = _('Update Product or Service')
     context_object_name = 'item'
     pk_url_kwarg = 'item_pk'
@@ -244,7 +244,7 @@ class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
-    template_name = 'django_ledger/product_delete.html'
+    template_name = 'django_ledger/product/product_delete.html'
     pk_url_kwarg = 'item_pk'
     context_object_name = 'item_model'
 
@@ -283,7 +283,7 @@ class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
 
 # EXPENSE ITEMS VIEW...
 class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/expense_list.html'
+    template_name = 'django_ledger/expense/expense_list.html'
     PAGE_TITLE = _('Expense Items')
     context_object_name = 'expense_list'
     extra_context = {
@@ -300,7 +300,7 @@ class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/expense_create.html'
+    template_name = 'django_ledger/expense/expense_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Expense Item')
     extra_context = {
@@ -345,7 +345,7 @@ class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/expense_update.html'
+    template_name = 'django_ledger/expense/expense_update.html'
     PAGE_TITLE = _('Update Expense Item')
     context_object_name = 'item'
     slug_field = 'uuid'
@@ -377,7 +377,7 @@ class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 class InventoryItemModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/inventory_item_list.html'
+    template_name = 'django_ledger/inventory/inventory_item_list.html'
     PAGE_TITLE = _('Inventory Items')
     context_object_name = 'inventory_item_list'
     extra_context = {
@@ -394,7 +394,7 @@ class InventoryItemModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class InventoryItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/inventory_item_create.html'
+    template_name = 'django_ledger/inventory/inventory_item_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Inventory Item')
     extra_context = {
@@ -443,7 +443,7 @@ class InventoryItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class InventoryItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/inventory_item_update.html'
+    template_name = 'django_ledger/inventory/inventory_item_update.html'
     PAGE_TITLE = _('Update Inventory Item')
     context_object_name = 'item'
     slug_field = 'uuid'

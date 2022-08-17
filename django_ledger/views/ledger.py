@@ -22,7 +22,7 @@ from django_ledger.views.mixins import (
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, ListView):
     context_object_name = 'ledgers'
-    template_name = 'django_ledger/ledger_list.html'
+    template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -41,7 +41,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class LedgerModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/ledger_create.html'
+    template_name = 'django_ledger/ledger/ledger_create.html'
     PAGE_TITLE = _('Create Ledger')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -71,7 +71,7 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/ledger_update.html'
+    template_name = 'django_ledger/ledger/ledger_update.html'
     context_object_name = 'ledger'
     slug_url_kwarg = 'ledger_pk'
     slug_field = 'uuid'
@@ -122,7 +122,7 @@ class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
                                        YearlyReportMixIn,
                                        DetailView):
     context_object_name = 'ledger'
-    template_name = 'django_ledger/balance_sheet.html'
+    template_name = 'django_ledger/financial_statements/balance_sheet.html'
     slug_url_kwarg = 'ledger_pk'
     slug_field = 'uuid'
 
@@ -177,7 +177,7 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
                                           YearlyReportMixIn,
                                           DetailView):
     context_object_name = 'ledger'
-    template_name = 'django_ledger/income_statement.html'
+    template_name = 'django_ledger/financial_statements/income_statement.html'
     slug_url_kwarg = 'ledger_pk'
     slug_field = 'uuid'
 

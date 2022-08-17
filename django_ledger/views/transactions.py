@@ -18,7 +18,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class TXSJournalEntryView(DjangoLedgerSecurityMixIn, TemplateView):
-    template_name = 'django_ledger/txs.html'
+    template_name = 'django_ledger/transaction/txs.html'
     PAGE_TITLE = _('Edit Transactions')
     extra_context = {
         'header_title': PAGE_TITLE,

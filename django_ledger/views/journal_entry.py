@@ -20,7 +20,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 # JE Views ---
 class JournalEntryListView(DjangoLedgerSecurityMixIn, ListView):
     context_object_name = 'journal_entries'
-    template_name = 'django_ledger/je_list.html'
+    template_name = 'django_ledger/journal_entry/je_list.html'
     PAGE_TITLE = _('Journal Entries')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -41,7 +41,7 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, ListView):
 
 class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
     context_object_name = 'journal_entry'
-    template_name = 'django_ledger/je_detail.html'
+    template_name = 'django_ledger/journal_entry/je_detail.html'
     slug_url_kwarg = 'je_pk'
     slug_field = 'uuid'
     PAGE_TITLE = _('Journal Entry Detail')
@@ -62,7 +62,7 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
 
 class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'journal_entry'
-    template_name = 'django_ledger/je_update.html'
+    template_name = 'django_ledger/journal_entry/je_update.html'
     slug_url_kwarg = 'je_pk'
     PAGE_TITLE = _('Update Journal Entry')
     extra_context = {
@@ -117,7 +117,7 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/je_create.html'
+    template_name = 'django_ledger/journal_entry/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
     extra_context = {
         'page_title': PAGE_TITLE,

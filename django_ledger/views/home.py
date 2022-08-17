@@ -23,7 +23,7 @@ class RootUrlView(RedirectView):
 
 
 class DashboardView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/home.html'
+    template_name = 'django_ledger/entity/home.html'
     PAGE_TITLE = _('My Dashboard')
     context_object_name = 'entities'
     extra_context = {

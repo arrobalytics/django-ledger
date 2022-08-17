@@ -11,7 +11,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, QuarterlyRepor
 
 
 class EntityUnitModelListView(DjangoLedgerSecurityMixIn, ListView):
-    template_name = 'django_ledger/unit_list.html'
+    template_name = 'django_ledger/unit/unit_list.html'
     PAGE_TITLE = _('Entity Unit List')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -28,7 +28,7 @@ class EntityUnitModelListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
-    template_name = 'django_ledger/unit_detail.html'
+    template_name = 'django_ledger/unit/unit_detail.html'
     PAGE_TITLE = _('Entity Unit Detail')
     slug_url_kwarg = 'unit_slug'
     extra_context = {
@@ -46,7 +46,7 @@ class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
 
 
 class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
-    template_name = 'django_ledger/unit_create.html'
+    template_name = 'django_ledger/unit/unit_create.html'
     PAGE_TITLE = _('Entity Unit Create')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -77,7 +77,7 @@ class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
 
 class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
-    template_name = 'django_ledger/unit_update.html'
+    template_name = 'django_ledger/unit/unit_update.html'
     PAGE_TITLE = _('Entity Unit Update')
     slug_url_kwarg = 'unit_slug'
     context_object_name = 'unit'

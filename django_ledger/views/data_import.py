@@ -53,7 +53,7 @@ class DataImportJobsListView(DjangoLedgerSecurityMixIn, ListView):
         'header_title': PAGE_TITLE
     }
     context_object_name = 'import_jobs'
-    template_name = 'django_ledger/data_import_job_list.html'
+    template_name = 'django_ledger/data_import/data_import_job_list.html'
 
     def get_queryset(self):
         return ImportJobModel.objects.for_entity(
@@ -63,7 +63,7 @@ class DataImportJobsListView(DjangoLedgerSecurityMixIn, ListView):
 
 
 class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
-    template_name = 'django_ledger/data_import_ofx.html'
+    template_name = 'django_ledger/data_import/data_import_ofx.html'
     PAGE_TITLE = _('OFX File Import')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -154,7 +154,7 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
 
 
 class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
-    template_name = 'django_ledger/data_import_job_txs.html'
+    template_name = 'django_ledger/data_import/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'import_job'
     pk_url_kwarg = 'job_pk'
