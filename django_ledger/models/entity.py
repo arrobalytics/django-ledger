@@ -107,6 +107,11 @@ def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
 
 
 def generate_entity_slug(name: str) -> str:
+    
+    """
+    This is the addition to the documentation.
+    
+    """
     slug = slugify(name)
     suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
     entity_slug = f'{slug}-{suffix}'
