@@ -110,3 +110,8 @@ venv.bak/
 node_modules
 notebooks/
 data/
+
+
+# ppt files
+
+.PPT_FILES
