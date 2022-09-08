@@ -9,9 +9,13 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.core.exceptions import ValidationError
 
 
-class InvalidDateInputException(ValidationError):
+class InvalidDateInputError(ValidationError):
     pass
 
 
-class TransactionNotInBalanceException(ValidationError):
+class JournalEntryValidationError(ValidationError):
+    pass
+
+
+class TransactionNotInBalanceError(ValidationError):
     pass

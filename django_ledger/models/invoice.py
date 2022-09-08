@@ -190,6 +190,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if not self.invoice_number:
             self.invoice_number = generate_invoice_number()
 
+        if entity_model.is_accrual_method():
+            self.accrue = True
+            self.progress = 1
+        else:
+            self.accrue = False
+
         LedgerModel = lazy_loader.get_ledger_model()
         ledger_model = LedgerModel.objects.create(
             entity=entity_model,

@@ -1,0 +1,134 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped">
+        <thead>
+        <tr>
+            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Operating Activities' %}</td>
+            <td class="has-text-right has-text-weight-bold">{% trans 'Total' %}</td>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <tr>
+            <td class="has-text-weight-bold is-size-5">{% trans 'Net Income' %}</td>
+            <td class="has-text-weight-bold has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_NET_INCOME | currency_format }}</td>
+        </tr>
+
+        {# Noncash Charges to Non-current Accounts #}
+        <tr>
+            <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Non-current Accounts' %}</td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Depreciation & Amortization of Assets' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_DEPRECIATION_AMORTIZATION | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Gain/Loss Sale of Assets' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_INVESTMENT_GAINS | currency_format }}</td>
+        </tr>
+
+        {# Noncash Charges to Current Accounts #}
+        <tr>
+            <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Current Accounts' %}</td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Accounts Receivable' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_ACCOUNTS_RECEIVABLE | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Inventories' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_INVENTORY | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Accounts Payable' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_ACCOUNTS_PAYABLE | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Other Current Assets' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_OTHER_CURRENT_ASSETS | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Other Current Liabilities' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_OTHER_CURRENT_LIABILITIES | currency_format }}</td>
+        </tr>
+
+        </tbody>
+        <tfoot>
+        <tr>
+            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Operating Activities' %}</td>
+            <td class="has-text-weight-bold has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <table class="table is-fullwidth is-narrow is-striped">
+        <thead>
+        <tr>
+            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Financing Activities' %}</td>
+            <td class="has-text-right has-text-weight-bold">{% trans 'Total' %}</td>
+        </tr>
+        </thead>
+
+        <tbody>
+
+
+        </tbody>
+        <tfoot>
+        <tr>
+            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Financing Activities' %}</td>
+            <td class="has-text-weight-bold has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <table class="table is-fullwidth is-narrow is-striped">
+        <thead>
+        <tr>
+            <td class="has-text-weight-light is-size-3">{% trans 'Cash from Investing Activities' %}</td>
+            <td class="has-text-right has-text-weight-bold">{% trans 'Total' %}</td>
+        </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Purchase, Maturity and Sales of Investments & Securities' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_OTHER_CURRENT_LIABILITIES | currency_format }}</td>
+        </tr>
+        <tr>
+            <td class="has-text-right has-text-weight-light">{% trans 'Addition and Disposition of Property, Plant & Equipment' %}</td>
+            <td class="has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_CFS_OTHER_CURRENT_LIABILITIES | currency_format }}</td>
+        </tr>
+
+        </tbody>
+
+
+        <tfoot>
+        <tr>
+            <td class="has-text-weight-bold is-size-5">{% trans 'Net Cash Provided by Investing Activities' %}</td>
+            <td class="has-text-weight-bold has-text-right">
+                {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
+        </tr>
+        </tfoot>
+
+
+    </table>
+</div>

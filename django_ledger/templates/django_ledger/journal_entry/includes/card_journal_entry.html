@@ -1,0 +1,27 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-header-title is-size-2">{% trans 'Journal Entry Detail' %}</div>
+    </div>
+    <div class="card-content">
+        <h2 class="is-size-2">{% trans 'Date' %}: {{ journal_entry.date | date }}</h2>
+        <h2 class="is-size-2 has-text-weight-light">{% trans 'Unit' %}: {{ journal_entry.get_entity_unit_name }}</h2>
+        <h3 class="is-size-4">{% trans 'Posted' %}:
+            {% if journal_entry.posted %}
+                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+            {% else %}
+                <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+            {% endif %}
+        </h3>
+        <h3 class="is-size-4">{% trans 'Locked' %}:
+            {% if journal_entry.locked %}
+                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+            {% else %}
+                <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+            {% endif %}
+        </h3>
+        <h4 class="is-size-4 has-text-weight-light">{{ journal_entry.description }}</h4>
+    </div>
+</div>

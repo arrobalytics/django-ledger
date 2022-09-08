@@ -1,6 +1,6 @@
 from django.forms import ModelForm, Textarea, Select, DateInput
 
-from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -21,15 +21,11 @@ class JournalEntryModelCreateForm(ModelForm):
         model = JournalEntryModel
         fields = [
             'parent',
-            'activity',
             'date',
             'description'
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'activity': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'date': DateInput(attrs={
@@ -46,17 +42,11 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
         model = JournalEntryModel
         fields = [
             'parent',
-            'activity',
             'date',
-            'description',
-            'locked',
-            'posted'
+            'description'
         ]
         widgets = {
             'parent': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'activity': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'date': DateInput(attrs={

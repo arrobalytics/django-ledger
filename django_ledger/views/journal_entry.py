@@ -5,14 +5,16 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
-from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
@@ -36,7 +38,7 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, ListView):
             ledger_pk=self.kwargs['ledger_pk'],
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).order_by(sort)
+        ).select_related('entity_unit').order_by(sort)
 
 
 class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
@@ -57,25 +59,18 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user
-        ).prefetch_related('txs', 'txs__account')
+        ).select_related('entity_unit')
 
 
 class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_update.html'
-    slug_url_kwarg = 'je_pk'
+    pk_url_kwarg = 'je_pk'
     PAGE_TITLE = _('Update Journal Entry')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
-    action_mark_as_posted: bool = False
-    action_mark_as_locked: bool = False
-    action_mark_as_unlocked: bool = False
-    http_method_names = ['get', 'post']
-
-    def get_slug_field(self):
-        return 'uuid'
 
     def get_form(self, form_class=None):
         return JournalEntryModelUpdateForm(
@@ -97,23 +92,6 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user
         ).prefetch_related('txs', 'txs__account')
-
-    def get(self, request, *args, **kwargs):
-        response = super(JournalEntryUpdateView, self).get(request, *args, **kwargs)
-        je_model: JournalEntryModel = self.object
-
-        if self.action_mark_as_posted:
-            je_model.mark_as_posted()
-        if self.action_mark_as_locked:
-            je_model.mark_as_locked(commit=True)
-        if self.action_mark_as_unlocked:
-            je_model.mark_as_unlocked(commit=True)
-
-        next_url = self.request.GET.get('next')
-        if next_url:
-            return HttpResponseRedirect(next_url)
-
-        return response
 
 
 class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
@@ -156,3 +134,56 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
                            'entity_slug': self.kwargs.get('entity_slug'),
                            'ledger_pk': self.kwargs.get('ledger_pk')
                        })
+
+
+# ACTION VIEWS...
+class BaseJournalEntryActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'je_pk'
+    action_name = None
+    commit = True
+
+    def get_queryset(self):
+        return JournalEntryModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:je-list',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug'],
+                           'ledger_pk': kwargs['ledger_pk']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BaseJournalEntryActionView, self).get(request, *args, **kwargs)
+        je_model: BaseJournalEntryActionView = self.get_object()
+
+        try:
+            getattr(je_model, self.action_name)(commit=self.commit, raise_exception=True, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class JournalEntryActionMarkAsPostedView(BaseJournalEntryActionView):
+    action_name = 'mark_as_posted'
+
+
+class JournalEntryActionMarkAsUnPostedView(BaseJournalEntryActionView):
+    action_name = 'mark_as_unposted'
+
+
+class JournalEntryActionMarkAsLockedView(BaseJournalEntryActionView):
+    action_name = 'mark_as_locked'
+
+
+class JournalEntryActionMarkAsUnLockedView(BaseJournalEntryActionView):
+    action_name = 'mark_as_unlocked'

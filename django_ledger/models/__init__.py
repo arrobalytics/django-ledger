@@ -14,7 +14,7 @@ from django_ledger.models.entity import *
 from django_ledger.models.bill import *
 from django_ledger.models.invoice import *
 from django_ledger.models.items import *
-from django_ledger.models.journalentry import *
+from django_ledger.models.journal_entry import *
 from django_ledger.models.accounts import *
 from django_ledger.models.ledger import *
 from django_ledger.models.transactions import *

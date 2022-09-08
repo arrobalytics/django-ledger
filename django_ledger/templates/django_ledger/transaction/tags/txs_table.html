@@ -1,35 +1,66 @@
+{% load i18n %}
 {% load django_ledger %}
 
-<div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
-        <tr>
-            <th>Date</th>
-            <th>Account</th>
-            <th>Account Name</th>
-            <th>Unit</th>
-            <th>Credit</th>
-            <th>Debit</th>
-            <th>Description</th>
-        </tr>
-        {% for tx in txs %}
+{% if style == 'detail' %}
+    <div class="table-container">
+        <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
             <tr>
-                <td>{{ tx.journal_entry.date }}</td>
-                <td>{{ tx.account.code }}</td>
-                <td>{{ tx.account.name }}</td>
-                <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit }}{% endif %}</td>
-                <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                <td>{{ tx.description }}</td>
+                <th>{% trans 'Date' %}</th>
+                <th>{% trans 'Account' %}</th>
+                <th>{% trans 'Account Name' %}</th>
+                <th>{% trans 'Unit' %}</th>
+                <th>{% trans 'Credit' %}</th>
+                <th>{% trans 'Debit' %}</th>
+                <th>{% trans 'Description' %}</th>
             </tr>
-        {% endfor %}
-        <tr class="has-text-weight-bold">
-            <td></td>
-            <td></td>
-            <td></td>
-            <td class="has-text-right">Total</td>
-            <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
-            <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
-            <td></td>
-        </tr>
-    </table>
-</div>
+            {% for tx in txs %}
+                <tr>
+                    <td>{{ tx.journal_entry.date }}</td>
+                    <td>{{ tx.account.code }}</td>
+                    <td>{{ tx.account.name }}</td>
+                    <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit }}{% endif %}</td>
+                    <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
+                    <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
+                    <td>{% if tx.description %}{{ tx.description }}{% endif %}</td>
+                </tr>
+            {% endfor %}
+            <tr class="has-text-weight-bold">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="has-text-right">Total</td>
+                <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
+                <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+{% elif style == 'compact' %}
+    <div class="table-container">
+        <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+            <tr>
+                <th>{% trans 'Account' %}</th>
+                <th>{% trans 'Account Name' %}</th>
+                <th>{% trans 'Credit' %}</th>
+                <th>{% trans 'Debit' %}</th>
+                <th>{% trans 'Description' %}</th>
+            </tr>
+            {% for tx in txs %}
+                <tr>
+                    <td>{{ tx.account.code }}</td>
+                    <td>{{ tx.account.name }}</td>
+                    <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
+                    <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
+                    <td>{% if tx.description %}{{ tx.description }}{% endif %}</td>
+                </tr>
+            {% endfor %}
+            <tr class="has-text-weight-bold">
+                <td></td>
+                <td class="has-text-right">{% trans 'Total' %}</td>
+                <td>{% currency_symbol %}{{ total_credits | currency_format }}</td>
+                <td>{% currency_symbol %}{{ total_debits | currency_format }}</td>
+                <td></td>
+            </tr>
+        </table>
+    </div>
+{% endif %}

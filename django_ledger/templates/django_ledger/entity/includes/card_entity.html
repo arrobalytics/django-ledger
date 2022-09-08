@@ -1,4 +1,5 @@
 {% load django_ledger %}
+{% load i18n %}
 {% now "Y" as current_year %}
 
 
@@ -8,6 +9,19 @@
             <span class="icon is-medium">{% icon "ic:baseline-business" 36 %}</span>{{ entity.name }}
         </p>
         <p class="subtitle">{{ entity.address_1 }}</p>
+        <h3 class="is-size-4 has-text-weight-light">
+            {% if entity.is_accrual_method %}
+                <span class="icon is-medium has-text-info">
+                    {% icon 'mdi:cash-clock' 24 %}</span>
+                {% trans 'Accrual Method' %}
+            {% elif entity.is_cash_method %}
+                <span class="icon is-medium has-text-success">
+                    {% icon 'bi:cash-stack' 24 %}</span>
+                {% trans 'Cash Method' %}
+            {% endif %}
+
+        </h3>
+
         <p>Created: {{ entity.created | timesince }} ago</p>
     </div>
     <footer class="card-footer">

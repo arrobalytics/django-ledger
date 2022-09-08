@@ -304,7 +304,6 @@ class LedgerWrapperMixIn(models.Model):
         if self.can_migrate() or force_migrate:
 
             # getting current ledger state
-            # pylint: disable=no-member
             txs_qs, txs_digest = self.ledger.digest(
                 user_model=user_model,
                 process_groups=True,
@@ -466,16 +465,16 @@ class LedgerWrapperMixIn(models.Model):
                         entity_unit_id=u,
                         date=now_date,
                         description=self.get_migrate_state_desc(),
-                        activity='op',
+                        # activity='op',
                         origin='migration',
-                        locked=True,
-                        posted=True,
+                        locked=False,
+                        posted=False,
                         ledger_id=self.ledger_id
                     ) for u in unit_uuids
                 }
 
                 for u, je in je_list.items():
-                    je.clean(verify_txs=False)
+                    je.clean(verify=False)
 
                 JournalEntryModel.objects.bulk_create(
                     je for _, je in je_list.items()

@@ -7,11 +7,11 @@ Miguel Sanda <msanda@arrobalytics.com>
 Michael Noel <noel.michael87@gmail.com>
 """
 
-from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, HiddenInput
+from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select
 
 from django_ledger.io import balance_tx_data
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.journalentry import JournalEntryModel
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -20,16 +20,12 @@ class TransactionModelForm(ModelForm):
     class Meta:
         model = TransactionModel
         fields = [
-            # 'journal_entry',
             'account',
             'tx_type',
             'amount',
             'description'
         ]
         widgets = {
-            # 'journal_entry': HiddenInput(attrs={
-            #     'readonly': True
-            # }),
             'account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             }),
@@ -45,12 +41,12 @@ class TransactionModelForm(ModelForm):
         }
 
 
-class BaseTransactionModelFormSet(BaseModelFormSet):
+class TransactionModelFormSet(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, ledger_pk, user_model, je_pk=None, **kwargs):
+    def __init__(self, *args, entity_slug, user_model, ledger_pk, je_model=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.USER_MODEL = user_model
-        self.JE_PK = je_pk
+        self.JE_MODEL: JournalEntryModel = je_model
         self.LEDGER_PK = ledger_pk
         self.ENTITY_SLUG = entity_slug
 
@@ -61,12 +57,16 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs
+            if self.JE_MODEL.locked:
+                form.fields['account'].disabled = True
+                form.fields['tx_type'].disabled = True
+                form.fields['amount'].disabled = True
 
     def get_queryset(self):
         return TransactionModel.objects.for_journal_entry(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL,
-            je_pk=self.JE_PK,
+            je_pk=self.JE_MODEL.uuid,
             ledger_pk=self.LEDGER_PK
         ).order_by('account__code')
 
@@ -83,9 +83,11 @@ class BaseTransactionModelFormSet(BaseModelFormSet):
         balance_tx_data(txs_balances)
 
 
-TransactionModelFormSet = modelformset_factory(
-    model=TransactionModel,
-    form=TransactionModelForm,
-    formset=BaseTransactionModelFormSet,
-    can_delete=True,
-    extra=6)
+def get_transactionmodel_formset_class(journal_entry_model: JournalEntryModel):
+    can_delete = not journal_entry_model.locked
+    return modelformset_factory(
+        model=TransactionModel,
+        form=TransactionModelForm,
+        formset=TransactionModelFormSet,
+        can_delete=can_delete,
+        extra=6 if can_delete else 0)

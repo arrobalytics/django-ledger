@@ -194,6 +194,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         if not self.bill_number:
             self.bill_number = generate_bill_number()
+
+        if entity_model.is_accrual_method():
+            self.accrue = True
+            self.progress = 1
+        else:
+            self.accrue = False
+
         ledger_name = f'Bill {self.bill_number}'
         if bill_desc:
             ledger_name += f' | {bill_desc}'

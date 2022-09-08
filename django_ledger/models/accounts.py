@@ -49,6 +49,16 @@ class AccountModelManager(models.Manager):
             qs = qs.filter(coa__slug__iexact=coa_slug)
         return qs
 
+    def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
+        qs = self.for_entity(
+            user_model=user_model,
+            entity_slug=entity_slug,
+            coa_slug=coa_slug)
+        return qs.filter(
+            active=True,
+            locked=False
+        )
+
     def with_roles(self, roles: Union[list, str], entity_slug: str, user_model):
         if isinstance(roles, str):
             roles = [roles]
@@ -60,16 +70,6 @@ class AccountModelManager(models.Manager):
             roles = [roles]
         qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
-
-    def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
-        qs = self.for_entity(
-            user_model=user_model,
-            entity_slug=entity_slug,
-            coa_slug=coa_slug)
-        return qs.filter(
-            active=True,
-            locked=False
-        )
 
     def for_invoice(self, user_model, entity_slug: str, coa_slug: str = None):
         qs = self.for_entity_available(
@@ -98,7 +98,7 @@ class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     code = models.CharField(max_length=10, verbose_name=_('Account Code'))
     name = models.CharField(max_length=100, verbose_name=_('Account Name'))
-    role = models.CharField(max_length=25, choices=ACCOUNT_ROLES, verbose_name=_('Account Role'))
+    role = models.CharField(max_length=30, choices=ACCOUNT_ROLES, verbose_name=_('Account Role'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     active = models.BooleanField(default=False, verbose_name=_('Active'))

@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            {% balance_sheet_table io_model=object to_date=to_date %}
+            {% balance_sheet_statement io_model=object %}
             {% if entity %}
                 <a class="button is-fullwidth is-dark is-small mb-1"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>

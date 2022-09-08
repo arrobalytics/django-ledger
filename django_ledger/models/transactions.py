@@ -214,5 +214,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
 
 class TransactionModel(TransactionModelAbstract):
     """
-    Base Transaction Model From Abstract
+    Base Transaction Model From Abstract.
+    This is a new documentation.
     """

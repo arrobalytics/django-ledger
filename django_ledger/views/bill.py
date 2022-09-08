@@ -172,6 +172,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             bill_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
+
         elif self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
             item_uuids = self.request.GET.get('item_uuids')
@@ -204,6 +205,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             bill_model.save()
             po_model_items_qs.update(bill_model=bill_model)
             return HttpResponseRedirect(self.get_success_url())
+
         elif self.for_estimate:
             estimate_qs = EstimateModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
@@ -214,6 +216,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             bill_model.clean()
             bill_model.save()
             return HttpResponseRedirect(self.get_success_url())
+
         return super(BillModelCreateView, self).form_valid(form)
 
     def get_success_url(self):
@@ -449,7 +452,7 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                                          entity_slug=entity_slug)
 
             if itemtxs_formset.has_changed():
-                if itemtxs_formset.is_valid():
+                if itemtxs_formset.is_balance_valid():
                     itemtxs_list = itemtxs_formset.save(commit=False)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)

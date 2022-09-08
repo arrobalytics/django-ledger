@@ -17,7 +17,7 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Manager, Q
+from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -25,11 +25,11 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager
 
 from django_ledger.io import IOMixIn
-from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
-    validate_roles
-from django_ledger.models.accounts import AccountModel, CREDIT
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
+from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
 from django_ledger.models.utils import LazyLoader
 
@@ -182,6 +182,8 @@ class EntityModelAbstract(MP_Node,
                           ContactInfoMixIn,
                           IOMixIn,
                           EntityReportManager):
+    CASH_METHOD = 'cash'
+    ACCRUAL_METHOD = 'accrual'
     FY_MONTHS = [
         (1, _('January')),
         (2, _('February')),
@@ -209,6 +211,8 @@ class EntityModelAbstract(MP_Node,
                                       verbose_name=_('Managers'))
 
     hidden = models.BooleanField(default=False)
+    accrual_method = models.BooleanField(default=False,
+                                         verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager()
@@ -384,28 +388,13 @@ class EntityModelAbstract(MP_Node,
                 acc.clean()
             AccountModel.on_coa.bulk_create(acc_objs)
 
-    def add_account(self,
-                    account_code: str,
-                    account_role: str,
-                    account_name: str,
-                    balance_type: str,
-                    is_active: bool = False,
-                    is_locked: bool = False) -> AccountModel:
-        validate_roles(account_role)
-        account_model = AccountModel(
-            code=account_code,
-            role=account_role,
-            name=account_name,
-            balance_type=balance_type,
-            coa_id=self.coa.uuid,
-            active=is_active,
-            locked=is_locked
-        )
-        account_model.clean()
-        account_model.save()
-        return account_model
-
     def get_accounts(self, user_model, active_only: bool = True):
+        """
+        This func does...
+        @param user_model: Request User Model
+        @param active_only: Active accounts only
+        @return: A queryset.
+        """
         accounts_qs = AccountModel.on_coa.for_entity(
             entity_slug=self.slug,
             user_model=user_model
@@ -470,14 +459,27 @@ class EntityModelAbstract(MP_Node,
             name=ledger_name,
             posted=ledger_posted
         )
+
+        # todo: this needs to be changes to use the JournalEntryModel API for validation...
         self.commit_txs(
             je_date=txs_date,
             je_txs=txs,
-            je_activity='op',
+            je_activity=JournalEntryModel.INVESTING_ACTIVITY,
             je_posted=je_posted,
             je_ledger=ledger
         )
         return ledger
+
+    def is_cash_method(self) -> bool:
+        return self.accrual_method is False
+
+    def is_accrual_method(self) -> bool:
+        return self.accrual_method is True
+
+    def get_accrual_method(self) -> str:
+        if self.is_cash_method():
+            return self.CASH_METHOD
+        return self.ACCRUAL_METHOD
 
     def clean(self):
         super(EntityModelAbstract, self).clean()

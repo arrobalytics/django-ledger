@@ -4,31 +4,32 @@
 {% load django_ledger %}
 
 {% block aux_menu %}
-    {% if unit_model %}
-        <div class="column is-12">{% period_navigation 'unit-ic' %}</div>
-    {% elif entity %}
-        <div class="column is-12">{% period_navigation 'entity-ic' %}</div>
+    {% if entity %}
+        <div class="column is-12">{% period_navigation 'entity-cf' %}</div>
     {% elif ledger %}
-        <div class="column is-12">{% period_navigation 'ledger-ic' %}</div>
+        <div class="column is-12">{% period_navigation 'ledger-cf' %}</div>
+    {% elif unit_model %}
+        <div class="column is-12">{% period_navigation 'unit-cf' %}</div>
     {% endif %}
 {% endblock %}
 
 {% block view_content %}
     <div class="card">
-        <div class="card-content has-text-centered">
-            <div class="container mb-4">
+        <div class="card-content">
+            <div class="container mb-4 has-text-centered">
                 <div class="columns">
                     <div class="column">
                         {% if entity %}
                             <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
+                        {% elif unit_model %}
+                            <h1 class="is-size-2 has-text-weight-light">{{ unit_model.name }}</h1>
                         {% endif %}
+                        <h1 class="is-size-2 has-text-weight-bold">{% trans 'Cash Flow Statement' %}</h1>
                         {% if unit_model %}
                             <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
                         {% endif %}
-
-                        <h1 class="is-size-2 has-text-weight-bold">{% trans 'Income Statement' %}</h1>
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}
@@ -41,21 +42,18 @@
                 </div>
             </div>
 
-            {% income_statement_table io_model=object %}
+            {% cash_flow_statement io_model=object %}
 
-            {% if ledger %}
+            {% if entity %}
+                <a class="button is-fullwidth is-dark is-small mb-1"
+                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
+            {% elif ledger %}
                 <a class="button is-fullwidth is-dark is-small my-2"
-                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
-                    Back</a>
-            {% elif entity %}
-                <a class="button is-fullwidth is-dark is-small my-2"
-                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
-                    Back</a>
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
             <a class="button is-fullwidth is-light is-small my-2"
                href="?by_unit=1">{% trans 'By Unit' %}</a>
 
         </div>
     </div>
-
 {% endblock %}

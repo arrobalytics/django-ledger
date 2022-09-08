@@ -11,7 +11,7 @@ from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput,
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemTransactionModel, ItemModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -49,7 +49,7 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
             len(account_qs)
 
             self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
-            self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
+            self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)
             self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
 
     class Meta:
@@ -62,7 +62,9 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         ]
         labels = {
             'terms': _('Invoice Terms'),
-            'draft_date': _('Draft Date')
+            'draft_date': _('Draft Date'),
+            'unearned_account': _('Deferred Revenue Account'),
+            'prepaid_account': _('Receivable Account')
         }
         widgets = {
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
@@ -146,7 +148,6 @@ class DraftInvoiceModelUpdateForm(BaseInvoiceModelUpdateForm):
         fields = [
             'customer',
             'terms',
-            'accrue',
             'markdown_notes'
         ]
 
@@ -224,7 +225,7 @@ class InvoiceItemForm(ModelForm):
         }
 
 
-class BaseInvoiceItemFormset(BaseModelFormSet):
+class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
 
     def __init__(self, *args,
                  entity_slug,
@@ -273,7 +274,7 @@ def get_invoice_itemtxs_formset_class(invoice_model: InvoiceModel):
     return modelformset_factory(
         model=ItemTransactionModel,
         form=InvoiceItemForm,
-        formset=BaseInvoiceItemFormset,
+        formset=BaseInvoiceItemTransactionFormset,
         can_delete=can_delete,
         extra=5 if can_delete else 0
     )

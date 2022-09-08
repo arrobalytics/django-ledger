@@ -65,7 +65,8 @@ class EntityModelCreateForm(ModelForm):
             'phone',
             'fy_start_month',
             'default_coa',
-            'activate_all_accounts'
+            'activate_all_accounts',
+            'accrual_method'
         ]
         labels = {
             'name': _('Entity Name'),
@@ -119,6 +120,9 @@ class EntityModelCreateForm(ModelForm):
             }),
             'fy_start_month': Select(attrs={
                 'class': 'input'
+            }),
+            'accrual_method': CheckboxInput(attrs={
+                'class': 'checkbook'
             })
         }
 

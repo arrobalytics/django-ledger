@@ -4,7 +4,7 @@ from django.forms import (ModelForm, DateInput, TextInput, Select,
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
+from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel,
                                   VendorModel, EntityUnitModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -44,7 +44,7 @@ class BillModelCreateForm(ModelForm):
 
             self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
             self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
-            self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_DEFERRED_REVENUE)
+            self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
 
     class Meta:
         model = BillModel
@@ -59,6 +59,8 @@ class BillModelCreateForm(ModelForm):
         ]
         labels = {
             'draft_date': _('Draft Date'),
+            'unearned_account': _('Payable Account'),
+            'prepaid_account': _('Prepaid Expenses Account')
         }
         widgets = {
             'draft_date': DateInput(attrs={
@@ -171,7 +173,6 @@ class DraftBillModelUpdateForm(BaseBillModelUpdateForm):
             'vendor',
             'terms',
             'xref',
-            'accrue',
             'markdown_notes'
         ]
 

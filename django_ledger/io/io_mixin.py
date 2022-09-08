@@ -19,7 +19,7 @@ from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import localdate, make_aware, is_naive
 
-from django_ledger.exceptions import InvalidDateInputException, TransactionNotInBalanceException
+from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.io.roles import RoleManager, GroupManager
@@ -51,7 +51,7 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
 
     if not is_valid and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
         if raise_exception:
-            raise TransactionNotInBalanceException(
+            raise TransactionNotInBalanceError(
                 f'Invalid tx data. Credits and debits must match. Currently cr: {CREDITS}, db {DEBITS}.'
                 f'Max Tolerance {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
             )
@@ -107,7 +107,7 @@ def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True
             # try to parse a datetime object from string...
             fdt = parse_datetime(dt)
             if not fdt:
-                raise InvalidDateInputException(
+                raise InvalidDateInputError(
                     message=f'Could not parse date from {dt}'
                 )
             elif is_naive(fdt):
@@ -435,8 +435,10 @@ class IOMixIn:
         # Validates that the activity is valid.
         je_activity = validate_activity(je_activity)
 
-        if all([isinstance(self, lazy_importer.get_entity_model()),
-                not je_ledger]):
+        if all([
+            isinstance(self, lazy_importer.get_entity_model()),
+            not je_ledger
+        ]):
             raise ValidationError('Must pass an instance of LedgerModel')
 
         if not je_ledger:

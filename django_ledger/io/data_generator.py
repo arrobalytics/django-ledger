@@ -15,8 +15,8 @@ from typing import Union
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.timezone import localtime, localdate
 
-from django_ledger.io import INCOME_SALES, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID, \
-    LIABILITY_CL_DEFERRED_REVENUE
+from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID, \
+                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_REGULAR, EQUITY_CAPITAL)
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
@@ -273,7 +273,7 @@ class EntityDataGenerator:
                     entity=self.entity_model,
                     for_inventory=is_inventory,
                     is_product_or_service=True,
-                    earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                     cogs_account=choice(self.accounts_by_role[COGS]),
                     inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
                     additional_info=dict()
@@ -289,7 +289,7 @@ class EntityDataGenerator:
                     entity=self.entity_model,
                     for_inventory=is_inventory,
                     is_product_or_service=True,
-                    earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                     additional_info=dict()
                 ))
 
@@ -324,7 +324,7 @@ class EntityDataGenerator:
                 entity=self.entity_model,
                 is_product_or_service=False,
                 for_inventory=False,
-                expense_account=choice(self.accounts_by_role['ex_op']),
+                expense_account=choice(self.accounts_by_role[EXPENSE_REGULAR]),
             ) for _ in range(expense_count)
         ]
 
@@ -344,7 +344,7 @@ class EntityDataGenerator:
                 entity=self.entity_model,
                 for_inventory=True,
                 is_product_or_service=True if random() > 0.6 else False,
-                earnings_account=choice(self.accounts_by_role[INCOME_SALES]),
+                earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                 cogs_account=choice(self.accounts_by_role[COGS]),
                 inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
             ) for _ in range(inv_count)
@@ -697,7 +697,7 @@ class EntityDataGenerator:
 
     def fund_entity(self):
 
-        capital_acc = choice(self.accounts_by_role['eq_capital'])
+        capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
         cash_acc = choice(self.bank_account_models).cash_account
 
         ledger_model: LedgerModel = self.entity_model.add_equity(

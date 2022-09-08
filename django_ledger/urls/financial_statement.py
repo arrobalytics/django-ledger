@@ -106,5 +106,23 @@ urlpatterns = [
          name='unit-ic-month'),
     path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/date/<int:year>/<str:month>/<int:day>/',
          views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
-         name='unit-ic-date')
+         name='unit-ic-date'),
+
+
+    # CASH FLOW STATEMENTS...
+    path('entity/<slug:entity_slug>/cash-flow-statement/',
+         views.EntityModelCashFlowStatementView.as_view(),
+         name='entity-cf'),
+    path('entity/<slug:entity_slug>/cash-flow-statement/year/<int:year>/',
+         views.FiscalYearEntityModelCashFlowStatementView.as_view(),
+         name='entity-cf-year'),
+    path('entity/<slug:entity_slug>/cash-flow-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyEntityModelCashFlowStatementView.as_view(),
+         name='entity-cf-quarter'),
+    path('entity/<slug:entity_slug>/cash-flow-statement/month/<int:year>/<int:month>/',
+         views.MonthlyEntityModelCashFlowStatementView.as_view(),
+         name='entity-cf-month'),
+    path('entity/<slug:entity_slug>/cash-flow-statement/date/<int:year>/<int:month>/<int:day>/',
+         views.DateModelCashFlowStatementView.as_view(),
+         name='entity-cf-date'),
 ]

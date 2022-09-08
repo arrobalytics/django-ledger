@@ -83,12 +83,14 @@ def icon(icon_name, size):
     }
 
 
-@register.inclusion_tag('django_ledger/financial_statements/tags/balance_sheet.html', takes_context=True)
-def balance_sheet_table(context, io_model, to_date):
+@register.inclusion_tag('django_ledger/financial_statements/tags/balance_sheet_statement.html', takes_context=True)
+def balance_sheet_statement(context, io_model, to_date=None):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
+    if not to_date:
+        to_date = context['to_date']
 
     prepare_context_by_unit(context)
 
@@ -108,12 +110,45 @@ def balance_sheet_table(context, io_model, to_date):
     return digest
 
 
+@register.inclusion_tag('django_ledger/financial_statements/tags/cash_flow_statement.html', takes_context=True)
+def cash_flow_statement(context, io_model):
+    user_model = context['user']
+    activity = context['request'].GET.get('activity')
+    activity = validate_activity(activity, raise_404=True)
+    entity_slug = context['view'].kwargs.get('entity_slug')
+    from_date = context['from_date']
+    to_date = context['to_date']
+
+    prepare_context_by_unit(context)
+
+    txs_qs, digest = io_model.digest(
+        activity=activity,
+        user_model=user_model,
+        equity_only=False,
+        entity_slug=entity_slug,
+        unit_slug=context['unit_slug'],
+        by_unit=context['by_unit'],
+        from_date=from_date,
+        to_date=to_date,
+        process_groups=True)
+
+    digest['by_unit'] = context['by_unit']
+    digest['unit_model'] = context['unit_model']
+    digest['unit_slug'] = context['unit_slug']
+    return digest
+
+
 @register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
-def income_statement_table(context, io_model, from_date, to_date):
+def income_statement_table(context, io_model, from_date=None, to_date=None):
     user_model: EntityUnitModel = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
+
+    if not from_date:
+        from_date = context['from_date']
+    if not to_date:
+        to_date = context['to_date']
 
     prepare_context_by_unit(context)
 
@@ -177,14 +212,15 @@ def jes_table(context, next_url=None):
 
 
 @register.inclusion_tag('django_ledger/transaction/tags/txs_table.html')
-def journal_entry_txs_table(journal_entry_model):
-    txs_queryset = journal_entry_model.txs.all()
+def journal_entry_txs_table(journal_entry_model, style='detail'):
+    txs_queryset = journal_entry_model.txs.all().select_related('account')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {
         'txs': txs_queryset,
         'total_debits': total_debits,
-        'total_credits': total_credits
+        'total_credits': total_credits,
+        'style': style
     }
 
 
@@ -466,18 +502,18 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
 
 @register.inclusion_tag('django_ledger/components/period_navigator.html', takes_context=True)
 def period_navigation(context, base_url: str):
-    KWARGS = dict()
+    kwargs = dict()
     entity_slug = context['view'].kwargs['entity_slug']
-    KWARGS['entity_slug'] = entity_slug
+    kwargs['entity_slug'] = entity_slug
 
     if context['view'].kwargs.get('ledger_pk'):
-        KWARGS['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
+        kwargs['ledger_pk'] = context['view'].kwargs.get('ledger_pk')
 
     if context['view'].kwargs.get('account_pk'):
-        KWARGS['account_pk'] = context['view'].kwargs.get('account_pk')
+        kwargs['account_pk'] = context['view'].kwargs.get('account_pk')
 
     if context['view'].kwargs.get('unit_slug'):
-        KWARGS['unit_slug'] = context['view'].kwargs.get('unit_slug')
+        kwargs['unit_slug'] = context['view'].kwargs.get('unit_slug')
 
     ctx = dict()
     ctx['year'] = context['year']
@@ -487,15 +523,15 @@ def period_navigation(context, base_url: str):
     ctx['has_date'] = context.get('has_date')
     ctx['previous_year'] = context['previous_year']
 
-    KWARGS['year'] = context['previous_year']
-    ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
+    kwargs['year'] = context['previous_year']
+    ctx['previous_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=kwargs)
     ctx['next_year'] = context['next_year']
 
-    KWARGS['year'] = context['next_year']
-    ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
+    kwargs['year'] = context['next_year']
+    ctx['next_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=kwargs)
 
-    KWARGS['year'] = context['year']
-    ctx['current_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=KWARGS)
+    kwargs['year'] = context['year']
+    ctx['current_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=kwargs)
 
     dt = localdate()
     KWARGS_CURRENT_MONTH = {
@@ -503,12 +539,12 @@ def period_navigation(context, base_url: str):
         'year': dt.year,
         'month': dt.month
     }
-    if 'unit_slug' in KWARGS:
-        KWARGS_CURRENT_MONTH['unit_slug'] = KWARGS['unit_slug']
-    if 'account_pk' in KWARGS:
-        KWARGS_CURRENT_MONTH['account_pk'] = KWARGS['account_pk']
-    if 'ledger_pk' in KWARGS:
-        KWARGS_CURRENT_MONTH['ledger_pk'] = KWARGS['ledger_pk']
+    if 'unit_slug' in kwargs:
+        KWARGS_CURRENT_MONTH['unit_slug'] = kwargs['unit_slug']
+    if 'account_pk' in kwargs:
+        KWARGS_CURRENT_MONTH['account_pk'] = kwargs['account_pk']
+    if 'ledger_pk' in kwargs:
+        KWARGS_CURRENT_MONTH['ledger_pk'] = kwargs['ledger_pk']
 
     ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month',
                                        kwargs=KWARGS_CURRENT_MONTH)
@@ -516,28 +552,28 @@ def period_navigation(context, base_url: str):
     quarter_urls = list()
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):
-        KWARGS['quarter'] = Q
+        kwargs['quarter'] = Q
         quarter_urls.append({
-            'url': reverse(f'django_ledger:{base_url}-quarter', kwargs=KWARGS),
+            'url': reverse(f'django_ledger:{base_url}-quarter', kwargs=kwargs),
             'quarter': Q,
             'quarter_name': f'Q{Q}'
         })
-    del KWARGS['quarter']
+    del kwargs['quarter']
     ctx['quarter_urls'] = quarter_urls
 
     month_urls = list()
     ctx['month'] = context.get('month')
     for M in range(1, 13):
-        KWARGS['month'] = M
+        kwargs['month'] = M
         month_urls.append({
-            'url': reverse(f'django_ledger:{base_url}-month', kwargs=KWARGS),
+            'url': reverse(f'django_ledger:{base_url}-month', kwargs=kwargs),
             'month': M,
             'month_abbr': month_abbr[M]
         })
     ctx['month_urls'] = month_urls
     ctx['from_date'] = context['from_date']
     ctx['to_date'] = context['to_date']
-    ctx.update(KWARGS)
+    ctx.update(kwargs)
 
     ctx['date_navigation_url'] = context.get('date_navigation_url')
 
@@ -649,7 +685,12 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Income Statement',
                         'url': reverse('django_ledger:entity-ic', kwargs={'entity_slug': ENTITY_SLUG})
-                    }
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Cash Flow Statement',
+                        'url': reverse('django_ledger:entity-cf', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
                 ]
             },
             {
