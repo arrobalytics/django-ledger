@@ -164,7 +164,9 @@ class BaseJournalEntryActionView(DjangoLedgerSecurityMixIn, RedirectView, Single
         je_model: BaseJournalEntryActionView = self.get_object()
 
         try:
-            getattr(je_model, self.action_name)(commit=self.commit, raise_exception=True, **kwargs)
+            getattr(je_model, self.action_name)(commit=self.commit,
+                                                verify=True,
+                                                raise_exception=True, **kwargs)
         except ValidationError as e:
             messages.add_message(request,
                                  message=e.message,

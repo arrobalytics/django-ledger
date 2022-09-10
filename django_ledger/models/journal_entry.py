@@ -146,10 +146,11 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             return self.entity_unit.name
         return no_unit_name
 
-    def can_post(self) -> bool:
+    def can_post(self, ignore_verify: bool = True) -> bool:
         return all([
             not self.locked,
-            not self.posted
+            not self.posted,
+            self.is_verified() if not ignore_verify else True
         ])
 
     def can_unpost(self):
@@ -168,21 +169,22 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             self.locked
         ])
 
-    def mark_as_posted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
-        if not self.can_post():
+    def mark_as_posted(self,
+                       commit: bool = False,
+                       verify: bool = False,
+                       raise_exception: bool = False,
+                       **kwargs):
+        if verify:
+            self.verify()
+
+        if not self.can_post(ignore_verify=False):
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already posted.')
-
-        txs_qs = self.clean(verify=True)
-
-        if not len(txs_qs):
-            if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} has no Transactions.')
-
-        if self.is_verified():
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot be posted.'
+                                                  f' Is verified: {self.is_verified()}')
+        else:
             self.posted = True
             if commit:
-                self.save(verify=True,
+                self.save(verify=False,
                           update_fields=[
                               'posted',
                               'updated'
@@ -191,38 +193,42 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         if not self.can_unpost():
             if raise_exception:
-                raise ValidationError(f'Journal Entry {self.uuid} is already not posted.')
-        self.posted = False
-        if commit:
-            self.save(verify=False,
-                      update_fields=[
-                          'posted',
-                          'updated'
-                      ])
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is unposted.')
+        else:
+            self.posted = False
+            if commit:
+                self.save(verify=False,
+                          update_fields=[
+                              'posted',
+                              'updated'
+                          ])
 
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+
         if not self.can_lock():
             if raise_exception:
                 raise ValidationError(f'Journal Entry {self.uuid} is already locked.')
-        self.locked = True
-        if commit:
-            self.save(verify=False,
-                      update_fields=[
-                          'locked',
-                          'updated'
-                      ])
+        else:
+            self.locked = True
+            if commit:
+                self.save(verify=False,
+                          update_fields=[
+                              'locked',
+                              'updated'
+                          ])
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         if not self.can_unlock():
             if raise_exception:
                 raise ValidationError(f'Journal Entry {self.uuid} is already unlocked.')
-        self.locked = False
-        if commit:
-            self.save(verify=False,
-                      update_fields=[
-                          'locked',
-                          'updated'
-                      ])
+        else:
+            self.locked = False
+            if commit:
+                self.save(verify=False,
+                          update_fields=[
+                              'locked',
+                              'updated'
+                          ])
 
     def get_txs_qs(self, select_accounts: bool = True):
         if not select_accounts:
@@ -259,17 +265,27 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     def is_cash_involved(self, txs_qs=None):
         return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
 
-    def clean(self, verify: bool = True):
-        if verify and not self.is_verified():
+    def verify(self,
+               txs_qs=None,
+               force_verify: bool = False,
+               raise_exception: bool = True,
+               **kwargs):
+        if not self.is_verified() or force_verify:
             txs_qs = self.get_txs_qs()
 
             if not len(txs_qs):
-                raise JournalEntryValidationError('Journal entry has no transactions.')
+                if raise_exception:
+                    raise JournalEntryValidationError('Journal entry has no transactions.')
+
+            if len(txs_qs) < 2:
+                if raise_exception:
+                    raise JournalEntryValidationError('At least two transactions required.')
 
             # CREDIT/DEBIT Balance validation...
             balance_is_valid = self.is_balance_valid(txs_qs)
             if not balance_is_valid:
-                raise JournalEntryValidationError('Debits and credits do not match.')
+                if raise_exception:
+                    raise JournalEntryValidationError('Debits and credits do not match.')
 
             # activity flag...
             cash_is_involved = self.is_cash_involved(txs_qs)
@@ -299,7 +315,8 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                     is_financing_dividends,
                     is_operational
                 ]) > 1:
-                    raise JournalEntryValidationError(f'Multiple activities detected in roles JE {roles_involved}.')
+                    if raise_exception:
+                        raise JournalEntryValidationError(f'Multiple activities detected in roles JE {roles_involved}.')
                 else:
                     if any([
                         is_investing_for_ppe,
@@ -316,17 +333,26 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                     elif is_operational:
                         self.activity = self.OPERATING_ACTIVITY
                     else:
-                        raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
-                                                          'Split into multiple Journal Entries or check'
-                                                          ' your account selection.')
+                        if raise_exception:
+                            raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
+                                                              'Split into multiple Journal Entries or check'
+                                                              ' your account selection.')
             self._verified = True
             return txs_qs
         self._verified = False
 
-    def save(self, verify: bool = True, *args, **kwargs):
+    def clean(self, verify: bool = False):
+        if verify:
+            txs_qs = self.verify()
+            return txs_qs
+
+    def save(self, verify: bool = False, post_on_verify: bool = False, *args, **kwargs):
         try:
             if verify:
                 self.clean(verify=verify)
+                if self.is_verified() and post_on_verify:
+                    # commit is False since the super call takes place at the end of save()
+                    self.mark_as_posted(commit=False, raise_exception=True)
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)

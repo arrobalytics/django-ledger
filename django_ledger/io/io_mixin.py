@@ -452,9 +452,11 @@ class IOMixIn:
             date=je_date,
             origin=je_origin,
             activity=je_activity,
-            posted=je_posted,
             parent=je_parent
         )
+
+        # verify is False, no transactions are present yet....
+        je_model.clean(verify=False)
 
         TransactionModel = lazy_importer.get_txs_model()
         txs_models = [
@@ -468,6 +470,7 @@ class IOMixIn:
             ) for tx in je_txs
         ]
         txs_models = TransactionModel.objects.bulk_create(txs_models)
+        je_model.save(verify=True)
         return je_model, txs_models
 
     @staticmethod

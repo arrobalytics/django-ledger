@@ -298,6 +298,7 @@ class LedgerWrapperMixIn(models.Model):
                       commit: bool = True,
                       void: bool = False,
                       je_date: date = None,
+                      verify_journal_entries: bool = True,
                       raise_exception: bool = True,
                       **kwargs):
 
@@ -467,8 +468,6 @@ class LedgerWrapperMixIn(models.Model):
                         description=self.get_migrate_state_desc(),
                         # activity='op',
                         origin='migration',
-                        locked=False,
-                        posted=False,
                         ledger_id=self.ledger_id
                     ) for u in unit_uuids
                 }
@@ -476,9 +475,7 @@ class LedgerWrapperMixIn(models.Model):
                 for u, je in je_list.items():
                     je.clean(verify=False)
 
-                JournalEntryModel.objects.bulk_create(
-                    je for _, je in je_list.items()
-                )
+                je_bulk = JournalEntryModel.objects.bulk_create(je for _, je in je_list.items())
 
                 txs_list = [
                     (unit_uuid, TransactionModel(
@@ -501,6 +498,22 @@ class LedgerWrapperMixIn(models.Model):
                 txs = [tx for ui, tx in txs_list]
                 balance_tx_data(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
+
+                if verify_journal_entries:
+                    for je in je_bulk:
+                        # will independently verify and populate appropriate activity for JE.
+                        je.clean(verify=True)
+                        if je.is_verified():
+                            je.mark_as_posted(commit=False, raise_exception=True)
+                            je.mark_as_locked(commit=False, raise_exception=True)
+
+                    if all([je.is_verified() for je in je_bulk]):
+                        # only if all JEs have been verified will be posted and locked...
+                        JournalEntryModel.objects.bulk_update(
+                            objs=[je for _, je in je_list.items()],
+                            fields=['posted', 'locked', 'activity']
+                        )
+
             return item_data, digest_data
         else:
             if raise_exception:

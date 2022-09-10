@@ -414,9 +414,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         if self.paid_date > localdate():
             raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        # if self.paid_date < self.date:
-        #     raise ValidationError(f'Cannot pay {self.__class__.__name__} before {self.__class__.__name__}'
-        #                           f' date {self.date}.')
 
         self.new_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
@@ -474,7 +471,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                 entity_slug=entity_slug,
                 void=True,
                 void_date=self.void_date,
-                force_migrate=True
+                force_migrate=False,
+                raise_exception=False
             )
             self.save()
             self.lock_ledger(commit=True, raise_exception=False)

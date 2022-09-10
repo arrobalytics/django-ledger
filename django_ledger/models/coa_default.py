@@ -6,7 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from itertools import groupby
+
 from django_ledger.io import roles
+
 CHART_OF_ACCOUNTS = [
 
     # ---------# ASSETS START #---------#
@@ -75,7 +78,7 @@ CHART_OF_ACCOUNTS = [
     {'code': '3910', 'role': roles.EQUITY_ADJUSTMENT, 'balance_type': 'credit', 'name': 'Available for Sale', 'parent': None},
     {'code': '3920', 'role': roles.EQUITY_ADJUSTMENT, 'balance_type': 'credit', 'name': 'PPE Unrealized Gains/Losses', 'parent': None},
 
-    {'code': '3920', 'role': roles.EQUITY_DIVIDENDS, 'balance_type': 'debit', 'name': 'Dividends & Distributions', 'parent': None},
+    {'code': '3930', 'role': roles.EQUITY_DIVIDENDS, 'balance_type': 'debit', 'name': 'Dividends & Distributions', 'parent': None},
 
     # REVENUE ACCOUNTS ------
     {'code': '4010', 'role': roles.INCOME_OPERATIONAL, 'balance_type': 'credit', 'name': 'Sales Income', 'parent': None},
@@ -128,10 +131,15 @@ CHART_OF_ACCOUNTS = [
     {'code': '6130', 'role': roles.EXPENSE_INTEREST, 'balance_type': 'debit', 'name': 'Interest Expense', 'parent': None},
     {'code': '6210', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Payroll Taxes', 'parent': None},
     {'code': '6280', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Taxes', 'parent': None},
-    {'code': '6500', 'role': roles.EXPENSE_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense', 'parent': None},
-
-    # ---------# SHAREHOLDER'S EQUITY END #---------#
+    {'code': '6500', 'role': roles.EXPENSE_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense', 'parent': None}
 
 ]
 
 
+def verify_unique_code():
+    code_list = list(i['code'] for i in CHART_OF_ACCOUNTS)
+    code_list.sort()
+    code_gb = groupby(code_list)
+    return {
+        code: sum([bool(v) for v in l]) for code, l in code_gb
+    }

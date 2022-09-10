@@ -579,7 +579,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 user_model=user_model,
                 void=True,
                 void_date=self.void_date,
-                force_migrate=True)
+                raise_exception=False,
+                force_migrate=False)
             self.save()
             self.lock_ledger(commit=False, raise_exception=False)
 

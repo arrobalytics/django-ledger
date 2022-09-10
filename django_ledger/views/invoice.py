@@ -345,9 +345,14 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                          message=f'Items for Invoice {invoice_model.invoice_number} saved.',
                                          level=messages.SUCCESS,
                                          extra_tags='is-success')
+                    return HttpResponseRedirect(
+                        redirect_to=reverse('django_ledger:invoice-update',
+                                            kwargs={
+                                                'entity_slug': entity_slug,
+                                                'invoice_pk': invoice_pk
+                                            })
+                    )
 
-                    # if valid get saved formset from DB
-                    return self.render_to_response(context=self.get_context_data())
                 # if not valid, return formset with errors...
                 return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
         return super(InvoiceModelUpdateView, self).post(request, **kwargs)
