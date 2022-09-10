@@ -3,16 +3,15 @@
 ### A Bookkeeping & Financial Analysis Engine for the Django Framework.
 
 The __Django Ledger Project__ is led and maintained by Miguel Sanda aiming to provide an open source financial
-engine to power financially driven applications using Python and the Django Framework. Unfortunately
-due to its complexity we cannot offer a stable release until all features on the
-[Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md) has been implemented.
+engine to power financially driven applications using Python and the Django Framework.
+Due to its complexity we cannot offer a stable release until all features on the
+[Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md) has been implemented and tested.
 
-Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects 
-as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API. 
-This project in particular, not only requires Python AND Django programming experience, but also finance and 
-accounting experience.
+Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects
+as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API to
+power financially driven applications. This project in particular, not only requires Python AND Django programming
+experience, but also finance and accounting experience.
 
-Due to time limitations, the developer is focusing on the development of new features. \
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
 
 Django Ledger supports:
@@ -24,15 +23,15 @@ Django Ledger supports:
 - Hierarchical entity management (for consolidated financial statements - v0.9).
 - Self-contained Ledgers, Journal Entries & Transactions.
 - Basic OFX & QFX file import.
-- Bills & Invoices with optional _accruable_ functionality.
+- Bills & Invoices with optional cash/accrual functionality.
 - Basic navigational templates.
 - Entity administration & entity manager support.
 - Items, lists & inventory management.
 - Bank Accounts.
 
 __WARNING__: Currently this project is under active development, it is not stable and is not recommended for production
-environments. Due to its high complexity, breaking changes may occur in future releases and migration backwards 
-compatibility may not be preserved until the first __stable__ release. The author is actively working to provide a 
+environments. Due to its high complexity, breaking changes may occur in future releases and migration backwards
+compatibility may not be preserved until the first __stable__ release. The author is actively working to provide a
 stable release as soon as possible and to incorporate the following functionality:
 
 # Roadmap to Version 1.0 Stable
@@ -49,19 +48,20 @@ stable release as soon as possible and to incorporate the following functionalit
 
 ### Version 0.5
 
-More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics.com/blog/2021/12/07/django-ledger-v05/).
+More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics.com/blog/2021/12/07/django-ledger-v05/)
+.
 
 * __0.5.0__: Inventory tracking.
-  * Average Cost.
+    * Average Cost.
 * __0.5.1__: Customer estimates & contract tracking.
-  * Link Estimate/PO/Bill/Invoice workflow.
-  * Journal Entry (or trial balance) import.
+    * Link Estimate/PO/Bill/Invoice workflow.
+    * Journal Entry (or trial balance) import.
 * __0.5.2__: Cash flow statement.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
 * __0.5.4__: Testing framework implementation that will include:
-  * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
-  * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
-  * __Need help!!!! If you want to contribute PLEASE ADD UNIT TESTS!!!__
+    * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
+    * Behavioral Driven Testing using the [behave](https://behave.readthedocs.io/en/latest/) library.
+    * __Need help!!!! If you want to contribute PLEASE ADD UNIT TESTS!!!__
 * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
     * Document code and functions within code base.
     * Generate HTML documentation.
@@ -106,8 +106,6 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 
 *** Roadmap subject to change based on user feedback and backlog priorities.
 
-
-
 # Want to contribute?
 
 __This project is actively looking for contributors. Any financial and/or accounting experience is a big plus.__
@@ -115,7 +113,9 @@ If you have prior accounting experience and want to contribute, don't hesitate t
 See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
 
 # Contrib Packages
-* GraphQL API - See details [here.](https://github.com/arrobalytics/django-ledger/tree/develop/django_ledger/contrib/django_ledger_graphql)
+
+* GraphQL API - See
+  details [here.](https://github.com/arrobalytics/django-ledger/tree/develop/django_ledger/contrib/django_ledger_graphql)
 
 ## Quick Start
 
@@ -160,6 +160,7 @@ urlpatterns = [
 ```
 
 * Add Django SuperUser if necessary.
+
 ```shell
 python manage.py createsuperuser
 ```
@@ -168,50 +169,69 @@ python manage.py createsuperuser
 * Use your user credentials.
 
 # How To Set Up Django Ledger for Development
+
 Django Ledger comes with a basic development environment already configured under __dev_env/__ folder not to be used
 for production environments. If you want to contribute to the project perform the following steps:
 
 1. Navigate to your projects directory.
 2. Clone the repo from github and CD into project.
+
 ```shell
 git clone https://github.com/arrobalytics/django-ledger.git && cd django-ledger
 ```
+
 3. Install PipEnv, if not already installed:
+
 ```shell
 pip install -U pipenv
 ```
+
 4. Create virtual environment.
+
 ```shell
 pipenv install
 ```
+
 If using a specific version of Python you may specify the path.
+
 ```shell
 pipenv install --python PATH_TO_INTERPRETER
 ```
+
 5. Activate environment.
+
 ```shell
 pipenv shell
 ```
+
 6. Apply migrations.
+
 ```shell
 python manage.py migrate
 ```
+
 7. Create a Development Django user.
+
 ```shell
 python manage.py createsuperuser
 ```
+
 8. Run development server.
+
 ```shell
 python manage.py runserver
 ```
 
 # Run Test Suite
+
 After setting up your development environment you may run tests.
+
 ```shell
 python manage.py test django_ledger
 ```
 
 # Screenshots
+
 ![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
 ![django ledger balance sheet](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_income_statement.png)
 ![django ledger income statement](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_balance_sheet.png)
