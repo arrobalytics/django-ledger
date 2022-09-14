@@ -74,6 +74,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             website=cleaned_data['website'],
             phone=cleaned_data['phone'],
             fy_start_month=cleaned_data['fy_start_month'],
+            accrual_method=cleaned_data['accrual_method'],
             admin=user_model
         )
         # entity_model = EntityModel.objects.get(pk=entity_model.uuid)

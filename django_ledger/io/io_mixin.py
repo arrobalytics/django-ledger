@@ -22,7 +22,7 @@ from django.utils.timezone import localdate, make_aware, is_naive
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles
 from django_ledger.io.ratios import FinancialRatioManager
-from django_ledger.io.roles import RoleManager, GroupManager
+from django_ledger.io.roles import RoleManager, GroupManager, BS_ASSET_ROLE, BS_LIABILITIES_ROLE, BS_EQUITY_ROLE
 from django_ledger.models.utils import LazyLoader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
                                     DJANGO_LEDGER_TRANSACTION_CORRECTION)
@@ -152,6 +152,10 @@ def validate_activity(activity: str, raise_404: bool = False):
     return activity
 
 
+class IOError(ValidationError):
+    pass
+
+
 class IOMixIn:
     """
     Controls how transactions are recorded into the ledger.
@@ -169,6 +173,8 @@ class IOMixIn:
                         accounts: str or List[str] or Set[str] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
+                        by_activity: bool = False,
+                        by_tx_type: bool = False,
                         by_period: bool = False,
                         by_unit: bool = False):
 
@@ -248,29 +254,26 @@ class IOMixIn:
             'account__name',
             'account__role',
         ]
+        ANNOTATE = {'balance': Sum('amount')}
+        ORDER_BY = ['account__uuid']
+
+        if by_period:
+            ORDER_BY.append('journal_entry__date')
+            ANNOTATE['dt_idx'] = TruncMonth('journal_entry__date')
 
         if by_unit:
             VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
+            ORDER_BY.append('journal_entry__entity_unit__uuid')
 
-        txs_qs = txs_qs.values(*VALUES)
+        if by_activity:
+            VALUES.append('journal_entry__activity')
+            ORDER_BY.append('journal_entry__activity')
 
-        if by_period:
-            txs_qs = txs_qs.annotate(
-                balance=Sum('amount'),
-                dt_idx=TruncMonth('journal_entry__date'),
-            ).order_by('journal_entry__date', 'account__uuid')
-            if by_unit:
-                txs_qs.order_by('journal_entry__date', 'account__uuid', 'journal_entry__entity_unit__uuid')
-        elif by_unit:
-            txs_qs = txs_qs.annotate(
-                balance=Sum('amount'),
-            ).order_by('account__uuid', 'journal_entry__entity_unit__uuid')
-        else:
-            txs_qs = txs_qs.annotate(
-                balance=Sum('amount'),
-            ).order_by('account__uuid')
+        if by_tx_type:
+            VALUES.append('tx_type')
+            ORDER_BY.append('tx_type')
 
-        return txs_qs
+        return txs_qs.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
     def python_digest(self,
                       user_model: UserModel,
@@ -284,7 +287,10 @@ class IOMixIn:
                       role: str = None,
                       accounts: set = None,
                       signs: bool = False,
+                      absolute_balances: bool = False,
                       by_unit: bool = False,
+                      by_activity: bool = False,
+                      by_tx_type: bool = False,
                       by_period: bool = False) -> list or tuple:
 
         if equity_only:
@@ -301,32 +307,38 @@ class IOMixIn:
             role=role,
             accounts=accounts,
             by_unit=by_unit,
+            by_activity=by_activity,
+            by_tx_type=by_tx_type,
             by_period=by_period)
 
-        # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
-        for tx in txs_qs:
-            if tx['account__balance_type'] != tx['tx_type']:
-                tx['balance'] = -tx['balance']
+        if not absolute_balances:
+            # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
+            for tx in txs_qs:
+                if tx['account__balance_type'] != tx['tx_type']:
+                    tx['balance'] = -tx['balance']
 
         accounts_gb_code = groupby(txs_qs,
                                    key=lambda a: (
                                        a['account__uuid'],
-                                       a['journal_entry__entity_unit__uuid'] if by_unit else None,
+                                       a.get('journal_entry__entity_unit__uuid'),
                                        a.get('dt_idx').year if by_period else None,
                                        a.get('dt_idx').month if by_period else None,
+                                       a.get('journal_entry__activity'),
+                                       a.get('tx_type'),
                                    ))
 
         gb_digest = [
-            self.digest_gb_accounts(k, g, by_unit) for k, g in accounts_gb_code
+            self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
         ]
 
-        if signs:
+        if signs and not absolute_balances:
+            TransactionModel = lazy_importer.get_txs_model()
             for acc in gb_digest:
                 if any([
-                    all([acc['role_bs'] == 'assets',
-                         acc['balance_type'] == 'credit']),
-                    all([acc['role_bs'] in ('liabilities', 'equity', 'other'),
-                         acc['balance_type'] == 'debit'])
+                    all([acc['role_bs'] == BS_ASSET_ROLE,
+                         acc['balance_type'] == TransactionModel.CREDIT]),
+                    all([acc['role_bs'] in (BS_LIABILITIES_ROLE, BS_EQUITY_ROLE),
+                         acc['balance_type'] == TransactionModel.DEBIT])
                 ]):
                     acc['balance'] = -acc['balance']
 
@@ -339,6 +351,7 @@ class IOMixIn:
                entity_slug: str = None,
                unit_slug: str = None,
                signs: bool = True,
+               absolute_balances: bool = False,
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
                queryset: QuerySet = None,
@@ -347,9 +360,14 @@ class IOMixIn:
                process_ratios: bool = False,
                equity_only: bool = False,
                by_period: bool = False,
-               by_unit: bool = True,
+               by_unit: bool = False,
+               by_activity: bool = False,
+               by_tx_type: bool = False,
                digest_name: str = None
                ) -> dict or tuple:
+
+        if signs and absolute_balances:
+            raise IOError('Cannot request signs and absolute balances concurrently.')
 
         txs_qs, accounts_digest = self.python_digest(
             queryset=queryset,
@@ -361,9 +379,12 @@ class IOMixIn:
             to_date=to_date,
             from_date=from_date,
             signs=signs,
+            absolute_balances=absolute_balances,
             equity_only=equity_only,
             by_period=by_period,
             by_unit=by_unit,
+            by_activity=by_activity,
+            by_tx_type=by_tx_type
         )
 
         digest = dict(
@@ -470,16 +491,18 @@ class IOMixIn:
             ) for tx in je_txs
         ]
         txs_models = TransactionModel.objects.bulk_create(txs_models)
-        je_model.save(verify=True)
+
+        je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
 
     @staticmethod
-    def digest_gb_accounts(k, g, by_unit: bool):
+    def digest_gb_accounts(k, g):
         gl = list(g)
         return {
             'account_uuid': k[0],
             'unit_uuid': k[1],
-            'unit_name': gl[0]['journal_entry__entity_unit__name'] if by_unit else None,
+            'unit_name': gl[0].get('journal_entry__entity_unit__name'),
+            'activity': gl[0].get('journal_entry__activity'),
             'period_year': k[2],
             'period_month': k[3],
             'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
@@ -487,6 +510,6 @@ class IOMixIn:
             'code': gl[0]['account__code'],
             'name': gl[0]['account__name'],
             'balance_type': gl[0]['account__balance_type'],
+            'tx_type': gl[0].get('tx_type'),
             'balance': sum(a['balance'] for a in gl),
-            'account_list': gl
         }

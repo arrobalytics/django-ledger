@@ -290,8 +290,12 @@ GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT = [
     LIABILITY_CL_OTHER,
 ]
 
+BS_ASSET_ROLE = 'assets'
+BS_LIABILITIES_ROLE = 'liabilities'
+BS_EQUITY_ROLE = 'equity'
+
 ACCOUNT_ROLES = [
-    ('Assets', (
+    (BS_ASSET_ROLE.capitalize(), (
         # CURRENT ASSETS ----
         (ASSET_CA_CASH, _('Current Asset')),
         (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
@@ -319,7 +323,7 @@ ACCOUNT_ROLES = [
         (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
         (ASSET_ADJUSTMENTS, _('Other Assets')),
     )),
-    ('Liabilities', (
+    (BS_LIABILITIES_ROLE.capitalize(), (
 
         # CURRENT LIABILITIES ---
         (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
@@ -337,7 +341,7 @@ ACCOUNT_ROLES = [
         (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
     )
      ),
-    ('Equity', (
+    (BS_EQUITY_ROLE.capitalize(), (
 
         # EQUITY ---
         (EQUITY_CAPITAL, _('Capital')),
@@ -503,7 +507,7 @@ class GroupManager:
             self.DIGEST['group_balance_by_period'] = self.GROUPS_BALANCES_BY_PERIOD
         if self.BY_UNIT:
             self.DIGEST['group_balance_by_unit'] = self.GROUPS_BALANCES_BY_UNIT
-        if self.BY_PERIOD and self.BY_PERIOD:
+        if self.BY_PERIOD and self.BY_UNIT:
             self.DIGEST['group_balance_by_period_and_unit'] = self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT
         return self.DIGEST
 
