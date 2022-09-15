@@ -320,11 +320,11 @@ class IOMixIn:
         accounts_gb_code = groupby(txs_qs,
                                    key=lambda a: (
                                        a['account__uuid'],
-                                       a.get('journal_entry__entity_unit__uuid'),
+                                       a.get('journal_entry__entity_unit__uuid') if by_unit else None,
                                        a.get('dt_idx').year if by_period else None,
                                        a.get('dt_idx').month if by_period else None,
-                                       a.get('journal_entry__activity'),
-                                       a.get('tx_type'),
+                                       a.get('journal_entry__activity') if by_activity else None,
+                                       a.get('tx_type') if by_tx_type else None,
                                    ))
 
         gb_digest = [
@@ -344,6 +344,25 @@ class IOMixIn:
 
         return txs_qs, gb_digest
 
+    @staticmethod
+    def digest_gb_accounts(k, g):
+        gl = list(g)
+        return {
+            'account_uuid': k[0],
+            'unit_uuid': k[1],
+            'unit_name': gl[0].get('journal_entry__entity_unit__name'),
+            'activity': gl[0].get('journal_entry__activity'),
+            'period_year': k[2],
+            'period_month': k[3],
+            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
+            'role': gl[0]['account__role'],
+            'code': gl[0]['account__code'],
+            'name': gl[0]['account__name'],
+            'balance_type': gl[0]['account__balance_type'],
+            'tx_type': k[5],
+            'balance': sum(a['balance'] for a in gl),
+        }
+
     def digest(self,
                user_model: UserModel,
                accounts: set or list = None,
@@ -355,7 +374,7 @@ class IOMixIn:
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
                queryset: QuerySet = None,
-               process_roles: bool = True,
+               process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
                equity_only: bool = False,
@@ -494,22 +513,3 @@ class IOMixIn:
 
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
-
-    @staticmethod
-    def digest_gb_accounts(k, g):
-        gl = list(g)
-        return {
-            'account_uuid': k[0],
-            'unit_uuid': k[1],
-            'unit_name': gl[0].get('journal_entry__entity_unit__name'),
-            'activity': gl[0].get('journal_entry__activity'),
-            'period_year': k[2],
-            'period_month': k[3],
-            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
-            'role': gl[0]['account__role'],
-            'code': gl[0]['account__code'],
-            'name': gl[0]['account__name'],
-            'balance_type': gl[0]['account__balance_type'],
-            'tx_type': gl[0].get('tx_type'),
-            'balance': sum(a['balance'] for a in gl),
-        }
