@@ -4,6 +4,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan <ptulshyan77@gmail.com>
+
 """
 from decimal import Decimal
 from string import ascii_lowercase, digits
@@ -20,6 +22,12 @@ from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
+
+"""
+The Item list is a collection of all the products that are sold by any organization.
+The tems may include Products or even services.
+
+"""
 
 
 # UNIT OF MEASURES MODEL....

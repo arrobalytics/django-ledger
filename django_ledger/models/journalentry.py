@@ -19,6 +19,11 @@ from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
 
 class JournalEntryModelQuerySet(QuerySet):
 
+    """
+    A custom defined Query Set for the JournalEntryModel.
+    
+    """
+
     def create(self, verify_on_save: bool = False, **kwargs):
         obj = self.model(**kwargs)
         self._for_write = True
@@ -55,6 +60,13 @@ class JournalEntryModelManager(models.Manager):
 
 
 class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+
+
+    """    
+    Some important methods implemented by the Journal Entry model:
+
+    
+    """
     ACTIVITY_IGNORE = ['all']
     ACTIVITIES = [
         ('op', _('Operating')),

@@ -4,6 +4,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan <ptulshyan77@gmail.com>
 """
 
 from uuid import uuid4
@@ -21,7 +22,12 @@ lazy_loader = LazyLoader()
 
 
 class BankAccountModelManager(models.Manager):
+    """
+    This model manager is a custome made model manager to act as a interface for the Db queries for the Bank Account Model.
+    "for_entity" allows only the authorized user to query the Bank Account model for its entity.
+    """
 
+    
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
         return qs.filter(
@@ -34,6 +40,36 @@ class BankAccountModelManager(models.Manager):
 
 
 class BackAccountModelAbstract(CreateUpdateMixIn):
+
+    """
+    This is an abstract base model for the Bank Account Model.
+
+    It inherits the CreateUpdateMixIn and hence create the two field created at and Updated at.
+
+    Below are the fields that are specific to this Bank Account Model.
+    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
+    @name: This is the user defined name  of the Account. the maximum length for Name of the ledger allowed is 150
+    @account_number: This is the Bank Account number . Only Digits are allowed.
+    @routing_number: User defined routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)' 
+    @aba_number: The American Bankers Association Number assigned to each bank.
+    @account_type: Each account will have to select from the available choices Checking, Savings or Money Market.
+    @cash_account: This is a foreigh key from the man accounts model. It will have all thse account which are marked as Cash Account in the main Coa  
+    @active: Determines whether the concerned bank account is active. Any Account can be used only when it is unlocked and Active Default value is set to False i.e Unlocked
+    @hidden: Determines whether the concerned bank account is set to hidden. Default value is set to False i.e Not hidden
+    @objects: setting the default Model Manager to the BankAccountModelManager
+
+
+    Some Meta Information: (Additional data points regarding this model that may alter its behavior)
+
+    @abstract: This is a abstract class and will be used through inheritance. Separate implementation can be done for this abstract class.
+    [It may also be noted that models are not created for the abstract models, but only for the models which implements the abstract model class]
+    @verbose_name: A human readable name for this Model (Also translatable to other languages with django translation> gettext_lazy)
+    @unique_together: the concantanation of cash account, account and RTN would remain unique throughout the model i.e database
+    @indexes : Index created on different attributes for better db & search queries
+    
+    
+
+    """
     REL_NAME_PREFIX = 'bank'
     ACCOUNT_TYPES = [
         ('checking', _('Checking')),

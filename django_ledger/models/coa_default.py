@@ -4,7 +4,23 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan <ptulshyan77@gmail.com>
 """
+
+"""
+This is the base Chart of Accounts that has all the possible accounts that are useful for the prepeartion of the Financial Statements.
+
+The Chart of Accounts is Braodly Bifurcted into 5 different Sections:
+
+1. Assets:
+2. Liabilities
+3. Shareholder's Equity
+4. Expenses 
+5. Revenue
+
+
+"""
+
 
 from django_ledger.io import roles
 
@@ -108,6 +124,9 @@ CHART_OF_ACCOUNTS = [
     {'code': '3920', 'role': roles.EQUITY_ADJUSTMENT, 'balance_type': 'credit', 'name': 'PPE Unrealized Gains/Losses',
      'parent': None},
 
+    # ---------# SHAREHOLDER'S EQUITY END #---------#
+
+
     # REVENUE ACCOUNTS ------
     {'code': '4010', 'role': roles.INCOME_SALES, 'balance_type': 'credit', 'name': 'Sales Income', 'parent': None},
     {'code': '4020', 'role': roles.INCOME_PASSIVE, 'balance_type': 'credit', 'name': 'Passive Income',
@@ -180,6 +199,5 @@ CHART_OF_ACCOUNTS = [
     {'code': '7510', 'role': roles.EXPENSE_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense',
      'parent': None},
 
-    # ---------# SHAREHOLDER'S EQUITY END #---------#
 
 ]

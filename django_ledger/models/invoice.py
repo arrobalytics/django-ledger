@@ -31,6 +31,14 @@ lazy_loader = LazyLoader()
 
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
+"""
+Invoice : it refers the Sales Invoice/ Sales Bill/ Tax Invoice/ Proof of Sale which the entity issues to its cutomers for the supply of goods or services
+The model manages all the Sales Invoices  which are issued by the entity
+In addition to tracking the invoice amount , it tracks the receipt and due amount
+
+
+"""
+
 
 def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
     """
@@ -47,6 +55,15 @@ def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
 
 class InvoiceModelQuerySet(models.QuerySet):
 
+     """
+    A custom defined Query Set for the InvoiceModel.
+    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
+    For e.g : We might want to have list of bills which are paid, unpaid, Due , OverDue, Approved, In draft stage.
+    All these separate functions will assist in making such queries and building customized reports.
+
+    """
+
+
     def paid(self):
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
 
@@ -61,6 +78,12 @@ class InvoiceModelQuerySet(models.QuerySet):
 
 
 class InvoiceModelManager(models.Manager):
+
+    """
+    A custom defined Invoice Model Manager that will act as an inteface to handling the DB queries to the Invoice  Model.
+    The default "get_queryset" has been overridden to refer the customdefined "InvoiceModelQuerySet"
+
+    """
 
     def get_queryset(self):
         return InvoiceModelQuerySet(self.model, using=self._db)
@@ -84,6 +107,29 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                            PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
+
+
+    """
+    This is the main abstract class which the Bill Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
+    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
+    
+    LedgerWrapperMixIn
+    PaymentTermsMixIn
+    MarkdownNotesMixIn
+    CreateUpdateMixIn
+    
+    Read about these mixin here.
+
+    Below are the fields specific to the bill model.
+    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
+    @bill_number: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
+    @bill_status: Any bill can have the status as either of the choices as mentioned under "BILL_STATUS" By default , the status will be "Draft"
+    @xref: this is the fiedl for capturing of any External reference number like the PO number of the buyer.Any othere reference number like the Vendor code in buyer books may also be captured.
+    
+
+    
+    """
+
     IS_DEBIT_BALANCE = True
     REL_NAME_PREFIX = 'invoice'
 

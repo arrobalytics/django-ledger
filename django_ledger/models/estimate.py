@@ -46,6 +46,15 @@ lazy_loader = LazyLoader()
 
 class EstimateModelQuerySet(models.QuerySet):
 
+    
+    """
+    A custom defined Query Set for the Estimate Model.
+    This implements multiple methods or queries that we need to run to get a status of estimates.
+    For e.g : We might want to have list of estimates which are Approved or  In draft stage.
+    All these separate functions will assist in making such queries and building customized reports.
+    """
+
+
     def approved(self):
         return self.filter(
             Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
@@ -66,6 +75,13 @@ class EstimateModelQuerySet(models.QuerySet):
 
 
 class EstimateModelManager(models.Manager):
+
+
+    """
+    A custom defined Estimate Model Manager that will act as an inteface to handling the DB queries to the Estimate Model.
+    The default "get_queryset" has been overridden to refer the customdefined "EstimateModelQuerySet"
+
+    """
 
     def get_queryset(self):
         return EstimateModelQuerySet(self.model, using=self._db)
@@ -89,6 +105,27 @@ class EstimateModelManager(models.Manager):
 
 
 class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+
+    """
+    This is the main abstract class which the Estimate Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
+    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
+    
+    MarkdownNotesMixIn
+    CreateUpdateMixIn
+    
+    Read about these mixin here.
+
+    Below are the fields specific to the bill model.
+    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
+    @estimate_number: This is a slug  Field and hence a random estimate number with Max Length of 20 will be defined
+    @entity: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
+    @customer:  Aforeign Key reference from the Customer Model
+    @terms: The value is among the choice from the Contract terms
+
+
+
+    """
+
     CJ_STATUS_DRAFT = 'draft'
     CJ_STATUS_REVIEW = 'in_review'
     CJ_STATUS_APPROVED = 'approved'

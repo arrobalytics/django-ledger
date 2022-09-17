@@ -4,6 +4,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan <ptulshyan77@gmail.com>
+
 """
 from datetime import date
 from decimal import Decimal
@@ -29,13 +31,24 @@ lazy_loader = LazyLoader()
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
+"""
+Bill : it refers the purchase Invoice/ Tax Invoice/ Purchase Bill which is issued by the Suppliers/ Vendors for the supply of goods or services
+The model manages all the Purchase Invoice/ Bills for the purhases mde by the entity.
+In addition to tracking the bill amount , it tracks the paid and due amount
+
+
+"""
+
 
 def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
     """
     A function that generates a random bill identifier for new bill models.
-    :param prefix:
-    :param length: The length of the bill number.
+    Params:
+
+    @prefix:whether the prefix is to be added or not.
+    @length: The length of the bill number.
     :return: A string representing a random bill identifier.
+    
     """
     bill_number = ''.join(choices(BILL_NUMBER_CHARS, k=length))
     if prefix:
@@ -44,6 +57,13 @@ def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
 
 
 class BillModelQuerySet(models.QuerySet):
+
+    """
+    A custom defined Query Set for the BillMOdel.
+    This implements multiple methods or queries that we need to run to get a status of bills.
+    For e.g : We might want to have list of bills which are paid, unpaid, Due , OverDue, Approved, In draft stage.
+    All these separate functions will assist in making such queries and building customized reports.
+    """
 
     def paid(self):
         return self.filter(bill_status__exact=BillModel.BILL_STATUS_PAID)
@@ -59,6 +79,12 @@ class BillModelQuerySet(models.QuerySet):
 
 
 class BillModelManager(models.Manager):
+
+    """
+    A custom defined Bill Model Manager that will act as an inteface to handling the DB queries to the Bill Model.
+    The default "get_queryset" has been overridden to refer the customdefined "BillModelQuerySet"
+
+    """
 
     def get_queryset(self):
         return BillModelQuerySet(self.model, using=self._db)
@@ -95,6 +121,32 @@ class BillModelAbstract(LedgerWrapperMixIn,
                         PaymentTermsMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
+
+    """
+    This is the main abstract class which the Bill Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
+    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
+    
+    LedgerWrapperMixIn
+    PaymentTermsMixIn
+    MarkdownNotesMixIn
+    CreateUpdateMixIn
+    
+    Read about these mixin here.
+
+    Below are the fields specific to the bill model.
+    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
+    @bill_number: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
+    @bill_status: Any bill can have the status as either of the choices as mentioned under "BILL_STATUS" By default , the status will be "Draft"
+    @xref: This is the fiedl for capturing of any External reference number like the PO number of the buyer.Any othere reference number like the Vendor code in buyer books may also be captured.
+    @vendor: This is the foreign key refernce to the Vendor code from whom the purchase has been made.
+    @additional_info: Any additional info about the Bill
+    @bill_items: This refers to the material code present in the items model. So, we have a drop down to choose which item has been procured in a bill
+
+    Other fields to capture the dates at which the review and approval was
+
+    
+
+    """
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
     ALLOW_MIGRATE = True
