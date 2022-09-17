@@ -4,6 +4,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan ptulshyan77@gmail.com<>
+
 """
 from calendar import monthrange
 from collections import defaultdict

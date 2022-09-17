@@ -22,21 +22,37 @@ from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 
 
+"""
+One of the major model which is used for storing the Transactions recorded in the entity model
+Every transaction which has an financial implication must be recorded in the books
+
+For each transaction, the debits and credits should be matched. Ay transaction will be reflecting in the Financial statements only after the same has been posted
+
+
+"""
+
 class TransactionQuerySet(models.QuerySet):
 
+    """
+    A custom defined Query Set for the TransactionModel.
+    This implements multiple methods or queries that we need to run to get a list of all the transactions.
+    """
     def posted(self):
+        """ Used to select the transaction which are in 'posted' state """
         return self.filter(
             Q(journal_entry__posted=True) &
             Q(journal_entry__ledger__posted=True)
         )
 
     def for_user(self, user_model):
+        """this will authenticate the user and allow the users only to view the transaction for which he is authorized """
         return self.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
             Q(journal_entry__ledger__entity__managers__in=[user_model])
         )
 
     def for_accounts(self, account_list: List[str or AccountModel]):
+        """This helps to view the transactions for a particular account. We can pass in one particular account of a list of accounts"""
         if len(account_list) > 0 and isinstance(account_list[0], str):
             return self.filter(account__code__in=account_list)
         return self.filter(account__in=account_list)

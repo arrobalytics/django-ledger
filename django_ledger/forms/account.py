@@ -4,7 +4,30 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
+"""
+The account Model has the below forms: All these form have Account Model as their base.
+
+CreateForm
+CreateChildForm
+Update Form
+
+"""
+
 class AccountModelCreateForm(ModelForm):
+
+    """
+    Create Form: 
+    This Form is used for creation of a new account that does not exist in the default Chart of Accounts. It has some external as well as some internal field.
+    The entity slug and the user model are the field which are internal and are predetermined in the lass itself
+
+    Remaining fields which needs to be defined by user are :
+
+    code: The code will be used to uniquely identify the partiular account
+    name: The name of the account. The name of the account should be resemblance of the nature of the transactions that will be in the account
+    role: The role needs to be selected rom list of the options available. Choices are given under ACCOUNT ROLES. Refer the account model documentation for more info
+    balance_type: Need to be selected from drop down as "Debit" or Credit"
+
+    """
     def __init__(self, entity_slug, user_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
@@ -35,6 +58,22 @@ class AccountModelCreateForm(ModelForm):
 
 
 class AccountModelCreateChildForm(AccountModelCreateForm):
+
+    """
+        
+    Create Child Form: 
+    This form is for creating of a child account .
+    The UI is designed such that, at the time of creating the child account, we have to automatically select that particular parent
+    So, we know under which parent the said Child is being created.
+    
+    User need to only mention the Account COde , Name and type: (Role will be same as the role of the Parent Account)
+
+    code: The code will be used to uniquely identify the partiular account
+    name: The name of the account. The name of the account should be resemblance of the nature of the transactions that will be in the account
+    balance_type: Need to be selected from drop down as "Debit" or Credit"
+
+    """
+
     class Meta:
         model = AccountModel
         fields = [
@@ -56,6 +95,14 @@ class AccountModelCreateChildForm(AccountModelCreateForm):
 
 
 class AccountModelUpdateForm(ModelForm):
+    """
+        
+    Update Account Form: 
+    This form is for updating the account. This works for both the parent or the child Account .
+    
+    We can update the Parent , or The Code or even the Name of the Account.
+    
+    """
 
     def __init__(self, entity_slug, user_model, *args, **kwargs):
         super().__init__(*args, **kwargs)

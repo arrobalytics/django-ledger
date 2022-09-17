@@ -4,7 +4,21 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
+Pranav P Tulshyan <ptulshyan77@gmail.com>
 """
+
+"""
+This is the base Chart of Accounts that has all the possible accounts that are useful for the prepeartion of the Financial Statements.
+
+The Chart of Accounts is Braodly Bifurcted into 5 different Sections:
+
+1. Assets:
+2. Liabilities
+3. Shareholder's Equity
+4. Expenses 
+5. Revenue
+"""
+
 
 from itertools import groupby
 
