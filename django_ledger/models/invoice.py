@@ -43,9 +43,9 @@ In addition to tracking the invoice amount , it tracks the receipt and due amoun
 def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
     """
     A function that generates a random bill identifier for new bill models.
-    :param prefix:
-    :param length: The length of the bill number.
-    :return: A string representing a random bill identifier.
+    @param length: Length of the Invoice Number, not including prefix.
+    @param prefix: Optional prefix to invoice number, otherwise "I" will be used.
+    @return: A string representing a random bill identifier.
     """
     invoice_number = ''.join(choices(INVOICE_NUMBER_CHARS, k=length))
     if prefix:
@@ -54,15 +54,12 @@ def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
 
 
 class InvoiceModelQuerySet(models.QuerySet):
-
-     """
-    A custom defined Query Set for the InvoiceModel.
-    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
-    For e.g : We might want to have list of bills which are paid, unpaid, Due , OverDue, Approved, In draft stage.
-    All these separate functions will assist in making such queries and building customized reports.
-
     """
-
+   A custom defined Query Set for the InvoiceModel.
+   This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
+   For e.g : We might want to have list of bills which are paid, unpaid, Due , OverDue, Approved, In draft stage.
+   All these separate functions will assist in making such queries and building customized reports.
+   """
 
     def paid(self):
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
@@ -78,11 +75,9 @@ class InvoiceModelQuerySet(models.QuerySet):
 
 
 class InvoiceModelManager(models.Manager):
-
     """
-    A custom defined Invoice Model Manager that will act as an inteface to handling the DB queries to the Invoice  Model.
-    The default "get_queryset" has been overridden to refer the customdefined "InvoiceModelQuerySet"
-
+    A custom defined Invoice Model Manager that will act as an interface to handling the DB queries to the Invoice  Model.
+    The default "get_queryset" has been overridden to refer the custom defined "InvoiceModelQuerySet"
     """
 
     def get_queryset(self):
@@ -107,11 +102,10 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                            PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
-
-
     """
-    This is the main abstract class which the Bill Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
-    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
+    This is the main abstract class which the Bill Model database will inherit, and it contains the
+    fields/columns/attributes which the said table will have. In addition to the attributes mentioned below,
+    it also has the fields/columns/attributes mentioned in below MixIn:
     
     LedgerWrapperMixIn
     PaymentTermsMixIn
@@ -120,14 +114,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     
     Read about these mixin here.
 
-    Below are the fields specific to the bill model.
-    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
-    @bill_number: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
-    @bill_status: Any bill can have the status as either of the choices as mentioned under "BILL_STATUS" By default , the status will be "Draft"
-    @xref: this is the fiedl for capturing of any External reference number like the PO number of the buyer.Any othere reference number like the Vendor code in buyer books may also be captured.
-    
-
-    
+    Below are the fields specific to the bill model. uuid : this is a unique primary key generated for the table. The
+    default value of this field is uuid4. bill_number: This is a slug. Field and hence a random bill number with Max
+    Length of 20 will be defined bill_status: Any bill can have the status as either of the choices as mentioned
+    under "BILL_STATUS". By default , the status will be "Draft" xref: this is the field for capturing of any
+    External reference number like the PO number of the buyer. Any other reference number like the Vendor code in
+    buyer books may also be captured.
     """
 
     IS_DEBIT_BALANCE = True
