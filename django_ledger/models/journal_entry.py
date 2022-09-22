@@ -6,6 +6,8 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from decimal import Decimal
+from enum import Enum
+from itertools import chain
 from typing import Set
 from uuid import uuid4
 
@@ -64,18 +66,50 @@ class JournalEntryModelManager(models.Manager):
         return qs.filter(ledger__uuid__exact=ledger_pk)
 
 
+class ActivityEnum(Enum):
+    OPERATING = 'op'
+    INVESTING = 'inv'
+    FINANCING = 'fin'
+
+
 class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
-    ACTIVITY_IGNORE = ['all']
-    OPERATING_ACTIVITY = 'op'
-    FINANCING_ACTIVITY = 'fin'
-    INVESTING_ACTIVITY = 'inv'
+    OPERATING_ACTIVITY = ActivityEnum.OPERATING.value
+    FINANCING_OTHER = ActivityEnum.FINANCING.value
+    INVESTING_OTHER = ActivityEnum.INVESTING.value
+
+    INVESTING_SECURITIES = f'{ActivityEnum.INVESTING.value}_securities'
+    INVESTING_PPE = f'{ActivityEnum.INVESTING.value}_ppe'
+
+    FINANCING_STD = f'{ActivityEnum.FINANCING.value}_std'
+    FINANCING_LTD = f'{ActivityEnum.FINANCING.value}_ltd'
+    FINANCING_EQUITY = f'{ActivityEnum.FINANCING.value}_equity'
+    FINANCING_DIVIDENDS = f'{ActivityEnum.FINANCING.value}_dividends'
+
     ACTIVITIES = [
-        (OPERATING_ACTIVITY, _('Operating')),
-        (FINANCING_ACTIVITY, _('Financing')),
-        (INVESTING_ACTIVITY, _('Investing'))
+        (_('Operating'), (
+            (OPERATING_ACTIVITY, _('Operating')),
+        )),
+        (_('Investing'), (
+            (INVESTING_PPE, _('Purchase/Disposition of PPE')),
+            (INVESTING_SECURITIES, _('Purchase/Disposition of Securities')),
+            (INVESTING_OTHER, _('Investing Activity Other')),
+        )),
+        (_('Financing'), (
+            (FINANCING_STD, _('Payoff of Short Term Debt')),
+            (FINANCING_LTD, _('Payoff of Long Term Debt')),
+            (FINANCING_EQUITY, _('Issuance of Common Stock, Preferred Stock or Capital Contribution')),
+            (FINANCING_DIVIDENDS, _('Dividends or Distributions to Shareholders')),
+            (FINANCING_OTHER, _('Financing Activity Other')),
+        )),
     ]
 
-    ACTIVITY_ALLOWS = [a[0] for a in ACTIVITIES]
+    VALID_ACTIVITIES = list(chain.from_iterable([
+        [a[0] for a in cat[1]] for cat in ACTIVITIES
+    ]))
+    NON_OPERATIONAL_ACTIVITIES = [
+        a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a
+    ]
+
     parent = models.ForeignKey('self',
                                blank=True,
                                null=True,
@@ -92,7 +126,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                                     null=True,
                                     verbose_name=_('Associated Entity Unit'))
     activity = models.CharField(choices=ACTIVITIES,
-                                max_length=5,
+                                max_length=20,
                                 null=True,
                                 blank=True,
                                 editable=False,
@@ -304,7 +338,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in roles_involved])
                 is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in roles_involved])
 
-                is_operational = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
+                is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
 
                 if sum([
                     is_investing_for_ppe,
@@ -313,24 +347,25 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                     is_financing_st_debt,
                     is_financing_issuing_equity,
                     is_financing_dividends,
-                    is_operational
+                    is_operating
                 ]) > 1:
                     if raise_exception:
                         raise JournalEntryValidationError(f'Multiple activities detected in roles JE {roles_involved}.')
                 else:
-                    if any([
-                        is_investing_for_ppe,
-                        is_investing_for_securities
-                    ]):
-                        self.activity = self.INVESTING_ACTIVITY
-                    elif any([
-                        is_financing_issuing_equity,
-                        is_financing_dividends,
-                        is_financing_st_debt,
-                        is_financing_lt_debt
-                    ]):
-                        self.activity = self.FINANCING_ACTIVITY
-                    elif is_operational:
+                    if is_investing_for_ppe:
+                        self.activity = self.INVESTING_PPE
+                    elif is_investing_for_securities:
+                        self.activity = self.INVESTING_SECURITIES
+
+                    elif is_financing_st_debt:
+                        self.activity = self.FINANCING_STD
+                    elif is_financing_lt_debt:
+                        self.activity = self.FINANCING_LTD
+                    elif is_financing_issuing_equity:
+                        self.activity = self.FINANCING_EQUITY
+                    elif is_financing_dividends:
+                        self.activity = self.FINANCING_DIVIDENDS
+                    elif is_operating:
                         self.activity = self.OPERATING_ACTIVITY
                     else:
                         if raise_exception:
@@ -340,6 +375,36 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             self._verified = True
             return txs_qs
         self._verified = False
+
+    def is_operating(self):
+        return self.activity in [
+            self.OPERATING_ACTIVITY
+        ]
+
+    def is_financing(self):
+        return self.activity in [
+            self.FINANCING_EQUITY,
+            self.FINANCING_LTD,
+            self.FINANCING_DIVIDENDS,
+            self.FINANCING_STD,
+            self.FINANCING_OTHER
+        ]
+
+    def is_investing(self):
+        return self.activity in [
+            self.INVESTING_SECURITIES,
+            self.INVESTING_PPE,
+            self.INVESTING_OTHER
+        ]
+
+    def get_activity(self):
+        if self.activity:
+            if self.is_operating():
+                return ActivityEnum.OPERATING.value
+            elif self.is_investing():
+                return ActivityEnum.INVESTING.value
+            elif self.is_financing():
+                return ActivityEnum.FINANCING.value
 
     def clean(self, verify: bool = False):
         if verify:
