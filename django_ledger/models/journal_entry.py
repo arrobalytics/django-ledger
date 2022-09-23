@@ -20,10 +20,12 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.exceptions import JournalEntryValidationError
-from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_INVESTING_PPE, GROUP_CFS_INVESTING_SECURITIES,
-                                    GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
+from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
                                     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-                                    GROUP_CFS_INVESTING_AND_FINANCING)
+                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE,
+                                    GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
+                                    GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
+                                    GROUP_CFS_INVESTING_SECURITIES)
 from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
 
 
@@ -209,7 +211,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                        raise_exception: bool = False,
                        **kwargs):
         if verify:
-            self.verify()
+            txs_qs = self.verify()
 
         if not self.can_post(ignore_verify=False):
             if raise_exception:
@@ -221,6 +223,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 self.save(verify=False,
                           update_fields=[
                               'posted',
+                              'activity',
                               'updated'
                           ])
 
@@ -329,8 +332,16 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 roles_involved = self.get_txs_roles(txs_qs, exclude_cash_role=True)
 
                 # determining if investing....
-                is_investing_for_ppe = all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved])
-                is_investing_for_securities = all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved])
+                is_investing_for_ppe = all([
+                    all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),  # all roles must be in group
+                    sum([r in GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE for r in roles_involved]) > 0,  # at least one role
+                    sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,  # at least one role
+                ])
+                is_investing_for_securities = all([
+                    all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),  # all roles must be in group
+                    sum([r in GROUP_CFS_INV_PURCHASE_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
+                    sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
+                ])
 
                 # determining if financing...
                 is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in roles_involved])

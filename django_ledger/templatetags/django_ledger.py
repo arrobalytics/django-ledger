@@ -113,8 +113,6 @@ def balance_sheet_statement(context, io_model, to_date=None):
 @register.inclusion_tag('django_ledger/financial_statements/tags/cash_flow_statement.html', takes_context=True)
 def cash_flow_statement(context, io_model):
     user_model = context['user']
-    activity = context['request'].GET.get('activity')
-    activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
     from_date = context['from_date']
     to_date = context['to_date']
@@ -122,10 +120,11 @@ def cash_flow_statement(context, io_model):
     prepare_context_by_unit(context)
 
     txs_qs, digest = io_model.digest(
-        activity=activity,
+        cash_flow_statement=True,
+        by_activity=True,
         user_model=user_model,
         equity_only=False,
-        # signs=False,
+        signs=True,
         entity_slug=entity_slug,
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],

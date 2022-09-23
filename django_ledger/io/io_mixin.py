@@ -315,7 +315,7 @@ class IOMixIn:
                                    ))
 
         gb_digest = [
-            self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
+            self.aggregate_balances(k, g) for k, g in accounts_gb_code
         ]
 
         if signs and not absolute_balances:
@@ -335,7 +335,7 @@ class IOMixIn:
         return txs_qs, gb_digest
 
     @staticmethod
-    def digest_gb_accounts(k, g):
+    def aggregate_balances(k, g):
         gl = list(g)
         return {
             'account_uuid': k[0],
@@ -401,9 +401,8 @@ class IOMixIn:
             by_tx_type=by_tx_type
         )
 
-        io_digest = dict(
-            accounts=accounts_digest
-        )
+        io_digest = defaultdict(lambda: dict())
+        io_digest['accounts'] = accounts_digest
 
         if process_roles:
             roles_mgr = RoleManager(
@@ -438,7 +437,7 @@ class IOMixIn:
         if not digest_name:
             digest_name = 'tx_digest'
 
-        digest_results = defaultdict(lambda: dict())
+        digest_results = dict()
         digest_results[digest_name] = io_digest
         return txs_qs, digest_results
 
