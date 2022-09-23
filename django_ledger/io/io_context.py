@@ -87,7 +87,6 @@ class GroupManager:
 
         self.IO_DIGEST = io_digest
 
-        # todo: this is not necesary if io_digest is a defaultdict...
         self.IO_DIGEST[self.GROUP_ACCOUNTS_KEY] = None
         self.IO_DIGEST[self.GROUP_BALANCE_KEY] = None
 

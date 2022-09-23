@@ -101,7 +101,8 @@ class CashFlowStatement:
         investing_activities = dict()
         investing_activities['GROUP_CFS_INVESTING_SECURITIES'] = {
             'description': 'Purchase, Maturity and Sales of Investments & Securities',
-            'balance': sum(a['balance'] for a in self.CASH_ACCOUNTS if a['activity'] == self.JE_MODEL.INVESTING_SECURITIES)
+            'balance': sum(
+                a['balance'] for a in self.CASH_ACCOUNTS if a['activity'] == self.JE_MODEL.INVESTING_SECURITIES)
         }
         investing_activities['GROUP_CFS_INVESTING_PPE'] = {
             'description': 'Addition and Disposition of Property, Plant & Equipment',
@@ -113,9 +114,15 @@ class CashFlowStatement:
         self.IO_DIGEST[self.CFS_DIGEST_KEY]['investing'] = investing_activities
         self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity']['INVESTING'] = net_cash
 
+    def net_cash(self):
+        self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash'] = sum([
+            bal for act, bal in self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity'].items()
+        ])
+
     def digest(self):
         self.check_io_digest()
         self.operating()
         self.financing()
         self.investing()
+        self.net_cash()
         return self.IO_DIGEST

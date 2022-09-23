@@ -183,4 +183,26 @@
 
 
     </table>
+
+    {# NET CASH #}
+    <table class="table is-fullwidth is-narrow is-stripped">
+        <thead>
+        <tr>
+            <td class="has-text-weight-light is-size-3">{% trans 'Net Cashflow' %}</td>
+            <td></td>
+        </tr>
+        </thead>
+
+        <tbody>
+        <tr>
+            <td class="has-text-right has-text-weight-light">
+                {% trans 'Net Cash From' %} {{ tx_digest.from_date }} -> {{ tx_digest.to_date }}
+            </td>
+            <td class="has-text-weight-bold has-text-right is-size-5">
+                {% currency_symbol %}{{ tx_digest.cash_flow_statement.net_cash | currency_format }}</td>
+        </tr>
+
+        </tbody>
+
+    </table>
 </div>
