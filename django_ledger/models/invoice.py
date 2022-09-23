@@ -9,6 +9,7 @@ from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_uppercase, digits
+from typing import Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -212,7 +213,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return f'Invoice: {self.invoice_number}'
 
     def configure(self,
-                  entity_slug: str or EntityModel,
+                  entity_slug: Union[EntityModel, str],
                   user_model: UserModel,
                   post_ledger: bool = False):
 
@@ -230,7 +231,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         if entity_model.is_accrual_method():
             self.accrue = True
-            self.progress = 1
+            self.progress = Decimal('1.00')
         else:
             self.accrue = False
 
@@ -407,21 +408,37 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to mark Invoice %s as In Review?') % self.invoice_number
 
     # APPROVED...
-    def mark_as_approved(self, date_approved: date = None, commit: bool = False, **kwargs):
+    def mark_as_approved(self,
+                         entity_slug,
+                         user_model,
+                         approved_date: date = None,
+                         commit: bool = False,
+                         force_migrate: bool = False,
+                         **kwargs):
+
         if not self.can_approve():
             raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
-        self.approved_date = localdate() if not date_approved else date_approved
+        self.approved_date = localdate() if not approved_date else approved_date
         self.clean()
         if commit:
-            self.ledger.post(commit=True)
             self.save(update_fields=[
                 'invoice_status',
                 'approved_date',
                 'due_date',
                 'updated'
             ])
+            if force_migrate or self.accrue:
+                # normally no transactions will be present when marked as approved...
+                self.migrate_state(
+                    entity_slug=entity_slug,
+                    user_model=user_model,
+                    je_date=approved_date,
+                    force_migrate=self.accrue
+                )
+            self.ledger.post(commit=commit)
+
 
     def get_mark_as_approved_html_id(self):
         return f'djl-{self.uuid}-invoice-mark-as-approved'
@@ -641,13 +658,17 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def clean(self):
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
+
         if not self.invoice_number:
             self.invoice_number = generate_invoice_number()
+
+        if self.accrue:
+            self.progress = Decimal('1.00')
+
         if self.is_draft():
             self.amount_paid = Decimal('0.00')
             self.paid = False
             self.paid_date = None
-            self.progress = 0
 
 
 class InvoiceModel(InvoiceModelAbstract):

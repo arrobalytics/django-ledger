@@ -466,7 +466,7 @@ class EntityModelAbstract(MP_Node,
         self.commit_txs(
             je_date=txs_date,
             je_txs=txs,
-            je_activity=JournalEntryModel.INVESTING_ACTIVITY,
+            je_activity=JournalEntryModel.FINANCING_EQUITY,
             je_posted=je_posted,
             je_ledger=ledger
         )

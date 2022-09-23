@@ -125,6 +125,7 @@ def cash_flow_statement(context, io_model):
         activity=activity,
         user_model=user_model,
         equity_only=False,
+        # signs=False,
         entity_slug=entity_slug,
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],

@@ -15,8 +15,9 @@ from typing import Union
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.timezone import localtime, localdate
 
-from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID, \
-                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_REGULAR, EQUITY_CAPITAL)
+from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
+                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_REGULAR, EQUITY_CAPITAL,
+                                    ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
     BillModel, generate_bill_number, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
@@ -417,7 +418,7 @@ class EntityDataGenerator:
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
-            unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
+            unearned_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
             draft_date=date_draft,
             additional_info=dict()
         )
@@ -524,7 +525,7 @@ class EntityDataGenerator:
 
                     bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
                     bill_model.prepaid_account = choice(self.accounts_by_role[ASSET_CA_PREPAID])
-                    bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE])
+                    bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE])
 
                     ledger_model, bill_model = bill_model.configure(
                         entity_slug=self.entity_model.slug,
@@ -612,7 +613,7 @@ class EntityDataGenerator:
             terms=choice(InvoiceModel.TERMS)[0],
             invoice_number=generate_invoice_number(),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
-            prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
+            prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             draft_date=date_draft,
             additional_info=dict()
@@ -668,7 +669,10 @@ class EntityDataGenerator:
             invoice_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.50:
                 date_approved = self.get_next_date(date_review)
-                invoice_model.mark_as_approved(commit=True, date_approved=date_approved)
+                invoice_model.mark_as_approved(entity_slug=self.entity_model.slug,
+                                               user_model=self.user_model,
+                                               commit=True,
+                                               approved_date=date_approved)
                 if random() > 0.25:
                     date_paid = self.get_next_date(date_approved)
                     invoice_model.mark_as_paid(

@@ -5,11 +5,11 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from collections import defaultdict
 from datetime import datetime, date
 from itertools import groupby
 from random import choice
-from typing import List, Set, Union, Tuple
+from typing import List, Set, Union, Tuple, Optional
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -20,9 +20,10 @@ from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import localdate, make_aware, is_naive
 
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
-from django_ledger.io import roles
+from django_ledger.io import roles as roles_module
+from django_ledger.io.financial_statements import CashFlowStatement
+from django_ledger.io.io_context import RoleManager, GroupManager, ActivityManager
 from django_ledger.io.ratios import FinancialRatioManager
-from django_ledger.io.roles import RoleManager, GroupManager, BS_ASSET_ROLE, BS_LIABILITIES_ROLE, BS_EQUITY_ROLE
 from django_ledger.models.utils import LazyLoader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
                                     DJANGO_LEDGER_TRANSACTION_CORRECTION)
@@ -128,27 +129,14 @@ def validate_dates(
 
 
 def validate_activity(activity: str, raise_404: bool = False):
-    if activity:
-        JournalEntryModel = lazy_importer.get_journal_entry_model()
-        if activity in JournalEntryModel.ACTIVITY_IGNORE:
-            activity = None
-
-        # todo: temporary fix. User should be able to pass a list.
-        if isinstance(activity, list) and len(activity) == 1:
-            activity = activity[0]
-        elif isinstance(activity, list) and len(activity) > 1:
-            exception = ValidationError(f'Multiple activities passed {activity}')
-            if raise_404:
-                raise Http404(exception)
-            raise exception
-
-        valid = activity in JournalEntryModel.ACTIVITY_ALLOWS
-        if activity and not valid:
-            exception = ValidationError(f'{activity} is invalid. Choices are {JournalEntryModel.ACTIVITY_ALLOWS}.')
-            if raise_404:
-                raise Http404(exception)
-            raise exception
-
+    # todo: move to model???...
+    JournalEntryModel = lazy_importer.get_journal_entry_model()
+    valid = activity in JournalEntryModel.VALID_ACTIVITIES
+    if activity and not valid:
+        exception = ValidationError(f'{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}.')
+        if raise_404:
+            raise Http404(exception)
+        raise exception
     return activity
 
 
@@ -179,7 +167,8 @@ class IOMixIn:
                         by_unit: bool = False):
 
         activity = validate_activity(activity)
-        role = roles.validate_roles(role)
+        if role:
+            role = roles_module.validate_roles(role)
         from_date, to_date = validate_dates(from_date, to_date)
 
         if not queryset:
@@ -242,8 +231,6 @@ class IOMixIn:
             txs_qs = txs_qs.for_activity(activity_list=activity)
 
         if role:
-            if isinstance(role, str):
-                role = [role]
             txs_qs = txs_qs.for_roles(role_list=role)
 
         VALUES = [
@@ -284,8 +271,8 @@ class IOMixIn:
                       activity: str = None,
                       entity_slug: str = None,
                       unit_slug: str = None,
-                      role: str = None,
-                      accounts: set = None,
+                      role: Optional[Union[Set[str], List[str]]] = None,
+                      accounts: Optional[Union[Set[str], List[str]]] = None,
                       signs: bool = False,
                       absolute_balances: bool = False,
                       by_unit: bool = False,
@@ -294,7 +281,7 @@ class IOMixIn:
                       by_period: bool = False) -> list or tuple:
 
         if equity_only:
-            role = roles.GROUP_EARNINGS
+            role = roles_module.GROUP_EARNINGS
 
         txs_qs = self.database_digest(
             user_model=user_model,
@@ -335,9 +322,12 @@ class IOMixIn:
             TransactionModel = lazy_importer.get_txs_model()
             for acc in gb_digest:
                 if any([
-                    all([acc['role_bs'] == BS_ASSET_ROLE,
+                    all([acc['role_bs'] == roles_module.BS_ASSET_ROLE,
                          acc['balance_type'] == TransactionModel.CREDIT]),
-                    all([acc['role_bs'] in (BS_LIABILITIES_ROLE, BS_EQUITY_ROLE),
+                    all([acc['role_bs'] in (
+                            roles_module.BS_LIABILITIES_ROLE,
+                            roles_module.BS_EQUITY_ROLE
+                    ),
                          acc['balance_type'] == TransactionModel.DEBIT])
                 ]):
                     acc['balance'] = -acc['balance']
@@ -354,7 +344,7 @@ class IOMixIn:
             'activity': gl[0].get('journal_entry__activity'),
             'period_year': k[2],
             'period_month': k[3],
-            'role_bs': roles.BS_ROLES.get(gl[0]['account__role']),
+            'role_bs': roles_module.BS_ROLES.get(gl[0]['account__role']),
             'role': gl[0]['account__role'],
             'code': gl[0]['account__code'],
             'name': gl[0]['account__name'],
@@ -363,9 +353,11 @@ class IOMixIn:
             'balance': sum(a['balance'] for a in gl),
         }
 
+    # todo: make this method return a Digest class...
     def digest(self,
                user_model: UserModel,
-               accounts: set or list = None,
+               accounts: Optional[Union[Set[str], List[str]]] = None,
+               role: Optional[Union[Set[str], List[str]]] = None,
                activity: str = None,
                entity_slug: str = None,
                unit_slug: str = None,
@@ -377,11 +369,13 @@ class IOMixIn:
                process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
+               process_activity: bool = False,
                equity_only: bool = False,
                by_period: bool = False,
                by_unit: bool = False,
                by_activity: bool = False,
                by_tx_type: bool = False,
+               cash_flow_statement: bool = False,
                digest_name: str = None
                ) -> dict or tuple:
 
@@ -392,6 +386,7 @@ class IOMixIn:
             queryset=queryset,
             user_model=user_model,
             accounts=accounts,
+            role=role,
             activity=activity,
             entity_slug=entity_slug,
             unit_slug=unit_slug,
@@ -406,37 +401,45 @@ class IOMixIn:
             by_tx_type=by_tx_type
         )
 
-        digest = dict(
+        io_digest = dict(
             accounts=accounts_digest
         )
 
         if process_roles:
             roles_mgr = RoleManager(
-                tx_digest=digest,
+                tx_digest=io_digest,
                 by_period=by_period,
                 by_unit=by_unit
             )
-            digest = roles_mgr.digest()
+
+            # todo: change digest() name to something else?...
+            io_digest = roles_mgr.digest()
 
         if process_groups:
             group_mgr = GroupManager(
-                tx_digest=digest,
+                io_digest=io_digest,
                 by_period=by_period,
                 by_unit=by_unit
             )
-            digest = group_mgr.digest()
+            io_digest = group_mgr.digest()
 
         if process_ratios:
-            ratio_gen = FinancialRatioManager(tx_digest=digest)
-            digest = ratio_gen.digest()
+            ratio_gen = FinancialRatioManager(tx_digest=io_digest)
+            io_digest = ratio_gen.digest()
+
+        if process_activity:
+            activity_manager = ActivityManager(tx_digest=io_digest, by_unit=by_unit, by_period=by_period)
+            activity_manager.digest()
+
+        if cash_flow_statement:
+            cfs = CashFlowStatement(io_digest=io_digest)
+            io_digest = cfs.digest()
 
         if not digest_name:
             digest_name = 'tx_digest'
 
-        digest_results = {
-            digest_name: digest,
-        }
-
+        digest_results = defaultdict(lambda: dict())
+        digest_results[digest_name] = io_digest
         return txs_qs, digest_results
 
     def commit_txs(self,

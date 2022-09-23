@@ -504,20 +504,23 @@ class BillModelAbstract(LedgerWrapperMixIn,
         self.new_state(commit=True)
         self.clean()
         if commit:
-            if force_migrate:
-                # normally no transactions will be present when marked as approved...
-                self.migrate_state(
-                    entity_slug=entity_slug,
-                    user_model=user_model,
-                    je_date=approved_date,
-                )
-            self.ledger.post(commit=commit)
             self.save(update_fields=[
                 'bill_status',
                 'approved_date',
                 'due_date',
                 'updated'
             ])
+            if force_migrate or self.accrue:
+                # normally no transactions will be present when marked as approved...
+                self.migrate_state(
+                    entity_slug=entity_slug,
+                    user_model=user_model,
+                    je_date=approved_date,
+                    force_migrate=self.accrue
+                )
+            self.ledger.post(commit=commit)
+
+
 
     def get_mark_as_approved_html_id(self):
         return f'djl-{self.uuid}-mark-as-approved'
@@ -712,11 +715,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if not self.bill_number:
             self.bill_number = generate_bill_number()
 
+        if self.accrue:
+            self.progress = Decimal('1.00')
+
         if self.is_draft():
             self.amount_paid = Decimal('0.00')
             self.paid = False
             self.paid_date = None
-            self.progress = 0
 
         if not self.additional_info:
             self.additional_info = dict()

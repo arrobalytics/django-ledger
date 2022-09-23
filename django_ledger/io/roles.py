@@ -7,12 +7,16 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 import sys
-from collections import defaultdict
+from itertools import chain
+from typing import Set
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
+from django_ledger.models.utils import LazyLoader
+
 mod = sys.modules[__name__]
+lazy_loader = LazyLoader()
 
 # --- ASSET ROLES ----
 # Current Assets ---
@@ -214,47 +218,7 @@ GROUP_BILL = [ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE]
 # ############# CASH FLOW STATEMENT GROUPS...
 GROUP_CFS_NET_INCOME = GROUP_EARNINGS
 
-# ---> INVESTING ACTIVITIES <---- #
-# Purchase of Assets....
-GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE = [
-    ASSET_PPE_BUILDINGS,
-    ASSET_PPE_PLANT,
-    ASSET_PPE_EQUIPMENT
-]
-GROUP_CFS_INV_LTD_OF_PPE = [
-    LIABILITY_LTL_NOTES_PAYABLE,
-    LIABILITY_LTL_MORTGAGE_PAYABLE,
-    LIABILITY_LTL_BONDS_PAYABLE
-]
-GROUP_CFS_INVESTING_PPE = GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE + GROUP_CFS_INV_LTD_OF_PPE
-
-# Purchase of Securities...
-GROUP_CFS_INV_PURCHASE_OF_SECURITIES = [
-    ASSET_CA_MKT_SECURITIES,
-    ASSET_LTI_SECURITIES,
-]
-GROUP_CFS_INV_LTD_OF_SECURITIES = [
-    LIABILITY_LTL_NOTES_PAYABLE,
-    LIABILITY_LTL_BONDS_PAYABLE
-]
-GROUP_CFS_INVESTING_SECURITIES = GROUP_CFS_INV_PURCHASE_OF_SECURITIES + GROUP_CFS_INV_LTD_OF_SECURITIES
-
-GROUP_CFS_INVESTING = GROUP_CFS_INVESTING_PPE + GROUP_CFS_INVESTING_SECURITIES
-
-# ---> FINANCING ACTIVITIES <---- #
-GROUP_CFS_FIN_ISSUING_EQUITY = [EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK]
-GROUP_CFS_FIN_DIVIDENDS = [EQUITY_DIVIDENDS]
-GROUP_CFS_FIN_ST_DEBT_PAYMENTS = [LIABILITY_CL_ST_NOTES_PAYABLE]
-GROUP_CFS_FIN_LT_DEBT_PAYMENTS = [LIABILITY_LTL_NOTES_PAYABLE]
-
-GROUP_CFS_FINANCING = GROUP_CFS_FIN_ISSUING_EQUITY + GROUP_CFS_FIN_DIVIDENDS
-GROUP_CFS_FINANCING += GROUP_CFS_FIN_ST_DEBT_PAYMENTS
-GROUP_CFS_FINANCING += GROUP_CFS_FIN_LT_DEBT_PAYMENTS
-
-# ---> INVESTING & FINANCING ACTIVITIES <---- #
-GROUP_CFS_INVESTING_AND_FINANCING = GROUP_CFS_INVESTING + GROUP_CFS_FINANCING
-
-# ---> OPERATING ACTIVITIES <---- #
+# ---> OPERATING ACTIVITIES (INDIRECT) <---- #
 # Non-Cash/Non-Current...
 GROUP_CFS_OP_DEPRECIATION_AMORTIZATION = [
     EXPENSE_DEPRECIATION,
@@ -289,6 +253,61 @@ GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT = [
     LIABILITY_CL_DEFERRED_REVENUE,
     LIABILITY_CL_OTHER,
 ]
+
+GROUP_CFS_OPERATING = list(chain.from_iterable([
+    GROUP_CFS_NET_INCOME,
+    GROUP_CFS_OP_DEPRECIATION_AMORTIZATION,
+    GROUP_CFS_OP_INVESTMENT_GAINS,
+    GROUP_CFS_OP_ACCOUNTS_RECEIVABLE,
+    GROUP_CFS_OP_INVENTORY,
+    GROUP_CFS_OP_ACCOUNTS_PAYABLE,
+    GROUP_CFS_OP_OTHER_CURRENT_ASSETS_ADJUSTMENT,
+    GROUP_CFS_OP_OTHER_CURRENT_LIABILITIES_ADJUSTMENT
+]))
+
+# ---> FINANCING ACTIVITIES <---- #
+GROUP_CFS_FIN_ISSUING_EQUITY = [EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK]
+GROUP_CFS_FIN_DIVIDENDS = [EQUITY_DIVIDENDS]
+GROUP_CFS_FIN_ST_DEBT_PAYMENTS = [LIABILITY_CL_ST_NOTES_PAYABLE]
+GROUP_CFS_FIN_LT_DEBT_PAYMENTS = [
+    LIABILITY_LTL_NOTES_PAYABLE,
+    LIABILITY_LTL_BONDS_PAYABLE,
+    LIABILITY_LTL_MORTGAGE_PAYABLE
+]
+
+GROUP_CFS_FINANCING = GROUP_CFS_FIN_ISSUING_EQUITY + GROUP_CFS_FIN_DIVIDENDS
+GROUP_CFS_FINANCING += GROUP_CFS_FIN_ST_DEBT_PAYMENTS
+GROUP_CFS_FINANCING += GROUP_CFS_FIN_LT_DEBT_PAYMENTS
+
+# ---> INVESTING ACTIVITIES <---- #
+# Purchase of Assets....
+GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE = [
+    ASSET_PPE_BUILDINGS,
+    ASSET_PPE_PLANT,
+    ASSET_PPE_EQUIPMENT
+]
+GROUP_CFS_INV_LTD_OF_PPE = [
+    LIABILITY_LTL_NOTES_PAYABLE,
+    LIABILITY_LTL_MORTGAGE_PAYABLE,
+    LIABILITY_LTL_BONDS_PAYABLE
+]
+GROUP_CFS_INVESTING_PPE = GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE + GROUP_CFS_INV_LTD_OF_PPE
+
+# Purchase of Securities...
+GROUP_CFS_INV_PURCHASE_OF_SECURITIES = [
+    ASSET_CA_MKT_SECURITIES,
+    ASSET_LTI_SECURITIES,
+]
+GROUP_CFS_INV_LTD_OF_SECURITIES = [
+    LIABILITY_LTL_NOTES_PAYABLE,
+    LIABILITY_LTL_BONDS_PAYABLE
+]
+GROUP_CFS_INVESTING_SECURITIES = GROUP_CFS_INV_PURCHASE_OF_SECURITIES + GROUP_CFS_INV_LTD_OF_SECURITIES
+
+GROUP_CFS_INVESTING = GROUP_CFS_INVESTING_PPE + GROUP_CFS_INVESTING_SECURITIES
+
+# ---> INVESTING & FINANCING ACTIVITIES <---- #
+GROUP_CFS_INVESTING_AND_FINANCING = GROUP_CFS_INVESTING + GROUP_CFS_FINANCING
 
 BS_ASSET_ROLE = 'assets'
 BS_LIABILITIES_ROLE = 'liabilities'
@@ -377,17 +396,6 @@ ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
 
-
-def validate_roles(roles):
-    if roles:
-        if isinstance(roles, str):
-            roles = [roles]
-        for r in roles:
-            if r not in VALID_ROLES:
-                raise ValidationError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
-    return roles
-
-
 ROLES_VARS = locals().keys()
 ROLES_DIRECTORY = dict()
 ROLES_CATEGORIES = ['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'COGS', 'EXPENSE']
@@ -401,134 +409,10 @@ for group in ROLES_GROUPS:
     GROUPS_DIRECTORY[group] = getattr(mod, group)
 
 
-class RoleManager:
-
-    def __init__(self,
-                 tx_digest: dict,
-                 by_period: bool = False,
-                 by_unit: bool = False):
-
-        self.BY_PERIOD = by_period
-        self.BY_UNIT = by_unit
-
-        self.DIGEST = tx_digest
-        self.DIGEST['role_account'] = None
-        self.DIGEST['role_balance'] = None
-
-        self.ACCOUNTS = tx_digest['accounts']
-
-        self.ROLES_ACCOUNTS = dict()
-        self.ROLES_BALANCES = dict()
-
-        if self.BY_PERIOD:
-            self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
-            self.DIGEST['role_balance_by_period'] = None
-        if self.BY_UNIT:
-            self.ROLES_BALANCES_BY_UNIT = defaultdict(lambda: dict())
-            self.DIGEST['role_balance_by_unit'] = None
-
-        if self.BY_PERIOD and self.BY_UNIT:
-            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
-
-
-
-    def digest(self):
-
-        self.process_roles()
-        self.DIGEST['role_account'] = self.ROLES_ACCOUNTS
-        self.DIGEST['role_balance'] = self.ROLES_BALANCES
-
-        if self.BY_PERIOD:
-            self.DIGEST['role_balance_by_period'] = self.ROLES_BALANCES_BY_PERIOD
-        if self.BY_UNIT:
-            self.DIGEST['role_balance_by_unit'] = self.ROLES_BALANCES_BY_UNIT
-
-        return self.DIGEST
-
-    def process_roles(self):
-
-        for c, l in ROLES_DIRECTORY.items():
-            for r in l:
-                acc_list = list(acc for acc in self.ACCOUNTS if acc['role'] == getattr(mod, r))
-
-                self.ROLES_ACCOUNTS[r] = acc_list
-                self.ROLES_BALANCES[r] = sum(acc['balance'] for acc in acc_list)
-
-                if self.BY_PERIOD or self.BY_UNIT:
-                    for acc in acc_list:
-                        if self.BY_PERIOD:
-                            key = (acc['period_year'], acc['period_month'])
-                            self.ROLES_BALANCES_BY_PERIOD[key][r] = sum(acc['balance'] for acc in acc_list if all([
-                                acc['period_year'] == key[0],
-                                acc['period_month'] == key[1]]
-                            ))
-                        if self.BY_UNIT:
-                            key = (acc['unit_uuid'], acc['unit_name'])
-                            self.ROLES_BALANCES_BY_UNIT[key][r] = sum(
-                                acc['balance'] for acc in acc_list if acc['unit_uuid'] == key[0])
-
-
-class GroupManager:
-
-    def __init__(self,
-                 tx_digest: dict,
-                 by_period: bool = False,
-                 by_unit: bool = False):
-
-        self.BY_PERIOD = by_period
-        self.BY_UNIT = by_unit
-
-        self.DIGEST = tx_digest
-        self.DIGEST['group_account'] = None
-        self.DIGEST['group_balance'] = None
-
-        self.ACCOUNTS = tx_digest['accounts']
-
-        self.GROUPS_ACCOUNTS = dict()
-        self.GROUPS_BALANCES = dict()
-        if self.BY_PERIOD:
-            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
-
-        if self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_UNIT = defaultdict(lambda: dict())
-            self.DIGEST['group_balance_by_unit'] = None
-
-        if self.BY_PERIOD and self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
-            self.DIGEST['group_balance_by_period'] = None
-
-    def digest(self):
-
-        self.process_groups()
-        self.DIGEST['group_account'] = self.GROUPS_ACCOUNTS
-        self.DIGEST['group_balance'] = self.GROUPS_BALANCES
-
-        if self.BY_PERIOD:
-            self.DIGEST['group_balance_by_period'] = self.GROUPS_BALANCES_BY_PERIOD
-        if self.BY_UNIT:
-            self.DIGEST['group_balance_by_unit'] = self.GROUPS_BALANCES_BY_UNIT
-        return self.DIGEST
-
-    def get_accounts_generator(self, mod, g):
-        return (acc for acc in self.ACCOUNTS if acc['role'] in getattr(mod, g))
-
-    def process_groups(self):
-        for g in ROLES_GROUPS:
-            acc_list = list(self.get_accounts_generator(mod, g))
-            self.GROUPS_ACCOUNTS[g] = acc_list
-            self.GROUPS_BALANCES[g] = sum(acc['balance'] for acc in acc_list)
-
-            if self.BY_PERIOD or self.BY_UNIT:
-                for acc in acc_list:
-                    if self.BY_PERIOD:
-                        key = (acc['period_year'], acc['period_month'])
-                        self.GROUPS_BALANCES_BY_PERIOD[key][g] = sum(
-                            acc['balance'] for acc in acc_list if all([
-                                acc['period_year'] == key[0],
-                                acc['period_month'] == key[1]]
-                            ))
-                    if self.BY_UNIT:
-                        key = (acc['unit_uuid'], acc['unit_name'])
-                        self.GROUPS_BALANCES_BY_UNIT[key][g] = sum(
-                            acc['balance'] for acc in acc_list if acc['unit_uuid'] == key[0]
-                        )
+def validate_roles(roles) -> Set[str]:
+    if isinstance(roles, str):
+        roles = set(roles)
+    for r in roles:
+        if r not in VALID_ROLES:
+            raise ValidationError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
+    return set(roles)
