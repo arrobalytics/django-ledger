@@ -152,8 +152,8 @@ class IOMixIn:
     def database_digest(self,
                         user_model: UserModel,
                         queryset: QuerySet,
-                        from_date: str or datetime = None,
-                        to_date: str or datetime = None,
+                        from_date: date = None,
+                        to_date: date = None,
                         activity: str = None,
                         role: str = None,
                         entity_slug: str = None,
@@ -165,11 +165,6 @@ class IOMixIn:
                         by_tx_type: bool = False,
                         by_period: bool = False,
                         by_unit: bool = False):
-
-        activity = validate_activity(activity)
-        if role:
-            role = roles_module.validate_roles(role)
-        from_date, to_date = validate_dates(from_date, to_date)
 
         if not queryset:
             TransactionModel = lazy_importer.get_txs_model()
@@ -265,8 +260,8 @@ class IOMixIn:
     def python_digest(self,
                       user_model: UserModel,
                       queryset: QuerySet,
-                      to_date: str = None,
-                      from_date: str = None,
+                      to_date: date = None,
+                      from_date: date = None,
                       equity_only: bool = False,
                       activity: str = None,
                       entity_slug: str = None,
@@ -274,7 +269,6 @@ class IOMixIn:
                       role: Optional[Union[Set[str], List[str]]] = None,
                       accounts: Optional[Union[Set[str], List[str]]] = None,
                       signs: bool = False,
-                      absolute_balances: bool = False,
                       by_unit: bool = False,
                       by_activity: bool = False,
                       by_tx_type: bool = False,
@@ -298,11 +292,9 @@ class IOMixIn:
             by_tx_type=by_tx_type,
             by_period=by_period)
 
-        if not absolute_balances:
-            # reverts the amount sign if the tx_type does not match the account_type prior to aggregating balances.
-            for tx in txs_qs:
-                if tx['account__balance_type'] != tx['tx_type']:
-                    tx['balance'] = -tx['balance']
+        for tx in txs_qs:
+            if tx['account__balance_type'] != tx['tx_type']:
+                tx['balance'] = -tx['balance']
 
         accounts_gb_code = groupby(txs_qs,
                                    key=lambda a: (
@@ -315,10 +307,10 @@ class IOMixIn:
                                    ))
 
         gb_digest = [
-            self.digest_gb_accounts(k, g) for k, g in accounts_gb_code
+            self.aggregate_balances(k, g) for k, g in accounts_gb_code
         ]
 
-        if signs and not absolute_balances:
+        if signs:
             TransactionModel = lazy_importer.get_txs_model()
             for acc in gb_digest:
                 if any([
@@ -335,7 +327,7 @@ class IOMixIn:
         return txs_qs, gb_digest
 
     @staticmethod
-    def digest_gb_accounts(k, g):
+    def aggregate_balances(k, g):
         gl = list(g)
         return {
             'account_uuid': k[0],
@@ -362,7 +354,6 @@ class IOMixIn:
                entity_slug: str = None,
                unit_slug: str = None,
                signs: bool = True,
-               absolute_balances: bool = False,
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
                queryset: QuerySet = None,
@@ -379,8 +370,10 @@ class IOMixIn:
                digest_name: str = None
                ) -> dict or tuple:
 
-        if signs and absolute_balances:
-            raise IOError('Cannot request signs and absolute balances concurrently.')
+        activity = validate_activity(activity)
+        if role:
+            role = roles_module.validate_roles(role)
+        from_date, to_date = validate_dates(from_date, to_date)
 
         txs_qs, accounts_digest = self.python_digest(
             queryset=queryset,
@@ -393,7 +386,6 @@ class IOMixIn:
             to_date=to_date,
             from_date=from_date,
             signs=signs,
-            absolute_balances=absolute_balances,
             equity_only=equity_only,
             by_period=by_period,
             by_unit=by_unit,
@@ -401,9 +393,10 @@ class IOMixIn:
             by_tx_type=by_tx_type
         )
 
-        io_digest = dict(
-            accounts=accounts_digest
-        )
+        io_digest = defaultdict(lambda: dict())
+        io_digest['accounts'] = accounts_digest
+        io_digest['from_date'] = from_date
+        io_digest['to_date'] = to_date
 
         if process_roles:
             roles_mgr = RoleManager(
@@ -438,7 +431,7 @@ class IOMixIn:
         if not digest_name:
             digest_name = 'tx_digest'
 
-        digest_results = defaultdict(lambda: dict())
+        digest_results = dict()
         digest_results[digest_name] = io_digest
         return txs_qs, digest_results
 

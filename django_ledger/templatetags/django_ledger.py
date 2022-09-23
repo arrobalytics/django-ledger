@@ -102,6 +102,7 @@ def balance_sheet_statement(context, io_model, to_date=None):
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
         to_date=to_date,
+        signs=True,
         process_groups=True)
 
     digest['by_unit'] = context['by_unit']
@@ -113,19 +114,18 @@ def balance_sheet_statement(context, io_model, to_date=None):
 @register.inclusion_tag('django_ledger/financial_statements/tags/cash_flow_statement.html', takes_context=True)
 def cash_flow_statement(context, io_model):
     user_model = context['user']
-    activity = context['request'].GET.get('activity')
-    activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
     from_date = context['from_date']
     to_date = context['to_date']
 
     prepare_context_by_unit(context)
 
-    txs_qs, digest = io_model.digest(
-        activity=activity,
+    txs_qs, io_digest = io_model.digest(
+        cash_flow_statement=True,
+        by_activity=True,
         user_model=user_model,
         equity_only=False,
-        # signs=False,
+        signs=True,
         entity_slug=entity_slug,
         unit_slug=context['unit_slug'],
         by_unit=context['by_unit'],
@@ -133,10 +133,10 @@ def cash_flow_statement(context, io_model):
         to_date=to_date,
         process_groups=True)
 
-    digest['by_unit'] = context['by_unit']
-    digest['unit_model'] = context['unit_model']
-    digest['unit_slug'] = context['unit_slug']
-    return digest
+    io_digest['by_unit'] = context['by_unit']
+    io_digest['unit_model'] = context['unit_model']
+    io_digest['unit_slug'] = context['unit_slug']
+    return io_digest
 
 
 @register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
