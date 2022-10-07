@@ -61,7 +61,8 @@ class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUp
         ordering = ['-created']
         verbose_name = _('Entity Unit Model')
         unique_together = [
-            ('entity', 'slug')
+            ('entity', 'slug'),
+            ('entity', 'document_prefix'),
         ]
         indexes = [
             models.Index(fields=['active']),
