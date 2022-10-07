@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from django.core.exceptions import FieldError
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Sum, QuerySet
 from django.db.models.functions import Coalesce
 from django.urls import reverse
@@ -27,6 +27,9 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES)
 from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
+from django_ledger.models.utils import LazyLoader
+
+lazy_loader = LazyLoader()
 
 
 class JournalEntryModelQuerySet(QuerySet):
@@ -74,6 +77,10 @@ class ActivityEnum(Enum):
     FINANCING = 'fin'
 
 
+# def generate_je_document_number(sequence, ):
+#     pass
+
+
 class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     OPERATING_ACTIVITY = ActivityEnum.OPERATING.value
     FINANCING_OTHER = ActivityEnum.FINANCING.value
@@ -118,8 +125,8 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                                verbose_name=_('Parent Journal Entry'),
                                related_name='children',
                                on_delete=models.CASCADE)
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    document_number = models.CharField(max_length=20, editable=False, null=True)
     date = models.DateField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
@@ -418,9 +425,54 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 return ActivityEnum.FINANCING.value
 
     def clean(self, verify: bool = False):
+        self.generate_document_number(commit=False)
         if verify:
             txs_qs = self.verify()
             return txs_qs
+
+    def generate_document_number(self, entity_uuid=None, commit: bool = False) -> str:
+        """
+        Generates the next Journal Entry document number available. If entity UUID is not provided, the operation
+        will result in two additional queries if the Journal Entry LedgerModel & EntityUnitModel is not cached in
+        QuerySet via select_related('ledger', 'entity_unit') If UUID is provided, user must make sure that the UUID
+        is valid for the JournalEntry instance. No validation is performed.
+        @param commit: Commit transaction into Journal Entry.
+        @param entity_uuid: JournalEntryModel EntityModel UUID.
+        @return: A String, representing the JournalEntryModel instance Document Number.
+        """
+        if not self.document_number:
+            with transaction.atomic():
+                EntityModel = lazy_loader.get_entity_model()
+
+                if not entity_uuid:
+                    entity_uuid = self.ledger.entity_id
+                entity_model = EntityModel.objects.filter(
+                    uuid__exact=entity_uuid
+                ).select_for_update().only('entity_state').get()
+                je_fy = entity_model.get_fy_for_date(dt=self.date, as_str=True)
+
+                if self.entity_unit_id:
+                    slot = f'{je_fy}_{self.entity_unit_id}'
+                    prefix = self.entity_unit.document_prefix
+                else:
+                    slot = je_fy
+                    prefix = '000'
+
+                try:
+                    entity_model.entity_state['journal_entry']['sequence'][slot] += 1
+                except KeyError:
+                    entity_model.entity_state['journal_entry']['sequence'][slot] = 1
+
+                entity_model.save(update_fields=['entity_state'])
+
+            seq = str(entity_model.entity_state['journal_entry']['sequence'][slot]).zfill(12)
+            doc_number = f'JE-{prefix}-{seq}'
+            self.document_number = doc_number
+
+            if commit:
+                self.save(update_fields=['document_number', 'updated'])
+
+        return self.document_number
 
     def save(self, verify: bool = False, post_on_verify: bool = False, *args, **kwargs):
         try:

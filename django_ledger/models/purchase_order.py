@@ -30,16 +30,23 @@ PO_NUMBER_CHARS = ascii_uppercase + digits
 lazy_loader = LazyLoader()
 
 
-def generate_po_number(length: int = 10, prefix: bool = True) -> str:
+def generate_po_number(
+        length: int = 10,
+        prefix_value: str = 'PO',
+        use_prefix: bool = True) -> str:
     """
     A function that generates a random PO identifier for new PO models.
-    :param prefix:
-    :param length: The length of the bill number.
-    :return: A string representing a random bill identifier.
+    @param use_prefix: The Purchase Order Number prefix if needed.
+    @param length: The length of the bill number.
+    @param prefix_value: The value to be prefixed to the PO Number
+    @return: A string representing a random Purchase Order identifier.
     """
+    if not prefix_value:
+        raise ValidationError(f'prefix_value cannot be {prefix_value}.')
+
     po_number = ''.join(choices(PO_NUMBER_CHARS, k=length))
-    if prefix:
-        po_number = 'PO-' + po_number
+    if use_prefix:
+        po_number = f'{prefix_value}-{po_number}'
     return po_number
 
 

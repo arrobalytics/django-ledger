@@ -150,14 +150,19 @@ class EntityDataGenerator:
         if nb_units:
             assert nb_units >= 0, 'Number of unite must be greater than 0'
 
-        self.entity_unit_models = [
-            EntityUnitModel.objects.create(
+        entity_unit_models = [
+            EntityUnitModel(
                 name=f'Unit {u}',
                 slug=create_entity_unit_slug(
                     name=f'{self.entity_model.name}-Unit {u}'),
                 entity=self.entity_model
             ) for u in range(nb_units)
         ]
+
+        for eum in entity_unit_models:
+            eum.clean()
+
+        self.entity_unit_models = EntityUnitModel.objects.bulk_create(entity_unit_models)
 
     def create_vendors(self):
         vendor_count = randint(10, 20)

@@ -17,6 +17,7 @@ from typing import Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
@@ -39,6 +40,29 @@ UserModel = get_user_model()
 lazy_loader = LazyLoader()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
+
+
+def get_entity_state_default():
+    return {
+        'journal_entry': {
+            'sequence': {}
+        },
+        'ledger': {
+            'sequence': {}
+        },
+        'purchase_order': {
+            'sequence': {}
+        },
+        'estimate': {
+            'sequence': {}
+        },
+        'bill': {
+            'sequence': {}
+        },
+        'invoice': {
+            'sequence': {}
+        }
+    }
 
 
 def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
@@ -167,6 +191,21 @@ class EntityReportManager:
         qe = self.get_quarter_end(year, quarter, fy_start_month)
         return qs, qe
 
+    def get_fy_for_date(self, dt: date, as_str: bool = False):
+        """
+        Given a date, returns the entity fiscal year associated with given date. 
+        @param dt: Date to evaluate.
+        @return: Fiscal year as Integer.
+        """
+        fy_start_month = self.get_fy_start_month()
+        if dt.month >= fy_start_month:
+            y = dt.year
+        else:
+            y = dt.year - 1
+        if as_str:
+            return str(y)
+        return y
+
 
 class EntityModelManager(MP_NodeManager):
 
@@ -176,6 +215,8 @@ class EntityModelManager(MP_NodeManager):
             Q(admin=user_model) |
             Q(managers__in=[user_model])
         )
+
+
 
 
 class EntityModelAbstract(MP_Node,
@@ -217,6 +258,7 @@ class EntityModelAbstract(MP_Node,
                                          verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
+    entity_state = models.JSONField(default=get_entity_state_default)
     objects = EntityModelManager()
 
     node_order_by = ['uuid']

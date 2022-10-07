@@ -7,7 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from random import choices
-from string import ascii_lowercase, digits
+from string import ascii_lowercase, digits, ascii_uppercase
 from uuid import uuid4
 
 from django.db import models
@@ -50,6 +50,7 @@ class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUp
                                editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Unit Entity'))
+    document_prefix = models.CharField(max_length=3)
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 
@@ -75,6 +76,9 @@ class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUp
     def clean(self):
         if not self.slug:
             self.slug = create_entity_unit_slug(self.name)
+
+        if not self.document_prefix:
+            self.document_prefix = ''.join(choices(ascii_uppercase, k=3))
 
     def get_dashboard_url(self):
         return reverse('django_ledger:unit-dashboard',
