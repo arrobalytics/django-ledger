@@ -163,6 +163,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             models.Index(fields=['entity_unit']),
             models.Index(fields=['ledger', 'posted']),
             models.Index(fields=['locked']),
+            models.Index(fields=['document_number'])
         ]
 
     def __str__(self):
