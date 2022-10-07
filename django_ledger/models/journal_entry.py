@@ -28,6 +28,7 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INVESTING_SECURITIES)
 from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
 from django_ledger.models.utils import LazyLoader
+from django_ledger.settings import DJANGO_LEDGER_JE_DOCUMENT_PREFIX
 
 lazy_loader = LazyLoader()
 
@@ -467,7 +468,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 entity_model.save(update_fields=['entity_state'])
 
             seq = str(entity_model.entity_state['journal_entry']['sequence'][slot]).zfill(12)
-            doc_number = f'JE-{prefix}-{seq}'
+            doc_number = f'{DJANGO_LEDGER_JE_DOCUMENT_PREFIX}-{prefix}-{seq}'
             self.document_number = doc_number
 
             if commit:
