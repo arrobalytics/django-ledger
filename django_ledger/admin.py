@@ -114,7 +114,7 @@ class LedgerModelAdmin(admin.ModelAdmin):
 class InvoiceModelAdmin(admin.ModelAdmin):
     readonly_fields = [
         'invoice_number',
-        'due_date',
+        'date_due',
         'ledger'
     ]
 
@@ -125,7 +125,7 @@ class InvoiceModelAdmin(admin.ModelAdmin):
 class BillModelAdmin(admin.ModelAdmin):
     readonly_fields = [
         'bill_number',
-        'due_date',
+        'date_due',
         'ledger'
     ]
 

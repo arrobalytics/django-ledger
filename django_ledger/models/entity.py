@@ -17,8 +17,8 @@ from typing import Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.indexes import GinIndex
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_save
@@ -40,29 +40,6 @@ UserModel = get_user_model()
 lazy_loader = LazyLoader()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
-
-
-def get_entity_state_default():
-    return {
-        'journal_entry': {
-            'sequence': {}
-        },
-        'ledger': {
-            'sequence': {}
-        },
-        'purchase_order': {
-            'sequence': {}
-        },
-        'estimate': {
-            'sequence': {}
-        },
-        'bill': {
-            'sequence': {}
-        },
-        'invoice': {
-            'sequence': {}
-        }
-    }
 
 
 def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
@@ -139,7 +116,7 @@ def generate_entity_slug(name: str) -> str:
     return entity_slug
 
 
-class EntityReportManager:
+class EntityReportMixIn:
     VALID_QUARTERS = list(range(1, 5))
 
     def get_fy_start_month(self) -> int:
@@ -217,14 +194,12 @@ class EntityModelManager(MP_NodeManager):
         )
 
 
-
-
 class EntityModelAbstract(MP_Node,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
                           IOMixIn,
-                          EntityReportManager):
+                          EntityReportMixIn):
     CASH_METHOD = 'cash'
     ACCRUAL_METHOD = 'accrual'
     FY_MONTHS = [
@@ -258,7 +233,6 @@ class EntityModelAbstract(MP_Node,
                                          verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
-    entity_state = models.JSONField(default=get_entity_state_default)
     objects = EntityModelManager()
 
     node_order_by = ['uuid']
@@ -564,6 +538,65 @@ class EntityManagementModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['entity', 'user']),
             models.Index(fields=['user', 'entity'])
         ]
+
+
+class EntityStateModelAbstract(models.Model):
+    KEY_JOURNAL_ENTRY = 'je'
+    KEY_PURCHASE_ORDER = 'po'
+    KEY_BILL = 'bill'
+    KEY_INVOICE = 'invoice'
+    KEY_ESTIMATE = 'estimate'
+
+    KEY_CHOICES = [
+        (KEY_JOURNAL_ENTRY, _('Journal Entry')),
+        (KEY_PURCHASE_ORDER, _('Purchase Order')),
+        (KEY_BILL, _('Bill')),
+        (KEY_INVOICE, _('Invoice')),
+        (KEY_ESTIMATE, _('Estimate')),
+    ]
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Entity Model'))
+    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
+                                    on_delete=models.RESTRICT,
+                                    verbose_name=_('Entity Unit'),
+                                    blank=True,
+                                    null=True)
+    fiscal_year = models.SmallIntegerField(
+        verbose_name=_('Fiscal Year'),
+        validators=[MinValueValidator(limit_value=1900)],
+        null=True,
+        blank=True
+    )
+    key = models.CharField(choices=KEY_CHOICES, max_length=10)
+    sequence = models.BigIntegerField(default=0, validators=[MinValueValidator(limit_value=0)])
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['key']),
+            models.Index(
+                fields=[
+                    'entity',
+                    'fiscal_year',
+                    'entity_unit',
+                    'key'
+                ])
+        ]
+        unique_together = [
+            ('entity', 'entity_unit', 'fiscal_year', 'key')
+        ]
+
+    def __str__(self):
+        return f'{self.__class__.__name__} {self.entity_id}: FY: {self.fiscal_year}, KEY: {self.get_key_display()}'
+
+
+class EntityStateModel(EntityStateModelAbstract):
+    """
+    Entity State Model Base Class from Abstract.
+    """
 
 
 class EntityModel(EntityModelAbstract):

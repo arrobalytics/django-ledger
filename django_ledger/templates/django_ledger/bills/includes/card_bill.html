@@ -13,10 +13,10 @@
                     <p class="title">{{ bill.vendor.vendor_name }}</p>
                     <p class="subtitle has-text-weight-light">{{ bill.vendor.address_1 }}</p>
                     {% if not bill.is_past_due %}
-                        <p class="is-size-5 has-text-info">Due in: {{ bill.due_date | timeuntil }}</p>
+                        <p class="is-size-5 has-text-info">Due in: {{ bill.date_due | timeuntil }}</p>
                     {% else %}
                         <p class="has-text-danger has-text-weight-bold is-size-5">Past
-                            Due: {{ bill.due_date | timesince }} ago</p>
+                            Due: {{ bill.date_due | timesince }} ago</p>
                     {% endif %}
                     {% if bill.accrue %}
                         <p>Is Accrued: <span
@@ -67,7 +67,7 @@
                                 </span>
                             </p>
                             <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                                <span class="has-text-weight-bold">{{ bill.due_date | timeuntil }}</span>
+                                <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
                             </p>
                             <p class="is-size-3">{% trans 'Is Accrued' %}:
                                 {% if bill.accrue %}
@@ -84,7 +84,7 @@
                                 </span>
                             </p>
                             <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                                <span class="has-text-weight-bold">{{ bill.due_date | timeuntil }}</span>
+                                <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
                             </p>
                             <p class="is-size-3">{% trans 'Is Accrued' %}:
                                 {% if bill.accrue %}
@@ -105,7 +105,7 @@
                                 </span>
                             </p>
                             <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                                <span class="has-text-weight-bold">{{ bill.due_date | timeuntil }}</span>
+                                <span class="has-text-weight-bold">{{ bill.date_due | timeuntil }}</span>
                             </p>
                             <p class="is-size-3">{% trans 'Is Accrued' %}:
                                 {% if bill.accrue %}
@@ -134,7 +134,7 @@
                                 </span>
                             </p>
                             <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
-                                <span class="has-text-weight-bold">{{ bill.paid_date | timesince }}</span>
+                                <span class="has-text-weight-bold">{{ bill.date_paid | timesince }}</span>
                                 {% if bill.xref %}
                                     <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
                                 {% endif %}

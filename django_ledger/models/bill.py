@@ -9,14 +9,13 @@ Pranav P Tulshyan <ptulshyan77@gmail.com>
 """
 from datetime import date
 from decimal import Decimal
-from random import choices
 from string import ascii_uppercase, digits
 from typing import Union
 from uuid import uuid4
 
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q, Sum, Count
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db import models, transaction
+from django.db.models import Q, Sum, Count, Case, When, Value, ExpressionWrapper, IntegerField, F
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -26,6 +25,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models import EntityModel
 from django_ledger.models import LazyLoader
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX
 
 lazy_loader = LazyLoader()
 
@@ -40,24 +40,23 @@ In addition to tracking the bill amount , it tracks the paid and due amount
 """
 
 
-def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
-    """
-    A function that generates a random bill identifier for new bill models.
-    Params:
-
-    @prefix:whether the prefix is to be added or not.
-    @length: The length of the bill number.
-    :return: A string representing a random bill identifier.
-    
-    """
-    bill_number = ''.join(choices(BILL_NUMBER_CHARS, k=length))
-    if prefix:
-        bill_number = 'B-' + bill_number
-    return bill_number
+# def generate_bill_number(length: int = 10, prefix: bool = True) -> str:
+#     """
+#     A function that generates a random bill identifier for new bill models.
+#     Params:
+#
+#     @prefix:whether the prefix is to be added or not.
+#     @length: The length of the bill number.
+#     :return: A string representing a random bill identifier.
+#
+#     """
+#     bill_number = ''.join(choices(BILL_NUMBER_CHARS, k=length))
+#     if prefix:
+#         bill_number = 'B-' + bill_number
+#     return bill_number
 
 
 class BillModelQuerySet(models.QuerySet):
-
     """
     A custom defined Query Set for the BillMOdel.
     This implements multiple methods or queries that we need to run to get a status of bills.
@@ -79,7 +78,6 @@ class BillModelQuerySet(models.QuerySet):
 
 
 class BillModelManager(models.Manager):
-
     """
     A custom defined Bill Model Manager that will act as an inteface to handling the DB queries to the Bill Model.
     The default "get_queryset" has been overridden to refer the customdefined "BillModelQuerySet"
@@ -121,7 +119,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
                         PaymentTermsMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
-
     """
     This is the main abstract class which the Bill Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
     In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
@@ -169,7 +166,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    bill_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Bill Number'))
+    bill_number = models.SlugField(max_length=20, verbose_name=_('Bill Number'), editable=False)
     bill_status = models.CharField(max_length=10,
                                    choices=BILL_STATUS,
                                    default=BILL_STATUS[0][0],
@@ -192,12 +189,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                  blank=True,
                                  verbose_name=_('Associated Customer Job/Estimate'))
 
-    draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
-    in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
-    approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
-    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
-    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
-    canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
+    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
+    date_approved = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
+    date_paid = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    date_void = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
+    date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
 
     objects = BillModelManager()
 
@@ -214,13 +211,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
 
-            models.Index(fields=['due_date']),
-            models.Index(fields=['draft_date']),
-            models.Index(fields=['in_review_date']),
-            models.Index(fields=['approved_date']),
-            models.Index(fields=['paid_date']),
-            models.Index(fields=['canceled_date']),
-            models.Index(fields=['void_date']),
+            models.Index(fields=['date_due']),
+            models.Index(fields=['date_draft']),
+            models.Index(fields=['date_in_review']),
+            models.Index(fields=['date_approved']),
+            models.Index(fields=['date_paid']),
+            models.Index(fields=['date_canceled']),
+            models.Index(fields=['date_void']),
 
             models.Index(fields=['vendor']),
         ]
@@ -233,7 +230,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
                   entity_slug: Union[str, EntityModel],
                   user_model,
                   ledger_posted: bool = False,
-                  bill_desc: str = None):
+                  bill_desc: str = None,
+                  commit: bool = False):
 
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
@@ -243,9 +241,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
             entity_model = entity_slug
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-        if not self.bill_number:
-            self.bill_number = generate_bill_number()
 
         if entity_model.is_accrual_method():
             self.accrue = True
@@ -266,6 +261,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
         ledger_model.clean()
         self.ledger = ledger_model
         self.clean()
+        if commit:
+            self.save()
         return ledger_model, self
 
     # State..
@@ -389,7 +386,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 raise ValidationError(f'Cannot bind an unapproved PO.')
             return False
 
-        if po_model.approved_date > self.draft_date:
+        if po_model.date_approved > self.date_draft:
             if raise_exception:
                 raise ValidationError(f'Approved PO date cannot be greater than Bill draft date.')
             return False
@@ -416,13 +413,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
             )
         self.bill_status = self.BILL_STATUS_DRAFT
-        self.draft_date = localdate() if not date_draft else date_draft
+        self.date_draft = localdate() if not date_draft else date_draft
         self.clean()
         if commit:
             self.save(
                 update_fields=[
                     'bill_status',
-                    'draft_date',
+                    'date_draft',
                     'updated'
                 ]
             )
@@ -446,7 +443,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                        itemtxs_qs=None,
                        date_in_review: date = None,
                        **kwargs):
-        self.in_review_date = localdate() if not date_in_review else date_in_review
+        self.date_in_review = localdate() if not date_in_review else date_in_review
 
         if not self.can_review():
             raise ValidationError(
@@ -463,12 +460,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
             )
 
         self.bill_status = self.BILL_STATUS_REVIEW
-        self.in_review_date = date_in_review
+        self.date_in_review = date_in_review
         self.clean()
         if commit:
             self.save(
                 update_fields=[
-                    'in_review_date',
+                    'date_in_review',
                     'bill_status',
                     'updated'
                 ]
@@ -500,14 +497,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 f'Bill {self.bill_number} cannot be marked as in approved.'
             )
         self.bill_status = self.BILL_STATUS_APPROVED
-        self.approved_date = localdate() if not approved_date else approved_date
+        self.date_approved = localdate() if not approved_date else approved_date
         self.new_state(commit=True)
         self.clean()
         if commit:
             self.save(update_fields=[
                 'bill_status',
-                'approved_date',
-                'due_date',
+                'date_approved',
+                'date_due',
                 'updated'
             ])
             if force_migrate or self.accrue:
@@ -519,8 +516,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit)
-
-
 
     def get_mark_as_approved_html_id(self):
         return f'djl-{self.uuid}-mark-as-approved'
@@ -567,12 +562,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.paid_date = localdate() if not date_paid else date_paid
+        self.date_paid = localdate() if not date_paid else date_paid
 
-        if self.paid_date > localdate():
+        if self.date_paid > localdate():
             raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
-        if self.paid_date < self.approved_date:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before approved date {self.approved_date}.')
+        if self.date_paid < self.date_approved:
+            raise ValidationError(f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
 
         self.bill_status = self.BILL_STATUS_PAID
         self.new_state(commit=True)
@@ -583,7 +578,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         if commit:
             self.save(update_fields=[
-                'paid_date',
+                'date_paid',
                 'progress',
                 'amount_paid',
                 'bill_status',
@@ -622,7 +617,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if not self.can_void():
             raise ValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
 
-        self.void_date = void_date if void_date else localdate()
+        self.date_void = void_date if void_date else localdate()
         self.bill_status = self.BILL_STATUS_VOID
         self.void_state(commit=True)
         self.clean()
@@ -633,7 +628,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 entity_slug=entity_slug,
                 user_model=user_model,
                 void=True,
-                void_date=self.void_date,
+                void_date=self.date_void,
                 raise_exception=False,
                 force_migrate=False)
             self.save()
@@ -657,13 +652,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if not self.can_cancel():
             raise ValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
 
-        self.canceled_date = localdate() if not canceled_date else canceled_date
+        self.date_canceled = localdate() if not canceled_date else canceled_date
         self.bill_status = self.BILL_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
                 'bill_status',
-                'canceled_date'
+                'date_canceled'
             ])
 
     def get_mark_as_canceled_html_id(self):
@@ -680,7 +675,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return _('Do you want to void as Canceled %s?') % self.bill_number
 
     def get_status_action_date(self):
-        return getattr(self, f'{self.bill_status}_date')
+        return getattr(self, f'date_{self.bill_status}')
 
     # HTML Tags...
     def get_document_id(self):
@@ -706,14 +701,73 @@ class BillModelAbstract(LedgerWrapperMixIn,
                        })
 
     def get_terms_start_date(self) -> date:
-        return self.approved_date
+        return self.date_approved
+
+    def generate_bill_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next InvoiceModel document number available. The operation
+        will result in two additional queries if the InvoiceModel LedgerModel is not cached in
+        QuerySet via select_related('ledger').
+        @param commit: Commit transaction into InvoiceModel.
+        @return: A String, representing the current InvoiceModel instance Document Number.
+        """
+        if not self.bill_number:
+            with transaction.atomic():
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.ledger.entity_id,
+                        'entity_unit_id__exact': None,
+                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
+                        'key__exact': EntityStateModel.KEY_BILL
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related(
+                        'entity').filter(**LOOKUP).annotate(
+                        is_previous_fy=Case(
+                            When(entity__fy_start_month__lt=self.date_draft.month,
+                                 then=Value(0)),
+                            default=Value(-1)
+                        ),
+                        fy_you_need=ExpressionWrapper(
+                            Value(self.date_draft.year), output_field=IntegerField()
+                        ) + F('is_previous_fy')).filter(
+                        fiscal_year=F('fy_you_need')
+                    )
+
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+                    EntityModel = lazy_loader.get_entity_model()
+                    entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+                    LOOKUP = {
+                        'entity_id': entity_model.uuid,
+                        'entity_unit_id': None,
+                        'fiscal_year': fy_key,
+                        'key': EntityStateModel.KEY_BILL,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.bill_number = f'{DJANGO_LEDGER_BILL_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+
+            if commit:
+                self.save(update_fields=['invoice_number', 'updated'])
+
+        return self.bill_number
 
     def clean(self):
+        self.generate_bill_number(commit=False)
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
-
-        if not self.bill_number:
-            self.bill_number = generate_bill_number()
 
         if self.accrue:
             self.progress = Decimal('1.00')
@@ -721,10 +775,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if self.is_draft():
             self.amount_paid = Decimal('0.00')
             self.paid = False
-            self.paid_date = None
+            self.date_paid = None
 
         if not self.additional_info:
             self.additional_info = dict()
+
+    def save(self, **kwargs):
+        self.generate_bill_number(commit=True)
+        super(BillModelAbstract, self).save(**kwargs)
 
 
 class BillModel(BillModelAbstract):

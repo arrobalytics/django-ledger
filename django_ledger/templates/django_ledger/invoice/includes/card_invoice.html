@@ -11,10 +11,10 @@
                 <p class="title">{{ invoice.customer.customer_name }}</p>
                 <p class="subtitle has-text-weight-light">{{ invoice.customer.address_1 }}</p>
                 {% if not invoice.is_past_due %}
-                    <p class="is-size-5 has-text-info">Due in: {{ invoice.due_date | timeuntil }}</p>
+                    <p class="is-size-5 has-text-info">Due in: {{ invoice.date_due | timeuntil }}</p>
                 {% else %}
                     <p class="has-text-danger has-text-weight-bold is-size-5">Past
-                        Due: {{ invoice.due_date | timesince }} ago</p>
+                        Due: {{ invoice.date_due | timesince }} ago</p>
                 {% endif %}
                 {% if invoice.accrue %}
                     <p>Accrue: <span
@@ -70,10 +70,10 @@
                     </p>
                     <p class="is-size-4">Invoice Status: {{ invoice.get_invoice_status_display }}</p>
                     {% if not invoice.is_past_due %}
-                        <p class="is-size-4 has-text-info">Due in: {{ invoice.due_date | timeuntil }}</p>
+                        <p class="is-size-4 has-text-info">Due in: {{ invoice.date_due | timeuntil }}</p>
                     {% else %}
                         <p class="has-text-danger has-text-weight-bold is-size-3">Past
-                            Due: {{ invoice.due_date | timesince }} ago</p>
+                            Due: {{ invoice.date_due | timesince }} ago</p>
                     {% endif %}
                     <p class="is-size-5 has-text-success">Owed to You:
                         {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>

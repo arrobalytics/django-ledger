@@ -51,19 +51,19 @@ class BillModelCreateForm(ModelForm):
         fields = [
             'vendor',
             'xref',
-            'draft_date',
+            'date_draft',
             'terms',
             'cash_account',
             'prepaid_account',
             'unearned_account',
         ]
         labels = {
-            'draft_date': _('Draft Date'),
+            'date_draft': _('Draft Date'),
             'unearned_account': _('Payable Account'),
             'prepaid_account': _('Prepaid Expenses Account')
         }
         widgets = {
-            'draft_date': DateInput(attrs={
+            'date_draft': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Bill Date (YYYY-MM-DD)...'),
                 'id': 'djl-bill-draft-date-input'
@@ -137,7 +137,7 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'bill_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'paid_date': DateInput(
+            'date_paid': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                     'placeholder': _('Date (YYYY-MM-DD)...')}
@@ -215,7 +215,7 @@ class BillModelConfigureForm(BaseBillModelUpdateForm):
             'xref',
             'amount_due',
             'amount_paid',
-            'paid_date',
+            'date_paid',
             'progress',
             'accrue',
             'cash_account',

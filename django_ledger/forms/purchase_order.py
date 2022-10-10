@@ -54,7 +54,7 @@ class BasePurchaseOrderModelUpdateForm(ModelForm):
             }),
             'po_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'vendor': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'fulfillment_date': DateInput(attrs={
+            'date_fulfilled': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Fulfillment Date (YYYY-MM-DD)...')
             }),

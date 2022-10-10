@@ -62,13 +62,13 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         ]
         labels = {
             'terms': _('Invoice Terms'),
-            'draft_date': _('Draft Date'),
+            'date_draft': _('Draft Date'),
             'unearned_account': _('Deferred Revenue Account'),
             'prepaid_account': _('Receivable Account')
         }
         widgets = {
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'draft_date': DateInput(attrs={
+            'date_draft': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Invoice Date (YYYY-MM-DD)...'),
                 'id': 'djl-invoice-draft-date-input'
@@ -89,7 +89,7 @@ class InvoiceModelCreateForm(InvoiceModelCreateForEstimateForm):
     class Meta(InvoiceModelCreateForEstimateForm.Meta):
         fields = [
             'customer',
-            'draft_date',
+            'date_draft',
             'terms',
             'cash_account',
             'prepaid_account',
@@ -124,7 +124,7 @@ class BaseInvoiceModelUpdateForm(ModelForm):
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
-            'paid_date': DateInput(
+            'date_paid': DateInput(
                 attrs={
                     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                     'placeholder': _('Paid Date (YYYY-MM-DD)...')}

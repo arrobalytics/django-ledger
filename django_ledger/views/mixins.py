@@ -20,7 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
-from django_ledger.models.entity import EntityReportManager
+from django_ledger.models.entity import EntityReportMixIn
 from django_ledger.utils import set_default_entity
 
 
@@ -55,7 +55,7 @@ class SuccessUrlNextMixIn:
         return reverse('django_ledger:home')
 
 
-class YearlyReportMixIn(YearMixin, EntityReportManager):
+class YearlyReportMixIn(YearMixin, EntityReportMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -98,7 +98,7 @@ class YearlyReportMixIn(YearMixin, EntityReportManager):
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, EntityReportManager):
+class QuarterlyReportMixIn(YearMixin, EntityReportMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -397,9 +397,9 @@ class UnpaidElementsMixIn:
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
             ).approved().filter(
-                Q(approved_date__gte=from_date) &
-                Q(approved_date__lte=to_date)
-            ).select_related('customer').order_by('due_date')
+                Q(date_approved__gte=from_date) &
+                Q(date_approved__lte=to_date)
+            ).select_related('customer').order_by('date_due')
 
             unit_slug = self.get_unit_slug()
             if unit_slug:
@@ -416,9 +416,9 @@ class UnpaidElementsMixIn:
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
             ).filter(
-                Q(approved_date__gte=from_date) &
-                Q(approved_date__lte=to_date)
-            ).select_related('vendor').order_by('due_date')
+                Q(date_approved__gte=from_date) &
+                Q(date_approved__lte=to_date)
+            ).select_related('vendor').order_by('date_due')
 
             unit_slug = self.get_unit_slug()
             if unit_slug:

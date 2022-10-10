@@ -6,11 +6,13 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+
 class LazyLoader:
     """
     This class eliminates the circle dependency between models.
     """
     ENTITY_MODEL = None
+    ENTITY_STATE_MODEL = None
     UNIT_MODEL = None
     ACCOUNT_MODEL = None
     BANK_ACCOUNT_MODEL = None
@@ -33,6 +35,12 @@ class LazyLoader:
             from django_ledger.models import EntityModel
             self.ENTITY_MODEL = EntityModel
         return self.ENTITY_MODEL
+
+    def get_entity_state_model(self):
+        if not self.ENTITY_STATE_MODEL:
+            from django_ledger.models import EntityStateModel
+            self.ENTITY_STATE_MODEL = EntityStateModel
+        return self.ENTITY_STATE_MODEL
 
     def get_bank_account_model(self):
         if not self.BANK_ACCOUNT_MODEL:

@@ -23,19 +23,19 @@
                 {% endif %}
 
                 {% if po_model.is_draft %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Draft Date' %}:{{ po_model.draft_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Draft Date' %}:{{ po_model.date_draft | date }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                 {% endif %}
 
                 {% if po_model.is_review %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Review Date' %}:{{ po_model.in_review_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Review Date' %}:{{ po_model.date_in_review | date }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                 {% endif %}
 
                 {% if po_model.is_approved %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Approved Date' %}:{{ po_model.approved_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Approved Date' %}:{{ po_model.date_approved | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Received Amount' %}:
@@ -45,9 +45,9 @@
                 {% endif %}
 
                 {% if po_model.is_fulfilled %}
-                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled Date' %}:{{ po_model.fulfillment_date | date }}</h3>
+                    <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled Date' %}:{{ po_model.date_fulfilled | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Approved' %}:
-                        {{ po_model.approved_date | date }}</h3>
+                        {{ po_model.date_approved | date }}</h3>
                     <h3 class="is-size-5 has-text-weight-light">{% trans 'Purchase Order Amount' %}:
                         {% currency_symbol %}{{ po_model.po_amount | currency_format }}</h3>
                     <h3 class="is-size-4 has-text-weight-light">{% trans 'Fulfilled' %}:

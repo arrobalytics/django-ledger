@@ -7,15 +7,14 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from datetime import date
 from decimal import Decimal
-from random import choices
 from string import ascii_uppercase, digits
 from typing import Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q, Sum, Count
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.db import models, transaction
+from django.db.models import Q, Sum, Count, Value, IntegerField, ExpressionWrapper, When, Case, F
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -25,6 +24,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models import LazyLoader
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
 
@@ -39,19 +39,6 @@ In addition to tracking the invoice amount , it tracks the receipt and due amoun
 
 
 """
-
-
-def generate_invoice_number(length: int = 10, prefix: bool = True) -> str:
-    """
-    A function that generates a random bill identifier for new bill models.
-    @param length: Length of the Invoice Number, not including prefix.
-    @param prefix: Optional prefix to invoice number, otherwise "I" will be used.
-    @return: A string representing a random bill identifier.
-    """
-    invoice_number = ''.join(choices(INVOICE_NUMBER_CHARS, k=length))
-    if prefix:
-        invoice_number = 'I-' + invoice_number
-    return invoice_number
 
 
 class InvoiceModelQuerySet(models.QuerySet):
@@ -143,7 +130,9 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    invoice_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Invoice Number'))
+    invoice_number = models.SlugField(max_length=20,
+                                      editable=False,
+                                      verbose_name=_('Invoice Number'))
     invoice_status = models.CharField(max_length=10, choices=INVOICE_STATUS, default=INVOICE_STATUS[0][0],
                                       verbose_name=_('Invoice Status'))
     customer = models.ForeignKey('django_ledger.CustomerModel',
@@ -177,12 +166,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                                  blank=True,
                                  verbose_name=_('Associated Customer Job/Estimate'))
 
-    draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
-    in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
-    approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
-    paid_date = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
-    void_date = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
-    canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
+    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
+    date_approved = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
+    date_paid = models.DateField(null=True, blank=True, verbose_name=_('Paid Date'))
+    date_void = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
+    date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
 
     objects = InvoiceModelManager()
 
@@ -192,21 +181,22 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         verbose_name = _('Invoice')
         verbose_name_plural = _('Invoices')
         indexes = [
-            models.Index(fields=['due_date']),
             models.Index(fields=['invoice_status']),
             models.Index(fields=['terms']),
-            models.Index(fields=['customer']),
 
             models.Index(fields=['cash_account']),
             models.Index(fields=['prepaid_account']),
             models.Index(fields=['unearned_account']),
 
-            models.Index(fields=['draft_date']),
-            models.Index(fields=['in_review_date']),
-            models.Index(fields=['approved_date']),
-            models.Index(fields=['paid_date']),
-            models.Index(fields=['void_date']),
-            models.Index(fields=['canceled_date']),
+            models.Index(fields=['date_due']),
+            models.Index(fields=['date_draft']),
+            models.Index(fields=['date_in_review']),
+            models.Index(fields=['date_approved']),
+            models.Index(fields=['date_paid']),
+            models.Index(fields=['date_canceled']),
+            models.Index(fields=['date_void']),
+
+            models.Index(fields=['customer'])
         ]
 
     def __str__(self):
@@ -215,7 +205,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def configure(self,
                   entity_slug: Union[EntityModel, str],
                   user_model: UserModel,
-                  post_ledger: bool = False):
+                  post_ledger: bool = False,
+                  commit: bool = False):
 
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
@@ -225,9 +216,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             entity_model = entity_slug
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
-
-        if not self.invoice_number:
-            self.invoice_number = generate_invoice_number()
 
         if entity_model.is_accrual_method():
             self.accrue = True
@@ -242,8 +230,10 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             name=f'Invoice {self.invoice_number}',
         )
         ledger_model.clean()
-        self.clean()
         self.ledger = ledger_model
+        self.clean()
+        if commit:
+            self.save()
         return ledger_model, self
 
     # STATE...
@@ -374,7 +364,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if not self.can_review():
             raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
-        self.in_review_date = localdate() if not date_in_review else date_in_review
+        self.date_in_review = localdate() if not date_in_review else date_in_review
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
@@ -390,7 +380,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if commit:
             self.save(update_fields=[
                 'invoice_status',
-                'in_review_date',
+                'date_in_review',
                 'updated'
             ])
 
@@ -420,13 +410,13 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
-        self.approved_date = localdate() if not approved_date else approved_date
+        self.date_approved = localdate() if not approved_date else approved_date
         self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',
-                'approved_date',
-                'due_date',
+                'date_approved',
+                'date_due',
                 'updated'
             ])
             if force_migrate or self.accrue:
@@ -438,7 +428,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit)
-
 
     def get_mark_as_approved_html_id(self):
         return f'djl-{self.uuid}-invoice-mark-as-approved'
@@ -465,9 +454,9 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.paid_date = localdate() if not date_paid else date_paid
+        self.date_paid = localdate() if not date_paid else date_paid
 
-        if self.paid_date > localdate():
+        if self.date_paid > localdate():
             raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
 
         self.new_state(commit=True)
@@ -508,12 +497,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if not self.can_void():
             raise ValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
-        self.void_date = localdate() if not date_void else date_void
+        self.date_void = localdate() if not date_void else date_void
 
-        if self.void_date > localdate():
+        if self.date_void > localdate():
             raise ValidationError(f'Cannot void {self.__class__.__name__} in the future.')
-        if self.void_date < self.approved_date:
-            raise ValidationError(f'Cannot void {self.__class__.__name__} before approved {self.approved_date}')
+        if self.date_void < self.date_approved:
+            raise ValidationError(f'Cannot void {self.__class__.__name__} before approved {self.date_approved}')
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
@@ -525,7 +514,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                 user_model=user_model,
                 entity_slug=entity_slug,
                 void=True,
-                void_date=self.void_date,
+                void_date=self.date_void,
                 force_migrate=False,
                 raise_exception=False
             )
@@ -550,13 +539,13 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if not self.can_cancel():
             raise ValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
 
-        self.canceled_date = localdate() if not date_canceled else date_canceled
+        self.date_canceled = localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
                 'invoice_status',
-                'canceled_date',
+                'date_canceled',
                 'updated'
             ])
             self.lock_ledger(commit=True, raise_exception=False)
@@ -578,7 +567,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     # ACTIONS END....
 
     def get_status_action_date(self):
-        return getattr(self, f'{self.invoice_status}_date')
+        return getattr(self, f'date_{self.invoice_status}')
 
     def get_html_id(self):
         return f'djl-{self.REL_NAME_PREFIX}-{self.uuid}'
@@ -653,14 +642,73 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return itemtxs_qs, itemtxs_agg
 
     def get_terms_start_date(self) -> date:
-        return self.approved_date
+        return self.date_approved
+
+    def generate_invoice_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next InvoiceModel document number available. The operation
+        will result in two additional queries if the InvoiceModel LedgerModel is not cached in
+        QuerySet via select_related('ledger').
+        @param commit: Commit transaction into InvoiceModel.
+        @return: A String, representing the current InvoiceModel instance Document Number.
+        """
+        if not self.invoice_number:
+            with transaction.atomic():
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.ledger.entity_id,
+                        'entity_unit_id__exact': None,
+                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
+                        'key__exact': EntityStateModel.KEY_INVOICE
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related(
+                        'entity').filter(**LOOKUP).annotate(
+                        is_previous_fy=Case(
+                            When(entity__fy_start_month__lt=self.date_draft.month,
+                                 then=Value(0)),
+                            default=Value(-1)
+                        ),
+                        fy_you_need=ExpressionWrapper(
+                            Value(self.date_draft.year), output_field=IntegerField()
+                        ) + F('is_previous_fy')).filter(
+                        fiscal_year=F('fy_you_need')
+                    )
+
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+                    EntityModel = lazy_loader.get_entity_model()
+                    entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+                    LOOKUP = {
+                        'entity_id': entity_model.uuid,
+                        'entity_unit_id': None,
+                        'fiscal_year': fy_key,
+                        'key': EntityStateModel.KEY_INVOICE,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.invoice_number = f'{DJANGO_LEDGER_INVOICE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+
+            if commit:
+                self.save(update_fields=['invoice_number', 'updated'])
+
+        return self.invoice_number
 
     def clean(self):
+        self.generate_invoice_number(commit=False)
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
-
-        if not self.invoice_number:
-            self.invoice_number = generate_invoice_number()
 
         if self.accrue:
             self.progress = Decimal('1.00')
@@ -668,7 +716,11 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if self.is_draft():
             self.amount_paid = Decimal('0.00')
             self.paid = False
-            self.paid_date = None
+            self.date_paid = None
+
+    def save(self, **kwargs):
+        self.generate_invoice_number(commit=True)
+        super(InvoiceModelAbstract, self).save(**kwargs)
 
 
 class InvoiceModel(InvoiceModelAbstract):
