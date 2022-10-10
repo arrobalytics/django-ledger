@@ -158,7 +158,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         if draft_date:
             self.date_draft = draft_date
-        else:
+        if not self.date_draft:
             self.date_draft = localdate()
         self.entity = entity_model
         self.clean()
@@ -259,6 +259,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError(f'Cannot bind estimate that is not approved.')
         return all([
             is_approved
+        ])
+
+    def can_generate_po_number(self):
+        return all([
+            self.date_draft,
+            not self.po_number
         ])
 
     # Actions...
@@ -500,10 +506,11 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def generate_po_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next PurchaseOrder document number available.
+        @param raise_exception: Raises a ValidationError if PO number cannot be generated.
         @param commit: Commit transaction into InvoiceModel.
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
-        if not self.po_number:
+        if self.can_generate_po_number():
             with transaction.atomic():
 
                 EntityStateModel = lazy_loader.get_entity_state_model()
@@ -558,10 +565,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self.po_number
 
     def clean(self):
-        self.generate_po_number(commit=False)
+        if self.can_generate_po_number():
+            self.generate_po_number(commit=False)
 
     def save(self, **kwargs):
-        self.generate_po_number(commit=True)
+        if self.can_generate_po_number():
+            self.generate_po_number(commit=False)
         super(PurchaseOrderModelAbstract, self).save(**kwargs)
 
 

@@ -296,6 +296,12 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_bind(self):
         return self.is_approved()
 
+    def can_generate_estimate_number(self):
+        return all([
+            self.date_draft,
+            not self.estimate_number
+        ])
+
     # Actions...
     # DRAFT...
     def mark_as_draft(self, commit: bool = False):
@@ -703,7 +709,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def clean(self):
 
-        self.generate_estimate_number(commit=False)
+        if self.can_generate_estimate_number():
+            self.generate_estimate_number(commit=False)
 
         if self.is_approved() and not self.date_approved:
             self.date_approved = localdate()
@@ -716,7 +723,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.date_completed = None
 
     def save(self, **kwargs):
-        self.generate_estimate_number(commit=True)
+        if self.can_generate_estimate_number():
+            self.generate_estimate_number(commit=False)
         super(EstimateModelAbstract, self).save(**kwargs)
 
 

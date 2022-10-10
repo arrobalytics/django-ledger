@@ -393,6 +393,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         return True
 
+    def can_generate_bill_number(self):
+        return all([
+            not self.bill_number,
+            self.date_draft,
+            self.ledger_id
+        ])
+
     # --> ACTIONS <---
     def action_bind_estimate(self, estimate_model, commit: bool = False):
         try:
@@ -711,7 +718,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         @param commit: Commit transaction into InvoiceModel.
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
-        if not self.bill_number:
+        if self.can_generate_bill_number():
             with transaction.atomic():
                 EntityStateModel = lazy_loader.get_entity_state_model()
 
@@ -765,7 +772,9 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return self.bill_number
 
     def clean(self):
-        self.generate_bill_number(commit=False)
+        if self.can_generate_bill_number():
+            self.generate_bill_number(commit=False)
+
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
 
@@ -781,7 +790,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
             self.additional_info = dict()
 
     def save(self, **kwargs):
-        self.generate_bill_number(commit=True)
+        if self.can_generate_bill_number():
+            self.generate_bill_number(commit=False)
         super(BillModelAbstract, self).save(**kwargs)
 
 

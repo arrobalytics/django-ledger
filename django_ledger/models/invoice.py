@@ -314,6 +314,12 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             is_approved
         ])
 
+    def can_generate_invoice_number(self):
+        return all([
+            self.date_draft,
+            self.ledger_id,
+            not self.invoice_number
+        ])
     # ACTIONS...
     def action_bind_estimate(self, estimate_model, commit: bool = False):
         try:
@@ -706,7 +712,9 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         return self.invoice_number
 
     def clean(self):
-        self.generate_invoice_number(commit=False)
+        if self.can_generate_invoice_number():
+            self.generate_invoice_number(commit=False)
+
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
 
@@ -719,7 +727,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.date_paid = None
 
     def save(self, **kwargs):
-        self.generate_invoice_number(commit=True)
+        if self.can_generate_invoice_number():
+            self.generate_invoice_number(commit=False)
         super(InvoiceModelAbstract, self).save(**kwargs)
 
 

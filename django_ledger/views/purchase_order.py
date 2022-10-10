@@ -128,8 +128,8 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user)
-
+                user_model=self.request.user
+            )
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             po_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
         return super().form_valid(form=form)
@@ -207,10 +207,10 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
     def post(self, request, entity_slug, *args, **kwargs):
         if self.action_update_items:
-            
+
             if not request.user.is_authenticated:
                 return HttpResponseForbidden()
-            
+
             queryset = self.get_queryset()
             po_model: PurchaseOrderModel = self.get_object(queryset=queryset)
             self.object = po_model
