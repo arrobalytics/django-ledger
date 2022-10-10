@@ -26,6 +26,7 @@
 {#                                    <span class="icon">{% icon "bi:cash-stack" 16 %}</span>#}
 {#                                    {% trans 'Unit' %}</p>#}
                                 <p class="title">{{ unit.name }}</p>
+                                <p>{% trans 'JE Document Prefix' %}: {{ unit.document_prefix }}</p>
                             </div>
                             <footer class="card-footer">
                                 <a href="{% url 'django_ledger:unit-detail' entity_slug=view.kwargs.entity_slug unit_slug=unit.slug %}"

@@ -17,7 +17,7 @@
         <tbody>
         {% for po in po_list %}
             <tr>
-                <td>{{ po.po_number }}</td>
+                <td>{% if po.po_number %}{{ po.po_number }}{% endif %}</td>
                 <td>{{ po.po_title }}</td>
                 <td>{{ po.get_status_action_date }}</td>
                 <td>{{ po.get_po_status_display }}</td>

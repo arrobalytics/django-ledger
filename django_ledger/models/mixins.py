@@ -595,12 +595,12 @@ class LedgerWrapperMixIn(models.Model):
             self.amount_paid = self.amount_due
             today = localdate()
 
-            if not self.paid_date:
-                self.paid_date = today
-            if self.paid_date > today:
+            if not self.date_paid:
+                self.date_paid = today
+            if self.date_paid > today:
                 raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
         else:
-            self.paid_date = None
+            self.date_paid = None
 
         if self.is_void():
             if any([
@@ -635,7 +635,7 @@ class PaymentTermsMixIn(models.Model):
                              default='on_receipt',
                              choices=TERMS,
                              verbose_name=_('Terms'))
-    due_date = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
+    date_due = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
 
     class Meta:
         abstract = True
@@ -646,8 +646,8 @@ class PaymentTermsMixIn(models.Model):
         )
 
     def due_in_days(self) -> Optional[int]:
-        if self.due_date:
-            td = self.due_date - localdate()
+        if self.date_due:
+            td = self.date_due - localdate()
             if td.days < 0:
                 return 0
             return td.days
@@ -665,8 +665,8 @@ class PaymentTermsMixIn(models.Model):
         return self.TERMS_NET_90_PLUS
 
     def is_past_due(self) -> bool:
-        if self.due_date:
-            return self.due_date < localdate()
+        if self.date_due:
+            return self.date_due < localdate()
         return False
 
     def clean(self):
@@ -674,9 +674,9 @@ class PaymentTermsMixIn(models.Model):
         if terms_start_date:
             if self.terms != self.TERMS_ON_RECEIPT:
                 # pylint: disable=no-member
-                self.due_date = terms_start_date + timedelta(days=int(self.terms.split('_')[-1]))
+                self.date_due = terms_start_date + timedelta(days=int(self.terms.split('_')[-1]))
             else:
-                self.due_date = terms_start_date
+                self.date_due = terms_start_date
 
 
 class MarkdownNotesMixIn(models.Model):

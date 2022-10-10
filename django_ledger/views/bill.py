@@ -148,7 +148,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def get_initial(self):
         return {
-            'draft_date': localdate()
+            'date_draft': localdate()
         }
 
     def get_form(self, form_class=None):

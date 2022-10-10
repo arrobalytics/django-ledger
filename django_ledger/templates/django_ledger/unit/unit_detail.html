@@ -15,7 +15,9 @@
 
             <div class="columns is-multiline">
 
-                <div class="column is-12">{{ unit }}</div>
+                <div class="column is-12">
+                    <p class="is-size-3">{% trans 'JE Document Prefix' %}: {{ unit.document_prefix }}</p>
+                </div>
                 <div class="column is-12">
                     <a href="{% url 'django_ledger:unit-dashboard' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
                        class="button is-medium is-info">{% trans 'Dashboard' %}</a>

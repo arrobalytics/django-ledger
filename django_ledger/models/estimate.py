@@ -7,15 +7,14 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from datetime import date
 from decimal import Decimal
-from random import choices
 from string import ascii_uppercase, digits
 from typing import Union
 from uuid import uuid4, UUID
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MinLengthValidator
-from django.db import models
-from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField
+from django.db import models, transaction
+from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField, Case, When, Value, IntegerField, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -24,36 +23,20 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import (CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn,
                                   CustomerModel, LazyLoader)
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
-
-
-def generate_estimate_number(length: int = 10, prefix: bool = True) -> str:
-    """
-    A function that generates a random bill identifier for new bill models.
-    :param prefix:
-    :param length: The length of the bill number.
-    :return: A string representing a random bill identifier.
-    """
-    estimate_number = ''.join(choices(ESTIMATE_NUMBER_CHARS, k=length))
-    if prefix:
-        estimate_number = 'E-' + estimate_number
-    return estimate_number
-
 
 lazy_loader = LazyLoader()
 
 
 class EstimateModelQuerySet(models.QuerySet):
-
-    
     """
     A custom defined Query Set for the Estimate Model.
     This implements multiple methods or queries that we need to run to get a status of estimates.
     For e.g : We might want to have list of estimates which are Approved or  In draft stage.
     All these separate functions will assist in making such queries and building customized reports.
     """
-
 
     def approved(self):
         return self.filter(
@@ -75,11 +58,9 @@ class EstimateModelQuerySet(models.QuerySet):
 
 
 class EstimateModelManager(models.Manager):
-
-
     """
-    A custom defined Estimate Model Manager that will act as an inteface to handling the DB queries to the Estimate Model.
-    The default "get_queryset" has been overridden to refer the customdefined "EstimateModelQuerySet"
+    A custom defined Estimate Model Manager that will act as an interface to handling the DB queries to the Estimate
+    Model. The default "get_queryset" has been overridden to refer the custom defined "EstimateModelQuerySet"
 
     """
 
@@ -105,7 +86,6 @@ class EstimateModelManager(models.Manager):
 
 
 class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
-
     """
     This is the main abstract class which the Estimate Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
     In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
@@ -154,8 +134,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     estimate_number = models.SlugField(max_length=20,
-                                       verbose_name=_('Estimate Number'),
-                                       default=generate_estimate_number)
+                                       editable=False,
+                                       verbose_name=_('Estimate Number'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -227,6 +207,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             models.Index(fields=['customer']),
             models.Index(fields=['terms']),
             models.Index(fields=['entity']),
+
             models.Index(fields=['date_draft']),
             models.Index(fields=['date_in_review']),
             models.Index(fields=['date_approved']),
@@ -246,7 +227,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def configure(self,
                   entity_slug: Union[EntityModel, UUID, str],
                   user_model,
-                  customer_model: CustomerModel):
+                  customer_model: CustomerModel,
+                  commit: bool = False):
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(user_model=user_model)
             entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
@@ -254,12 +236,11 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             entity_model = entity_slug
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
-        self.estimate_number = generate_estimate_number()
         self.entity = entity_model
         self.customer = customer_model
-        if not self.estimate_number:
-            self.estimate_number = generate_estimate_number()
         self.clean()
+        if commit:
+            self.save()
         return self
 
     # State....
@@ -660,10 +641,69 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ce_pk=self.uuid
         )
 
+    def generate_estimate_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next PurchaseOrder document number available.
+        @param commit: Commit transaction into InvoiceModel.
+        @return: A String, representing the current InvoiceModel instance Document Number.
+        """
+        if not self.estimate_number:
+            with transaction.atomic():
+
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.entity_id,
+                        'entity_unit_id': None,
+                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
+                        'key__exact': EntityStateModel.KEY_ESTIMATE
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related(
+                        'entity').filter(**LOOKUP).annotate(
+                        is_previous_fy=Case(
+                            When(entity__fy_start_month__lt=self.date_draft.month,
+                                 then=Value(0)),
+                            default=Value(-1)
+                        ),
+                        fy_you_need=ExpressionWrapper(
+                            Value(self.date_draft.year), output_field=IntegerField()
+                        ) + F('is_previous_fy')).filter(
+                        fiscal_year=F('fy_you_need')
+                    )
+
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+                    EntityModel = lazy_loader.get_entity_model()
+                    entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
+                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+                    LOOKUP = {
+                        'entity_id': entity_model.uuid,
+                        'entity_unit_id': None,
+                        'fiscal_year': fy_key,
+                        'key': EntityStateModel.KEY_ESTIMATE,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.estimate_number = f'{DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+
+            if commit:
+                self.save(update_fields=['estimate_number'])
+
+        return self.estimate_number
+
     def clean(self):
 
-        if not self.estimate_number:
-            self.estimate_number = generate_estimate_number()
+        self.generate_estimate_number(commit=False)
 
         if self.is_approved() and not self.date_approved:
             self.date_approved = localdate()
@@ -674,6 +714,10 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if self.is_canceled():
             self.date_approved = None
             self.date_completed = None
+
+    def save(self, **kwargs):
+        self.generate_estimate_number(commit=True)
+        super(EstimateModelAbstract, self).save(**kwargs)
 
 
 class EstimateModel(EstimateModelAbstract):

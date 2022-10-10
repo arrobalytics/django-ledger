@@ -7,15 +7,14 @@ Miguel Sanda <msanda@arrobalytics.com>
 Pranav P Tulshyan <Ptulshyan77@gmail.com>
 """
 from datetime import date
-from random import choices
 from string import ascii_uppercase, digits
 from typing import Tuple, List, Union
 from uuid import uuid4
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator
-from django.db import models
-from django.db.models import Q, Sum, Count, QuerySet
+from django.db import models, transaction
+from django.db.models import Q, Sum, Count, QuerySet, Case, When, Value, ExpressionWrapper, IntegerField, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -24,23 +23,11 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import EntityModel, ItemTransactionModel, LazyLoader, BillModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
 lazy_loader = LazyLoader()
-
-
-def generate_po_number(length: int = 10, prefix: bool = True) -> str:
-    """
-    A function that generates a random PO identifier for new PO models.
-    :param prefix:
-    :param length: The length of the bill number.
-    :return: A string representing a random bill identifier.
-    """
-    po_number = ''.join(choices(PO_NUMBER_CHARS, k=length))
-    if prefix:
-        po_number = 'PO-' + po_number
-    return po_number
 
 
 class PurchaseOrderModelQueryset(models.QuerySet):
@@ -93,7 +80,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    po_number = models.SlugField(max_length=20, unique=True, verbose_name=_('Purchase Order Number'))
+    po_number = models.SlugField(max_length=20, verbose_name=_('Purchase Order Number'), editable=False)
     po_title = models.CharField(max_length=250,
                                 verbose_name=_('Purchase Order Title'),
                                 validators=[
@@ -111,12 +98,12 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity'))
 
-    draft_date = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
-    in_review_date = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
-    approved_date = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
-    void_date = models.DateField(blank=True, null=True, verbose_name=_('Void Date'))
-    fulfillment_date = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
-    canceled_date = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
+    date_draft = models.DateField(null=True, blank=True, verbose_name=_('Draft Date'))
+    date_in_review = models.DateField(null=True, blank=True, verbose_name=_('In Review Date'))
+    date_approved = models.DateField(null=True, blank=True, verbose_name=_('Approved Date'))
+    date_void = models.DateField(blank=True, null=True, verbose_name=_('Void Date'))
+    date_fulfilled = models.DateField(blank=True, null=True, verbose_name=_('Fulfillment Date'))
+    date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
 
     po_items = models.ManyToManyField('django_ledger.ItemModel',
                                       through='django_ledger.ItemTransactionModel',
@@ -134,15 +121,16 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['entity']),
+            models.Index(fields=['entity', 'po_number']),
             models.Index(fields=['po_status']),
             models.Index(fields=['ce_model']),
-            models.Index(fields=['draft_date']),
-            models.Index(fields=['in_review_date']),
-            models.Index(fields=['approved_date']),
-            models.Index(fields=['fulfillment_date']),
-            models.Index(fields=['canceled_date']),
-            models.Index(fields=['void_date']),
+
+            models.Index(fields=['date_draft']),
+            models.Index(fields=['date_in_review']),
+            models.Index(fields=['date_approved']),
+            models.Index(fields=['date_fulfilled']),
+            models.Index(fields=['date_canceled']),
+            models.Index(fields=['date_void']),
         ]
         unique_together = [
             ('entity', 'po_number')
@@ -156,7 +144,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def configure(self,
                   entity_slug: str or EntityModel,
                   user_model,
-                  draft_date: date = None):
+                  draft_date: date = None,
+                  commit: bool = False):
+
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(
                 user_model=user_model)
@@ -166,12 +156,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-        self.po_number = generate_po_number()
         if draft_date:
-            self.draft_date = draft_date
+            self.date_draft = draft_date
         else:
-            self.draft_date = localdate()
+            self.date_draft = localdate()
         self.entity = entity_model
+        self.clean()
+        if commit:
+            self.save()
         return self
 
     # State Update...
@@ -318,13 +310,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not self.po_amount:
             raise ValidationError(message='PO amount is zero.')
 
-        self.in_review_date = localdate() if not date_review else date_review
+        self.date_in_review = localdate() if not date_review else date_review
         self.po_status = self.PO_STATUS_REVIEW
         self.clean()
         if commit:
             self.save(update_fields=[
                 'po_status',
-                'in_review_date',
+                'date_in_review',
                 'updated'
             ])
 
@@ -345,13 +337,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def mark_as_approved(self, commit: bool = False, date_approved: date = None, **kwargs):
         if not self.can_approve():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as approved.')
-        self.approved_date = localdate() if not date_approved else date_approved
+        self.date_approved = localdate() if not date_approved else date_approved
         self.po_status = self.PO_STATUS_APPROVED
         self.clean()
         if commit:
             self.itemtransactionmodel_set.all().update(po_item_status=ItemTransactionModel.STATUS_NOT_ORDERED)
             self.save(update_fields=[
-                'approved_date',
+                'date_approved',
                 'po_status',
                 'updated'
             ])
@@ -373,13 +365,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def mark_as_canceled(self, commit: bool = False, date_canceled: date = None, **kwargs):
         if not self.can_cancel():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
-        self.canceled_date = localdate() if not date_canceled else date_canceled
+        self.date_canceled = localdate() if not date_canceled else date_canceled
         self.po_status = self.PO_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
                 'po_status',
-                'canceled_date',
+                'date_canceled',
                 'updated'
             ])
 
@@ -404,7 +396,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                           **kwargs):
         if not self.can_fulfill():
             raise ValidationError(message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')
-        self.fulfillment_date = localdate() if not date_fulfilled else date_fulfilled
+        self.date_fulfilled = localdate() if not date_fulfilled else date_fulfilled
+        self.po_amount_received = self.po_amount
 
         if not po_items:
             po_items = self.itemtransactionmodel_set.all().select_related('bill_model')
@@ -422,14 +415,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not all_items_received:
             raise ValidationError('All items must be received before PO is fulfilled.')
 
-        self.fulfillment_date = date_fulfilled
+        self.date_fulfilled = date_fulfilled
         self.po_status = self.PO_STATUS_FULFILLED
         self.clean()
 
         if commit:
             po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
-                'fulfillment_date',
+                'date_fulfilled',
                 'po_status',
                 'updated'
             ])
@@ -467,7 +460,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not all(b.is_void() for b in bill_model_qs):
             raise ValidationError('Must void all PO bills before PO can be voided.')
 
-        self.void_date = localdate() if not void_date else void_date
+        self.date_void = localdate() if not void_date else void_date
         self.po_status = self.PO_STATUS_VOID
         self.clean()
 
@@ -501,20 +494,75 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def get_status_action_date(self):
         if self.is_fulfilled():
-            return self.fulfillment_date
-        return getattr(self, f'{self.po_status}_date')
+            return self.date_fulfilled
+        return getattr(self, f'date_{self.po_status}')
+
+    def generate_po_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next PurchaseOrder document number available.
+        @param commit: Commit transaction into InvoiceModel.
+        @return: A String, representing the current InvoiceModel instance Document Number.
+        """
+        if not self.po_number:
+            with transaction.atomic():
+
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.entity_id,
+                        'entity_unit_id': None,
+                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
+                        'key__exact': EntityStateModel.KEY_PURCHASE_ORDER
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related(
+                        'entity').filter(**LOOKUP).annotate(
+                        is_previous_fy=Case(
+                            When(entity__fy_start_month__lt=self.date_draft.month,
+                                 then=Value(0)),
+                            default=Value(-1)
+                        ),
+                        fy_you_need=ExpressionWrapper(
+                            Value(self.date_draft.year), output_field=IntegerField()
+                        ) + F('is_previous_fy')).filter(
+                        fiscal_year=F('fy_you_need')
+                    )
+
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+                    EntityModel = lazy_loader.get_entity_model()
+                    entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
+                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+                    LOOKUP = {
+                        'entity_id': entity_model.uuid,
+                        'entity_unit_id': None,
+                        'fiscal_year': fy_key,
+                        'key': EntityStateModel.KEY_PURCHASE_ORDER,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.po_number = f'{DJANGO_LEDGER_PO_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
+
+            if commit:
+                self.save(update_fields=['po_number'])
+
+        return self.po_number
 
     def clean(self):
+        self.generate_po_number(commit=False)
 
-        # if self.is_draft() and not self.draft_date:
-        #     raise ValidationError('')
-
-        if not self.po_number:
-            self.po_number = generate_po_number()
-        if self.is_fulfilled():
-            self.po_amount_received = self.po_amount
-        if self.is_fulfilled() and not self.fulfillment_date:
-            self.fulfillment_date = localdate()
+    def save(self, **kwargs):
+        self.generate_po_number(commit=True)
+        super(PurchaseOrderModelAbstract, self).save(**kwargs)
 
 
 class PurchaseOrderModel(PurchaseOrderModelAbstract):

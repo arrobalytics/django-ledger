@@ -1,24 +1,25 @@
-
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import BillModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import BillModel
 
 
 class BillNode(DjangoObjectType):
     class Meta:
         model = BillModel
         filter_fields = {
-            'vendor' : ['exact'],
-            'xref' : ['exact', 'icontains', 'istartswith'],
-            'draft_date' : ['exact', 'icontains', 'istartswith'],
-            'terms' : ['exact', 'icontains', 'istartswith'],
-            'cash_account' : ['exact'],
-            'prepaid_account' : ['exact'],
-            'unearned_account' : ['exact'],
+            'vendor': ['exact'],
+            'xref': ['exact', 'icontains', 'istartswith'],
+            'date_draft': ['exact', 'icontains', 'istartswith'],
+            'terms': ['exact', 'icontains', 'istartswith'],
+            'cash_account': ['exact'],
+            'prepaid_account': ['exact'],
+            'unearned_account': ['exact'],
         }
         interfaces = (relay.Node,)
+
 
 class Bill_list_Query(graphene.ObjectType):
     all_bills = DjangoFilterConnectionField(BillNode, slug_name=graphene.String(required=True))
@@ -31,4 +32,3 @@ class Bill_list_Query(graphene.ObjectType):
             ).select_related('vendor').order_by('-updated')
         else:
             return BillModel.objects.none()
-

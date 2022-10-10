@@ -11,10 +11,10 @@ from itertools import chain
 from typing import Set
 from uuid import uuid4
 
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q, Sum, QuerySet
+from django.db import models, transaction
+from django.db.models import Q, Sum, QuerySet, F, Value, Case, When, ExpressionWrapper, IntegerField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -27,6 +27,11 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES)
 from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
+from django_ledger.models.utils import LazyLoader
+from django_ledger.settings import DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, \
+    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
+
+lazy_loader = LazyLoader()
 
 
 class JournalEntryModelQuerySet(QuerySet):
@@ -118,8 +123,8 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                                verbose_name=_('Parent Journal Entry'),
                                related_name='children',
                                on_delete=models.CASCADE)
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    je_number = models.SlugField(max_length=20, editable=False, verbose_name=_('Journal Entry Number'))
     date = models.DateField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
@@ -150,15 +155,19 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         verbose_name = _('Journal Entry')
         verbose_name_plural = _('Journal Entries')
         indexes = [
+            models.Index(fields=['parent']),
+            models.Index(fields=['ledger']),
             models.Index(fields=['date']),
             models.Index(fields=['activity']),
-            models.Index(fields=['parent']),
             models.Index(fields=['entity_unit']),
-            models.Index(fields=['ledger', 'posted']),
             models.Index(fields=['locked']),
+            models.Index(fields=['posted']),
+            models.Index(fields=['je_number'])
         ]
 
     def __str__(self):
+        if self.je_number:
+            return 'JE: {x1} - Desc: {x2}'.format(x1=self.je_number, x2=self.description)
         return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
 
     def __init__(self, *args, **kwargs):
@@ -417,7 +426,76 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
 
+    def generate_je_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next Journal Entry document number available. The operation
+        will result in two additional queries if the Journal Entry LedgerModel & EntityUnitModel are not cached in
+        QuerySet via select_related('ledger', 'entity_unit').
+        @param commit: Commit transaction into Journal Entry.
+        @return: A String, representing the current JournalEntryModel instance Document Number.
+        """
+        if not self.je_number:
+
+            with transaction.atomic():
+
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.ledger.entity_id,
+                        'entity_unit_id__exact': self.entity_unit_id,
+                        'fiscal_year__in': [self.date.year, self.date.year - 1],
+                        'key__exact': EntityStateModel.KEY_JOURNAL_ENTRY
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related(
+                        'entity').filter(**LOOKUP).annotate(
+                        is_previous_fy=Case(
+                            When(entity__fy_start_month__lt=self.date.month,
+                                 then=Value(0)),
+                            default=Value(-1)
+                        ),
+                        fy_you_need=ExpressionWrapper(
+                            Value(self.date.year), output_field=IntegerField()
+                        ) + F('is_previous_fy')).filter(
+                        fiscal_year=F('fy_you_need')
+                    )
+
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+                    EntityModel = lazy_loader.get_entity_model()
+                    entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+                    fy_key = entity_model.get_fy_for_date(dt=self.date)
+
+                    LOOKUP = {
+                        'entity_id': entity_model.uuid,
+                        'entity_unit_id': self.entity_unit_id,
+                        'fiscal_year': fy_key,
+                        'key': EntityStateModel.KEY_JOURNAL_ENTRY,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            if self.entity_unit_id:
+                unit_prefix = self.entity_unit.document_prefix
+            else:
+                unit_prefix = DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
+
+            if commit:
+                self.save(update_fields=['je_number'])
+
+        return self.je_number
+
     def clean(self, verify: bool = False):
+        self.generate_je_number(commit=False)
         if verify:
             txs_qs = self.verify()
             return txs_qs
@@ -434,7 +512,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 self.mark_as_unposted(raise_exception=True)
             raise JournalEntryValidationError(
                 f'Something went wrong validating journal entry ID: {self.uuid}: {e.message}')
-        except:
+        except Exception:
             # safety net, for any unexpected error...
             # no JE can be posted if not fully validated...
             self.posted = False

@@ -20,8 +20,8 @@ from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
 from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
     EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
-    BillModel, generate_bill_number, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, generate_invoice_number, \
-    create_entity_unit_slug, EstimateModel, generate_estimate_number
+    BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, \
+    create_entity_unit_slug, EstimateModel
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -150,14 +150,19 @@ class EntityDataGenerator:
         if nb_units:
             assert nb_units >= 0, 'Number of unite must be greater than 0'
 
-        self.entity_unit_models = [
-            EntityUnitModel.objects.create(
+        entity_unit_models = [
+            EntityUnitModel(
                 name=f'Unit {u}',
                 slug=create_entity_unit_slug(
                     name=f'{self.entity_model.name}-Unit {u}'),
                 entity=self.entity_model
             ) for u in range(nb_units)
         ]
+
+        for eum in entity_unit_models:
+            eum.clean()
+
+        self.entity_unit_models = EntityUnitModel.objects.bulk_create(entity_unit_models)
 
     def create_vendors(self):
         vendor_count = randint(10, 20)
@@ -358,11 +363,9 @@ class EntityDataGenerator:
         self.update_inventory()
 
     def create_estimates(self, date_draft: date):
-        estimate_number = generate_estimate_number()
         customer_estimate: EstimateModel = EstimateModel(
-            estimate_number=estimate_number,
             terms=choice(EstimateModel.CONTRACT_TERMS)[0],
-            title=f'Customer Estimate {estimate_number}',
+            title=f'Customer Estimate {date_draft}',
             date_draft=date_draft
         )
         customer_estimate.configure(entity_slug=self.entity_model,
@@ -414,12 +417,11 @@ class EntityDataGenerator:
             accrue=random() > 0.65,
             progress=random(),
             terms=choice(BillModel.TERMS)[0],
-            bill_number=generate_bill_number(),
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
-            draft_date=date_draft,
+            date_draft=date_draft,
             additional_info=dict()
         )
 
@@ -481,7 +483,7 @@ class EntityDataGenerator:
 
     def create_po(self, date_draft: date):
 
-        po_model: PurchaseOrderModel = PurchaseOrderModel(draft_date=date_draft)
+        po_model: PurchaseOrderModel = PurchaseOrderModel(date_draft=date_draft)
         po_model = po_model.configure(entity_slug=self.entity_model, user_model=self.user_model)
         po_model.po_title = f'PO Title for {po_model.po_number}'
         po_model.save()
@@ -519,8 +521,7 @@ class EntityDataGenerator:
                     date_bill_draft = date_fulfilled - timedelta(days=randint(1, 3))
 
                     bill_model: BillModel = BillModel(
-                        bill_number=generate_bill_number(),
-                        draft_date=date_bill_draft,
+                        date_draft=date_bill_draft,
                         vendor=choice(self.vendor_models))
 
                     bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
@@ -538,6 +539,8 @@ class EntityDataGenerator:
                         BillModel.TERMS_NET_60,
                         BillModel.TERMS_NET_90
                     ])
+
+                    bill_model.full_clean()
                     bill_model.save()
 
                     for po_i in po_items:
@@ -611,11 +614,11 @@ class EntityDataGenerator:
             accrue=random() > 0.75,
             progress=random(),
             terms=choice(InvoiceModel.TERMS)[0],
-            invoice_number=generate_invoice_number(),
+            # invoice_number=generate_invoice_number(),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
-            draft_date=date_draft,
+            date_draft=date_draft,
             additional_info=dict()
         )
 

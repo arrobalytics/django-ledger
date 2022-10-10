@@ -20,10 +20,14 @@ class EntityUnitModelCreateForm(ModelForm):
     class Meta:
         model = EntityUnitModel
         fields = [
-            'name'
+            'name',
+            'document_prefix'
         ]
         widgets = {
             'name': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'document_prefix': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }

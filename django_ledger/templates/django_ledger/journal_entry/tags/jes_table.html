@@ -7,6 +7,7 @@
         <tr class="has-text-centered">
             <th>{% trans 'Description' %}</th>
             <th>{% trans 'Activity' %}</th>
+            <th>{% trans 'Document Number' %}</th>
             <th>{% trans 'Date' %}</th>
             <th>{% trans 'Posted' %}</th>
             <th>{% trans 'Locked' %}</th>
@@ -19,6 +20,7 @@
             <tr class="has-text-centered">
                 <td>{{ je.description }}</td>
                 <td>{{ je.get_activity_display }}</td>
+                <td>{{ je.je_number }}</td>
                 <td>{{ je.date }}</td>
                 <td>
                     {% if je.posted %}
