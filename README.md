@@ -206,19 +206,32 @@ pipenv install --python PATH_TO_INTERPRETER
 pipenv shell
 ```
 
-6. Apply migrations.
+6. Install required packages 
+
+```shell
+pip install -r requirements.txt
+```
+
+
+7. Install Pillow 
+```shell
+python -m pip install --install pillow
+```
+
+
+8. Apply migrations.
 
 ```shell
 python manage.py migrate
 ```
 
-7. Create a Development Django user.
+9. Create a Development Django user.
 
 ```shell
 python manage.py createsuperuser
 ```
 
-8. Run development server.
+10. Run development server.
 
 ```shell
 python manage.py runserver

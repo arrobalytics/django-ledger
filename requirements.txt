@@ -1,0 +1,13 @@
+asgiref==3.4.1
+Django==3.2.16
+django-markdown==0.8.4
+django-treebeard==4.5.1
+importlib-metadata==4.8.3
+Markdown==3.3.7
+ofxtools==0.8.16
+Pillow==8.4.0
+pkg_resources==0.0.0
+pytz==2022.5
+sqlparse==0.4.3
+typing_extensions==4.1.1
+zipp==3.6.0
