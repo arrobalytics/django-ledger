@@ -12,7 +12,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn
+from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, BankAccountInfoMixIn, TaxInfoMixIn
 
 
 class VendorModelManager(models.Manager):
@@ -29,7 +29,10 @@ class VendorModelManager(models.Manager):
         )
 
 
-class VendorModel(ContactInfoMixIn, CreateUpdateMixIn):
+class VendorModel(ContactInfoMixIn,
+                  BankAccountInfoMixIn,
+                  TaxInfoMixIn,
+                  CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     vendor_name = models.CharField(max_length=100)
     entity = models.ForeignKey('django_ledger.EntityModel',

@@ -13,6 +13,7 @@ from typing import Optional
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
+from django.core.validators import int_list_validator
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
@@ -697,6 +698,57 @@ class ParentChildMixIn(models.Model):
                                blank=True,
                                on_delete=models.CASCADE,
                                related_name='children_set')
+
+    class Meta:
+        abstract = True
+
+
+class BankAccountInfoMixIn(models.Model):
+    ACCOUNT_CHECKING = 'checking'
+    ACCOUNT_SAVINGS = 'savings'
+    ACCOUNT_TYPES = [
+        (ACCOUNT_CHECKING, _('Checking')),
+        (ACCOUNT_SAVINGS, _('Savings'))
+    ]
+
+    account_number = models.CharField(max_length=30, null=True, blank=True,
+                                      validators=[
+                                          int_list_validator(sep='', message=_('Only digits allowed'))
+                                      ], verbose_name=_('Account Number'))
+    routing_number = models.CharField(max_length=30, null=True, blank=True,
+                                      validators=[
+                                          int_list_validator(sep='', message=_('Only digits allowed'))
+                                      ], verbose_name=_('Routing Number'))
+    aba_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('ABA Number'))
+    swift_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number'))
+    account_type = models.CharField(choices=ACCOUNT_TYPES,
+                                    max_length=10,
+                                    default=ACCOUNT_CHECKING,
+                                    verbose_name=_('Account Type'))
+
+    class Meta:
+        abstract = True
+
+
+class TaxInfoMixIn(models.Model):
+    tax_id_number = models.CharField(max_length=30,
+                                     null=True,
+                                     blank=True,
+                                     verbose_name=_('Tax Registration Number'))
+
+    class Meta:
+        abstract = True
+
+
+class TaxCollectionMixIn(models.Model):
+    sales_tax_rate = models.FloatField(default=0.00000,
+                                       verbose_name=_('Sales Tax Rate'),
+                                       null=True,
+                                       blank=True,
+                                       validators=[
+                                           MinValueValidator(limit_value=0.00000),
+                                           MaxValueValidator(limit_value=1.00000)
+                                       ])
 
     class Meta:
         abstract = True

@@ -9,13 +9,12 @@ Pranav P Tulshyan <ptulshyan77@gmail.com>
 
 from uuid import uuid4
 
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, SlugNameMixIn, TaxCollectionMixIn
 from django.db.models import Q
-
 
 """
 The model for managing the details of the Customers.
@@ -24,8 +23,8 @@ In case, the customer is not created , then the same needs to be created under t
 
 """
 
-class CustomerModelManager(models.Manager):
 
+class CustomerModelManager(models.Manager):
     """
     A custom defined Customer  Model Manager that will act as an inteface to handling the DB queries to the Customer Model.
     The default "get_queryset" has been used"
@@ -44,11 +43,10 @@ class CustomerModelManager(models.Manager):
         )
 
 
-class CustomerModel(ContactInfoMixIn, CreateUpdateMixIn):
-
+class CustomerModel(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
     """
     This is the main class which the Customer Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
-    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
+    In addition to the attributes mentioned below, it also has the fields/columns/attributes mentioned in below MixIn:
     
     ContactinfoMixIn
     CreateUpdateMixIn
@@ -66,13 +64,11 @@ class CustomerModel(ContactInfoMixIn, CreateUpdateMixIn):
 
     Some Meta Information: (Additional data points regarding this model that may alter its behavior)
 
-    @verbose_name: A human readable name for this Model (Also translatable to other languages with django translation> gettext_lazy)
-    @unique_together: the concantanation of entity  & customer code would remain unique throughout the model i.e database
+    @verbose_name: A human-readable name for this Model (Also translatable to other languages with django translation> gettext_lazy)
+    @unique_together: the concatenation of entity  & customer code would remain unique throughout the model i.e database
     @indexes : Index created on different attributes for better db & search queries
 
     """
-
-
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     customer_name = models.CharField(max_length=100)
