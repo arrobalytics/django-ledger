@@ -6,7 +6,8 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, TextInput, EmailInput
+from django.forms import ModelForm, TextInput, EmailInput, NumberInput
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.customer import CustomerModel
@@ -31,7 +32,11 @@ class CustomerModelForm(ModelForm):
             'phone',
             'email',
             'website',
+            'sales_tax_rate'
         ]
+        help_texts = {
+            'sales_tax_rate': _('Example: 3.50% should be entered as 0.0035')
+        }
         widgets = {
             'customer_name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -63,4 +68,10 @@ class CustomerModelForm(ModelForm):
             'website': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'sales_tax_rate': NumberInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'min': 0.000,
+                'max': 1.000,
+                'step': 0.001
+            })
         }

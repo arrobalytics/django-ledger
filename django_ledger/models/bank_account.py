@@ -10,12 +10,11 @@ Pranav P Tulshyan <ptulshyan77@gmail.com>
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
-from django.core.validators import int_list_validator
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn
+from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
 from django_ledger.models.utils import LazyLoader
 
 lazy_loader = LazyLoader()
@@ -27,7 +26,6 @@ class BankAccountModelManager(models.Manager):
     "for_entity" allows only the authorized user to query the Bank Account model for its entity.
     """
 
-    
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
         return qs.filter(
@@ -39,8 +37,7 @@ class BankAccountModelManager(models.Manager):
         )
 
 
-class BackAccountModelAbstract(CreateUpdateMixIn):
-
+class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     """
     This is an abstract base model for the Bank Account Model.
 
@@ -71,24 +68,9 @@ class BackAccountModelAbstract(CreateUpdateMixIn):
 
     """
     REL_NAME_PREFIX = 'bank'
-    ACCOUNT_TYPES = [
-        ('checking', _('Checking')),
-        ('savings', _('Savings')),
-        ('money_mkt', _('Money Market')),
-    ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True)
-    account_number = models.CharField(max_length=30, null=True, blank=True,
-                                      validators=[
-                                          int_list_validator(sep='', message=_('Only digits allowed'))
-                                      ])
-    routing_number = models.CharField(max_length=30, null=True, blank=True,
-                                      validators=[
-                                          int_list_validator(sep='', message=_('Only digits allowed'))
-                                      ])
-    aba_number = models.CharField(max_length=30, null=True, blank=True)
-    account_type = models.CharField(choices=ACCOUNT_TYPES, max_length=10)
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Cash Account'),

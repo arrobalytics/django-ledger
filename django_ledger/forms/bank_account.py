@@ -43,6 +43,7 @@ class BankAccountCreateForm(ModelForm):
             'account_number',
             'routing_number',
             'aba_number',
+            'swift_number',
             'cash_account',
             'active'
         ]
@@ -62,6 +63,10 @@ class BankAccountCreateForm(ModelForm):
             'aba_number': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                 'placeholder': _('Enter ABA number...')
+            }),
+            'swift_number': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('Enter SWIFT number...')
             }),
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES

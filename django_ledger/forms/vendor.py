@@ -31,6 +31,7 @@ class VendorModelForm(ModelForm):
             'phone',
             'email',
             'website',
+            'tax_id_number'
         ]
         widgets = {
             'vendor_name': TextInput(attrs={
@@ -61,6 +62,9 @@ class VendorModelForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'website': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'tax_id_number': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
