@@ -7,7 +7,7 @@ setup(
     dependency_links=[],
     name="django-ledger",
     version=django_ledger.__version__,
-    packages=find_packages(exclude=["assets", "dev_env"]),
+    packages=find_packages(exclude=['assets', 'dev_env']),
     url=django_ledger.__url__,
     license=django_ledger.__license__,
     keywords="django, finance, bookkeeping, accounting, balance sheet, income statement, general ledger, money, engine",
@@ -16,14 +16,14 @@ setup(
     description="Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, "
                 + "Chart of Accounts, Entities",
     include_package_data=True,
-    install_requires=[
-        'django>=3.2',
-        'django-treebeard~=4.5.1',
-        'ofxtools~=0.9.4',
-        'markdown~=3.3.4',
-        'faker~=8.12',
-        'pillow>=8.4.0'
-    ],
+    install_requires=["asgiref==3.5.2; python_version >= '3.7'", 'django==4.1.2', 'django-treebeard==4.5.1',
+                      'faker==8.16.0', 'markdown==3.3.7', 'ofxtools==0.9.5', 'pillow==9.2.0',
+                      "python-dateutil==2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+                      "six==1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+                      "sqlparse==0.4.3; python_version >= '3.5'", 'text-unidecode==1.3',
+                      "tzdata==2022.2; sys_platform == 'win32'"
+
+                      ],
     project_urls={
         "Bug Tracker": "https://github.com/arrobalytics/django-ledger/issues",
         # 'Documentation': 'https://docs.example.com/HelloWorld/',
