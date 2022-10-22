@@ -11,15 +11,18 @@ from decimal import Decimal
 from string import ascii_lowercase, digits
 from uuid import uuid4
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models import LazyLoader
 from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
-from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE)
+from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -28,6 +31,8 @@ The Item list is a collection of all the products that are sold by any organizat
 The tems may include Products or even services.
 
 """
+
+lazy_loader = LazyLoader()
 
 
 # UNIT OF MEASURES MODEL....
@@ -81,9 +86,6 @@ class ItemModelQuerySet(models.QuerySet):
 
 
 class ItemModelManager(models.Manager):
-
-    def get_queryset(self):
-        return ItemModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -170,6 +172,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
     item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
+    item_number = models.CharField(max_length=30, null=True, blank=True)
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
 
     default_amount = models.DecimalField(max_digits=20,
@@ -242,10 +245,13 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('Item Entity'))
 
-    objects = ItemModelManager()
+    objects = ItemModelManager.from_queryset(queryset_class=ItemModelQuerySet)()
 
     class Meta:
         abstract = True
+        unique_together = [
+            ('entity', 'item_number')
+        ]
         indexes = [
             models.Index(fields=['inventory_account']),
             models.Index(fields=['cogs_account']),
@@ -275,6 +281,12 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def is_inventory(self):
         return self.for_inventory is True
 
+    def is_product(self):
+        return all([
+            self.is_product_or_service,
+            not self.for_inventory
+        ])
+
     def is_labor(self):
         return self.item_type == self.LABOR_TYPE
 
@@ -298,7 +310,65 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 pass
         return Decimal('0.00')
 
+    def get_item_number_prefix(self):
+        if self.is_expense():
+            return DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX
+        elif self.is_inventory():
+            return DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX
+        elif self.is_product():
+            return DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX
+        raise ValidationError('Cannot determine Item Number prefix for ItemModel')
+
+    def generate_item_number(self, commit: bool = False) -> str:
+        """
+        Atomic Transaction. Generates the next Vendor Number available.
+        @param commit: Commit transaction into VendorModel.
+        @return: A String, representing the current InvoiceModel instance Document Number.
+        """
+        if not self.item_number:
+            with transaction.atomic():
+
+                EntityStateModel = lazy_loader.get_entity_state_model()
+
+                try:
+                    LOOKUP = {
+                        'entity_id__exact': self.entity_id,
+                        'key__exact': EntityStateModel.KEY_ITEM
+                    }
+
+                    state_model_qs = EntityStateModel.objects.select_related('entity').filter(**LOOKUP)
+                    state_model = state_model_qs.get()
+                    state_model.sequence += 1
+                    state_model.save(update_fields=['sequence'])
+
+                except ObjectDoesNotExist:
+
+                    LOOKUP = {
+                        'entity_id': self.entity_id,
+                        'key': EntityStateModel.KEY_ITEM,
+                        'sequence': 1
+                    }
+                    state_model = EntityStateModel(**LOOKUP)
+                    state_model.clean()
+                    state_model.save()
+
+            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+            self.item_number = f'{self.get_item_number_prefix()}-{seq}'
+
+            if commit:
+                self.save(update_fields=['item_number'])
+
+        return self.item_number
+
+    def save(self, **kwargs):
+        if not self.item_number:
+            self.generate_item_number(commit=False)
+        super(ItemModelAbstract, self).save(**kwargs)
+
     def clean(self):
+
+        if not self.item_number:
+            self.generate_item_number(commit=False)
 
         if all([
             self.for_inventory is False,
@@ -358,9 +428,6 @@ class ItemTransactionModelQuerySet(models.QuerySet):
 
 
 class ItemTransactionModelManager(models.Manager):
-
-    def get_queryset(self):
-        return ItemTransactionModelQuerySet(self.model, using=self._db)
 
     def for_entity(self, user_model, entity_slug):
         qs = self.get_queryset()
@@ -627,7 +694,7 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                                               verbose_name=_('Total Estimate/Contract Revenue.'),
                                               validators=[MinValueValidator(limit_value=0.0)])
     item_notes = models.CharField(max_length=400, null=True, blank=True, verbose_name=_('Description'))
-    objects = ItemTransactionModelManager()
+    objects = ItemTransactionModelManager.from_queryset(queryset_class=ItemTransactionModelQuerySet)()
 
     class Meta:
         abstract = True

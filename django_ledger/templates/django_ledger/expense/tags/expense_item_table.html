@@ -5,15 +5,17 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Item</th>
-            <th>UOM</th>
-            <th>Expense Account</th>
-            <th>Actions</th>
+            <th>{% trans 'Expense Number' %}</th>
+            <th>{% trans 'Item' %}</th>
+            <th>{% trans 'UOM' %}</th>
+            <th>{% trans 'Expense Account' %}</th>
+            <th>{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for expense_item in expense_list %}
             <tr>
+                <td>{{ expense_item.item_number }}</td>
                 <td>{{ expense_item.name }}</td>
                 <td>{{ expense_item.uom }}</td>
                 <td>{{ expense_item.expense_account }}</td>

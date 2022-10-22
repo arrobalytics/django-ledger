@@ -29,6 +29,10 @@ In case, the customer is not created , then the same needs to be created under t
 lazy_loader = LazyLoader()
 
 
+class CustomerModelQueryset(models.QuerySet):
+    pass
+
+
 class CustomerModelManager(models.Manager):
     """
     A custom defined Customer  Model Manager that will act as an inteface to handling the DB queries to the Customer Model.
@@ -48,7 +52,7 @@ class CustomerModelManager(models.Manager):
         )
 
 
-class CustomerModel(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
+class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
     """
     This is the main class which the Customer Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
     In addition to the attributes mentioned below, it also has the fields/columns/attributes mentioned in below MixIn:
@@ -89,9 +93,10 @@ class CustomerModel(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
 
     additional_info = models.JSONField(null=True, blank=True)
 
-    objects = CustomerModelManager()
+    objects = CustomerModelManager.from_queryset(queryset_class=CustomerModelQueryset)()
 
     class Meta:
+        abstract = True
         verbose_name = _('Customer')
         indexes = [
             models.Index(fields=['created']),
@@ -155,4 +160,10 @@ class CustomerModel(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
     def save(self, **kwargs):
         if not self.customer_number:
             self.generate_customer_number(commit=False)
-        super(CustomerModel, self).save(**kwargs)
+        super(CustomerModelAbstract, self).save(**kwargs)
+
+
+class CustomerModel(CustomerModelAbstract):
+    """
+    Base Customer Model Implementation
+    """

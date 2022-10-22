@@ -38,10 +38,10 @@ class VendorModelManager(models.Manager):
         )
 
 
-class VendorModel(ContactInfoMixIn,
-                  BankAccountInfoMixIn,
-                  TaxInfoMixIn,
-                  CreateUpdateMixIn):
+class VendorModelAbstract(ContactInfoMixIn,
+                          BankAccountInfoMixIn,
+                          TaxInfoMixIn,
+                          CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     vendor_number = models.CharField(max_length=30, null=True, blank=True)
     vendor_name = models.CharField(max_length=100)
@@ -68,6 +68,7 @@ class VendorModel(ContactInfoMixIn,
         unique_together = [
             ('entity', 'vendor_number')
         ]
+        abstract = True
 
     def __str__(self):
         return f'Vendor: {self.vendor_name}'
@@ -95,7 +96,6 @@ class VendorModel(ContactInfoMixIn,
                     state_model.save(update_fields=['sequence'])
 
                 except ObjectDoesNotExist:
-                    EntityModel = lazy_loader.get_entity_model()
 
                     LOOKUP = {
                         'entity_id': self.entity_id,
@@ -121,4 +121,10 @@ class VendorModel(ContactInfoMixIn,
     def save(self, **kwargs):
         if not self.vendor_number:
             self.generate_vendor_number(commit=False)
-        super(VendorModel, self).save(**kwargs)
+        super(VendorModelAbstract, self).save(**kwargs)
+
+
+class VendorModel(VendorModelAbstract):
+    """
+    Base Vendor Model Implamentation
+    """
