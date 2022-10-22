@@ -546,6 +546,9 @@ class EntityStateModelAbstract(models.Model):
     KEY_BILL = 'bill'
     KEY_INVOICE = 'invoice'
     KEY_ESTIMATE = 'estimate'
+    KEY_VENDOR = 'vendor'
+    KEY_CUSTOMER = 'customer'
+    KEY_ITEM = 'item'
 
     KEY_CHOICES = [
         (KEY_JOURNAL_ENTRY, _('Journal Entry')),

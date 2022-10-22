@@ -5,16 +5,18 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th>Item</th>
-            <th>UOM</th>
-            <th>Inventory Account</th>
-            <th>COGS Account</th>
-            <th>Actions</th>
+            <th>{% trans 'Inventory Number' %}</th>
+            <th>{% trans 'Item' %}</th>
+            <th>{% trans 'UOM' %}</th>
+            <th>{% trans 'Inventory Account' %}</th>
+            <th>{% trans 'COGS Account' %}</th>
+            <th>{% trans 'Action' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for inv_item in inventory_item_list %}
             <tr>
+                <td>{{ inv_item.item_number }}</td>
                 <td>{{ inv_item.name }}</td>
                 <td>{{ inv_item.uom }}</td>
                 <td>{{ inv_item.inventory_account }}</td>

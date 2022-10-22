@@ -6,14 +6,16 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th class="has-text-centered">Vendor</th>
-            <th class="has-text-centered">Address</th>
-            <th class="has-text-centered">Actions</th>
+            <th class="has-text-centered">{% trans 'Vendor Number' %}</th>
+            <th class="has-text-centered">{% trans 'Vendor' %}</th>
+            <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for vendor in vendors %}
             <tr class="has-text-centered">
+                <td>{{ vendor.vendor_number }}</td>
                 <td>{{ vendor.vendor_name }}</td>
                 <td>{{ vendor.address_1 }}</td>
                 <td>

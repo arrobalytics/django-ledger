@@ -5,14 +5,16 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
-            <th class="has-text-centered">Customer</th>
-            <th class="has-text-centered">Address</th>
-            <th class="has-text-centered">Actions</th>
+            <th class="has-text-centered">{% trans 'Customer Number' %}</th>
+            <th class="has-text-centered">{% trans 'Customer' %}</th>
+            <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for customer in customers %}
             <tr class="has-text-centered">
+                <td>{{ customer.customer_number }}</td>
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
                 <td>
