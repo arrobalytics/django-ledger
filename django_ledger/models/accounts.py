@@ -11,10 +11,11 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_INVOICE, GROUP_BILL
+from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles
+from django_ledger.models import LazyLoader
 from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
 
 DEBIT = 'debit'
@@ -27,55 +28,59 @@ Each entity will be having its list of accounts for cash, rent, salary, loans, p
 We will be looking at the different attributes that the account model will be possessing.  
 """
 
+lazy_loader = LazyLoader()
+
 
 class AccountModelQuerySet(models.QuerySet):
     """
-    It is Query Set class defined in case of the Accounts Model. "active" function will ensure that only the Accounts
-    that are marked as active will be displayed "with_roles" is used to make query of accounts with a certain role
-    For instance, the fixed assets like Building, Plant , Equipments have al been assigned the role of
-    "asset_ppe" role is basically an aggregation of the accounts under a similar category.
-
-    For getting a list of roles , refer io.roles.py
-
-    So, to query the list of all accounts under the role "asset_ppe", we can use this function.
-    The 'role' parameter can be given as a type string or a type list.
+    This is QuerySet class defined for the Accounts Model.
     """
 
     def active(self):
+        """
+        Returns a QuerySet of active AccountModels.
+        """
         return self.filter(active=True)
 
     def with_roles(self, roles: Union[list, str]):
+        """
+        Returns a QuerySet filtered by user-provided list of Roles. This method is used to make query of accounts
+        with a certain role. For instance, the fixed assets like Buildings have all been assigned
+        the role of  "asset_ppe_build" role is basically an aggregation of the accounts under a similar category.
+        So, to query the list of all accounts under the role "asset_ppe_build", we can use this function.
+        Function accepts a single str instance of a role or a list of roles.
+        For a list of roles , refer io.roles.py
+        """
         if isinstance(roles, str):
             roles = [roles]
+        roles = validate_roles(roles)
         return self.filter(role__in=roles)
 
 
 class AccountModelManager(models.Manager):
     """
-    This model Manager will be used as interface through which the database query operations can be provided to the
-    Account Model. It uses the custom defined Query Set and hence overrides the normal get_queryset function which
-    return all rows of a model. The "for_entity" method will ensure that a particular entity is able to view only
-    their respective accounts. *COA: Each entity will have its individual Chart of Accounts , which will have the
-    mapping for all the accounts of that entity *Discussed in detail in the CoA Model CoA slug, basically helps in
-    identifying the complete Chart of Accounts for a Particular Entity.
-
+    This Model Manager will be used as interface through which the database query operations can be provided to the
+    Account Model. It uses the custom defined AccountModelQuerySet and hence overrides the normal get_queryset
+    function which return all rows of a model. The "for_entity" method will ensure that a particular entity is able
+    to view only their respective accounts. *COA: Each entity will have its individual Chart of Accounts ,
+    which will have the mapping for all the accounts of that entity *Discussed in detail in the CoA Model CoA slug,
+    basically helps in identifying the complete Chart of Accounts for a Particular Entity.
     """
 
-    def get_queryset(self):
-        return AccountModelQuerySet(self.model, using=self._db)
-
-    def for_entity(self, user_model, entity_slug: str, coa_slug: str = None):
+    def for_entity(self, user_model, entity_slug, coa_slug: str = None):
         """
-        The first level filter takes the entity slug and the user model
+        The first level filter takes the entity slug or EntityModel and the user model
         In case , even a coa_slug is also passed, the coa_slug will be filtered to show the relevant accounts details
 
-        @param user_model: The default user_model for purpose of access and authorization check
-        @param entity_slug : Expected data type is string
-        @param coa_slug: Expected data type is string. If None, default CoA will be used.
+        @param user_model: The default user_model for purpose of access and authorization check.
+        @param entity_slug : Entity slug field from URL kwargs or EntityModel.
+        @param coa_slug: If None, default CoA will be used.
         @return: QuerySet with the applicable filters.
         """
-
         qs = self.get_queryset()
+        EntityModel = lazy_loader.get_entity_model()
+        if isinstance(entity_slug, EntityModel):
+            entity_slug = entity_slug.slug
         qs = qs.filter(
             Q(coa__entity__slug__exact=entity_slug) &
             (
@@ -87,7 +92,15 @@ class AccountModelManager(models.Manager):
             qs = qs.filter(coa__slug__iexact=coa_slug)
         return qs
 
-    def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
+    def for_entity_available(self, user_model, entity_slug, coa_slug: str = None):
+        """
+        Convenience method to pull only available and not locked AccountModels for a specific EntityModel or Entity
+        Slug.
+        @param user_model: The default user_model for purpose of access and authorization check.
+        @param entity_slug : Entity slug field from URL kwargs or EntityModel.
+        @param coa_slug: If None, default CoA will be used.
+        @return: QuerySet with the applicable filters.
+        """
         qs = self.for_entity(
             user_model=user_model,
             entity_slug=entity_slug,
@@ -109,24 +122,6 @@ class AccountModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
 
-    def for_entity_available(self, user_model, entity_slug: str, coa_slug: str = None):
-        """
-        Returning only the entities which are active and are not locked.
-
-        @param entity_slug : Expected data type is string.
-        @param user_model: The default user_model for purpose of access and authorization check.
-        @param coa_slug: Expected data type is string. If None, default CoA will be used.
-        @return: QuerySet with the applicable filters
-        """
-        qs = self.for_entity(
-            user_model=user_model,
-            entity_slug=entity_slug,
-            coa_slug=coa_slug)
-        return qs.filter(
-            active=True,
-            locked=False
-        )
-
     def with_roles_available(self, roles: Union[list, str], entity_slug: str, user_model):
         """
         Returns the accounts which are available (i.e. not locked and are marked as active) for a single or a list of
@@ -139,12 +134,14 @@ class AccountModelManager(models.Manager):
 
         if isinstance(roles, str):
             roles = [roles]
+        roles = validate_roles(roles)
         qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(role__in=roles)
 
     def for_invoice(self, user_model, entity_slug: str, coa_slug: str = None):
         """
-        Applies the filter for selection of the account which are assigned the roles as marked under "GROUP_INVOICE"
+        Applies the filter for selection for accounts which are assigned the roles as marked under "GROUP_INVOICE".
+
         @param entity_slug : Expected data type is string.
         @param coa_slug: Expected data type is string. If None, default CoA will be used.
         @param user_model: The default user_model for purpose of access and authorization check.
@@ -156,7 +153,7 @@ class AccountModelManager(models.Manager):
             coa_slug=coa_slug)
         return qs.filter(role__in=GROUP_INVOICE)
 
-    def for_bill(self, user_model, entity_slug: str, coa_slug: str = None):
+    def for_bill(self, user_model, entity_slug, coa_slug: str = None):
         """
         Applies the filter for selection of the account which are assigned the roles as marked under "GROUP_BILL"
         @param entity_slug : Expected data type is string.
@@ -174,12 +171,13 @@ class AccountModelManager(models.Manager):
 
 class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     """
-    Django Ledger Base Account Model Abstract This is the main abstract class which the Account Model database will
+    Django Ledger Base Account Model Abstract. This is the main abstract class which the Account Model database will
     inherit, and it contains the fields/columns/attributes which the said ledger table will have. In addition to the
     attributes mentioned below, it also has the fields/columns/attributes mentioned in the ParentChileMixin & the
     CreateUpdateMixIn. Read about these mixin here.
 
     Below are the fields specific to the accounts model.
+
     uuid : this is a unique primary key generated for the table. the default value of this field is uuid4().
     code: Each account will have its own code for e.g. Cash Account -> Code 1010 , Inventory -> 1200. Maximum Length
     allowed is 10.
@@ -201,7 +199,7 @@ class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     @abstract: This is a abstract class and will be used through inheritance. Separate implementation can be done for
     this abstract class. [It may also be noted that models are not created for the abstract models, but only for the
     models which implements the abstract model class]
-    @verbose_name: A human readable name for this Model (Also translatable to other languages with django translation
+    @verbose_name: A human-readable name for this Model (Also translatable to other languages with django translation
     gettext_lazy).
     @unique_together: the concatenation of coa & account code would remain unique throughout the model i.e. database
     @indexes : Index created on different attributes for better db & search queries
@@ -223,7 +221,7 @@ class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                             editable=False,
                             verbose_name=_('Chart of Accounts'),
                             related_name='accounts')
-    on_coa = AccountModelManager()
+    on_coa = AccountModelManager.from_queryset(queryset_class=AccountModelQuerySet)()
 
     class Meta:
         abstract = True

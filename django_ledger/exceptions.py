@@ -13,6 +13,10 @@ class InvalidDateInputError(ValidationError):
     pass
 
 
+class InvalidRoleError(ValidationError):
+    pass
+
+
 class JournalEntryValidationError(ValidationError):
     pass
 

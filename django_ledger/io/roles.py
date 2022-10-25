@@ -10,9 +10,9 @@ import sys
 from itertools import chain
 from typing import Set
 
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
+from django_ledger.exceptions import InvalidRoleError
 from django_ledger.models.utils import LazyLoader
 
 mod = sys.modules[__name__]
@@ -413,5 +413,5 @@ def validate_roles(roles) -> Set[str]:
         roles = set(roles)
     for r in roles:
         if r not in VALID_ROLES:
-            raise ValidationError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
+            raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
     return set(roles)
