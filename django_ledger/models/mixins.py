@@ -704,6 +704,16 @@ class ParentChildMixIn(models.Model):
 
 
 class BankAccountInfoMixIn(models.Model):
+    """
+    MixIn to add universal bank routing information to DjangoLedger Models.
+
+    @account_number: This is the Bank Account number . Only Digits are allowed.
+    @routing_number: User defined routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)'
+    @aba_number: The American Bankers Association Number assigned to each bank.
+    @account_type: Each account will have to select from the available choices Checking, Savings or Money Market.
+    @swift_number: SWIFT electronic communications network number of the bank institution.
+    """
+
     ACCOUNT_CHECKING = 'checking'
     ACCOUNT_SAVINGS = 'savings'
     ACCOUNT_TYPES = [
