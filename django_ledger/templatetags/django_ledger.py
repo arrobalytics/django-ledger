@@ -432,7 +432,7 @@ def chart_container(chart_id, endpoint=None):
 def modal_action(context, model, http_method: str = 'post', entity_slug: str = None):
     if not entity_slug:
         entity_slug = context['view'].kwargs['entity_slug']
-    action_url = model.get_mark_paid_url(entity_slug=entity_slug)
+    action_url = model.get_mark_as_paid_url(entity_slug=entity_slug)
     return {
         'object': model,
         'action_url': action_url,
