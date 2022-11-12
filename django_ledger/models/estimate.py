@@ -13,7 +13,7 @@ from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MinLengthValidator
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField, Case, When, Value, IntegerField, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
@@ -238,7 +238,6 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
         self.entity = entity_model
         self.customer = customer_model
-        self.clean()
         if commit:
             self.save()
         return self
@@ -647,6 +646,44 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ce_pk=self.uuid
         )
 
+    def _get_next_state_model(self, raise_exception: bool = True):
+        EntityStateModel = lazy_loader.get_entity_state_model()
+        EntityModel = lazy_loader.get_entity_model()
+        entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
+        fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+        try:
+            LOOKUP = {
+                'entity_id__exact': self.entity_id,
+                'entity_unit_id': None,
+                'fiscal_year': fy_key,
+                'key__exact': EntityStateModel.KEY_ESTIMATE
+            }
+
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model = state_model_qs.get()
+            state_model.sequence = F('sequence') + 1
+            state_model.save()
+            state_model.refresh_from_db()
+            return state_model
+        except ObjectDoesNotExist:
+            EntityModel = lazy_loader.get_entity_model()
+            entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
+            fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+            LOOKUP = {
+                'entity_id': entity_model.uuid,
+                'entity_unit_id': None,
+                'fiscal_year': fy_key,
+                'key': EntityStateModel.KEY_ESTIMATE,
+                'sequence': 1
+            }
+
+            state_model = EntityStateModel.objects.create(**LOOKUP)
+            return state_model
+        except IntegrityError as e:
+            if raise_exception:
+                raise e
+
     def generate_estimate_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next PurchaseOrder document number available.
@@ -654,63 +691,24 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
         if not self.estimate_number:
-            with transaction.atomic():
+            with transaction.atomic(durable=True):
 
-                EntityStateModel = lazy_loader.get_entity_state_model()
+                state_model = None
+                while not state_model:
+                    state_model = self._get_next_state_model(raise_exception=False)
 
-                try:
-                    LOOKUP = {
-                        'entity_id__exact': self.entity_id,
-                        'entity_unit_id': None,
-                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
-                        'key__exact': EntityStateModel.KEY_ESTIMATE
-                    }
+                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+                self.estimate_number = f'{DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
 
-                    state_model_qs = EntityStateModel.objects.select_related(
-                        'entity').filter(**LOOKUP).annotate(
-                        is_previous_fy=Case(
-                            When(entity__fy_start_month__lt=self.date_draft.month,
-                                 then=Value(0)),
-                            default=Value(-1)
-                        ),
-                        fy_you_need=ExpressionWrapper(
-                            Value(self.date_draft.year), output_field=IntegerField()
-                        ) + F('is_previous_fy')).filter(
-                        fiscal_year=F('fy_you_need')
-                    )
-
-                    state_model = state_model_qs.get()
-                    state_model.sequence += 1
-                    state_model.save(update_fields=['sequence'])
-
-                except ObjectDoesNotExist:
-                    EntityModel = lazy_loader.get_entity_model()
-                    entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
-                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
-
-                    LOOKUP = {
-                        'entity_id': entity_model.uuid,
-                        'entity_unit_id': None,
-                        'fiscal_year': fy_key,
-                        'key': EntityStateModel.KEY_ESTIMATE,
-                        'sequence': 1
-                    }
-                    state_model = EntityStateModel(**LOOKUP)
-                    state_model.clean()
-                    state_model.save()
-
-            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.estimate_number = f'{DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
-
-            if commit:
-                self.save(update_fields=['estimate_number'])
+                if commit:
+                    self.save(update_fields=['estimate_number'])
 
         return self.estimate_number
 
     def clean(self):
 
         if self.can_generate_estimate_number():
-            self.generate_estimate_number(commit=False)
+            self.generate_estimate_number(commit=True)
 
         if self.is_approved() and not self.date_approved:
             self.date_approved = localdate()
@@ -724,7 +722,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def save(self, **kwargs):
         if self.can_generate_estimate_number():
-            self.generate_estimate_number(commit=False)
+            self.generate_estimate_number(commit=True)
         super(EstimateModelAbstract, self).save(**kwargs)
 
 

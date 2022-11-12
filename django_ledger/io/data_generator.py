@@ -415,7 +415,7 @@ class EntityDataGenerator:
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
             accrue=random() > 0.65,
-            progress=random(),
+            progress=Decimal(str(round(random(), 2))),
             terms=choice(BillModel.TERMS)[0],
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
@@ -612,9 +612,8 @@ class EntityDataGenerator:
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
             accrue=random() > 0.75,
-            progress=random(),
+            progress=Decimal(str(round(random(), 2))),
             terms=choice(InvoiceModel.TERMS)[0],
-            # invoice_number=generate_invoice_number(),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),

@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.core.exceptions import ValidationError
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, QuerySet, F, Value, Case, When, ExpressionWrapper, IntegerField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
@@ -319,13 +319,13 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         if not self.is_verified() or force_verify:
             txs_qs = self.get_txs_qs()
 
-            if not len(txs_qs):
-                if raise_exception:
-                    raise JournalEntryValidationError('Journal entry has no transactions.')
+            # if not len(txs_qs):
+            #     if raise_exception:
+            #         raise JournalEntryValidationError('Journal entry has no transactions.')
 
-            if len(txs_qs) < 2:
-                if raise_exception:
-                    raise JournalEntryValidationError('At least two transactions required.')
+            # if len(txs_qs) < 2:
+            #     if raise_exception:
+            #         raise JournalEntryValidationError('At least two transactions required.')
 
             # CREDIT/DEBIT Balance validation...
             balance_is_valid = self.is_balance_valid(txs_qs)
@@ -426,6 +426,42 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
 
+    def _get_next_state_model(self, raise_exception: bool = True):
+
+        EntityStateModel = lazy_loader.get_entity_state_model()
+        EntityModel = lazy_loader.get_entity_model()
+        entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+        fy_key = entity_model.get_fy_for_date(dt=self.date)
+
+        try:
+            LOOKUP = {
+                'entity_id__exact': self.ledger.entity_id,
+                'entity_unit_id__exact': self.entity_unit_id,
+                'fiscal_year': fy_key,
+                'key__exact': EntityStateModel.KEY_JOURNAL_ENTRY
+            }
+
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model = state_model_qs.get()
+            state_model.sequence = F('sequence') + 1
+            state_model.save()
+            state_model.refresh_from_db()
+            return state_model
+
+        except ObjectDoesNotExist:
+            LOOKUP = {
+                'entity_id': entity_model.uuid,
+                'entity_unit_id': self.entity_unit_id,
+                'fiscal_year': fy_key,
+                'key': EntityStateModel.KEY_JOURNAL_ENTRY,
+                'sequence': 1
+            }
+            state_model = EntityStateModel.objects.create(**LOOKUP)
+            return state_model
+        except IntegrityError as e:
+            if raise_exception:
+                raise e
+
     def generate_je_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next Journal Entry document number available. The operation
@@ -436,66 +472,27 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         """
         if not self.je_number:
 
-            with transaction.atomic():
+            with transaction.atomic(durable=True):
 
-                EntityStateModel = lazy_loader.get_entity_state_model()
+                state_model = None
+                while not state_model:
+                    state_model = self._get_next_state_model(raise_exception=False)
 
-                try:
-                    LOOKUP = {
-                        'entity_id__exact': self.ledger.entity_id,
-                        'entity_unit_id__exact': self.entity_unit_id,
-                        'fiscal_year__in': [self.date.year, self.date.year - 1],
-                        'key__exact': EntityStateModel.KEY_JOURNAL_ENTRY
-                    }
+                if self.entity_unit_id:
+                    unit_prefix = self.entity_unit.document_prefix
+                else:
+                    unit_prefix = DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
 
-                    state_model_qs = EntityStateModel.objects.select_related(
-                        'entity').filter(**LOOKUP).annotate(
-                        is_previous_fy=Case(
-                            When(entity__fy_start_month__lt=self.date.month,
-                                 then=Value(0)),
-                            default=Value(-1)
-                        ),
-                        fy_you_need=ExpressionWrapper(
-                            Value(self.date.year), output_field=IntegerField()
-                        ) + F('is_previous_fy')).filter(
-                        fiscal_year=F('fy_you_need')
-                    )
+                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+                self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
 
-                    state_model = state_model_qs.get()
-                    state_model.sequence += 1
-                    state_model.save(update_fields=['sequence'])
-
-                except ObjectDoesNotExist:
-                    EntityModel = lazy_loader.get_entity_model()
-                    entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
-                    fy_key = entity_model.get_fy_for_date(dt=self.date)
-
-                    LOOKUP = {
-                        'entity_id': entity_model.uuid,
-                        'entity_unit_id': self.entity_unit_id,
-                        'fiscal_year': fy_key,
-                        'key': EntityStateModel.KEY_JOURNAL_ENTRY,
-                        'sequence': 1
-                    }
-                    state_model = EntityStateModel(**LOOKUP)
-                    state_model.clean()
-                    state_model.save()
-
-            if self.entity_unit_id:
-                unit_prefix = self.entity_unit.document_prefix
-            else:
-                unit_prefix = DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
-
-            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.je_number = f'{DJANGO_LEDGER_JE_NUMBER_PREFIX}-{state_model.fiscal_year}-{unit_prefix}-{seq}'
-
-            if commit:
-                self.save(update_fields=['je_number'])
+                if commit:
+                    self.save(update_fields=['je_number'])
 
         return self.je_number
 
     def clean(self, verify: bool = False):
-        self.generate_je_number(commit=False)
+        self.generate_je_number(commit=True)
         if verify:
             txs_qs = self.verify()
             return txs_qs

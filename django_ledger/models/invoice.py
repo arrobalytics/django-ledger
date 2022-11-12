@@ -13,7 +13,7 @@ from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, Count, Value, IntegerField, ExpressionWrapper, When, Case, F
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
@@ -650,6 +650,44 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def get_terms_start_date(self) -> date:
         return self.date_approved
 
+    def _get_next_state_model(self, raise_exception=True):
+        EntityStateModel = lazy_loader.get_entity_state_model()
+        EntityModel = lazy_loader.get_entity_model()
+        entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+        fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+        try:
+            LOOKUP = {
+                'entity_id__exact': self.ledger.entity_id,
+                'entity_unit_id__exact': None,
+                'fiscal_year': fy_key,
+                'key__exact': EntityStateModel.KEY_INVOICE
+            }
+
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model = state_model_qs.get()
+            state_model.sequence = F('sequence') + 1
+            state_model.save()
+            state_model.refresh_from_db()
+            return state_model
+        except ObjectDoesNotExist:
+            EntityModel = lazy_loader.get_entity_model()
+            entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
+            fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
+            LOOKUP = {
+                'entity_id': entity_model.uuid,
+                'entity_unit_id': None,
+                'fiscal_year': fy_key,
+                'key': EntityStateModel.KEY_INVOICE,
+                'sequence': 1
+            }
+
+            state_model = EntityStateModel.objects.create(**LOOKUP)
+            return state_model
+        except IntegrityError as e:
+            if raise_exception:
+                raise e
+
     def generate_invoice_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next InvoiceModel document number available. The operation
@@ -659,61 +697,20 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
         if not self.invoice_number:
-            with transaction.atomic():
-                EntityStateModel = lazy_loader.get_entity_state_model()
+            with transaction.atomic(durable=True):
+                state_model = None
+                while not state_model:
+                    state_model = self._get_next_state_model(raise_exception=False)
+                seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
+                self.invoice_number = f'{DJANGO_LEDGER_INVOICE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
 
-                try:
-                    LOOKUP = {
-                        'entity_id__exact': self.ledger.entity_id,
-                        'entity_unit_id__exact': None,
-                        'fiscal_year__in': [self.date_draft.year, self.date_draft.year - 1],
-                        'key__exact': EntityStateModel.KEY_INVOICE
-                    }
-
-                    state_model_qs = EntityStateModel.objects.select_related(
-                        'entity').filter(**LOOKUP).annotate(
-                        is_previous_fy=Case(
-                            When(entity__fy_start_month__lt=self.date_draft.month,
-                                 then=Value(0)),
-                            default=Value(-1)
-                        ),
-                        fy_you_need=ExpressionWrapper(
-                            Value(self.date_draft.year), output_field=IntegerField()
-                        ) + F('is_previous_fy')).filter(
-                        fiscal_year=F('fy_you_need')
-                    )
-
-                    state_model = state_model_qs.get()
-                    state_model.sequence += 1
-                    state_model.save(update_fields=['sequence'])
-
-                except ObjectDoesNotExist:
-                    EntityModel = lazy_loader.get_entity_model()
-                    entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
-                    fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
-
-                    LOOKUP = {
-                        'entity_id': entity_model.uuid,
-                        'entity_unit_id': None,
-                        'fiscal_year': fy_key,
-                        'key': EntityStateModel.KEY_INVOICE,
-                        'sequence': 1
-                    }
-                    state_model = EntityStateModel(**LOOKUP)
-                    state_model.clean()
-                    state_model.save()
-
-            seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
-            self.invoice_number = f'{DJANGO_LEDGER_INVOICE_NUMBER_PREFIX}-{state_model.fiscal_year}-{seq}'
-
-            if commit:
-                self.save(update_fields=['invoice_number', 'updated'])
-
+                if commit:
+                    self.save(update_fields=['invoice_number'])
         return self.invoice_number
 
     def clean(self):
         if self.can_generate_invoice_number():
-            self.generate_invoice_number(commit=False)
+            self.generate_invoice_number(commit=True)
 
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
@@ -728,7 +725,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
     def save(self, **kwargs):
         if self.can_generate_invoice_number():
-            self.generate_invoice_number(commit=False)
+            self.generate_invoice_number(commit=True)
         super(InvoiceModelAbstract, self).save(**kwargs)
 
 

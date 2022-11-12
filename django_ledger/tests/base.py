@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from logging import getLogger, DEBUG
 from random import randint, choice
@@ -80,12 +80,11 @@ class DjangoLedgerBaseTest(TestCase):
         cls.populate_entity_models()
 
     @classmethod
-    def get_random_date(cls) -> datetime:
-        return datetime(
+    def get_random_date(cls) -> date:
+        return date(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),
-            day=choice(range(1, 28)),
-            tzinfo=cls.TZ
+            day=choice(range(1, 28))
         )
 
     @classmethod
@@ -109,6 +108,7 @@ class DjangoLedgerBaseTest(TestCase):
     @classmethod
     def get_random_entity_data(cls) -> dict:
         return {
+            'slug': f'a-cool-slug-{randint(10000,99999)}',
             'name': f'Testing Inc-{randint(100000, 999999)}',
             'address_1': f'{randint(100000, 999999)} Main St',
             'address_2': f'Suite {randint(1000, 9999)}',
@@ -118,14 +118,15 @@ class DjangoLedgerBaseTest(TestCase):
             'country': 'US',
             'email': 'mytest@testinginc.com',
             'website': 'http://www.mytestingco.com',
-            'fy_start_month': choice(cls.FY_STARTS)
+            'fy_start_month': choice(cls.FY_STARTS),
+            'admin': cls.user_model
         }
 
     @classmethod
     def create_entity_models(cls, save=True, n: int = 5):
         cls.refresh_test_data(n)
         for ent_data in cls.TEST_DATA:
-            entity_model = EntityModel(**ent_data)
+            entity_model = EntityModel.add_root(**ent_data)
             entity_model.admin = cls.user_model
             entity_model.clean()
             if save:
