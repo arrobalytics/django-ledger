@@ -14,7 +14,7 @@ from uuid import uuid4
 from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.core.exceptions import ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, QuerySet, F, Value, Case, When, ExpressionWrapper, IntegerField
+from django.db.models import Q, Sum, QuerySet, F
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -26,12 +26,10 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES)
-from django_ledger.models import CreateUpdateMixIn, ParentChildMixIn
-from django_ledger.models.utils import LazyLoader
-from django_ledger.settings import DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, \
-    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
-
-lazy_loader = LazyLoader()
+from django_ledger.models import CreateUpdateMixIn
+from django_ledger.models.utils import lazy_loader
+from django_ledger.settings import (DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+                                    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX)
 
 
 class JournalEntryModelQuerySet(QuerySet):
@@ -79,7 +77,7 @@ class ActivityEnum(Enum):
     FINANCING = 'fin'
 
 
-class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+class JournalEntryModelAbstract(CreateUpdateMixIn):
     OPERATING_ACTIVITY = ActivityEnum.OPERATING.value
     FINANCING_OTHER = ActivityEnum.FINANCING.value
     INVESTING_OTHER = ActivityEnum.INVESTING.value
@@ -117,12 +115,6 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a
     ]
 
-    parent = models.ForeignKey('self',
-                               blank=True,
-                               null=True,
-                               verbose_name=_('Parent Journal Entry'),
-                               related_name='children',
-                               on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     je_number = models.SlugField(max_length=20, editable=False, verbose_name=_('Journal Entry Number'))
     date = models.DateField(verbose_name=_('Date'))
@@ -155,7 +147,7 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         verbose_name = _('Journal Entry')
         verbose_name_plural = _('Journal Entries')
         indexes = [
-            models.Index(fields=['parent']),
+            # models.Index(fields=['parent']),
             models.Index(fields=['ledger']),
             models.Index(fields=['date']),
             models.Index(fields=['activity']),
@@ -278,8 +270,8 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
 
     def get_txs_qs(self, select_accounts: bool = True):
         if not select_accounts:
-            return self.txs.all()
-        return self.txs.all().select_related('account')
+            return self.transactionmodel_set.all()
+        return self.transactionmodel_set.all().select_related('account')
 
     def get_txs_balances(self, txs_qs=None):
         if not txs_qs:
@@ -509,13 +501,13 @@ class JournalEntryModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
                 self.mark_as_unposted(raise_exception=True)
             raise JournalEntryValidationError(
                 f'Something went wrong validating journal entry ID: {self.uuid}: {e.message}')
-        except Exception:
+        except Exception as e:
             # safety net, for any unexpected error...
             # no JE can be posted if not fully validated...
             self.posted = False
             self._verified = False
-            self.save(updade_fields=['posted', 'updated'], verify=False)
-            raise JournalEntryValidationError(f'Unknown error posting JE {self.uuid}')
+            self.save(update_fields=['posted', 'updated'], verify=False)
+            raise JournalEntryValidationError(e)
         super(JournalEntryModelAbstract, self).save(*args, **kwargs)
 
 

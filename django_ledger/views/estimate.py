@@ -66,13 +66,10 @@ class EstimateModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
     def form_valid(self, form):
-        cj_model: EstimateModel = form.save(commit=False)
-
-        # making sure the user as permissions on entity_model...
+        estimate_model: EstimateModel = form.save(commit=False)
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).only('uuid')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug=self.kwargs['entity_slug'])
-        cj_model.entity = entity_model
-
+        estimate_model.entity = entity_model
         return super(EstimateModelCreateView, self).form_valid(form)
 
 
@@ -160,12 +157,10 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     def get_context_data(self, itemtxs_formset=None, **kwargs):
         context = super(EstimateModelUpdateView, self).get_context_data(**kwargs)
         ce_model: EstimateModel = self.object
-
         context['page_title'] = self.PAGE_TITLE,
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = ce_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
-
         if not itemtxs_formset:
             itemtxs_qs, itemtxs_agg = ce_model.get_itemtransaction_data()
             if ce_model.can_update_items():
@@ -220,6 +215,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
             if not request.user.is_authenticated:
                 return HttpResponseForbidden()
+
             queryset = self.get_queryset()
             ce_model: EstimateModel = self.get_object(queryset=queryset)
             self.object = ce_model
@@ -256,8 +252,8 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                          extra_tags='is-success')
 
                     return self.render_to_response(context=self.get_context_data())
-                context = self.get_context_data(itemtxs_formset=itemtxs_formset)
-                return self.render_to_response(context=context)
+            context = self.get_context_data(itemtxs_formset=itemtxs_formset)
+            return self.render_to_response(context=context)
         return super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
 
 

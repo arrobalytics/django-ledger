@@ -9,7 +9,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import date, timedelta
 from decimal import Decimal
 from itertools import groupby
-from random import randint, random, choice
+from random import randint, random, choice, choices
+from string import ascii_uppercase
 from typing import Union
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -151,18 +152,16 @@ class EntityDataGenerator:
             assert nb_units >= 0, 'Number of unite must be greater than 0'
 
         entity_unit_models = [
-            EntityUnitModel(
+            EntityUnitModel.add_root(
                 name=f'Unit {u}',
                 slug=create_entity_unit_slug(
                     name=f'{self.entity_model.name}-Unit {u}'),
-                entity=self.entity_model
+                entity=self.entity_model,
+                document_prefix=''.join(choices(ascii_uppercase, k=3))
             ) for u in range(nb_units)
         ]
 
-        for eum in entity_unit_models:
-            eum.clean()
-
-        self.entity_unit_models = EntityUnitModel.objects.bulk_create(entity_unit_models)
+        self.entity_unit_models = self.entity_model.entityunitmodel_set.all()
 
     def create_vendors(self):
         vendor_count = randint(10, 20)
@@ -223,23 +222,17 @@ class EntityDataGenerator:
                              routing_number=self.fk.swift11(),
                              aba_number=self.fk.swift(),
                              account_type='checking',
+                             active=True,
                              cash_account=choice(self.accounts_by_role['asset_ca_cash']),
-                             ledger=LedgerModel.objects.create(
-                                 entity=self.entity_model,
-                                 name=f'{self.entity_model.name} Checking Account',
-                                 posted=True
-                             )),
+                             entity_model=self.entity_model),
             BankAccountModel(name=f'{self.entity_model.name} Savings Account',
                              account_number=self.fk.bban(),
                              routing_number=self.fk.swift11(),
                              aba_number=self.fk.swift(),
+                             active=True,
                              account_type='savings',
                              cash_account=choice(self.accounts_by_role['asset_ca_cash']),
-                             ledger=LedgerModel.objects.create(
-                                 entity=self.entity_model,
-                                 name=f'{self.entity_model.name} Savings Account',
-                                 posted=True
-                             ))
+                             entity_model=self.entity_model),
         ]
         for ba in bank_account_models:
             ba.clean()
@@ -269,7 +262,7 @@ class EntityDataGenerator:
         for i in range(product_count):
             is_inventory = random() > 0.75
             if is_inventory:
-                product_models.append(ItemModel(
+                product_models.append(ItemModel.add_root(
                     name=f'Product or Service {randint(1000, 9999)}',
                     uom=choice(self.uom_models),
                     item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -285,7 +278,7 @@ class EntityDataGenerator:
                     additional_info=dict()
                 ))
             else:
-                product_models.append(ItemModel(
+                product_models.append(ItemModel.add_root(
                     name=f'Product or Service {randint(1000, 9999)}',
                     uom=choice(self.uom_models),
                     item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -299,10 +292,6 @@ class EntityDataGenerator:
                     additional_info=dict()
                 ))
 
-        for im in product_models:
-            im.full_clean()
-
-        self.entity_model.items.bulk_create(product_models, ignore_conflicts=True)
         self.update_products()
 
     def update_products(self):
@@ -317,10 +306,16 @@ class EntityDataGenerator:
             user_model=self.user_model
         )
 
+    def update_expenses(self):
+        self.expense_models = ItemModel.objects.expenses(
+            entity_slug=self.entity_model.slug,
+            user_model=self.user_model
+        )
+
     def create_expenses(self):
         expense_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         expense_models = [
-            ItemModel(
+            ItemModel.add_root(
                 name=f'Expense Item {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
                 item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -334,15 +329,12 @@ class EntityDataGenerator:
             ) for _ in range(expense_count)
         ]
 
-        for em in expense_models:
-            em.clean()
-
-        self.expense_models = self.entity_model.items.bulk_create(expense_models)
+        self.update_expenses()
 
     def create_inventories(self):
         inv_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         inventory_models = [
-            ItemModel(
+            ItemModel.add_root(
                 name=f'Inventory {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
                 item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -356,10 +348,6 @@ class EntityDataGenerator:
             ) for _ in range(inv_count)
         ]
 
-        for i in inventory_models:
-            i.clean()
-
-        self.entity_model.items.bulk_create(inventory_models)
         self.update_inventory()
 
     def create_estimates(self, date_draft: date):

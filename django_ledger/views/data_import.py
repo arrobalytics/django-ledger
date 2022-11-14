@@ -120,8 +120,7 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
                 ba.clean()
                 ba.configure(
                     entity_slug=entity_model,
-                    user_model=self.request.user,
-                    posted_ledger=True
+                    user_model=self.request.user
                 )
             BankAccountModel.objects.bulk_create(new_bank_accs)
 

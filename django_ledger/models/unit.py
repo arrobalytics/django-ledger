@@ -15,21 +15,26 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from treebeard.mp_tree import MP_Node, MP_NodeManager
 
 from django_ledger.io.io_mixin import IOMixIn
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ParentChildMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
-def create_entity_unit_slug(name):
+def create_entity_unit_slug(name, k=5):
     slug = slugify(name)
-    suffix = ''.join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=5))
+    suffix = ''.join(choices(ENTITY_UNIT_RANDOM_SLUG_SUFFIX, k=k))
     unit_slug = f'{slug}-{suffix}'
     return unit_slug
 
 
-class EntityUnitModelManager(models.Manager):
+class EntityUnitModelQuerySet(models.QuerySet):
+    pass
+
+
+class EntityUnitModelManager(MP_NodeManager):
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -43,7 +48,7 @@ class EntityUnitModelManager(models.Manager):
         )
 
 
-class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUpdateMixIn):
+class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     slug = models.SlugField(max_length=50)
     entity = models.ForeignKey('django_ledger.EntityModel',
@@ -54,7 +59,8 @@ class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUp
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 
-    objects = EntityUnitModelManager()
+    objects = EntityUnitModelManager.from_queryset(queryset_class=EntityUnitModelQuerySet)()
+    node_order_by = ['uuid']
 
     class Meta:
         abstract = True
@@ -86,6 +92,10 @@ class EntityUnitModelAbstract(IOMixIn, ParentChildMixIn, SlugNameMixIn, CreateUp
                        kwargs={
                            'entity_slug': self.slug
                        })
+
+    def save(self, **kwargs):
+        self.clean()
+        super(EntityUnitModelAbstract, self).save(self, **kwargs)
 
 
 class EntityUnitModel(EntityUnitModelAbstract):

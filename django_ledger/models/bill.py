@@ -14,7 +14,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, Case, When, Value, ExpressionWrapper, IntegerField, F
+from django.db.models import Q, Sum, Count, F
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -24,10 +24,8 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
-from django_ledger.models.utils import LazyLoader
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX
-
-lazy_loader = LazyLoader()
 
 BILL_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -230,6 +228,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             models.Index(fields=['date_void']),
 
             models.Index(fields=['vendor']),
+            models.Index(fields=['bill_number']),
         ]
 
     def __str__(self):
@@ -273,19 +272,21 @@ class BillModelAbstract(LedgerWrapperMixIn,
         else:
             self.accrue = False
 
-        ledger_name = f'Bill {self.bill_number}'
+        LedgerModel = lazy_loader.get_ledger_model()
+        ledger_model: LedgerModel = LedgerModel(
+            entity=entity_model,
+            posted=ledger_posted
+        )
+        ledger_name = f'Bill {self.uuid}'
         if bill_desc:
             ledger_name += f' | {bill_desc}'
-
-        LedgerModel = lazy_loader.get_ledger_model()
-        ledger_model: LedgerModel = LedgerModel.objects.create(
-            entity=entity_model,
-            posted=ledger_posted,
-            name=ledger_name,
-        )
+        ledger_model.name = ledger_name
         ledger_model.clean()
+
         self.ledger = ledger_model
+        self.ledger.save()
         self.clean()
+
         if commit:
             self.save()
 
@@ -387,6 +388,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         if self.date_due and self.is_approved():
             return self.date_due < localdate()
         return False
+
     # Permissions....
     def can_draft(self) -> bool:
         """
@@ -508,7 +510,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         return all([
             not self.bill_number,
             self.date_draft,
-            self.ledger_id
+            # self.ledger_id
         ])
 
     # --> ACTIONS <---
@@ -565,7 +567,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-mark-as-draft'
 
-    def get_mark_as_draft_url(self, entity_slug: str = None) -> str:
+    def get_mark_as_draft_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Draft action URL.
         @return: BillModel mark-as-draft action URL.
@@ -634,7 +636,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-mark-as-review'
 
-    def get_mark_as_review_url(self, entity_slug: str = None) -> str:
+    def get_mark_as_review_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Review action URL.
         @return: BillModel mark-as-review action URL.
@@ -836,7 +838,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-mark-as-paid'
 
-    def get_mark_as_paid_url(self, entity_slug: Optional[str]) -> str:
+    def get_mark_as_paid_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Paid action URL.
         @return: BillModel mark-as-paid action URL.
@@ -903,7 +905,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-mark-as-void'
 
-    def get_mark_as_void_url(self, entity_slug: Optional[str]) -> str:
+    def get_mark_as_void_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Void action URL.
         @return: BillModel mark-as-void action URL.
@@ -951,7 +953,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-mark-as-canceled'
 
-    def get_mark_as_canceled_url(self, entity_slug: Optional[str]) -> str:
+    def get_mark_as_canceled_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Canceled action URL.
         @return: BillModel mark-as-canceled action URL.
@@ -1039,7 +1041,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
-            state_model.save()
+            state_model.save(update_fields=['sequence'])
             state_model.refresh_from_db()
             return state_model
         except ObjectDoesNotExist:

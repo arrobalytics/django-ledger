@@ -47,6 +47,13 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:bank-account-update' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
+                                {% if bank_acc.can_activate %}
+                                    <a href="{% url 'django_ledger:bank-account-mark-as-active' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
+                                       class="dropdown-item has-text-weight-bold has-text-success">{% trans 'Activate' %}</a>
+                                {% elif bank_acc.can_inactivate %}
+                                    <a href="{% url 'django_ledger:bank-account-mark-as-inactive' entity_slug=entity_slug bank_account_pk=bank_acc.uuid %}"
+                                       class="dropdown-item has-text-weight-bold has-text-danger">{% trans 'Inactivate' %}</a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

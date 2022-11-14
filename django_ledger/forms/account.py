@@ -108,24 +108,24 @@ class AccountModelUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        self.PARENT_ACCOUNT: AccountModel = self.instance.parent
-
-        if self.PARENT_ACCOUNT:
-            self.fields['parent'].queryset = AccountModel.on_coa.with_roles_available(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL,
-                roles=[self.PARENT_ACCOUNT.role]
-            )
-        else:
-            self.fields['parent'].queryset = AccountModel.on_coa.for_entity_available(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG,
-            )
+        # self.PARENT_ACCOUNT: AccountModel = self.instance.parent
+        #
+        # if self.PARENT_ACCOUNT:
+        #     self.fields['parent'].queryset = AccountModel.on_coa.with_roles_available(
+        #         entity_slug=self.ENTITY_SLUG,
+        #         user_model=self.USER_MODEL,
+        #         roles=[self.PARENT_ACCOUNT.role]
+        #     )
+        # else:
+        #     self.fields['parent'].queryset = AccountModel.on_coa.for_entity_available(
+        #         user_model=self.USER_MODEL,
+        #         entity_slug=self.ENTITY_SLUG,
+        #     )
 
     class Meta:
         model = AccountModel
         fields = [
-            'parent',
+            # 'parent',
             'code',
             'name',
             'locked',

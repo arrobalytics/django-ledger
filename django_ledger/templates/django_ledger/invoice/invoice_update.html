@@ -34,13 +34,13 @@
                 <div class="column is-12">
                     <div class="card">
                         <div class="card-header">
-                            <p class="card-header-title">{% trans 'Bill State' %}</p>
+                            <p class="card-header-title">{% trans 'Invoice State' %}</p>
                         </div>
                         <div class="card-body">
                             <div class="card-content">
                                 <div class="columns is-multiline">
                                     <div class="column is-12">
-                                        <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
+                                        <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
                                         <p>{{ invoice.cash_account }}:
                                             ${{ invoice.get_amount_cash | currency_format }}</p>
                                         <p>{{ invoice.prepaid_account }}:
@@ -72,7 +72,7 @@
                                     <div class="column is-12">
                                         <a class="button is-small is-warning is-fullwidth"
                                            href="{% url 'django_ledger:ledger-update' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
-                                            {% trans 'Bill Ledger' %}
+                                            {% trans 'Invoice Ledger' %}
                                         </a>
                                         <a class="button is-small is-info is-fullwidth mt-2"
                                            href="{% url 'django_ledger:je-list' ledger_pk=invoice.ledger.uuid entity_slug=view.kwargs.entity_slug %}">
@@ -94,7 +94,7 @@
                 <div class="column is-12">
                     <div class="card animate__animated animate__tada">
                         <div class="card-header">
-                            <p class="card-header-title">{% trans 'Bill Configuration' %}</p>
+                            <p class="card-header-title">{% trans 'Invoice Configuration' %}</p>
                         </div>
                         <div class="card-body">
                             <div class="card-content">

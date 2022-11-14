@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -44,7 +44,7 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         return AccountModel.on_coa.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).select_related('parent').order_by('code')
+        ).order_by('code')
 
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -78,7 +78,7 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        ).select_related('parent')
+        )
 
 
 class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
@@ -107,18 +107,17 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     def form_valid(self, form):
         entity_slug = self.kwargs['entity_slug']
         parent_account_pk = self.kwargs.get('parent_account_pk')
-        account: AccountModel = form.save(commit=False)
-        if parent_account_pk:
-            account_qs = self.get_queryset()
-            parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
-            account.parent = parent_account_model
-            account.role = parent_account_model.role
+        # if parent_account_pk:
+        #     account_qs = self.get_queryset()
+        #     parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
+        #     account.parent = parent_account_model
+        #     account.role = parent_account_model.role
 
         coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
                                                         entity_slug=entity_slug)
         coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
-        account.coa = coa_model
-        return super().form_valid(form)
+        account_model = AccountModel.add_root(**form.cleaned_data, coa=coa_model)
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
@@ -186,7 +185,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         context = super().get_context_data(**kwargs)
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
-        txs_qs = self.object.txs.order_by('-journal_entry__date')
+        txs_qs = self.object.transactionmodel_set.order_by('-journal_entry__date')
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
         context['transactions'] = txs_qs
@@ -196,7 +195,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         return AccountModel.on_coa.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        ).prefetch_related('txs')
+        ).prefetch_related('transactionmodel_set')
 
 
 class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):

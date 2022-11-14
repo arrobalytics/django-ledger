@@ -452,7 +452,7 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                                          entity_slug=entity_slug)
 
             if itemtxs_formset.has_changed():
-                if itemtxs_formset.is_balance_valid():
+                if itemtxs_formset.is_valid():
                     itemtxs_list = itemtxs_formset.save(commit=False)
                     entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
@@ -491,8 +491,8 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                                 'bill_pk': bill_pk
                                             })
                     )
-                # if not valid, return formset with errors...
-                return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
+            context = self.get_context_data(itemtxs_formset=itemtxs_formset)
+            return self.render_to_response(context=context)
         return super(BillModelUpdateView, self).post(request, **kwargs)
 
 
@@ -507,7 +507,7 @@ class BaseBillActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMi
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).select_related('ledger', 'ledger__entity')
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:bill-update',

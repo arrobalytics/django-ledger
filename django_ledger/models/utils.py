@@ -137,3 +137,6 @@ class LazyLoader:
             from django_ledger.models import EntityUnitModel
             self.ENTITY_UNIT_MODEL = EntityUnitModel
         return self.ENTITY_UNIT_MODEL
+
+
+lazy_loader = LazyLoader()

@@ -22,9 +22,11 @@
                     <a href="{% url 'django_ledger:unit-dashboard' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
                        class="button is-medium is-info">{% trans 'Dashboard' %}</a>
                     <a href="{% url 'django_ledger:unit-bs' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
-                       class="button is-medium is-info">{% trans 'Balance Sheet' %}</a>
+                       class="button is-medium is-primary">{% trans 'Balance Sheet' %}</a>
                     <a href="{% url 'django_ledger:unit-ic' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
                        class="button is-medium is-primary">{% trans 'Income Statement' %}</a>
+                    <a href="{% url 'django_ledger:unit-cf' entity_slug=view.kwargs.entity_slug unit_slug=view.kwargs.unit_slug %}"
+                       class="button is-medium is-primary">{% trans 'Cash Flow Statement' %}</a>
                 </div>
 
             </div>

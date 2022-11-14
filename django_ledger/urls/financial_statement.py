@@ -125,4 +125,22 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/cash-flow-statement/date/<int:year>/<int:month>/<int:day>/',
          views.DateModelCashFlowStatementView.as_view(),
          name='entity-cf-date'),
+
+    # Entity Units...
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/',
+         views.EntityUnitModelIncomeStatementView.as_view(),
+         name='unit-cf'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/year/<int:year>/',
+         views.FiscalYearEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-cf-year'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-cf-quarter'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/month/<int:year>/<str:month>/',
+         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-cf-month'),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/date/<int:year>/<str:month>/<int:day>/',
+         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+         name='unit-cf-date'),
+
 ]

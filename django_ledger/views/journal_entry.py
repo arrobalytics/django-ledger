@@ -91,7 +91,7 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user
-        ).prefetch_related('txs', 'txs__account')
+        ).prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
 
 
 class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):

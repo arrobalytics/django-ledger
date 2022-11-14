@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView
@@ -45,7 +45,7 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     }
 
     def get_queryset(self):
-        return VendorModelForm.objects.for_entity(
+        return VendorModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
@@ -57,12 +57,12 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
     def form_valid(self, form):
-        customer_model: VendorModel = form.save(commit=False)
-        entity_model = EntityModel.objects.for_user(
+        vendor_model: VendorModel = form.save(commit=False)
+        entity_model_qs = EntityModel.objects.for_user(
             user_model=self.request.user
-        ).get(slug__exact=self.kwargs['entity_slug'])
-        customer_model.entity = entity_model
-        customer_model.save()
+        )
+        entity_model = get_object_or_404(klass=entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+        vendor_model.entity = entity_model
         return super().form_valid(form)
 
 
@@ -71,13 +71,18 @@ class VendorModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     PAGE_TITLE = _('Vendor Update')
     context_object_name = 'vendor'
     form_class = VendorModelForm
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'bi:person-lines-fill'
-    }
+
     slug_url_kwarg = 'vendor_pk'
     slug_field = 'uuid'
+
+    def get_context_data(self, **kwargs):
+        context = super(VendorModelUpdateView, self).get_context_data(**kwargs)
+        vendor_model: VendorModel = self.object
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = vendor_model.vendor_number
+        context['header_subtitle_icon'] = 'bi:person-lines-fill'
+        return context
 
     def get_queryset(self):
         return VendorModel.objects.for_entity(

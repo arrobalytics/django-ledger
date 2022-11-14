@@ -215,7 +215,7 @@ def jes_table(context, next_url=None):
 
 @register.inclusion_tag('django_ledger/transaction/tags/txs_table.html')
 def journal_entry_txs_table(journal_entry_model, style='detail'):
-    txs_queryset = journal_entry_model.txs.all().select_related('account')
+    txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {

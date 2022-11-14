@@ -184,12 +184,10 @@ class TransactionModelAbstract(CreateUpdateMixIn):
     tx_type = models.CharField(max_length=10, choices=TX_TYPE, verbose_name=_('Tx Type'))
     journal_entry = models.ForeignKey('django_ledger.JournalEntryModel',
                                       editable=False,
-                                      related_name='txs',
                                       verbose_name=_('Journal Entry'),
                                       help_text=_('Journal Entry to be associated with this transaction.'),
                                       on_delete=models.PROTECT)
     account = models.ForeignKey('django_ledger.AccountModel',
-                                related_name='txs',
                                 verbose_name=_('Account'),
                                 help_text=_('Account from Chart of Accounts to be associated with this transaction.'),
                                 on_delete=models.PROTECT)

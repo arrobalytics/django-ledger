@@ -11,16 +11,10 @@ class JournalEntryModelCreateForm(ModelForm):
         self.USER_MODEL = user_model
         self.LEDGER_PK = ledger_pk
 
-        self.fields['parent'].queryset = JournalEntryModel.on_coa.for_ledger(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL,
-            ledger_pk=self.LEDGER_PK
-        )
-
     class Meta:
         model = JournalEntryModel
         fields = [
-            'parent',
+            # 'parent',
             'date',
             'description'
         ]
@@ -41,7 +35,6 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
     class Meta:
         model = JournalEntryModel
         fields = [
-            'parent',
             'date',
             'description'
         ]

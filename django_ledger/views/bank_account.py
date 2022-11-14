@@ -5,10 +5,12 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-from django.http import HttpResponseRedirect
+from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, RedirectView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
 from django_ledger.models.bank_account import BankAccountModel
@@ -29,7 +31,7 @@ class BankAccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         return BankAccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('cash_account')
+        ).select_related('cash_account', 'entity_model')
 
 
 class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
@@ -60,9 +62,8 @@ class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         bank_account_model.configure(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-            posted_ledger=True)
-        bank_account_model.save()
-        return HttpResponseRedirect(self.get_success_url())
+            commit=False)
+        return super(BankAccountModelCreateView, self).form_valid(form)
 
 
 class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -86,7 +87,7 @@ class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return BankAccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('ledger')
+        ).select_related('entity_model')
 
     def get_form(self, form_class=None):
         return BankAccountUpdateForm(
@@ -94,3 +95,47 @@ class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
+
+
+# ACTION VIEWS...
+class BaseBankAccountModelActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'bank_account_pk'
+    action_name = None
+    commit = True
+
+    def get_queryset(self):
+        return BankAccountModel.objects.for_entity(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:bank-account-list',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
+        ba_model: BankAccountModel = self.get_object()
+
+        try:
+            getattr(ba_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class BankAccountModelActionMarkAsActiveView(BaseBankAccountModelActionView):
+    action_name = 'mark_as_active'
+
+
+class BankAccountModelActionMarkAsInactiveView(BaseBankAccountModelActionView):
+    action_name = 'mark_as_inactive'

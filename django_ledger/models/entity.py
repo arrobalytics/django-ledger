@@ -25,7 +25,7 @@ from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
-from treebeard.mp_tree import MP_Node, MP_NodeManager
+from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
 from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
@@ -34,10 +34,9 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
-from django_ledger.models.utils import LazyLoader
+from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()
-lazy_loader = LazyLoader()
 
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -184,7 +183,15 @@ class EntityReportMixIn:
         return y
 
 
+class EntityModelQuerySet(MP_NodeQuerySet):
+    pass
+
+
 class EntityModelManager(MP_NodeManager):
+
+    def get_queryset(self):
+        """Sets the custom queryset as the default."""
+        return EntityModelQuerySet(self.model).order_by('path')
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -233,7 +240,7 @@ class EntityModelAbstract(MP_Node,
                                          verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
-    objects = EntityModelManager()
+    objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
     node_order_by = ['uuid']
 
@@ -340,7 +347,7 @@ class EntityModelAbstract(MP_Node,
     def recorded_inventory(self, user_model, queryset=None, as_values=True):
         if not queryset:
             # pylint: disable=no-member
-            recorded_qs = self.items.inventory(
+            recorded_qs = self.itemmodel_set.inventory(
                 entity_slug=self.slug,
                 user_model=user_model
             )
@@ -388,23 +395,28 @@ class EntityModelAbstract(MP_Node,
 
     def populate_default_coa(self, activate_accounts: bool = False):
         # pylint: disable=no-member
-        coa: ChartOfAccountModel = self.coa
-        has_accounts = coa.accounts.all().exists()
+        coa: ChartOfAccountModel = self.chartofaccountmodel
+        has_accounts = coa.accountmodel_set.all().exists()
         if not has_accounts:
             acc_objs = [
-                AccountModel(
-                    code=a['code'],
-                    name=a['name'],
-                    role=a['role'],
-                    balance_type=a['balance_type'],
-                    active=activate_accounts,
-                    coa=coa,
-                ) for a in CHART_OF_ACCOUNTS
-            ]
+                {
+                    'code': a['code'],
+                    'name': a['name'],
+                    'role': a['role'],
+                    'balance_type': a['balance_type'],
+                    'active': activate_accounts,
+                    'coa': coa
+                } for a in CHART_OF_ACCOUNTS]
 
-            for acc in acc_objs:
-                acc.clean()
-            AccountModel.on_coa.bulk_create(acc_objs)
+            for acc_kwargs in acc_objs:
+                AccountModel.add_root(**acc_kwargs)
+
+            # accounts_qs = coa.accountmodel_set.all()
+            # for account_model in accounts_qs:
+            #     account_model.clean()
+            # AccountModel.add_root(acc)
+            # accounts_qs.bulk_update()
+            # AccountModel.on_coa.(acc_objs)
 
     def get_accounts(self, user_model, active_only: bool = True):
         """

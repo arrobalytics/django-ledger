@@ -22,9 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
 from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models.utils import LazyLoader
-
-lazy_loader = LazyLoader()
+from django_ledger.models.utils import lazy_loader
 
 
 class SlugNameMixIn(models.Model):
@@ -682,17 +680,6 @@ class MarkdownNotesMixIn(models.Model):
         if not self.markdown_notes:
             return ''
         return markdown(force_str(self.markdown_notes))
-
-
-class ParentChildMixIn(models.Model):
-    parent = models.ForeignKey('self',
-                               null=True,
-                               blank=True,
-                               on_delete=models.CASCADE,
-                               related_name='children_set')
-
-    class Meta:
-        abstract = True
 
 
 class BankAccountInfoMixIn(models.Model):

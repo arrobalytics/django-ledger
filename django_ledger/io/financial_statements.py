@@ -2,9 +2,7 @@ from django.core.exceptions import ValidationError
 
 from django_ledger.io.io_context import GroupManager
 from django_ledger.io.roles import ASSET_CA_CASH
-from django_ledger.models.utils import LazyLoader
-
-lazy_loader = LazyLoader()
+from django_ledger.models.utils import lazy_loader
 
 
 class CashFlowStatementError(ValidationError):

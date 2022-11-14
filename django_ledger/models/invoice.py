@@ -21,14 +21,12 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import LazyLoader
+from django_ledger.models import lazy_loader
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
-
-lazy_loader = LazyLoader()
 
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -211,7 +209,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             models.Index(fields=['date_canceled']),
             models.Index(fields=['date_void']),
 
-            models.Index(fields=['customer'])
+            models.Index(fields=['customer']),
+            models.Index(fields=['invoice_number']),
         ]
 
     def __str__(self):
@@ -220,7 +219,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def configure(self,
                   entity_slug: Union[EntityModel, str],
                   user_model: UserModel,
-                  post_ledger: bool = False,
+                  ledger_posted: bool = False,
+                  invoice_desc: str = None,
                   commit: bool = False):
 
         if isinstance(entity_slug, str):
@@ -239,17 +239,23 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             self.accrue = False
 
         LedgerModel = lazy_loader.get_ledger_model()
-        ledger_model = LedgerModel.objects.create(
+        ledger_model: LedgerModel = LedgerModel(
             entity=entity_model,
-            posted=post_ledger,
-            name=f'Invoice {self.invoice_number}',
+            posted=ledger_posted
         )
+        ledger_name = f'Invoice {self.uuid}'
+        if invoice_desc:
+            ledger_name += f' | {invoice_desc}'
+        ledger_model.name = ledger_name
         ledger_model.clean()
+
         self.ledger = ledger_model
+        self.ledger.save()
         self.clean()
+
         if commit:
             self.save()
-        return ledger_model, self
+        return self.ledger, self
 
     # STATE...
     def is_draft(self) -> bool:
@@ -337,9 +343,10 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def can_generate_invoice_number(self):
         return all([
             self.date_draft,
-            self.ledger_id,
+            # self.ledger_id,
             not self.invoice_number
         ])
+
     # ACTIONS...
     def action_bind_estimate(self, estimate_model, commit: bool = False):
         try:
@@ -716,7 +723,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         @param commit: Commit transaction into InvoiceModel.
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
-        if not self.invoice_number:
+        if self.can_generate_invoice_number():
             with transaction.atomic(durable=True):
                 state_model = None
                 while not state_model:

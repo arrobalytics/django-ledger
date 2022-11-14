@@ -50,10 +50,9 @@ class BankAccountMutation(graphene.Mutation):
             cash_account=cash_account,
             active=active,
         )
-        bank_account_model.configure(
+        bank_account_model, entity_model = bank_account_model.configure(
             entity_slug=slug_name,
-            user_model=info.context.user,
-            posted_ledger=True)
+            user_model=info.context.user)
         bank_account_model.save()
         # Notice we return an instance of this mutation
         return BankAccountMutation(bank_account=bank_account_model)

@@ -3,6 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import RestrictedError
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -194,22 +195,14 @@ class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn, CreateView):
         )
 
     def form_valid(self, form):
-        instance: ItemModel = form.save(commit=False)
         entity_slug = self.kwargs['entity_slug']
-        try:
-            entity_model: EntityModel = EntityModel.objects.for_user(
-                user_model=self.request.user
-            ).get(slug__iexact=entity_slug)
-            instance.entity = entity_model
-        except ObjectDoesNotExist:
-            add_message(self.request,
-                        level=ERROR,
-                        message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
-                        extra_tags='is-danger')
-        instance.is_product_or_service = True
-        instance.for_inventory = False
-        instance.save()
-        return super().form_valid(form=form)
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        ItemModel.add_root(**form.cleaned_data,
+                           entity=entity_model,
+                           is_product_or_service=True,
+                           for_inventory=False)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -323,25 +316,14 @@ class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
         )
 
     def form_valid(self, form):
-        instance: ItemModel = form.save(commit=False)
         entity_slug = self.kwargs['entity_slug']
-
-        try:
-            entity_model: EntityModel = EntityModel.objects.for_user(
-                user_model=self.request.user
-            ).get(slug__iexact=entity_slug)
-            instance.entity = entity_model
-        except ObjectDoesNotExist:
-            add_message(self.request,
-                        level=ERROR,
-                        message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
-                        extra_tags='is-danger')
-
-        instance.is_product_or_service = False
-        instance.for_inventory = False
-        instance.clean()
-        instance.save()
-        return super().form_valid(form=form)
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        ItemModel.add_root(**form.cleaned_data,
+                           entity=entity_model,
+                           is_product_or_service=False,
+                           for_inventory=False)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -421,25 +403,13 @@ class InventoryItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return self.render_to_response(self.get_context_data(form=form))
 
     def form_valid(self, form):
-        instance: ItemModel = form.save(commit=False)
         entity_slug = self.kwargs['entity_slug']
-
-        try:
-            entity_model: EntityModel = EntityModel.objects.for_user(
-                user_model=self.request.user
-            ).get(slug__iexact=entity_slug)
-            instance.entity = entity_model
-        except ObjectDoesNotExist:
-            add_message(self.request,
-                        level=ERROR,
-                        message=_(f'User {self.request.user.username} cannot access entity {entity_slug}.'),
-                        extra_tags='is-danger')
-
-        instance.is_product_or_service = False
-        instance.for_inventory = True
-        instance.clean()
-        instance.save()
-        return super().form_valid(form=form)
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        ItemModel.add_root(**form.cleaned_data,
+                           entity=entity_model,
+                           for_inventory=True)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class InventoryItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):

@@ -14,20 +14,18 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, QuerySet, Case, When, Value, ExpressionWrapper, IntegerField, F
+from django.db.models import Q, Sum, Count, QuerySet, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, ItemTransactionModel, LazyLoader, BillModel
+from django_ledger.models import EntityModel, ItemTransactionModel, lazy_loader, BillModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
-
-lazy_loader = LazyLoader()
 
 
 class PurchaseOrderModelQueryset(models.QuerySet):
@@ -121,7 +119,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['entity', 'po_number']),
+            models.Index(fields=['entity']),
+            models.Index(fields=['po_number']),
             models.Index(fields=['po_status']),
             models.Index(fields=['ce_model']),
 

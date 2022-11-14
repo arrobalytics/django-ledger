@@ -442,8 +442,7 @@ class IOMixIn:
                    je_posted: bool = False,
                    je_ledger=None,
                    je_desc=None,
-                   je_origin=None,
-                   je_parent=None):
+                   je_origin=None):
         """
         Creates JE from TXS list using provided account_id.
 
@@ -487,8 +486,7 @@ class IOMixIn:
             description=je_desc,
             date=je_date,
             origin=je_origin,
-            activity=je_activity,
-            parent=je_parent
+            activity=je_activity
         )
 
         # verify is False, no transactions are present yet....

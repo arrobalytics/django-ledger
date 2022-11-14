@@ -251,7 +251,7 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
         :return: The View queryset.
         """
         return EntityModel.objects.for_user(
-            user_model=self.request.user).select_related('coa')
+            user_model=self.request.user).select_related('chartofaccountmodel')
 
 
 class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):

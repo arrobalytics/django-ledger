@@ -14,7 +14,7 @@ from uuid import uuid4, UUID
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField, Case, When, Value, IntegerField, F
+from django.db.models import Q, Sum, Count, ExpressionWrapper, FloatField, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -22,12 +22,10 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import (CreateUpdateMixIn, EntityModel, MarkdownNotesMixIn,
-                                  CustomerModel, LazyLoader)
+                                  CustomerModel, lazy_loader)
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
-
-lazy_loader = LazyLoader()
 
 
 class EstimateModelQuerySet(models.QuerySet):
@@ -213,6 +211,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             models.Index(fields=['date_approved']),
             models.Index(fields=['date_canceled']),
             models.Index(fields=['date_void']),
+            models.Index(fields=['estimate_number']),
         ]
         unique_together = [
             ('entity', 'estimate_number')
@@ -298,6 +297,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_generate_estimate_number(self):
         return all([
             self.date_draft,
+            self.entity_id,
             not self.estimate_number
         ])
 
@@ -690,7 +690,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         @param commit: Commit transaction into InvoiceModel.
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
-        if not self.estimate_number:
+        if self.can_generate_estimate_number():
             with transaction.atomic(durable=True):
 
                 state_model = None
@@ -707,8 +707,11 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def clean(self):
 
+        if not self.date_draft:
+            self.date_draft = localdate()
+
         if self.can_generate_estimate_number():
-            self.generate_estimate_number(commit=True)
+            self.generate_estimate_number(commit=False)
 
         if self.is_approved() and not self.date_approved:
             self.date_approved = localdate()
@@ -722,7 +725,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def save(self, **kwargs):
         if self.can_generate_estimate_number():
-            self.generate_estimate_number(commit=True)
+            self.generate_estimate_number(commit=False)
         super(EstimateModelAbstract, self).save(**kwargs)
 
 

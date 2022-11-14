@@ -74,13 +74,17 @@ class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
     PAGE_TITLE = _('Customer Update')
     form_class = CustomerModelForm
     context_object_name = 'customer'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'dashicons:businesswoman'
-    }
     slug_url_kwarg = 'customer_pk'
     slug_field = 'uuid'
+
+    def get_context_data(self, **kwargs):
+        context = super(CustomerModelUpdateView, self).get_context_data(**kwargs)
+        customer_model: CustomerModel = self.object
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = customer_model.customer_number
+        context['header_subtitle_icon'] = 'dashicons:businesswoman'
+        return context
 
     def get_queryset(self):
         return CustomerModel.objects.for_entity(

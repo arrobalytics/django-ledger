@@ -43,7 +43,8 @@ class ProductOrServiceUpdateForm(ModelForm):
         accounts_qs = AccountModel.on_coa.with_roles(
             roles=GROUP_INCOME,
             entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL)
+            user_model=self.USER_MODEL).active()
+
         self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
 
         uom_qs = UnitOfMeasureModel.objects.for_entity(
@@ -101,7 +102,6 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             user_model=self.USER_MODEL
         )
         self.fields['uom'].queryset = uom_qs
-        self.fields['is_product_or_service'].initial = True
 
     class Meta(ProductOrServiceUpdateForm.Meta):
         fields = [
@@ -113,7 +113,6 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             'item_type',
             'default_amount',
             'earnings_account',
-            'is_product_or_service'
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -139,9 +138,6 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             }),
             'default_amount': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'is_product_or_service': HiddenInput(attrs={
-                'readonly': True
             })
         }
 
@@ -155,7 +151,8 @@ class ExpenseItemUpdateForm(ModelForm):
         accounts_qs = AccountModel.on_coa.with_roles(
             roles=GROUP_EXPENSES_NO_COGS,
             entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL)
+            user_model=self.USER_MODEL).active()
+
         self.fields['expense_account'].queryset = accounts_qs.filter(role__in=GROUP_EXPENSES_NO_COGS)
 
         uom_qs = UnitOfMeasureModel.objects.for_entity(
@@ -223,7 +220,7 @@ class InventoryItemUpdateForm(ModelForm):
         accounts_qs = AccountModel.on_coa.with_roles(
             roles=self.INVENTORY_ROLES,
             entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL)
+            user_model=self.USER_MODEL).active()
 
         # evaluating qs...
         len(accounts_qs)

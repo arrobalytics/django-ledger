@@ -57,14 +57,15 @@
                                     {{ f.create_bill }}
                                 {% elif f.instance.bill_model %}
                                     <a class="button is-small is-light"
-                                       href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=f.instance.bill_model_id %}">View
-                                        Bill</a>
+                                       href="{% url 'django_ledger:bill-detail' entity_slug=entity_slug bill_pk=f.instance.bill_model_id %}">
+                                    {% trans 'View Bill' %}
+                                    </a>
                                     {#                                {% else %}#}
                                 {% endif %}
                             </td>
                             <td class="has-text-centered">
                             {% if f.instance.bill_model %}
-                                {% if f.instance.bill_model.paid %}
+                                {% if f.instance.bill_model.is_paid %}
                                     <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
                                 {% else %}
                                     <span class="icon is-small has-text-danger">{% icon 'clarity:no-access-solid' 24 %}</span>

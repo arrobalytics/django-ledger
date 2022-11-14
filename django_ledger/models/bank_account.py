@@ -12,12 +12,11 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
-from django_ledger.models.utils import LazyLoader
-
-lazy_loader = LazyLoader()
+from django_ledger.models.utils import lazy_loader
 
 
 class BankAccountModelQuerySet(models.QuerySet):
@@ -40,10 +39,10 @@ class BankAccountModelManager(models.Manager):
         """
         qs = self.get_queryset()
         return qs.filter(
-            Q(ledger__entity__slug__exact=entity_slug) &
+            Q(entity_model__slug__exact=entity_slug) &
             (
-                    Q(ledger__entity__admin=user_model) |
-                    Q(ledger__entity__managers__in=[user_model])
+                    Q(entity_model__admin=user_model) |
+                    Q(entity_model__managers__in=[user_model])
             )
         )
 
@@ -66,61 +65,82 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True)
+    entity_model = models.ForeignKey('django_ledger.EntityModel', on_delete=models.RESTRICT,
+                                     verbose_name=_('Entity Model'))
     cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.CASCADE,
+                                     on_delete=models.RESTRICT,
                                      verbose_name=_('Cash Account'),
                                      related_name=f'{REL_NAME_PREFIX}_cash_account',
                                      null=True, blank=True)
-    ledger = models.OneToOneField('django_ledger.LedgerModel',
-                                  editable=False,
-                                  verbose_name=_('Ledger'),
-                                  on_delete=models.CASCADE)
-    active = models.BooleanField(default=True)
+    active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager.from_queryset(queryset_class=BankAccountModelQuerySet)()
 
     def configure(self,
                   entity_slug,
                   user_model,
-                  posted_ledger: bool = True):
+                  commit: bool = False):
+
         EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_slug, str):
-            entity_model = EntityModel.objects.for_user(
-                user_model=user_model).get(
-                slug__exact=entity_slug)
+            entity_model_qs = EntityModel.objects.for_user(user_model=user_model)
+            entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
         elif isinstance(entity_slug, EntityModel):
             entity_model = entity_slug
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-        LedgerModel = lazy_loader.get_ledger_model()
-        acc_number = self.account_number
-        ledger_model = LedgerModel.objects.create(
-            entity=entity_model,
-            posted=posted_ledger,
-            # pylint: disable=unsubscriptable-object
-            name=f'Bank Account {"***" + acc_number[-4:]}'
-        )
-        ledger_model.clean()
-        self.ledger = ledger_model
-        return self
+        self.entity_model = entity_model
+        self.clean()
+        if commit:
+            self.save(update_fields=[
+                'entity_model',
+                'updated'
+            ])
+        return self, entity_model
 
     class Meta:
         abstract = True
         verbose_name = _('Bank Account')
         indexes = [
-            models.Index(fields=['ledger']),
             models.Index(fields=['account_type']),
-            models.Index(fields=['cash_account', 'account_type'])
+            models.Index(fields=['cash_account'])
         ]
         unique_together = [
-            ('cash_account', 'account_number', 'routing_number')
+            ('entity_model', 'account_number'),
+            ('entity_model', 'cash_account', 'account_number', 'routing_number')
         ]
 
-    # pylint: disable=invalid-str-returned
     def __str__(self):
-        # pylint: disable=bad-option-value
         return self.name
+
+    def can_activate(self) -> bool:
+        return self.active is False
+
+    def can_inactivate(self) -> bool:
+        return self.active is True
+
+    def mark_as_active(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        if not self.can_activate():
+            if raise_exception:
+                raise ValidationError('Bank Account cannot be activated.')
+        self.active = True
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
+
+    def mark_as_inactive(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        if not self.can_inactivate():
+            if raise_exception:
+                raise ValidationError('Bank Account cannot be deactivated.')
+        self.active = False
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
 
 
 class BankAccountModel(BackAccountModelAbstract):

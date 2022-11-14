@@ -13,13 +13,14 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
+from treebeard.mp_tree import MP_Node, MP_NodeManager
 
-from django_ledger.models import LazyLoader
-from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
+from django_ledger.models import lazy_loader
+from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
                                     DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
                                     DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
@@ -31,8 +32,6 @@ The Item list is a collection of all the products that are sold by any organizat
 The tems may include Products or even services.
 
 """
-
-lazy_loader = LazyLoader()
 
 
 # UNIT OF MEASURES MODEL....
@@ -85,7 +84,7 @@ class ItemModelQuerySet(models.QuerySet):
         return self.filter(active=True)
 
 
-class ItemModelManager(models.Manager):
+class ItemModelManager(MP_NodeManager):
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -144,7 +143,7 @@ class ItemModelManager(models.Manager):
         return qs.distinct('uuid')
 
 
-class ItemModelAbstract(CreateUpdateMixIn):
+class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
     REL_NAME_PREFIX = 'item'
 
     LABOR_TYPE = 'L'
@@ -172,7 +171,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
     item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
-    item_number = models.CharField(max_length=30, null=True, blank=True)
+    item_number = models.CharField(max_length=30, editable=False, verbose_name=_('Item Number'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
 
     default_amount = models.DecimalField(max_digits=20,
@@ -241,11 +240,11 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                        verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
-                               related_name='items',
                                on_delete=models.CASCADE,
                                verbose_name=_('Item Entity'))
 
     objects = ItemModelManager.from_queryset(queryset_class=ItemModelQuerySet)()
+    node_order_by = ['uuid']
 
     class Meta:
         abstract = True
@@ -261,9 +260,10 @@ class ItemModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['is_product_or_service']),
             models.Index(fields=['is_active']),
             models.Index(fields=['item_type']),
-            models.Index(fields=['entity', 'sku']),
-            models.Index(fields=['entity', 'upc']),
-            models.Index(fields=['entity', 'item_id'])
+            models.Index(fields=['sku']),
+            models.Index(fields=['upc']),
+            models.Index(fields=['item_id']),
+            models.Index(fields=['item_number']),
         ]
 
     def __str__(self):
@@ -274,6 +274,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
         elif self.is_product_or_service:
             return f'Product/Service: {self.name} | {self.get_item_type_display()}'
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
+
+    # def add_root(cls, **kwargs):
 
     def is_expense(self):
         return self.is_product_or_service is False and self.for_inventory is False
@@ -319,38 +321,55 @@ class ItemModelAbstract(CreateUpdateMixIn):
             return DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX
         raise ValidationError('Cannot determine Item Number prefix for ItemModel')
 
+    def can_generate_item_number(self) -> bool:
+        return all([
+            self.entity_id,
+            not self.item_number
+        ])
+
+    def _get_next_state_model(self, raise_exception: bool = True):
+        EntityStateModel = lazy_loader.get_entity_state_model()
+
+        try:
+            LOOKUP = {
+                'entity_id__exact': self.entity_id,
+                'key__exact': EntityStateModel.KEY_ITEM
+            }
+
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
+            state_model = state_model_qs.get()
+            state_model.sequence = F('sequence') + 1
+            state_model.save()
+            state_model.refresh_from_db()
+
+            return state_model
+        except ObjectDoesNotExist:
+
+            LOOKUP = {
+                'entity_id': self.entity_id,
+                'entity_unit_id': None,
+                'fiscal_year': None,
+                'key': EntityStateModel.KEY_ITEM,
+                'sequence': 1
+            }
+            state_model = EntityStateModel.objects.create(**LOOKUP)
+            return state_model
+        except IntegrityError as e:
+            if raise_exception:
+                raise e
+
     def generate_item_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next Vendor Number available.
         @param commit: Commit transaction into VendorModel.
         @return: A String, representing the current InvoiceModel instance Document Number.
         """
-        if not self.item_number:
-            with transaction.atomic():
+        if self.can_generate_item_number():
+            with transaction.atomic(durable=True):
 
-                EntityStateModel = lazy_loader.get_entity_state_model()
-
-                try:
-                    LOOKUP = {
-                        'entity_id__exact': self.entity_id,
-                        'key__exact': EntityStateModel.KEY_ITEM
-                    }
-
-                    state_model_qs = EntityStateModel.objects.select_related('entity').filter(**LOOKUP)
-                    state_model = state_model_qs.get()
-                    state_model.sequence += 1
-                    state_model.save(update_fields=['sequence'])
-
-                except ObjectDoesNotExist:
-
-                    LOOKUP = {
-                        'entity_id': self.entity_id,
-                        'key': EntityStateModel.KEY_ITEM,
-                        'sequence': 1
-                    }
-                    state_model = EntityStateModel(**LOOKUP)
-                    state_model.clean()
-                    state_model.save()
+                state_model = None
+                while not state_model:
+                    state_model = self._get_next_state_model(raise_exception=False)
 
             seq = str(state_model.sequence).zfill(DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING)
             self.item_number = f'{self.get_item_number_prefix()}-{seq}'
@@ -361,13 +380,14 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return self.item_number
 
     def save(self, **kwargs):
-        if not self.item_number:
+        self.clean()
+        if self.can_generate_item_number():
             self.generate_item_number(commit=False)
         super(ItemModelAbstract, self).save(**kwargs)
 
     def clean(self):
 
-        if not self.item_number:
+        if self.can_generate_item_number():
             self.generate_item_number(commit=False)
 
         if all([
@@ -571,7 +591,7 @@ class ItemTransactionModelManager(models.Manager):
         )
 
 
-class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+class ItemTransactionModelAbstract(CreateUpdateMixIn):
     DECIMAL_PLACES = 2
 
     STATUS_NOT_ORDERED = 'not_ordered'
@@ -589,12 +609,12 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    parent = models.ForeignKey('self',
-                               null=True,
-                               blank=True,
-                               on_delete=models.RESTRICT,
-                               related_name='children',
-                               verbose_name=_('Parent Item'))
+    # parent = models.ForeignKey('self',
+    #                            null=True,
+    #                            blank=True,
+    #                            on_delete=models.RESTRICT,
+    #                            related_name='children',
+    #                            verbose_name=_('Parent Item'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
                                     on_delete=models.RESTRICT,
                                     blank=True,
@@ -703,8 +723,7 @@ class ItemTransactionModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
             models.Index(fields=['invoice_model', 'item_model']),
             models.Index(fields=['po_model', 'item_model']),
             models.Index(fields=['ce_model', 'item_model']),
-            models.Index(fields=['po_item_status']),
-            models.Index(fields=['parent'])
+            models.Index(fields=['po_item_status'])
         ]
 
     def __str__(self):

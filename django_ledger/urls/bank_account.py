@@ -12,4 +12,12 @@ urlpatterns = [
     path('<slug:entity_slug>/update/<uuid:bank_account_pk>/',
          views.BankAccountModelUpdateView.as_view(),
          name='bank-account-update'),
+
+    # Actions...
+    path('<slug:entity_slug>/action/<uuid:bank_account_pk>/mark-as-active/',
+         views.BankAccountModelActionMarkAsActiveView.as_view(),
+         name='bank-account-mark-as-active'),
+    path('<slug:entity_slug>/action/<uuid:bank_account_pk>/mark-as-inactive/',
+         views.BankAccountModelActionMarkAsInactiveView.as_view(),
+         name='bank-account-mark-as-inactive')
 ]

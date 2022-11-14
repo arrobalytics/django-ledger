@@ -13,10 +13,10 @@ from typing import Set
 from django.utils.translation import gettext as _
 
 from django_ledger.exceptions import InvalidRoleError
-from django_ledger.models.utils import LazyLoader
+from django_ledger.models.utils import lazy_loader
 
 mod = sys.modules[__name__]
-lazy_loader = LazyLoader()
+
 
 # --- ASSET ROLES ----
 # Current Assets ---

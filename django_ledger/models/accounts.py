@@ -11,12 +11,13 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io.roles import ACCOUNT_ROLES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles
-from django_ledger.models import LazyLoader
-from django_ledger.models.mixins import CreateUpdateMixIn, ParentChildMixIn
+from django_ledger.models import lazy_loader
+from django_ledger.models.mixins import CreateUpdateMixIn
 
 DEBIT = 'debit'
 CREDIT = 'credit'
@@ -28,10 +29,8 @@ Each entity will be having its list of accounts for cash, rent, salary, loans, p
 We will be looking at the different attributes that the account model will be possessing.  
 """
 
-lazy_loader = LazyLoader()
 
-
-class AccountModelQuerySet(models.QuerySet):
+class AccountModelQuerySet(MP_NodeQuerySet):
     """
     This is QuerySet class defined for the Accounts Model.
     """
@@ -57,7 +56,7 @@ class AccountModelQuerySet(models.QuerySet):
         return self.filter(role__in=roles)
 
 
-class AccountModelManager(models.Manager):
+class AccountModelManager(MP_NodeManager):
     """
     This Model Manager will be used as interface through which the database query operations can be provided to the
     Account Model. It uses the custom defined AccountModelQuerySet and hence overrides the normal get_queryset
@@ -66,6 +65,10 @@ class AccountModelManager(models.Manager):
     which will have the mapping for all the accounts of that entity *Discussed in detail in the CoA Model CoA slug,
     basically helps in identifying the complete Chart of Accounts for a Particular Entity.
     """
+
+    def get_queryset(self):
+        """Sets the custom queryset as the default."""
+        return AccountModelQuerySet(self.model).order_by('path')
 
     def for_entity(self, user_model, entity_slug, coa_slug: str = None):
         """
@@ -169,7 +172,7 @@ class AccountModelManager(models.Manager):
         return qs.filter(role__in=GROUP_BILL)
 
 
-class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
+class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     """
     Django Ledger Base Account Model Abstract. This is the main abstract class which the Account Model database will
     inherit, and it contains the fields/columns/attributes which the said ledger table will have. In addition to the
@@ -219,9 +222,10 @@ class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
     coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
                             on_delete=models.CASCADE,
                             editable=False,
-                            verbose_name=_('Chart of Accounts'),
-                            related_name='accounts')
+                            verbose_name=_('Chart of Accounts'))
     on_coa = AccountModelManager.from_queryset(queryset_class=AccountModelQuerySet)()
+
+    node_order_by = ['uuid']
 
     class Meta:
         abstract = True
@@ -261,6 +265,10 @@ class AccountModelAbstract(ParentChildMixIn, CreateUpdateMixIn):
         # pylint: disable=unsupported-membership-test
         if ' ' in self.code:
             raise ValidationError(_('Account code must not contain spaces'))
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.clean()
+        super(AccountModelAbstract, self).save(force_insert=False, force_update=False, using=None, update_fields=None)
 
 
 class AccountModel(AccountModelAbstract):
