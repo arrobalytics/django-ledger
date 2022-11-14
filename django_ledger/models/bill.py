@@ -74,12 +74,12 @@ class BillModelQuerySet(models.QuerySet):
 
 class BillModelManager(models.Manager):
     """
-    A custom defined BillModel Manager that will act as an inteface to handling the DB queries 
+    A custom defined BillModel Manager that will act as an interface to handling the DB queries
     to the Bill Model. The default "get_queryset" has been overridden to refer the custom defined
     "BillModelQuerySet"
     """
 
-    def for_user(self, user_model):
+    def for_user(self, user_model) -> BillModelQuerySet:
         """
         Returns a QuerySet of BillModels that the UserModel as access to.
         User must be a Manager or an Admin to retrieve the BillModels.
@@ -90,10 +90,13 @@ class BillModelManager(models.Manager):
             Q(ledger__entity__managers__in=[user_model])
         )
 
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_slug, user_model) -> BillModelQuerySet:
         """
         Returns a QuerySet of BillModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
+        @param entity_slug: The entity slug or EntityModel used for filtering the QuerySet.
+        @param user_model: The request UserModel to check for privileges.
+        @return: A filtered BillModelQuerySet.
         """
         qs = self.get_queryset()
         if isinstance(entity_slug, EntityModel):
@@ -111,12 +114,14 @@ class BillModelManager(models.Manager):
                 )
             )
 
-    def for_entity_unpaid(self, entity_slug, user_model):
+    def for_entity_unpaid(self, entity_slug, user_model) -> BillModelQuerySet:
         """
-        Returns a QuerySet of unpaid Bill Models associated with a specific EntityModel & UserModel.
+        Returns a QuerySet of unpaid BillModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
+        @param entity_slug: The entity slug or EntityModel used for filtering the QuerySet.
+        @param user_model: The request UserModel to check for privileges.
+        @return: A filtered BillModelQuerySet.
         """
-
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.approved()
 
@@ -137,18 +142,15 @@ class BillModelAbstract(LedgerWrapperMixIn,
     
     Read about these mixin here.
 
-    Below are the fields specific to the BillModel. 
-
+    Below are the fields specific to the BillModel:
     @uuid : this is a unique primary key generated for the table. The default value of this fields is uuid4().
-
     @bill_number: Auto assigned number at creation. Can be customized with DJANGO_LEDGER_BILL_NUMBER_PREFIX
     settings. Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
-
     @bill_status: Any bill can have the status as either of the choices as mentioned under "BILL_STATUS".
     By default , the status will be "Draft". Options are: Draft, In Review, Approved, Paid, Void or Canceled.
     @xref: This is the filed for capturing of any External reference number like the PO number of the buyer.
     Any other reference number like the Vendor code in buyer books may also be captured.
-    @vendor: This is the foreign key refernce to the VendorModel from whom the purchase has been made.
+    @vendor: This is the foreign key reference to the VendorModel from whom the purchase has been made.
     @additional_info: Any additional info about the BillModel may be stored here.
     @bill_items: A foreign key reference to the list of ItemModels that make the bill amount.
     """
@@ -381,6 +383,10 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return self.bill_status == self.BILL_STATUS_VOID
 
+    def is_past_due(self) -> bool:
+        if self.date_due and self.is_approved():
+            return self.date_due < localdate()
+        return False
     # Permissions....
     def can_draft(self) -> bool:
         """
@@ -572,7 +578,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                            'bill_pk': self.uuid
                        })
 
-    def get_mark_as_draft_message(self):
+    def get_mark_as_draft_message(self) -> str:
         """
         Internationalized confirmation message with Bill Number.
         @return: Mark-as-Draft BillModel confirmation message as a String.
@@ -641,7 +647,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                            'bill_pk': self.uuid
                        })
 
-    def get_mark_as_review_message(self):
+    def get_mark_as_review_message(self) -> str:
         """
         Internationalized confirmation message with Bill Number.
         @return: Mark-as-Review BillModel confirmation message as a String.
@@ -694,14 +700,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 )
             self.ledger.post(commit=commit)
 
-    def get_mark_as_approved_html_id(self):
+    def get_mark_as_approved_html_id(self) -> str:
         """
         BillModel Mark as Approved HTML ID.
         @return: HTML ID as a String.
         """
         return f'djl-bill-model-{self.uuid}-mark-as-approved'
 
-    def get_mark_as_approved_url(self, entity_slug: Optional[str] = None):
+    def get_mark_as_approved_url(self, entity_slug: Optional[str] = None) -> str:
         """
         BillModel Mark-as-Approved action URL.
         @return: BillModel mark-as-approved action URL.
@@ -714,7 +720,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                            'bill_pk': self.uuid
                        })
 
-    def get_mark_as_approved_message(self):
+    def get_mark_as_approved_message(self) -> str:
         """
         Internationalized confirmation message with Bill Number.
         @return: Mark-as-Approved BillModel confirmation message as a String.
@@ -732,7 +738,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
         self.delete(**kwargs)
 
-    def get_mark_as_delete_html_id(self):
+    def get_mark_as_delete_html_id(self) -> str:
         """
         BillModel Mark as Delete HTML ID Tag.
         @return: HTML ID as a String.
@@ -959,7 +965,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                            'bill_pk': self.uuid
                        })
 
-    def get_mark_as_canceled_message(self):
+    def get_mark_as_canceled_message(self) -> str:
         """
         Internationalized confirmation message with Bill Number.
         @return: Mark-as-Canceled BillModel confirmation message as a String.
@@ -1002,7 +1008,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'djl-bill-model-{self.uuid}-amount-paid'
 
-    def get_html_form_name(self) -> str:
+    def get_html_form_id(self) -> str:
         """
         Unique BillModel Form HTML ID.
         @return: HTML ID as a String.

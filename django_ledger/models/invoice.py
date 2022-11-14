@@ -33,29 +33,40 @@ lazy_loader = LazyLoader()
 INVOICE_NUMBER_CHARS = ascii_uppercase + digits
 
 """
-Invoice : it refers the Sales Invoice/ Sales Bill/ Tax Invoice/ Proof of Sale which the entity issues to its cutomers for the supply of goods or services
-The model manages all the Sales Invoices  which are issued by the entity
-In addition to tracking the invoice amount , it tracks the receipt and due amount
-
-
+Invoice : it refers the Sales Invoice/ Sales Bill/ Tax Invoice/ Proof of Sale which the entity issues to its customers 
+for the supply of goods or services. The model manages all the Sales Invoices which are issued by the entity
+In addition to tracking the invoice amount , it tracks the receipt and due amount.
 """
 
 
 class InvoiceModelQuerySet(models.QuerySet):
     """
-   A custom defined Query Set for the InvoiceModel.
+   A custom defined QuerySet for the InvoiceModel.
    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
-   For e.g : We might want to have list of bills which are paid, unpaid, Due , OverDue, Approved, In draft stage.
+   For e.g : We might want to have list of invoices which are paid, unpaid, Due , OverDue, Approved, In draft stage.
    All these separate functions will assist in making such queries and building customized reports.
    """
 
     def paid(self):
+        """
+        Filters the QuerySet to include only InvoiceModels that are Paid.
+        @return: A filtered InvoiceModelQuerySet.
+        """
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID)
 
     def approved(self):
+        """
+        Filters the QuerySet to include only InvoiceModels that are Approve.
+        @return: A filtered InvoiceModelQuerySet.
+        """
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
 
     def active(self):
+        """
+        Filters the QuerySet to include only active InvoiceModels.
+        Active Invoices are defined as approved or paid.
+        @return:
+        """
         return self.filter(
             Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_PAID) |
             Q(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
@@ -64,14 +75,18 @@ class InvoiceModelQuerySet(models.QuerySet):
 
 class InvoiceModelManager(models.Manager):
     """
-    A custom defined Invoice Model Manager that will act as an interface to handling the DB queries to the Invoice  Model.
+    A custom defined InvoiceModel Manager that will act as an interface to handling the DB queries to the InvoiceModel.
     The default "get_queryset" has been overridden to refer the custom defined "InvoiceModelQuerySet"
     """
 
-    def get_queryset(self):
-        return InvoiceModelQuerySet(self.model, using=self._db)
-
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_slug, user_model) -> InvoiceModelQuerySet:
+        """
+        Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        @param entity_slug: The entity slug or EntityModel used for filtering the QuerySet.
+        @param user_model: The request UserModel to check for privileges.
+        @return: A Filtered InvoiceModelQuerySet.
+        """
         qs = self.get_queryset().filter(
             Q(ledger__entity__admin=user_model) |
             Q(ledger__entity__managers__in=[user_model])
@@ -173,7 +188,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     date_void = models.DateField(null=True, blank=True, verbose_name=_('Void Date'))
     date_canceled = models.DateField(null=True, blank=True, verbose_name=_('Canceled Date'))
 
-    objects = InvoiceModelManager()
+    objects = InvoiceModelManager.from_queryset(InvoiceModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -254,6 +269,11 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
     def is_void(self) -> bool:
         return self.invoice_status == self.INVOICE_STATUS_VOID
+
+    def is_past_due(self) -> bool:
+        if self.date_due and self.is_approved():
+            return self.date_due < localdate()
+        return False
 
     # PERMISSIONS....
     def can_draft(self):

@@ -662,11 +662,6 @@ class PaymentTermsMixIn(models.Model):
             return self.TERMS_NET_90
         return self.TERMS_NET_90_PLUS
 
-    def is_past_due(self) -> bool:
-        if self.date_due:
-            return self.date_due < localdate()
-        return False
-
     def clean(self):
         terms_start_date = self.get_terms_start_date()
         if terms_start_date:

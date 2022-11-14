@@ -32,7 +32,7 @@ class BillModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
     template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
-    date_field = 'created'
+    date_field = 'date_draft'
     paginate_by = 20
     paginate_orphans = 2
     allow_empty = True

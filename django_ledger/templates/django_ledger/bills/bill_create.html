@@ -11,7 +11,7 @@
                     <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Bill' %}</h2>
                 </div>
                 <div class="card-content">
-                    <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
+                    <form action="{{ form_action_url }}" method="post" id="djl-bill-model-create-form-id">
                         <div class="columns is-multiline is-centered">
                             {% csrf_token %}
                             {% if po_model %}

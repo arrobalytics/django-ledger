@@ -89,6 +89,7 @@ def balance_sheet_statement(context, io_model, to_date=None):
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
+
     if not to_date:
         to_date = context['to_date']
 

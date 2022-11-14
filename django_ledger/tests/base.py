@@ -143,7 +143,7 @@ class DjangoLedgerBaseTest(TestCase):
                 start_date=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
                 days_forward=30 * 9,
-                tx_quantity=50
+                tx_quantity=25
             )
             cls.logger.info(f'Populating Entity {entity_model.name}...')
             data_generator.populate_entity()
