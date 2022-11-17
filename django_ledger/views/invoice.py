@@ -323,7 +323,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                         itemtxs.clean()
 
                     itemtxs_list = itemtxs_formset.save()
-                    itemtxs_qs, itemtxs_agg = invoice_model.update_amount_due()
+                    itemtxs_qs = invoice_model.update_amount_due()
                     invoice_model.new_state(commit=True)
                     invoice_model.clean()
                     invoice_model.save(

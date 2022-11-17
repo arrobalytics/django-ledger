@@ -44,6 +44,9 @@ class SlugNameMixIn(models.Model):
 
 
 class CreateUpdateMixIn(models.Model):
+    """
+    The create and update mixin!
+    """
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)
 
@@ -76,6 +79,10 @@ class ContactInfoMixIn(models.Model):
 
 
 class LedgerWrapperMixIn(models.Model):
+    """
+    The Ledger wrapper!
+
+    """
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
     ALLOW_MIGRATE = True
@@ -218,7 +225,7 @@ class LedgerWrapperMixIn(models.Model):
             payments = self.amount_paid or 0
             return amount_due - payments
 
-    def get_item_data(self, entity_slug: str, queryset=None):
+    def get_migration_data(self, queryset=None):
         raise NotImplementedError('Must implement get_account_balance_data method.')
 
     def get_migrate_state_desc(self, *args, **kwargs):
@@ -321,7 +328,7 @@ class LedgerWrapperMixIn(models.Model):
                 # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
             }
 
-            item_data = list(self.get_item_data(entity_slug=entity_slug, queryset=itemtxs_qs))
+            item_data = list(self.get_migration_data(queryset=itemtxs_qs))
             cogs_adjustment = defaultdict(lambda: Decimal('0.00'))
             inventory_adjustment = defaultdict(lambda: Decimal('0.00'))
             progress = self.get_progress()
@@ -614,6 +621,9 @@ class LedgerWrapperMixIn(models.Model):
 
 
 class PaymentTermsMixIn(models.Model):
+    """
+    Payment Terms MixIn!
+    """
     TERMS_ON_RECEIPT = 'on_receipt'
     TERMS_NET_30 = 'net_30'
     TERMS_NET_60 = 'net_60'
@@ -671,6 +681,9 @@ class PaymentTermsMixIn(models.Model):
 
 
 class MarkdownNotesMixIn(models.Model):
+    """
+    MarkDown Notes MixIn!
+    """
     markdown_notes = models.TextField(blank=True, null=True, verbose_name=_('Markdown Notes'))
 
     class Meta:

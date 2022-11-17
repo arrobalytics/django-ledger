@@ -26,7 +26,7 @@ Ledger Model
 
 Journal Entry Model
 -------------------
-.. automodule:: django_ledger.models.journalentry
+.. automodule:: django_ledger.models.journal_entry
     :members:
 
 
@@ -45,5 +45,20 @@ Account Model
 Transaction Model
 -----------------
 .. automodule:: django_ledger.models.transactions
+    :members:
+
+Bill Model
+-----------------
+.. automodule:: django_ledger.models.bill
+    :members:
+
+Estimate Model
+-----------------
+.. automodule:: django_ledger.models.estimate
+    :members:
+
+MixIns
+-----------------
+.. automodule:: django_ledger.models.mixins
     :members:
 

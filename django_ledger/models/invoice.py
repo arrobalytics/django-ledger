@@ -8,7 +8,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
-from typing import Union
+from typing import Union, Optional
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -21,7 +21,7 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import lazy_loader
+from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
@@ -631,23 +631,34 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
+    def validate_item_transaction_qs(self, queryset):
+        valid = all([
+            i.invoice_model_id == self.uuid for i in queryset
+        ])
+        if not valid:
+            raise ValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
+
     def get_itemtxs_data(self, queryset=None) -> tuple:
         if not queryset:
-            # pylint: disable=no-member
             queryset = self.itemtransactionmodel_set.all().select_related('item_model')
-        return queryset, queryset.aggregate(
-            Sum('total_amount'),
-            total_items=Count('uuid')
-        )
+        else:
+            self.validate_item_transaction_qs(queryset)
+
+        return queryset, {
+            'total_amount__sum': sum(i.total_amount for i in queryset),
+            'total_items': len(queryset)
+        }
 
     def can_migrate(self) -> bool:
         return self.is_approved()
 
-    def get_item_data(self, entity_slug: str, queryset=None):
+    def get_migration_data(self,
+                           queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
         if not queryset:
-            # pylint: disable=no-member
             queryset = self.itemtransactionmodel_set.all()
-            queryset = queryset.filter(invoice_model__ledger__entity__slug__exact=entity_slug)
+        else:
+            self.validate_item_transaction_qs(queryset)
+
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                                               'entity_unit__uuid',
                                                               'item_model__earnings_account__balance_type').values(
@@ -665,14 +676,11 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self, itemtxs_qs=None, itemtxs_list: list = None) -> None or tuple:
-        if itemtxs_list:
-            # self.amount_due = Decimal.from_float(round(sum(a.total_amount for a in item_list), 2))
-            self.amount_due = round(sum(a.total_amount for a in itemtxs_list), 2)
-            return
+    def update_amount_due(self,
+                          itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
         itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
-        return itemtxs_qs, itemtxs_agg
+        return itemtxs_qs
 
     def get_terms_start_date(self) -> date:
         return self.date_approved

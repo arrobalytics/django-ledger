@@ -67,7 +67,9 @@ class AccountModelManager(MP_NodeManager):
     """
 
     def get_queryset(self):
-        """Sets the custom queryset as the default."""
+        """
+        Sets the custom queryset as the default.
+        """
         return AccountModelQuerySet(self.model).order_by('path')
 
     def for_entity(self, user_model, entity_slug, coa_slug: str = None):

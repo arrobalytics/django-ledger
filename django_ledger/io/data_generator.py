@@ -433,7 +433,7 @@ class EntityDataGenerator:
         for bi in bill_items:
             bi.full_clean()
 
-        bill_model.update_amount_due(itemtxs_list=bill_items)
+        bill_model.update_amount_due(itemtxs_qs=bill_items)
         bill_model.itemtransactionmodel_set.bulk_create(bill_items)
         bill_model.full_clean()
         bill_model.save()
@@ -447,7 +447,7 @@ class EntityDataGenerator:
                 bill_model.mark_as_approved(commit=True,
                                             entity_slug=self.entity_model.slug,
                                             user_model=self.user_model,
-                                            approved_date=approved_date)
+                                            date_approved=approved_date)
 
                 if random() > 0.25:
                     paid_date = self.get_next_date(approved_date)
@@ -462,12 +462,12 @@ class EntityDataGenerator:
                     bill_model.mark_as_void(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
-                        void_date=void_date,
+                        date_void=void_date,
                         commit=True
                     )
             elif random() > 0.8:
                 canceled_date = self.get_next_date(date_in_review)
-                bill_model.mark_as_canceled(canceled_date=canceled_date)
+                bill_model.mark_as_canceled(date_canceled=canceled_date)
 
     def create_po(self, date_draft: date):
 
@@ -540,7 +540,7 @@ class EntityDataGenerator:
                         po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                         po_i.full_clean()
 
-                    bill_model.update_amount_due(itemtxs_list=po_items)
+                    bill_model.update_amount_due(itemtxs_qs=po_items)
                     bill_model.full_clean()
                     bill_model.update_state()
                     bill_model.save()
@@ -566,7 +566,7 @@ class EntityDataGenerator:
                             bill_model.mark_as_approved(commit=True,
                                                         entity_slug=self.entity_model.slug,
                                                         user_model=self.user_model,
-                                                        approved_date=bill_approve_date)
+                                                        date_approved=bill_approve_date)
                             if random() > 0.25:
                                 bill_paid_date = self.get_next_date(bill_approve_date)
                                 bill_model.mark_as_paid(
@@ -662,7 +662,7 @@ class EntityDataGenerator:
                 invoice_model.mark_as_approved(entity_slug=self.entity_model.slug,
                                                user_model=self.user_model,
                                                commit=True,
-                                               approved_date=date_approved)
+                                               date_approved=date_approved)
                 if random() > 0.25:
                     date_paid = self.get_next_date(date_approved)
                     invoice_model.mark_as_paid(

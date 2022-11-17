@@ -199,7 +199,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             if po_model.is_contract_bound():
                 bill_model.ce_model_id = po_model.ce_model_id
 
-            bill_model.update_amount_due(itemtxs_qs=po_model_items_qs)
+            bill_model.update_amount_due()
             bill_model.new_state(commit=True)
             bill_model.clean()
             bill_model.save()
@@ -461,8 +461,8 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                         itemtxs.bill_model_id = bill_model.uuid
                         itemtxs.clean()
 
-                    itemtxs_list = itemtxs_formset.save()
-                    itemtxs_qs, itemtxs_agg = bill_model.update_amount_due()
+                    itemtxs_formset.save()
+                    itemtxs_qs = bill_model.update_amount_due()
                     bill_model.new_state(commit=True)
                     bill_model.clean()
                     bill_model.save(update_fields=['amount_due',

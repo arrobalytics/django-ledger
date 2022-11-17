@@ -6,11 +6,15 @@
 Django Ledger - The Django Book Keeping Engine.
 ==================================================
 
+.. autosummary::
+   :toctree: generated
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    ./installation
+   ./quickstart
    ./models
    ./views
 

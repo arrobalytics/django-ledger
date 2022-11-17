@@ -68,10 +68,10 @@ class PayableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            bill_qs = BillModel.objects.for_entity_unpaid(
+            bill_qs = BillModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
-            ).select_related('ledger__entity')
+            ).unpaid().select_related('ledger__entity')
 
             # todo: implement this...
             # unit_slug = self.get_unit_slug()

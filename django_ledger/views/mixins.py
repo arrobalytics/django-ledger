@@ -412,10 +412,10 @@ class UnpaidElementsMixIn:
             from_date = context['from_date'] if not from_date else from_date
             to_date = context['to_date'] if not to_date else to_date
 
-            qs = BillModel.objects.for_entity_unpaid(
+            qs = BillModel.objects.for_entity(
                 user_model=self.request.user,
                 entity_slug=self.kwargs['entity_slug']
-            ).filter(
+            ).unpaid().filter(
                 Q(date_approved__gte=from_date) &
                 Q(date_approved__lte=to_date)
             ).select_related('vendor').order_by('date_due')

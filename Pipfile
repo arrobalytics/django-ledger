@@ -12,8 +12,8 @@ faker = "~=8.12"
 pillow = ">=8.4.0"
 
 [dev-packages]
-jupyterlab = "~=3.4.7"
-sphinx = "~=4.5.0"
+jupyterlab = "~=3.5.0"
+sphinx = "~=5.3.0"
 behave = "~=1.2.6"
 pipenv-setup = "*"
 pylint = "*"
