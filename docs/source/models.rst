@@ -52,6 +52,11 @@ Bill Model
 .. automodule:: django_ledger.models.bill
     :members:
 
+Invoice Model
+-----------------
+.. automodule:: django_ledger.models.invoice
+    :members:
+
 Estimate Model
 -----------------
 .. automodule:: django_ledger.models.estimate

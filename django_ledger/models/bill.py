@@ -9,16 +9,24 @@ Contributions to this module:
 This module implements the BillModel, which represents an Invoice received from a Supplier/Vendor, on which
 the Vendor states the amount owed by the recipient for the purposes of supplying goods and/or services.
 In addition to tracking the bill amount, it tracks the paid and due amount.
+
+Examples
+________
+>>> user_model = request.user  # django UserModel
+>>> entity_slug = kwargs['entity_slug'] # may come from view kwargs
+>>> bill_model = BillModel()
+>>> ledger_model, bill_model = bill_model.configure(entity_slug=entity_slug, user_model=user_model)
+>>> bill_model.save()
 """
 
 from datetime import date
 from decimal import Decimal
-from typing import Union, Optional, List, Tuple, Dict
+from typing import Union, Optional, Tuple, Dict
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, F
+from django.db.models import Q, Sum, F
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -26,10 +34,10 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel
+from django_ledger.models.items import ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
 
 
 class BillModelQuerySet(models.QuerySet):
@@ -42,7 +50,8 @@ class BillModelQuerySet(models.QuerySet):
 
     def draft(self):
         """
-        Default status of any bill that is created. Draft bills do not impact the Ledger.
+        Default status of any bill that is created.
+        Draft bills do not impact the Ledger.
 
         Returns
         -------
@@ -54,6 +63,7 @@ class BillModelQuerySet(models.QuerySet):
     def in_review(self):
         """
         In review bills are those that need additional review or approvals before being approved.
+        In review bills do not impact the Ledger.
 
         Returns
         -------
@@ -86,8 +96,8 @@ class BillModelQuerySet(models.QuerySet):
 
     def void(self):
         """
-        Void bills are those that where rolled back after being approved. Void bills rollback all transactions by
-        creating a set of transactions posted on the date_void.
+        Void bills are those that where rolled back after being approved.
+        Void bills rollback all transactions by creating a new set of transactions posted on the date_void.
 
         Returns
         -------
@@ -227,8 +237,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
     """
-    This is the main abstract class which the BillModel database will inherit from. The BillModel inherits functionality
-    from the following MixIns:
+    This is the main abstract class which the BillModel database will inherit from.
+    The BillModel inherits functionality from the following MixIns:
 
         1. :func:`LedgerWrapperMixIn <django_ledger.models.mixins.LedgerWrapperMixIn>`
         2. :func:`PaymentTermsMixIn <django_ledger.models.mixins.PaymentTermsMixIn>`
@@ -238,7 +248,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     Attributes
     __________
     uuid : UUID
-        This is a unique primary key generated for the table. The default value of this fields is uuid4().
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
 
     bill_number: str
         Auto assigned number at creation by generate_bill_number() function.
@@ -246,7 +256,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
 
     bill_status: str
-        Any bill can have the status as either of the choices as mentioned under "BILL_STATUS".
+        Current status of the BillModel. Must be one of the choices as mentioned under "BILL_STATUS".
         By default , the status will be "Draft". Options are: Draft, In Review, Approved, Paid, Void or Canceled.
 
     xref: str
@@ -293,7 +303,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         Will be null unless BillModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
 
     objects: BillModelManager
-        Custom defined BillModel Manager.
+        Custom defined BillModelManager.
 
     """
     REL_NAME_PREFIX = 'bill'
@@ -458,11 +468,23 @@ class BillModelAbstract(LedgerWrapperMixIn,
     def get_migrate_state_desc(self) -> str:
         """
         Description used when migrating transactions into the LedgerModel.
-        @return: Description as a string.
+
+        Returns
+        _______
+        str
+            Description as a string.
         """
         return f'Bill {self.bill_number} account adjustment.'
 
     def validate_item_transaction_qs(self, queryset: ItemTransactionModelQuerySet):
+        """
+        Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
+
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet
+            ItemTransactionModelQuerySet to validate.
+        """
         valid = all([
             i.bill_model_id == self.uuid for i in queryset
         ])
@@ -501,7 +523,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         Parameters
         ----------
         queryset: ItemTransactionModelQuerySet
-            Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
+            Optional pre-fetched ItemModelTransactionQueryset to use. Avoids additional DB query if provided.
         """
 
         if not queryset:
@@ -758,6 +780,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 raise ValidationError(f'Bill {self.bill_number} already bound to '
                                       f'Estimate {self.ce_model.estimate_number}')
             return False
+
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
             raise ValidationError(f'Cannot bind estimate that is not approved.')
@@ -798,7 +821,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     def can_generate_bill_number(self) -> bool:
         """
-        Checks if BillModel can generate its Bill Number.
+        Checks if BillModel can generate its Document Number.
 
         Returns
         _______
@@ -808,8 +831,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return all([
             not self.bill_number,
-            self.date_draft,
-            # self.ledger_id
+            self.date_draft
         ])
 
     # --> ACTIONS <---
@@ -1116,61 +1138,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return _('Do you want to mark Bill %s as Approved?') % self.bill_number
 
-    # DELETE ACTIONS...
-    def mark_as_delete(self, **kwargs):
-        """
-        Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
-        """
-        if not self.can_delete():
-            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
-        self.delete(**kwargs)
-
-    def get_mark_as_delete_html_id(self) -> str:
-        """
-        BillModel Mark as Delete HTML ID Tag.
-
-        Returns
-        _______
-
-        str
-            HTML ID as a String.
-        """
-        return f'djl-bill-model-{self.uuid}-mark-as-delete'
-
-    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
-        """
-        BillModel Mark-as-Delete action URL.
-
-        Parameters
-        __________
-        entity_slug: str
-            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
-            is not cached on QuerySet.
-
-        Returns
-        _______
-        str
-            BillModel mark-as-delete action URL.
-        """
-        if not entity_slug:
-            entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:bill-action-mark-as-delete',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': self.uuid
-                       })
-
-    def get_mark_as_delete_message(self) -> str:
-        """
-        Internationalized confirmation message with Bill Number.
-
-        Returns
-        _______
-        str
-            Mark-as-Delete BillModel confirmation message as a String.
-        """
-        return _('Do you want to delete Bill %s?') % self.bill_number
-
     # PAY ACTIONS....
     def mark_as_paid(self,
                      user_model,
@@ -1458,6 +1425,61 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return _('Do you want to mark Bill %s as Canceled?') % self.bill_number
 
+    # DELETE ACTIONS...
+    def mark_as_delete(self, **kwargs):
+        """
+        Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
+        """
+        if not self.can_delete():
+            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
+        self.delete(**kwargs)
+
+    def get_mark_as_delete_html_id(self) -> str:
+        """
+        BillModel Mark as Delete HTML ID Tag.
+
+        Returns
+        _______
+
+        str
+            HTML ID as a String.
+        """
+        return f'djl-bill-model-{self.uuid}-mark-as-delete'
+
+    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
+        """
+        BillModel Mark-as-Delete action URL.
+
+        Parameters
+        __________
+        entity_slug: str
+            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
+            is not cached on QuerySet.
+
+        Returns
+        _______
+        str
+            BillModel mark-as-delete action URL.
+        """
+        if not entity_slug:
+            entity_slug = self.ledger.entity.slug
+        return reverse('django_ledger:bill-action-mark-as-delete',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'bill_pk': self.uuid
+                       })
+
+    def get_mark_as_delete_message(self) -> str:
+        """
+        Internationalized confirmation message with Bill Number.
+
+        Returns
+        _______
+        str
+            Mark-as-Delete BillModel confirmation message as a String.
+        """
+        return _('Do you want to delete Bill %s?') % self.bill_number
+
     def get_status_action_date(self) -> date:
         """
         Current status action date.
@@ -1596,12 +1618,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
         Parameters
         __________
         commit: bool
-            Commits transaction into InvoiceModel.
+            Commits transaction into BillModel.
 
         Returns
         _______
         str
-            A String, representing the generated InvoiceModel instance Document Number.
+            A String, representing the generated BillModel instance Document Number.
         """
         if self.can_generate_bill_number():
             with transaction.atomic(durable=True):
