@@ -20,8 +20,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel,
-                                  generate_entity_slug)
+from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
@@ -63,7 +62,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
         entity_model: EntityModel = EntityModel.add_root(
             name=cleaned_data['name'],
-            slug=generate_entity_slug(name=cleaned_data['name']),
+            slug=EntityModel.generate_slug_from_name(name=cleaned_data['name']),
             address_1=cleaned_data['address_1'],
             address_2=cleaned_data['address_2'],
             city=cleaned_data['city'],

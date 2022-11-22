@@ -650,7 +650,7 @@ class EntityDataGenerator:
             invoice_items.append(itm)
 
         invoice_items = invoice_model.itemtransactionmodel_set.bulk_create(invoice_items)
-        invoice_model.update_amount_due(itemtxs_list=invoice_items)
+        invoice_model.update_amount_due(itemtxs_qs=invoice_items)
         invoice_model.full_clean()
         invoice_model.save()
 

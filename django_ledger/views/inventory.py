@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView
 
-from django_ledger.models import EntityModel, inventory_adjustment
+from django_ledger.models import EntityModel
 from django_ledger.models.items import ItemTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
@@ -69,7 +69,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
         user_model = self.request.user
         recorded_qs = entity_model.recorded_inventory(
             user_model=user_model,
-            queryset=queryset
+            item_qs=queryset
         )
         return recorded_qs
 
@@ -81,7 +81,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
 
         recorded_qs = self.recorded_inventory() if not recorded_qs else recorded_qs
         counted_qs = self.counted_inventory() if not counted_qs else counted_qs
-        adjustment = inventory_adjustment(counted_qs, recorded_qs) if not adjustment else adjustment
+        adjustment = EntityModel.inventory_adjustment(counted_qs, recorded_qs) if not adjustment else adjustment
 
         context['count_inventory_received'] = counted_qs
         context['current_inventory_levels'] = recorded_qs

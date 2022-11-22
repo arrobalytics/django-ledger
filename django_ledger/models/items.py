@@ -116,7 +116,7 @@ class ItemModelManager(MP_NodeManager):
 
     def inventory(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(for_inventory=True)
+        return qs.filter(for_inventory=True).select_related('uom')
 
     def for_bill(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)

@@ -3,8 +3,22 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Pranav P Tulshyan ptulshyan77@gmail.com<>
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan ptulshyan77@gmail.com<>
+
+The EntityModel represents the Company, Corporation, Legal Entity, Enterprise or Person that engage and operate as a
+business. EntityModels can be created as part of a parent/child model structure to accommodate complex corporate
+structures where certain entities may be owned by other entities and may also generate consolidated financial statements.
+Another use case of parent/child model structures is the coordination and authorization of inter-company transactions
+across multiple related entities. The EntityModel encapsulates all LedgerModel, JournalEntryModel and TransactionModel which is the core structure of
+Django Ledger in order to track and produce all financials.
+
+The EntityModel must be assigned an Administrator at creation, and may have optional Managers that will have the ability
+to operate on such EntityModel.
+
+EntityModels may also have different financial reporting periods, (also known as fiscal year), which start month is
+specified at the time of creation. All key functionality around the Fiscal Year is encapsulated in the
+EntityReportMixIn.
 
 """
 from calendar import monthrange
@@ -13,7 +27,7 @@ from datetime import date
 from decimal import Decimal
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -29,6 +43,7 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
 from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
+from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
@@ -41,105 +56,213 @@ UserModel = get_user_model()
 ENTITY_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
 
-def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
-    counted_map = {
-        (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
-            'count': i['quantity_onhand'],
-            'value': i['value_onhand'],
-            'avg_cost': i['cost_average']
-            if i['quantity_onhand'] else Decimal('0.00')
-        } for i in counted_qs
-    }
-    recorded_map = {
-        (i['uuid'], i['name'], i['uom__name']): {
-            'count': i['inventory_received'] or Decimal.from_float(0.0),
-            'value': i['inventory_received_value'] or Decimal.from_float(0.0),
-            'avg_cost': i['inventory_received_value'] / i['inventory_received']
-            if i['inventory_received'] else Decimal('0.00')
-        } for i in recorded_qs
-    }
+class EntityModelQuerySet(MP_NodeQuerySet):
+    """
+    A custom defined EntityModel QuerySet.
+    Inherits from the Materialized Path Node QuerySet Class from Django Treebeard.
+    """
 
-    # todo: change this to use a groupby then sum...
-    item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
-    adjustment = defaultdict(lambda: {
-        # keeps track of inventory recounts...
-        'counted': Decimal('0.000'),
-        'counted_value': Decimal('0.00'),
-        'counted_avg_cost': Decimal('0.00'),
+    def hidden(self):
+        """
+        A QuerySet of all hidden EntityModel.
 
-        # keeps track of inventory level...
-        'recorded': Decimal('0.000'),
-        'recorded_value': Decimal('0.00'),
-        'recorded_avg_cost': Decimal('0.00'),
+        Returns
+        -------
+        EntityModelQuerySet
+            A filtered QuerySet of hidden EntityModels only.
+        """
+        return self.filter(hidden=True)
 
-        # keeps track of necessary inventory adjustment...
-        'count_diff': Decimal('0.000'),
-        'value_diff': Decimal('0.00'),
-        'avg_cost_diff': Decimal('0.00')
-    })
+    def visible(self):
+        """
+        A Queryset of all visible EntityModel.
 
-    for uid in item_ids:
-
-        count_data = counted_map.get(uid)
-        if count_data:
-            avg_cost = count_data['value'] / count_data['count'] if count_data['count'] else Decimal('0.000')
-
-            adjustment[uid]['counted'] = count_data['count']
-            adjustment[uid]['counted_value'] = count_data['value']
-            adjustment[uid]['counted_avg_cost'] = avg_cost
-
-            adjustment[uid]['count_diff'] += count_data['count']
-            adjustment[uid]['value_diff'] += count_data['value']
-            adjustment[uid]['avg_cost_diff'] += avg_cost
-
-        recorded_data = recorded_map.get(uid)
-        if recorded_data:
-            counted = recorded_data['count']
-            avg_cost = recorded_data['value'] / counted if recorded_data['count'] else Decimal('0.000')
-
-            adjustment[uid]['recorded'] = counted
-            adjustment[uid]['recorded_value'] = recorded_data['value']
-            adjustment[uid]['recorded_avg_cost'] = avg_cost
-
-            adjustment[uid]['count_diff'] -= counted
-            adjustment[uid]['value_diff'] -= recorded_data['value']
-            adjustment[uid]['avg_cost_diff'] -= avg_cost
-
-    return adjustment
+        Returns
+        -------
+        EntityModelQuerySet
+            A filtered QuerySet of visible EntityModels only.
+        """
+        return self.filter(hidden=False)
 
 
-def generate_entity_slug(name: str) -> str:
-    slug = slugify(name)
-    suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
-    entity_slug = f'{slug}-{suffix}'
-    return entity_slug
+class EntityModelManager(MP_NodeManager):
+    """
+    A custom defined EntityModel Manager. This ModelManager uses the custom defined EntityModelQuerySet as default.
+    Inherits from the Materialized Path Node Manager to include the necessary methods to manage tree-like models.
+    This Model Manager keeps track and maintains a root/parent/child relationship between Entities for the purposes of
+    producing consolidated financial statements.
+
+    Examples
+    ________
+    >>> user = request.user
+    >>> entity_model_qs = EntityModel.objects.for_user(user_model=user)
+
+    """
+
+    def get_queryset(self):
+        """Sets the custom queryset as the default."""
+        return EntityModelQuerySet(self.model).order_by('path')
+
+    def for_user(self, user_model):
+        """
+        This QuerySet guarantees that Users do not access or operate on EntityModels that don't have access to.
+        This is the recommended initial QuerySet.
+
+        Parameters
+        ----------
+        user_model
+            The Django User Model making the request.
+
+        Returns
+        -------
+        EntityModelQuerySet
+            A filtered QuerySet of EntityModels that the user has access. The user has access to an Entity if:
+                1. Is the Administrator.
+                2. Is a manager.
+        """
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(admin=user_model) |
+            Q(managers__in=[user_model])
+        )
 
 
 class EntityReportMixIn:
+    """
+    This class encapsulates the functionality needed to determine the start and end of all financial periods of an
+    EntityModel. At the moment of creation, an EntityModel must be assigned a calendar month which is going to
+    determine the start of the Fiscal Year.
+    """
     VALID_QUARTERS = list(range(1, 5))
+    VALID_MONTHS = list(range(1, 13))
 
     def get_fy_start_month(self) -> int:
-        fy = getattr(self, 'fy_start_month', None)
-        if not fy:
-            return 1
+        """
+        The fiscal year start month represents the month (as an integer) when the assigned fiscal year of the
+        EntityModel starts.
+
+        Returns
+        -------
+        int
+            An integer representing the month that the fiscal year starts.
+
+        Examples
+        ________
+            * 1 -> January.
+            * 4 -> April.
+            * 9 -> September.
+        """
+        fy: int = getattr(self, 'fy_start_month')
         return fy
 
     def validate_quarter(self, quarter: int):
+        """
+        Validates the quarter as a valid parameter for other functions.
+        Makes sure that only integers 1,2,3, or 4 are used to refer to a particular Quarter.
+        Prevents injection of invalid values from views into the IOMixIn.
+
+        Parameters
+        ----------
+        quarter: int
+            The quarter number to validate.
+
+        Raises
+        ______
+        ValidationError
+            If quarter is not valid.
+        """
         if quarter not in self.VALID_QUARTERS:
             raise ValidationError(f'Specified quarter is not valid: {quarter}')
 
-    def get_fy_start(self, year: int, fy_start_month: int = None) -> date:
+    def validate_month(self, month: int):
+        """
+        Validates the month as a valid parameter for other functions.
+        Makes sure that only integers between 1 and 12 are used to refer to a particular month.
+        Prevents injection of invalid values from views into the IOMixIn.
+
+        Parameters
+        ----------
+        month: int
+            The month number to validate.
+
+        Raises
+        ______
+        ValidationError
+            If month is not valid.
+        """
+        if month not in self.VALID_MONTHS:
+            raise ValidationError(f'Specified month is not valid: {month}')
+
+    def get_fy_start(self, year: int, fy_start_month: Optional[int] = None) -> date:
+        """
+        The fiscal year start date of the EntityModel, according to its settings.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested start date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        date
+            The date when the requested EntityModel fiscal year starts.
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
         return date(year, fy_start_month, 1)
 
     def get_fy_end(self, year: int, fy_start_month: int = None) -> date:
+        """
+        The fiscal year ending date of the EntityModel, according to its settings.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested end date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        date
+            The date when the requested EntityModel fiscal year ends.
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
         ye = year if fy_start_month == 1 else year + 1
         me = 12 if fy_start_month == 1 else fy_start_month - 1
         return date(ye, me, monthrange(ye, me)[1])
 
     def get_quarter_start(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+        """
+        The fiscal year quarter starting date of the EntityModel, according to its settings.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested start date.
+
+        quarter: int
+            The quarter number associated with the requested start date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        date
+            The date when the requested EntityModel quarter starts.
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        self.validate_quarter(quarter)
         quarter_month_start = (quarter - 1) * 3 + fy_start_month
         year_start = year
         if quarter_month_start > 12:
@@ -148,7 +271,29 @@ class EntityReportMixIn:
         return date(year_start, quarter_month_start, 1)
 
     def get_quarter_end(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+        """
+        The fiscal year quarter ending date of the EntityModel, according to its settings.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested end date.
+
+        quarter: int
+            The quarter number associated with the requested end date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        date
+            The date when the requested EntityModel quarter ends.
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        self.validate_quarter(quarter)
         quarter_month_end = quarter * 3 + fy_start_month - 1
         year_end = year
         if quarter_month_end > 12:
@@ -157,21 +302,77 @@ class EntityReportMixIn:
         return date(year_end, quarter_month_end, monthrange(year_end, quarter_month_end)[1])
 
     def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> Tuple[date, date]:
+        """
+        Convenience method to get in one shot both, fiscal year start and end dates.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested start and end date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        tuple
+            Both, the date when the requested EntityModel fiscal year start and end date as a tuple.
+            The start date will be first.
+
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         sd = self.get_fy_start(year, fy_start_month)
         ed = self.get_fy_end(year, fy_start_month)
         return sd, ed
 
     def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> Tuple[date, date]:
+        """
+        Convenience method to get in one shot both, fiscal year quarter start and end dates.
+
+        Parameters
+        ----------
+        year: int
+            The fiscal year associated with the requested start and end date.
+
+        quarter: int
+            The quarter number associated with the requested start and end date.
+
+        fy_start_month: int
+            Optional fiscal year month start. If passed, it will override the EntityModel setting.
+
+        Returns
+        -------
+        tuple
+            Both, the date when the requested EntityModel fiscal year quarter start and end date as a tuple.
+            The start date will be first.
+
+        """
+        if fy_start_month:
+            self.validate_month(fy_start_month)
         self.validate_quarter(quarter)
         qs = self.get_quarter_start(year, quarter, fy_start_month)
         qe = self.get_quarter_end(year, quarter, fy_start_month)
         return qs, qe
 
-    def get_fy_for_date(self, dt: date, as_str: bool = False):
+    def get_fy_for_date(self, dt: date, as_str: bool = False) -> Union[str, int]:
         """
-        Given a date, returns the entity fiscal year associated with given date. 
-        @param dt: Date to evaluate.
-        @return: Fiscal year as Integer.
+        Given a known date, returns the EntityModel fiscal year associated with the given date.
+
+        Parameters
+        __________
+
+        dt: date
+            Date to evaluate.
+
+        as_str: bool
+            If True, return date as a string.
+
+
+        Returns
+        _______
+        str or date
+            Fiscal year as an integer or string, depending on as_str parameter.
         """
         fy_start_month = self.get_fy_start_month()
         if dt.month >= fy_start_month:
@@ -183,30 +384,57 @@ class EntityReportMixIn:
         return y
 
 
-class EntityModelQuerySet(MP_NodeQuerySet):
-    pass
-
-
-class EntityModelManager(MP_NodeManager):
-
-    def get_queryset(self):
-        """Sets the custom queryset as the default."""
-        return EntityModelQuerySet(self.model).order_by('path')
-
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(admin=user_model) |
-            Q(managers__in=[user_model])
-        )
-
-
 class EntityModelAbstract(MP_Node,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
                           IOMixIn,
                           EntityReportMixIn):
+    """
+    The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
+    Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
+    of the Django Treebeard library. This allows for complex parent/child relationships between Entities to be tracked
+    and managed properly.
+
+    The EntityModel also inherits functionality from the following MixIns:
+
+        1. :func:`SlugNameMixIn <django_ledger.models.mixins.SlugNameMixIn>`
+        2. :func:`PaymentTermsMixIn <django_ledger.models.mixins.PaymentTermsMixIn>`
+        3. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
+        4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
+        5. :func:`EntityReportMixIn <django_ledger.models.mixins.EntityReportMixIn>`
+        6. :func:`IOMixIn <django_ledger.io.io_mixin.IOMixIn>`
+
+
+    Attributes
+    __________
+    uuid : UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
+
+    name: str
+        The name of the Company, Enterprise, Person, etc. used to identify the Entity.
+
+    admin: UserModel
+        The Django UserModel that will be assigned as the administrator of the EntityModel.
+
+    managers: UserModel
+        The Django UserModels that will be assigned as the managers of the EntityModel by the admin.
+
+    hidden: bool
+        A flag used to hide the EntityModel from QuerySets. Defaults to False.
+
+    accrual_method: bool
+        A flag used to define which method of accounting will be used to produce financial statements.
+            * If False, Cash Method of Accounting will be used.
+            * If True, Accrual Method of Accounting will be used.
+
+    fy_start_month: int
+        An integer that specifies the month that the Fiscal Year starts.
+
+    picture
+        The image or logo used to identify the company on reports or UI/UX.
+    """
+
     CASH_METHOD = 'cash'
     ACCRUAL_METHOD = 'accrual'
     FY_MONTHS = [
@@ -225,7 +453,7 @@ class EntityModelAbstract(MP_Node,
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    name = models.CharField(max_length=150, verbose_name=_('Entity Name'), null=True, blank=True)
+    name = models.CharField(max_length=150, verbose_name=_('Entity Name'))
     admin = models.ForeignKey(UserModel,
                               on_delete=models.CASCADE,
                               related_name='admin_of',
@@ -254,109 +482,362 @@ class EntityModelAbstract(MP_Node,
         ]
 
     def __str__(self):
-        return f'{self.name}'
+        return f'EntityModel: {self.name}'
 
-    def get_dashboard_url(self):
+    def get_dashboard_url(self) -> str:
+        """
+        The EntityModel Dashboard URL.
+
+        Returns
+        _______
+        str
+            EntityModel dashboard URL as a string.
+        """
         return reverse('django_ledger:entity-dashboard',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_manage_url(self):
+    def get_manage_url(self) -> str:
+        """
+        The EntityModel Manage URL.
+
+        Returns
+        _______
+        str
+            EntityModel manage URL as a string.
+        """
         return reverse('django_ledger:entity-update',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_ledgers_url(self):
+    def get_ledgers_url(self) -> str:
+        """
+        The EntityModel Ledger List URL.
+
+        Returns
+        _______
+        str
+            EntityModel ledger list URL as a string.
+        """
         return reverse('django_ledger:ledger-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_bills_url(self):
+    def get_bills_url(self) -> str:
+        """
+        The EntityModel bill list URL.
+
+        Returns
+        _______
+        str
+            EntityModel bill list URL as a string.
+        """
         return reverse('django_ledger:bill-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_invoices_url(self):
+    def get_invoices_url(self) -> str:
+        """
+        The EntityModel invoice list URL.
+
+        Returns
+        _______
+        str
+            EntityModel invoice list URL as a string.
+        """
         return reverse('django_ledger:invoice-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_banks_url(self):
+    def get_banks_url(self) -> str:
+        """
+        The EntityModel bank account list URL.
+
+        Returns
+        _______
+        str
+            EntityModel bank account list URL as a string.
+        """
         return reverse('django_ledger:bank-account-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_balance_sheet_url(self):
+    def get_balance_sheet_url(self) -> str:
+        """
+        The EntityModel Balance Sheet Statement URL.
+
+        Returns
+        _______
+        str
+            EntityModel Balance Sheet Statement URL as a string.
+        """
         return reverse('django_ledger:entity-bs',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_income_statement_url(self):
+    def get_income_statement_url(self) -> str:
+        """
+        The EntityModel Income Statement URL.
+
+        Returns
+        _______
+        str
+            EntityModel Income Statement URL as a string.
+        """
         return reverse('django_ledger:entity-ic',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_data_import_url(self):
+    def get_cashflow_statement_url(self) -> str:
+        """
+        The EntityModel Cashflow Statement URL.
+
+        Returns
+        _______
+        str
+            EntityModel Cashflow Statement URL as a string.
+        """
+        return reverse('django_ledger:entity-cf',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
+    def get_data_import_url(self) -> str:
+        """
+        The EntityModel transaction import URL.
+
+        Returns
+        _______
+        str
+            EntityModel transaction import URL as a string.
+        """
         return reverse('django_ledger:data-import-jobs-list',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_accounts_url(self):
+    def get_accounts_url(self) -> str:
+        """
+        The EntityModel Code of Accounts llist import URL.
+
+        Returns
+        _______
+        str
+            EntityModel Code of Accounts llist import URL as a string.
+        """
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': self.slug,
                        })
 
-    def get_customers_url(self):
+    def get_customers_url(self) -> str:
+        """
+        The EntityModel customers list URL.
+
+        Returns
+        _______
+        str
+            EntityModel customers list URL as a string.
+        """
         return reverse('django_ledger:customer-list',
                        kwargs={
                            'entity_slug': self.slug,
                        })
 
-    def get_vendors_url(self):
+    def get_vendors_url(self) -> str:
+        """
+        The EntityModel vendors list URL.
+
+        Returns
+        _______
+        str
+            EntityModel vendors list URL as a string.
+        """
         return reverse('django_ledger:vendor-list',
                        kwargs={
                            'entity_slug': self.slug,
                        })
 
-    def get_delete_url(self):
+    def get_delete_url(self) -> str:
+        """
+        The EntityModel delete URL.
+
+        Returns
+        _______
+        str
+            EntityModel delete URL as a string.
+        """
         return reverse('django_ledger:entity-delete',
                        kwargs={
                            'entity_slug': self.slug
                        })
 
-    def get_fy_start_month(self) -> int:
-        return self.fy_start_month
+    @staticmethod
+    def generate_slug_from_name(name: str) -> str:
+        """
+        Uses Django's slugify function to create a valid slug from any given string.
 
-    def generate_slug(self, force_update: bool = False):
+        Parameters
+        ----------
+        name: str
+            The name or string to slugify.
+
+
+        Returns
+        -------
+            The slug as a String.
+        """
+        slug = slugify(name)
+        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
+        entity_slug = f'{slug}-{suffix}'
+        return entity_slug
+
+    def generate_slug(self,
+                      commit: bool = False,
+                      raise_exception: bool = True,
+                      force_update: bool = False):
+        """
+        Convenience method to create the EntityModel slug.
+
+        Parameters
+        ----------
+        force_update: bool
+            If True, will update the EntityModel slug.
+
+        raise_exception: bool
+            Raises ValidationError if EntityModel already has a slug.
+
+        commit: bool
+            If True,
+        """
         if not force_update and self.slug:
-            raise ValidationError(
-                message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
-            )
-        self.slug = generate_entity_slug(self.name)
+            if raise_exception:
+                raise ValidationError(
+                    message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
+                )
 
-    def recorded_inventory(self, user_model, queryset=None, as_values=True):
-        if not queryset:
-            # pylint: disable=no-member
+        self.slug = self.generate_slug_from_name(self.name)
+
+        if commit:
+            self.save(update_fields=[
+                'slug',
+                'updated'
+            ])
+
+    def recorded_inventory(self, user_model,
+                           item_qs: Optional[ItemModelQuerySet] = None,
+                           as_values: bool = True) -> ItemModelQuerySet:
+        """
+        Recorded inventory on the books marked as received. PurchaseOrderModel drives the ordering and receiving of
+        inventory. Once inventory is marked as "received" recorded inventory of each item is updated by calling
+        :func:`update_inventory <django_ledger.models.entity.EntityModelAbstract.update_inventory>`.
+        This function returns relevant values of the recoded inventory, including Unit of Measures.
+
+
+        Parameters
+        ----------
+        user_model: UserModel
+            The Django UserModel making the request.
+
+        item_qs: ItemModelQuerySet
+            Pre fetched ItemModelQuerySet. Avoids additional DB Query.
+
+        as_values: bool
+            Returns a list of dictionaries by calling the Django values() QuerySet function.
+
+
+        Returns
+        -------
+        ItemModelQuerySet
+            The ItemModelQuerySet containing inventory ItemModels with additional Unit of Measure information.
+
+        """
+        if not item_qs:
             recorded_qs = self.itemmodel_set.inventory(
                 entity_slug=self.slug,
                 user_model=user_model
             )
         else:
-            recorded_qs = queryset
+            recorded_qs = item_qs
         if as_values:
             return recorded_qs.values(
                 'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
         return recorded_qs
+
+    @staticmethod
+    def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
+        counted_map = {
+            (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
+                'count': i['quantity_onhand'],
+                'value': i['value_onhand'],
+                'avg_cost': i['cost_average']
+                if i['quantity_onhand'] else Decimal('0.00')
+            } for i in counted_qs
+        }
+        recorded_map = {
+            (i['uuid'], i['name'], i['uom__name']): {
+                'count': i['inventory_received'] or Decimal.from_float(0.0),
+                'value': i['inventory_received_value'] or Decimal.from_float(0.0),
+                'avg_cost': i['inventory_received_value'] / i['inventory_received']
+                if i['inventory_received'] else Decimal('0.00')
+            } for i in recorded_qs
+        }
+
+        # todo: change this to use a groupby then sum...
+        item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
+        adjustment = defaultdict(lambda: {
+            # keeps track of inventory recounts...
+            'counted': Decimal('0.000'),
+            'counted_value': Decimal('0.00'),
+            'counted_avg_cost': Decimal('0.00'),
+
+            # keeps track of inventory level...
+            'recorded': Decimal('0.000'),
+            'recorded_value': Decimal('0.00'),
+            'recorded_avg_cost': Decimal('0.00'),
+
+            # keeps track of necessary inventory adjustment...
+            'count_diff': Decimal('0.000'),
+            'value_diff': Decimal('0.00'),
+            'avg_cost_diff': Decimal('0.00')
+        })
+
+        for uid in item_ids:
+
+            count_data = counted_map.get(uid)
+            if count_data:
+                avg_cost = count_data['value'] / count_data['count'] if count_data['count'] else Decimal('0.000')
+
+                adjustment[uid]['counted'] = count_data['count']
+                adjustment[uid]['counted_value'] = count_data['value']
+                adjustment[uid]['counted_avg_cost'] = avg_cost
+
+                adjustment[uid]['count_diff'] += count_data['count']
+                adjustment[uid]['value_diff'] += count_data['value']
+                adjustment[uid]['avg_cost_diff'] += avg_cost
+
+            recorded_data = recorded_map.get(uid)
+            if recorded_data:
+                counted = recorded_data['count']
+                avg_cost = recorded_data['value'] / counted if recorded_data['count'] else Decimal('0.000')
+
+                adjustment[uid]['recorded'] = counted
+                adjustment[uid]['recorded_value'] = recorded_data['value']
+                adjustment[uid]['recorded_avg_cost'] = avg_cost
+
+                adjustment[uid]['count_diff'] -= counted
+                adjustment[uid]['value_diff'] -= recorded_data['value']
+                adjustment[uid]['avg_cost_diff'] -= avg_cost
+
+        return adjustment
 
     def update_inventory(self, user_model, commit: bool = False):
 
@@ -370,10 +851,10 @@ class EntityModelAbstract(MP_Node,
         recorded_qs = self.recorded_inventory(user_model=user_model, as_values=False)
         recorded_qs_values = self.recorded_inventory(
             user_model=user_model,
-            queryset=recorded_qs,
+            item_qs=recorded_qs,
             as_values=True)
 
-        adj = inventory_adjustment(counted_qs, recorded_qs_values)
+        adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
 
         updated_items = list()
         for (uuid, name, uom), i in adj.items():
