@@ -17,7 +17,11 @@ import django
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, HERE)
-sys.path.insert(0, '../../django_ledger')
+
+BASE_DIR = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, BASE_DIR)
+
+print(f'conf_path: {HERE}, project_path: {BASE_DIR}')
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "dev_env.settings"
 django.setup()
