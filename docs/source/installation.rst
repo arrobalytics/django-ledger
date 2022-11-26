@@ -4,7 +4,7 @@ Installation
 The easiest way to install the latest Django Ledger version is to install it directly
 from the repository.
 
->>> pip install git+https://github.com/arrobalytics/django-ledger.git
+>>> pip install django_ledger
 
 Add **django_ledger** to your installed apps.
 
@@ -17,6 +17,7 @@ Add **django_ledger** to your installed apps.
     ]
 
 Include Django Ledger's URLs in your project.
+
 .. code-block:: python
 
     from django.urls import path, include

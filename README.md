@@ -136,7 +136,7 @@ option when creating new entities.
 * Install Django Ledger
 
 ```shell script
-pip install git+https://github.com/arrobalytics/django-ledger.git
+pip install django_ledger
 ```
 
 To install Django Virtual Environment
@@ -145,7 +145,7 @@ To install Django Virtual Environment
 * Or with pipenv:
 
 ```shell script
-pipenv install git+https://github.com/arrobalytics/django-ledger.git
+pipenv install django_ledger
 ```
 
 * Add django_ledger to INSTALLED_APPS
