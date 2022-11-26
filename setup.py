@@ -2,13 +2,7 @@ from setuptools import setup, find_packages, find_namespace_packages
 
 import django_ledger
 
-PACKAGES = find_namespace_packages(
-    exclude=[
-        'dev_env',
-        'docs',
-        'assets',
-        'docs.source'
-    ])
+PACKAGES = find_namespace_packages(exclude=["dev_env", "docs", "assets", "docs.source"])
 
 setup(
     extras_require={
@@ -30,8 +24,8 @@ setup(
         "asgiref==3.5.2; python_version >= '3.7'",
         "django==4.1.3",
         "django-treebeard==4.5.1",
-        "faker==8.16.0",
-        "markdown==3.3.7",
+        "faker==15.3.3",
+        "markdown==3.4.1",
         "ofxtools==0.9.5",
         "pillow==9.3.0",
         "python-dateutil==2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
@@ -42,7 +36,7 @@ setup(
     ],
     project_urls={
         "Bug Tracker": "https://github.com/arrobalytics/django-ledger/issues",
-        'Documentation': 'https://docs.djangoledger.com',
+        "Documentation": "https://docs.djangoledger.com",
         "Source Code": "https://github.com/arrobalytics/django-ledger",
     },
     classifiers=[
