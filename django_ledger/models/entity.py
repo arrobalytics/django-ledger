@@ -35,7 +35,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save, pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -43,12 +42,12 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
 from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
-from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
+from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
 from django_ledger.models.journal_entry import JournalEntryModel
-from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()
@@ -389,6 +388,7 @@ class EntityModelAbstract(MP_Node,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
                           IOMixIn,
+                          LoggingMixIn,
                           EntityReportMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
@@ -416,6 +416,10 @@ class EntityModelAbstract(MP_Node,
 
     admin: UserModel
         The Django UserModel that will be assigned as the administrator of the EntityModel.
+
+    default_coa: ChartOfAccounts
+        The default Chart of Accounts Model of the Entity. EntityModel can have multiple Chart of Accounts but only one
+        can be assigned as default.
 
     managers: UserModel
         The Django UserModels that will be assigned as the managers of the EntityModel by the admin.
@@ -451,9 +455,15 @@ class EntityModelAbstract(MP_Node,
         (11, _('November')),
         (12, _('December')),
     ]
+    LOGGER_NAME_ATTRIBUTE = 'slug'
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'))
+    default_coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
+                                       verbose_name=_('Default Chart of Accounts'),
+                                       null=True,
+                                       blank=True,
+                                       on_delete=models.PROTECT)
     admin = models.ForeignKey(UserModel,
                               on_delete=models.CASCADE,
                               related_name='admin_of',
@@ -484,6 +494,405 @@ class EntityModelAbstract(MP_Node,
     def __str__(self):
         return f'EntityModel: {self.name}'
 
+    @staticmethod
+    def generate_slug_from_name(name: str) -> str:
+        """
+        Uses Django's slugify function to create a valid slug from any given string.
+
+        Parameters
+        ----------
+        name: str
+            The name or string to slugify.
+
+        Returns
+        -------
+            The slug as a String.
+        """
+        slug = slugify(name)
+        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
+        entity_slug = f'{slug}-{suffix}'
+        return entity_slug
+
+    def generate_slug(self,
+                      commit: bool = False,
+                      raise_exception: bool = True,
+                      force_update: bool = False):
+        """
+        Convenience method to create the EntityModel slug.
+
+        Parameters
+        ----------
+        force_update: bool
+            If True, will update the EntityModel slug.
+
+        raise_exception: bool
+            Raises ValidationError if EntityModel already has a slug.
+
+        commit: bool
+            If True,
+        """
+        if not force_update and self.slug:
+            if raise_exception:
+                raise ValidationError(
+                    message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
+                )
+
+        self.slug = self.generate_slug_from_name(self.name)
+
+        if commit:
+            self.save(update_fields=[
+                'slug',
+                'updated'
+            ])
+
+    def recorded_inventory(self, user_model,
+                           item_qs: Optional[ItemModelQuerySet] = None,
+                           as_values: bool = True) -> ItemModelQuerySet:
+        """
+        Recorded inventory on the books marked as received. PurchaseOrderModel drives the ordering and receiving of
+        inventory. Once inventory is marked as "received" recorded inventory of each item is updated by calling
+        :func:`update_inventory <django_ledger.models.entity.EntityModelAbstract.update_inventory>`.
+        This function returns relevant values of the recoded inventory, including Unit of Measures.
+
+
+        Parameters
+        ----------
+        user_model: UserModel
+            The Django UserModel making the request.
+
+        item_qs: ItemModelQuerySet
+            Pre fetched ItemModelQuerySet. Avoids additional DB Query.
+
+        as_values: bool
+            Returns a list of dictionaries by calling the Django values() QuerySet function.
+
+
+        Returns
+        -------
+        ItemModelQuerySet
+            The ItemModelQuerySet containing inventory ItemModels with additional Unit of Measure information.
+
+        """
+        if not item_qs:
+            recorded_qs = self.itemmodel_set.inventory(
+                entity_slug=self.slug,
+                user_model=user_model
+            )
+        else:
+            recorded_qs = item_qs
+        if as_values:
+            return recorded_qs.values(
+                'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
+        return recorded_qs
+
+    @staticmethod
+    def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
+        """
+        Computes the necessary inventory adjustment to update balance sheet.
+
+        Parameters
+        ----------
+        counted_qs: ItemTransactionModelQuerySet
+            Inventory recount queryset from Purchase Order  received inventory.
+            See :func:`ItemTransactionModelManager.inventory_count
+            <django_ledger.models.item.ItemTransactionModelManager.inventory_count>`.
+            Expects ItemTransactionModelQuerySet to be formatted "as values".
+
+        recorded_qs: ItemModelQuerySet
+            Inventory received currently recorded for each inventory item.
+            See :func:`ItemTransactionModelManager.inventory_count
+            <django_ledger.models.item.ItemTransactionModelManager.inventory_count>`
+            Expects ItemModelQuerySet to be formatted "as values".
+
+        Returns
+        -------
+        defaultdict
+            A dictionary with necessary adjustments with keys as tuple:
+                0. item_model_id
+                1. item_model__name
+                2. item_model__uom__name
+        """
+        counted_map = {
+            (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
+                'count': i['quantity_onhand'],
+                'value': i['value_onhand'],
+                'avg_cost': i['cost_average']
+                if i['quantity_onhand'] else Decimal('0.00')
+            } for i in counted_qs
+        }
+        recorded_map = {
+            (i['uuid'], i['name'], i['uom__name']): {
+                'count': i['inventory_received'] or Decimal.from_float(0.0),
+                'value': i['inventory_received_value'] or Decimal.from_float(0.0),
+                'avg_cost': i['inventory_received_value'] / i['inventory_received']
+                if i['inventory_received'] else Decimal('0.00')
+            } for i in recorded_qs
+        }
+
+        # todo: change this to use a groupby then sum...
+        item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
+        adjustment = defaultdict(lambda: {
+            # keeps track of inventory recounts...
+            'counted': Decimal('0.000'),
+            'counted_value': Decimal('0.00'),
+            'counted_avg_cost': Decimal('0.00'),
+
+            # keeps track of inventory level...
+            'recorded': Decimal('0.000'),
+            'recorded_value': Decimal('0.00'),
+            'recorded_avg_cost': Decimal('0.00'),
+
+            # keeps track of necessary inventory adjustment...
+            'count_diff': Decimal('0.000'),
+            'value_diff': Decimal('0.00'),
+            'avg_cost_diff': Decimal('0.00')
+        })
+
+        for uid in item_ids:
+
+            count_data = counted_map.get(uid)
+            if count_data:
+                avg_cost = count_data['value'] / count_data['count'] if count_data['count'] else Decimal('0.000')
+
+                adjustment[uid]['counted'] = count_data['count']
+                adjustment[uid]['counted_value'] = count_data['value']
+                adjustment[uid]['counted_avg_cost'] = avg_cost
+
+                adjustment[uid]['count_diff'] += count_data['count']
+                adjustment[uid]['value_diff'] += count_data['value']
+                adjustment[uid]['avg_cost_diff'] += avg_cost
+
+            recorded_data = recorded_map.get(uid)
+            if recorded_data:
+                counted = recorded_data['count']
+                avg_cost = recorded_data['value'] / counted if recorded_data['count'] else Decimal('0.000')
+
+                adjustment[uid]['recorded'] = counted
+                adjustment[uid]['recorded_value'] = recorded_data['value']
+                adjustment[uid]['recorded_avg_cost'] = avg_cost
+
+                adjustment[uid]['count_diff'] -= counted
+                adjustment[uid]['value_diff'] -= recorded_data['value']
+                adjustment[uid]['avg_cost_diff'] -= avg_cost
+
+        return adjustment
+
+    def update_inventory(self,
+                         user_model,
+                         commit: bool = False) -> Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]:
+        """
+        Triggers an inventory recount with optional commitment of transaction.
+
+        Parameters
+        ----------
+        user_model: UserModel
+            The Django UserModel making the request.
+
+        commit:
+            Updates all inventory ItemModels with the new inventory count.
+
+        Returns
+        -------
+        Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]
+            Return a tuple as follows:
+                0. All necessary inventory adjustments as a dictionary.
+                1. The recounted inventory.
+                2. The recorded inventory on Balance Sheet.
+        """
+        ItemTransactionModel = lazy_loader.get_item_transaction_model()
+        ItemModel = lazy_loader.get_item_model()
+
+        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(
+            entity_slug=self.slug,
+            user_model=user_model
+        )
+        recorded_qs: ItemModelQuerySet = self.recorded_inventory(user_model=user_model, as_values=False)
+        recorded_qs_values = self.recorded_inventory(
+            user_model=user_model,
+            item_qs=recorded_qs,
+            as_values=True)
+
+        adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
+
+        updated_items = list()
+        for (uuid, name, uom), i in adj.items():
+            item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
+            item_model.inventory_received = i['counted']
+            item_model.inventory_received_value = i['counted_value']
+            item_model.clean()
+            updated_items.append(item_model)
+
+        if commit:
+            ItemModel.objects.bulk_update(updated_items,
+                                          fields=[
+                                              'inventory_received',
+                                              'inventory_received_value',
+                                              'updated'
+                                          ])
+
+        return adj, counted_qs, recorded_qs
+
+    def create_chart_of_accounts(self,
+                                 assign_as_default: bool = False,
+                                 commit: bool = False) -> ChartOfAccountModel:
+        """
+        Creates a Chart of Accounts for the Entity Model and optionally assign it as the default Chart of Accounts.
+        EntityModel must have a default Chart of Accounts before being able to transact.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the transaction into the DB. A ChartOfAccountModel will
+
+        assign_as_default: bool
+            Assigns the newly created ChartOfAccountModel as the EntityModel default_coa.
+
+        Returns
+        -------
+        ChartOfAccountModel
+            The newly created chart of accounts model.
+        """
+        chart_of_accounts = ChartOfAccountModel(
+            slug=self.slug + '-coa',
+            name=self.name + ' CoA',
+            entity=self
+        )
+        chart_of_accounts.clean()
+        chart_of_accounts.save()
+
+        if assign_as_default:
+            self.default_coa = chart_of_accounts
+            if commit:
+                self.save(update_fields=[
+                    'default_coa',
+                    'updated'
+                ])
+        return chart_of_accounts
+
+    def populate_default_coa(self,
+                             activate_accounts: bool = False,
+                             force: bool = False,
+                             chart_of_accounts: Optional[ChartOfAccountModel] = None,
+                             ):
+        if not chart_of_accounts:
+            chart_of_accounts: ChartOfAccountModel = self.default_coa
+
+        coa_has_accounts = chart_of_accounts.accountmodel_set.all().exists()
+        if not coa_has_accounts or force:
+            logger = self.get_logger()
+            acc_objs = [
+                AccountModel(
+                    code=a['code'],
+                    name=a['name'],
+                    role=a['role'],
+                    balance_type=a['balance_type'],
+                    active=activate_accounts,
+                    coa=chart_of_accounts,
+                ) for a in CHART_OF_ACCOUNTS
+            ]
+
+            for acc in acc_objs:
+                acc.clean()
+                logger.info(msg=f'Adding Account {acc.code}: {acc.name}...')
+                AccountModel.add_root(instance=acc)
+        else:
+            raise ValidationError(f'Entity {self.name} already has existing accounts. '
+                                  'Use force=True to bypass this check')
+
+    def get_accounts(self, user_model, active_only: bool = True):
+        """
+        This func does...
+        @param user_model: Request User Model
+        @param active_only: Active accounts only
+        @return: A queryset.
+        """
+        accounts_qs = AccountModel.on_coa.for_entity(
+            entity_slug=self.slug,
+            user_model=user_model
+        )
+        if active_only:
+            accounts_qs = accounts_qs.active()
+        return accounts_qs
+
+    def add_equity(self,
+                   user_model,
+                   cash_account: Union[str, AccountModel],
+                   equity_account: Union[str, AccountModel],
+                   txs_date: Union[date, str],
+                   amount: Decimal,
+                   ledger_name: str,
+                   ledger_posted: bool = False,
+                   je_posted: bool = False):
+
+        if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
+
+            account_qs = AccountModel.on_coa.with_roles(
+                roles=[
+                    EQUITY_CAPITAL,
+                    EQUITY_COMMON_STOCK,
+                    EQUITY_PREFERRED_STOCK,
+                    ASSET_CA_CASH
+                ],
+                entity_slug=self.slug,
+                user_model=user_model
+            )
+
+            cash_account_model = account_qs.get(code__exact=cash_account)
+            equity_account_model = account_qs.get(code__exact=equity_account)
+
+        elif isinstance(cash_account, AccountModel) and isinstance(equity_account, AccountModel):
+            cash_account_model = cash_account
+            equity_account_model = equity_account
+
+        else:
+            raise ValidationError(
+                message=f'Both cash_account and equity account must be an instance of str or AccountMode.'
+                        f' Got. Cash Account: {cash_account.__class__.__name__} and '
+                        f'Equity Account: {equity_account.__class__.__name__}'
+            )
+
+        txs = list()
+        txs.append({
+            'account_id': cash_account_model.uuid,
+            'tx_type': 'debit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+        txs.append({
+            'account_id': equity_account_model.uuid,
+            'tx_type': 'credit',
+            'amount': amount,
+            'description': f'Sample data for {self.name}'
+        })
+
+        # pylint: disable=no-member
+        ledger = self.ledgermodel_set.create(
+            name=ledger_name,
+            posted=ledger_posted
+        )
+
+        # todo: this needs to be changes to use the JournalEntryModel API for validation...
+        self.commit_txs(
+            je_date=txs_date,
+            je_txs=txs,
+            je_activity=JournalEntryModel.FINANCING_EQUITY,
+            je_posted=je_posted,
+            je_ledger=ledger
+        )
+        return ledger
+
+    def is_cash_method(self) -> bool:
+        return self.accrual_method is False
+
+    def is_accrual_method(self) -> bool:
+        return self.accrual_method is True
+
+    def get_accrual_method(self) -> str:
+        if self.is_cash_method():
+            return self.CASH_METHOD
+        return self.ACCRUAL_METHOD
+
+    # URLS ----
     def get_dashboard_url(self) -> str:
         """
         The EntityModel Dashboard URL.
@@ -680,325 +1089,11 @@ class EntityModelAbstract(MP_Node,
                            'entity_slug': self.slug
                        })
 
-    @staticmethod
-    def generate_slug_from_name(name: str) -> str:
-        """
-        Uses Django's slugify function to create a valid slug from any given string.
-
-        Parameters
-        ----------
-        name: str
-            The name or string to slugify.
-
-
-        Returns
-        -------
-            The slug as a String.
-        """
-        slug = slugify(name)
-        suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
-        entity_slug = f'{slug}-{suffix}'
-        return entity_slug
-
-    def generate_slug(self,
-                      commit: bool = False,
-                      raise_exception: bool = True,
-                      force_update: bool = False):
-        """
-        Convenience method to create the EntityModel slug.
-
-        Parameters
-        ----------
-        force_update: bool
-            If True, will update the EntityModel slug.
-
-        raise_exception: bool
-            Raises ValidationError if EntityModel already has a slug.
-
-        commit: bool
-            If True,
-        """
-        if not force_update and self.slug:
-            if raise_exception:
-                raise ValidationError(
-                    message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
-                )
-
-        self.slug = self.generate_slug_from_name(self.name)
-
-        if commit:
-            self.save(update_fields=[
-                'slug',
-                'updated'
-            ])
-
-    def recorded_inventory(self, user_model,
-                           item_qs: Optional[ItemModelQuerySet] = None,
-                           as_values: bool = True) -> ItemModelQuerySet:
-        """
-        Recorded inventory on the books marked as received. PurchaseOrderModel drives the ordering and receiving of
-        inventory. Once inventory is marked as "received" recorded inventory of each item is updated by calling
-        :func:`update_inventory <django_ledger.models.entity.EntityModelAbstract.update_inventory>`.
-        This function returns relevant values of the recoded inventory, including Unit of Measures.
-
-
-        Parameters
-        ----------
-        user_model: UserModel
-            The Django UserModel making the request.
-
-        item_qs: ItemModelQuerySet
-            Pre fetched ItemModelQuerySet. Avoids additional DB Query.
-
-        as_values: bool
-            Returns a list of dictionaries by calling the Django values() QuerySet function.
-
-
-        Returns
-        -------
-        ItemModelQuerySet
-            The ItemModelQuerySet containing inventory ItemModels with additional Unit of Measure information.
-
-        """
-        if not item_qs:
-            recorded_qs = self.itemmodel_set.inventory(
-                entity_slug=self.slug,
-                user_model=user_model
-            )
-        else:
-            recorded_qs = item_qs
-        if as_values:
-            return recorded_qs.values(
-                'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
-        return recorded_qs
-
-    @staticmethod
-    def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
-        counted_map = {
-            (i['item_model_id'], i['item_model__name'], i['item_model__uom__name']): {
-                'count': i['quantity_onhand'],
-                'value': i['value_onhand'],
-                'avg_cost': i['cost_average']
-                if i['quantity_onhand'] else Decimal('0.00')
-            } for i in counted_qs
-        }
-        recorded_map = {
-            (i['uuid'], i['name'], i['uom__name']): {
-                'count': i['inventory_received'] or Decimal.from_float(0.0),
-                'value': i['inventory_received_value'] or Decimal.from_float(0.0),
-                'avg_cost': i['inventory_received_value'] / i['inventory_received']
-                if i['inventory_received'] else Decimal('0.00')
-            } for i in recorded_qs
-        }
-
-        # todo: change this to use a groupby then sum...
-        item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
-        adjustment = defaultdict(lambda: {
-            # keeps track of inventory recounts...
-            'counted': Decimal('0.000'),
-            'counted_value': Decimal('0.00'),
-            'counted_avg_cost': Decimal('0.00'),
-
-            # keeps track of inventory level...
-            'recorded': Decimal('0.000'),
-            'recorded_value': Decimal('0.00'),
-            'recorded_avg_cost': Decimal('0.00'),
-
-            # keeps track of necessary inventory adjustment...
-            'count_diff': Decimal('0.000'),
-            'value_diff': Decimal('0.00'),
-            'avg_cost_diff': Decimal('0.00')
-        })
-
-        for uid in item_ids:
-
-            count_data = counted_map.get(uid)
-            if count_data:
-                avg_cost = count_data['value'] / count_data['count'] if count_data['count'] else Decimal('0.000')
-
-                adjustment[uid]['counted'] = count_data['count']
-                adjustment[uid]['counted_value'] = count_data['value']
-                adjustment[uid]['counted_avg_cost'] = avg_cost
-
-                adjustment[uid]['count_diff'] += count_data['count']
-                adjustment[uid]['value_diff'] += count_data['value']
-                adjustment[uid]['avg_cost_diff'] += avg_cost
-
-            recorded_data = recorded_map.get(uid)
-            if recorded_data:
-                counted = recorded_data['count']
-                avg_cost = recorded_data['value'] / counted if recorded_data['count'] else Decimal('0.000')
-
-                adjustment[uid]['recorded'] = counted
-                adjustment[uid]['recorded_value'] = recorded_data['value']
-                adjustment[uid]['recorded_avg_cost'] = avg_cost
-
-                adjustment[uid]['count_diff'] -= counted
-                adjustment[uid]['value_diff'] -= recorded_data['value']
-                adjustment[uid]['avg_cost_diff'] -= avg_cost
-
-        return adjustment
-
-    def update_inventory(self, user_model, commit: bool = False):
-
-        ItemThroughModel = lazy_loader.get_item_transaction_model()
-        ItemModel = lazy_loader.get_item_model()
-
-        counted_qs = ItemThroughModel.objects.inventory_count(
-            entity_slug=self.slug,
-            user_model=user_model
-        )
-        recorded_qs = self.recorded_inventory(user_model=user_model, as_values=False)
-        recorded_qs_values = self.recorded_inventory(
-            user_model=user_model,
-            item_qs=recorded_qs,
-            as_values=True)
-
-        adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
-
-        updated_items = list()
-        for (uuid, name, uom), i in adj.items():
-            item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
-            item_model.inventory_received = i['counted']
-            item_model.inventory_received_value = i['counted_value']
-            item_model.clean()
-            updated_items.append(item_model)
-
-        if commit:
-            ItemModel.objects.bulk_update(updated_items,
-                                          fields=[
-                                              'inventory_received',
-                                              'inventory_received_value',
-                                              'updated'
-                                          ])
-
-        return adj, counted_qs, recorded_qs
-
-    def populate_default_coa(self, activate_accounts: bool = False):
-        # pylint: disable=no-member
-        coa: ChartOfAccountModel = self.chartofaccountmodel
-        has_accounts = coa.accountmodel_set.all().exists()
-        if not has_accounts:
-            acc_objs = [
-                {
-                    'code': a['code'],
-                    'name': a['name'],
-                    'role': a['role'],
-                    'balance_type': a['balance_type'],
-                    'active': activate_accounts,
-                    'coa': coa
-                } for a in CHART_OF_ACCOUNTS]
-
-            for acc_kwargs in acc_objs:
-                AccountModel.add_root(**acc_kwargs)
-
-            # accounts_qs = coa.accountmodel_set.all()
-            # for account_model in accounts_qs:
-            #     account_model.clean()
-            # AccountModel.add_root(acc)
-            # accounts_qs.bulk_update()
-            # AccountModel.on_coa.(acc_objs)
-
-    def get_accounts(self, user_model, active_only: bool = True):
-        """
-        This func does...
-        @param user_model: Request User Model
-        @param active_only: Active accounts only
-        @return: A queryset.
-        """
-        accounts_qs = AccountModel.on_coa.for_entity(
-            entity_slug=self.slug,
-            user_model=user_model
-        )
-        if active_only:
-            accounts_qs = accounts_qs.active()
-        return accounts_qs
-
-    def add_equity(self,
-                   user_model,
-                   cash_account: Union[str, AccountModel],
-                   equity_account: Union[str, AccountModel],
-                   txs_date: Union[date, str],
-                   amount: Decimal,
-                   ledger_name: str,
-                   ledger_posted: bool = False,
-                   je_posted: bool = False):
-
-        if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
-
-            account_qs = AccountModel.on_coa.with_roles(
-                roles=[
-                    EQUITY_CAPITAL,
-                    EQUITY_COMMON_STOCK,
-                    EQUITY_PREFERRED_STOCK,
-                    ASSET_CA_CASH
-                ],
-                entity_slug=self.slug,
-                user_model=user_model
-            )
-
-            cash_account_model = account_qs.get(code__exact=cash_account)
-            equity_account_model = account_qs.get(code__exact=equity_account)
-
-        elif isinstance(cash_account, AccountModel) and isinstance(equity_account, AccountModel):
-            cash_account_model = cash_account
-            equity_account_model = equity_account
-
-        else:
-            raise ValidationError(
-                message=f'Both cash_account and equity account must be an instance of str or AccountMode.'
-                        f' Got. Cash Account: {cash_account.__class__.__name__} and '
-                        f'Equity Account: {equity_account.__class__.__name__}'
-            )
-
-        txs = list()
-        txs.append({
-            'account_id': cash_account_model.uuid,
-            'tx_type': 'debit',
-            'amount': amount,
-            'description': f'Sample data for {self.name}'
-        })
-        txs.append({
-            'account_id': equity_account_model.uuid,
-            'tx_type': 'credit',
-            'amount': amount,
-            'description': f'Sample data for {self.name}'
-        })
-
-        # pylint: disable=no-member
-        ledger = self.ledgermodel_set.create(
-            name=ledger_name,
-            posted=ledger_posted
-        )
-
-        # todo: this needs to be changes to use the JournalEntryModel API for validation...
-        self.commit_txs(
-            je_date=txs_date,
-            je_txs=txs,
-            je_activity=JournalEntryModel.FINANCING_EQUITY,
-            je_posted=je_posted,
-            je_ledger=ledger
-        )
-        return ledger
-
-    def is_cash_method(self) -> bool:
-        return self.accrual_method is False
-
-    def is_accrual_method(self) -> bool:
-        return self.accrual_method is True
-
-    def get_accrual_method(self) -> str:
-        if self.is_cash_method():
-            return self.CASH_METHOD
-        return self.ACCRUAL_METHOD
-
     def clean(self):
-        super(EntityModelAbstract, self).clean()
-        if not self.name:
-            raise ValidationError(message=_('Must provide a name for EntityModel'))
-
         if not self.slug:
             self.generate_slug()
+        super(EntityModelAbstract, self).clean()
+
 
 
 class EntityManagementModelAbstract(CreateUpdateMixIn):
@@ -1101,28 +1196,21 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-def entitymodel_presave(instance: EntityModel, **kwargs):
-    if not instance.slug:
-        instance.slug = instance.generate_slug()
+# def entitymodel_presave(instance: EntityModel, **kwargs):
+#     if not instance.slug:
+#         instance.slug = instance.generate_slug(commit=False)
+#
+#
+# pre_save.connect(entitymodel_presave, EntityModel)
 
 
-pre_save.connect(entitymodel_presave, EntityModel)
+# instance.ledgermodel_set.create(
+#     name=_(f'{instance.name} First Ledger'),
+#     posted=True
+# )
 
 
-def entitymodel_postsave(instance: EntityModel, **kwargs):
-    if not getattr(instance, 'coa', None):
-        ChartOfAccountModel.objects.create(
-            slug=instance.slug + '-coa',
-            name=instance.name + ' CoA',
-            entity=instance
-        )
-        instance.ledgermodel_set.create(
-            name=_(f'{instance.name} General Ledger'),
-            posted=True
-        )
-
-
-post_save.connect(entitymodel_postsave, EntityModel)
+# post_init.connect(entitymodel_postinit, EntityModel)
 
 
 class EntityManagementModel(EntityManagementModelAbstract):

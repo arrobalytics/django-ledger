@@ -5,6 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+import logging
 from collections import defaultdict
 from datetime import timedelta, date
 from decimal import Decimal
@@ -754,3 +755,17 @@ class TaxCollectionMixIn(models.Model):
 
     class Meta:
         abstract = True
+
+
+class LoggingMixIn:
+    LOGGER_NAME_ATTRIBUTE = None
+
+    def get_logger_name(self):
+        if self.LOGGER_NAME_ATTRIBUTE is None:
+            raise NotImplementedError(f'{self.__class__.__name__} must define LOGGER_NAME_ATTRIBUTE of implement '
+                                      'get_logger_name() function.')
+        return getattr(self, self.LOGGER_NAME_ATTRIBUTE)
+
+    def get_logger(self) -> logging.Logger:
+        name = self.get_logger_name()
+        return logging.getLogger(name)

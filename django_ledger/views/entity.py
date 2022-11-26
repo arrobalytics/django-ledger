@@ -57,10 +57,13 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def form_valid(self, form):
         cleaned_data = form.cleaned_data
-        user_model = self.request.user
-        FIELDS_GEN = (f.name for f in EntityModel._meta.get_fields())
+        default_coa = cleaned_data.get('default_coa')
+        activate_accounts = cleaned_data.get('activate_all_accounts')
+        sample_data = form.cleaned_data.get('generate_sample_data')
 
-        entity_model: EntityModel = EntityModel.add_root(
+        user_model = self.request.user
+
+        entity_model: EntityModel = EntityModel(
             name=cleaned_data['name'],
             slug=EntityModel.generate_slug_from_name(name=cleaned_data['name']),
             address_1=cleaned_data['address_1'],
@@ -76,15 +79,12 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             accrual_method=cleaned_data['accrual_method'],
             admin=user_model
         )
-        # entity_model = EntityModel.objects.get(pk=entity_model.uuid)
-
-        default_coa = cleaned_data.get('default_coa')
-        activate_accounts = cleaned_data.get('activate_all_accounts')
+        entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
+        entity_model.create_chart_of_accounts()
 
         if default_coa:
             entity_model.populate_default_coa(activate_accounts=activate_accounts)
 
-        sample_data = form.cleaned_data.get('generate_sample_data')
         if sample_data:
             entity_generator = EntityDataGenerator(
                 entity_model=entity_model,
@@ -250,7 +250,7 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
         :return: The View queryset.
         """
         return EntityModel.objects.for_user(
-            user_model=self.request.user).select_related('chartofaccountmodel')
+            user_model=self.request.user).select_related('default_coa')
 
 
 class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):

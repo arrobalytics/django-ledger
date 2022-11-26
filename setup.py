@@ -1,6 +1,14 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, find_namespace_packages
 
 import django_ledger
+
+PACKAGES = find_namespace_packages(
+    exclude=[
+        'dev_env',
+        'docs',
+        'assets',
+        'docs.source'
+    ])
 
 setup(
     extras_require={
@@ -9,7 +17,7 @@ setup(
     dependency_links=[],
     name="django-ledger",
     version=django_ledger.__version__,
-    packages=find_packages(exclude=["assets", "dev_env"]),
+    packages=PACKAGES,
     url=django_ledger.__url__,
     license=django_ledger.__license__,
     keywords="django, finance, bookkeeping, accounting, balance sheet, income statement, general ledger, money, engine",

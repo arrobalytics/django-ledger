@@ -86,6 +86,9 @@ class ItemModelQuerySet(models.QuerySet):
 
 class ItemModelManager(MP_NodeManager):
 
+    def get_queryset(self):
+        return ItemModelQuerySet(self.model).order_by('path')
+
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
         return qs.filter(
@@ -243,7 +246,7 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('Item Entity'))
 
-    objects = ItemModelManager.from_queryset(queryset_class=ItemModelQuerySet)()
+    objects = ItemModelManager()
     node_order_by = ['uuid']
 
     class Meta:
@@ -609,12 +612,6 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    # parent = models.ForeignKey('self',
-    #                            null=True,
-    #                            blank=True,
-    #                            on_delete=models.RESTRICT,
-    #                            related_name='children',
-    #                            verbose_name=_('Parent Item'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
                                     on_delete=models.RESTRICT,
                                     blank=True,

@@ -1,5 +1,0 @@
-recursive-include django_ledger/templates *
-recursive-include django_ledger/static *
-
-exclude dev_env/
-exclude assets/

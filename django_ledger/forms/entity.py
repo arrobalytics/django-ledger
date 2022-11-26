@@ -64,7 +64,6 @@ class EntityModelCreateForm(ModelForm):
             'website',
             'phone',
             'fy_start_month',
-            'default_coa',
             'activate_all_accounts',
             'accrual_method'
         ]

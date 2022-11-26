@@ -16,7 +16,6 @@ Django Ledger - The Django Book Keeping Engine.
    ./installation
    ./quickstart
    ./models
-   ./views
 
 
 Indices and tables

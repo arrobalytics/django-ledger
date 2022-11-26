@@ -19,10 +19,10 @@ from django.utils.timezone import localtime, localdate
 from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
                                     LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_REGULAR, EQUITY_CAPITAL,
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
-from django_ledger.models import EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel, \
-    EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel, \
-    BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel, \
-    create_entity_unit_slug, EstimateModel
+from django_ledger.models import (EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel,
+                                  EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
+                                  BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel,
+                                  create_entity_unit_slug, EstimateModel, LoggingMixIn)
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -34,7 +34,7 @@ except ImportError:
     FAKER_IMPORTED = False
 
 
-class EntityDataGenerator:
+class EntityDataGenerator(LoggingMixIn):
 
     def __init__(self,
                  user_model,
@@ -90,8 +90,14 @@ class EntityDataGenerator:
         self.MIN_DAYS_FORWARD = 1
         self.MAX_DAYS_FORWARD = 8
 
+        self.logger = self.get_logger()
+
+    def get_logger_name(self):
+        return self.entity_model.slug
+
     def populate_entity(self):
 
+        self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
             entity_slug=self.entity_model,
             user_model=self.user_model
@@ -101,6 +107,7 @@ class EntityDataGenerator:
             raise ValidationError(
                 f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
 
+        self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
         self.account_models = AccountModel.on_coa.for_entity_available(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
@@ -124,7 +131,7 @@ class EntityDataGenerator:
 
         for i in range(self.tx_quantity):
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
-            self.create_estimates(date_draft=start_dttm)
+            self.create_estimate(date_draft=start_dttm)
 
             if random() > 0.4:
                 self.create_po(date_draft=start_dttm)
@@ -146,6 +153,7 @@ class EntityDataGenerator:
         return next_date
 
     def create_entity_units(self, nb_units: int = None):
+        self.logger.info(f'Creating entity units...')
         nb_units = self.NB_UNITS if not nb_units else nb_units
 
         if nb_units:
@@ -164,6 +172,7 @@ class EntityDataGenerator:
         self.entity_unit_models = self.entity_model.entityunitmodel_set.all()
 
     def create_vendors(self):
+        self.logger.info('Creating vendors...')
         vendor_count = randint(10, 20)
         vendor_models = [
             VendorModel(
@@ -190,6 +199,7 @@ class EntityDataGenerator:
         self.vendor_models = VendorModel.objects.bulk_create(vendor_models, ignore_conflicts=True)
 
     def create_customers(self):
+        self.logger.info(f'Creating entity customers...')
         customer_count = randint(10, 20)
         customer_models = [
             CustomerModel(
@@ -216,6 +226,7 @@ class EntityDataGenerator:
         self.customer_models = CustomerModel.objects.bulk_create(customer_models, ignore_conflicts=True)
 
     def create_bank_accounts(self):
+        self.logger.info(f'Creating entity accounts...')
         bank_account_models = [
             BankAccountModel(name=f'{self.entity_model.name} Checking Account',
                              account_number=self.fk.bban(),
@@ -240,6 +251,7 @@ class EntityDataGenerator:
         self.bank_account_models = BankAccountModel.objects.bulk_create(bank_account_models, ignore_conflicts=True)
 
     def create_uom_models(self):
+        self.logger.info(f'Creating entity Unit of Measures...')
         UOMs = {
             'unit': 'Unit',
             'ln.ft': 'Linear Feet',
@@ -257,6 +269,7 @@ class EntityDataGenerator:
         self.uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
 
     def create_products(self):
+        self.logger.info(f'Creating entity product items...')
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         product_models = list()
         for i in range(product_count):
@@ -295,24 +308,28 @@ class EntityDataGenerator:
         self.update_products()
 
     def update_products(self):
+        self.logger.info(f'Updating product catalog...')
         self.product_and_services_models = ItemModel.objects.products_and_services(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
 
     def update_inventory(self):
+        self.logger.info(f'Updating inventory...')
         self.inventory_models = ItemModel.objects.inventory(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
 
     def update_expenses(self):
+        self.logger.info(f'Updating expenses...')
         self.expense_models = ItemModel.objects.expenses(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
 
     def create_expenses(self):
+        self.logger.info(f'Creating entity expense items...')
         expense_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         expense_models = [
             ItemModel.add_root(
@@ -332,6 +349,7 @@ class EntityDataGenerator:
         self.update_expenses()
 
     def create_inventories(self):
+        self.logger.info(f'Creating entity inventory items...')
         inv_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         inventory_models = [
             ItemModel.add_root(
@@ -350,21 +368,22 @@ class EntityDataGenerator:
 
         self.update_inventory()
 
-    def create_estimates(self, date_draft: date):
-        customer_estimate: EstimateModel = EstimateModel(
+    def create_estimate(self, date_draft: date):
+        estimate_model: EstimateModel = EstimateModel(
             terms=choice(EstimateModel.CONTRACT_TERMS)[0],
             title=f'Customer Estimate {date_draft}',
             date_draft=date_draft
         )
-        customer_estimate.configure(entity_slug=self.entity_model,
+        estimate_model.configure(entity_slug=self.entity_model,
                                     user_model=self.user_model,
                                     customer_model=choice(self.customer_models))
 
-        customer_estimate.save()
+        estimate_model.save()
+        self.logger.info(f'Creating entity estimate {estimate_model.estimate_number}...')
 
         estimate_items = [
             ItemTransactionModel(
-                ce_model=customer_estimate,
+                ce_model=estimate_model,
                 item_model=choice(self.product_and_services_models),
                 ce_quantity=round(random() * randint(5, 15), 2),
                 ce_unit_cost_estimate=round(random() * randint(50, 100), 2),
@@ -376,30 +395,29 @@ class EntityDataGenerator:
         for i in estimate_items:
             i.full_clean()
 
-        customer_estimate.full_clean()
-        customer_estimate.update_state(queryset=estimate_items)
-        customer_estimate.save()
+        estimate_model.full_clean()
+        estimate_model.update_state(queryset=estimate_items)
+        estimate_model.save()
 
-        estimate_items = customer_estimate.itemtransactionmodel_set.bulk_create(objs=estimate_items)
+        estimate_items = estimate_model.itemtransactionmodel_set.bulk_create(objs=estimate_items)
 
         if random() > 0.25:
             date_in_review = self.get_next_date(date_draft)
-            customer_estimate.mark_as_review(commit=True, date_in_review=date_in_review)
+            estimate_model.mark_as_review(commit=True, date_in_review=date_in_review)
             if random() > 0.50:
                 date_approved = self.get_next_date(date_in_review)
-                customer_estimate.mark_as_approved(commit=True, date_approved=date_approved)
+                estimate_model.mark_as_approved(commit=True, date_approved=date_approved)
                 if random() > 0.25:
                     date_completed = self.get_next_date(date_approved)
-                    customer_estimate.mark_as_completed(commit=True, date_completed=date_completed)
+                    estimate_model.mark_as_completed(commit=True, date_completed=date_completed)
                 elif random() > 0.8:
                     date_void = self.get_next_date(date_approved)
-                    customer_estimate.mark_as_void(commit=True, date_void=date_void)
+                    estimate_model.mark_as_void(commit=True, date_void=date_void)
             elif random() > 0.8:
                 date_canceled = self.get_next_date(date_in_review)
-                customer_estimate.mark_as_canceled(commit=True, date_canceled=date_canceled)
+                estimate_model.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
     def create_bill(self, date_draft):
-
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
             accrue=random() > 0.65,
@@ -419,6 +437,7 @@ class EntityDataGenerator:
 
         bill_model.full_clean()
         bill_model.save()
+        self.logger.info(f'Creating entity bill {bill_model.bill_number}...')
 
         bill_items = [
             ItemTransactionModel(
@@ -470,7 +489,6 @@ class EntityDataGenerator:
                 bill_model.mark_as_canceled(date_canceled=canceled_date)
 
     def create_po(self, date_draft: date):
-
         po_model: PurchaseOrderModel = PurchaseOrderModel(date_draft=date_draft)
         po_model = po_model.configure(entity_slug=self.entity_model, user_model=self.user_model)
         po_model.po_title = f'PO Title for {po_model.po_number}'
@@ -492,6 +510,7 @@ class EntityDataGenerator:
         po_model.update_state(itemtxs_list=po_items)
         po_model.full_clean()
         po_model.save()
+        self.logger.info(f'Creating entity purchase order {po_model.po_number}...')
 
         # pylint: disable=no-member
         po_items = po_model.itemtransactionmodel_set.bulk_create(po_items)
@@ -596,7 +615,6 @@ class EntityDataGenerator:
                                     self.update_inventory()
 
     def create_invoice(self, date_draft: date):
-
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
             accrue=random() > 0.75,
@@ -608,7 +626,7 @@ class EntityDataGenerator:
             date_draft=date_draft,
             additional_info=dict()
         )
-
+        self.logger.info(f'Creating entity invoice {invoice_model.invoice_number}...')
         ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.entity_model,
             user_model=self.user_model)
@@ -691,6 +709,7 @@ class EntityDataGenerator:
 
     def fund_entity(self):
 
+        self.logger.info(f'Funding entity...')
         capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
         cash_acc = choice(self.bank_account_models).cash_account
 
@@ -706,6 +725,7 @@ class EntityDataGenerator:
         )
 
     def recount_inventory(self):
+        self.logger.info(f'Recounting inventory...')
         self.entity_model.update_inventory(
             user_model=self.user_model,
             commit=True

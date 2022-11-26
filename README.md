@@ -1,23 +1,31 @@
 ![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-### A Bookkeeping & Financial Analysis Engine for the Django Framework.
+### An Accounting, Bookkeeping & Financial Analysis Engine for the Django Framework.
 
-The __Django Ledger Project__ is led and maintained by Miguel Sanda aiming to provide an open source financial
-engine to power financially driven applications using Python and the Django Framework.
+__Django Ledger__ is a double entry accounting system, which aims to power financially driven applications by removing
+the complexity of the accounting domain into a simple, high-level API.
+
 Due to its complexity we cannot offer a stable release until all features on the
 [Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md) has been implemented and tested.
 
+### Wait, not stable yet?...
 Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects
 as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API to
 power financially driven applications. This project in particular, not only requires Python AND Django programming
-experience, but also finance and accounting experience.
+experience, but also finance and accounting experience. So, that's the long way of saying, this project is complex and
+models may require breaking changes as we move along.
 
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
 
+### Documentation
+Access the latest documentation [here](https://django-ledger.readthedocs.io/en/latest/).
+
 Django Ledger supports:
 
-- Chart of Accounts.
-- Financial Statements (Income Statement & Balance Sheets).
+- Double entry accounting.
+- Hierarchical Chart of Accounts.
+- Financial Statements (Income Statement, Balance Sheet & Cash Flow Statement).
+- Purchase Orders, Sales Orders (Estimates), Bills and Invoices.
 - Automatic financial ratio & insight calculations.
 - Multi tenancy (multiple users/clients).
 - Hierarchical entity management (for consolidated financial statements - v0.9).
@@ -27,6 +35,7 @@ Django Ledger supports:
 - Basic navigational templates.
 - Entity administration & entity manager support.
 - Items, lists & inventory management.
+- Unit of Measures.
 - Bank Accounts.
 
 __WARNING__: Currently this project is under active development, it is not stable and is not recommended for production

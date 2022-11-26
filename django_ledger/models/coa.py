@@ -8,7 +8,6 @@ Pranav P Tulshyan <ptulshyan77@gmail.com>
 
 """
 
-
 """
 Chart Of Account: This is a basically the entire collection of all the accounts that is present and a logical aggregation of those accounts.
 The Chart of accounts is the backbone of making of any financial statements. Transactions are recorded into individual accounts based on their individual type.
@@ -47,13 +46,10 @@ The "coa_model" refers to the ChartofAccounts model that is separate for every e
 
 
 def get_coa_account(coa_model, code):
-
     """
     The function is used for filtering the particular account code from the list of all the codes in the Chart Of Accounts.
     In case the code doesnt eist, it will raise a non Existent error
     """
-
-
 
     try:
         qs = coa_model.acc_assignments.available()
@@ -68,7 +64,6 @@ def get_coa_account(coa_model, code):
 
 
 def make_account_active(coa_model, account_codes: str or list):
-
     """
     This function is used for making a single or a list of account_codes as "active".
     Whenever a new account is created under the "Accounts" Model, the said code is first set as Inactive.
@@ -85,8 +80,6 @@ def make_account_active(coa_model, account_codes: str or list):
 
 
 class ChartOfAccountModelManager(Manager):
-    
-
     """
     This is the custome defined Model Manager whic will act as an nterface between the db queries and the ChartofAccountModel.
     This manager allows for db queries to pass through 2 filters . The "entity_slug" filter and the user filter.
@@ -141,10 +134,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity = models.OneToOneField('django_ledger.EntityModel',
-                                  editable=False,
-                                  verbose_name=_('Entity'),
-                                  on_delete=models.CASCADE)
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               editable=False,
+                               verbose_name=_('Entity'),
+                               on_delete=models.CASCADE)
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     description = models.TextField(verbose_name=_('CoA Description'), null=True, blank=True)
     objects = ChartOfAccountModelManager()
