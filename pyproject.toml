@@ -36,14 +36,14 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
 ]
 
-[project.license]
-file = "LICENSE"
-
 [project.urls]
 "Homepage" = "https://www.djangoledger.com"
 "Bug Tracker" = "https://github.com/arrobalytics/django-ledger/issues"
 "Documentation" = "https://django-ledger.readthedocs.io/en/latest/"
 "Source Code" = "https://github.com/arrobalytics/django-ledger"
+
+[project.license]
+text = "GPLv3 License"
 
 [project.optional-dependencies]
 dev = ["sphinx~=4.5.0", "behave~=1.2.6", "pipenv-setup", "pylint", "furo"]
