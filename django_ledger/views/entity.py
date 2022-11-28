@@ -80,7 +80,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             admin=user_model
         )
         entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
-        entity_model.create_chart_of_accounts()
+        entity_model.create_chart_of_accounts(assign_as_default=True)
 
         if default_coa:
             entity_model.populate_default_coa(activate_accounts=activate_accounts)
