@@ -16,7 +16,7 @@ reduce its balance. Conversely, a CREDIT to a CREDIT-type AccountModel will incr
 DEBIT to a CREDIT-type AccountModel will reduce its balance.
 
 It is entirely up to the user to adopt the chart of accounts that best suits the EntityModel.
-The user may choose to user the default Chart of Accounts provided by Django Ledger when creating a new EntityModel.
+The user may choose to use the default Chart of Accounts provided by Django Ledger when creating a new EntityModel.
 
 In Django Ledger, all account models must be assigned a role from
 :func:`ACCOUNT_ROLES <django_ledger.io.roles.ACCOUNT_ROLES>`. Roles are a way to group accounts to a common namespace,
@@ -30,7 +30,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
@@ -305,7 +305,6 @@ class AccountModelManager(MP_NodeManager):
         AccountModelQuerySet
             A QuerySet of all requested EntityModel Chart of Accounts.
         """
-
         qs = self.for_entity_available(
             user_model=user_model,
             entity_slug=entity_slug,
@@ -329,8 +328,11 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
     code: str
-        Each account will have its own code for e.g. Cash Account -> Code 1010 , Inventory -> 1200. Maximum Length
-        allowed is 10.
+        Each account will have its own alphanumeric code.
+        For example:
+           * Cash Account -> Code 1010
+           * Inventory -> 1200.
+        Maximum Length allowed is 10.
 
     name: str
         This is the user defined name  of the Account. the maximum length for Name of the ledger allowed is 100
@@ -342,9 +344,9 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         Each account will have a default Account type i.e. Either Debit or Credit.
         For example:
             * Assets like Cash, Inventory, Accounts Receivable or Expenses like Rent, Salary will have
-        balance_type=DEBIT
+              balance_type=DEBIT.
             * Liabilities, Equities and Income like Payables, Loans, Income, Sales, Reserves will have
-            balance_type=CREDIT.
+              balance_type=CREDIT.
 
     locked: bool
         This determines whether any transactions can be added in the account. Before making any update to the
@@ -352,7 +354,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
 
     active: bool
         Determines whether the concerned account is active. Any Account can be used only when it is unlocked and
-        Active. Default value is set to T i.e Unlocked
+        Active. Default value is set to True.
 
     coa: ChartOfAccountsModel
         Each Accounts must be assigned a ChartOfAccountsModel. By default, one CoA will be created for each entity.
@@ -360,7 +362,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
 
     on_coa: AccountModelManager
         This object has been created for the purpose of the managing the models and in turn handling the database
-
     """
     BALANCE_TYPE = [
         (CREDIT, _('Credit')),
@@ -414,9 +415,9 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         The principal role of the account on the balance sheet.
         Options are:
-            * asset
-            * liability
-            * equity
+        * asset
+        * liability
+        * equity
 
         Returns
         -------

@@ -3,134 +3,151 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Pranav P Tulshyan <ptulshyan77@gmail.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan <ptulshyan77@gmail.com>
 
-"""
+Chart Of Accounts
+_________________
 
-"""
-Chart Of Account: This is a basically the entire collection of all the accounts that is present and a logical aggregation of those accounts.
-The Chart of accounts is the backbone of making of any financial statements. Transactions are recorded into individual accounts based on their individual type.
-The accounts which are of a similar nature will be grouped and classified accordingly.
+A Chart of Accounts (CoA) is a collection of accounts logically grouped into a distinct set within a
+ChartOfAccountModel. The CoA is the backbone of making of any financial statements and it consist of accounts of many
+roles, such as cash, accounts receivable, expenses, liabilities, income, etc. For instance, we can have a heading as
+"Fixed Assets" in the Balance Sheet, which will consists of Tangible, Intangible Assets. Further, the tangible assets
+will consists of multiple accounts like Building, Plant & Equipments, Machinery. So, aggregation of balances of
+individual accounts based on the Chart of Accounts and AccountModel roles, helps in preparation of the Financial
+Statements.
 
-For instance: We can have a heading as "Fixed Asssets" in the Balance Sheet, which will consists of Tangible, Intangible assets.
-
-Further, the tangible assets will consists of multiple accounts like Building, Plant & Equipments, Machinery, Furnitures.
-So, aggregation of balances of individual accounts based on the Chart of accounts , helps in prerapartion of the Financial Statements.
-
-
+All EntityModel must have a default CoA to be able to create any type of transaction. Throughout the application,
+when no explicit CoA is specified, the default behavior is to use the EntityModel default CoA. **Only ONE Chart of
+Accounts can be used when creating Journal Entries**. No commingling between CoAs is allowed in order to preserve the
+integrity of the Journal Entry.
 """
 
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Manager, Q
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
 UserModel = get_user_model()
 
-"""
-Firstly, we have set the UsermOdel as the user which is currently active.
 
-The "code"used in this file refers to the account code that is uniquely assigned to any account Name.
-This is similar to the GL code which we have under an SAP environment
-
-The "coa_model" refers to the ChartofAccounts model that is separate for every entity.
+class ChartOfAccountQuerySet(models.QuerySet):
+    pass
 
 
-"""
-
-
-def get_coa_account(coa_model, code):
+class ChartOfAccountModelManager(models.Manager):
     """
-    The function is used for filtering the particular account code from the list of all the codes in the Chart Of Accounts.
-    In case the code doesnt eist, it will raise a non Existent error
+    A custom defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
+    to the ChartOfAccountModel.
     """
 
-    try:
-        qs = coa_model.acc_assignments.available()
-        acc_model = qs.get(account__code__iexact=code)
-        return acc_model
-    except ObjectDoesNotExist:
-        raise ValueError(
-            'Account {acc} is either not assigned, inactive, locked or non existent for CoA: {coa}'.format(
-                acc=code,
-                coa=coa_model.__str__()
-            ))
+    def for_user(self, user_model) -> ChartOfAccountQuerySet:
+        """
+        Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
+        multiple Entities. The user has access to bills if:
+            1. Is listed as Manager of Entity.
+            2. Is the Admin of the Entity.
 
+        Parameters
+        __________
+        user_model
+            Logged in and authenticated django UserModel instance.
 
-def make_account_active(coa_model, account_codes: str or list):
-    """
-    This function is used for making a single or a list of account_codes as "active".
-    Whenever a new account is created under the "Accounts" Model, the said code is first set as Inactive.
-    So, the below function actually make the code (list of codes) as "Active"
+        Examples
+        ________
+            >>> request_user = self.request.user
+            >>> coa_model_qs = ChartOfAccountModel.objects.for_user(user_model=request_user)
 
-
-    """
-
-    if isinstance(account_codes, str):
-        account_codes = [account_codes]
-    qs = coa_model.accounts.all()
-    acc = qs.filter(code__in=account_codes)
-    acc.update(active=True)
-
-
-class ChartOfAccountModelManager(Manager):
-    """
-    This is the custome defined Model Manager whic will act as an nterface between the db queries and the ChartofAccountModel.
-    This manager allows for db queries to pass through 2 filters . The "entity_slug" filter and the user filter.
-
-
-    """
-
-    def for_entity(self, entity_slug: str, user_model):
+        Returns
+        _______
+        ChartOfAccountQuerySet
+            Returns a ChartOfAccountQuerySet with applied filters.
+        """
         qs = self.get_queryset()
         return qs.filter(
-            Q(entity__slug__iexact=entity_slug) &
             (
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
         )
 
+    def for_entity(self, entity_slug, user_model) -> ChartOfAccountQuerySet:
+        """
+        Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
 
-class ChartOfAccountModelAbstract(SlugNameMixIn,
-                                  CreateUpdateMixIn):
+        Parameters
+        __________
+
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Examples
+        ________
+
+            >>> request_user = self.request.user
+            >>> slug = self.kwargs['entity_slug'] # may come from request kwargs
+            >>> coa_model_qs = ChartOfAccountModelManager.objects.for_entity(user_model=request_user, entity_slug=slug)
+
+        Returns
+        _______
+        ChartOfAccountQuerySet
+            Returns a ChartOfAccountQuerySet with applied filters.
+        """
+
+        qs = self.get_queryset()
+        EntityModel = lazy_loader.get_entity_model()
+
+        if isinstance(entity_slug, str):
+            return qs.filter(
+                Q(entity__slug__iexact=entity_slug) &
+                (
+                        Q(entity__admin=user_model) |
+                        Q(entity__managers__in=[user_model])
+                )
+            )
+
+        elif isinstance(entity_slug, EntityModel):
+            return qs.filter(
+                Q(entity=entity_slug) &
+                (
+                        Q(entity__admin=user_model) |
+                        Q(entity__managers__in=[user_model])
+                )
+            )
+
+
+class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     """
-    Base Chart of Accounts Model Abstract
-
-    This is the main abstract class which the ChartOfAccount Model database will inherit, and it contains the fields/columns/attributes which the said ledger table will have.
-    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned below:
+    Base implementation of Chart of Accounts Model as an Abstract.
     
-    1. SlugMixIn
-    2.CreateUpdateMixIn
+    2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.SlugMixIn>`
+    2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
     
-    Read about these mixin here.
+    Attributes
+    __________
 
-    Below are the fields specific to the chart_of_accounts model.
+    uuid : UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
-    @entity: This will be onetoOne Entity Mapping . Each ChartOf Accounts must be mapped to a Entity
-    @locked:This determines whether any changes can be done in the account or not. Before making any update to the ChartOf Account , the account needs to be unlocked
-    Default value is set to False i.e Unlocked
-    @escription: This is the decription of the Chart oF Accounts which will tell the Accounting frameowrk based on which the Chart Of Accounts has been created
-    @objects: setting the default Model Manager to the BankAccountModelManager
+    entity: EntityModel
+        The EntityModel associated with this Chart of Accounts.
 
-    
-    Some Meta Information: (Additional data points regarding this model that may alter its behavior)
+    locked: bool
+        This determines whether any changes can be done to the Chart of Accounts.
+        Before making any update to the ChartOf Account, the account needs to be unlocked.
+        Default value is set to False (unlocked).
 
-    @abstract: This is a abstract class and will be used through inheritance. Separate implementation can be done for this abstract class.
-    [It may also be noted that models are not created for the abstract models, but only for the models which implements the abstract model class]
-    @ordering: The default ordering of the table will be based on creation date
-    @verbose_name: A human readable name for this Model (Also translatable to other languages with django translation> gettext_lazy)
-    @unique_together: the concantanation of coa & account code would remain unique throughout the model i.e database
-    @indexes : Index created on different attributes for better db & search queries
-
-
+    description: str
+        A user generated description for this Chart of Accounts.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -140,7 +157,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn,
                                on_delete=models.CASCADE)
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     description = models.TextField(verbose_name=_('CoA Description'), null=True, blank=True)
-    objects = ChartOfAccountModelManager()
+    objects = ChartOfAccountModelManager.from_queryset(queryset_class=ChartOfAccountQuerySet)()
 
     class Meta:
         abstract = True

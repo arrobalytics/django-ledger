@@ -16,8 +16,6 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
-from django_ledger.models.accounts import AccountModel
-from django_ledger.models.coa import get_coa_account
 from django_ledger.models.mixins import CreateUpdateMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits

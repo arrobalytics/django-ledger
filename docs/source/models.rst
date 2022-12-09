@@ -16,8 +16,13 @@ Entity Model
     :members:
 
 Account Model
-------------
+-------------
 .. automodule:: django_ledger.models.accounts
+    :members:
+
+Chart of Accounts Model
+-----------------------
+.. automodule:: django_ledger.models.coa
     :members:
 
 Bill Model
