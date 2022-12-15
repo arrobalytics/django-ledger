@@ -278,8 +278,6 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
             return f'Product/Service: {self.name} | {self.get_item_type_display()}'
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
-    # def add_root(cls, **kwargs):
-
     def is_expense(self):
         return self.is_product_or_service is False and self.for_inventory is False
 

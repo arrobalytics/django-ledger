@@ -35,6 +35,11 @@ Invoice Model
 .. automodule:: django_ledger.models.invoice
     :members:
 
+Customer Model
+-----------------
+.. automodule:: django_ledger.models.customer
+    :members:
+
 MixIns
 -----------------
 .. automodule:: django_ledger.models.mixins

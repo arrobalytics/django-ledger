@@ -167,9 +167,10 @@ class BillModelManager(models.Manager):
     def for_user(self, user_model) -> BillModelQuerySet:
         """
         Fetches a QuerySet of BillModels that the UserModel as access to. May include BillModels from multiple Entities.
+
         The user has access to bills if:
-        1. Is listed as Manager of Entity.
-        2. Is the Admin of the Entity.
+            1. Is listed as Manager of Entity.
+            2. Is the Admin of the Entity.
 
         Parameters
         __________
@@ -178,7 +179,7 @@ class BillModelManager(models.Manager):
 
         Examples
         ________
-            >>> request_user = self.request.user
+            >>> request_user = request.user
             >>> bill_model_qs = BillModel.objects.for_user(user_model=request_user)
 
         Returns
@@ -206,8 +207,8 @@ class BillModelManager(models.Manager):
 
         Examples
         ________
-            >>> request_user = self.request.user
-            >>> slug = self.kwargs['entity_slug'] # may come from request kwargs
+            >>> request_user = request.user
+            >>> slug = kwargs['entity_slug'] # may come from request kwargs
             >>> bill_model_qs = BillModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
         Returns

@@ -3,42 +3,148 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Pranav P Tulshyan <ptulshyan77@gmail.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan <ptulshyan77@gmail.com>
+
+A Customer refers to the person or entity that buys product and services. When issuing Invoices, a Customer must be
+created before it can be assigned to the InvoiceModel. Only customers who are active can be assigned to new Invoices.
 """
 
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F
+from django.db.models import Q, F, QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
 
-"""
-The model for managing the details of the Customers.
-For raising an Invoice ,we have to select the Customer Name. 
-In case, the customer is not created , then the same needs to be created under this table.
 
-"""
+class CustomerModelQueryset(QuerySet):
+    """
+    A custom defined QuerySet for the CustomerModel. This implements multiple methods or queries needed to get a
+    filtered QuerySet based on the CustomerModel status. For example, we might want to have list of Customers that
+    are active or hidden. All these separate functions will assist in making such queries and building customized
+    reports.
+    """
 
+    def active(self) -> QuerySet:
+        """
+        Active customers can be assigned to new Invoices and show on dropdown menus and views.
 
-class CustomerModelQueryset(models.QuerySet):
-    pass
+        Returns
+        -------
+        CustomerModelQueryset
+            A QuerySet of active Customers.
+        """
+        return self.filter(active=True)
+
+    def inactive(self) -> QuerySet:
+        """
+        Active customers can be assigned to new Invoices and show on dropdown menus and views.
+        Marking CustomerModels as inactive can help reduce Database load to populate select inputs and also inactivate
+        CustomerModels that are not relevant to the Entity anymore. Also, it makes de UI cleaner by not populating
+        unnecessary choices.
+
+        Returns
+        -------
+        CustomerModelQueryset
+            A QuerySet of inactive Customers.
+        """
+        return self.filter(active=False)
+
+    def hidden(self) -> QuerySet:
+        """
+        Hidden customers do not show on dropdown menus, but may be used via APIs or any other method that does not
+        involve the UI.
+
+        Returns
+        -------
+        CustomerModelQueryset
+            A QuerySet of hidden Customers.
+        """
+        return self.filter(hidden=True)
+
+    def visible(self) -> QuerySet:
+        """
+        Visible customers show on dropdown menus and views. Visible customers are active and not hidden.
+
+        Returns
+        -------
+        CustomerModelQueryset
+            A QuerySet of visible Customers.
+        """
+        return self.filter(
+            Q(hidden=False) & Q(active=True)
+        )
 
 
 class CustomerModelManager(models.Manager):
     """
-    A custom defined Customer  Model Manager that will act as an inteface to handling the DB queries to the Customer Model.
-    The default "get_queryset" has been used"
-
+    A custom defined CustomerModelManager that will act as an interface to handling the DB queries to the
+    CustomerModel.
     """
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_user(self, user_model):
+        """
+        Fetches a QuerySet of BillModels that the UserModel as access to.
+        May include BillModels from multiple Entities.
+
+        The user has access to bills if:
+            1. Is listed as Manager of Entity.
+            2. Is the Admin of the Entity.
+
+        Parameters
+        __________
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Examples
+        ________
+            >>> request_user = request.user
+            >>> customer_model_qs = CustomerModel.objects.for_user(user_model=request_user)
+        """
         qs = self.get_queryset()
+        return qs.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
+
+    def for_entity(self, entity_slug, user_model):
+        """
+        Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        __________
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Examples
+        ________
+            >>> request_user = request.user
+            >>> slug = kwargs['entity_slug'] # may come from request kwargs
+            >>> customer_model_qs = CustomerModel.objects.for_entity(user_model=request_user, entity_slug=slug)
+
+        Returns
+        -------
+
+        """
+        qs = self.get_queryset()
+
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            return qs.filter(
+                Q(entity=entity_slug) &
+                Q(active=True) &
+                (
+                        Q(entity__admin=user_model) |
+                        Q(entity__managers__in=[user_model])
+                )
+            )
         return qs.filter(
             Q(entity__slug__exact=entity_slug) &
             Q(active=True) &
@@ -51,34 +157,38 @@ class CustomerModelManager(models.Manager):
 
 class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMixIn):
     """
-    This is the main class which the Customer Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
-    In addition to the attributes mentioned below, it also has the fields/columns/attributes mentioned in below MixIn:
+    This is the main abstract class which the CustomerModel database will inherit from.
+    The CustomerModel inherits functionality from the following MixIns:
+
+        1. :func:`CreateUpdateMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
+        2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
     
-    ContactinfoMixIn
-    CreateUpdateMixIn
-    
-    Read about these mixin here.
+    Attributes
+    __________
+    uuid : UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    Below are the fields specific to the bill model.
-    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
-    @entity: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
-    @description: A text field to capture the decsription about the customer
-    @active: We can set any customer code to be active or Incative. By default, whenever a new Cutsomer code is craeted , the same is set to True i.e "Active"
-    @hidden: We can set any customer code to be hidden. By default, whenever a new Cutsomer code is craeted , the same is set to False i.e "not Hidden"
-    @aditinal_info: Any additional infor about the customer
-    @objects:setting the default Model Manager to the CustomerModelManagers
+    entity: EntotyModel
+        The EntityModel associated with this Customer.
 
-    Some Meta Information: (Additional data points regarding this model that may alter its behavior)
+    description: str
+        A text field to capture the description about the customer.
 
-    @verbose_name: A human-readable name for this Model (Also translatable to other languages with django translation> gettext_lazy)
-    @unique_together: the concatenation of entity  & customer code would remain unique throughout the model i.e database
-    @indexes : Index created on different attributes for better db & search queries
+    active: bool
+        We can set any customer code to be active or inactive. Defaults to True.
 
+    hidden: bool
+        Hidden CustomerModels don't show on the UI. Defaults to False.
+
+    additional_info: dict
+        Any additional information about the customer, stored as a JSON object.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(max_length=30, editable=False, verbose_name=_('Customer Number'))
+
+    # todo: rename to entity_model???...
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -109,12 +219,33 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         return f'Customer: {self.customer_name}'
 
     def can_generate_customer_number(self) -> bool:
+        """
+        Determines if the CustomerModel can be issued a Customer Number.
+        CustomerModels have a unique sequential number, which is unique for each EntityModel.
+
+        Returns
+        -------
+        bool
+            True if customer model can be generated, else False.
+        """
         return all([
             self.entity_id,
             not self.customer_number
         ])
 
     def _get_next_state_model(self, raise_exception: bool = True):
+        """
+
+        Parameters
+        ----------
+        raise_exception: bool
+            Raises IntegrityError if Database cannot determine the next EntityStateModel available.
+
+        Returns
+        -------
+        EntityStateModel
+            The EntityStateModel associated with the CustomerModel number sequence.
+        """
         EntityStateModel = lazy_loader.get_entity_state_model()
 
         try:
@@ -148,8 +279,17 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     def generate_customer_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next Customer Number available.
-        @param commit: Commit transaction into CustomerModel.
-        @return: A String, representing the current InvoiceModel instance Document Number.
+
+        Parameters
+        __________
+
+        commit: bool
+            Commits transaction into CustomerModel. Defaults to False.
+
+        Returns
+        _______
+        str
+            A String, representing the current InvoiceModel instance Document Number.
         """
         if self.can_generate_customer_number():
             with transaction.atomic(durable=True):
@@ -171,6 +311,14 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             self.generate_customer_number(commit=False)
 
     def save(self, **kwargs):
+        """
+        Custom-defined save method that automatically generates the next available CustomerModel number.
+
+        Parameters
+        ----------
+        kwargs
+            Keywords passed to the super().save() method of the CustomerModel.
+        """
         if not self.customer_number:
             self.generate_customer_number(commit=False)
         super(CustomerModelAbstract, self).save(**kwargs)
