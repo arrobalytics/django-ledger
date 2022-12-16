@@ -160,7 +160,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     This is the main abstract class which the CustomerModel database will inherit from.
     The CustomerModel inherits functionality from the following MixIns:
 
-        1. :func:`CreateUpdateMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
+        1. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
     
     Attributes
@@ -168,7 +168,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    entity: EntotyModel
+    entity: EntityModel
         The EntityModel associated with this Customer.
 
     description: str
@@ -181,7 +181,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         Hidden CustomerModels don't show on the UI. Defaults to False.
 
     additional_info: dict
-        Any additional information about the customer, stored as a JSON object.
+        Any additional information about the customer, stored as a JSON object using a JSONField.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
