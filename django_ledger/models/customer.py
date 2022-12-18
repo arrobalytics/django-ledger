@@ -112,7 +112,7 @@ class CustomerModelManager(models.Manager):
             Q(entity__managers__in=[user_model])
         )
 
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_slug, user_model) -> CustomerModelQueryset:
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -132,7 +132,8 @@ class CustomerModelManager(models.Manager):
 
         Returns
         -------
-
+        CustomerModelQueryset
+            A filtered CustomerModel QuerySet.
         """
         qs = self.get_queryset()
 
@@ -235,6 +236,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
     def _get_next_state_model(self, raise_exception: bool = True):
         """
+        Fetches the updated EntityStateModel associated with the customer number sequence.
 
         Parameters
         ----------
@@ -307,7 +309,11 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         return self.customer_number
 
     def clean(self):
-        if not self.customer_number:
+        """
+        Custom defined clean method that fetches the next customer model if the CustomerModel needs one.
+        Additional validation may be provided.
+        """
+        if self.can_generate_customer_number():
             self.generate_customer_number(commit=False)
 
     def save(self, **kwargs):

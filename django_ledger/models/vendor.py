@@ -3,7 +3,15 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+
+A Vendor refers to the person or entity that provides products and services to the business for a fee.
+Vendors are an integral part of the billing process as they are the providers of goods and services for the
+business.
+
+Vendors can be flagged as active/inactive or hidden. Vendors who no longer conduct business with the EntityModel,
+whether temporarily or indefinitely may be flagged as inactive (i.e. active is False). Hidden Vendors will not show up
+as an option in the UI, but can still be used programmatically (via API).
 """
 
 from uuid import uuid4
@@ -19,12 +27,39 @@ from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO
 
 
 class VendorModelQuerySet(models.QuerySet):
-    pass
+    """
+    Custom defined VendorModel QuerySet.
+    """
 
 
 class VendorModelManager(models.Manager):
+    """
+    Custom defined VendorModel Manager, which defines many methods for initial query of the Database.
+    """
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug, user_model) -> VendorModelQuerySet:
+        """
+        Fetches a QuerySet of VendorModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Examples
+        ________
+            >>> request_user = request.user
+            >>> slug = kwargs['entity_slug'] # may come from request kwargs
+            >>> vendor_model_qs = VendorModel.objects.for_entity(user_model=request_user, entity_slug=slug)
+
+        Returns
+        -------
+        VendorModelQuerySet
+            A filtered VendorModel QuerySet.
+        """
         qs = self.get_queryset()
         return qs.filter(
             Q(entity__slug__exact=entity_slug) &

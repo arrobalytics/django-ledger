@@ -40,6 +40,11 @@ Customer Model
 .. automodule:: django_ledger.models.customer
     :members:
 
+Vendor Model
+-----------------
+.. automodule:: django_ledger.models.vendor
+    :members:
+
 MixIns
 -----------------
 .. automodule:: django_ledger.models.mixins
