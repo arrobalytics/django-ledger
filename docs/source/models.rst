@@ -20,6 +20,11 @@ Account Model
 .. automodule:: django_ledger.models.accounts
     :members:
 
+Bank Account Model
+-------------
+.. automodule:: django_ledger.models.bank_account
+    :members:
+
 Chart of Accounts Model
 -----------------------
 .. automodule:: django_ledger.models.coa
