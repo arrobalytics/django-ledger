@@ -10,7 +10,6 @@ The account Model has the below forms: All these form have Account Model as thei
 CreateForm
 CreateChildForm
 Update Form
-
 """
 
 class AccountModelCreateForm(ModelForm):

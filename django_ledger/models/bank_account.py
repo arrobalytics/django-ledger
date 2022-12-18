@@ -3,15 +3,19 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Pranav P Tulshyan <ptulshyan77@gmail.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan <ptulshyan77@gmail.com>
+
+A Bank Account refers to the financial institution which holds financial assets for the EntityModel.
+A bank account usually holds cash, which is a Current Asset. Transactions may be imported using the open financial
+format specification OFX into a staging area for final disposition into the EntityModel ledger.
 """
 
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
@@ -19,25 +23,61 @@ from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
 from django_ledger.models.utils import lazy_loader
 
 
-class BankAccountModelQuerySet(models.QuerySet):
+class BankAccountModelQuerySet(QuerySet):
     """
-    Base BankAccountModel QuerySet.
+    A custom defined QuerySet for the BankAccountModel.
     """
+
+    def active(self) -> QuerySet:
+        """
+        Active bank accounts which can be used to create new transactions.
+
+        Returns
+        _______
+        BankAccountModelQuerySet
+            A filtered BankAccountModelQuerySet of active accounts.
+        """
+        return self.filter(active=True)
+
+    def hidden(self) -> QuerySet:
+        """
+        Hidden bank accounts which can be used to create new transactions. but will not show in drop down menus
+        in the UI.
+
+        Returns
+        _______
+        BankAccountModelQuerySet
+            A filtered BankAccountModelQuerySet of active accounts.
+        """
+        return self.filter(hidden=True)
 
 
 class BankAccountModelManager(models.Manager):
     """
-    This model manager acts as an interface for the Db queries for the Bank Account Model.
+    Custom defined Model Manager for the BankAccountModel.
     """
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug, user_model) -> BankAccountModelQuerySet:
         """
         Allows only the authorized user to query the BankAccountModel for a given EntityModel.
-        @param entity_slug: Entity slug as a string.
-        @param user_model: Current Django User Model
-        @return: A Filtered QuerySet
+        This is the recommended initial QuerySet.
+
+        Parameters
+        __________
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            Logged in and authenticated django UserModel instance.
         """
         qs = self.get_queryset()
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            return qs.filter(
+                Q(entity_model=entity_slug) &
+                (
+                        Q(entity_model__admin=user_model) |
+                        Q(entity_model__managers__in=[user_model])
+                )
+            )
         return qs.filter(
             Q(entity_model__slug__exact=entity_slug) &
             (
@@ -49,24 +89,43 @@ class BankAccountModelManager(models.Manager):
 
 class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     """
-    This is an abstract base model for the Bank Account Model.
+    This is the main abstract class which the BankAccountModel database will inherit from.
+    The BankAccountModel inherits functionality from the following MixIns:
 
-    It inherits from BankAccountInfoMixIn and CreateUpdateMixIn.
+        1. :func:`BankAccountInfoMixIn <django_ledger.models.mixins.BankAccountInfoMixIn>`
+        2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
-    Below are the fields that are specific to this Bank Account Model.
 
-    @uuid: This is a unique primary key generated for the table. the default value of this field is uuid4().
-    @name: This is the user defined name  of the Account. The maximum name length allowed is 150 characters.
-    @cash_account: This is a foreign key from the AccountsModel. Must be a Cash Account in the main Code of Accounts.
-    @active: Determines whether the concerned bank account is active. Default value is True.
-    @hidden: Determines whether the concerned bank account is set to hidden. Default value is set to False.
+    Attributes
+    __________
+    uuid : UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
+
+    name: str
+        A user defined name for the bank account as a String.
+
+    entity_model: EntityModel
+        The EntityModel associated with the BankAccountModel instance.
+
+    cash_account: AccountModel
+        The AccountModel associated with the BankAccountModel instance. Must be an account with role ASSET_CA_CASH.
+
+    active: bool
+        Determines whether the BackAccountModel instance bank account is active. Defaults to True.
+
+    hidden: bool
+        Determines whether the BackAccountModel instance bank account is hidden. Defaults to False.
     """
     REL_NAME_PREFIX = 'bank'
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+
+    # todo: rename to account_name?...
     name = models.CharField(max_length=150, null=True, blank=True)
     entity_model = models.ForeignKey('django_ledger.EntityModel', on_delete=models.RESTRICT,
                                      verbose_name=_('Entity Model'))
+
+    # todo: add a validator?...
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.RESTRICT,
                                      verbose_name=_('Cash Account'),

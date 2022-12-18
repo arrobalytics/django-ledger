@@ -25,6 +25,7 @@ requesting and producing financial statements and financial ratio calculations.
 
 AccountModels may also contain parent/child relationships as implemented by the Django Treebeard functionality.
 """
+
 from typing import Union, List, Optional
 from uuid import uuid4
 
@@ -47,7 +48,7 @@ CREDIT = 'credit'
 
 class AccountModelQuerySet(MP_NodeQuerySet):
     """
-    QuerySet class defined for the AccountsModel, which inherits from the Materialized Path Tree implementation
+    A custom defined QuerySet, which inherits from the Materialized Path Tree implementation
     of Django Treebeard for tree-like model implementation.
     """
 
@@ -141,7 +142,7 @@ class AccountModelManager(MP_NodeManager):
             slug = entity_slug.slug
         else:
             slug = entity_slug
-            entity_model = EntityModel.object.get(slug__exact=slug)
+            entity_model = EntityModel.objects.get(slug__exact=slug)
 
         qs = qs.filter(
             Q(coa__entity__slug__exact=slug) &
@@ -324,13 +325,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     Attributes
     __________
 
-    uuid : UUID
+    uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
     code: str
         Each account will have its own alphanumeric code.
         For example:
-           * Cash Account -> Code 1010
+           * Cash Account -> Code 1010.
            * Inventory -> 1200.
         Maximum Length allowed is 10.
 
@@ -405,7 +406,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     def __str__(self):
         return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(x1=self.role_bs.upper(),
                                                       x2=self.name,
-                                                      # pylint: disable=no-member
                                                       x3=self.role.upper(),
                                                       x4=self.balance_type,
                                                       x5=self.code)

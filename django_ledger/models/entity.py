@@ -545,7 +545,8 @@ class EntityModelAbstract(MP_Node,
                 'updated'
             ])
 
-    def recorded_inventory(self, user_model,
+    def recorded_inventory(self,
+                           user_model,
                            item_qs: Optional[ItemModelQuerySet] = None,
                            as_values: bool = True) -> ItemModelQuerySet:
         """
@@ -553,7 +554,6 @@ class EntityModelAbstract(MP_Node,
         inventory. Once inventory is marked as "received" recorded inventory of each item is updated by calling
         :func:`update_inventory <django_ledger.models.entity.EntityModelAbstract.update_inventory>`.
         This function returns relevant values of the recoded inventory, including Unit of Measures.
-
 
         Parameters
         ----------
@@ -593,7 +593,7 @@ class EntityModelAbstract(MP_Node,
         Parameters
         ----------
         counted_qs: ItemTransactionModelQuerySet
-            Inventory recount queryset from Purchase Order  received inventory.
+            Inventory recount queryset from Purchase Order received inventory.
             See :func:`ItemTransactionModelManager.inventory_count
             <django_ledger.models.item.ItemTransactionModelManager.inventory_count>`.
             Expects ItemTransactionModelQuerySet to be formatted "as values".

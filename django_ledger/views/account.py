@@ -14,8 +14,8 @@ from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm, AccountModelCreateChildForm
+from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn,
     BaseDateNavigationUrlMixIn, EntityUnitMixIn, DateReportMixIn
@@ -105,18 +105,22 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         )
 
     def form_valid(self, form):
-        entity_slug = self.kwargs['entity_slug']
-        parent_account_pk = self.kwargs.get('parent_account_pk')
+        EntityModel = lazy_loader.get_entity_model()
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+
+        # parent_account_pk = self.kwargs.get('parent_account_pk')
         # if parent_account_pk:
         #     account_qs = self.get_queryset()
         #     parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
         #     account.parent = parent_account_model
         #     account.role = parent_account_model.role
 
-        coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
-                                                        entity_slug=entity_slug)
-        coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
-        account_model = AccountModel.add_root(**form.cleaned_data, coa=coa_model)
+        # coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
+        #                                                 entity_slug=entity_slug)
+        # coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
+
+        account_model = AccountModel.add_root(**form.cleaned_data, coa_id=entity_model.default_coa_id)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
