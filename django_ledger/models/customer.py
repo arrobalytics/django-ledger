@@ -172,6 +172,12 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     entity: EntityModel
         The EntityModel associated with this Customer.
 
+    customer_name: str
+        A string representing the name the customer uses to do business with the EntityModel.
+
+    customer_number: str
+        A unique, auto-generated human-readable number which identifies the customer within the EntityModel.
+
     description: str
         A text field to capture the description about the customer.
 
@@ -222,7 +228,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     def can_generate_customer_number(self) -> bool:
         """
         Determines if the CustomerModel can be issued a Customer Number.
-        CustomerModels have a unique sequential number, which is unique for each EntityModel.
+        CustomerModels have a unique sequential number, which is unique for each EntityMode/CustomerModel.
 
         Returns
         -------
@@ -237,6 +243,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     def _get_next_state_model(self, raise_exception: bool = True):
         """
         Fetches the updated EntityStateModel associated with the customer number sequence.
+        If EntityStateModel is not present, a new model will be created.
 
         Parameters
         ----------
@@ -291,7 +298,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         Returns
         _______
         str
-            A String, representing the current InvoiceModel instance Document Number.
+            A String, representing the current CustomerModel instance Document Number.
         """
         if self.can_generate_customer_number():
             with transaction.atomic(durable=True):
@@ -310,7 +317,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
     def clean(self):
         """
-        Custom defined clean method that fetches the next customer model if the CustomerModel needs one.
+        Custom defined clean method that fetches the next customer number if not yet fetched.
         Additional validation may be provided.
         """
         if self.can_generate_customer_number():
@@ -318,7 +325,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
     def save(self, **kwargs):
         """
-        Custom-defined save method that automatically generates the next available CustomerModel number.
+        Custom-defined save method that automatically fetches the customer number if not present.
 
         Parameters
         ----------
