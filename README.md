@@ -176,7 +176,7 @@ urlpatterns = [
 python manage.py createsuperuser
 ```
 
-* Navigate to Django Ledger root view assigned in your project urlpattern setting.
+* Navigate to Django Ledger root views   assigned in your project urlpattern setting.
 * Use your user credentials.
 
 # How To Set Up Django Ledger for Development
