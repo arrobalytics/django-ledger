@@ -21,21 +21,20 @@ from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
 from django_ledger.models.entity import EntityReportMixIn
-from django_ledger.utils import set_default_entity
 
 
-class SessionConfigurationMixIn:
-
-    def get(self, *args, **kwargs):
-        response = super().get(*args, **kwargs)
-        request = getattr(self, 'request')
-        try:
-            entity_model = getattr(self, 'object')
-            if entity_model and isinstance(entity_model, EntityModel):
-                set_default_entity(request, entity_model)
-        except AttributeError:
-            pass
-        return response
+# class SessionConfigurationMixIn:
+#
+#     def get(self, *args, **kwargs):
+#         response = super().get(*args, **kwargs)
+#         request = getattr(self, 'request')
+#         try:
+#             entity_model = getattr(self, 'object')
+#             if entity_model and isinstance(entity_model, EntityModel):
+#                 set_default_entity(request, entity_model)
+#         except AttributeError:
+#             pass
+#         return response
 
 
 class SuccessUrlNextMixIn:

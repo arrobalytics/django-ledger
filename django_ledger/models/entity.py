@@ -166,7 +166,7 @@ class EntityReportMixIn:
             The quarter number to validate.
 
         Raises
-        ______
+        ------
         ValidationError
             If quarter is not valid.
         """
@@ -185,7 +185,8 @@ class EntityReportMixIn:
             The month number to validate.
 
         Raises
-        ______
+        ------
+
         ValidationError
             If month is not valid.
         """

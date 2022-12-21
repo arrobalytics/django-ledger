@@ -20,8 +20,13 @@ Account Model
 .. automodule:: django_ledger.models.accounts
     :members:
 
+Journal Entry Model
+-------------------
+.. automodule:: django_ledger.models.journal_entry
+    :members:
+
 Bank Account Model
--------------
+------------------
 .. automodule:: django_ledger.models.bank_account
     :members:
 

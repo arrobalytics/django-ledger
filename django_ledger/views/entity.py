@@ -23,7 +23,7 @@ from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn, EntityUnitMixIn,
+    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
     EntityDigestMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
@@ -194,7 +194,6 @@ class EntityModelDetailView(DjangoLedgerSecurityMixIn,
 
 
 class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
-                                         SessionConfigurationMixIn,
                                          BaseDateNavigationUrlMixIn,
                                          UnpaidElementsMixIn,
                                          EntityUnitMixIn,
@@ -272,7 +271,7 @@ class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixI
 
 
 # BALANCE SHEET -----------
-class EntityModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
+class EntityModelBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -284,7 +283,6 @@ class EntityModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                            SessionConfigurationMixIn,
                                             BaseDateNavigationUrlMixIn,
                                             EntityUnitMixIn,
                                             YearlyReportMixIn,
@@ -312,6 +310,7 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
         """
         return EntityModel.objects.for_user(user_model=self.request.user)
 
+    # todo: this is odd, why override this method from YearlyReportMixIn?
     def get_fy_start_month(self) -> int:
         entity_model: EntityModel = self.object
         return entity_model.fy_start_month
@@ -336,7 +335,7 @@ class DateEntityModelBalanceSheetView(DateReportMixIn, FiscalYearEntityModelBala
 
 
 # INCOME STATEMENT ------------
-class EntityModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class EntityModelIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
         return reverse('django_ledger:entity-ic-year',
@@ -347,7 +346,6 @@ class EntityModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
-                                               SessionConfigurationMixIn,
                                                BaseDateNavigationUrlMixIn,
                                                EntityUnitMixIn,
                                                YearlyReportMixIn,
@@ -372,6 +370,7 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
     def get_queryset(self):
         return EntityModel.objects.for_user(user_model=self.request.user)
 
+    # todo: this is odd, why override this method from YearlyReportMixIn?
     def get_fy_start_month(self) -> int:
         entity_model: EntityModel = self.object
         return entity_model.fy_start_month
@@ -396,7 +395,7 @@ class DateModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeS
 
 
 # CASH FLOW STATEMENT ----
-class EntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class EntityModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -408,7 +407,6 @@ class EntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
-                                                 SessionConfigurationMixIn,
                                                  BaseDateNavigationUrlMixIn,
                                                  EntityUnitMixIn,
                                                  YearlyReportMixIn,
@@ -436,6 +434,11 @@ class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
 
     def get_queryset(self):
         return EntityModel.objects.for_user(user_model=self.request.user)
+
+    # todo: this is odd, why override this method from YearlyReportMixIn?
+    def get_fy_start_month(self) -> int:
+        entity_model: EntityModel = self.object
+        return entity_model.fy_start_month
 
 
 class QuarterlyEntityModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearEntityModelCashFlowStatementView):

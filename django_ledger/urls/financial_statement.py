@@ -7,7 +7,7 @@ urlpatterns = [
     # BALANCE SHEET Reports...
     # Entities...
     path('entity/<slug:entity_slug>/balance-sheet/',
-         views.EntityModelBalanceSheetView.as_view(),
+         views.EntityModelBalanceSheetRedirectView.as_view(),
          name='entity-bs'),
     path('entity/<slug:entity_slug>/balance-sheet/year/<int:year>/',
          views.FiscalYearEntityModelBalanceSheetView.as_view(),
@@ -59,7 +59,7 @@ urlpatterns = [
     # INCOME STATEMENT Reports ----
     # Entity .....
     path('entity/<slug:entity_slug>/income-statement/',
-         views.EntityModelIncomeStatementView.as_view(),
+         views.EntityModelIncomeStatementRedirectView.as_view(),
          name='entity-ic'),
     path('entity/<slug:entity_slug>/income-statement/year/<int:year>/',
          views.FiscalYearEntityModelIncomeStatementView.as_view(),
@@ -111,7 +111,7 @@ urlpatterns = [
 
     # CASH FLOW STATEMENTS...
     path('entity/<slug:entity_slug>/cash-flow-statement/',
-         views.EntityModelCashFlowStatementView.as_view(),
+         views.EntityModelCashFlowStatementRedirectView.as_view(),
          name='entity-cf'),
     path('entity/<slug:entity_slug>/cash-flow-statement/year/<int:year>/',
          views.FiscalYearEntityModelCashFlowStatementView.as_view(),

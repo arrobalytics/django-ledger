@@ -17,7 +17,7 @@ from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCrea
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel
 from django_ledger.views.mixins import (
-    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn, SessionConfigurationMixIn,
+    YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn,
     BaseDateNavigationUrlMixIn, EntityUnitMixIn, DateReportMixIn
 )
 
@@ -169,7 +169,6 @@ class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
-                                 SessionConfigurationMixIn,
                                  BaseDateNavigationUrlMixIn,
                                  EntityUnitMixIn,
                                  YearlyReportMixIn,
