@@ -136,7 +136,6 @@ class DjangoLedgerBaseTest(TestCase):
     def populate_entity_models(cls):
         entities_qs = EntityModel.objects.all()
         for entity_model in entities_qs:
-            entity_model.populate_default_coa(activate_accounts=True)
             data_generator = EntityDataGenerator(
                 user_model=cls.user_model,
                 entity_model=entity_model,

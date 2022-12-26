@@ -35,6 +35,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -517,7 +518,7 @@ class EntityModelAbstract(MP_Node,
     def generate_slug(self,
                       commit: bool = False,
                       raise_exception: bool = True,
-                      force_update: bool = False):
+                      force_update: bool = False) -> str:
         """
         Convenience method to create the EntityModel slug.
 
@@ -545,6 +546,7 @@ class EntityModelAbstract(MP_Node,
                 'slug',
                 'updated'
             ])
+        return self.slug
 
     def recorded_inventory(self,
                            user_model,
@@ -733,8 +735,12 @@ class EntityModelAbstract(MP_Node,
 
         return adj, counted_qs, recorded_qs
 
+    def has_default_coa(self):
+        return self.default_coa_id is not None
+
     def create_chart_of_accounts(self,
                                  assign_as_default: bool = False,
+                                 coa_name: Optional[str] = None,
                                  commit: bool = False) -> ChartOfAccountModel:
         """
         Creates a Chart of Accounts for the Entity Model and optionally assign it as the default Chart of Accounts.
@@ -742,6 +748,9 @@ class EntityModelAbstract(MP_Node,
 
         Parameters
         ----------
+        coa_name: str
+            The new CoA name. If not provided will be auto generated based on the EntityModel name.
+
         commit: bool
             Commits the transaction into the DB. A ChartOfAccountModel will
 
@@ -753,9 +762,13 @@ class EntityModelAbstract(MP_Node,
         ChartOfAccountModel
             The newly created chart of accounts model.
         """
+        # todo: this logic will generate always the same slug...
+        if not coa_name:
+            coa_name = self.name + ' CoA'
+
         chart_of_accounts = ChartOfAccountModel(
             slug=self.slug + '-coa',
-            name=self.name + ' CoA',
+            name=coa_name,
             entity=self
         )
         chart_of_accounts.clean()
@@ -773,12 +786,15 @@ class EntityModelAbstract(MP_Node,
     def populate_default_coa(self,
                              activate_accounts: bool = False,
                              force: bool = False,
-                             chart_of_accounts: Optional[ChartOfAccountModel] = None,
-                             ):
+                             chart_of_accounts: Optional[ChartOfAccountModel] = None):
+
         if not chart_of_accounts:
+            if not self.has_default_coa():
+                self.create_chart_of_accounts(assign_as_default=True, coa_name='Default')
             chart_of_accounts: ChartOfAccountModel = self.default_coa
 
         coa_has_accounts = chart_of_accounts.accountmodel_set.all().exists()
+
         if not coa_has_accounts or force:
             logger = self.get_logger()
             acc_objs = [
@@ -792,10 +808,10 @@ class EntityModelAbstract(MP_Node,
                 ) for a in CHART_OF_ACCOUNTS
             ]
 
-            for acc in acc_objs:
-                acc.clean()
-                logger.info(msg=f'Adding Account {acc.code}: {acc.name}...')
-                AccountModel.add_root(instance=acc)
+            for account_model in acc_objs:
+                account_model.clean()
+                logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
+                AccountModel.add_root(instance=account_model)
         else:
             raise ValidationError(f'Entity {self.name} already has existing accounts. '
                                   'Use force=True to bypass this check')
@@ -876,7 +892,7 @@ class EntityModelAbstract(MP_Node,
         self.commit_txs(
             je_date=txs_date,
             je_txs=txs,
-            je_activity=JournalEntryModel.FINANCING_EQUITY,
+            # je_activity=JournalEntryModel.FINANCING_EQUITY,
             je_posted=je_posted,
             je_ledger=ledger
         )
@@ -1096,7 +1112,6 @@ class EntityModelAbstract(MP_Node,
         super(EntityModelAbstract, self).clean()
 
 
-
 class EntityManagementModelAbstract(CreateUpdateMixIn):
     """
     Entity Management Model responsible for manager permissions to read/write.
@@ -1197,12 +1212,14 @@ class EntityModel(EntityModelAbstract):
     """
 
 
-# def entitymodel_presave(instance: EntityModel, **kwargs):
-#     if not instance.slug:
-#         instance.slug = instance.generate_slug(commit=False)
-#
-#
-# pre_save.connect(entitymodel_presave, EntityModel)
+def entitymodel_presave(instance: EntityModel, **kwargs):
+    if not instance.slug:
+        instance.generate_slug(commit=False)
+
+
+
+
+pre_save.connect(entitymodel_presave, EntityModel)
 
 
 # instance.ledgermodel_set.create(

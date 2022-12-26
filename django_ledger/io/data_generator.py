@@ -22,7 +22,7 @@ from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS
 from django_ledger.models import (EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel,
                                   EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
                                   BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel,
-                                  create_entity_unit_slug, EstimateModel, LoggingMixIn)
+                                  EstimateModel, LoggingMixIn)
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -107,9 +107,10 @@ class EntityDataGenerator(LoggingMixIn):
             raise ValidationError(
                 f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
 
+        self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
         self.account_models = AccountModel.on_coa.for_entity_available(
-            entity_slug=self.entity_model.slug,
+            entity_slug=self.entity_model,
             user_model=self.user_model
         ).order_by('role')
 
@@ -160,14 +161,16 @@ class EntityDataGenerator(LoggingMixIn):
             assert nb_units >= 0, 'Number of unite must be greater than 0'
 
         entity_unit_models = [
-            EntityUnitModel.add_root(
+            EntityUnitModel(
                 name=f'Unit {u}',
-                slug=create_entity_unit_slug(
-                    name=f'{self.entity_model.name}-Unit {u}'),
                 entity=self.entity_model,
                 document_prefix=''.join(choices(ascii_uppercase, k=3))
             ) for u in range(nb_units)
         ]
+
+        for unit in entity_unit_models:
+            unit.clean()
+            EntityUnitModel.add_root(instance=unit)
 
         self.entity_unit_models = self.entity_model.entityunitmodel_set.all()
 
@@ -234,7 +237,7 @@ class EntityDataGenerator(LoggingMixIn):
                              aba_number=self.fk.swift(),
                              account_type='checking',
                              active=True,
-                             cash_account=choice(self.accounts_by_role['asset_ca_cash']),
+                             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
                              entity_model=self.entity_model),
             BankAccountModel(name=f'{self.entity_model.name} Savings Account',
                              account_number=self.fk.bban(),
@@ -375,8 +378,8 @@ class EntityDataGenerator(LoggingMixIn):
             date_draft=date_draft
         )
         estimate_model.configure(entity_slug=self.entity_model,
-                                    user_model=self.user_model,
-                                    customer_model=choice(self.customer_models))
+                                 user_model=self.user_model,
+                                 customer_model=choice(self.customer_models))
 
         estimate_model.save()
         self.logger.info(f'Creating entity estimate {estimate_model.estimate_number}...')
@@ -462,14 +465,14 @@ class EntityDataGenerator(LoggingMixIn):
             bill_model.mark_as_review(commit=True, date_in_review=date_in_review)
 
             if random() > 0.50:
-                approved_date = self.get_next_date(date_in_review)
+                date_approved = self.get_next_date(date_in_review)
                 bill_model.mark_as_approved(commit=True,
                                             entity_slug=self.entity_model.slug,
                                             user_model=self.user_model,
-                                            date_approved=approved_date)
+                                            date_approved=date_approved)
 
                 if random() > 0.25:
-                    paid_date = self.get_next_date(approved_date)
+                    paid_date = self.get_next_date(date_approved)
                     bill_model.mark_as_paid(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
@@ -477,7 +480,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
                 elif random() > 0.8:
-                    void_date = self.get_next_date(approved_date)
+                    void_date = self.get_next_date(date_approved)
                     bill_model.mark_as_void(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
@@ -730,3 +733,7 @@ class EntityDataGenerator(LoggingMixIn):
             user_model=self.user_model,
             commit=True
         )
+
+    def create_coa(self):
+        entity_model = self.entity_model
+        entity_model.populate_default_coa(activate_accounts=True)

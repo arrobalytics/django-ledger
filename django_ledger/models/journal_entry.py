@@ -693,7 +693,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.save(update_fields=['posted', 'updated'], verify=False)
             raise JournalEntryValidationError(e)
 
-        if not self.is_verified():
+        if not self.is_verified() and verify:
             raise JournalEntryValidationError(message='Cannot save an unverified Journal Entry.')
 
         super(JournalEntryModelAbstract, self).save(*args, **kwargs)

@@ -970,7 +970,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
     def mark_as_approved(self,
                          entity_slug,
                          user_model,
-                         approved_date: date = None,
+                         date_approved: date = None,
                          commit: bool = False,
                          force_migrate: bool = False,
                          **kwargs):
@@ -999,7 +999,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
-        self.date_approved = localdate() if not approved_date else approved_date
+        self.date_approved = localdate() if not date_approved else date_approved
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -1013,7 +1013,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
                 self.migrate_state(
                     entity_slug=entity_slug,
                     user_model=user_model,
-                    je_date=approved_date,
+                    je_date=date_approved,
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit)
@@ -1191,7 +1191,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if self.date_void > localdate():
             raise ValidationError(f'Cannot void {self.__class__.__name__} in the future.')
         if self.date_void < self.date_approved:
-            raise ValidationError(f'Cannot void {self.__class__.__name__} before approved {self.date_approved}')
+            raise ValidationError(f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
+                                  f'{self.date_approved}')
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID

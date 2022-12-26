@@ -21,6 +21,7 @@ from django_ledger.models.mixins import CreateUpdateMixIn
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
 
+# todo: move this somewhere....
 def generate_ledger_id(length=10):
     return ''.join(choice(LEDGER_ID_CHARS) for _ in range(length))
 

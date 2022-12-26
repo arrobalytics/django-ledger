@@ -438,7 +438,6 @@ class IOMixIn:
     def commit_txs(self,
                    je_date: Union[str, datetime, date],
                    je_txs: list,
-                   je_activity: str,
                    je_posted: bool = False,
                    je_ledger=None,
                    je_desc=None,
@@ -467,9 +466,6 @@ class IOMixIn:
         # Validates that credits/debits balance.
         balance_tx_data(je_txs)
 
-        # Validates that the activity is valid.
-        je_activity = validate_activity(je_activity)
-
         if all([
             isinstance(self, lazy_importer.get_entity_model()),
             not je_ledger
@@ -481,16 +477,15 @@ class IOMixIn:
 
         JournalEntryModel = lazy_importer.get_journal_entry_model()
 
-        je_model = JournalEntryModel.on_coa.create(
+        je_model = JournalEntryModel(
             ledger=je_ledger,
             description=je_desc,
             date=je_date,
             origin=je_origin,
-            activity=je_activity
         )
 
         # verify is False, no transactions are present yet....
-        je_model.clean(verify=False)
+        je_model.save(verify=False)
 
         TransactionModel = lazy_importer.get_txs_model()
         txs_models = [

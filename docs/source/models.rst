@@ -15,6 +15,11 @@ Entity Model
 .. automodule:: django_ledger.models.entity
     :members:
 
+Entity Unit Model
+-----------------
+.. automodule:: django_ledger.models.unit
+    :members:
+
 Account Model
 -------------
 .. automodule:: django_ledger.models.accounts

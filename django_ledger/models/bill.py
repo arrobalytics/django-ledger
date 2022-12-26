@@ -247,7 +247,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
     Attributes
-    __________
+    ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
@@ -305,7 +305,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
     objects: BillModelManager
         Custom defined BillModelManager.
-
     """
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
