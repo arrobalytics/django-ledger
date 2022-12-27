@@ -232,7 +232,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         other commercial bookkeeping software). Contains the fiscal year under which the JE takes place within the
         EntityModel as a prefix.
 
-    date: date
+    timestamp: datetime
         The date of the JournalEntryModel. This date is applied to all TransactionModels contained within the JE, and
         drives the financial statements of the EntityModel.
 
@@ -297,9 +297,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     je_number = models.SlugField(max_length=20, editable=False, verbose_name=_('Journal Entry Number'))
-
-    # todo: change to datetime field?....
-    date = models.DateField(verbose_name=_('Date'))
+    timestamp = models.DateTimeField(verbose_name=_('Date'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
                                     on_delete=models.RESTRICT,
@@ -333,7 +331,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         indexes = [
             # models.Index(fields=['parent']),
             models.Index(fields=['ledger']),
-            models.Index(fields=['date']),
+            models.Index(fields=['timestamp']),
             models.Index(fields=['activity']),
             models.Index(fields=['entity_unit']),
             models.Index(fields=['locked']),
@@ -607,17 +605,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         EntityStateModel = lazy_loader.get_entity_state_model()
         EntityModel = lazy_loader.get_entity_model()
         entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
-        fy_key = entity_model.get_fy_for_date(dt=self.date)
+        fy_key = entity_model.get_fy_for_date(dt=self.timestamp)
 
         try:
             LOOKUP = {
-                'entity_id__exact': self.ledger.entity_id,
+                'entity_model_id__exact': self.ledger.entity_id,
                 'entity_unit_id__exact': self.entity_unit_id,
                 'fiscal_year': fy_key,
                 'key__exact': EntityStateModel.KEY_JOURNAL_ENTRY
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
+                'entity_model').select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -626,7 +625,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         except ObjectDoesNotExist:
             LOOKUP = {
-                'entity_id': entity_model.uuid,
+                'entity_model_id': entity_model.uuid,
                 'entity_unit_id': self.entity_unit_id,
                 'fiscal_year': fy_key,
                 'key': EntityStateModel.KEY_JOURNAL_ENTRY,
@@ -638,6 +637,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise e
 
+    def can_generate_je_number(self) -> bool:
+        return all([
+            self.ledger_id,
+            not self.je_number
+        ])
+
     def generate_je_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next Journal Entry document number available. The operation
@@ -646,7 +651,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         @param commit: Commit transaction into Journal Entry.
         @return: A String, representing the current JournalEntryModel instance Document Number.
         """
-        if not self.je_number:
+        if self.can_generate_je_number():
 
             with transaction.atomic(durable=True):
 
@@ -675,6 +680,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def save(self, verify: bool = False, post_on_verify: bool = False, *args, **kwargs):
         try:
+            self.generate_je_number(commit=False)
             if verify:
                 self.clean(verify=verify)
                 if self.is_verified() and post_on_verify:

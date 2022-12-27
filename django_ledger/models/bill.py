@@ -342,6 +342,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                                verbose_name=_('Vendor'))
     additional_info = models.JSONField(blank=True,
                                        null=True,
+                                       default=dict,
                                        verbose_name=_('Bill Additional Info'))
     bill_items = models.ManyToManyField('django_ledger.ItemModel',
                                         through='django_ledger.ItemTransactionModel',
@@ -425,42 +426,42 @@ class BillModelAbstract(LedgerWrapperMixIn,
         A tuple of LedgerModel, BillModel
         """
 
-        # todo: add is_configured() check.
-        # todo: add raise_exception flag.
+        # todo: add raise_exception flag, check if this is consistent...
 
-        if not self.ledger_id:
-            if isinstance(entity_slug, str):
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=user_model)
-                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-            elif isinstance(entity_slug, EntityModel):
-                entity_model = entity_slug
+        if not self.is_configured():
+            if not self.ledger_id:
+                if isinstance(entity_slug, str):
+                    entity_qs = EntityModel.objects.for_user(
+                        user_model=user_model)
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                elif isinstance(entity_slug, EntityModel):
+                    entity_model = entity_slug
+                else:
+                    raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
+            if entity_model.is_accrual_method():
+                self.accrue = True
+                self.progress = 1
             else:
-                raise ValidationError('entity_slug must be an instance of str or EntityModel')
+                self.accrue = False
 
-        if entity_model.is_accrual_method():
-            self.accrue = True
-            self.progress = 1
-        else:
-            self.accrue = False
+            LedgerModel = lazy_loader.get_ledger_model()
+            ledger_model: LedgerModel = LedgerModel(
+                entity=entity_model,
+                posted=ledger_posted
+            )
+            ledger_name = f'Bill {self.uuid}'
+            if bill_desc:
+                ledger_name += f' | {bill_desc}'
+            ledger_model.name = ledger_name
+            ledger_model.clean()
 
-        LedgerModel = lazy_loader.get_ledger_model()
-        ledger_model: LedgerModel = LedgerModel(
-            entity=entity_model,
-            posted=ledger_posted
-        )
-        ledger_name = f'Bill {self.uuid}'
-        if bill_desc:
-            ledger_name += f' | {bill_desc}'
-        ledger_model.name = ledger_name
-        ledger_model.clean()
+            self.ledger = ledger_model
+            self.ledger.save()
+            self.clean()
 
-        self.ledger = ledger_model
-        self.ledger.save()
-        self.clean()
-
-        if commit:
-            self.save()
+            if commit:
+                self.save()
 
         return self.ledger, self
 
@@ -1579,13 +1580,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
         try:
             LOOKUP = {
-                'entity_id__exact': self.ledger.entity_id,
+                'entity_model_id__exact': self.ledger.entity_id,
                 'entity_unit_id__exact': None,
                 'fiscal_year': fy_key,
                 'key__exact': EntityStateModel.KEY_BILL
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
+                'entity_model').select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save(update_fields=['sequence'])
@@ -1597,7 +1599,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
 
             LOOKUP = {
-                'entity_id': entity_model.uuid,
+                'entity_model_id': entity_model.uuid,
                 'entity_unit_id': None,
                 'fiscal_year': fy_key,
                 'key': EntityStateModel.KEY_BILL,

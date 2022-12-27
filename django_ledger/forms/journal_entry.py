@@ -1,4 +1,4 @@
-from django.forms import ModelForm, Textarea, Select, DateInput
+from django.forms import ModelForm, Textarea, Select, DateInput, DateTimeInput
 
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -15,14 +15,14 @@ class JournalEntryModelCreateForm(ModelForm):
         model = JournalEntryModel
         fields = [
             # 'parent',
-            'date',
+            'timestamp',
             'description'
         ]
         widgets = {
             'parent': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'date': DateInput(attrs={
+            'timestamp': DateTimeInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={
@@ -35,14 +35,14 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
     class Meta:
         model = JournalEntryModel
         fields = [
-            'date',
+            'timestamp',
             'description'
         ]
         widgets = {
             'parent': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'date': DateInput(attrs={
+            'timestamp': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={

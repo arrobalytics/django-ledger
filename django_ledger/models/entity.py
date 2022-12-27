@@ -23,7 +23,7 @@ EntityReportMixIn.
 """
 from calendar import monthrange
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from random import choices
 from string import ascii_lowercase, digits
@@ -47,7 +47,6 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
 from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
-from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.utils import lazy_loader
 
@@ -356,7 +355,7 @@ class EntityReportMixIn:
         qe = self.get_quarter_end(year, quarter, fy_start_month)
         return qs, qe
 
-    def get_fy_for_date(self, dt: date, as_str: bool = False) -> Union[str, int]:
+    def get_fy_for_date(self, dt: Union[date, datetime], as_str: bool = False) -> Union[str, int]:
         """
         Given a known date, returns the EntityModel fiscal year associated with the given date.
 
@@ -463,8 +462,8 @@ class EntityModelAbstract(MP_Node,
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'))
     default_coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
                                        verbose_name=_('Default Chart of Accounts'),
-                                       null=True,
                                        blank=True,
+                                       null=True,
                                        on_delete=models.PROTECT)
     admin = models.ForeignKey(UserModel,
                               on_delete=models.CASCADE,
@@ -764,7 +763,7 @@ class EntityModelAbstract(MP_Node,
         """
         # todo: this logic will generate always the same slug...
         if not coa_name:
-            coa_name = self.name + ' CoA'
+            coa_name = self.name + ' Default CoA'
 
         chart_of_accounts = ChartOfAccountModel(
             slug=self.slug + '-coa',
@@ -786,11 +785,13 @@ class EntityModelAbstract(MP_Node,
     def populate_default_coa(self,
                              activate_accounts: bool = False,
                              force: bool = False,
-                             chart_of_accounts: Optional[ChartOfAccountModel] = None):
+                             ignore_if_default_coa: bool = True,
+                             chart_of_accounts: Optional[ChartOfAccountModel] = None,
+                             commit: bool = True):
 
         if not chart_of_accounts:
             if not self.has_default_coa():
-                self.create_chart_of_accounts(assign_as_default=True, coa_name='Default')
+                self.create_chart_of_accounts(assign_as_default=True, coa_name='Default', commit=commit)
             chart_of_accounts: ChartOfAccountModel = self.default_coa
 
         coa_has_accounts = chart_of_accounts.accountmodel_set.all().exists()
@@ -804,7 +805,7 @@ class EntityModelAbstract(MP_Node,
                     role=a['role'],
                     balance_type=a['balance_type'],
                     active=activate_accounts,
-                    coa=chart_of_accounts,
+                    coa_model=chart_of_accounts,
                 ) for a in CHART_OF_ACCOUNTS
             ]
 
@@ -813,8 +814,9 @@ class EntityModelAbstract(MP_Node,
                 logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
                 AccountModel.add_root(instance=account_model)
         else:
-            raise ValidationError(f'Entity {self.name} already has existing accounts. '
-                                  'Use force=True to bypass this check')
+            if not ignore_if_default_coa:
+                raise ValidationError(f'Entity {self.name} already has existing accounts. '
+                                      'Use force=True to bypass this check')
 
     def get_accounts(self, user_model, active_only: bool = True):
         """
@@ -823,7 +825,7 @@ class EntityModelAbstract(MP_Node,
         @param active_only: Active accounts only
         @return: A queryset.
         """
-        accounts_qs = AccountModel.on_coa.for_entity(
+        accounts_qs = AccountModel.objects.for_entity(
             entity_slug=self.slug,
             user_model=user_model
         )
@@ -843,7 +845,7 @@ class EntityModelAbstract(MP_Node,
 
         if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
 
-            account_qs = AccountModel.on_coa.with_roles(
+            account_qs = AccountModel.objects.with_roles(
                 roles=[
                     EQUITY_CAPITAL,
                     EQUITY_COMMON_STOCK,
@@ -892,7 +894,6 @@ class EntityModelAbstract(MP_Node,
         self.commit_txs(
             je_date=txs_date,
             je_txs=txs,
-            # je_activity=JournalEntryModel.FINANCING_EQUITY,
             je_posted=je_posted,
             je_ledger=ledger
         )
@@ -1163,9 +1164,9 @@ class EntityStateModelAbstract(models.Model):
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Entity Model'))
+    entity_model = models.ForeignKey('django_ledger.EntityModel',
+                                     on_delete=models.CASCADE,
+                                     verbose_name=_('Entity Model'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
                                     on_delete=models.RESTRICT,
                                     verbose_name=_('Entity Unit'),
@@ -1186,14 +1187,14 @@ class EntityStateModelAbstract(models.Model):
             models.Index(fields=['key']),
             models.Index(
                 fields=[
-                    'entity',
+                    'entity_model',
                     'fiscal_year',
                     'entity_unit',
                     'key'
                 ])
         ]
         unique_together = [
-            ('entity', 'entity_unit', 'fiscal_year', 'key')
+            ('entity_model', 'entity_unit', 'fiscal_year', 'key')
         ]
 
     def __str__(self):

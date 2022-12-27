@@ -27,7 +27,7 @@ Django Ledger supports:
 - Financial Statements (Income Statement, Balance Sheet & Cash Flow Statement).
 - Purchase Orders, Sales Orders (Estimates), Bills and Invoices.
 - Automatic financial ratio & insight calculations.
-- Multi tenancy (multiple users/clients).
+- Multi tenancy (multiple companies/users/clients).
 - Hierarchical entity management (for consolidated financial statements - v0.9).
 - Self-contained Ledgers, Journal Entries & Transactions.
 - Basic OFX & QFX file import.
@@ -66,9 +66,10 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Link Estimate/PO/Bill/Invoice workflow.
     * Journal Entry activity determination & validation (for cash flow).
 * __0.5.2__: Cash flow statement.
-  * Balance Sheet Statement, Income Statement & Cash Flow Statement API Integration & export.
   * Human Readable Journal Entry document numbers.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
+  * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
+  * GraphQL API.
 * __0.5.4__: Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using [behave](https://behave.readthedocs.io/en/latest/) library.

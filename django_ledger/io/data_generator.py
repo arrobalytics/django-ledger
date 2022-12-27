@@ -109,7 +109,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
-        self.account_models = AccountModel.on_coa.for_entity_available(
+        self.account_models = AccountModel.objects.for_entity_available(
             entity_slug=self.entity_model,
             user_model=self.user_model
         ).order_by('role')
@@ -180,7 +180,7 @@ class EntityDataGenerator(LoggingMixIn):
         vendor_models = [
             VendorModel(
                 vendor_name=self.fk.name() if random() > .7 else self.fk.company(),
-                entity=self.entity_model,
+                entity_model=self.entity_model,
                 address_1=self.fk.street_address(),
                 address_2=self.fk.building_number() if random() < .2 else None,
                 city=self.fk.city(),
@@ -207,7 +207,7 @@ class EntityDataGenerator(LoggingMixIn):
         customer_models = [
             CustomerModel(
                 customer_name=self.fk.name() if random() > .2 else self.fk.company(),
-                entity=self.entity_model,
+                entity_model=self.entity_model,
                 address_1=self.fk.street_address() + self.fk.street_suffix(),
                 address_2=self.fk.building_number() if random() > .2 else None,
                 city=self.fk.city(),

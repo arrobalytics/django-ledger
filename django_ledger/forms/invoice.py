@@ -40,7 +40,7 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
             'prepaid_account' in self.fields,
             'unearned_account' in self.fields,
         ]):
-            account_qs = AccountModel.on_coa.for_invoice(
+            account_qs = AccountModel.objects.for_invoice(
                 user_model=self.USER_MODEL,
                 entity_slug=self.ENTITY_SLUG
             )
@@ -120,7 +120,7 @@ class BaseInvoiceModelUpdateForm(ModelForm):
             'amount_paid': _('Amount Received')
         }
         widgets = {
-            'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'timestamp': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

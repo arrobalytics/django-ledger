@@ -34,7 +34,7 @@ class BillModelCreateForm(ModelForm):
             'prepaid_account' in self.fields,
             'unearned_account' in self.fields,
         ]):
-            account_qs = AccountModel.on_coa.for_bill(
+            account_qs = AccountModel.objects.for_bill(
                 user_model=self.USER_MODEL,
                 entity_slug=self.ENTITY_SLUG
             )
@@ -133,7 +133,7 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
         widgets = {
             'xref': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                                      'placeholder': 'External Reference...'}),
-            'date': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'timestamp': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'bill_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

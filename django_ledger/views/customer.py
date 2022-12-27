@@ -63,7 +63,7 @@ class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
         entity_model = EntityModel.objects.for_user(
             user_model=self.request.user
         ).get(slug__exact=self.kwargs['entity_slug'])
-        customer_model.entity = entity_model
+        customer_model.entity_model = entity_model
         customer_model.save()
         return super().form_valid(form)
 

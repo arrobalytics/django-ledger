@@ -116,7 +116,7 @@ class AccountModelManager(MP_NodeManager):
         Ensures that only accounts associated with the given EntityModel are returned.
 
         Parameters
-        __________
+        ----------
 
         entity_slug: EntityModel or str
             The EntityModel or EntityModel slug to pull accounts from. If slug is passed and coa_slug is None will
@@ -131,7 +131,7 @@ class AccountModelManager(MP_NodeManager):
             The Django User Model making the request to check for permissions.
 
         Returns
-        _______
+        -------
         AccountModelQuerySet
             A QuerySet of all requested EntityModel Chart of Accounts.
         """
@@ -145,18 +145,16 @@ class AccountModelManager(MP_NodeManager):
             entity_model = EntityModel.objects.get(slug__exact=slug)
 
         qs = qs.filter(
-            Q(coa__entity__slug__exact=slug) &
+            Q(coa_model__entity=entity_model) &
             (
-                    Q(coa__entity__admin=user_model) |
-                    Q(coa__entity__managers__in=[user_model])
+                    Q(coa_model__entity__admin=user_model) |
+                    Q(coa_model__entity__managers__in=[user_model])
             )
         ).order_by('code')
 
         if coa_slug:
-            qs = qs.filter(coa__slug__exact=coa_slug)
-        else:
-            qs = qs.filter(coa__uuid__exact=entity_model.default_coa_id)
-        return qs
+            return qs.filter(coa_model___slug__exact=coa_slug)
+        return qs.filter(coa_model__uuid__exact=entity_model.default_coa_id)
 
     def for_entity_available(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
         """
@@ -191,7 +189,7 @@ class AccountModelManager(MP_NodeManager):
             locked=False
         )
 
-    def with_roles(self, roles: Union[list, str], entity_slug: str, user_model) -> AccountModelQuerySet:
+    def with_roles(self, roles: Union[list, str], entity_slug, user_model) -> AccountModelQuerySet:
         """
         This method is used to make query of accounts with a certain role. For instance, the fixed assets like
         Buildings have all been assigned the role of  "asset_ppe_build" role is basically an aggregation of the
@@ -376,15 +374,11 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     active = models.BooleanField(default=False, verbose_name=_('Active'))
-
-    # todo: rename to coa_model?...
-    coa = models.ForeignKey('django_ledger.ChartOfAccountModel',
-                            on_delete=models.CASCADE,
-                            editable=False,
-                            verbose_name=_('Chart of Accounts'))
-
-    # todo: on_coa, still relevant? use objects instead?...
-    on_coa = AccountModelManager()
+    coa_model = models.ForeignKey('django_ledger.ChartOfAccountModel',
+                                  on_delete=models.CASCADE,
+                                  editable=False,
+                                  verbose_name=_('Chart of Accounts'))
+    objects = AccountModelManager()
     node_order_by = ['uuid']
 
     class Meta:
@@ -393,13 +387,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         verbose_name = _('Account')
         verbose_name_plural = _('Accounts')
         unique_together = [
-            ('coa', 'code')
+            ('coa_model', 'code')
         ]
         indexes = [
             models.Index(fields=['role']),
             models.Index(fields=['balance_type']),
             models.Index(fields=['active']),
-            models.Index(fields=['coa']),
+            models.Index(fields=['coa_model']),
             models.Index(fields=['role', 'balance_type', 'active']),
         ]
 

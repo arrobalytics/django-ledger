@@ -122,15 +122,13 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
 
     # todo: rename to account_name?...
     name = models.CharField(max_length=150, null=True, blank=True)
-    entity_model = models.ForeignKey('django_ledger.EntityModel', on_delete=models.RESTRICT,
+    entity_model = models.ForeignKey('django_ledger.EntityModel',
+                                     on_delete=models.CASCADE,
                                      verbose_name=_('Entity Model'))
-
-    # todo: add a validator?...
     cash_account = models.ForeignKey('django_ledger.AccountModel',
                                      on_delete=models.RESTRICT,
                                      verbose_name=_('Cash Account'),
-                                     related_name=f'{REL_NAME_PREFIX}_cash_account',
-                                     null=True, blank=True)
+                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
     active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager.from_queryset(queryset_class=BankAccountModelQuerySet)()

@@ -115,13 +115,13 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
         ).get(uuid__exact=self.kwargs['ledger_pk'])
-        form.instance.ledger = ledger_model
-        self.object = form.save()
+        je_model: JournalEntryModel = form.save(commit=False)
+        je_model.ledger = ledger_model
         return super().form_valid(form)
 
     def get_initial(self):
         return {
-            'date': localdate(),
+            'timestamp': localdate(),
             'ledger': LedgerModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user

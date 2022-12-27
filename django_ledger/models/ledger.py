@@ -16,20 +16,30 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import IOMixIn
+from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
 
-# todo: move this somewhere....
-def generate_ledger_id(length=10):
-    return ''.join(choice(LEDGER_ID_CHARS) for _ in range(length))
+class LedgerModelQuerySet(models.QuerySet):
+    """
+    Custom defined LedgerModel QuerySet.
+    """
 
 
 class LedgerModelManager(models.Manager):
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug, user_model):
         qs = self.get_queryset()
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            return qs.filter(
+                Q(entity=entity_slug) &
+                (
+                        Q(entity__admin=user_model) |
+                        Q(entity__managers__in=[user_model])
+                )
+            )
         return qs.filter(
             Q(entity__slug__exact=entity_slug) &
             (
@@ -53,7 +63,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     locked = models.BooleanField(default=False, verbose_name=_('Locked Ledger'))
     hidden = models.BooleanField(default=False, verbose_name=_('Hidden Ledger'))
 
-    objects = LedgerModelManager()
+    objects = LedgerModelManager.from_queryset(queryset_class=LedgerModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -66,10 +76,17 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             models.Index(fields=['entity', 'locked']),
         ]
 
-    # pylint: disable=bad-option-value
     def __str__(self):
-        # pylint: disable=invalid-str-returned
         return self.name
+
+    def is_posted(self):
+        return self.posted is True
+
+    def is_locked(self):
+        return self.locked is True
+
+    def is_hidden(self):
+        return self.hidden is True
 
     def get_absolute_url(self):
         return reverse('django_ledger:ledger-detail',

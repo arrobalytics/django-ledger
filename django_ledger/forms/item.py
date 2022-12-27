@@ -40,7 +40,7 @@ class ProductOrServiceUpdateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.on_coa.with_roles(
+        accounts_qs = AccountModel.objects.with_roles(
             roles=GROUP_INCOME,
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
@@ -148,7 +148,7 @@ class ExpenseItemUpdateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.on_coa.with_roles(
+        accounts_qs = AccountModel.objects.with_roles(
             roles=GROUP_EXPENSES_NO_COGS,
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
@@ -217,7 +217,7 @@ class InventoryItemUpdateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.on_coa.with_roles(
+        accounts_qs = AccountModel.objects.with_roles(
             roles=self.INVENTORY_ROLES,
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()

@@ -63,19 +63,19 @@ class VendorModelManager(models.Manager):
         qs = self.get_queryset()
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity=entity_slug) &
+                Q(entity_model=entity_slug) &
                 Q(active=True) &
                 (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
+                        Q(entity_model__admin=user_model) |
+                        Q(entity_model__managers__in=[user_model])
                 )
             )
         return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
+            Q(entity_model__slug__exact=entity_slug) &
             Q(active=True) &
             (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
+                    Q(entity_model__admin=user_model) |
+                    Q(entity_model__managers__in=[user_model])
             )
         )
 
@@ -100,7 +100,7 @@ class VendorModelAbstract(ContactInfoMixIn,
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    entity: EntityModel
+    entity_model: EntityModel
         The EntityModel associated with this Vendor.
 
     vendor_name: str
@@ -127,15 +127,14 @@ class VendorModelAbstract(ContactInfoMixIn,
     vendor_number = models.CharField(max_length=30, null=True, blank=True)
     vendor_name = models.CharField(max_length=100)
 
-    # todo: rename to entity_model?...
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Vendor Entity'))
+    entity_model = models.ForeignKey('django_ledger.EntityModel',
+                                     on_delete=models.CASCADE,
+                                     verbose_name=_('Vendor Entity'))
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
 
-    additional_info = models.JSONField(null=True, blank=True)
+    additional_info = models.JSONField(null=True, blank=True, default=dict)
 
     objects = VendorModelManager.from_queryset(queryset_class=VendorModelQuerySet)()
 
@@ -148,7 +147,7 @@ class VendorModelAbstract(ContactInfoMixIn,
             models.Index(fields=['hidden']),
         ]
         unique_together = [
-            ('entity', 'vendor_number')
+            ('entity_model', 'vendor_number')
         ]
         abstract = True
 
@@ -166,7 +165,7 @@ class VendorModelAbstract(ContactInfoMixIn,
             True if customer model can be generated, else False.
         """
         return all([
-            self.entity_id,
+            self.entity_model_id,
             not self.vendor_number
         ])
 
@@ -189,7 +188,7 @@ class VendorModelAbstract(ContactInfoMixIn,
 
         try:
             LOOKUP = {
-                'entity_id__exact': self.entity_id,
+                'entity_model_id__exact': self.entity_model_id,
                 'key__exact': EntityStateModel.KEY_VENDOR
             }
 
@@ -203,7 +202,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         except ObjectDoesNotExist:
 
             LOOKUP = {
-                'entity_id': self.entity_id,
+                'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
                 'fiscal_year': None,
                 'key': EntityStateModel.KEY_VENDOR,

@@ -41,7 +41,7 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         return context
 
     def get_queryset(self):
-        return AccountModel.on_coa.for_entity(
+        return AccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
         ).order_by('code')
@@ -75,7 +75,7 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        })
 
     def get_queryset(self):
-        return AccountModel.on_coa.for_entity(
+        return AccountModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
         )
@@ -92,7 +92,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     }
 
     def get_queryset(self):
-        return AccountModel.on_coa.for_entity(
+        return AccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         )
@@ -195,7 +195,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         return context
 
     def get_queryset(self):
-        return AccountModel.on_coa.for_entity(
+        return AccountModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
         ).prefetch_related('transactionmodel_set')

@@ -225,7 +225,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                  f'Warning! This Invoice is Locked. Must unlock before making any changes.',
                                  extra_tags='is-danger')
 
-        if not ledger_model.posted:
+        if not ledger_model.is_posted():
             messages.add_message(self.request,
                                  messages.INFO,
                                  f'This Invoice has not been posted. Must post to see ledger changes.',

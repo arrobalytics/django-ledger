@@ -4,6 +4,7 @@
 {% load django_ledger %}
 
 {% block view_content %}
+
     <div class="card">
         <div class="card-content">
             <div class="level">
@@ -18,13 +19,11 @@
             </div>
 
             <div class="columns is-multiline">
+
                 {% for unit in unit_list %}
                     <div class="column is-4">
                         <div class="card">
                             <div class="card-content">
-{#                                <p class="subtitle has-text-grey has-text-right">#}
-{#                                    <span class="icon">{% icon "bi:cash-stack" 16 %}</span>#}
-{#                                    {% trans 'Unit' %}</p>#}
                                 <p class="title">{{ unit.name }}</p>
                                 <p>{% trans 'JE Document Prefix' %}: {{ unit.document_prefix }}</p>
                             </div>
@@ -33,8 +32,6 @@
                                    class="card-footer-item has-text-primary has-text-centered">{% trans 'View' %}</a>
                                 <a href="{% url 'django_ledger:unit-update' entity_slug=view.kwargs.entity_slug unit_slug=unit.slug %}"
                                    class="card-footer-item has-text-warning-dark has-text-centered">{% trans 'Update' %}</a>
-                                {#                                <a onclick="djLedger.toggleModal('{{ invoice.get_html_id }}')"#}
-                                {#                                   class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Paid' %}</a>#}
                             </footer>
 
                         </div>

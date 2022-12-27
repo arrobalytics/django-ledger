@@ -62,7 +62,7 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             user_model=self.request.user
         )
         entity_model = get_object_or_404(klass=entity_model_qs, slug__exact=self.kwargs['entity_slug'])
-        vendor_model.entity = entity_model
+        vendor_model.entity_model = entity_model
         return super().form_valid(form)
 
 

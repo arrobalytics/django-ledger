@@ -139,19 +139,19 @@ class CustomerModelManager(models.Manager):
 
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity=entity_slug) &
+                Q(entity_model=entity_slug) &
                 Q(active=True) &
                 (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
+                        Q(entity_model__admin=user_model) |
+                        Q(entity_model__managers__in=[user_model])
                 )
             )
         return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
+            Q(entity_model__slug__exact=entity_slug) &
             Q(active=True) &
             (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
+                    Q(entity_model__admin=user_model) |
+                    Q(entity_model__managers__in=[user_model])
             )
         )
 
@@ -194,17 +194,15 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     customer_name = models.CharField(max_length=100)
     customer_number = models.CharField(max_length=30, editable=False, verbose_name=_('Customer Number'))
-
-    # todo: rename to entity_model???...
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               editable=False,
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Customer Entity'))
+    entity_model = models.ForeignKey('django_ledger.EntityModel',
+                                     editable=False,
+                                     on_delete=models.CASCADE,
+                                     verbose_name=_('Customer Entity'))
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
 
-    additional_info = models.JSONField(null=True, blank=True)
+    additional_info = models.JSONField(null=True, blank=True, default=dict)
 
     objects = CustomerModelManager.from_queryset(queryset_class=CustomerModelQueryset)()
 
@@ -219,7 +217,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             models.Index(fields=['customer_number']),
         ]
         unique_together = [
-            ('entity', 'customer_number')
+            ('entity_model', 'customer_number')
         ]
 
     def __str__(self):
@@ -236,7 +234,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             True if customer model can be generated, else False.
         """
         return all([
-            self.entity_id,
+            self.entity_model_id,
             not self.customer_number
         ])
 
@@ -259,7 +257,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
         try:
             LOOKUP = {
-                'entity_id__exact': self.entity_id,
+                'entity_model_id__exact': self.entity_model_id,
                 'key__exact': EntityStateModel.KEY_CUSTOMER
             }
 
@@ -273,7 +271,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         except ObjectDoesNotExist:
 
             LOOKUP = {
-                'entity_id': self.entity_id,
+                'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
                 'fiscal_year': None,
                 'key': EntityStateModel.KEY_CUSTOMER,

@@ -5,9 +5,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
-from datetime import datetime
-from typing import List
+from datetime import datetime, date
+from typing import List, Union
 from uuid import uuid4, UUID
 
 from django.core.validators import MinValueValidator
@@ -15,12 +14,12 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import validate_io_date
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
-
 
 """
 One of the major model which is used for storing the Transactions recorded in the entity model
@@ -31,12 +30,13 @@ For each transaction, the debits and credits should be matched. Ay transaction w
 
 """
 
-class TransactionQuerySet(models.QuerySet):
 
+class TransactionQuerySet(models.QuerySet):
     """
     A custom defined Query Set for the TransactionModel.
     This implements multiple methods or queries that we need to run to get a list of all the transactions.
     """
+
     def posted(self):
         """ Used to select the transaction which are in 'posted' state """
         return self.filter(
@@ -66,11 +66,24 @@ class TransactionQuerySet(models.QuerySet):
     def for_activity(self, activity_list: List[str]):
         return self.filter(journal_entry__activity__in=activity_list)
 
-    def to_date(self, to_date: str or datetime):
-        return self.filter(journal_entry__date__lte=to_date)
+    def to_date(self, to_date: Union[str, date, datetime]):
+        if isinstance(to_date, str):
+            to_date = validate_io_date(to_date)
 
-    def from_date(self, from_date: str or datetime):
-        return self.filter(journal_entry__date__gte=from_date)
+        if isinstance(to_date, date):
+            return self.filter(journal_entry__timestamp__date__lte=to_date)
+
+        return self.filter(journal_entry__timestamp__lte=to_date)
+
+    def from_date(self, from_date: Union[str, date, datetime]):
+
+        if isinstance(from_date, str):
+            from_date = validate_io_date(from_date)
+
+        if isinstance(from_date, date):
+            return self.filter(journal_entry__timestamp__date__gte=from_date)
+
+        return self.filter(journal_entry__timestamp__gte=from_date)
 
 
 class TransactionModelAdmin(models.Manager):

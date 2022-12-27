@@ -322,6 +322,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
     additional_info = models.JSONField(blank=True,
                                        null=True,
+                                       default=dict,
                                        verbose_name=_('Invoice Additional Info'))
     invoice_items = models.ManyToManyField('django_ledger.ItemModel',
                                            through='django_ledger.ItemTransactionModel',
@@ -1478,13 +1479,14 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
         try:
             LOOKUP = {
-                'entity_id__exact': self.ledger.entity_id,
+                'entity_model_id__exact': self.ledger.entity_id,
                 'entity_unit_id__exact': None,
                 'fiscal_year': fy_key,
                 'key__exact': EntityStateModel.KEY_INVOICE
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
+                'entity_model').select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -1496,7 +1498,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
 
             LOOKUP = {
-                'entity_id': entity_model.uuid,
+                'entity_model_id': entity_model.uuid,
                 'entity_unit_id': None,
                 'fiscal_year': fy_key,
                 'key': EntityStateModel.KEY_INVOICE,

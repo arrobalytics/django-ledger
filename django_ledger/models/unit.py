@@ -9,10 +9,10 @@ An EntityUnit is a logical, user-defined grouping which is assigned to JournalEn
 operations into separate components. Examples of business units may include Departments (i.e. Human Resources, IT, etc.)
 office locations, a real estate property, or any other label relevant to the business.
 
-An EntityUnit is self contained. Meaning that double entry accounting rules apply to all transactions associated with
+An EntityUnit is self contained. Meaning that double entry accounting rules apply to all transactions associated within
 them. When An Invoice or Bill is updated, the migration process generates the appropriate Journal Entries associated
 with each unit, if any. This means that an invoice or bill can split items into different units and the migration
-process will allocate costs to each junit accordingly.
+process will allocate costs to each unit accordingly.
 
 The main advantages of EntityUnits are:
     1. Entity units can generate their own financial statements which can give additional insight to specific operations
@@ -115,7 +115,7 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
         A unique, indexed identifier for the EntityUnitModel instance used in URLs and queries.
 
     entity: EntityModel
-        The EntityModel associated with this Chart of Accounts.
+        The EntityModel associated with this EntityUnitModel.
 
     document_prefix: str
         A predefined prefix automatically incorporated into JournalEntryModel document numbers. Max Length 3.

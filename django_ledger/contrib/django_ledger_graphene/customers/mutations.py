@@ -61,7 +61,7 @@ class CustomerMutation(graphene.Mutation):
         entity_model = EntityModel.objects.for_user(
             user_model=info.context.user
         ).get(slug__exact=slug_name)
-        customer_model.entity = entity_model
+        customer_model.entity_model = entity_model
         customer_model.save()
         # Notice we return an instance of this mutation
         return CustomerMutation(customer=customer_model)

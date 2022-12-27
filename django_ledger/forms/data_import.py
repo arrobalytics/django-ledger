@@ -79,7 +79,7 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
         self.IMPORT_DISABLED = not exclude_account
         self.CASH_ACCOUNT = exclude_account
 
-        accounts_qs = AccountModel.on_coa.for_entity_available(
+        accounts_qs = AccountModel.objects.for_entity_available(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
         )

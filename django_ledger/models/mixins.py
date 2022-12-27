@@ -7,10 +7,10 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 import logging
 from collections import defaultdict
-from datetime import timedelta, date
+from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional
+from typing import Optional, Union
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
@@ -18,11 +18,12 @@ from django.core.validators import int_list_validator
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
-from django.utils.timezone import localdate
+from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE
+from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE, \
+    validate_io_date
 from django_ledger.models.utils import lazy_loader
 
 
@@ -162,6 +163,7 @@ class LedgerWrapperMixIn(models.Model):
     # STATES..
     def is_configured(self):
         return all([
+            self.ledger_id is not None,
             self.cash_account_id is not None,
             self.unearned_account_id is not None,
             self.prepaid_account_id is not None
@@ -299,12 +301,11 @@ class LedgerWrapperMixIn(models.Model):
 
     def migrate_state(self,
                       user_model,
-                      entity_slug: str,
                       itemtxs_qs: QuerySet = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
-                      je_date: date = None,
+                      je_date: Union[str, date, datetime] = None,
                       verify_journal_entries: bool = True,
                       raise_exception: bool = True,
                       **kwargs):
@@ -467,11 +468,15 @@ class LedgerWrapperMixIn(models.Model):
                 TransactionModel = lazy_loader.get_transaction_model()
 
                 unit_uuids = list(set(k[1] for k in idx_keys))
-                now_date = localdate() if not je_date else je_date
+
+                if je_date:
+                    je_date = validate_io_date(dt=je_date)
+
+                now_timestamp = localtime() if not je_date else je_date
                 je_list = {
                     u: JournalEntryModel(
                         entity_unit_id=u,
-                        date=now_date,
+                        timestamp=now_timestamp,
                         description=self.get_migrate_state_desc(),
                         origin='migration',
                         ledger_id=self.ledger_id

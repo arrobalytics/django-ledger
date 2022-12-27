@@ -653,13 +653,14 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
         try:
             LOOKUP = {
-                'entity_id__exact': self.entity_id,
+                'entity_model_id__exact': self.entity_id,
                 'entity_unit_id': None,
                 'fiscal_year': fy_key,
                 'key__exact': EntityStateModel.KEY_ESTIMATE
             }
 
-            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related('entity').select_for_update()
+            state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_related(
+                'entity_model').select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
@@ -671,7 +672,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
 
             LOOKUP = {
-                'entity_id': entity_model.uuid,
+                'entity_model_id': entity_model.uuid,
                 'entity_unit_id': None,
                 'fiscal_year': fy_key,
                 'key': EntityStateModel.KEY_ESTIMATE,

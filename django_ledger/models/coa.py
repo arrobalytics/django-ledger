@@ -133,8 +133,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
     
     Attributes
-    __________
-
+    ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 

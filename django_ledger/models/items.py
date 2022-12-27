@@ -183,13 +183,13 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
                                          verbose_name=_('Default monetary value per unit of measure'),
                                          validators=[MinValueValidator(0)])
 
-    for_inventory = models.BooleanField(
-        verbose_name=_('Is an item for inventory'),
-        help_text=_('It is an item you require for your inventory.'))
+    for_inventory = models.BooleanField(verbose_name=_('Is an item for inventory'),
+                                        help_text=_('It is an item you require for your inventory.'))
 
-    is_product_or_service = models.BooleanField(
-        verbose_name=_('Is a product or service.'),
-        help_text=_('Is a product or service you sell or provide to customers.'))
+    is_product_or_service = models.BooleanField(verbose_name=_('Is a product or service.'),
+                                                help_text=_(
+                                                    'Is a product or service you sell or provide to customers.'
+                                                ))
 
     sold_as_unit = models.BooleanField(default=False)
 
@@ -240,6 +240,7 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
 
     additional_info = models.JSONField(blank=True,
                                        null=True,
+                                       default=dict,
                                        verbose_name=_('Item Additional Info'))
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
@@ -333,7 +334,7 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
 
         try:
             LOOKUP = {
-                'entity_id__exact': self.entity_id,
+                'entity_model_id__exact': self.entity_id,
                 'key__exact': EntityStateModel.KEY_ITEM
             }
 
@@ -347,7 +348,7 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
         except ObjectDoesNotExist:
 
             LOOKUP = {
-                'entity_id': self.entity_id,
+                'entity_model_id': self.entity_id,
                 'entity_unit_id': None,
                 'fiscal_year': None,
                 'key': EntityStateModel.KEY_ITEM,

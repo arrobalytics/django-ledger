@@ -3,7 +3,7 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict
 from datetime import datetime, date
@@ -94,13 +94,19 @@ def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
     return True
 
 
-def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True):
+def validate_io_date(dt: Union[str, date, datetime], no_parse_localdate: bool = True) -> Union[datetime]:
     if isinstance(dt, date):
+        dt = make_aware(datetime.combine(
+            dt,
+            datetime.min.time()
+        ))
         return dt
+
     elif isinstance(dt, datetime):
         if is_naive(dt):
-            return make_aware(dt).date
-        return dt.date
+            return make_aware(dt)
+        return dt
+
     elif isinstance(dt, str):
         # try to parse a date object from string...
         fdt = parse_date(dt)
@@ -112,24 +118,23 @@ def validate_io_date(dt: str or date or datetime, no_parse_locadate: bool = True
                     message=f'Could not parse date from {dt}'
                 )
             elif is_naive(fdt):
-                return make_aware(fdt).date
-            return fdt.date
+                fdt = make_aware(fdt)
         return fdt
-    if no_parse_locadate:
+
+    if no_parse_localdate:
         return localdate()
-    return
 
 
 def validate_dates(
         from_date: Union[str, datetime, date] = None,
         to_date: Union[str, datetime, date] = None) -> Tuple[date, date]:
-    from_date = validate_io_date(from_date, no_parse_locadate=False)
+    from_date = validate_io_date(from_date, no_parse_localdate=False)
     to_date = validate_io_date(to_date)
     return from_date, to_date
 
 
 def validate_activity(activity: str, raise_404: bool = False):
-    # todo: move to model???...
+    # idea: move to model???...
     JournalEntryModel = lazy_importer.get_journal_entry_model()
     valid = activity in JournalEntryModel.VALID_ACTIVITIES
     if activity and not valid:
@@ -240,8 +245,8 @@ class IOMixIn:
         ORDER_BY = ['account__uuid']
 
         if by_period:
-            ORDER_BY.append('journal_entry__date')
-            ANNOTATE['dt_idx'] = TruncMonth('journal_entry__date')
+            ORDER_BY.append('journal_entry__timestamp')
+            ANNOTATE['dt_idx'] = TruncMonth('journal_entry__timestamp')
 
         if by_unit:
             VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
@@ -345,7 +350,7 @@ class IOMixIn:
             'balance': sum(a['balance'] for a in gl),
         }
 
-    # todo: make this method return a Digest class...
+    # idea: make this method return a Digest class?...
     def digest(self,
                user_model: UserModel,
                accounts: Optional[Union[Set[str], List[str]]] = None,
@@ -405,7 +410,7 @@ class IOMixIn:
                 by_unit=by_unit
             )
 
-            # todo: change digest() name to something else?...
+            # idea: change digest() name to something else? maybe aggregate, calculate?...
             io_digest = roles_mgr.digest()
 
         if process_groups:
@@ -477,10 +482,12 @@ class IOMixIn:
 
         JournalEntryModel = lazy_importer.get_journal_entry_model()
 
+        je_date = validate_io_date(dt=je_date)
+
         je_model = JournalEntryModel(
             ledger=je_ledger,
             description=je_desc,
-            date=je_date,
+            timestamp=je_date,
             origin=je_origin,
         )
 

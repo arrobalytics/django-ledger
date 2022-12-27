@@ -80,10 +80,11 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             admin=user_model
         )
         entity_model: EntityModel = EntityModel.add_root(instance=entity_model)
-        entity_model.create_chart_of_accounts(assign_as_default=True)
+        default_coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
 
         if default_coa:
-            entity_model.populate_default_coa(activate_accounts=activate_accounts)
+            entity_model.populate_default_coa(activate_accounts=activate_accounts,
+                                              chart_of_accounts=default_coa_model)
 
         if sample_data:
             entity_generator = EntityDataGenerator(
@@ -124,7 +125,6 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity/entity_delete.html'
-    verify_descendants = False
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)
@@ -145,16 +145,8 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
 
     def delete(self, request, *args, **kwargs):
         entity_model: EntityModel = self.get_object()
-
-        # todo: this will need to be changed once hierarchical support is enabled.
-        if self.verify_descendants:
-            c = entity_model.children.count()
-            if c != 0:
-                add_message(request,
-                            level=ERROR,
-                            extra_tags='is-danger',
-                            message=_('Entity has %s children. Must delete children first.' % c))
-                return self.get(request, *args, **kwargs)
+        entity_model.default_coa = None
+        entity_model.save(update_fields=['default_coa'])
 
         ItemTransactionModel.objects.for_entity(
             user_model=self.request.user,

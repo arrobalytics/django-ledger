@@ -371,7 +371,7 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                                  f'Warning! This bill is locked. Must unlock before making any changes.',
                                  extra_tags='is-danger')
 
-        if not ledger_model.posted:
+        if not ledger_model.is_posted():
             messages.add_message(self.request,
                                  messages.INFO,
                                  f'This bill has not been posted. Must post to see ledger changes.',
