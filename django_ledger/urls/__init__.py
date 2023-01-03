@@ -9,6 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.urls import path, include
 
 from django_ledger import views
+from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_ENABLED
 
 app_name = 'django_ledger'
 
@@ -38,3 +39,6 @@ urlpatterns = [
     path('djl-api/v1/', include('django_ledger.urls.djl_api')),
     path('', views.RootUrlView.as_view(), name='root'),
 ]
+
+if DJANGO_LEDGER_GRAPHQL_ENABLED:
+    pass

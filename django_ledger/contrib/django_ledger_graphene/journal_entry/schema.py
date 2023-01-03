@@ -1,17 +1,17 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import JournalEntryModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import JournalEntryModel
 
 
 class JournalEntryNode(DjangoObjectType):
     class Meta:
         model = JournalEntryModel
         filter_fields = {
-            'parent': ['exact'],
             'activity': ['exact', 'icontains', 'istartswith'],
-            'date': ['exact'],
+            'timestamp': ['exact'],
             'description': ['exact'],
         }
         interfaces = (relay.Node,)
@@ -27,7 +27,7 @@ class JournalEntryQuery(graphene.ObjectType):
             sort = info.context.GET.get('sort')
             if not sort:
                 sort = '-updated'
-                return JournalEntryModel.on_coa.for_ledger(
+                return JournalEntryModel.objects.for_ledger(
                     ledger_pk=pk_ledger,
                     entity_slug=slug_name,
                     user_model=info.context.user

@@ -1,8 +1,10 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import UnitOfMeasureModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import UnitOfMeasureModel
+
 
 class UnitOfMeasureNode(DjangoObjectType):
     class Meta:

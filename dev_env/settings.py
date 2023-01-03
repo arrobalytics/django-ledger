@@ -1,11 +1,6 @@
 import os
 
-try:
-    import graphene_django
-
-    GRAPHENE_SUPPORT = True
-except ImportError:
-    GRAPHENE_SUPPORT = False
+from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_ENABLED
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -26,10 +21,10 @@ INSTALLED_APPS = [
     'django_ledger',
 ]
 
-if GRAPHENE_SUPPORT:
+if DJANGO_LEDGER_GRAPHQL_ENABLED:
     INSTALLED_APPS += [
         'graphene_django',
-        'graphql_auth',
+        'graphql_auth'
     ]
 
 MIDDLEWARE = [
@@ -112,7 +107,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if GRAPHENE_SUPPORT:
+if DJANGO_LEDGER_GRAPHQL_ENABLED:
     GRAPHENE = {
         'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
         'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,

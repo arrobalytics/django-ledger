@@ -1,8 +1,9 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import PurchaseOrderModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import PurchaseOrderModel
 
 
 class PurchaseOrderNode(DjangoObjectType):

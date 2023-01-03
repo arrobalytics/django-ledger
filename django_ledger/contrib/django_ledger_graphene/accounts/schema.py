@@ -2,15 +2,15 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import AccountModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import AccountModel
 
 
 class AccountNode(DjangoObjectType):
     class Meta:
         model = AccountModel
         filter_fields = {
-            'parent': ['exact'],
             'code': ['exact', 'icontains', 'istartswith'],
             'name': ['exact', 'icontains', 'istartswith'],
             'locked': ['exact'],

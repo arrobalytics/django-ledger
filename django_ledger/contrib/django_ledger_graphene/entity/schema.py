@@ -2,8 +2,9 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import EntityModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import EntityModel
 
 
 class EntityNode(DjangoObjectType):

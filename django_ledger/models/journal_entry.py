@@ -50,6 +50,7 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES)
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.transactions import TransactionModelQuerySet
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
                                     DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX)
@@ -320,7 +321,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                related_name='journal_entries',
                                on_delete=models.CASCADE)
 
-    on_coa = JournalEntryModelManager.from_queryset(queryset_class=JournalEntryModelQuerySet)()
     objects = JournalEntryModelManager.from_queryset(queryset_class=JournalEntryModelQuerySet)()
 
     class Meta:
@@ -329,7 +329,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         verbose_name = _('Journal Entry')
         verbose_name_plural = _('Journal Entries')
         indexes = [
-            # models.Index(fields=['parent']),
             models.Index(fields=['ledger']),
             models.Index(fields=['timestamp']),
             models.Index(fields=['activity']),
@@ -349,9 +348,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         self._verified = False
 
     def is_verified(self) -> bool:
+        """
+        Determines if the JournalEntryModel is verified.
+
+        Returns
+        -------
+        bool
+            True if is verified, otherwise False.
+        """
         return self._verified
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
+
         return reverse('django_ledger:je-detail',
                        kwargs={
                            'je_pk': self.id,
@@ -366,33 +374,89 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return no_unit_name
 
     def can_post(self, ignore_verify: bool = True) -> bool:
+        """
+        Determines if a JournalEntryModel can be posted.
+
+        Parameters
+        ----------
+        ignore_verify: bool
+            Skips JournalEntryModel verification if True. Defaults to False.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be posted, otherwise False.
+        """
         return all([
             not self.locked,
             not self.posted,
             self.is_verified() if not ignore_verify else True
         ])
 
-    def can_unpost(self):
+    def can_unpost(self) -> bool:
+        """
+        Determines if a JournalEntryModel can be un-posted.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be un-posted, otherwise False.
+        """
         return all([
             not self.locked,
             self.posted
         ])
 
-    def can_lock(self):
+    def can_lock(self) -> bool:
+        """
+        Determines if a JournalEntryModel can be locked.
+        Locked transactions cannot be modified.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be locked, otherwise False.
+        """
         return all([
             not self.locked
         ])
 
-    def can_unlock(self):
+    def can_unlock(self) -> locked:
+        """
+        Determines if a JournalEntryModel can be un-locked.
+        Locked transactions cannot be modified.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be un-locked, otherwise False.
+        """
         return all([
             self.locked
         ])
 
     def mark_as_posted(self,
                        commit: bool = False,
-                       verify: bool = False,
+                       verify: bool = True,
                        raise_exception: bool = False,
                        **kwargs):
+        """
+        Posted transactions show on the EntityModel ledger and financial statements.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits changes into the Database, Defaults to False.
+
+        verify: bool
+            Verifies JournalEntryModel before marking as posted. Defaults to False.
+
+        raise_exception: bool
+            Raises JournalEntryValidationError if cannot post. Defaults to False.
+
+        kwargs: dict
+            Additional keyword arguments.
+        """
         if verify:
             txs_qs = self.verify()
 
@@ -411,6 +475,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           ])
 
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Un-posted JournalEntryModels do not show on the EntityModel ledger and financial statements.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits changes into the Database, Defaults to False.
+
+        raise_exception: bool
+            Raises JournalEntryValidationError if cannot post. Defaults to False.
+
+        kwargs: dict
+            Additional keyword arguments.
+        """
         if not self.can_unpost():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is unposted.')
@@ -424,10 +502,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           ])
 
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Locked JournalEntryModels do not allow transactions to be edited.
 
+        Parameters
+        ----------
+        commit: bool
+            Commits changes into the Database, Defaults to False.
+
+        raise_exception: bool
+            Raises JournalEntryValidationError if cannot lock. Defaults to False.
+
+        kwargs: dict
+            Additional keyword arguments.
+        """
         if not self.can_lock():
             if raise_exception:
-                raise ValidationError(f'Journal Entry {self.uuid} is already locked.')
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         else:
             self.locked = True
             if commit:
@@ -438,9 +529,21 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           ])
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Unlocked JournalEntryModels allow transactions to be edited.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits changes into the Database, Defaults to False.
+        raise_exception: bool
+            Raises JournalEntryValidationError if cannot lock. Defaults to False.
+        kwargs: dict
+            Additional keyword arguments.
+        """
         if not self.can_unlock():
             if raise_exception:
-                raise ValidationError(f'Journal Entry {self.uuid} is already unlocked.')
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
         else:
             self.locked = False
             if commit:
@@ -450,14 +553,27 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                               'updated'
                           ])
 
-    def get_txs_qs(self, select_accounts: bool = True):
-        if not select_accounts:
-            return self.transactionmodel_set.all()
-        return self.transactionmodel_set.all().select_related('account')
+    def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
+        """
+        Fetched the TransactionModelQuerySet associated with the JournalEntryModel instance.
+
+        Parameters
+        ----------
+        select_accounts: bool
+            Fetches the associated AccountModel of each transaction. Defaults to True.
+
+        Returns
+        -------
+        TransactionModelQuerySet
+            The TransactionModelQuerySet associated with the current JournalEntryModel instance.
+        """
+        if select_accounts:
+            return self.transactionmodel_set.all().select_related('account')
+        return self.transactionmodel_set.all()
 
     def get_txs_balances(self, txs_qs=None):
         if not txs_qs:
-            txs_qs = self.get_txs_qs()
+            txs_qs = self.get_transaction_queryset()
         balances = txs_qs.values('tx_type').annotate(
             amount__sum=Coalesce(Sum('amount'),
                                  Decimal('0.00'),
@@ -466,7 +582,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def get_txs_roles(self, txs_qs=None, exclude_cash_role: bool = False) -> Set:
         if not txs_qs:
-            txs_qs = self.get_txs_qs()
+            txs_qs = self.get_transaction_queryset()
 
         # todo: implement distinct for non SQLite Backends...
         if exclude_cash_role:
@@ -491,7 +607,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                raise_exception: bool = True,
                **kwargs):
         if not self.is_verified() or force_verify:
-            txs_qs = self.get_txs_qs()
+            txs_qs = self.get_transaction_queryset()
 
             # if not len(txs_qs):
             #     if raise_exception:
@@ -685,7 +801,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.clean(verify=verify)
                 if self.is_verified() and post_on_verify:
                     # commit is False since the super call takes place at the end of save()
-                    self.mark_as_posted(commit=False, raise_exception=True)
+                    self.mark_as_posted(commit=False, verify=False, raise_exception=True)
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)

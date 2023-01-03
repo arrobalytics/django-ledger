@@ -513,7 +513,7 @@ class LedgerWrapperMixIn(models.Model):
                         # will independently verify and populate appropriate activity for JE.
                         je.clean(verify=True)
                         if je.is_verified():
-                            je.mark_as_posted(commit=False, raise_exception=True)
+                            je.mark_as_posted(commit=False, verify=False, raise_exception=True)
                             je.mark_as_locked(commit=False, raise_exception=True)
 
                     if all([je.is_verified() for _, je in je_list.items()]):

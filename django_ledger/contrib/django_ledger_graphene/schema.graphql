@@ -1,21 +1,56 @@
 type Query {
-    allUnitOfMeasure(slugName: String!): [UnitOfMeasureList]
-    allEntityList: [EntitytList]
-    allCoa(slugName: String!): [CoaList]
-    allBankAccountList(slugName: String!): [Bank_accountList]
-    allAccounts(slugName: String!): [AccountList]
-    allBills(slugName: String!): [BillList]
-    allCustomers(slugName: String!): [CustomerList]
+  me: UserNode
+  user(
+    """The ID of the object"""
+    id: ID!
+  ): UserNode
+  users(offset: Int, before: String, after: String, first: Int, last: Int, email: String, username: String, username_Icontains: String, username_Istartswith: String, isActive: Boolean, status_Archived: Boolean, status_Verified: Boolean, status_SecondaryEmail: String): UserNodeConnection
+  allPurchaseOrder(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, dateDraft: Date, poTitle: String, poTitle_Icontains: String, poTitle_Istartswith: String): PurchaseOrderNodeConnection
+  allJournalEntries(slugName: String!, pkLedger: UUID, offset: Int, before: String, after: String, first: Int, last: Int, activity: DjangoLedgerJournalEntryModelActivityChoices, activity_Icontains: DjangoLedgerJournalEntryModelActivityChoices, activity_Istartswith: DjangoLedgerJournalEntryModelActivityChoices, timestamp: DateTime, description: String): JournalEntryNodeConnection
+  allTransactions(slugName: String!, pkJe: UUID, pkLedger: UUID, offset: Int, before: String, after: String, first: Int, last: Int, journalEntry: ID, account: ID, txType: DjangoLedgerTransactionModelTxTypeChoices, txType_Icontains: DjangoLedgerTransactionModelTxTypeChoices, txType_Istartswith: DjangoLedgerTransactionModelTxTypeChoices, amount: Decimal, amount_Icontains: Decimal, amount_Istartswith: Decimal, description: String, description_Icontains: String, description_Istartswith: String): TransactionNodeConnection
+  allLedger(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String): LedgerNodeConnection
+  allEntityUnit(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String): EntityUnitNodeConnection
+  allVendors(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, vendorName: String, vendorName_Icontains: String, vendorName_Istartswith: String, address1: String, address1_Icontains: String, address1_Istartswith: String, address2: String, address2_Icontains: String, address2_Istartswith: String, city: String, city_Icontains: String, city_Istartswith: String, state: String, state_Icontains: String, state_Istartswith: String, zipCode: String, zipCode_Icontains: String, zipCode_Istartswith: String, country: String, country_Icontains: String, country_Istartswith: String, phone: String, phone_Icontains: String, phone_Istartswith: String, email: String, email_Icontains: String, email_Istartswith: String, website: String, website_Icontains: String, website_Istartswith: String): VendorNodeConnection
+  allUnitOfMeasure(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String, unitAbbr: String, unitAbbr_Icontains: String, unitAbbr_Istartswith: String, isActive: Boolean): UnitOfMeasureNodeConnection
+  allEntityList: [EntitytList]
+  allCoa(slugName: String!): [CoaList]
+  allBankaccounts(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String, accountType: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Icontains: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Istartswith: DjangoLedgerBankAccountModelAccountTypeChoices, accountNumber: String, accountNumber_Icontains: String, accountNumber_Istartswith: String, routingNumber: String, routingNumber_Icontains: String, routingNumber_Istartswith: String, abaNumber: String, abaNumber_Icontains: String, abaNumber_Istartswith: String, cashAccount: ID, active: Boolean): BankaccountNodeConnection
+  allAccounts(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, code: String, code_Icontains: String, code_Istartswith: String, name: String, name_Icontains: String, name_Istartswith: String, locked: Boolean, active: Boolean): AccountNodeConnection
+  allBills(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, vendor: ID, xref: String, xref_Icontains: String, xref_Istartswith: String, dateDraft: Date, dateDraft_Icontains: Date, dateDraft_Istartswith: Date, terms: DjangoLedgerBillModelTermsChoices, terms_Icontains: DjangoLedgerBillModelTermsChoices, terms_Istartswith: DjangoLedgerBillModelTermsChoices, cashAccount: ID, prepaidAccount: ID, unearnedAccount: ID): BillNodeConnection
+  allCustomers(slugName: String!, offset: Int, before: String, after: String, first: Int, last: Int, customerName: String, customerName_Icontains: String, customerName_Istartswith: String, address1: String, address1_Icontains: String, address1_Istartswith: String, address2: String, address2_Icontains: String, address2_Istartswith: String, city: String, city_Icontains: String, city_Istartswith: String, state: String, state_Icontains: String, state_Istartswith: String, zipCode: String, zipCode_Icontains: String, zipCode_Istartswith: String, country: String, country_Icontains: String, country_Istartswith: String, phone: String, phone_Icontains: String, phone_Istartswith: String, email: String, email_Icontains: String, email_Istartswith: String, website: String, website_Icontains: String, website_Istartswith: String): CustomerNodeConnection
 }
 
-type UnitOfMeasureList {
-    created: DateTime!
-    updated: DateTime
-    uuid: UUID!
-    name: String!
-    unitAbbr: String!
-    isActive: Boolean!
-    entity: EntitytList!
+type UserNode implements Node {
+  """The ID of the object"""
+  id: ID!
+  lastLogin: DateTime
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+  firstName: String!
+  lastName: String!
+  email: String!
+
+  """Designates whether the user can log into this admin site."""
+  isStaff: Boolean!
+
+  """
+  Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+  """
+  isActive: Boolean!
+  dateJoined: DateTime!
+  adminOf: [EntitytList!]!
+  managedBy: [EntitytList!]!
+  pk: Int
+  archived: Boolean
+  verified: Boolean
+  secondaryEmail: String
+}
+
+"""An object with an ID"""
+interface Node {
+  """The ID of the object"""
+  id: ID!
 }
 
 """
@@ -25,310 +60,534 @@ value as specified by
 """
 scalar DateTime
 
+type EntitytList {
+  slug: String!
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  path: String!
+  depth: Int!
+  numchild: Int!
+  uuid: UUID!
+  name: String!
+  defaultCoa: CoaList
+  admin: UserNode!
+  managers(offset: Int, before: String, after: String, first: Int, last: Int, email: String, username: String, username_Icontains: String, username_Istartswith: String, isActive: Boolean, status_Archived: Boolean, status_Verified: Boolean, status_SecondaryEmail: String): UserNodeConnection!
+  hidden: Boolean!
+  accrualMethod: Boolean!
+  fyStartMonth: DjangoLedgerEntityModelFyStartMonthChoices!
+  picture: String
+  bankaccountmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String, accountType: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Icontains: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Istartswith: DjangoLedgerBankAccountModelAccountTypeChoices, accountNumber: String, accountNumber_Icontains: String, accountNumber_Istartswith: String, routingNumber: String, routingNumber_Icontains: String, routingNumber_Istartswith: String, abaNumber: String, abaNumber_Icontains: String, abaNumber_Istartswith: String, cashAccount: ID, active: Boolean): BankaccountNodeConnection!
+  chartofaccountmodelSet: [CoaList!]!
+  unitofmeasuremodelSet(offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String, unitAbbr: String, unitAbbr_Icontains: String, unitAbbr_Istartswith: String, isActive: Boolean): UnitOfMeasureNodeConnection!
+  ledgermodelSet(offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String): LedgerNodeConnection!
+  entityunitmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String): EntityUnitNodeConnection!
+  customermodelSet(offset: Int, before: String, after: String, first: Int, last: Int, customerName: String, customerName_Icontains: String, customerName_Istartswith: String, address1: String, address1_Icontains: String, address1_Istartswith: String, address2: String, address2_Icontains: String, address2_Istartswith: String, city: String, city_Icontains: String, city_Istartswith: String, state: String, state_Icontains: String, state_Istartswith: String, zipCode: String, zipCode_Icontains: String, zipCode_Istartswith: String, country: String, country_Icontains: String, country_Istartswith: String, phone: String, phone_Icontains: String, phone_Istartswith: String, email: String, email_Icontains: String, email_Istartswith: String, website: String, website_Icontains: String, website_Istartswith: String): CustomerNodeConnection!
+  vendormodelSet(offset: Int, before: String, after: String, first: Int, last: Int, vendorName: String, vendorName_Icontains: String, vendorName_Istartswith: String, address1: String, address1_Icontains: String, address1_Istartswith: String, address2: String, address2_Icontains: String, address2_Istartswith: String, city: String, city_Icontains: String, city_Istartswith: String, state: String, state_Icontains: String, state_Istartswith: String, zipCode: String, zipCode_Icontains: String, zipCode_Istartswith: String, country: String, country_Icontains: String, country_Istartswith: String, phone: String, phone_Icontains: String, phone_Istartswith: String, email: String, email_Icontains: String, email_Istartswith: String, website: String, website_Icontains: String, website_Istartswith: String): VendorNodeConnection!
+  purchaseordermodelSet(offset: Int, before: String, after: String, first: Int, last: Int, dateDraft: Date, poTitle: String, poTitle_Icontains: String, poTitle_Istartswith: String): PurchaseOrderNodeConnection!
+}
+
 """
 Leverages the internal Python implementation of UUID (uuid.UUID) to provide native UUID objects
 in fields, resolvers and input.
 """
 scalar UUID
 
-type EntitytList {
-    slug: String!
-    created: DateTime!
-    updated: DateTime
-    address1: String!
-    address2: String
-    city: String
-    state: String
-    zipCode: String
-    country: String
-    email: String
-    website: String
-    phone: String
-    parent: EntitytList
-    uuid: UUID!
-    name: String
-    hidden: Boolean!
-    fyStartMonth: DjangoLedgerEntityModelFyStartMonthChoices!
-    picture: String
-    coa: CoaList
-    childrenSet: [EntitytList!]!
-    unitofmeasuremodelSet: [UnitOfMeasureList!]!
-    customers: [CustomerList!]!
-}
-
-"""An enumeration."""
-enum DjangoLedgerEntityModelFyStartMonthChoices {
-    """January"""
-    A_1
-
-    """February"""
-    A_2
-
-    """March"""
-    A_3
-
-    """April"""
-    A_4
-
-    """May"""
-    A_5
-
-    """June"""
-    A_6
-
-    """July"""
-    A_7
-
-    """August"""
-    A_8
-
-    """September"""
-    A_9
-
-    """October"""
-    A_10
-
-    """November"""
-    A_11
-
-    """December"""
-    A_12
-}
-
 type CoaList {
-    slug: String!
-    name: String
-    created: DateTime!
-    updated: DateTime
-    uuid: UUID!
-    entity: EntitytList!
-    locked: Boolean!
-    description: String
-    accounts: [AccountList!]!
+  slug: String!
+  name: String
+  created: DateTime!
+  updated: DateTime
+  uuid: UUID!
+  entity: EntitytList!
+  locked: Boolean!
+  description: String
+  accountmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, code: String, code_Icontains: String, code_Istartswith: String, name: String, name_Icontains: String, name_Istartswith: String, locked: Boolean, active: Boolean): AccountNodeConnection!
+  entitymodel: EntitytList
 }
 
-type AccountList {
-    created: DateTime!
-    updated: DateTime
-    parent: AccountList
-    uuid: UUID!
-    code: String!
-    name: String!
-    role: DjangoLedgerAccountModelRoleChoices!
-    balanceType: DjangoLedgerAccountModelBalanceTypeChoices!
-    locked: Boolean!
-    active: Boolean!
-    coa: CoaList!
-    bankCashAccount: [Bank_accountList!]!
-    childrenSet: [AccountList!]!
-    NoneCashAccount: [BillList!]!
-    NonePrepaidAccount: [BillList!]!
-    NoneUnearnedAccount: [BillList!]!
+type AccountNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [AccountNodeEdge]!
 }
 
-"""An enumeration."""
+"""
+The Relay compliant `PageInfo` type, containing data necessary to paginate this connection.
+"""
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: String
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: String
+}
+
+"""A Relay edge containing a `AccountNode` and its cursor."""
+type AccountNodeEdge {
+  """The item at the end of the edge"""
+  node: AccountNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type AccountNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  path: String!
+  depth: Int!
+  numchild: Int!
+  uuid: UUID!
+  code: String!
+  name: String!
+  role: DjangoLedgerAccountModelRoleChoices!
+  balanceType: DjangoLedgerAccountModelBalanceTypeChoices!
+  locked: Boolean!
+  active: Boolean!
+  coaModel: CoaList!
+  bankCashAccount(offset: Int, before: String, after: String, first: Int, last: Int, name: String, name_Icontains: String, name_Istartswith: String, accountType: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Icontains: DjangoLedgerBankAccountModelAccountTypeChoices, accountType_Istartswith: DjangoLedgerBankAccountModelAccountTypeChoices, accountNumber: String, accountNumber_Icontains: String, accountNumber_Istartswith: String, routingNumber: String, routingNumber_Icontains: String, routingNumber_Istartswith: String, abaNumber: String, abaNumber_Icontains: String, abaNumber_Istartswith: String, cashAccount: ID, active: Boolean): BankaccountNodeConnection!
+  NoneCashAccount(offset: Int, before: String, after: String, first: Int, last: Int, vendor: ID, xref: String, xref_Icontains: String, xref_Istartswith: String, dateDraft: Date, dateDraft_Icontains: Date, dateDraft_Istartswith: Date, terms: DjangoLedgerBillModelTermsChoices, terms_Icontains: DjangoLedgerBillModelTermsChoices, terms_Istartswith: DjangoLedgerBillModelTermsChoices, cashAccount: ID, prepaidAccount: ID, unearnedAccount: ID): BillNodeConnection!
+  NonePrepaidAccount(offset: Int, before: String, after: String, first: Int, last: Int, vendor: ID, xref: String, xref_Icontains: String, xref_Istartswith: String, dateDraft: Date, dateDraft_Icontains: Date, dateDraft_Istartswith: Date, terms: DjangoLedgerBillModelTermsChoices, terms_Icontains: DjangoLedgerBillModelTermsChoices, terms_Istartswith: DjangoLedgerBillModelTermsChoices, cashAccount: ID, prepaidAccount: ID, unearnedAccount: ID): BillNodeConnection!
+  NoneUnearnedAccount(offset: Int, before: String, after: String, first: Int, last: Int, vendor: ID, xref: String, xref_Icontains: String, xref_Istartswith: String, dateDraft: Date, dateDraft_Icontains: Date, dateDraft_Istartswith: Date, terms: DjangoLedgerBillModelTermsChoices, terms_Icontains: DjangoLedgerBillModelTermsChoices, terms_Istartswith: DjangoLedgerBillModelTermsChoices, cashAccount: ID, prepaidAccount: ID, unearnedAccount: ID): BillNodeConnection!
+
+  """Account from Chart of Accounts to be associated with this transaction."""
+  transactionmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, journalEntry: ID, account: ID, txType: DjangoLedgerTransactionModelTxTypeChoices, txType_Icontains: DjangoLedgerTransactionModelTxTypeChoices, txType_Istartswith: DjangoLedgerTransactionModelTxTypeChoices, amount: Decimal, amount_Icontains: Decimal, amount_Istartswith: Decimal, description: String, description_Icontains: String, description_Istartswith: String): TransactionNodeConnection!
+
+  """The ID of the object"""
+  id: ID!
+}
+
 enum DjangoLedgerAccountModelRoleChoices {
-    """Current Asset"""
-    ASSET_CA_CASH
+  """Current Asset"""
+  ASSET_CA_CASH
 
-    """Marketable Securities"""
-    ASSET_CA_MKT_SEC
+  """Marketable Securities"""
+  ASSET_CA_MKT_SEC
 
-    """Receivables"""
-    ASSET_CA_RECV
+  """Receivables"""
+  ASSET_CA_RECV
 
-    """Inventory"""
-    ASSET_CA_INV
+  """Inventory"""
+  ASSET_CA_INV
 
-    """Uncollectibles"""
-    ASSET_CA_UNCOLL
+  """Uncollectibles"""
+  ASSET_CA_UNCOLL
 
-    """Prepaid"""
-    ASSET_CA_PREPAID
+  """Prepaid"""
+  ASSET_CA_PREPAID
 
-    """Other Liquid Assets"""
-    ASSET_CA_OTHER
+  """Other Liquid Assets"""
+  ASSET_CA_OTHER
 
-    """Notes Receivable"""
-    ASSET_LTI_NOTES
+  """Notes Receivable"""
+  ASSET_LTI_NOTES
 
-    """Land"""
-    ASSET_LTI_LAND
+  """Land"""
+  ASSET_LTI_LAND
 
-    """Securities"""
-    ASSET_LTI_SEC
+  """Securities"""
+  ASSET_LTI_SEC
 
-    """Property Plant & Equipment"""
-    ASSET_PPE
+  """Buildings"""
+  ASSET_PPE_BUILD
 
-    """Intangible Assets"""
-    ASSET_IA
+  """Buildings - Accum. Depreciation"""
+  ASSET_PPE_BUILD_ACCUM_DEPR
 
-    """Other Assets"""
-    ASSET_ADJUSTMENT
+  """Plant"""
+  ASSET_PPE_PLANT
 
-    """Accounts Payable"""
-    LIA_CL_ACC_PAY
+  """Plant - Accum. Depreciation"""
+  ASSET_PPE_PLANT_DEPR
 
-    """Wages Payable"""
-    LIA_CL_WAGE_PAY
+  """Equipment"""
+  ASSET_PPE_EQUIP
 
-    """Wages Payable"""
-    LIA_CL_WAGE_PAY_2
+  """Equipment - Accum. Depreciation"""
+  ASSET_PPE_EQUIP_ACCUM_DEPR
 
-    """Notes Payable"""
-    LIA_CL_ST_NOTES_PAYABLE
+  """Intangible Assets"""
+  ASSET_IA
 
-    """Current Maturities of Long Tern Debt"""
-    LIA_CL_LTD_MAT
+  """Intangible Assets - Accum. Amortization"""
+  ASSET_IA_ACCUM_AMORT
 
-    """Deferred Revenue"""
-    LIA_CL_DEF_REV
+  """Other Assets"""
+  ASSET_ADJUSTMENT
 
-    """Other Liabilities"""
-    LIA_CL_OTHER
+  """Accounts Payable"""
+  LIA_CL_ACC_PAYABLE
 
-    """Notes Payable"""
-    LIA_LTL_NOTES
+  """Wages Payable"""
+  LIA_CL_WAGES_PAYABLE
 
-    """Bonds Payable"""
-    LIA_LTL_BONDS
+  """Interest Payable"""
+  LIA_CL_INT_PAYABLE
 
-    """Mortgage Payable"""
-    LIA_LTL_MORTGAGE
+  """Taxes Payable"""
+  LIA_CL_TAXES_PAYABLE
 
-    """Capital"""
-    EQ_CAPITAL
+  """Notes Payable"""
+  LIA_CL_ST_NOTES_PAYABLE
 
-    """Common Stock"""
-    EQ_STOCK_C
+  """Current Maturities of Long Tern Debt"""
+  LIA_CL_LTD_MAT
 
-    """Preferred Stock"""
-    EQ_STOCK_P
+  """Deferred Revenue"""
+  LIA_CL_DEF_REV
 
-    """Other Equity Adjustments"""
-    EQ_ADJUSTMENT
+  """Other Liabilities"""
+  LIA_CL_OTHER
 
-    """Sales Income"""
-    IN_SALES
+  """Notes Payable"""
+  LIA_LTL_NOTES
 
-    """Passive Income"""
-    IN_PASS
+  """Bonds Payable"""
+  LIA_LTL_BONDS
 
-    """Other Income"""
-    IN_OTHER
+  """Mortgage Payable"""
+  LIA_LTL_MORTGAGE
 
-    """Cost of Goods Sold"""
-    EX_COGS
+  """Capital"""
+  EQ_CAPITAL
 
-    """Operational Expense"""
-    EX_OP
+  """Common Stock"""
+  EQ_STOCK_COMMON
 
-    """Interest Expense"""
-    EX_INTEREST
+  """Preferred Stock"""
+  EQ_STOCK_PREFERRED
 
-    """Tax Expense"""
-    EX_TAXES
+  """Other Equity Adjustments"""
+  EQ_ADJUSTMENT
 
-    """Capital Expense"""
-    EX_CAP
+  """Dividends & Distributions to Shareholders"""
+  EQ_DIVIDENDS
 
-    """Other Expense"""
-    EX_OTHER
+  """Operational Income"""
+  IN_OPERATIONAL
+
+  """Investing/Passive Income"""
+  IN_PASSIVE
+
+  """Interest Income"""
+  IN_INTEREST
+
+  """Capital Gain/Loss Income"""
+  IN_GAIN_LOSS
+
+  """Other Income"""
+  IN_OTHER
+
+  """Cost of Goods Sold"""
+  EX_COGS
+
+  """Regular Expense"""
+  EX_REGULAR
+
+  """Interest Expense"""
+  EX_INTEREST
+
+  """Tax Expense"""
+  EX_TAXES
+
+  """Capital Expense"""
+  EX_CAPITAL
+
+  """Depreciation Expense"""
+  EX_DEPRECIATION
+
+  """Amortization Expense"""
+  EX_AMORTIZATION
+
+  """Other Expense"""
+  EX_OTHER
 }
 
-"""An enumeration."""
 enum DjangoLedgerAccountModelBalanceTypeChoices {
-    """Credit"""
-    CREDIT
+  """Credit"""
+  CREDIT
 
-    """Debit"""
-    DEBIT
+  """Debit"""
+  DEBIT
 }
 
-type Bank_accountList {
-    created: DateTime!
-    updated: DateTime
-    uuid: UUID!
-    name: String
-    accountNumber: String
-    routingNumber: String
-    abaNumber: String
-    accountType: DjangoLedgerBankAccountModelAccountTypeChoices!
-    cashAccount: AccountList
-    active: Boolean!
-    hidden: Boolean!
+type BankaccountNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [BankaccountNodeEdge]!
 }
 
-"""An enumeration."""
+"""A Relay edge containing a `BankaccountNode` and its cursor."""
+type BankaccountNodeEdge {
+  """The item at the end of the edge"""
+  node: BankaccountNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type BankaccountNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  accountNumber: String
+  routingNumber: String
+  abaNumber: String
+  swiftNumber: String
+  accountType: DjangoLedgerBankAccountModelAccountTypeChoices!
+  uuid: UUID!
+  name: String
+  entityModel: EntitytList!
+  cashAccount: AccountNode!
+  active: Boolean!
+  hidden: Boolean!
+
+  """The ID of the object"""
+  id: ID!
+}
+
 enum DjangoLedgerBankAccountModelAccountTypeChoices {
-    """Checking"""
-    CHECKING
+  """Checking"""
+  CHECKING
 
-    """Savings"""
-    SAVINGS
-
-    """Money Market"""
-    MONEY_MKT
+  """Savings"""
+  SAVINGS
 }
 
-type BillList {
-    created: DateTime!
-    updated: DateTime
-    terms: DjangoLedgerBillModelTermsChoices!
+type BillNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
 
-    """"""
-    amountDue: Decimal!
-
-    """"""
-    amountPaid: Decimal!
-
-    """"""
-    amountReceivable: Decimal!
-
-    """"""
-    amountUnearned: Decimal!
-
-    """"""
-    amountEarned: Decimal!
-    paid: Boolean!
-    paidDate: Date
-    date: Date!
-    dueDate: Date!
-    void: Boolean!
-    voidDate: Date
-    accrue: Boolean!
-
-    """"""
-    progress: Decimal!
-    cashAccount: AccountList
-    prepaidAccount: AccountList
-    unearnedAccount: AccountList
-    markdownNotes: String
-    uuid: UUID!
-    billNumber: String!
-    billStatus: DjangoLedgerBillModelBillStatusChoices!
-    xref: String
-    additionalInfo: JSONString!
+  """Contains the nodes in this connection."""
+  edges: [BillNodeEdge]!
 }
 
-"""An enumeration."""
-enum DjangoLedgerBillModelTermsChoices {
-    """Due On Receipt"""
-    ON_RECEIPT
+"""A Relay edge containing a `BillNode` and its cursor."""
+type BillNodeEdge {
+  """The item at the end of the edge"""
+  node: BillNode
 
-    """Net 30 Days"""
-    NET_30
+  """A cursor for use in pagination"""
+  cursor: String!
+}
 
-    """Net 60 Days"""
-    NET_60
+type BillNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  amountDue: Decimal!
+  amountPaid: Decimal!
+  amountReceivable: Decimal!
+  amountUnearned: Decimal!
+  amountEarned: Decimal!
+  accrue: Boolean!
+  progress: Decimal!
+  ledger: LedgerNode!
+  cashAccount: AccountNode
+  prepaidAccount: AccountNode
+  unearnedAccount: AccountNode
+  terms: DjangoLedgerBillModelTermsChoices!
+  dateDue: Date
+  markdownNotes: String
+  uuid: UUID!
+  billNumber: String!
+  billStatus: DjangoLedgerBillModelBillStatusChoices!
+  xref: String
+  vendor: VendorNode!
+  additionalInfo: JSONString
+  dateDraft: Date
+  dateInReview: Date
+  dateApproved: Date
+  datePaid: Date
+  dateVoid: Date
+  dateCanceled: Date
 
-    """Net 90 Days"""
-    NET_90
+  """The ID of the object"""
+  id: ID!
 }
 
 """The `Decimal` scalar type represents a python Decimal."""
 scalar Decimal
+
+type LedgerNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  uuid: UUID!
+  name: String
+  entity: EntitytList!
+  posted: Boolean!
+  locked: Boolean!
+  hidden: Boolean!
+  billmodel: BillNode
+  journalEntries(offset: Int, before: String, after: String, first: Int, last: Int, activity: DjangoLedgerJournalEntryModelActivityChoices, activity_Icontains: DjangoLedgerJournalEntryModelActivityChoices, activity_Istartswith: DjangoLedgerJournalEntryModelActivityChoices, timestamp: DateTime, description: String): JournalEntryNodeConnection!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+type JournalEntryNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [JournalEntryNodeEdge]!
+}
+
+"""A Relay edge containing a `JournalEntryNode` and its cursor."""
+type JournalEntryNodeEdge {
+  """The item at the end of the edge"""
+  node: JournalEntryNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type JournalEntryNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  uuid: UUID!
+  jeNumber: String!
+  timestamp: DateTime!
+  description: String
+  entityUnit: EntityUnitNode
+  activity: DjangoLedgerJournalEntryModelActivityChoices
+  origin: String
+  posted: Boolean!
+  locked: Boolean!
+  ledger: LedgerNode!
+
+  """Journal Entry to be associated with this transaction."""
+  transactionmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, journalEntry: ID, account: ID, txType: DjangoLedgerTransactionModelTxTypeChoices, txType_Icontains: DjangoLedgerTransactionModelTxTypeChoices, txType_Istartswith: DjangoLedgerTransactionModelTxTypeChoices, amount: Decimal, amount_Icontains: Decimal, amount_Istartswith: Decimal, description: String, description_Icontains: String, description_Istartswith: String): TransactionNodeConnection!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+type EntityUnitNode implements Node {
+  name: String
+  created: DateTime!
+  updated: DateTime
+  path: String!
+  depth: Int!
+  numchild: Int!
+  uuid: UUID!
+  slug: String!
+  entity: EntitytList!
+  documentPrefix: String!
+  active: Boolean!
+  hidden: Boolean!
+  journalentrymodelSet(offset: Int, before: String, after: String, first: Int, last: Int, activity: DjangoLedgerJournalEntryModelActivityChoices, activity_Icontains: DjangoLedgerJournalEntryModelActivityChoices, activity_Istartswith: DjangoLedgerJournalEntryModelActivityChoices, timestamp: DateTime, description: String): JournalEntryNodeConnection!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+enum DjangoLedgerJournalEntryModelActivityChoices {
+  """Operating"""
+  OP
+
+  """Purchase/Disposition of PPE"""
+  INV_PPE
+
+  """Purchase/Disposition of Securities"""
+  INV_SECURITIES
+
+  """Investing Activity Other"""
+  INV
+
+  """Payoff of Short Term Debt"""
+  FIN_STD
+
+  """Payoff of Long Term Debt"""
+  FIN_LTD
+
+  """Issuance of Common Stock, Preferred Stock or Capital Contribution"""
+  FIN_EQUITY
+
+  """Dividends or Distributions to Shareholders"""
+  FIN_DIVIDENDS
+
+  """Financing Activity Other"""
+  FIN
+}
+
+type TransactionNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [TransactionNodeEdge]!
+}
+
+"""A Relay edge containing a `TransactionNode` and its cursor."""
+type TransactionNodeEdge {
+  """The item at the end of the edge"""
+  node: TransactionNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type TransactionNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  uuid: UUID!
+  txType: DjangoLedgerTransactionModelTxTypeChoices!
+
+  """Journal Entry to be associated with this transaction."""
+  journalEntry: JournalEntryNode!
+
+  """Account from Chart of Accounts to be associated with this transaction."""
+  account: AccountNode!
+
+  """Account of the transaction."""
+  amount: Decimal
+
+  """A description to be included with this individual transaction"""
+  description: String
+
+  """The ID of the object"""
+  id: ID!
+}
+
+enum DjangoLedgerTransactionModelTxTypeChoices {
+  """Credit"""
+  CREDIT
+
+  """Debit"""
+  DEBIT
+}
+
+enum DjangoLedgerBillModelTermsChoices {
+  """Due On Receipt"""
+  ON_RECEIPT
+
+  """Net 30 Days"""
+  NET_30
+
+  """Net 60 Days"""
+  NET_60
+
+  """Net 90 Days"""
+  NET_90
+}
 
 """
 The `Date` scalar type represents a Date
@@ -337,19 +596,64 @@ value as specified by
 """
 scalar Date
 
-"""An enumeration."""
 enum DjangoLedgerBillModelBillStatusChoices {
-    """Draft"""
-    DRAFT
+  """Draft"""
+  DRAFT
 
-    """In Review"""
-    IN_REVIEW
+  """In Review"""
+  IN_REVIEW
 
-    """Approved"""
-    APPROVED
+  """Approved"""
+  APPROVED
 
-    """Canceled"""
-    CANCELED
+  """Paid"""
+  PAID
+
+  """Canceled"""
+  CANCELED
+
+  """Void"""
+  VOID
+}
+
+type VendorNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  accountNumber: String
+  routingNumber: String
+  abaNumber: String
+  swiftNumber: String
+  accountType: DjangoLedgerVendorModelAccountTypeChoices!
+  taxIdNumber: String
+  uuid: UUID!
+  vendorNumber: String
+  vendorName: String!
+  entityModel: EntitytList!
+  description: String!
+  active: Boolean!
+  hidden: Boolean!
+  additionalInfo: JSONString
+  billmodelSet(offset: Int, before: String, after: String, first: Int, last: Int, vendor: ID, xref: String, xref_Icontains: String, xref_Istartswith: String, dateDraft: Date, dateDraft_Icontains: Date, dateDraft_Istartswith: Date, terms: DjangoLedgerBillModelTermsChoices, terms_Icontains: DjangoLedgerBillModelTermsChoices, terms_Istartswith: DjangoLedgerBillModelTermsChoices, cashAccount: ID, prepaidAccount: ID, unearnedAccount: ID): BillNodeConnection!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+enum DjangoLedgerVendorModelAccountTypeChoices {
+  """Checking"""
+  CHECKING
+
+  """Savings"""
+  SAVINGS
 }
 
 """
@@ -360,23 +664,665 @@ schema (one of the key benefits of GraphQL).
 """
 scalar JSONString
 
-type CustomerList {
-    created: DateTime!
-    updated: DateTime
-    address1: String!
-    address2: String
-    city: String
-    state: String
-    zipCode: String
-    country: String
-    email: String
-    website: String
-    phone: String
-    uuid: UUID!
-    customerName: String!
-    entity: EntitytList!
-    description: String!
-    active: Boolean!
-    hidden: Boolean!
-    additionalInfo: JSONString
+type UserNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [UserNodeEdge]!
+}
+
+"""A Relay edge containing a `UserNode` and its cursor."""
+type UserNodeEdge {
+  """The item at the end of the edge"""
+  node: UserNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+enum DjangoLedgerEntityModelFyStartMonthChoices {
+  """January"""
+  A_1
+
+  """February"""
+  A_2
+
+  """March"""
+  A_3
+
+  """April"""
+  A_4
+
+  """May"""
+  A_5
+
+  """June"""
+  A_6
+
+  """July"""
+  A_7
+
+  """August"""
+  A_8
+
+  """September"""
+  A_9
+
+  """October"""
+  A_10
+
+  """November"""
+  A_11
+
+  """December"""
+  A_12
+}
+
+type UnitOfMeasureNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [UnitOfMeasureNodeEdge]!
+}
+
+"""A Relay edge containing a `UnitOfMeasureNode` and its cursor."""
+type UnitOfMeasureNodeEdge {
+  """The item at the end of the edge"""
+  node: UnitOfMeasureNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type UnitOfMeasureNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  uuid: UUID!
+  name: String!
+  unitAbbr: String!
+  isActive: Boolean!
+  entity: EntitytList!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+type LedgerNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [LedgerNodeEdge]!
+}
+
+"""A Relay edge containing a `LedgerNode` and its cursor."""
+type LedgerNodeEdge {
+  """The item at the end of the edge"""
+  node: LedgerNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type EntityUnitNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [EntityUnitNodeEdge]!
+}
+
+"""A Relay edge containing a `EntityUnitNode` and its cursor."""
+type EntityUnitNodeEdge {
+  """The item at the end of the edge"""
+  node: EntityUnitNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type CustomerNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [CustomerNodeEdge]!
+}
+
+"""A Relay edge containing a `CustomerNode` and its cursor."""
+type CustomerNodeEdge {
+  """The item at the end of the edge"""
+  node: CustomerNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type CustomerNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  salesTaxRate: Float
+  uuid: UUID!
+  customerName: String!
+  customerNumber: String!
+  entityModel: EntitytList!
+  description: String!
+  active: Boolean!
+  hidden: Boolean!
+  additionalInfo: JSONString
+
+  """The ID of the object"""
+  id: ID!
+}
+
+type VendorNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [VendorNodeEdge]!
+}
+
+"""A Relay edge containing a `VendorNode` and its cursor."""
+type VendorNodeEdge {
+  """The item at the end of the edge"""
+  node: VendorNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type PurchaseOrderNodeConnection {
+  """Pagination data for this connection."""
+  pageInfo: PageInfo!
+
+  """Contains the nodes in this connection."""
+  edges: [PurchaseOrderNodeEdge]!
+}
+
+"""A Relay edge containing a `PurchaseOrderNode` and its cursor."""
+type PurchaseOrderNodeEdge {
+  """The item at the end of the edge"""
+  node: PurchaseOrderNode
+
+  """A cursor for use in pagination"""
+  cursor: String!
+}
+
+type PurchaseOrderNode implements Node {
+  created: DateTime!
+  updated: DateTime
+  markdownNotes: String
+  uuid: UUID!
+  poNumber: String!
+  poTitle: String!
+  poStatus: DjangoLedgerPurchaseOrderModelPoStatusChoices!
+  poAmount: Decimal!
+  poAmountReceived: Decimal!
+  entity: EntitytList!
+  dateDraft: Date
+  dateInReview: Date
+  dateApproved: Date
+  dateVoid: Date
+  dateFulfilled: Date
+  dateCanceled: Date
+
+  """The ID of the object"""
+  id: ID!
+}
+
+enum DjangoLedgerPurchaseOrderModelPoStatusChoices {
+  """Draft"""
+  DRAFT
+
+  """In Review"""
+  IN_REVIEW
+
+  """Approved"""
+  APPROVED
+
+  """Fulfilled"""
+  FULFILLED
+
+  """Canceled"""
+  CANCELED
+
+  """Void"""
+  VOID
+}
+
+type Mutation {
+  """
+  Register user with fields defined in the settings.
+  
+  If the email field of the user model is part of the
+  registration fields (default), check if there is
+  no user with that email or as a secondary email.
+  
+  If it exists, it does not register the user,
+  even if the email field is not defined as unique
+  (default of the default django user model).
+  
+  When creating the user, it also creates a `UserStatus`
+  related to that user, making it possible to track
+  if the user is archived, verified and has a secondary
+  email.
+  
+  Send account verification email.
+  
+  If allowed to not verified users login, return token.
+  """
+  register(email: String!, username: String!, password1: String!, password2: String!): Register
+
+  """
+  Verify user account.
+  
+  Receive the token that was sent by email.
+  If the token is valid, make the user verified
+  by making the `user.status.verified` field true.
+  """
+  verifyAccount(token: String!): VerifyAccount
+
+  """
+  Sends activation email.
+  
+  It is called resend because theoretically
+  the first activation email was sent when
+  the user registered.
+  
+  If there is no user with the requested email,
+  a successful response is returned.
+  """
+  resendActivationEmail(email: String!): ResendActivationEmail
+
+  """
+  Send password reset email.
+  
+  For non verified users, send an activation
+  email instead.
+  
+  Accepts both primary and secondary email.
+  
+  If there is no user with the requested email,
+  a successful response is returned.
+  """
+  sendPasswordResetEmail(email: String!): SendPasswordResetEmail
+
+  """
+  Change user password without old password.
+  
+  Receive the token that was sent by email.
+  
+  If token and new passwords are valid, update
+  user password and in case of using refresh
+  tokens, revoke all of them.
+  """
+  passwordReset(token: String!, newPassword1: String!, newPassword2: String!): PasswordReset
+
+  """
+  Change account password when user knows the old password.
+  
+  A new token and refresh token are sent. User must be verified.
+  """
+  passwordChange(oldPassword: String!, newPassword1: String!, newPassword2: String!): PasswordChange
+
+  """
+  Archive account and revoke refresh tokens.
+  
+  User must be verified and confirm password.
+  """
+  archiveAccount(password: String!): ArchiveAccount
+
+  """
+  Delete account permanently or make `user.is_active=False`.
+  
+  The behavior is defined on settings.
+  Anyway user refresh tokens are revoked.
+  
+  User must be verified and confirm password.
+  """
+  deleteAccount(password: String!): DeleteAccount
+
+  """
+  Update user model fields, defined on settings.
+  
+  User must be verified.
+  """
+  updateAccount(firstName: String, lastName: String): UpdateAccount
+
+  """
+  Send activation to secondary email.
+  
+  User must be verified and confirm password.
+  """
+  sendSecondaryEmailActivation(email: String!, password: String!): SendSecondaryEmailActivation
+
+  """
+  Verify user secondary email.
+  
+  Receive the token that was sent by email.
+  User is already verified when using this mutation.
+  
+  If the token is valid, add the secondary email
+  to `user.status.secondary_email` field.
+  
+  Note that until the secondary email is verified,
+  it has not been saved anywhere beyond the token,
+  so it can still be used to create a new account.
+  After being verified, it will no longer be available.
+  """
+  verifySecondaryEmail(token: String!): VerifySecondaryEmail
+
+  """
+  Swap between primary and secondary emails.
+  
+  Require password confirmation.
+  """
+  swapEmails(password: String!): SwapEmails
+
+  """
+  Obtain JSON web token for given user.
+  
+  Allow to perform login with different fields,
+  and secondary email if set. The fields are
+  defined on settings.
+  
+  Not verified users can login by default. This
+  can be changes on settings.
+  
+  If user is archived, make it unarchive and
+  return `unarchiving=True` on output.
+  """
+  tokenAuth(password: String!, email: String, username: String): ObtainJSONWebToken
+
+  """Same as `grapgql_jwt` implementation, with standard output."""
+  verifyToken(token: String): VerifyToken
+
+  """Same as `grapgql_jwt` implementation, with standard output."""
+  refreshToken(token: String): RefreshToken
+
+  """Same as `grapgql_jwt` implementation, with standard output."""
+  revokeToken(refreshToken: String): RevokeToken
+  createBankAccount(abaNumber: String!, accountNumber: String!, accountType: String!, active: Boolean!, cashAccount: ID!, name: String!, routingNumber: String!, slugName: String!): BankAccountMutation
+  createCustomer(address1: String!, address2: String!, city: String!, country: String!, customerName: String!, email: String!, phone: String!, slugName: String!, state: String!, website: String!, zipCode: String!): CustomerMutation
+}
+
+"""
+Register user with fields defined in the settings.
+
+If the email field of the user model is part of the
+registration fields (default), check if there is
+no user with that email or as a secondary email.
+
+If it exists, it does not register the user,
+even if the email field is not defined as unique
+(default of the default django user model).
+
+When creating the user, it also creates a `UserStatus`
+related to that user, making it possible to track
+if the user is archived, verified and has a secondary
+email.
+
+Send account verification email.
+
+If allowed to not verified users login, return token.
+"""
+type Register {
+  success: Boolean
+  errors: ExpectedErrorType
+  token: String
+}
+
+"\n    Errors messages and codes mapped to\n    fields or non fields errors.\n    Example:\n    {\n        field_name: [\n            {\n                \"message\": \"error message\",\n                \"code\": \"error_code\"\n            }\n        ],\n        other_field: [\n            {\n                \"message\": \"error message\",\n                \"code\": \"error_code\"\n            }\n        ],\n        nonFieldErrors: [\n            {\n                \"message\": \"error message\",\n                \"code\": \"error_code\"\n            }\n        ]\n    }\n    "
+scalar ExpectedErrorType
+
+"""
+Verify user account.
+
+Receive the token that was sent by email.
+If the token is valid, make the user verified
+by making the `user.status.verified` field true.
+"""
+type VerifyAccount {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Sends activation email.
+
+It is called resend because theoretically
+the first activation email was sent when
+the user registered.
+
+If there is no user with the requested email,
+a successful response is returned.
+"""
+type ResendActivationEmail {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Send password reset email.
+
+For non verified users, send an activation
+email instead.
+
+Accepts both primary and secondary email.
+
+If there is no user with the requested email,
+a successful response is returned.
+"""
+type SendPasswordResetEmail {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Change user password without old password.
+
+Receive the token that was sent by email.
+
+If token and new passwords are valid, update
+user password and in case of using refresh
+tokens, revoke all of them.
+"""
+type PasswordReset {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Change account password when user knows the old password.
+
+A new token and refresh token are sent. User must be verified.
+"""
+type PasswordChange {
+  success: Boolean
+  errors: ExpectedErrorType
+  token: String
+}
+
+"""
+Archive account and revoke refresh tokens.
+
+User must be verified and confirm password.
+"""
+type ArchiveAccount {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Delete account permanently or make `user.is_active=False`.
+
+The behavior is defined on settings.
+Anyway user refresh tokens are revoked.
+
+User must be verified and confirm password.
+"""
+type DeleteAccount {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Update user model fields, defined on settings.
+
+User must be verified.
+"""
+type UpdateAccount {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Send activation to secondary email.
+
+User must be verified and confirm password.
+"""
+type SendSecondaryEmailActivation {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Verify user secondary email.
+
+Receive the token that was sent by email.
+User is already verified when using this mutation.
+
+If the token is valid, add the secondary email
+to `user.status.secondary_email` field.
+
+Note that until the secondary email is verified,
+it has not been saved anywhere beyond the token,
+so it can still be used to create a new account.
+After being verified, it will no longer be available.
+"""
+type VerifySecondaryEmail {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Swap between primary and secondary emails.
+
+Require password confirmation.
+"""
+type SwapEmails {
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""
+Obtain JSON web token for given user.
+
+Allow to perform login with different fields,
+and secondary email if set. The fields are
+defined on settings.
+
+Not verified users can login by default. This
+can be changes on settings.
+
+If user is archived, make it unarchive and
+return `unarchiving=True` on output.
+"""
+type ObtainJSONWebToken {
+  payload: GenericScalar!
+  refreshExpiresIn: Int!
+  success: Boolean
+  errors: ExpectedErrorType
+  user: UserNode
+  unarchiving: Boolean
+  token: String!
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+"""Same as `grapgql_jwt` implementation, with standard output."""
+type VerifyToken {
+  payload: GenericScalar!
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+"""Same as `grapgql_jwt` implementation, with standard output."""
+type RefreshToken {
+  payload: GenericScalar!
+  refreshExpiresIn: Int!
+  success: Boolean
+  errors: ExpectedErrorType
+  token: String!
+}
+
+"""Same as `grapgql_jwt` implementation, with standard output."""
+type RevokeToken {
+  revoked: Int!
+  success: Boolean
+  errors: ExpectedErrorType
+}
+
+type BankAccountMutation {
+  bankAccount: BankAccountType
+}
+
+type BankAccountType {
+  created: DateTime!
+  updated: DateTime
+  accountNumber: String
+  routingNumber: String
+  abaNumber: String
+  swiftNumber: String
+  accountType: DjangoLedgerBankAccountModelAccountTypeChoices!
+  uuid: UUID!
+  name: String
+  entityModel: EntitytList!
+  cashAccount: AccountNode!
+  active: Boolean!
+  hidden: Boolean!
+}
+
+type CustomerMutation {
+  customer: CustomerType
+}
+
+type CustomerType {
+  created: DateTime!
+  updated: DateTime
+  address1: String!
+  address2: String
+  city: String
+  state: String
+  zipCode: String
+  country: String
+  email: String
+  website: String
+  phone: String
+  salesTaxRate: Float
+  uuid: UUID!
+  customerName: String!
+  customerNumber: String!
+  entityModel: EntitytList!
+  description: String!
+  active: Boolean!
+  hidden: Boolean!
+  additionalInfo: JSONString
 }

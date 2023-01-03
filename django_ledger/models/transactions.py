@@ -25,13 +25,12 @@ from django_ledger.models.unit import EntityUnitModel
 One of the major model which is used for storing the Transactions recorded in the entity model
 Every transaction which has an financial implication must be recorded in the books
 
-For each transaction, the debits and credits should be matched. Ay transaction will be reflecting in the Financial statements only after the same has been posted
-
-
+For each transaction, the debits and credits should be matched. Ay transaction will be reflecting in the Financial 
+statements only after the same has been posted
 """
 
 
-class TransactionQuerySet(models.QuerySet):
+class TransactionModelQuerySet(models.QuerySet):
     """
     A custom defined Query Set for the TransactionModel.
     This implements multiple methods or queries that we need to run to get a list of all the transactions.
@@ -89,7 +88,7 @@ class TransactionQuerySet(models.QuerySet):
 class TransactionModelAdmin(models.Manager):
 
     def get_queryset(self):
-        return TransactionQuerySet(self.model, using=self._db)
+        return TransactionModelQuerySet(self.model, using=self._db)
 
     def for_user(self, user_model):
         return self.filter(

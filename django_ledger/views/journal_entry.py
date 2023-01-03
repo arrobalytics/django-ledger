@@ -34,7 +34,7 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, ListView):
         sort = self.request.GET.get('sort')
         if not sort:
             sort = '-updated'
-        return JournalEntryModel.on_coa.for_ledger(
+        return JournalEntryModel.objects.for_ledger(
             ledger_pk=self.kwargs['ledger_pk'],
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
@@ -55,7 +55,7 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, DetailView):
     http_method_names = ['get']
 
     def get_queryset(self):
-        return JournalEntryModel.on_coa.for_ledger(
+        return JournalEntryModel.objects.for_ledger(
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user
@@ -87,7 +87,7 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         })
 
     def get_queryset(self):
-        return JournalEntryModel.on_coa.for_ledger(
+        return JournalEntryModel.objects.for_ledger(
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],
             user_model=self.request.user

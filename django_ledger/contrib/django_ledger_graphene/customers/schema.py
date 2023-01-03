@@ -1,12 +1,10 @@
-from graphene import relay
 import graphene
+from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import CustomerModel
 from graphene_django.filter import DjangoFilterConnectionField
 
-import graphene
-from graphene_django import DjangoObjectType
 from django_ledger.models import CustomerModel, EntityModel
+
 
 class CustomerNode(DjangoObjectType):
     class Meta:

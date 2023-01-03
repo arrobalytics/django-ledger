@@ -1,5 +1,4 @@
 import graphene
-
 from graphene_django import DjangoObjectType
 
 from django_ledger.models.bank_account import BankAccountModel

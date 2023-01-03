@@ -11,6 +11,13 @@ markdown = "~=3.4.1"
 faker = "~=15.3.3"
 pillow = ">=9.3.0"
 
+[graphql]
+django-filter = ">=2.1.0"
+graphene = ">=3.2.1"
+graphene_django = ">=3.0.0"
+django-graphql-jwt = "*"
+django-graphql-auth = "*"
+
 [dev-packages]
 jupyterlab = "*"
 sphinx = "*"
@@ -22,8 +29,11 @@ twine = "*"
 python-dotenv = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.11"
 
 [scripts]
 publish-package-test = "twine upload --repository testpypi -u __token__ -p ${DJL_PYPI_TEST_TOKEN} dist/*"
 publish-package = "twine upload -u __token__ -p ${DJL_PYPI_TOKEN} dist/*"
+
+generate-graphql-schema = "python manage.py graphql_schema --schema django_ledger.contrib.django_ledger_graphene.api.schema --out django_ledger/contrib/django_ledger_graphene/schema.graphql --indent 2"
+generate-graphql-introspection = "python manage.py graphql_schema --schema django_ledger.contrib.django_ledger_graphene.api.schema --out django_ledger/contrib/django_ledger_graphene/schema.json --indent 2"
