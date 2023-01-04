@@ -17,9 +17,5 @@ class InvalidRoleError(ValidationError):
     pass
 
 
-class JournalEntryValidationError(ValidationError):
-    pass
-
-
 class TransactionNotInBalanceError(ValidationError):
     pass

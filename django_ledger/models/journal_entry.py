@@ -31,7 +31,7 @@ JE is responsible for programmatically determine the kind of operation for the J
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
-from typing import Set, Union
+from typing import Set, Union, Optional, Dict, Tuple
 from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist
@@ -42,18 +42,23 @@ from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.exceptions import JournalEntryValidationError
 from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
                                     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
                                     GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE,
                                     GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES)
+from django_ledger.models.accounts import CREDIT, DEBIT
+from django_ledger.models.entity import EntityStateModel, EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
-from django_ledger.models.transactions import TransactionModelQuerySet
+from django_ledger.models.transactions import TransactionModelQuerySet, TransactionModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
                                     DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX)
+
+
+class JournalEntryValidationError(ValidationError):
+    pass
 
 
 class JournalEntryModelQuerySet(QuerySet):
@@ -358,6 +363,79 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self._verified
 
+    def is_balance_valid(self, txs_qs: Optional[TransactionModelQuerySet] = None, raise_exception: bool = True) -> bool:
+        """
+        Checks if CREDITs and DEBITs are equal.
+
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
+            Optional pre-fetched JE instance TransactionModelQuerySet. Will be validated if provided.
+
+        Returns
+        -------
+        bool
+            True if JE balances are valid (i.e. are equal).
+        """
+        if len(txs_qs) > 0:
+            balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
+            return balances[CREDIT] == balances[DEBIT]
+        return True
+
+    def is_cash_involved(self, txs_qs=None):
+        return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
+
+    def is_operating(self):
+        return self.activity in [
+            self.OPERATING_ACTIVITY
+        ]
+
+    def is_financing(self):
+        return self.activity in [
+            self.FINANCING_EQUITY,
+            self.FINANCING_LTD,
+            self.FINANCING_DIVIDENDS,
+            self.FINANCING_STD,
+            self.FINANCING_OTHER
+        ]
+
+    def is_investing(self):
+        return self.activity in [
+            self.INVESTING_SECURITIES,
+            self.INVESTING_PPE,
+            self.INVESTING_OTHER
+        ]
+
+    def is_txs_qs_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
+        """
+        Validates a given TransactionModelQuerySet against the JournalEntryModel instance.
+
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
+            The queryset to validate.
+
+        raise_exception: bool
+            Raises JournalEntryValidationError if TransactionModelQuerySet is not valid.
+
+        Raises
+        ------
+        JournalEntryValidationError if JE model is invalid and raise_exception is True.
+
+        Returns
+        -------
+        bool
+            True if valid, otherwise False.
+        """
+        if not isinstance(txs_qs, TransactionModelQuerySet):
+            raise JournalEntryValidationError('Must pass an instance of TransactionModelQuerySet')
+
+        is_valid = all(tx.journal_entry_id == self.uuid for tx in txs_qs)
+        if not is_valid and raise_exception:
+            raise JournalEntryValidationError('Invalid TransactionModelQuerySet provided. All Transactions must be ',
+                                              f'associated with LedgerModel {self.uuid}')
+        return is_valid
+
     def get_absolute_url(self) -> str:
 
         return reverse('django_ledger:je-detail',
@@ -410,7 +488,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def can_lock(self) -> bool:
         """
         Determines if a JournalEntryModel can be locked.
-        Locked transactions cannot be modified.
+        Locked JournalEntryModels cannot be modified.
 
         Returns
         -------
@@ -421,7 +499,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.locked
         ])
 
-    def can_unlock(self) -> locked:
+    def can_unlock(self) -> bool:
         """
         Determines if a JournalEntryModel can be un-locked.
         Locked transactions cannot be modified.
@@ -458,7 +536,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             Additional keyword arguments.
         """
         if verify:
-            txs_qs = self.verify()
+            txs_qs, verified = self.verify()
 
         if not self.can_post(ignore_verify=False):
             if raise_exception:
@@ -555,7 +633,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
-        Fetched the TransactionModelQuerySet associated with the JournalEntryModel instance.
+        Fetches the TransactionModelQuerySet associated with the JournalEntryModel instance.
 
         Parameters
         ----------
@@ -571,18 +649,105 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return self.transactionmodel_set.all().select_related('account')
         return self.transactionmodel_set.all()
 
-    def get_txs_balances(self, txs_qs=None):
+    def get_txs_balances(self,
+                         txs_qs: Optional[TransactionModelQuerySet] = None,
+                         as_dict: bool = False) -> Union[TransactionModelQuerySet, Dict]:
+        """
+        Fetches the sum total of CREDITs and DEBITs associated with the JournalEntryModel instance. This method
+        performs a reduction/aggregation at the database level and fetches exactly two records. Optionally,
+        may pass an  existing TransactionModelQuerySet if previously fetched. Additional validation occurs to ensure
+        that all TransactionModels in QuerySet are of the JE instance. Due to JournalEntryModel pre-save validation
+        and basic rules of accounting, CREDITs and DEBITS will always match.
+
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
+            The JE TransactionModelQuerySet to use if previously fetched. Will be validated to make sure all
+            TransactionModel in QuerySet belong to the JournalEntryModel instance.
+
+        as_dict: bool
+            If True, returns the result as a dictionary, with exactly two keys: 'credit' and 'debit'.
+            The values will be the total CREDIT or DEBIT amount as Decimal.
+
+        Examples
+        --------
+        >>> je_model: JournalEntryModel = je_qs.first() # any existing JournalEntryModel QuerySet...
+        >>> balances = je_model.get_txs_balances()
+        >>> balances
+        Returns exactly two records:
+        <TransactionModelQuerySet [{'tx_type': 'credit', 'amount__sum': Decimal('2301.5')},
+        {'tx_type': 'debit', 'amount__sum': Decimal('2301.5')}]>
+
+        Examples
+        --------
+        >>> balances = je_model.get_txs_balances(as_dict=True)
+        >>> balances
+        Returns a dictionary:
+        {'credit': Decimal('2301.5'), 'debit': Decimal('2301.5')}
+
+        Raises
+        ------
+        JournalEntryValidationError
+            If JE is not valid or TransactionModelQuerySet provided does not belong to JE instance.
+
+        Returns
+        -------
+        TransactionModelQuerySet or dict
+            An aggregated queryset containing exactly two records. The total CREDIT or DEBIT amount as Decimal.
+        """
         if not txs_qs:
-            txs_qs = self.get_transaction_queryset()
+            txs_qs = self.get_transaction_queryset(select_accounts=False)
+        else:
+            if not isinstance(txs_qs, TransactionModelQuerySet):
+                raise JournalEntryValidationError(
+                    message=f'Must pass a TransactionModelQuerySet. Got {txs_qs.__class__.__name__}'
+                )
+
+            # todo: add maximum transactions per JE model as a setting...
+            is_valid = self.is_txs_qs_valid(txs_qs)
+            if not is_valid:
+                raise JournalEntryValidationError(
+                    message='Invalid Transaction QuerySet used. Must be from same Journal Entry'
+                )
+
         balances = txs_qs.values('tx_type').annotate(
             amount__sum=Coalesce(Sum('amount'),
                                  Decimal('0.00'),
                                  output_field=models.DecimalField()))
+
+        if as_dict:
+            return {
+                tx['tx_type']: tx['amount__sum'] for tx in balances
+            }
         return balances
 
-    def get_txs_roles(self, txs_qs=None, exclude_cash_role: bool = False) -> Set:
+    def get_txs_roles(self,
+                      txs_qs: Optional[TransactionModelQuerySet] = None,
+                      exclude_cash_role: bool = False) -> Set[str]:
+        """
+        Determines the list of account roles involved in the JournalEntryModel instance.
+        It reaches into the AccountModel associated with each TransactionModel of the JE to determine a Set of
+        all roles involved in transactions. This method is important in determining the nature of the
+
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
+            Prefetched TransactionModelQuerySet. Will be validated if provided.
+            Avoids additional DB query if provided.
+
+        exclude_cash_role: bool
+            Removes CASH role from the Set if present.
+            Useful in some cases where cash role must be excluded for additional validation.
+
+        Returns
+        -------
+        set
+            The set of account roles as strings associated with the JournalEntryModel instance.
+        """
         if not txs_qs:
-            txs_qs = self.get_transaction_queryset()
+            txs_qs = self.get_transaction_queryset(select_accounts=True)
+        else:
+            self.is_txs_qs_valid(txs_qs)
 
         # todo: implement distinct for non SQLite Backends...
         if exclude_cash_role:
@@ -591,123 +756,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             roles_involved = [i.account.role for i in txs_qs]
         return set(roles_involved)
 
-    def is_balance_valid(self, txs_qs=None):
-        if len(txs_qs) > 0:
-            balances = self.get_txs_balances(txs_qs=txs_qs)
-            bal_idx = {i['tx_type']: i['amount__sum'] for i in balances}
-            return bal_idx['credit'] == bal_idx['debit']
-        return True
+    def has_activity(self) -> bool:
+        return self.activity is not None
 
-    def is_cash_involved(self, txs_qs=None):
-        return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
+    def get_activity_name(self) -> Optional[str]:
+        """
+        Returns a human-readable, GAAP string representing the JournalEntryModel activity.
 
-    def verify(self,
-               txs_qs=None,
-               force_verify: bool = False,
-               raise_exception: bool = True,
-               **kwargs):
-        if not self.is_verified() or force_verify:
-            txs_qs = self.get_transaction_queryset()
-
-            # if not len(txs_qs):
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('Journal entry has no transactions.')
-
-            # if len(txs_qs) < 2:
-            #     if raise_exception:
-            #         raise JournalEntryValidationError('At least two transactions required.')
-
-            # CREDIT/DEBIT Balance validation...
-            balance_is_valid = self.is_balance_valid(txs_qs)
-            if not balance_is_valid:
-                if raise_exception:
-                    raise JournalEntryValidationError('Debits and credits do not match.')
-
-            # activity flag...
-            cash_is_involved = self.is_cash_involved(txs_qs)
-            if not cash_is_involved:
-                self.activity = None
-            else:
-                roles_involved = self.get_txs_roles(txs_qs, exclude_cash_role=True)
-
-                # determining if investing....
-                is_investing_for_ppe = all([
-                    all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),  # all roles must be in group
-                    sum([r in GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE for r in roles_involved]) > 0,  # at least one role
-                    sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,  # at least one role
-                ])
-                is_investing_for_securities = all([
-                    all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),  # all roles must be in group
-                    sum([r in GROUP_CFS_INV_PURCHASE_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
-                    sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
-                ])
-
-                # determining if financing...
-                is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in roles_involved])
-                is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in roles_involved])
-                is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in roles_involved])
-                is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in roles_involved])
-
-                is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
-
-                if sum([
-                    is_investing_for_ppe,
-                    is_investing_for_securities,
-                    is_financing_lt_debt,
-                    is_financing_st_debt,
-                    is_financing_issuing_equity,
-                    is_financing_dividends,
-                    is_operating
-                ]) > 1:
-                    if raise_exception:
-                        raise JournalEntryValidationError(f'Multiple activities detected in roles JE {roles_involved}.')
-                else:
-                    if is_investing_for_ppe:
-                        self.activity = self.INVESTING_PPE
-                    elif is_investing_for_securities:
-                        self.activity = self.INVESTING_SECURITIES
-
-                    elif is_financing_st_debt:
-                        self.activity = self.FINANCING_STD
-                    elif is_financing_lt_debt:
-                        self.activity = self.FINANCING_LTD
-                    elif is_financing_issuing_equity:
-                        self.activity = self.FINANCING_EQUITY
-                    elif is_financing_dividends:
-                        self.activity = self.FINANCING_DIVIDENDS
-                    elif is_operating:
-                        self.activity = self.OPERATING_ACTIVITY
-                    else:
-                        if raise_exception:
-                            raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
-                                                              'Split into multiple Journal Entries or check'
-                                                              ' your account selection.')
-            self._verified = True
-            return txs_qs
-        self._verified = False
-
-    def is_operating(self):
-        return self.activity in [
-            self.OPERATING_ACTIVITY
-        ]
-
-    def is_financing(self):
-        return self.activity in [
-            self.FINANCING_EQUITY,
-            self.FINANCING_LTD,
-            self.FINANCING_DIVIDENDS,
-            self.FINANCING_STD,
-            self.FINANCING_OTHER
-        ]
-
-    def is_investing(self):
-        return self.activity in [
-            self.INVESTING_SECURITIES,
-            self.INVESTING_PPE,
-            self.INVESTING_OTHER
-        ]
-
-    def get_activity(self):
+        Returns
+        -------
+        str or None
+            Representing the JournalEntryModel activity in the statement of cash flows.
+        """
         if self.activity:
             if self.is_operating():
                 return ActivityEnum.OPERATING.value
@@ -716,10 +776,92 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
 
-    def _get_next_state_model(self, raise_exception: bool = True):
+    def generate_activity(self,
+                          txs_qs: Optional[TransactionModelQuerySet] = None,
+                          raise_exception: bool = True,
+                          force_update: bool = False) -> Optional[str]:
 
-        EntityStateModel = lazy_loader.get_entity_state_model()
-        EntityModel = lazy_loader.get_entity_model()
+        if not self.has_activity() or force_update:
+
+            txs_is_valid = True
+            if not txs_qs:
+                txs_qs = self.get_transaction_queryset(select_accounts=False)
+            else:
+                try:
+                    txs_is_valid = self.is_txs_qs_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+                except JournalEntryValidationError as e:
+                    if raise_exception:
+                        raise e
+
+            if txs_is_valid:
+                cash_is_involved = self.is_cash_involved(txs_qs=txs_qs)
+                if not cash_is_involved:
+                    self.activity = None
+                else:
+                    roles_involved = self.get_txs_roles(txs_qs, exclude_cash_role=True)
+
+                    # determining if investing....
+                    is_investing_for_ppe = all([
+                        all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),  # all roles must be in group
+                        sum([r in GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE for r in roles_involved]) > 0,
+                        # at least one role
+                        sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,  # at least one role
+                    ])
+                    is_investing_for_securities = all([
+                        all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),
+                        # all roles must be in group
+                        sum([r in GROUP_CFS_INV_PURCHASE_OF_SECURITIES for r in roles_involved]) > 0,
+                        # at least one role
+                        sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
+                    ])
+
+                    # determining if financing...
+                    is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in roles_involved])
+                    is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in roles_involved])
+                    is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in roles_involved])
+                    is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in roles_involved])
+
+                    is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
+
+                    if sum([
+                        is_investing_for_ppe,
+                        is_investing_for_securities,
+                        is_financing_lt_debt,
+                        is_financing_st_debt,
+                        is_financing_issuing_equity,
+                        is_financing_dividends,
+                        is_operating
+                    ]) > 1:
+                        if raise_exception:
+                            raise JournalEntryValidationError(
+                                f'Multiple activities detected in roles JE {roles_involved}.')
+                    else:
+                        if is_investing_for_ppe:
+                            self.activity = self.INVESTING_PPE
+                        elif is_investing_for_securities:
+                            self.activity = self.INVESTING_SECURITIES
+
+                        elif is_financing_st_debt:
+                            self.activity = self.FINANCING_STD
+                        elif is_financing_lt_debt:
+                            self.activity = self.FINANCING_LTD
+                        elif is_financing_issuing_equity:
+                            self.activity = self.FINANCING_EQUITY
+                        elif is_financing_dividends:
+                            self.activity = self.FINANCING_DIVIDENDS
+                        elif is_operating:
+                            self.activity = self.OPERATING_ACTIVITY
+                        else:
+                            if raise_exception:
+                                raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
+                                                                  'Split into multiple Journal Entries or check'
+                                                                  ' your account selection.')
+        return self.activity
+
+    # todo: add entity_model as parameter on all functions...
+    # todo: outsource this function to EntityStateModel...?...
+    def _get_next_state_model(self, raise_exception: bool = True) -> EntityStateModel:
+
         entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
         fy_key = entity_model.get_fy_for_date(dt=self.timestamp)
 
@@ -754,6 +896,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 raise e
 
     def can_generate_je_number(self) -> bool:
+        """
+        Checks if the JournalEntryModel instance can generate its own JE number.
+        Conditions are:
+            * The JournalEntryModel must have a LedgerModel instance assigned.
+            * The JournalEntryModel instance must not have a pre-existing JE number.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel needs a JE number, otherwise False.
+        """
         return all([
             self.ledger_id,
             not self.je_number
@@ -764,8 +917,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         Atomic Transaction. Generates the next Journal Entry document number available. The operation
         will result in two additional queries if the Journal Entry LedgerModel & EntityUnitModel are not cached in
         QuerySet via select_related('ledger', 'entity_unit').
-        @param commit: Commit transaction into Journal Entry.
-        @return: A String, representing the current JournalEntryModel instance Document Number.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits transaction into JournalEntryModel when function is called.
+
+        Returns
+        -------
+        str
+            A String, representing the new or current JournalEntryModel instance Document Number.
         """
         if self.can_generate_je_number():
 
@@ -788,17 +949,122 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         return self.je_number
 
-    def clean(self, verify: bool = False):
+    def verify(self,
+               txs_qs: Optional[TransactionModelQuerySet] = None,
+               force_verify: bool = False,
+               raise_exception: bool = True,
+               **kwargs) -> Tuple[TransactionModelQuerySet, bool]:
+
+        """
+        Verifies the JournalEntryModel. The JE Model is verified when:
+            * All TransactionModels associated with the JE instance are in balance (i.e. the sum of CREDITs and DEBITs are equal).
+            * If the JournalEntryModel is using cash, a cash flow activity is assigned.
+
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
+            Prefetched TransactionModelQuerySet. If provided avoids additional DB query. Will be verified against
+            JournalEntryModel instance.
+        force_verify: bool
+            If True, forces new verification of JournalEntryModel if previously verified. Defaults to False.
+        raise_exception: bool
+            If True, will raise JournalEntryValidationError if verification fails.
+        kwargs: dict
+            Additional function key-word args.
+
+        Raises
+        ------
+        JournalEntryValidationError if JE instance could not be verified.
+
+        Returns
+        -------
+        tuple: TransactionModelQuerySet, bool
+            The TransactionModelQuerySet of the JournalEntryModel instance, verification result as True/False.
+        """
+
+        if not self.is_verified() or force_verify:
+            self._verified = False
+
+            # fetches JEModel TXS QuerySet if not provided....
+            if not txs_qs:
+                txs_qs = self.get_transaction_queryset()
+                is_txs_qs_valid = True
+            else:
+                try:
+                    is_txs_qs_valid = self.is_txs_qs_valid(raise_exception=raise_exception, txs_qs=txs_qs)
+                except JournalEntryValidationError as e:
+                    raise e
+
+            # CREDIT/DEBIT Balance validation...
+            try:
+                is_balance_valid = self.is_balance_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+            except JournalEntryValidationError as e:
+                raise e
+
+            # if not len(txs_qs):
+            #     if raise_exception:
+            #         raise JournalEntryValidationError('Journal entry has no transactions.')
+
+            # if len(txs_qs) < 2:
+            #     if raise_exception:
+            #         raise JournalEntryValidationError('At least two transactions required.')
+
+            if all([is_balance_valid, is_txs_qs_valid]):
+                # activity flag...
+                self.generate_activity(txs_qs=txs_qs, raise_exception=raise_exception)
+                self._verified = True
+                return txs_qs, self.is_verified()
+        return TransactionModel.objects.none(), self.is_verified()
+
+    def clean(self,
+              verify: bool = False,
+              txs_qs: Optional[TransactionModelQuerySet] = None) -> Tuple[TransactionModelQuerySet, bool]:
+        """
+        Customized JournalEntryModel clean method. Generates a JE number if needed. Optional verification hook on clean.
+
+        Parameters
+        ----------
+        verify: bool
+            Attempts to verify the JournalEntryModel during cleaning.
+        txs_qs: TransactionModelQuerySet
+            Prefetched TransactionModelQuerySet. If provided avoids additional DB query. Will be verified against
+            JournalEntryModel instance.
+
+        Returns
+        -------
+        tuple: TransactionModelQuerySet, bool
+            The TransactionModelQuerySet of the JournalEntryModel instance, verification result as True/False.
+        """
+        if txs_qs:
+            self.is_txs_qs_valid(txs_qs=txs_qs)
         self.generate_je_number(commit=True)
         if verify:
-            txs_qs = self.verify()
-            return txs_qs
+            txs_qs, verified = self.verify()
+            return txs_qs, self.is_verified()
+        return TransactionModel.objects.none(), self.is_verified()
 
-    def save(self, verify: bool = False, post_on_verify: bool = False, *args, **kwargs):
+    def save(self, verify: bool = True, post_on_verify: bool = False, *args, **kwargs):
+        # todo this does not show up on docs...
+        """
+        Custom JournalEntryModel instance save method. Additional options are added to attempt to verify JournalEntryModel
+        before saving into database.
+
+        Parameters
+        ----------
+        verify: bool
+            If True, verifies JournalEntryModel transactions before saving. Defaults to True.
+        post_on_verify: bool
+            Posts JournalEntryModel if verification is successful and can_post() is True.
+
+        Returns
+        -------
+        JournalEntryModel
+            The saved instance.
+        """
         try:
             self.generate_je_number(commit=False)
             if verify:
-                self.clean(verify=verify)
+                self.clean(verify=True)
                 if self.is_verified() and post_on_verify:
                     # commit is False since the super call takes place at the end of save()
                     self.mark_as_posted(commit=False, verify=False, raise_exception=True)
