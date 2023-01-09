@@ -66,8 +66,8 @@ class TransactionModelFormSet(BaseModelFormSet):
         return TransactionModel.objects.for_journal_entry(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL,
-            je_pk=self.JE_MODEL.uuid,
-            ledger_pk=self.LEDGER_PK
+            je_model=self.JE_MODEL.uuid,
+            ledger_model=self.LEDGER_PK
         ).order_by('account__code')
 
     def clean(self):

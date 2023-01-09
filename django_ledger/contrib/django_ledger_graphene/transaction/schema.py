@@ -26,8 +26,8 @@ class TransactionsQuery(graphene.ObjectType):
             return TransactionModel.objects.for_journal_entry(
                 entity_slug=slug_name,
                 user_model=info.context.user,
-                je_pk=pk_je,
-                ledger_pk=pk_ledger
+                je_model=pk_je,
+                ledger_model=pk_ledger
             ).order_by('account__code')
         else:
             return TransactionModel.objects.none()

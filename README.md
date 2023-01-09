@@ -67,6 +67,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Journal Entry activity determination & validation (for cash flow).
 * __0.5.2__: Cash flow statement.
   * Human Readable Journal Entry document numbers.
+  * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
   * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
   * GraphQL API.
