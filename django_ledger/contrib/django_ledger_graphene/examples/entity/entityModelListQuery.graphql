@@ -1,0 +1,22 @@
+{
+    visibleEntityList {
+        uuid
+        slug
+        name
+        accrualMethod
+        fyStartMonth
+        hidden
+        picture
+        isAdmin
+    }
+
+    hiddenEntityList {
+        uuid
+        slug
+        name
+        accrualMethod
+        fyStartMonth
+        hidden
+        picture
+        isAdmin    }
+}

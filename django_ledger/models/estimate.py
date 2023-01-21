@@ -3,12 +3,12 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
-from typing import Union
+from typing import Union, Optional
 from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -28,44 +28,95 @@ from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
 
 
+class EstimateModelValidationError(ValidationError):
+    pass
+
+
 class EstimateModelQuerySet(models.QuerySet):
     """
-    A custom defined Query Set for the Estimate Model.
-    This implements multiple methods or queries that we need to run to get a status of estimates.
-    For e.g : We might want to have list of estimates which are Approved or  In draft stage.
-    All these separate functions will assist in making such queries and building customized reports.
+    A custom defined QuerySet for the EstimateModel.
     """
 
     def approved(self):
+        """
+        Approved Estimates or Sales Orders are those that have been approved or completed.
+
+        Returns
+        -------
+        EstimateModelQuerySet
+            A EstimateModelQuerySet with applied filters.
+        """
         return self.filter(
             Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
             Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
         )
 
     def not_approved(self):
+        """
+        Not approved Estimates or Sales Orders are those that have not been approved or completed.
+
+        Returns
+        -------
+        EstimateModelQuerySet
+            A EstimateModelQuerySet with applied filters.
+        """
         return self.exclude(
             Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
             Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
         )
 
     def contracts(self):
+        """
+        A contract are Estimates or Sales Orders are those that have been approved or completed.
+
+        Returns
+        -------
+        EstimateModelQuerySet
+            A EstimateModelQuerySet with applied filters. Equivalent to approve.
+        """
         return self.approved()
 
     def estimates(self):
+        """
+         Estimates or Sales Orders are those that have not been approved or completed.
+
+        Returns
+        -------
+        EstimateModelQuerySet
+            A EstimateModelQuerySet with applied filters. Equivalent to not approved.
+        """
         return self.not_approved()
 
 
 class EstimateModelManager(models.Manager):
     """
-    A custom defined Estimate Model Manager that will act as an interface to handling the DB queries to the Estimate
-    Model. The default "get_queryset" has been overridden to refer the custom defined "EstimateModelQuerySet"
-
+    A custom defined EstimateModelManager that will act as an interface to handling the initial DB queries
+    to the EstimateModel.
     """
 
-    def get_queryset(self):
-        return EstimateModelQuerySet(self.model, using=self._db)
-
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
+        """
+        Fetches a QuerySet of EstimateModels associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Examples
+        --------
+            >>> request_user = request.user
+            >>> slug = kwargs['entity_slug'] # may come from request kwargs
+            >>> bill_model_qs = EstimateModel.objects.for_entity(user_model=request_user, entity_slug=slug)
+
+        Returns
+        -------
+        EstimateModelQuerySet
+            Returns a EstimateModelQuerySet with applied filters.
+        """
         qs = self.get_queryset()
         if isinstance(entity_slug, EntityModel):
             return qs.filter(
@@ -74,36 +125,90 @@ class EstimateModelManager(models.Manager):
                         Q(entity__managers__in=[user_model])
                 )
             )
-        elif isinstance(entity_slug, str):
-            return qs.filter(
-                Q(entity__slug__exact=entity_slug) & (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
+        return qs.filter(
+            Q(entity__slug__exact=entity_slug) & (
+                    Q(entity__admin=user_model) |
+                    Q(entity__managers__in=[user_model])
             )
+        )
 
 
 class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     """
-    This is the main abstract class which the Estimate Model database will inherit, and it contains the fields/columns/attributes which the said table will have.
-    In addition to the attributes mentioned below, it also has the the fields/columns/attributes mentioned in below MixIn:
-    
-    MarkdownNotesMixIn
-    CreateUpdateMixIn
-    
-    Read about these mixin here.
+    This is the main abstract class which the EstimateModel database will inherit from.
+    The EstimateModel inherits functionality from the following MixIns:
 
-    Below are the fields specific to the bill model.
-    @uuid : this is a unique primary key generated for the table. the default value of this fields is set as the unique uuid generated.
-    @estimate_number: This is a slug  Field and hence a random estimate number with Max Length of 20 will be defined
-    @entity: This is a slug  Field and hence a random bill number with Max Length of 20 will be defined
-    @customer:  Aforeign Key reference from the Customer Model
-    @terms: The value is among the choice from the Contract terms
+        1. :func:`MarkdownNotesMixIn <django_ledger.models.mixins.MarkdownNotesMixIn>`
+        2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
+    Attributes
+    ----------
+    uuid : UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
 
+    estimate_number: str
+        Auto assigned number at creation by generate_estimate_number() function.
+        Prefix be customized with DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX setting.
+        Includes a reference to the Fiscal Year and a sequence number. Max Length is 20.
 
+    entity: EntityModel
+        The EntityModel associated with te EntityModel instance.
+
+    customer: CustomerModel
+        The CustomerModel associated with the EstimateModel instance.
+
+    title: str
+        A string representing the name or title of the EstimateModel instance.
+
+    status: str
+        The status of the EstimateModel instance. Must be one of Draft, In Review, Approved, Completed Void or Canceled.
+
+    terms: str
+        The contract terms that will be associated with this EstimateModel instance.
+        Choices are Fixed Price, Target Price, Time & Materials and Other.
+
+    date_draft: date
+        The draft date represents the date when the EstimateModel was first created. Defaults to
+        :func:`localdate <django.utils.timezone.localdate>`.
+
+    date_in_review: date
+        The in review date represents the date when the EstimateModel was marked as In Review status.
+        Will be null if EstimateModel is canceled during draft status. Defaults to
+        :func:`localdate <django.utils.timezone.localdate>`.
+
+    date_approved: date
+        The approved date represents the date when the EstimateModel was approved.
+        Will be null if EstimateModel is canceled.
+        Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+
+    date_completed: date
+        The paid date represents the date when the EstimateModel was completed and fulfilled.
+        Will be null if EstimateModel is canceled. Defaults to
+        :func:`localdate <django.utils.timezone.localdate>`.
+
+    date_void: date
+        The void date represents the date when the EstimateModel was void, if applicable.
+        Will be null unless EstimateModel is void. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+
+    date_canceled: date
+        The canceled date represents the date when the EstimateModel was canceled, if applicable.
+        Will be null unless EstimateModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+
+    revenue_estimate: Decimal
+        The total estimated revenue of the EstimateModel instance.
+
+    labor_estimate: Decimal
+        The total labor costs estimate of the EstimateModel instance.
+
+    material_estimate: Decimal
+        The total material costs estimate of the EstimateModel instance.
+
+    equipment_estimate: Decimal
+        The total equipment costs estimate of the EstimateModel instance.
+
+    other_estimate: Decimal
+        the total miscellaneous costs estimate of the EstimateModel instance.
     """
-
     CJ_STATUS_DRAFT = 'draft'
     CJ_STATUS_REVIEW = 'in_review'
     CJ_STATUS_APPROVED = 'approved'
@@ -193,7 +298,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                          help_text=_('Estimated equipment cost to complete the quoted work.'),
                                          validators=[MinValueValidator(0)])
 
-    objects = EstimateModelManager()
+    objects = EstimateModelManager.from_queryset(queryset_class=EstimateModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -223,11 +328,60 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return f'Estimate {self.estimate_number} | {self.title}'
 
     # Configuration...
+    def is_draft(self) -> bool:
+        """
+        Determines if the EstimateModel is in Draft status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is in Draft status, else False.
+        """
+        return self.status == self.CJ_STATUS_DRAFT
+
     def configure(self,
                   entity_slug: Union[EntityModel, UUID, str],
                   user_model,
                   customer_model: CustomerModel,
+                  date_draft: Optional[date] = None,
+                  raise_exception: bool = True,
                   commit: bool = False):
+        """
+        A configuration hook which executes all initial EstimateModel setup.
+        Can only call this method once in the lifetime of a EstimateModel.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel to associate the Bill with.
+
+        user_model:
+            The UserModel making the request to check for QuerySet permissions.
+
+        date_draft: date
+            The draft date to use. If None defaults to localdate().
+
+        customer_model: CustomerModel
+            The CustomerModel to be associated with this EstimateModel instance.
+
+        commit: bool
+            Saves the current EstimateModel after being configured.
+
+        raise_exception: bool
+            If True, raises EstimateModelValidationError when model is already configured.
+
+        Returns
+        -------
+        EstimateModel
+            The configured EstimateModel instance.
+        """
+        if self.is_configured():
+            if raise_exception:
+                raise EstimateModelValidationError(
+                    message=f'{self.__class__.__name__} already configured...'
+                )
+            return
+
         if isinstance(entity_slug, str):
             entity_qs = EntityModel.objects.for_user(user_model=user_model)
             entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
@@ -235,35 +389,99 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             entity_model = entity_slug
         else:
             raise ValidationError('entity_slug must be an instance of str or EntityModel')
+
         self.entity = entity_model
         self.customer = customer_model
+        if not date_draft:
+            self.date_draft = localdate()
+
         if commit:
             self.save()
         return self
-
     # State....
-    def is_draft(self):
-        return self.status == self.CJ_STATUS_DRAFT
 
     def is_review(self):
+        """
+        Determines if the EstimateModel is In Review status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is In Review status, else False.
+        """
         return self.status == self.CJ_STATUS_REVIEW
 
     def is_approved(self):
+        """
+        Determines if the EstimateModel is in Approved status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is in Approved status, else False.
+        """
         return self.status == self.CJ_STATUS_APPROVED
 
     def is_completed(self):
+        """
+        Determines if the EstimateModel is in Completed status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is in Completed status, else False.
+        """
         return self.status == self.CJ_STATUS_COMPLETED
 
     def is_canceled(self):
+        """
+        Determines if the EstimateModel is in Canceled status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is in Canceled status, else False.
+        """
         return self.status == self.CJ_STATUS_CANCELED
 
     def is_void(self):
+        """
+        Determines if the EstimateModel is in Void status.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is in Void status, else False.
+        """
         return self.status == self.CJ_STATUS_VOID
 
     def is_contract(self):
+        """
+        Determines if the EstimateModel is considered a Contract.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is a Contract, else False.
+        """
         return any([
             self.is_approved(),
             self.is_completed()
+        ])
+
+    def is_configured(self):
+        """
+        Determines if the EstimateModel is configured.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel is configured, else False.
+        """
+        return all([
+            self.customer_id,
+            self.entity_id,
+            self.date_draft
         ])
 
     # Permissions...
@@ -297,7 +515,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_generate_estimate_number(self):
         return all([
             self.date_draft,
-            self.entity_id,
+            self.is_configured(),
             not self.estimate_number
         ])
 

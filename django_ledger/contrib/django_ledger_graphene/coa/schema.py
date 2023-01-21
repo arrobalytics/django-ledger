@@ -6,39 +6,26 @@ from graphene_django import DjangoObjectType
 from django_ledger.models import ChartOfAccountModel
 
 
-class CoaNode(DjangoObjectType):
+class ChartOfAccountsModelListNode(DjangoObjectType):
     class Meta:
         model = ChartOfAccountModel
-        filter_fields = {
-            'slug' : ['exact', 'icontains', 'istartswith'],
-            'name' : ['exact', 'icontains', 'istartswith'],
-            'description' : ['exact', 'icontains', 'istartswith']
-        }
+        fields = [
+            'uuid',
+            'slug',
+            'name',
+            'locked'
+        ]
         interfaces = (relay.Node,)
-
-class CoaNode(DjangoObjectType):
-    class Meta:
-        model = ChartOfAccountModel
-        filter_fields = {
-            'slug' : ['exact', 'icontains', 'istartswith'],
-            'name' : ['exact', 'icontains', 'istartswith'],
-            'description' : ['exact', 'icontains', 'istartswith']
-        }
-        interfaces = (relay.Node,)
-
-class CoaList(DjangoObjectType):
-    class Meta:
-        model = ChartOfAccountModel
 
 
 class ChartOfAccountsQuery(graphene.ObjectType):
-    all_coa = graphene.List(CoaList, slug_name=graphene.String(required=True))
+    all_coa = graphene.List(ChartOfAccountsModelListNode, slug=graphene.String(required=True))
 
-    def resolve_all_coa(self, info, slug_name):
+    def resolve_all_coa(self, info, slug, **kwargs):
 
         if info.context.user.is_authenticated:
             return ChartOfAccountModel.objects.for_entity(
-                entity_slug=slug_name,
+                entity_slug=slug,
                 user_model=info.context.user,
             )
         else:

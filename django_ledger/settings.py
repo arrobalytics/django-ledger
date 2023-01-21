@@ -14,8 +14,9 @@ logger = logging.getLogger('Django Ledger Logger')
 logger.setLevel(logging.INFO)
 
 try:
-    import graphene
-    import graphene_django
+    from graphene import __version__
+    from graphene_django import __version__
+    from oauth2_provider import __version__
 
     DJANGO_LEDGER_GRAPHQL_ENABLED = True
 except ImportError:

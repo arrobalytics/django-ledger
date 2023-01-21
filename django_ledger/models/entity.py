@@ -495,6 +495,9 @@ class EntityModelAbstract(MP_Node,
     def __str__(self):
         return f'EntityModel: {self.name}'
 
+    def is_admin_user(self, user_model):
+        return user_model.id == self.admin_id
+
     @staticmethod
     def generate_slug_from_name(name: str) -> str:
         """

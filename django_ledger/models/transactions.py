@@ -33,8 +33,6 @@ A transaction by definition must perform a CREDIT or a DEBIT to the underlying A
 role in the production of financial statements and sets its foundation in the TransactionModel API to effective query
 amd aggregate transactions at the Database layer without the need of pulling all TransactionModels into memory for the
 production of financial statements.
-
-It is 
 """
 
 

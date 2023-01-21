@@ -1,0 +1,28 @@
+{
+    entityDetailBySlug(slug: "miguel-sanda-5ocug9kr") {
+        uuid
+        slug
+        name
+        defaultCoa {
+            uuid
+            slug
+            name
+            locked
+        }
+        created
+        updated
+    }
+
+    entityDetailByUuid(uuid: "5046db64-b558-49ff-a07a-545bcce8f409") {
+        uuid
+        slug
+        name
+        defaultCoa {
+            uuid
+            slug
+            name
+            locked
+        }
+        created
+        updated    }
+}

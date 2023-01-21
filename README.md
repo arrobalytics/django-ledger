@@ -69,6 +69,9 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
   * Human Readable Journal Entry document numbers.
   * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
+  * Chart of Accounts Import.
+  * Trial Balance Import.
+  * Closing entries and snapshots.
   * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
   * GraphQL API.
 * __0.5.4__: Testing framework implementation that will include:
