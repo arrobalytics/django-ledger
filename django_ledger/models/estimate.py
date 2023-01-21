@@ -400,7 +400,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return self
     # State....
 
-    def is_review(self):
+    def is_review(self) -> bool:
         """
         Determines if the EstimateModel is In Review status.
 
@@ -411,7 +411,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         """
         return self.status == self.CJ_STATUS_REVIEW
 
-    def is_approved(self):
+    def is_approved(self) -> bool:
         """
         Determines if the EstimateModel is in Approved status.
 
@@ -422,7 +422,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         """
         return self.status == self.CJ_STATUS_APPROVED
 
-    def is_completed(self):
+    def is_completed(self) -> bool:
         """
         Determines if the EstimateModel is in Completed status.
 
@@ -433,7 +433,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         """
         return self.status == self.CJ_STATUS_COMPLETED
 
-    def is_canceled(self):
+    def is_canceled(self) -> bool:
         """
         Determines if the EstimateModel is in Canceled status.
 
@@ -469,7 +469,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.is_completed()
         ])
 
-    def is_configured(self):
+    def is_configured(self) -> bool:
         """
         Determines if the EstimateModel is configured.
 
@@ -485,34 +485,106 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ])
 
     # Permissions...
-    def can_draft(self):
+    def can_draft(self) -> bool:
+        """
+        Determines if the EstimateModel can be marked as Draft.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as draft, else False.
+        """
         return self.is_review()
 
     def can_review(self):
+        """
+        Determines if the EstimateModel can be marked as In Review.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as In Review, else False.
+        """
         return self.is_draft()
 
     def can_approve(self):
+        """
+        Determines if the EstimateModel can be marked as approved.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as approved, else False.
+        """
         return self.is_review()
 
     def can_complete(self):
+        """
+        Determines if the EstimateModel can be marked as completed.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as completed, else False.
+        """
         return self.is_approved()
 
     def can_cancel(self):
+        """
+        Determines if the EstimateModel can be marked as canceled.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as canceled, else False.
+        """
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
     def can_void(self):
+        """
+        Determines if the EstimateModel can be marked as void.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be marked as void, else False.
+        """
         return self.is_approved()
 
     def can_update_items(self):
+        """
+        Determines if the EstimateModel item transactions can be edited or changed.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel item transactions can be edited or changed, else False.
+        """
         return self.is_draft()
 
     def can_bind(self):
+        """
+        Determines if the EstimateModel can be bound to a set of POs, Bills or Invoices.
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can be bound, else False.
+        """
         return self.is_approved()
 
     def can_generate_estimate_number(self):
+        """
+        Determines if the EstimateModel can generate its own estimate number..
+
+        Returns
+        -------
+        bool
+            True if EstimateModel can generate the estimate number, else False.
+        """
         return all([
             self.date_draft,
             self.is_configured(),
