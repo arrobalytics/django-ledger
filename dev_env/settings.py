@@ -24,7 +24,7 @@ INSTALLED_APPS = [
 if DJANGO_LEDGER_GRAPHQL_ENABLED:
     INSTALLED_APPS += [
         'graphene_django',
-        'graphql_auth'
+        'oauth2_provider'
     ]
 
 MIDDLEWARE = [
@@ -112,31 +112,9 @@ if DJANGO_LEDGER_GRAPHQL_ENABLED:
         'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
         'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,
         # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
-        'MIDDLEWARE': [
-            'graphql_jwt.middleware.JSONWebTokenMiddleware',
-        ],
-    }
-
-    AUTHENTICATION_BACKENDS += [
-        'graphql_jwt.backends.JSONWebTokenBackend'
-    ]
-
-    GRAPHQL_JWT = {
-        'JWT_ALLOW_ARGUMENT': True,
-        # ...
-        "JWT_ALLOW_ANY_CLASSES": [
-            "graphql_auth.mutations.Register",
-            "graphql_auth.mutations.VerifyAccount",
-            "graphql_auth.mutations.ResendActivationEmail",
-            "graphql_auth.mutations.SendPasswordResetEmail",
-            "graphql_auth.mutations.PasswordReset",
-            "graphql_auth.mutations.ObtainJSONWebToken",
-            "graphql_auth.mutations.VerifyToken",
-            "graphql_auth.mutations.RefreshToken",
-            "graphql_auth.mutations.RevokeToken",
-            "graphql_auth.mutations.VerifySecondaryEmail",
-
-        ],
+        # 'MIDDLEWARE': [
+        #     'graphql_jwt.middleware.JSONWebTokenMiddleware',
+        # ],
     }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -10,7 +10,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
                                           CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
                                           DraftEstimateModelUpdateForm)
-from django_ledger.models import EntityModel
+from django_ledger.models import EntityModel, ItemTransactionModelQuerySet
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
 
@@ -111,10 +111,7 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
         context['estimate_bill_model_queryset'] = bill_qs
 
-        context['contract_items'] = ce_model.get_contract_transactions(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
+        # context['contract_items'] = ce_model.itemtransactionmodel_set.all()
 
         context['contract_progress'] = ce_model.get_contract_summary(
             po_qs=po_qs,
@@ -128,7 +125,7 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         return EstimateModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('customer')
+        ).select_related('customer', 'entity').prefetch_related('itemtransactionmodel_set')
 
 
 class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -162,7 +159,8 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         context['header_subtitle'] = ce_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
         if not itemtxs_formset:
-            itemtxs_qs, itemtxs_agg = ce_model.get_itemtransaction_data()
+            itemtxs_qs: ItemTransactionModelQuerySet = ce_model.get_itemtxs_data()
+            itemtxs_agg = itemtxs_qs.get_estimate_aggregate()
             if ce_model.can_update_items():
                 itemtxs_formset = CanEditEstimateItemModelFormset(
                     entity_slug=self.kwargs['entity_slug'],
@@ -178,7 +176,8 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                     queryset=itemtxs_qs
                 )
         else:
-            itemtxs_qs, itemtxs_agg = ce_model.get_itemtransaction_data(queryset=itemtxs_formset.queryset)
+            itemtxs_qs = ce_model.get_itemtxs_data(itemtxs_qs=itemtxs_formset.queryset)
+            itemtxs_agg = itemtxs_qs.get_estimate_aggregate()
 
         context['ce_revenue_estimate__sum'] = itemtxs_agg['ce_revenue_estimate__sum']
         context['ce_cost_estimate__sum'] = itemtxs_agg['ce_cost_estimate__sum']
@@ -190,7 +189,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return EstimateModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).select_related('customer')
+        ).select_related('customer', 'entity')
 
     def get_success_url(self):
         return reverse('django_ledger:customer-estimate-detail',

@@ -448,6 +448,13 @@ class ItemTransactionModelQuerySet(models.QuerySet):
     def is_ordered(self):
         return self.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
+    def get_estimate_aggregate(self):
+        return {
+            'ce_cost_estimate__sum': sum(i.ce_cost_estimate for i in self),
+            'ce_revenue_estimate__sum': sum(i.ce_revenue_estimate for i in self),
+            'total_items': len(self)
+        }
+
 
 class ItemTransactionModelManager(models.Manager):
 

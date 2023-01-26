@@ -102,20 +102,8 @@ class ChartOfAccountModelManager(models.Manager):
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
-
         qs = self.get_queryset()
-        EntityModel = lazy_loader.get_entity_model()
-
-        if isinstance(entity_slug, str):
-            return qs.filter(
-                Q(entity__slug__iexact=entity_slug) &
-                (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
-            )
-
-        elif isinstance(entity_slug, EntityModel):
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
                 Q(entity=entity_slug) &
                 (
@@ -123,6 +111,13 @@ class ChartOfAccountModelManager(models.Manager):
                         Q(entity__managers__in=[user_model])
                 )
             )
+        return qs.filter(
+            Q(entity__slug__iexact=entity_slug) &
+            (
+                    Q(entity__admin=user_model) |
+                    Q(entity__managers__in=[user_model])
+            )
+        )
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):

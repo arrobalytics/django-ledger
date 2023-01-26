@@ -12,7 +12,6 @@ urlpatterns = [
     path('entity/<slug:entity_slug>/data/net-receivables/',
          views.ReceivableNetAPIView.as_view(),
          name='entity-json-net-receivables'),
-
     path('unit/<slug:entity_slug>/<slug:unit_slug>/data/pnl/',
          views.PnLAPIView.as_view(),
          name='unit-json-pnl'),

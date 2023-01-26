@@ -1,0 +1,18 @@
+# curl -X POST
+#    -H "Cache-Control: no-cache"
+#    -H "Content-Type: application/x-www-form-urlencoded"
+#    "http://127.0.0.1:8000/o/token/"
+#    -d "client_id=${ID}"
+#    -d "client_secret=${SECRET}"
+#    -d "code=${CODE}"
+#    -d "code_verifier=${CODE_VERIFIER}"
+#    -d "redirect_uri=http://127.0.0.1:8000/noexist/callback"
+#    -d "grant_type=authorization_code"
+POST http://192.168.1.101:8000/api/v1/o/token/
+Cache-Control: no-cache
+Content-Type: application/x-www-form-urlencoded
+
+client_id={{client_id}}&client_secret={{client_secret}}&code={{auth_code}}&code_verifier={{code_verifier}}&redirect_uri={{redirect_uri}}&grant_type=authorization_code
+
+###
+

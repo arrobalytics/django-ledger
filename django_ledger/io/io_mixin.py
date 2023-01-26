@@ -192,6 +192,7 @@ class IOMixIn:
             elif isinstance(self, lazy_importer.get_ledger_model()):
                 txs_qs = TransactionModel.objects.for_ledger(
                     user_model=user_model,
+                    entity_slug=entity_slug,
                     ledger_model=self
                 )
             # If IO is on unit model....

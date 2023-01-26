@@ -301,6 +301,7 @@ class LedgerWrapperMixIn(models.Model):
 
     def migrate_state(self,
                       user_model,
+                      entity_slug: str,
                       itemtxs_qs: QuerySet = None,
                       force_migrate: bool = False,
                       commit: bool = True,
@@ -315,6 +316,7 @@ class LedgerWrapperMixIn(models.Model):
             # getting current ledger state
             txs_qs, txs_digest = self.ledger.digest(
                 user_model=user_model,
+                entity_slug=entity_slug,
                 process_groups=True,
                 process_roles=False,
                 process_ratios=False,

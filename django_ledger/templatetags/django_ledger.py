@@ -229,7 +229,7 @@ def journal_entry_txs_table(journal_entry_model, style='detail'):
 @register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
 def bill_txs_table(context, bill_model: BillModel):
     txs_queryset = TransactionModel.objects.for_bill(
-        bill_pk=bill_model.uuid,
+        bill_model=bill_model.uuid,
         user_model=context['request'].user,
         entity_slug=context['view'].kwargs['entity_slug']
     ).select_related('journal_entry').order_by('-journal_entry__date')

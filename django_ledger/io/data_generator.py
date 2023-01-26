@@ -399,7 +399,7 @@ class EntityDataGenerator(LoggingMixIn):
             i.full_clean()
 
         estimate_model.full_clean()
-        estimate_model.update_state(queryset=estimate_items)
+        estimate_model.update_state(itemtxs_qs=estimate_items)
         estimate_model.save()
 
         estimate_items = estimate_model.itemtransactionmodel_set.bulk_create(objs=estimate_items)

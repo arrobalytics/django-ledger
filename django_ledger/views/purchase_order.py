@@ -188,7 +188,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
         if po_model.is_contract_bound():
             ce_model: EstimateModel = po_model.ce_model
-            ce_itemtxs_qs, ce_itemtxs_agg = ce_model.get_itemtxs_aggregate()
+            ce_itemtxs_qs, ce_itemtxs_agg = ce_model.get_itemtxs_annotation()
             context['ce_itemtxs_agg'] = ce_itemtxs_agg
             context['ce_cost_estimate__sum'] = sum(i['ce_cost_estimate__sum'] for i in ce_itemtxs_agg)
 

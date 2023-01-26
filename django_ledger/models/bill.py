@@ -166,7 +166,8 @@ class BillModelManager(models.Manager):
 
     def for_user(self, user_model) -> BillModelQuerySet:
         """
-        Fetches a QuerySet of BillModels that the UserModel as access to. May include BillModels from multiple Entities.
+        Fetches a QuerySet of BillModels that the UserModel as access to.
+        May include BillModels from multiple Entities.
 
         The user has access to bills if:
             1. Is listed as Manager of Entity.
@@ -254,7 +255,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
     bill_number: str
         Auto assigned number at creation by generate_bill_number() function.
         Prefix be customized with DJANGO_LEDGER_BILL_NUMBER_PREFIX setting.
-        Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
+        Includes a reference to the Fiscal Year and a sequence number. Max Length is 20.
 
     bill_status: str
         Current status of the BillModel. Must be one of the choices as mentioned under "BILL_STATUS".
@@ -302,9 +303,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
     date_canceled: date
         The canceled date represents the date when the BillModel was canceled, if applicable.
         Will be null unless BillModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
-    objects: BillModelManager
-        Custom defined BillModelManager.
     """
     REL_NAME_PREFIX = 'bill'
     IS_DEBIT_BALANCE = False
