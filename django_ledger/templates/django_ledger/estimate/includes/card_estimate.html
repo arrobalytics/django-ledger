@@ -32,7 +32,7 @@
         <h3 class="is-size-4">{% trans 'Total Cost' %}:
             {% currency_symbol %}{{ estimate_model.get_cost_estimate | currency_format }}</h3>
         <h3 class="is-size-4 has-text-weight-light is-italic">
-            {% trans 'Estimated Gross Margin' %}: {{ estimate_model.gross_margin_percent_estimate | floatformat:2 }}%</h3>
+            {% trans 'Estimated Gross Margin' %}: {{ estimate_model.get_gross_margin_estimate | percentage }}</h3>
 
         {# PROGRESS BARS #}
         {% if estimate_model.is_approved and contract_progress %}

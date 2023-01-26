@@ -37,7 +37,7 @@
                             <div>
                                 <p class="heading">{% trans 'Gross Margin Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ estimate_model.gross_margin_estimate  | percentage }}</p>
+                                    {% currency_symbol %}{{ estimate_model.get_gross_margin_estimate  | percentage }}</p>
                             </div>
                         </div>
                     </nav>
