@@ -4,85 +4,84 @@
 <div class="table-container">
     <table class="table is-fullwidth is-striped is-narrow django-ledger-table-bottom-margin-75">
         <thead>
-            {% if title %}
-                <tr>
-                    <td><h2 class="is-size-3 has-text-weight-light">{{ title }}</h2></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            {% endif %}
+        {% if title %}
             <tr>
-                <th>{% trans 'Role' %}</th>
-                <th>{% trans 'Parent' %}</th>
-                <th>{% trans 'Code' %}</th>
-                <th>{% trans 'Account Name' %}</th>
-                <th>{% trans 'Balance Type' %}</th>
-                <th>{% trans 'Active' %}</th>
-                <th>{% trans 'Locked' %}</th>
-                <th>{% trans 'Actions' %}</th>
+                <td><h2 class="is-size-3 has-text-weight-light">{{ title }}</h2></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
             </tr>
+        {% endif %}
+        <tr>
+            <th>{% trans 'Role' %}</th>
+            <th>{% trans 'Account Name' %}</th>
+            <th>{% trans 'Parent' %}</th>
+            <th>{% trans 'Code' %}</th>
+            <th>{% trans 'Balance Type' %}</th>
+            <th>{% trans 'Active' %}</th>
+            <th>{% trans 'Locked' %}</th>
+            <th>{% trans 'Actions' %}</th>
+        </tr>
         </thead>
         <tbody>
-            {% for account in accounts %}
-                <tr>
-                    <td>{{ account.get_role_display }}</td>
-                    <td>{{ account.parent.code }}</td>
-                    <td>{{ account.code }}</td>
-                    <td>{{ account.name }}</td>
-                    <td class="has-text-centered">
-                        {% if account.is_debit %}
-                            <span class="icon has-text-info-dark">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                        {% elif account.is_credit %}
-                            <span class="icon has-text-warning-dark">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                        {% endif %}
-                    </td>
-                    <td class="has-text-centered">
-                        {% if account.active %}
-                            <span class="icon has-text-success-dark">
+        {% for account in accounts %}
+            <tr>
+                <td class="has-text-weight-bold">{{ account.get_role_display }}</td>
+                <td>{{ account.name }}</td>
+                {#                <td>{{ account.get_code_prefix }}</td>#}
+                <td>{% if account.get_parent %}{{ account.get_parent }}{% endif %}</td>
+                <td>{{ account.code }}</td>
+                <td class="has-text-centered">
+                    {% if account.is_debit %}
+                        <span class="icon has-text-info-dark">{% icon 'bi:arrow-bar-down' 24 %}</span>
+                    {% elif account.is_credit %}
+                        <span class="icon has-text-warning-dark">{% icon 'bi:arrow-bar-up' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if account.active %}
+                        <span class="icon has-text-success-dark">
                                 {% icon 'ant-design:check-circle-filled' 24 %}
                             </span>
-                        {% endif %}
-                    </td>
-                    <td class="has-text-centered">
-                        {% if account.locked %}
-                            <span class="icon has-text-success-dark">
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">
+                    {% if account.locked %}
+                        <span class="icon has-text-success-dark">
                                 {% icon 'bi:lock-fill' 24 %}
                             </span>
-                        {% elif not account.locked %}
-                            <span class="icon has-text-danger-dark">
+                    {% elif not account.locked %}
+                        <span class="icon has-text-danger-dark">
                                 {% icon 'bx:bx-lock-open-alt' 24 %}
                             </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
-                            <div class="dropdown-trigger">
-                                <button class="button is-small is-rounded is-outlined"
-                                        aria-haspopup="true"
-                                        aria-controls="dropdown-menu">
-                                    <span>Actions</span>
-                                    <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
-                                </button>
-                            </div>
-                            <div class="dropdown-menu" id="dropdown-menu-{{ account.uuid }}" role="menu">
-                                <div class="dropdown-content">
-                                    <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=account.uuid %}"
-                                       class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                    <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}"
-                                       class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
-                                    <a href="{% url 'django_ledger:account-create-child' entity_slug=entity_slug parent_account_pk=account.uuid %}"
-                                       class="dropdown-item has-text-info">{% trans 'Create Child Account' %}</a>
-                                </div>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>{% trans 'Actions' %}</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ account.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=account.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
+                                <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}"
+                                   class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
                             </div>
                         </div>
-                    </td>
-                </tr>
-            {% endfor %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
 
     </table>
 </div>

@@ -16,6 +16,9 @@ from django_ledger.exceptions import InvalidRoleError
 
 mod = sys.modules[__name__]
 
+DEBIT = 'debit'
+CREDIT = 'credit'
+
 # --- ASSET ROLES ----
 # Current Assets ---
 ASSET_CA_CASH = 'asset_ca_cash'
@@ -86,6 +89,70 @@ EXPENSE_TAXES = 'ex_taxes'
 EXPENSE_INTEREST = 'ex_interest'
 EXPENSE_OTHER = 'ex_other'
 
+# ------> ROLES ACCOUNT ROOT <----- #
+
+ROOT_COA = 'root_coa'
+ROOT_ASSETS = 'root_assets'
+ROOT_LIABILITIES = 'root_liabilities'
+ROOT_CAPITAL = 'root_capital'
+ROOT_INCOME = 'root_income'
+ROOT_COGS = 'root_cogs'
+ROOT_EXPENSES = 'root_expenses'
+
+ROOT_GROUP = [
+    ROOT_COA,
+    ROOT_ASSETS,
+    ROOT_LIABILITIES,
+    ROOT_CAPITAL,
+    ROOT_INCOME,
+    ROOT_COGS,
+    ROOT_EXPENSES
+]
+ROOT_GROUP_LEVEL_2 = [
+    ROOT_ASSETS,
+    ROOT_LIABILITIES,
+    ROOT_CAPITAL,
+    ROOT_INCOME,
+    ROOT_COGS,
+    ROOT_EXPENSES
+]
+ROOT_GROUP_META = {
+    ROOT_COA: {
+        'code': '00000',
+        'title': 'CoA Root Node',
+        'balance_type': DEBIT
+    },
+    ROOT_ASSETS: {
+        'code': '10000',
+        'title': 'Asset Accounts Root Node',
+        'balance_type': DEBIT
+    },
+    ROOT_LIABILITIES: {
+        'code': '20000',
+        'title': 'Liability Accounts Root Node',
+        'balance_type': CREDIT
+    },
+    ROOT_CAPITAL: {
+        'code': '30000',
+        'title': 'Capital Accounts Root Node',
+        'balance_type': CREDIT
+    },
+    ROOT_INCOME: {
+        'code': '40000',
+        'title': 'Income Accounts Root Node',
+        'balance_type': CREDIT
+    },
+    ROOT_COGS: {
+        'code': '50000',
+        'title': 'COGS Accounts Root Node',
+        'balance_type': DEBIT
+    },
+    ROOT_EXPENSES: {
+        'code': '60000',
+        'title': 'Expense Accounts Root Node',
+        'balance_type': DEBIT
+    },
+}
 # ------> ROLE GROUPS <-------#
 
 # ASSET GROUPS...
@@ -100,6 +167,7 @@ GROUP_CURRENT_ASSETS = [
     ASSET_CA_INVENTORY,
     ASSET_CA_RECEIVABLES,
     ASSET_CA_PREPAID,
+    ASSET_CA_UNCOLLECTIBLES,
     ASSET_CA_OTHER
 ]
 
@@ -156,18 +224,11 @@ GROUP_INCOME = [
     INCOME_OTHER,
 ]
 
-GROUP_EXPENSES = [
-    COGS,
-    EXPENSE_REGULAR,
-    EXPENSE_INTEREST,
-    EXPENSE_TAXES,
-    EXPENSE_CAPITAL,
-    EXPENSE_DEPRECIATION,
-    EXPENSE_AMORTIZATION,
-    EXPENSE_OTHER
+GROUP_COGS = [
+    COGS
 ]
 
-GROUP_EXPENSES_NO_COGS = [
+GROUP_EXPENSES = [
     EXPENSE_REGULAR,
     EXPENSE_INTEREST,
     EXPENSE_TAXES,
@@ -310,7 +371,7 @@ BS_ASSET_ROLE = 'assets'
 BS_LIABILITIES_ROLE = 'liabilities'
 BS_EQUITY_ROLE = 'equity'
 
-ACCOUNT_ROLES = [
+ACCOUNT_ROLE_CHOICES = [
     (BS_ASSET_ROLE.capitalize(), (
         # CURRENT ASSETS ----
         (ASSET_CA_CASH, _('Current Asset')),
@@ -355,8 +416,7 @@ ACCOUNT_ROLES = [
         (LIABILITY_LTL_NOTES_PAYABLE, _('Notes Payable')),
         (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
         (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
-    )
-     ),
+    )),
     (BS_EQUITY_ROLE.capitalize(), (
 
         # EQUITY ---
@@ -384,18 +444,28 @@ ACCOUNT_ROLES = [
         (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
         (EXPENSE_AMORTIZATION, _('Amortization Expense')),
         (EXPENSE_OTHER, _('Other Expense')),
-    )
-     )
+    )),
+    ('Root', (
+        (ROOT_COA, 'CoA Root Account'),
+        (ROOT_ASSETS, 'Assets Root Account'),
+        (ROOT_LIABILITIES, 'Liabilities Root Account'),
+        (ROOT_CAPITAL, 'Capital Root Account'),
+        (ROOT_INCOME, 'Income Root Account'),
+        (ROOT_COGS, 'COGS Root Account'),
+        (ROOT_EXPENSES, 'Expenses Root Account'),
+    ))
 ]
+ACCOUNT_ROLE_CREATE_CHOICES = [c for c in ACCOUNT_ROLE_CHOICES if c[0] != 'Root']
 
-ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLES], list())
-ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLES])
+ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], list())
+ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHOICES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
 
 ROLES_VARS = locals().keys()
 ROLES_DIRECTORY = dict()
 ROLES_CATEGORIES = ['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'COGS', 'EXPENSE']
+
 for cat in ROLES_CATEGORIES:
     ROLES_DIRECTORY[cat] = [c for c in ROLES_VARS if c.split('_')[0] == cat]
 

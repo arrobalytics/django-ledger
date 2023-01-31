@@ -9,6 +9,7 @@ from datetime import datetime, date
 from typing import List, Union
 from uuid import uuid4, UUID
 
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet
@@ -16,10 +17,10 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import validate_io_date, lazy_importer
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.entity import EntityModel
-from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 
@@ -34,6 +35,10 @@ role in the production of financial statements and sets its foundation in the Tr
 amd aggregate transactions at the Database layer without the need of pulling all TransactionModels into memory for the
 production of financial statements.
 """
+
+
+class TransactionModelValidationError(ValidationError):
+    pass
 
 
 class TransactionModelQuerySet(QuerySet):
@@ -463,8 +468,13 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                                   x2=self.account.name,
                                                   x3=self.amount,
                                                   x4=self.tx_type,
-                                                  # pylint: disable=no-member
                                                   x5=self.account.balance_type)
+
+    def clean(self):
+        if self.account.is_root_account():
+            raise TransactionModelValidationError(
+                message=_('Cannot transact on root accounts')
+            )
 
 
 class TransactionModel(TransactionModelAbstract):
