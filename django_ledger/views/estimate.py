@@ -86,7 +86,7 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     def get_context_data(self, **kwargs):
         context = super(EstimateModelDetailView, self).get_context_data(**kwargs)
         ce_model: EstimateModel = self.object
-        context['page_title'] = self.PAGE_TITLE,
+        context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = ce_model.estimate_number
         context['header_subtitle_icon'] = 'eos-icons:job'
@@ -154,7 +154,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     def get_context_data(self, itemtxs_formset=None, **kwargs):
         context = super(EstimateModelUpdateView, self).get_context_data(**kwargs)
         ce_model: EstimateModel = self.object
-        context['page_title'] = self.PAGE_TITLE,
+        context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
         context['header_subtitle'] = ce_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
