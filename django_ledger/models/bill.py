@@ -456,6 +456,10 @@ class BillModelAbstract(LedgerWrapperMixIn,
 
             self.ledger = ledger_model
             self.ledger.save()
+
+            if self.can_generate_bill_number():
+                self.generate_bill_number(commit=commit)
+
             self.clean()
 
             if commit:
@@ -1651,9 +1655,6 @@ class BillModelAbstract(LedgerWrapperMixIn,
         commit: bool
             If True, commits into DB the generated BillModel number if generated.
         """
-
-        if self.can_generate_bill_number():
-            self.generate_bill_number(commit=commit)
 
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()

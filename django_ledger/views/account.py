@@ -14,7 +14,7 @@ from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm, AccountModelCreateChildForm
-from django_ledger.models import lazy_loader
+from django_ledger.models import lazy_loader, ChartOfAccountModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn,
@@ -120,7 +120,9 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         #                                                 entity_slug=entity_slug)
         # coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
 
-        account_model = AccountModel.add_root(**form.cleaned_data, coa_id=entity_model.default_coa_id)
+        coa_model = get_object_or_404(ChartOfAccountModel, uuid__exact=entity_model.default_coa_id)
+        account_model = AccountModel.add_root(**form.cleaned_data, coa_model=coa_model)
+        
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):

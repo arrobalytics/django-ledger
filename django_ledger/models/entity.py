@@ -151,7 +151,13 @@ class EntityReportMixIn:
             * 4 -> April.
             * 9 -> September.
         """
-        fy: int = getattr(self, 'fy_start_month')
+        try:
+            fy: int = getattr(self, 'fy_start_month')
+        except AttributeError:
+            # current object is not an entity, get current entity and fetch its fy_start_month value
+            entity = EntityModel.objects.get(slug=self.kwargs['entity_slug'])
+            fy: int = getattr(entity, 'fy_start_month')
+     
         return fy
 
     def validate_quarter(self, quarter: int):

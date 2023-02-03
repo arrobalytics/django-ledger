@@ -433,6 +433,10 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         self.ledger = ledger_model
         self.ledger.save()
+
+        if self.can_generate_invoice_number():
+            self.generate_invoice_number(commit=commit)
+
         self.clean()
 
         if commit:
@@ -1550,8 +1554,6 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         commit: bool
             If True, commits into DB the generated InvoiceModel number if generated.
         """
-        if self.can_generate_invoice_number():
-            self.generate_invoice_number(commit=commit)
 
         super(LedgerWrapperMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
