@@ -44,7 +44,8 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         return AccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).select_related('coa_model', 'coa_model__entity').order_by('role', 'code')
+        ).not_coa_root().select_related(
+            'coa_model', 'coa_model__entity').order_by('role', 'code')
 
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -110,9 +111,12 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def form_valid(self, form):
         EntityModel = lazy_loader.get_entity_model()
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
-        account_model = AccountModel.add_root(**form.cleaned_data, coa_model_id=entity_model.default_coa_id)
+        account_model: AccountModel = form.save(commit=False)
+        account_model.coa_model_id = entity_model.default_coa_id
+        bs_root_node: AccountModel = account_model.get_bs_root_node()
+        bs_root_node.add_child(instance=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):

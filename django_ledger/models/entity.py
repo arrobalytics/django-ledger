@@ -25,6 +25,7 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
+from itertools import groupby
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional
@@ -42,10 +43,11 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
-from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
+    ROOT_GROUP
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.models.coa_default import CHART_OF_ACCOUNTS
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS, CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.utils import lazy_loader
@@ -769,12 +771,13 @@ class EntityModelAbstract(MP_Node,
             coa_name = self.name + ' Default CoA'
 
         chart_of_accounts = ChartOfAccountModel(
-            slug=self.slug + '-coa',
+            slug=self.slug + ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6)) + '-coa',
             name=coa_name,
             entity=self
         )
         chart_of_accounts.clean()
         chart_of_accounts.save()
+        chart_of_accounts.configure()
 
         if assign_as_default:
             self.default_coa = chart_of_accounts
@@ -794,28 +797,38 @@ class EntityModelAbstract(MP_Node,
 
         if not chart_of_accounts:
             if not self.has_default_coa():
-                self.create_chart_of_accounts(assign_as_default=True, coa_name='Default', commit=commit)
+                self.create_chart_of_accounts(assign_as_default=True, commit=commit)
             chart_of_accounts: ChartOfAccountModel = self.default_coa
 
-        coa_has_accounts = chart_of_accounts.accountmodel_set.all().exists()
+        coa_accounts_qs = chart_of_accounts.accountmodel_set.all()
+        len(coa_accounts_qs)
+
+        coa_has_accounts = coa_accounts_qs.not_coa_root().exists()
 
         if not coa_has_accounts or force:
+            root_accounts = coa_accounts_qs.is_coa_root()
             logger = self.get_logger()
-            acc_objs = [
-                AccountModel(
-                    code=a['code'],
-                    name=a['name'],
-                    role=a['role'],
-                    balance_type=a['balance_type'],
-                    active=activate_accounts,
-                    coa_model=chart_of_accounts,
-                ) for a in CHART_OF_ACCOUNTS
-            ]
 
-            for account_model in acc_objs:
-                account_model.clean()
-                logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
-                AccountModel.add_root(instance=account_model)
+            root_maps = {
+                root_accounts.get(role__exact=k): [
+                    AccountModel(
+                        code=a['code'],
+                        name=a['name'],
+                        role=a['role'],
+                        balance_type=a['balance_type'],
+                        active=activate_accounts,
+                        coa_model=chart_of_accounts,
+                    ) for a in v] for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
+            }
+
+            for root_acc, acc_model_list in root_maps.items():
+                for account_model in acc_model_list:
+                    account_model.clean()
+
+            for root_acc, acc_model_list in root_maps.items():
+                for account_model in acc_model_list:
+                    logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
+                    root_acc.add_child(instance=account_model)
         else:
             if not ignore_if_default_coa:
                 raise ValidationError(f'Entity {self.name} already has existing accounts. '
@@ -1219,8 +1232,6 @@ class EntityModel(EntityModelAbstract):
 def entitymodel_presave(instance: EntityModel, **kwargs):
     if not instance.slug:
         instance.generate_slug(commit=False)
-
-
 
 
 pre_save.connect(entitymodel_presave, EntityModel)

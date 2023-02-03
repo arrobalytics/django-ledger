@@ -779,7 +779,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
         return all([
             self.date_draft,
-            not self.invoice_number
+            not self.invoice_number,
+            self.is_configured()
         ])
 
     # ACTIONS...

@@ -4,9 +4,10 @@
   "extensions": {
     "endpoints": {
       "Default GraphQL Endpoint": {
-        "url": "http://localhost:8000/graphql/",
+        "url": "http://192.168.1.101:8000/api/v1/graphql/",
         "headers": {
-          "user-agent": "JS GraphQL"
+          "user-agent": "JS GraphQL",
+          "Authorization": "Bearer pWbp2nCMi0FYHrYMcSvBygwPpvNrZB"
         },
         "introspect": true
       }

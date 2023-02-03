@@ -79,7 +79,7 @@ INCOME_CAPITAL_GAIN_LOSS = 'in_gain_loss'
 INCOME_INTEREST = 'in_interest'
 INCOME_OTHER = 'in_other'
 
-COGS = 'ex_cogs'
+COGS = 'cogs_regular'
 
 EXPENSE_REGULAR = 'ex_regular'
 EXPENSE_CAPITAL = 'ex_capital'
@@ -455,12 +455,24 @@ ACCOUNT_ROLE_CHOICES = [
         (ROOT_EXPENSES, 'Expenses Root Account'),
     ))
 ]
-ACCOUNT_ROLE_CREATE_CHOICES = [c for c in ACCOUNT_ROLE_CHOICES if c[0] != 'Root']
+
+ACCOUNT_CHOICES_NO_ROOT = [c for c in ACCOUNT_ROLE_CHOICES if c[0] != 'Root']
+ACCOUNT_LIST_ROLE_ORDER = list(r[0] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT]))
 
 ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], list())
 ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHOICES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
+BS_BUCKETS = {
+    '0': 'Root',
+    '1': 'Asset',
+    '2': 'Liability',
+    '3': 'Capital',
+    '4': 'Income',
+    '5': 'COGS',
+    '6': 'Expenses'
+}
+BS_BUCKETS_ORDER = [v for _, v in BS_BUCKETS.items() if v != 'Root']
 
 ROLES_VARS = locals().keys()
 ROLES_DIRECTORY = dict()

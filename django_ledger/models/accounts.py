@@ -38,7 +38,8 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
                                     GROUP_ASSETS,
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
-                                    ROOT_GROUP)
+                                    ROOT_GROUP, BS_BUCKETS, ROOT_GROUP_META, ROOT_ASSETS, ROOT_LIABILITIES,
+                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE
@@ -106,6 +107,9 @@ class AccountModelQuerySet(MP_NodeQuerySet):
 
     def is_coa_root(self):
         return self.filter(role__in=ROOT_GROUP)
+
+    def not_coa_root(self):
+        return self.exclude(role__in=ROOT_GROUP)
 
     def for_entity(self, entity_slug, user_model):
         if isinstance(self, lazy_loader.get_entity_model()):
@@ -499,6 +503,27 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         return self.balance_type == CREDIT
 
+    def is_coa_root(self):
+        return self.role in ROOT_GROUP
+
+    # def get_bs_root_node(self):
+    #     if not self.is_coa_root():
+    #         ancestors_qs = self.get_ancestors()
+    #         if self.is_asset():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_ASSETS]['code'])
+    #         elif self.is_liability():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_LIABILITIES]['code'])
+    #         elif self.is_capital():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_CAPITAL]['code'])
+    #         elif self.is_income():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_INCOME]['code'])
+    #         elif self.is_cogs():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_COGS]['code'])
+    #         elif self.is_expense():
+    #             return ancestors_qs.get(code__exact=ROOT_GROUP_META[ROOT_EXPENSES]['code'])
+    #         raise AccountModelValidationError(message=f'Unable to locate Balance Sheet root node for account code: '
+    #                                                   f'{self.code} {self.name}')
+
     def is_asset(self) -> bool:
         return self.role in GROUP_ASSETS
 
@@ -508,7 +533,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     def is_capital(self) -> bool:
         return self.role in GROUP_CAPITAL
 
-    def is_revenue(self) -> bool:
+    def is_income(self) -> bool:
         return self.role in GROUP_INCOME
 
     def is_cogs(self) -> bool:
@@ -525,14 +550,22 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             return '2'
         elif self.is_capital():
             return '3'
-        elif self.is_revenue():
+        elif self.is_income():
             return '4'
         elif self.is_cogs():
             return '5'
         elif self.is_expense():
             return '6'
+        elif self.is_coa_root():
+            return '0'
         else:
             raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
+
+    def get_bs_bucket(self) -> str:
+        return BS_BUCKETS[self.get_code_prefix()]
+
+    def get_html_pixel_indent(self):
+        return f'{(self.depth - 2) * 30}px'
 
     def generate_random_code(self):
         if not self.role:

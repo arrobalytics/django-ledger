@@ -830,7 +830,8 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return all([
             not self.bill_number,
-            self.date_draft
+            self.is_draft(),
+            self.is_configured()
         ])
 
     # --> ACTIONS <---

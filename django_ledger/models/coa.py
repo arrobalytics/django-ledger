@@ -32,7 +32,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META
 from django_ledger.models import lazy_loader
-from django_ledger.models.accounts import AccountModel
+from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.settings import logger
 
@@ -175,8 +175,19 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     # def is_configured(self, account_model_qs: Optional[AccountModelQuerySet]):
     #     pass
 
+    def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
+        return self.accountmodel_set.all().is_coa_root()
+
+    def get_coa_root_account(self) -> AccountModel:
+        qs = self.get_coa_root_accounts_qs()
+        return qs.get(role__exact=ROOT_COA)
+
+    def get_coa_account_tree(self):
+        root_account = self.get_coa_root_account()
+        return AccountModel.dump_bulk(parent=root_account)
+
     def configure(self, raise_exception: bool = True):
-        root_accounts_qs = self.accountmodel_set.all().is_coa_root()
+        root_accounts_qs = self.get_coa_root_accounts_qs()
         existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
 
         if len(existing_root_roles) > 0:
@@ -198,6 +209,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     locked=True,
                     balance_type=role_meta['balance_type']
                 ))
+
             coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
 
             for root_role in ROOT_GROUP_LEVEL_2:

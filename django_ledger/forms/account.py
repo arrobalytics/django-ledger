@@ -4,7 +4,7 @@ from django.forms import TextInput, Select, ModelForm, ChoiceField
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
-from django_ledger.io import ACCOUNT_ROLE_CREATE_CHOICES
+from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -35,7 +35,7 @@ class AccountModelCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
-        self.fields['role'].choices = ACCOUNT_ROLE_CREATE_CHOICES
+        self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
         self.fields['code'].required = False
 
     class Meta:
