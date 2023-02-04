@@ -405,42 +405,43 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         A tuple of LedgerModel, InvoiceModel
         """
 
-        if isinstance(entity_slug, str):
-            entity_qs = EntityModel.objects.for_user(
-                user_model=user_model)
-            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-        elif isinstance(entity_slug, EntityModel):
-            entity_model = entity_slug
-        else:
-            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+        if not self.is_configured():
+            if isinstance(entity_slug, str):
+                entity_qs = EntityModel.objects.for_user(
+                    user_model=user_model)
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+            elif isinstance(entity_slug, EntityModel):
+                entity_model = entity_slug
+            else:
+                raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-        if entity_model.is_accrual_method():
-            self.accrue = True
-            self.progress = Decimal('1.00')
-        else:
-            self.accrue = False
+            if entity_model.is_accrual_method():
+                self.accrue = True
+                self.progress = Decimal('1.00')
+            else:
+                self.accrue = False
 
-        LedgerModel = lazy_loader.get_ledger_model()
-        ledger_model: LedgerModel = LedgerModel(
-            entity=entity_model,
-            posted=ledger_posted
-        )
-        ledger_name = f'Invoice {self.uuid}'
-        if invoice_desc:
-            ledger_name += f' | {invoice_desc}'
-        ledger_model.name = ledger_name
-        ledger_model.clean()
+            LedgerModel = lazy_loader.get_ledger_model()
+            ledger_model: LedgerModel = LedgerModel(
+                entity=entity_model,
+                posted=ledger_posted
+            )
+            ledger_name = f'Invoice {self.uuid}'
+            if invoice_desc:
+                ledger_name += f' | {invoice_desc}'
+            ledger_model.name = ledger_name
+            ledger_model.clean()
 
-        self.ledger = ledger_model
-        self.ledger.save()
+            self.ledger = ledger_model
+            self.ledger.save()
 
-        if self.can_generate_invoice_number():
-            self.generate_invoice_number(commit=commit)
+            if self.can_generate_invoice_number():
+                self.generate_invoice_number(commit=commit)
 
-        self.clean()
+            self.clean()
 
-        if commit:
-            self.save()
+            if commit:
+                self.save()
         return self.ledger, self
 
     def get_migrate_state_desc(self):
@@ -783,7 +784,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
         return all([
             self.date_draft,
-            not self.invoice_number
+            not self.invoice_number,
+            self.is_configured()
         ])
 
     # ACTIONS...

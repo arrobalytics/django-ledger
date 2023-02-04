@@ -7,6 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from calendar import month_abbr
+from itertools import groupby
 from random import randint
 
 from django import template
@@ -18,6 +19,7 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
+from django_ledger.io import BS_BUCKETS_ORDER, ACCOUNT_LIST_ROLE_ORDER
 from django_ledger.io.io_mixin import validate_activity
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.settings import (
@@ -245,7 +247,7 @@ def bill_txs_table(context, bill_model: BillModel):
 @register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
 def invoice_txs_table(context, invoice_model: InvoiceModel):
     txs_queryset = TransactionModel.objects.for_invoice(
-        invoice_pk=invoice_model.uuid,
+        invoice_model=invoice_model,
         user_model=context['request'].user,
         entity_slug=context['view'].kwargs['entity_slug']
     ).select_related('journal_entry').order_by('-journal_entry__date')
@@ -292,8 +294,19 @@ def po_table(context, purchase_order_qs):
 
 @register.inclusion_tag('django_ledger/account/tags/accounts_table.html', takes_context=True)
 def accounts_table(context, accounts_qs, title=None):
+    accounts_gb = list((r, list(gb)) for r, gb in groupby(accounts_qs, key=lambda acc: acc.get_bs_bucket()))
+    accounts_gb.sort(key=lambda v: BS_BUCKETS_ORDER.index(v[0]))
+    for r, gb in accounts_gb:
+        gb.sort(key=lambda acc: ACCOUNT_LIST_ROLE_ORDER.index(acc.role))
+    accounts_gb_2 = [
+        (bsr, [
+            (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
+        ]) for bsr, gb in accounts_gb
+    ]
     return {
         'accounts': accounts_qs,
+        'accounts_gb': accounts_gb,
+        'accounts_gb_2': accounts_gb_2,
         'title': title,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }

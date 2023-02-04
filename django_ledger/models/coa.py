@@ -22,18 +22,27 @@ when no explicit CoA is specified, the default behavior is to use the EntityMode
 Accounts can be used when creating Journal Entries**. No commingling between CoAs is allowed in order to preserve the
 integrity of the Journal Entry.
 """
-
+from typing import Optional, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS, ROOT_LIABILITIES, ROOT_CAPITAL, \
+    ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES
 from django_ledger.models import lazy_loader
+from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.settings import logger
 
 UserModel = get_user_model()
+
+
+class ChartOfAccountsModelValidationError(ValidationError):
+    pass
 
 
 class ChartOfAccountQuerySet(models.QuerySet):
@@ -164,6 +173,101 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def __str__(self):
         return f'{self.slug}: {self.name}'
+
+    # def is_configured(self, account_model_qs: Optional[AccountModelQuerySet]):
+    #     pass
+
+    def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
+        return self.accountmodel_set.all().is_coa_root()
+
+    def get_coa_root(self) -> AccountModel:
+        qs = self.get_coa_root_accounts_qs()
+        return qs.get(role__exact=ROOT_COA)
+
+    def get_coa_l2_root(self,
+                        account_model: AccountModel,
+                        root_account_qs: Optional[AccountModelQuerySet] = None,
+                        as_queryset: bool = False) -> Union[AccountModelQuerySet, AccountModel]:
+
+        if not account_model.is_coa_root():
+
+            if not root_account_qs:
+                root_account_qs = self.get_coa_root_accounts_qs()
+
+            if account_model.is_asset():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_ASSETS]['code'])
+            elif account_model.is_liability():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_LIABILITIES]['code'])
+            elif account_model.is_capital():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_CAPITAL]['code'])
+            elif account_model.is_income():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_INCOME]['code'])
+            elif account_model.is_cogs():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_COGS]['code'])
+            elif account_model.is_expense():
+                qs = root_account_qs.filter(code__exact=ROOT_GROUP_META[ROOT_EXPENSES]['code'])
+            else:
+                raise ChartOfAccountsModelValidationError(message=f'Unable to locate Balance Sheet'
+                                                                  ' root node for account code: '
+                                                                  f'{account_model.code} {account_model.name}')
+            if as_queryset:
+                return qs
+            return qs.get()
+
+    def get_coa_account_tree(self):
+        root_account = self.get_coa_root()
+        return AccountModel.dump_bulk(parent=root_account)
+
+    def configure(self, raise_exception: bool = True):
+        root_accounts_qs = self.get_coa_root_accounts_qs()
+        existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
+
+        if len(existing_root_roles) > 0:
+            raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+
+        if ROOT_COA not in existing_root_roles:
+            # add coa root...
+            role_meta = ROOT_GROUP_META[ROOT_COA]
+            account_pk = uuid4()
+            logger.info(msg=f'Adding {role_meta} node...')
+            coa_root_account_model = AccountModel.add_root(
+                instance=AccountModel(
+                    uuid=account_pk,
+                    code=role_meta['code'],
+                    name=role_meta['title'],
+                    coa_model=self,
+                    role=ROOT_COA,
+                    active=False,
+                    locked=True,
+                    balance_type=role_meta['balance_type']
+                ))
+
+            coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
+
+            for root_role in ROOT_GROUP_LEVEL_2:
+                if root_role not in existing_root_roles:
+                    account_pk = uuid4()
+                    role_meta = ROOT_GROUP_META[root_role]
+                    logger.info(msg=f'Adding {role_meta} node...')
+                    coa_root_account_model.add_child(
+                        instance=AccountModel(
+                            uuid=account_pk,
+                            code=role_meta['code'],
+                            name=role_meta['title'],
+                            coa_model=self,
+                            role=root_role,
+                            active=False,
+                            locked=True,
+                            balance_type=role_meta['balance_type']
+                        ))
+
+    def add_account(self, account_model: AccountModel):
+        if not account_model.coa_model_id:
+            root_account_qs = self.get_coa_root_accounts_qs()
+            l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
+            account_model.coa_model_id = self.uuid
+            account_model = l2_root_node.add_child(instance=account_model)
+        return account_model
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):

@@ -1,6 +1,6 @@
-from django.forms import ModelForm, TextInput, Select, HiddenInput
+from django.forms import ModelForm, TextInput, Select
 
-from django_ledger.io.roles import GROUP_INCOME, GROUP_EXPENSES_NO_COGS, COGS, ASSET_CA_INVENTORY
+from django_ledger.io.roles import GROUP_INCOME, COGS, ASSET_CA_INVENTORY, GROUP_EXPENSES
 from django_ledger.models import AccountModel, ItemModel, UnitOfMeasureModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -149,11 +149,11 @@ class ExpenseItemUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.with_roles(
-            roles=GROUP_EXPENSES_NO_COGS,
+            roles=GROUP_EXPENSES,
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
 
-        self.fields['expense_account'].queryset = accounts_qs.filter(role__in=GROUP_EXPENSES_NO_COGS)
+        self.fields['expense_account'].queryset = accounts_qs.filter(role__in=GROUP_EXPENSES)
 
         uom_qs = UnitOfMeasureModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,

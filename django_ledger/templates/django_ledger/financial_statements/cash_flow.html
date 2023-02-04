@@ -4,7 +4,9 @@
 {% load django_ledger %}
 
 {% block aux_menu %}
-    {% if entity %}
+    {% if unit_model and entity %}
+        <div class="column is-12">{% period_navigation 'unit-cf' %}</div>
+    {% elif entity %}
         <div class="column is-12">{% period_navigation 'entity-cf' %}</div>
     {% elif ledger %}
         <div class="column is-12">{% period_navigation 'ledger-cf' %}</div>
@@ -19,21 +21,21 @@
             <div class="container mb-4 has-text-centered">
                 <div class="columns">
                     <div class="column">
-                        {% if entity %}
-                            <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
+                        {% if unit_model and entity %}
+                            <h1 class="is-size-2 has-text-weight-light">{{ entity.name }}</h1>
+                        {% elif entity %}
+                            <h1 class="is-size-2 has-text-weight-light">{{ entity.name }}</h1>
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
-                        {% elif unit_model %}
-                            <h1 class="is-size-2 has-text-weight-light">{{ unit_model.name }}</h1>
                         {% endif %}
                         <h1 class="is-size-2 has-text-weight-bold">{% trans 'Cash Flow Statement' %}</h1>
                         {% if unit_model %}
-                            <h3 class="is-size-4 has-text-weight-medium is-italic">{{ unit_model.name }} {% trans 'Unit' %}</h3>
-                        {% endif %}
+                            <h3 class="is-size-4 has-text-weight-bold has-text-success">{{ unit_model.name }} {% trans 'Unit' %}</h3>
+                        {% endif %}s
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}
-                            {% else %}Fiscal Year {{ year }}
+                                {% else %}{% trans 'Fiscal Year' %} {{ year }}
                             {% endif %}</h2>
                         <h3 class="is-size-4 is-italic has-font-weight-light">
                             {{ from_date | date:'m/d/Y' }} - {{ to_date | date:'m/d/Y' }}

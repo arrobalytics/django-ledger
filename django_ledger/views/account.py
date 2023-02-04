@@ -13,8 +13,8 @@ from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 
-from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm, AccountModelCreateChildForm
-from django_ledger.models import lazy_loader, ChartOfAccountModel
+from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
+from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn,
@@ -44,7 +44,8 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         return AccountModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).order_by('code')
+        ).not_coa_root().select_related(
+            'coa_model', 'coa_model__entity').order_by('role', 'code')
 
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
@@ -61,6 +62,10 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return context
 
     def get_form(self, form_class=None):
+        account_model = self.object
+
+        # Set here because user_model is needed to instantiate an instance of MoveNodeForm (AccountModelUpdateForm)
+        account_model.USER_MODEL = self.request.user
         return AccountModelUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
@@ -106,23 +111,11 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def form_valid(self, form):
         EntityModel = lazy_loader.get_entity_model()
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
-
-        # parent_account_pk = self.kwargs.get('parent_account_pk')
-        # if parent_account_pk:
-        #     account_qs = self.get_queryset()
-        #     parent_account_model = get_object_or_404(account_qs, uuid__exact=parent_account_pk)
-        #     account.parent = parent_account_model
-        #     account.role = parent_account_model.role
-
-        # coa_qs = ChartOfAccountModel.objects.for_entity(user_model=self.request.user,
-        #                                                 entity_slug=entity_slug)
-        # coa_model = get_object_or_404(coa_qs, entity__slug__exact=entity_slug)
-
-        coa_model = get_object_or_404(ChartOfAccountModel, uuid__exact=entity_model.default_coa_id)
-        account_model = AccountModel.add_root(**form.cleaned_data, coa_model=coa_model)
-        
+        account_model: AccountModel = form.save(commit=False)
+        coa_model = entity_model.default_coa
+        coa_model.add_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
@@ -131,30 +124,6 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        kwargs={
                            'entity_slug': entity_slug,
                        })
-
-
-class AccountModelCreateChildView(AccountModelCreateView):
-    template_name = 'django_ledger/account/account_create_child.html'
-    slug_url_kwarg = 'parent_account_pk'
-    slug_field = 'uuid'
-    PAGE_TITLE = _('Create Child Account')
-    context_object_name = 'account'
-
-    def get_context_data(self, **kwargs):
-        context = super(AccountModelCreateChildView, self).get_context_data()
-        obj: AccountModel = self.get_object()
-        context['page_title'] = _('Create Child Account')
-        context['header_title'] = _('Create Child Account - %s' % obj)
-        context['header_subtitle_icon'] = 'ic:twotone-account-tree'
-        context['account'] = obj
-        return context
-
-    def get_form(self, form_class=None):
-        return AccountModelCreateChildForm(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-            **self.get_form_kwargs()
-        )
 
 
 class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
@@ -190,7 +159,8 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         context = super().get_context_data(**kwargs)
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
-        txs_qs = self.object.transactionmodel_set.order_by('-journal_entry__date')
+        account_model: AccountModel = self.object
+        txs_qs = account_model.transactionmodel_set.order_by('-journal_entry__date')
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
         context['transactions'] = txs_qs
@@ -200,7 +170,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         return AccountModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        ).prefetch_related('transactionmodel_set')
+        ).select_related('coa_model', 'coa_model__entity').prefetch_related('transactionmodel_set')
 
 
 class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):
