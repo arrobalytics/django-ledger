@@ -25,7 +25,6 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
-from itertools import groupby
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional
@@ -43,13 +42,13 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
-from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK, \
-    ROOT_GROUP
+from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
-from django_ledger.models.coa_default import CHART_OF_ACCOUNTS, CHART_OF_ACCOUNTS_ROOT_MAP
+from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
+from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()
@@ -153,13 +152,24 @@ class EntityReportMixIn:
             * 4 -> April.
             * 9 -> September.
         """
+        # fy: int = getattr(self, 'fy_start_month')
+
         try:
             fy: int = getattr(self, 'fy_start_month')
         except AttributeError:
             # current object is not an entity, get current entity and fetch its fy_start_month value
-            entity = EntityModel.objects.get(slug=self.kwargs['entity_slug'])
+
+            # if current object is a detail view with an object...
+            obj = getattr(self, 'object')
+            if isinstance(obj, EntityModel):
+                entity = obj
+            elif isinstance(obj, EntityUnitModel):
+                entity = obj.entity
+            elif isinstance(obj, AccountModel):
+                entity = obj.coa_model.entity
+
             fy: int = getattr(entity, 'fy_start_month')
-     
+
         return fy
 
     def validate_quarter(self, quarter: int):
@@ -823,7 +833,7 @@ class EntityModelAbstract(MP_Node,
                         role=a['role'],
                         balance_type=a['balance_type'],
                         active=activate_accounts,
-                        coa_model=chart_of_accounts,
+                        # coa_model=chart_of_accounts,
                     ) for a in v] for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
             }
 
@@ -831,10 +841,12 @@ class EntityModelAbstract(MP_Node,
                 for account_model in acc_model_list:
                     account_model.clean()
 
+            coa_root_qs = chart_of_accounts.get_coa_root_accounts_qs()
             for root_acc, acc_model_list in root_maps.items():
                 for account_model in acc_model_list:
                     logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
-                    root_acc.add_child(instance=account_model)
+                    # root_acc.add_child(instance=account_model)
+                    chart_of_accounts.add_account(account_model)
         else:
             if not ignore_if_default_coa:
                 raise ValidationError(f'Entity {self.name} already has existing accounts. '

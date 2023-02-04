@@ -5,10 +5,18 @@
 
 {% block view_content %}
     <div class="box">
-        <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
-           class="button is-primary is-outlined">{% trans 'Create Account' %}</a>
-        <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-           class="button is-dark">{%  trans 'Back' %}</a>
-        {% accounts_table accounts %}
+        <div class="columns">
+            <div class="column">
+                <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-primary is-outlined">{% trans 'Create Account' %}</a>
+                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-dark">{% trans 'Back' %}</a>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                {% accounts_table accounts %}
+            </div>
+        </div>
     </div>
 {% endblock %}

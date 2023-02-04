@@ -1,6 +1,6 @@
 from typing import Optional
 
-from django.forms import TextInput, Select, ModelForm, ChoiceField
+from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
@@ -92,19 +92,17 @@ class AccountModelUpdateForm(MoveNodeForm):
     def mk_dropdown_tree(cls, model, for_node: Optional[AccountModel] = None):
         """ Creates a tree-like list of choices """
 
-        options = [(None, _('-- root --'))]
-        qs: AccountModelQuerySet = model.get_root_nodes()
+        if not for_node:
+            raise ValidationError(message='Must provide for_node argument.')
 
-        if for_node:
-            qs = qs.for_entity(
-                entity_slug=for_node.coa_model.entity.slug,
-                # must be set on view...
-                user_model=getattr(for_node, 'USER_MODEL')
-            ).with_roles(roles=for_node.role).active()
+        options = list()
+        qs = for_node.get_account_move_choice_queryset()
 
-        for node in qs:
-            cls.add_subtree(for_node, node, options)
-        return options
+        # for node in qs:
+        #     cls.add_subtree(for_node, node, options)
+        return [
+            (i.uuid, f'{"-" * (i.depth - 1)} {i}') for i in qs
+        ]
 
     class Meta:
         model = AccountModel

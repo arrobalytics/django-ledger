@@ -73,7 +73,7 @@ class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def form_valid(self, form):
         entity_unit_model: EntityUnitModel = form.save(commit=False)
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user )
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
         entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
         entity_unit_model.entity = entity_model
         EntityUnitModel.add_root(instance=entity_unit_model)
@@ -151,10 +151,6 @@ class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceShee
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
         ).select_related('entity')
-
-    def get_fy_start_month(self) -> int:
-        entity_unit: EntityUnitModel = self.object
-        return entity_unit.entity.fy_start_month
 
 
 class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):

@@ -298,10 +298,15 @@ def accounts_table(context, accounts_qs, title=None):
     accounts_gb.sort(key=lambda v: BS_BUCKETS_ORDER.index(v[0]))
     for r, gb in accounts_gb:
         gb.sort(key=lambda acc: ACCOUNT_LIST_ROLE_ORDER.index(acc.role))
-
+    accounts_gb_2 = [
+        (bsr, [
+            (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
+        ]) for bsr, gb in accounts_gb
+    ]
     return {
         'accounts': accounts_qs,
         'accounts_gb': accounts_gb,
+        'accounts_gb_2': accounts_gb_2,
         'title': title,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }

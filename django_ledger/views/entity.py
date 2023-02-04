@@ -230,10 +230,6 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
 
         return context
 
-    def get_fy_start_month(self) -> int:
-        entity_model: EntityModel = self.object
-        return entity_model.fy_start_month
-
     def get_queryset(self):
         """
         Returns a queryset of all Entities owned or Managed by the User.
@@ -302,11 +298,6 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
         """
         return EntityModel.objects.for_user(user_model=self.request.user)
 
-    # todo: this is odd, why override this method from YearlyReportMixIn?
-    def get_fy_start_month(self) -> int:
-        entity_model: EntityModel = self.object
-        return entity_model.fy_start_month
-
 
 class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
     """
@@ -361,11 +352,6 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
 
     def get_queryset(self):
         return EntityModel.objects.for_user(user_model=self.request.user)
-
-    # todo: this is odd, why override this method from YearlyReportMixIn?
-    def get_fy_start_month(self) -> int:
-        entity_model: EntityModel = self.object
-        return entity_model.fy_start_month
 
 
 class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
@@ -426,11 +412,6 @@ class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
 
     def get_queryset(self):
         return EntityModel.objects.for_user(user_model=self.request.user)
-
-    # todo: this is odd, why override this method from YearlyReportMixIn?
-    def get_fy_start_month(self) -> int:
-        entity_model: EntityModel = self.object
-        return entity_model.fy_start_month
 
 
 class QuarterlyEntityModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearEntityModelCashFlowStatementView):

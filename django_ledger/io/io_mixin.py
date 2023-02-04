@@ -202,7 +202,7 @@ class IOMixIn:
                 txs_qs = TransactionModel.objects.for_unit(
                     user_model=user_model,
                     entity_slug=entity_slug,
-                    unit_model=self
+                    unit_slug=self
                 )
             else:
                 txs_qs = TransactionModel.objects.none()

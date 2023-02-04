@@ -108,7 +108,6 @@ urlpatterns = [
          views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
          name='unit-ic-date'),
 
-
     # CASH FLOW STATEMENTS...
     path('entity/<slug:entity_slug>/cash-flow-statement/',
          views.EntityModelCashFlowStatementRedirectView.as_view(),
@@ -127,20 +126,20 @@ urlpatterns = [
          name='entity-cf-date'),
 
     # Entity Units...
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/',
-         views.EntityUnitModelIncomeStatementView.as_view(),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/',
+         views.EntityUnitModelCashFlowStatementView.as_view(),
          name='unit-cf'),
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/year/<int:year>/',
-         views.FiscalYearEntityUnitModelIncomeStatementView.as_view(),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/year/<int:year>/',
+         views.FiscalYearEntityUnitModelCashFlowStatementView.as_view(),
          name='unit-cf-year'),
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/quarter/<int:year>/<int:quarter>/',
-         views.QuarterlyEntityUnitModelIncomeStatementView.as_view(),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyEntityUnitModelCashFlowStatementView.as_view(),
          name='unit-cf-quarter'),
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/month/<int:year>/<str:month>/',
-         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/month/<int:year>/<str:month>/',
+         views.MonthlyEntityUnitModelCashFlowStatementView.as_view(),
          name='unit-cf-month'),
-    path('unit/<slug:entity_slug>/<slug:unit_slug>/income-statement/date/<int:year>/<str:month>/<int:day>/',
-         views.MonthlyEntityUnitModelIncomeStatementView.as_view(),
+    path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/date/<int:year>/<str:month>/<int:day>/',
+         views.DateEntityUnitModelCashFlowStatementView.as_view(),
          name='unit-cf-date'),
 
 ]

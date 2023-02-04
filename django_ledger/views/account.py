@@ -114,9 +114,8 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
         account_model: AccountModel = form.save(commit=False)
-        account_model.coa_model_id = entity_model.default_coa_id
-        bs_root_node: AccountModel = account_model.get_bs_root_node()
-        bs_root_node.add_child(instance=account_model)
+        coa_model = entity_model.default_coa
+        coa_model.add_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
@@ -160,7 +159,8 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         context = super().get_context_data(**kwargs)
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
-        txs_qs = self.object.transactionmodel_set.order_by('-journal_entry__date')
+        account_model: AccountModel = self.object
+        txs_qs = account_model.transactionmodel_set.order_by('-journal_entry__date')
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
         context['transactions'] = txs_qs
@@ -170,7 +170,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         return AccountModel.objects.for_entity(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
-        ).prefetch_related('transactionmodel_set')
+        ).select_related('coa_model', 'coa_model__entity').prefetch_related('transactionmodel_set')
 
 
 class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):
