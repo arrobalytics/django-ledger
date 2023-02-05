@@ -5,17 +5,23 @@
 __Django Ledger__ is a double entry accounting system, which aims to power financially driven applications by removing
 the complexity of the accounting domain into a simple, high-level API.
 
-Due to its complexity we cannot offer a stable release until all features on the
-[Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md) has been implemented and tested.
+__Django Ledger__ was created and is currently maintained and developed by lead developer Miguel Sanda. 
+If you want to contribute please consider joining our new discord channel here.
 
-### Wait, not stable yet?...
+### Join our Discord Channel [Here](https://discord.gg/PEugR227)
+
+The software is still in early stages of development. For more information, please check the
+[Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md).
+
+### How long until all features are implemented?
 Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects
 as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API to
 power financially driven applications. This project in particular, not only requires Python AND Django programming
-experience, but also finance and accounting experience. So, that's the long way of saying, this project is complex and
-models may require breaking changes as we move along.
+experience, but also finance and accounting experience. So, that's the long way of saying, we need your help! 
+Join our Discord Channel [here](https://discord.gg/PEugR227) to learn more.
 
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
+__This is the best way to get started twith this project if you are not familiar with the models.__
 
 ### Documentation
 Access the latest documentation [here](https://django-ledger.readthedocs.io/en/latest/).
@@ -38,12 +44,7 @@ Django Ledger supports:
 - Unit of Measures.
 - Bank Accounts.
 
-__WARNING__: Currently this project is under active development, it is not stable and is not recommended for production
-environments. Due to its high complexity, breaking changes may occur in future releases and migration backwards
-compatibility may not be preserved until the first __stable__ release. The author is actively working to provide a
-stable release as soon as possible and to incorporate the following functionality:
-
-# Roadmap to Version 1.0 Stable
+# Roadmap to Version 1.0.
 
 ### ~~Version 0.4~~ *completed*
 
@@ -67,6 +68,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Journal Entry activity determination & validation (for cash flow).
 * __0.5.2__: Cash flow statement.
   * Human Readable Journal Entry document numbers.
+  * Hierarchical Account Model Management.
   * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
   * Chart of Accounts Import.
@@ -135,7 +137,7 @@ See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/bl
 
 ## Quick Start
 
-Django Ledger comes with a default CoA ready to use or you could use your own. Make sure to select the appropriate
+Django Ledger comes with a default CoA ready to use, or you could use your own. Make sure to select the appropriate
 option when creating new entities.
 
 * Install Django Ledger
