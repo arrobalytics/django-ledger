@@ -123,32 +123,32 @@ ROOT_GROUP_META = {
         'balance_type': DEBIT
     },
     ROOT_ASSETS: {
-        'code': '10000',
+        'code': '01000',
         'title': 'Asset Accounts Root Node',
         'balance_type': DEBIT
     },
     ROOT_LIABILITIES: {
-        'code': '20000',
+        'code': '02000',
         'title': 'Liability Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_CAPITAL: {
-        'code': '30000',
+        'code': '03000',
         'title': 'Capital Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_INCOME: {
-        'code': '40000',
+        'code': '04000',
         'title': 'Income Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_COGS: {
-        'code': '50000',
+        'code': '05000',
         'title': 'COGS Accounts Root Node',
         'balance_type': DEBIT
     },
     ROOT_EXPENSES: {
-        'code': '60000',
+        'code': '06000',
         'title': 'Expense Accounts Root Node',
         'balance_type': DEBIT
     },

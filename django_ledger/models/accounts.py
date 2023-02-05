@@ -592,7 +592,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             self.code = self.generate_random_code()
 
         pf = self.get_code_prefix()
-        if  self.code[0] != pf:
+        if self.code[0] != pf:
             raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
                                               f'must start with {pf} for CoA consistency')
 
