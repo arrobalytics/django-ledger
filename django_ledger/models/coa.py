@@ -31,8 +31,9 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS, ROOT_LIABILITIES, ROOT_CAPITAL, \
-    ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES
+from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
+                              ROOT_LIABILITIES, ROOT_CAPITAL,
+                              ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
@@ -261,9 +262,23 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                             balance_type=role_meta['balance_type']
                         ))
 
-    def add_account(self, account_model: AccountModel):
+    def validate_root_coa_qs(self, root_account_qs: AccountModelQuerySet):
+        if not isinstance(root_account_qs, AccountModelQuerySet):
+            raise ChartOfAccountsModelValidationError(
+                message='Must pass an instance of AccountModelQuerySet'
+            )
+        for acc_model in root_account_qs:
+            if not acc_model.coa_model_id == self.uuid:
+                raise ChartOfAccountsModelValidationError(
+                    message=f'Invalid root queryset for CoA {self.name}'
+                )
+
+    def add_account(self, account_model: AccountModel, root_account_qs: Optional[AccountModelQuerySet] = None):
         if not account_model.coa_model_id:
-            root_account_qs = self.get_coa_root_accounts_qs()
+            if not root_account_qs:
+                root_account_qs = self.get_coa_root_accounts_qs()
+            else:
+                self.validate_root_coa_qs(root_account_qs)
             l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
             account_model.coa_model_id = self.uuid
             account_model = l2_root_node.add_child(instance=account_model)
