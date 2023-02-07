@@ -181,7 +181,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
         return self.accountmodel_set.all().is_coa_root()
 
-    def get_coa_root(self) -> AccountModel:
+    def get_coa_root_account(self) -> AccountModel:
         qs = self.get_coa_root_accounts_qs()
         return qs.get(role__exact=ROOT_COA)
 
@@ -215,8 +215,11 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 return qs
             return qs.get()
 
+    def get_non_root_coa_accounts_qs(self) -> AccountModelQuerySet:
+        return self.accountmodel_set.all().not_coa_root()
+
     def get_coa_account_tree(self):
-        root_account = self.get_coa_root()
+        root_account = self.get_coa_root_account()
         return AccountModel.dump_bulk(parent=root_account)
 
     def configure(self, raise_exception: bool = True):
@@ -262,12 +265,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                             balance_type=role_meta['balance_type']
                         ))
 
-    def validate_root_coa_qs(self, root_account_qs: AccountModelQuerySet):
-        if not isinstance(root_account_qs, AccountModelQuerySet):
+    def validate_account_model_qs(self, account_model_qs: AccountModelQuerySet):
+        if not isinstance(account_model_qs, AccountModelQuerySet):
             raise ChartOfAccountsModelValidationError(
                 message='Must pass an instance of AccountModelQuerySet'
             )
-        for acc_model in root_account_qs:
+        for acc_model in account_model_qs:
             if not acc_model.coa_model_id == self.uuid:
                 raise ChartOfAccountsModelValidationError(
                     message=f'Invalid root queryset for CoA {self.name}'
@@ -278,11 +281,24 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             if not root_account_qs:
                 root_account_qs = self.get_coa_root_accounts_qs()
             else:
-                self.validate_root_coa_qs(root_account_qs)
+                self.validate_account_model_qs(root_account_qs)
             l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
             account_model.coa_model = self
             account_model = l2_root_node.add_child(instance=account_model)
         return account_model
+
+    # ACTIONS -----
+
+    # todo: use these methods once multi CoA fetures are enabled...
+    def lock_all_accounts(self) -> AccountModelQuerySet:
+        non_root_accounts_qs = self.get_non_root_coa_accounts_qs()
+        non_root_accounts_qs.update(locked=True)
+        return non_root_accounts_qs
+
+    def unlock_all_accounts(self) -> AccountModelQuerySet:
+        non_root_accounts_qs = self.get_non_root_coa_accounts_qs()
+        non_root_accounts_qs.update(locked=False)
+        return non_root_accounts_qs
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):
