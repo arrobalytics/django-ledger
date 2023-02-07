@@ -280,7 +280,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             else:
                 self.validate_root_coa_qs(root_account_qs)
             l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
-            account_model.coa_model_id = self.uuid
+            account_model.coa_model = self
             account_model = l2_root_node.add_child(instance=account_model)
         return account_model
 
