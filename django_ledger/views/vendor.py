@@ -25,7 +25,6 @@ class VendorModelModelViewQuerySetMixIn:
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
             ).order_by('-updated')
-            print('hello')
         return super().get_queryset()
 
 

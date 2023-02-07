@@ -15,7 +15,19 @@ from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
 
 
-class EstimateModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
+class EstimateModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = EstimateModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer', 'entity')
+        return super().get_queryset()
+
+
+class EstimateModelListView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, ArchiveIndexView):
     template_name = 'django_ledger/estimate/estimate_list.html'
     context_object_name = 'estimate_list'
     PAGE_TITLE = _('Customer Estimates')
@@ -29,17 +41,8 @@ class EstimateModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
         'header_subtitle_icon': 'eos-icons:job'
     }
 
-    def get_queryset(self):
-        return EstimateModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('customer')
 
-    def get_date_field(self):
-        return 'created'
-
-
-class EstimateModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class EstimateModelCreateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, CreateView):
     PAGE_TITLE = _('Create Customer Estimate')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -73,7 +76,7 @@ class EstimateModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return super(EstimateModelCreateView, self).form_valid(form)
 
 
-class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
+class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, DetailView):
     pk_url_kwarg = 'ce_pk'
     template_name = 'django_ledger/estimate/estimate_detail.html'
     PAGE_TITLE = _('Customer Estimate Detail')
@@ -111,24 +114,21 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
         context['estimate_bill_model_queryset'] = bill_qs
 
-        # context['contract_items'] = ce_model.itemtransactionmodel_set.all()
-
-        context['contract_progress'] = ce_model.get_contract_summary(
-            po_qs=po_qs,
-            invoice_qs=invoice_qs,
-            bill_qs=bill_qs
-        )
+        if ce_model.is_contract():
+            context['contract_progress'] = ce_model.get_contract_summary(
+                po_qs=po_qs,
+                invoice_qs=invoice_qs,
+                bill_qs=bill_qs
+            )
 
         return context
 
     def get_queryset(self):
-        return EstimateModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('customer', 'entity').prefetch_related('itemtransactionmodel_set')
+        qs = super().get_queryset()
+        return qs.prefetch_related('itemtransactionmodel_set')
 
 
-class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/estimate/estimate_update.html'
     pk_url_kwarg = 'ce_pk'
     context_object_name = 'estimate'
@@ -184,12 +184,6 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         context['itemtxs_qs'] = itemtxs_qs
         context['itemtxs_formset'] = itemtxs_formset
         return context
-
-    def get_queryset(self):
-        return EstimateModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('customer', 'entity')
 
     def get_success_url(self):
         return reverse('django_ledger:customer-estimate-detail',
@@ -257,17 +251,14 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 # ---- ACTION VIEWS ----
-class BaseEstimateActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
+                             EstimateModelModelViewQuerySetMixIn,
+                             RedirectView,
+                             SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'ce_pk'
     action_name = None
     commit = True
-
-    def get_queryset(self):
-        return EstimateModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_redirect_url(self, entity_slug, ce_pk, *args, **kwargs):
         return reverse('django_ledger:customer-estimate-update',

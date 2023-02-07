@@ -16,7 +16,20 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
+class CustomerModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = CustomerModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).order_by('-updated')
+        return super().get_queryset()
+
+
 class CustomerModelListView(DjangoLedgerSecurityMixIn,
+                            CustomerModelModelViewQuerySetMixIn,
                             ListView):
     template_name = 'django_ledger/customer/customer_list.html'
     PAGE_TITLE = _('Customer List')
@@ -27,14 +40,9 @@ class CustomerModelListView(DjangoLedgerSecurityMixIn,
     }
     context_object_name = 'customers'
 
-    def get_queryset(self):
-        return CustomerModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).order_by('-updated')
-
 
 class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
+                              CustomerModelModelViewQuerySetMixIn,
                               CreateView):
     template_name = 'django_ledger/customer/customer_create.html'
     PAGE_TITLE = _('Create New Customer')
@@ -45,12 +53,6 @@ class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'dashicons:businesswoman'
     }
-
-    def get_queryset(self):
-        return CustomerModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:customer-list',
@@ -69,6 +71,7 @@ class CustomerModelCreateView(DjangoLedgerSecurityMixIn,
 
 
 class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
+                              CustomerModelModelViewQuerySetMixIn,
                               UpdateView):
     template_name = 'django_ledger/customer/customer_update.html'
     PAGE_TITLE = _('Customer Update')
@@ -85,12 +88,6 @@ class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
         context['header_subtitle'] = customer_model.customer_number
         context['header_subtitle_icon'] = 'dashicons:businesswoman'
         return context
-
-    def get_queryset(self):
-        return CustomerModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:customer-list',

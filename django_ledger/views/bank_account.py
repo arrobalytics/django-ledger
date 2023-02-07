@@ -17,7 +17,19 @@ from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class BankAccountModelListView(DjangoLedgerSecurityMixIn, ListView):
+class BankAccountModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = BankAccountModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('cash_account', 'entity_model')
+        return super().get_queryset()
+
+
+class BankAccountModelListView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
@@ -27,16 +39,9 @@ class BankAccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'clarity:bank-line'
     }
 
-    def get_queryset(self):
-        return BankAccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('cash_account', 'entity_model')
 
-
-class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/bank_account/bank_account_create.html'
-    form_class = BankAccountCreateForm
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -66,7 +71,7 @@ class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return super(BankAccountModelCreateView, self).form_valid(form)
 
 
-class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
@@ -83,12 +88,6 @@ class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                            'entity_slug': self.kwargs['entity_slug']
                        })
 
-    def get_queryset(self):
-        return BankAccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity_model')
-
     def get_form(self, form_class=None):
         return BankAccountUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
@@ -98,17 +97,14 @@ class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
 
 
 # ACTION VIEWS...
-class BaseBankAccountModelActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+class BaseBankAccountModelActionView(DjangoLedgerSecurityMixIn,
+                                     BankAccountModelModelViewQuerySetMixIn,
+                                     RedirectView,
+                                     SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'bank_account_pk'
     action_name = None
     commit = True
-
-    def get_queryset(self):
-        return BankAccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:bank-account-list',
