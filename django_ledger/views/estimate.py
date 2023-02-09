@@ -113,11 +113,12 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
 
         # context['contract_items'] = ce_model.itemtransactionmodel_set.all()
 
-        context['contract_progress'] = ce_model.get_contract_summary(
-            po_qs=po_qs,
-            invoice_qs=invoice_qs,
-            bill_qs=bill_qs
-        )
+        if ce_model.is_contract():
+            context['contract_progress'] = ce_model.get_contract_summary(
+                po_qs=po_qs,
+                invoice_qs=invoice_qs,
+                bill_qs=bill_qs
+            )
 
         return context
 

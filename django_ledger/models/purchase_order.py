@@ -115,7 +115,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                  blank=True,
                                  verbose_name=_('Associated Customer Job/Estimate'))
 
-    objects = PurchaseOrderModelManager.from_queryset(queryset_class=PurchaseOrderModelQuerySet)
+    objects = PurchaseOrderModelManager.from_queryset(queryset_class=PurchaseOrderModelQuerySet)()
 
     class Meta:
         abstract = True
