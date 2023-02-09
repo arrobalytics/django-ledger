@@ -27,7 +27,19 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class InvoiceModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
+class InvoiceModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = InvoiceModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('customer', 'ledger').order_by('-created')
+        return super().get_queryset()
+
+
+class InvoiceModelListView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, ArchiveIndexView):
     template_name = 'django_ledger/invoice/invoice_list.html'
     context_object_name = 'invoice_list'
     PAGE_TITLE = _('Invoice List')
@@ -40,12 +52,6 @@ class InvoiceModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
         'header_title': PAGE_TITLE
     }
 
-    def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('customer').order_by('-created')
-
 
 class InvoiceModelYearlyListView(YearArchiveView, InvoiceModelListView):
     paginate_by = 10
@@ -57,7 +63,7 @@ class InvoiceModelMonthlyListView(MonthArchiveView, InvoiceModelListView):
     month_format = '%m'
 
 
-class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/invoice/invoice_create.html'
     PAGE_TITLE = _('Create Invoice')
     extra_context = {
@@ -156,7 +162,7 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
 
-class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, UpdateView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -258,11 +264,8 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        })
 
     def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).prefetch_related('itemtransactionmodel_set').select_related(
-            'ledger', 'customer')
+        qs = super().get_queryset()
+        return qs.prefetch_related('itemtransactionmodel_set')
 
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
@@ -358,7 +361,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return super(InvoiceModelUpdateView, self).post(request, **kwargs)
 
 
-class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
+class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, DetailView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     context_object_name = 'invoice'
@@ -381,15 +384,13 @@ class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         return context
 
     def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).prefetch_related(
+        qs = super().get_queryset()
+        return qs.prefetch_related(
             'itemtransactionmodel_set'
-        ).select_related('ledger', 'customer', 'cash_account', 'prepaid_account', 'unearned_account')
+        ).select_related('cash_account', 'prepaid_account', 'unearned_account')
 
 
-class InvoiceModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+class InvoiceModelDeleteView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, DeleteView):
     slug_url_kwarg = 'invoice_pk'
     slug_field = 'uuid'
     template_name = 'django_ledger/invoice/invoice_delete.html'
@@ -410,25 +411,16 @@ class InvoiceModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
                            'entity_slug': self.kwargs['entity_slug']
                        })
 
-    def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
-
 
 # ACTION VIEWS...
-class BaseInvoiceActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+class BaseInvoiceActionView(DjangoLedgerSecurityMixIn,
+                            RedirectView,
+                            InvoiceModelModelViewQuerySetMixIn,
+                            SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'invoice_pk'
     action_name = None
     commit = True
-
-    def get_queryset(self):
-        return InvoiceModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:invoice-update',

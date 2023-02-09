@@ -32,7 +32,6 @@ class BaseAccountModelViewQuerySetMixIn:
                 user_model=self.request.user,
             ).select_related('coa_model', 'coa_model__entity').order_by(
                 'coa_model', 'role', 'code').not_coa_root()
-            print('hello!')
         return super().get_queryset()
 
 
@@ -109,6 +108,10 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
         account_model: AccountModel = form.save(commit=False)
+
+        if not entity_model.has_default_coa():
+            entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+
         coa_model = entity_model.default_coa
         coa_model.add_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())

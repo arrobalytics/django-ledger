@@ -590,7 +590,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             raise AccountModelValidationError('Must assign account role before generate random code')
 
         prefix = self.get_code_prefix()
-        ri = randint(1000, 9999)
+        ri = randint(10000, 99999)
         return f'{prefix}{ri}'
 
     def clean(self):

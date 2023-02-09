@@ -784,7 +784,7 @@ class EntityModelAbstract(MP_Node,
         """
         # todo: this logic will generate always the same slug...
         if not coa_name:
-            coa_name = self.name + ' Default CoA'
+            coa_name = 'Default CoA'
 
         chart_of_accounts = ChartOfAccountModel(
             slug=self.slug + ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6)) + '-coa',
