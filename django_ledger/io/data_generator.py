@@ -22,7 +22,7 @@ from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS
 from django_ledger.models import (EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel,
                                   EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
                                   BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel,
-                                  EstimateModel, LoggingMixIn)
+                                  EstimateModel, LoggingMixIn, InvoiceModelValidationError)
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -126,9 +126,8 @@ class EntityDataGenerator(LoggingMixIn):
         self.create_products()
         self.create_expenses()
         self.create_inventories()
-        self.fund_entity()
 
-        count_inventory = True
+        self.fund_entity()
 
         for i in range(self.tx_quantity):
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
@@ -277,11 +276,34 @@ class EntityDataGenerator(LoggingMixIn):
         product_models = list()
         for i in range(product_count):
             is_inventory = random() > 0.75
+
             if is_inventory:
-                product_models.append(ItemModel.add_root(
-                    name=f'Product or Service {randint(1000, 9999)}',
+                # is Product....
+                product_models.append(ItemModel(
+                    name=f'Product #{randint(1000, 9999)}',
                     uom=choice(self.uom_models),
-                    item_type=choice(ItemModel.ITEM_CHOICES)[0],
+
+                    # cannot be labor...
+                    item_type=choice(ItemModel.ITEM_CHOICES[1:])[0],
+                    sku=generate_random_sku(),
+                    upc=generate_random_upc(),
+                    item_id=generate_random_item_id(),
+                    entity=self.entity_model,
+                    for_inventory=is_inventory,
+                    is_product_or_service=True,
+                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
+                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
+                    cogs_account=choice(self.accounts_by_role[COGS]),
+                    additional_info=dict()
+                ))
+            else:
+                # is Service....
+                product_models.append(ItemModel(
+                    name=f'Service #{randint(1000, 9999)}',
+                    uom=choice(self.uom_models),
+
+                    # services are labor...
+                    item_type=ItemModel.ITEM_CHOICES[0][0],
                     sku=generate_random_sku(),
                     upc=generate_random_upc(),
                     item_id=generate_random_item_id(),
@@ -290,24 +312,13 @@ class EntityDataGenerator(LoggingMixIn):
                     is_product_or_service=True,
                     earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                     cogs_account=choice(self.accounts_by_role[COGS]),
-                    inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
-                    additional_info=dict()
-                ))
-            else:
-                product_models.append(ItemModel.add_root(
-                    name=f'Product or Service {randint(1000, 9999)}',
-                    uom=choice(self.uom_models),
-                    item_type=choice(ItemModel.ITEM_CHOICES)[0],
-                    sku=generate_random_sku(),
-                    upc=generate_random_upc(),
-                    item_id=generate_random_item_id(),
-                    entity=self.entity_model,
-                    for_inventory=is_inventory,
-                    is_product_or_service=True,
-                    earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                     additional_info=dict()
                 ))
 
+        for product in product_models:
+            product.full_clean()
+
+        ItemModel.objects.bulk_create(product_models)
         self.update_products()
 
     def update_products(self):
@@ -335,7 +346,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.logger.info(f'Creating entity expense items...')
         expense_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         expense_models = [
-            ItemModel.add_root(
+            ItemModel(
                 name=f'Expense Item {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
                 item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -349,13 +360,17 @@ class EntityDataGenerator(LoggingMixIn):
             ) for _ in range(expense_count)
         ]
 
+        for exp in expense_models:
+            exp.full_clean()
+
+        ItemModel.objects.bulk_create(expense_models)
         self.update_expenses()
 
     def create_inventories(self):
         self.logger.info(f'Creating entity inventory items...')
         inv_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         inventory_models = [
-            ItemModel.add_root(
+            ItemModel(
                 name=f'Inventory {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
                 item_type=choice(ItemModel.ITEM_CHOICES)[0],
@@ -363,13 +378,18 @@ class EntityDataGenerator(LoggingMixIn):
                 entity=self.entity_model,
                 for_inventory=True,
                 is_product_or_service=True if random() > 0.6 else False,
+                sku=generate_random_sku(),
+                upc=generate_random_upc(),
                 earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                 cogs_account=choice(self.accounts_by_role[COGS]),
                 inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
             ) for _ in range(inv_count)
         ]
 
-        self.update_inventory()
+        for inv in inventory_models:
+            inv.full_clean()
+
+        self.inventory_models = ItemModel.objects.bulk_create(inventory_models)
 
     def create_estimate(self, date_draft: date):
         estimate_model: EstimateModel = EstimateModel(
@@ -677,7 +697,12 @@ class EntityDataGenerator(LoggingMixIn):
 
         if random() > 0.25:
             date_review = self.get_next_date(date_draft)
-            invoice_model.mark_as_review(commit=True, date_in_review=date_review)
+
+            try:
+                invoice_model.mark_as_review(commit=True, date_in_review=date_review)
+            except InvoiceModelValidationError as e:
+                return
+
             if random() > 0.50:
                 date_approved = self.get_next_date(date_review)
                 invoice_model.mark_as_approved(entity_slug=self.entity_model.slug,

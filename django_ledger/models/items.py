@@ -17,7 +17,6 @@ from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
-from treebeard.mp_tree import MP_Node, MP_NodeManager
 
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
@@ -32,6 +31,10 @@ The Item list is a collection of all the products that are sold by any organizat
 The tems may include Products or even services.
 
 """
+
+
+class ItemModelValidationError(ValidationError):
+    pass
 
 
 # UNIT OF MEASURES MODEL....
@@ -84,10 +87,7 @@ class ItemModelQuerySet(models.QuerySet):
         return self.filter(active=True)
 
 
-class ItemModelManager(MP_NodeManager):
-
-    def get_queryset(self):
-        return ItemModelQuerySet(self.model).order_by('path')
+class ItemModelManager(models.Manager):
 
     def for_entity(self, entity_slug: str, user_model):
         qs = self.get_queryset()
@@ -105,10 +105,7 @@ class ItemModelManager(MP_NodeManager):
 
     def products_and_services(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            Q(is_product_or_service=True) &
-            Q(for_inventory=False)
-        )
+        return qs.filter(is_product_or_service=True)
 
     def expenses(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
@@ -146,7 +143,7 @@ class ItemModelManager(MP_NodeManager):
         return qs.distinct('uuid')
 
 
-class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
+class ItemModelAbstract(CreateUpdateMixIn):
     REL_NAME_PREFIX = 'item'
 
     LABOR_TYPE = 'L'
@@ -247,8 +244,7 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('Item Entity'))
 
-    objects = ItemModelManager()
-    node_order_by = ['uuid']
+    objects = ItemModelManager.from_queryset(queryset_class=ItemModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -280,16 +276,36 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
     def is_expense(self):
-        return self.is_product_or_service is False and self.for_inventory is False
+        return all([
+            not self.is_product_or_service,
+            not self.for_inventory
+        ])
 
     def is_inventory(self):
-        return self.for_inventory is True
+        return all([
+            self.for_inventory,
+            not self.is_product_or_service
+        ])
 
     def is_product(self):
         return all([
             self.is_product_or_service,
-            not self.for_inventory
+            self.for_inventory,
+            not self.is_labor()
         ])
+
+    def is_service(self):
+        return all([
+            self.is_product_or_service,
+            not self.for_inventory,
+            self.is_labor()
+        ])
+
+    def product_or_service_display(self):
+        if self.is_product():
+            return 'product'
+        elif self.is_service():
+            return 'service'
 
     def is_labor(self):
         return self.item_type == self.LABOR_TYPE
@@ -319,9 +335,13 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
             return DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX
         elif self.is_inventory():
             return DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX
-        elif self.is_product():
+        elif self.is_product() or self.is_service():
             return DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX
-        raise ValidationError('Cannot determine Item Number prefix for ItemModel')
+        raise ItemModelValidationError('Cannot determine Item Number prefix for ItemModel. '
+                                       f'For Inventory: {self.for_inventory}, '
+                                       f'IsProductOrService: {self.is_product_or_service}, '
+                                       f'Type: {self.item_type} '
+                                       f'IsLabor: {self.is_labor()} ')
 
     def can_generate_item_number(self) -> bool:
         return all([
@@ -389,51 +409,48 @@ class ItemModelAbstract(MP_Node, CreateUpdateMixIn):
 
     def clean(self):
 
+        if self.is_product_or_service:
+            if self.is_labor():
+                self.for_inventory = False
+            else:
+                self.for_inventory = True
+
         if self.can_generate_item_number():
             self.generate_item_number(commit=False)
 
-        if all([
-            self.for_inventory is False,
-            self.is_product_or_service is False
-        ]):
+        if self.is_expense():
             if not self.expense_account_id:
-                raise ValidationError(_('Items must have an associated expense accounts.'))
+                raise ItemModelValidationError(_('Items must have an associated expense accounts.'))
             self.inventory_account = None
             self.earnings_account = None
             self.cogs_account = None
 
-        elif all([
-            self.for_inventory is True,
-            self.is_product_or_service is True
-        ]):
+        elif self.is_product():
             if not all([
                 self.inventory_account_id,
                 self.cogs_account_id,
                 self.earnings_account_id
             ]):
-                raise ValidationError(_('Items for resale must have Inventory, COGS & Earnings accounts.'))
+                raise ItemModelValidationError(_('Products must have Inventory, COGS & Earnings accounts.'))
+            self.expense_account = None
 
-        elif all([
-            self.for_inventory is True,
-            self.is_product_or_service is False
-        ]):
+        elif self.is_service():
+            if not all([
+                self.cogs_account_id,
+                self.earnings_account_id
+            ]):
+                raise ItemModelValidationError(_('Services must have COGS & Earnings accounts.'))
+            self.inventory_account = None
+            self.expense_account = None
+
+        elif self.is_inventory():
             if not all([
                 self.inventory_account_id,
                 self.cogs_account_id
             ]):
-                raise ValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
+                raise ItemModelValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
             self.expense_account = None
             self.earnings_account = None
-
-        elif all([
-            self.for_inventory is False,
-            self.is_product_or_service is True
-        ]):
-            if not self.earnings_account_id:
-                raise ValidationError(_('Products & Services must have an Earnings Account'))
-            self.expense_account = None
-            self.inventory_account = None
-            self.cogs_account = None
 
 
 # ITEM TRANSACTION MODELS...

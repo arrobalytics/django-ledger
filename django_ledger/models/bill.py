@@ -40,6 +40,10 @@ from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
 
 
+class BillModelValidationError(ValidationError):
+    pass
+
+
 class BillModelQuerySet(models.QuerySet):
     """
     A custom defined QuerySet for the BillModel. This implements multiple methods or queries needed to get a filtered
@@ -435,7 +439,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
                 elif isinstance(entity_slug, EntityModel):
                     entity_model = entity_slug
                 else:
-                    raise ValidationError('entity_slug must be an instance of str or EntityModel')
+                    raise BillModelValidationError('entity_slug must be an instance of str or EntityModel')
 
             if entity_model.is_accrual_method():
                 self.accrue = True
@@ -492,7 +496,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             i.bill_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise ValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
+            raise BillModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
 
     def get_itemtxs_data(self,
                          queryset: ItemTransactionModelQuerySet = None) -> Tuple[ItemTransactionModelQuerySet, Dict]:
@@ -770,7 +774,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             EstimateModel to check against.
 
         raise_exception: bool
-            If True, raises ValidationError if unable to bind. Else, returns False.
+            If True, raises BillModelValidationError if unable to bind. Else, returns False.
 
         Returns
         _______
@@ -780,13 +784,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         if self.ce_model_id:
             if raise_exception:
-                raise ValidationError(f'Bill {self.bill_number} already bound to '
-                                      f'Estimate {self.ce_model.estimate_number}')
+                raise BillModelValidationError(f'Bill {self.bill_number} already bound to '
+                                               f'Estimate {self.ce_model.estimate_number}')
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise ValidationError(f'Cannot bind estimate that is not approved.')
+            raise BillModelValidationError(f'Cannot bind estimate that is not approved.')
         return all([
             is_approved
         ])
@@ -802,7 +806,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             The PurchaseOrderModel to check against.
 
         raise_exception: bool
-            If True, raises ValidationError if unable to bind, else False.
+            If True, raises BillModelValidationError if unable to bind, else False.
 
         Returns
         _______
@@ -812,12 +816,12 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         if not po_model.is_approved():
             if raise_exception:
-                raise ValidationError(f'Cannot bind an unapproved PO.')
+                raise BillModelValidationError(f'Cannot bind an unapproved PO.')
             return False
 
         if po_model.date_approved > self.date_draft:
             if raise_exception:
-                raise ValidationError(f'Approved PO date cannot be greater than Bill draft date.')
+                raise BillModelValidationError(f'Approved PO date cannot be greater than Bill draft date.')
             return False
 
         return True
@@ -849,7 +853,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             EstimateModel to bind.
 
         raise_exception: bool
-            Raises ValidationError if unable to bind EstimateModel.
+            Raises BillModelValidationError if unable to bind EstimateModel.
 
         commit: bool
             Commits transaction into current BillModel.
@@ -882,7 +886,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_draft():
-            raise ValidationError(
+            raise BillModelValidationError(
                 f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
             )
         self.bill_status = self.BILL_STATUS_DRAFT
@@ -962,11 +966,11 @@ class BillModelAbstract(LedgerWrapperMixIn,
         commit: bool
             Commits transaction into the Database. Defaults to False.
         raise_exception: bool
-            Raises ValidationError if BillModel cannot be marked as in review. Defaults to True.
+            Raises BillModelValidationError if BillModel cannot be marked as in review. Defaults to True.
         """
         if not self.can_review():
             if raise_exception:
-                raise ValidationError(
+                raise BillModelValidationError(
                     f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
                 )
 
@@ -976,9 +980,9 @@ class BillModelAbstract(LedgerWrapperMixIn,
             self.validate_item_transaction_qs(queryset=itemtxs_qs)
 
         if not itemtxs_qs.count():
-            raise ValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
+            raise BillModelValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
         if not self.amount_due:
-            raise ValidationError(
+            raise BillModelValidationError(
                 f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
 
@@ -1071,7 +1075,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
 
         if not self.can_approve():
-            raise ValidationError(
+            raise BillModelValidationError(
                 f'Bill {self.bill_number} cannot be marked as in approved.'
             )
         self.bill_status = self.BILL_STATUS_APPROVED
@@ -1172,16 +1176,17 @@ class BillModelAbstract(LedgerWrapperMixIn,
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_pay():
-            raise ValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
+            raise BillModelValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
         self.date_paid = localdate() if not date_paid else date_paid
 
         if self.date_paid > localdate():
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+            raise BillModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
         if self.date_paid < self.date_approved:
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
+            raise BillModelValidationError(
+                f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
 
         self.bill_status = self.BILL_STATUS_PAID
         self.new_state(commit=True)
@@ -1290,7 +1295,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             Commits transaction into DB. Defaults to False.
         """
         if not self.can_void():
-            raise ValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
+            raise BillModelValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
 
         self.date_void = date_void if date_void else localdate()
         self.bill_status = self.BILL_STATUS_VOID
@@ -1371,7 +1376,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_cancel():
-            raise ValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
+            raise BillModelValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
 
         self.date_canceled = localdate() if not date_canceled else date_canceled
         self.bill_status = self.BILL_STATUS_CANCELED
@@ -1435,7 +1440,7 @@ class BillModelAbstract(LedgerWrapperMixIn,
         Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
         """
         if not self.can_delete():
-            raise ValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
+            raise BillModelValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
         self.delete(**kwargs)
 
     def get_mark_as_delete_html_id(self) -> str:

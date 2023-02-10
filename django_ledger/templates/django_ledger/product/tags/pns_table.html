@@ -5,6 +5,7 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
+            <th>{% trans 'Type' %}</th>
             <th>{% trans 'Item Number' %}</th>
             <th>{% trans 'Item' %}</th>
             <th>{% trans 'UOM' %}</th>
@@ -17,6 +18,7 @@
         <tbody>
         {% for pns in pns_list %}
             <tr>
+                <td>{{ pns.product_or_service_display | capfirst }}</td>
                 <td>{{ pns.item_number }}</td>
                 <td>{{ pns.name }}</td>
                 <td>{{ pns.uom }}</td>

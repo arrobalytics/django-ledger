@@ -18,7 +18,20 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 # todo: Create delete views...
 
-class UnitOfMeasureModelListView(DjangoLedgerSecurityMixIn, ListView):
+# UNIT OF MEASURE VIEWS....
+class UnitOfMeasureModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = UnitOfMeasureModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+        return super().get_queryset()
+
+
+class UnitOfMeasureModelListView(DjangoLedgerSecurityMixIn, UnitOfMeasureModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/uom/uom_list.html'
     PAGE_TITLE = _('Unit of Measures')
     context_object_name = 'uom_list'
@@ -28,14 +41,8 @@ class UnitOfMeasureModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'carbon:circle-measurement'
     }
 
-    def get_queryset(self):
-        return UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
-
-class UnitOfMeasureModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class UnitOfMeasureModelCreateView(DjangoLedgerSecurityMixIn, UnitOfMeasureModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/uom/uom_create.html'
     PAGE_TITLE = _('Create Unit of Measure')
     extra_context = {
@@ -84,7 +91,7 @@ class UnitOfMeasureModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return super().form_valid(form)
 
 
-class UnitOfMeasureModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class UnitOfMeasureModelUpdateView(DjangoLedgerSecurityMixIn, UnitOfMeasureModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/uom/uom_update.html'
     PAGE_TITLE = _('Update Unit of Measure')
     context_object_name = 'uom'
@@ -95,12 +102,6 @@ class UnitOfMeasureModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'carbon:circle-measurement'
     }
-
-    def get_queryset(self):
-        return UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:uom-list',
@@ -116,16 +117,10 @@ class UnitOfMeasureModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         )
 
 
-class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, UnitOfMeasureModelModelViewQuerySetMixIn, DeleteView):
     pk_url_kwarg = 'uom_pk'
     template_name = 'django_ledger/uom/uom_delete.html'
     context_object_name = 'uom_model'
-
-    def get_queryset(self):
-        return UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def form_valid(self, form):
         try:
@@ -153,8 +148,22 @@ class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
                        })
 
 
-# PRODUCTS AND SERVICES VIEW...
-class ProductsAndServicesListView(DjangoLedgerSecurityMixIn, ListView):
+# PRODUCTS AND SERVICES VIEWS...
+class ProductAndServiceItemModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = ItemModel.objects.products_and_services(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('earnings_account', 'cogs_account', 'inventory_account', 'uom').order_by('-updated')
+        return super().get_queryset()
+
+
+class ProductsAndServicesListView(DjangoLedgerSecurityMixIn,
+                                  ProductAndServiceItemModelModelViewQuerySetMixIn,
+                                  ListView):
     template_name = 'django_ledger/product/product_list.html'
     PAGE_TITLE = _('Products & Services')
     context_object_name = 'pns_list'
@@ -164,14 +173,10 @@ class ProductsAndServicesListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'zmdi:collection-item'
     }
 
-    def get_queryset(self, **kwargs):
-        return ItemModel.objects.products_and_services(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('earnings_account', 'uom').order_by('-updated')
 
-
-class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn,
+                                 ProductAndServiceItemModelModelViewQuerySetMixIn,
+                                 CreateView):
     template_name = 'django_ledger/product/product_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Product or Service')
@@ -198,14 +203,15 @@ class ProductOrServiceCreateView(DjangoLedgerSecurityMixIn, CreateView):
         entity_slug = self.kwargs['entity_slug']
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
         entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
-        ItemModel.add_root(**form.cleaned_data,
-                           entity=entity_model,
-                           is_product_or_service=True,
-                           for_inventory=False)
+        item_model: ItemModel = form.save(commit=False)
+        item_model.entity = entity_model
+        ItemModel.add_root(instance=item_model)
         return HttpResponseRedirect(self.get_success_url())
 
 
-class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn,
+                                 ProductAndServiceItemModelModelViewQuerySetMixIn,
+                                 UpdateView):
     template_name = 'django_ledger/product/product_update.html'
     PAGE_TITLE = _('Update Product or Service')
     context_object_name = 'item'
@@ -236,16 +242,12 @@ class ProductOrServiceUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        })
 
 
-class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn,
+                                 ProductAndServiceItemModelModelViewQuerySetMixIn,
+                                 DeleteView):
     template_name = 'django_ledger/product/product_delete.html'
     pk_url_kwarg = 'item_pk'
     context_object_name = 'item_model'
-
-    def get_queryset(self):
-        return ItemModel.objects.products_and_services(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def form_valid(self, form):
         try:
@@ -275,7 +277,20 @@ class ProductOrServiceDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
 
 
 # EXPENSE ITEMS VIEW...
-class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ListView):
+
+class ExpenseItemItemModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = ItemModel.objects.expenses(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('expense_account', 'uom').order_by('-updated')
+        return super().get_queryset()
+
+
+class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ExpenseItemItemModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/expense/expense_list.html'
     PAGE_TITLE = _('Expense Items')
     context_object_name = 'expense_list'
@@ -285,14 +300,8 @@ class ExpenseItemModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'zmdi:collection-item'
     }
 
-    def get_queryset(self, **kwargs):
-        return ItemModel.objects.expenses(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('expense_account', 'uom').order_by('-updated')
 
-
-class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, ExpenseItemItemModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/expense/expense_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Expense Item')
@@ -326,7 +335,7 @@ class ExpenseItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, ExpenseItemItemModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/expense/expense_update.html'
     PAGE_TITLE = _('Update Expense Item')
     context_object_name = 'item'
@@ -337,12 +346,6 @@ class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'zmdi:collection-item'
     }
-
-    def get_queryset(self):
-        return ItemModel.objects.expenses(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_form(self, form_class=None):
         return ExpenseItemUpdateForm(
@@ -358,7 +361,21 @@ class ExpenseItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        })
 
 
-class InventoryItemModelListView(DjangoLedgerSecurityMixIn, ListView):
+# INVENTORY VIEWS...
+
+class InventoryItemItemModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = ItemModel.objects.inventory(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('inventory_account', 'cogs_account', 'uom').order_by('-updated')
+        return super().get_queryset()
+
+
+class InventoryItemModelListView(DjangoLedgerSecurityMixIn, InventoryItemItemModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/inventory/inventory_item_list.html'
     PAGE_TITLE = _('Inventory Items')
     context_object_name = 'inventory_item_list'
@@ -368,14 +385,8 @@ class InventoryItemModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'zmdi:collection-item'
     }
 
-    def get_queryset(self, **kwargs):
-        return ItemModel.objects.inventory(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('inventory_account', 'cogs_account', 'uom').order_by('-updated')
 
-
-class InventoryItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class InventoryItemCreateView(DjangoLedgerSecurityMixIn, InventoryItemItemModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/inventory/inventory_item_create.html'
     model = ItemModel
     PAGE_TITLE = _('Create New Inventory Item')
@@ -412,7 +423,7 @@ class InventoryItemCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-class InventoryItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class InventoryItemUpdateView(DjangoLedgerSecurityMixIn, InventoryItemItemModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/inventory/inventory_item_update.html'
     PAGE_TITLE = _('Update Inventory Item')
     context_object_name = 'item'
@@ -423,12 +434,6 @@ class InventoryItemUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'zmdi:collection-item'
     }
-
-    def get_queryset(self):
-        return ItemModel.objects.inventory(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_form(self, form_class=None):
         return InventoryItemUpdateForm(
