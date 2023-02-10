@@ -26,6 +26,7 @@ from string import ascii_lowercase, digits, ascii_uppercase
 from typing import Optional
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -38,6 +39,10 @@ from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
+
+
+class EntityUnitModelValidationError(ValidationError):
+    pass
 
 
 class EntityUnitModelQuerySet(MP_NodeQuerySet):

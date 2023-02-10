@@ -146,23 +146,35 @@ class ItemModelManager(models.Manager):
 class ItemModelAbstract(CreateUpdateMixIn):
     REL_NAME_PREFIX = 'item'
 
-    LABOR_TYPE = 'L'
-    MATERIAL_TYPE = 'M'
-    EQUIPMENT_TYPE = 'E'
-    LUMP_SUM = 'S'
-    OTHER_TYPE = 'O'
+    ITEM_TYPE_LABOR = 'L'
+    ITEM_TYPE_MATERIAL = 'M'
+    ITEM_TYPE_EQUIPMENT = 'E'
+    ITEM_TYPE_LUMP_SUM = 'S'
+    ITEM_TYPE_OTHER = 'O'
+    ITEM_TYPE_CHOICES = [
+        (ITEM_TYPE_LABOR, _('Labor')),
+        (ITEM_TYPE_MATERIAL, _('Material')),
+        (ITEM_TYPE_EQUIPMENT, _('Equipment')),
+        (ITEM_TYPE_LUMP_SUM, _('Lump Sum')),
+        (ITEM_TYPE_OTHER, _('Other')),
+    ]
 
-    ITEM_CHOICES = [
-        (LABOR_TYPE, _('Labor')),
-        (MATERIAL_TYPE, _('Material')),
-        (EQUIPMENT_TYPE, _('Equipment')),
-        (LUMP_SUM, _('Lump Sum')),
-        (OTHER_TYPE, _('Other')),
+    ITEM_ROLE_EXPENSE = 'expense'
+    ITEM_ROLE_INVENTORY = 'inventory'
+    ITEM_ROLE_SERVICE = 'service'
+    ITEM_ROLE_PRODUCT = 'product'
+    ITEM_ROLE_CHOICES = [
+        ('expense', _('Expense')),
+        ('inventory', _('Inventory')),
+        ('service', _('Service')),
+        ('product', _('Product')),
     ]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=100, verbose_name=_('Item Name'))
-    item_type = models.CharField(max_length=1, choices=ITEM_CHOICES, null=True, blank=True)
+
+    item_role = models.CharField(max_length=10, choices=ITEM_ROLE_CHOICES, null=True, blank=True)
+    item_type = models.CharField(max_length=1, choices=ITEM_TYPE_CHOICES, null=True, blank=True)
 
     uom = models.ForeignKey('django_ledger.UnitOfMeasureModel',
                             verbose_name=_('Unit of Measure'),
@@ -283,8 +295,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def is_inventory(self):
         return all([
+            not self.is_product_or_service,
             self.for_inventory,
-            not self.is_product_or_service
         ])
 
     def is_product(self):
@@ -308,19 +320,19 @@ class ItemModelAbstract(CreateUpdateMixIn):
             return 'service'
 
     def is_labor(self):
-        return self.item_type == self.LABOR_TYPE
+        return self.item_type == self.ITEM_TYPE_LABOR
 
     def is_material(self):
-        return self.item_type == self.MATERIAL_TYPE
+        return self.item_type == self.TYPE_MATERIAL
 
     def is_equipment(self):
-        return self.item_type == self.EQUIPMENT_TYPE
+        return self.item_type == self.TYPE_EQUIPMENT
 
     def is_lump_sum(self):
-        return self.item_type == self.LUMP_SUM
+        return self.item_type == self.TYPE_LUMP_SUM
 
     def is_other(self):
-        return self.item_type == self.OTHER_TYPE
+        return self.item_type == self.TYPE_OTHER
 
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:
@@ -446,7 +458,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         elif self.is_inventory():
             if not all([
                 self.inventory_account_id,
-                self.cogs_account_id
+                # self.cogs_account_id
             ]):
                 raise ItemModelValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
             self.expense_account = None

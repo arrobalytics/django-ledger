@@ -1,6 +1,6 @@
 from django.forms import ModelForm, TextInput, Select
 
-from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_INVENTORY, GROUP_EXPENSES, GROUP_COGS
+from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_INVENTORY, GROUP_EXPENSES, GROUP_COGS, COGS
 from django_ledger.models import AccountModel, ItemModel, UnitOfMeasureModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -197,7 +197,7 @@ class ExpenseItemCreateForm(ExpenseItemUpdateForm):
 
 
 class InventoryItemUpdateForm(ModelForm):
-    INVENTORY_ROLES = [ASSET_CA_INVENTORY] + GROUP_INCOME
+    # INVENTORY_ROLES = [ASSET_CA_INVENTORY] + GROUP_COGS
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         self.ENTITY_SLUG = entity_slug
@@ -205,16 +205,10 @@ class InventoryItemUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.with_roles(
-            roles=self.INVENTORY_ROLES,
+            roles=[ASSET_CA_INVENTORY],
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
-
-        # evaluating qs...
-        len(accounts_qs)
-
-        # self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
-        self.fields['inventory_account'].queryset = accounts_qs.filter(role__in=[ASSET_CA_INVENTORY])
-        # self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=[COGS])
+        self.fields['inventory_account'].queryset = accounts_qs
 
         uom_qs = UnitOfMeasureModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
@@ -230,11 +224,8 @@ class InventoryItemUpdateForm(ModelForm):
             'item_type',
             'upc',
             'item_id',
-            'cogs_account',
             'default_amount',
-            'is_product_or_service',
             'inventory_account',
-            'earnings_account',
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -265,6 +256,7 @@ class InventoryItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
+
     model = ItemModel
 
 

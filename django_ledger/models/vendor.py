@@ -16,7 +16,7 @@ as an option in the UI, but can still be used programmatically (via API).
 
 from uuid import uuid4
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F
 from django.utils.translation import gettext_lazy as _
@@ -24,6 +24,10 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, BankAccountInfoMixIn, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX
+
+
+class VendorModelValidationError(ValidationError):
+    pass
 
 
 class VendorModelQuerySet(models.QuerySet):
@@ -84,7 +88,6 @@ class VendorModelAbstract(ContactInfoMixIn,
                           BankAccountInfoMixIn,
                           TaxInfoMixIn,
                           CreateUpdateMixIn):
-
     """
     This is the main abstract class which the VendorModel database will inherit from.
     The VendorModel inherits functionality from the following MixIns:

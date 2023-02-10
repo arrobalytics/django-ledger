@@ -284,7 +284,7 @@ class EntityDataGenerator(LoggingMixIn):
                     uom=choice(self.uom_models),
 
                     # cannot be labor...
-                    item_type=choice(ItemModel.ITEM_CHOICES[1:])[0],
+                    item_type=choice(ItemModel.ITEM_TYPE_CHOICES[1:])[0],
                     sku=generate_random_sku(),
                     upc=generate_random_upc(),
                     item_id=generate_random_item_id(),
@@ -303,7 +303,7 @@ class EntityDataGenerator(LoggingMixIn):
                     uom=choice(self.uom_models),
 
                     # services are labor...
-                    item_type=ItemModel.ITEM_CHOICES[0][0],
+                    item_type=ItemModel.ITEM_TYPE_CHOICES[0][0],
                     sku=generate_random_sku(),
                     upc=generate_random_upc(),
                     item_id=generate_random_item_id(),
@@ -349,7 +349,7 @@ class EntityDataGenerator(LoggingMixIn):
             ItemModel(
                 name=f'Expense Item {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
-                item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                item_type=choice(ItemModel.ITEM_TYPE_CHOICES)[0],
                 sku=generate_random_sku(),
                 upc=generate_random_upc(),
                 item_id=generate_random_item_id(),
@@ -373,7 +373,7 @@ class EntityDataGenerator(LoggingMixIn):
             ItemModel(
                 name=f'Inventory {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
-                item_type=choice(ItemModel.ITEM_CHOICES)[0],
+                item_type=choice(ItemModel.ITEM_TYPE_CHOICES)[0],
                 item_id=generate_random_item_id(),
                 entity=self.entity_model,
                 for_inventory=True,
