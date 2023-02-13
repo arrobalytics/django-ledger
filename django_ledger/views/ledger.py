@@ -20,7 +20,19 @@ from django_ledger.views.mixins import (
     EntityUnitMixIn)
 
 
-class LedgerModelListView(DjangoLedgerSecurityMixIn, ListView):
+class LedgerModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = LedgerModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('entity')
+        return super().get_queryset()
+
+
+class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ListView):
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
@@ -29,18 +41,8 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_title': PAGE_TITLE
     }
 
-    def get_queryset(self):
-        sort = self.request.GET.get('sort')
-        if not sort:
-            sort = '-updated'
-        entity_slug = self.kwargs.get('entity_slug')
-        return LedgerModel.objects.for_entity(
-            entity_slug=entity_slug,
-            user_model=self.request.user
-        ).order_by(sort)
 
-
-class LedgerModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/ledger/ledger_create.html'
     PAGE_TITLE = _('Create Ledger')
     extra_context = {
@@ -70,7 +72,7 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
 
-class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/ledger/ledger_update.html'
     context_object_name = 'ledger'
     slug_url_kwarg = 'ledger_pk'
@@ -88,13 +90,6 @@ class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         context['page_title'] = _('Update Ledger: ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_queryset(self):
-        entity_slug = self.kwargs['entity_slug']
-        return LedgerModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=entity_slug
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:ledger-list',
@@ -116,6 +111,7 @@ class BaseLedgerBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
+                                       LedgerModelModelViewQuerySetMixIn,
                                        BaseDateNavigationUrlMixIn,
                                        EntityUnitMixIn,
                                        YearlyReportMixIn,
@@ -130,12 +126,6 @@ class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
         context['page_title'] = _('Ledger Balance Sheet: ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_queryset(self):
-        entity_slug = self.kwargs['entity_slug']
-        return LedgerModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=entity_slug)
 
 
 class QuarterlyLedgerBalanceSheetView(QuarterlyReportMixIn, FiscalYearLedgerBalanceSheetView):
@@ -170,6 +160,7 @@ class BaseLedgerIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
+                                          LedgerModelModelViewQuerySetMixIn,
                                           BaseDateNavigationUrlMixIn,
                                           EntityUnitMixIn,
                                           YearlyReportMixIn,
@@ -184,12 +175,6 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
         context['page_title'] = _('Ledger Income Statement: ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_queryset(self):
-        entity_slug = self.kwargs['entity_slug']
-        return LedgerModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=entity_slug)
 
 
 class QuarterlyLedgerIncomeStatementView(QuarterlyReportMixIn, FiscalYearLedgerIncomeStatementView):

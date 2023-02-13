@@ -197,7 +197,7 @@ def data_import_job_txs_imported(context):
     return context
 
 
-@register.inclusion_tag('django_ledger/journal_entry/tags/jes_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)
 def jes_table(context, next_url=None):
     entity_slug = context['view'].kwargs['entity_slug']
     ledger_pk = context['view'].kwargs['ledger_pk']
@@ -215,7 +215,7 @@ def jes_table(context, next_url=None):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html')
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def journal_entry_txs_table(journal_entry_model, style='detail'):
     txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')

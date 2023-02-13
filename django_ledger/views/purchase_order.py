@@ -23,7 +23,21 @@ from django_ledger.models import PurchaseOrderModel, ItemTransactionModel, Estim
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
+class PurchaseOrderModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = PurchaseOrderModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('entity', 'ce_model')
+        return super().get_queryset()
+
+
+class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn,
+                                 PurchaseOrderModelModelViewQuerySetMixIn,
+                                 ArchiveIndexView):
     template_name = 'django_ledger/purchase_order/po_list.html'
     context_object_name = 'po_list'
     PAGE_TITLE = _('PO List')
@@ -37,12 +51,6 @@ class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
         'header_subtitle_icon': 'uil:bill'
     }
 
-    def get_queryset(self):
-        return PurchaseOrderModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).order_by('-created')
-
     def get_allow_future(self):
         allow_future = self.request.GET.get('allow_future')
         if allow_future:
@@ -55,18 +63,22 @@ class PurchaseOrderModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
         return False
 
 
-class PurchaseOrderModelYearListView(YearArchiveView, PurchaseOrderModelListView):
+class PurchaseOrderModelYearListView(YearArchiveView,
+                                     PurchaseOrderModelListView):
     paginate_by = 10
     make_object_list = True
 
 
-class PurchaseOrderModelMonthListView(MonthArchiveView, PurchaseOrderModelListView):
+class PurchaseOrderModelMonthListView(MonthArchiveView,
+                                      PurchaseOrderModelListView):
     paginate_by = 10
     month_format = '%m'
     date_list_period = 'year'
 
 
-class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
+                                   PurchaseOrderModelModelViewQuerySetMixIn,
+                                   CreateView):
     template_name = 'django_ledger/purchase_order/po_create.html'
     PAGE_TITLE = _('Create Purchase Order')
     extra_context = {
@@ -150,7 +162,9 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
 
-class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
+                                   PurchaseOrderModelModelViewQuerySetMixIn,
+                                   UpdateView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -300,12 +314,6 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                            'po_pk': po_pk
                        })
 
-    def get_queryset(self):
-        return PurchaseOrderModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity', 'ce_model')
-
     def get_po_itemtxs_qs(self, po_model: PurchaseOrderModel):
         return po_model.itemtransactionmodel_set.select_related('bill_model', 'po_model').order_by('created')
 
@@ -352,7 +360,9 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         return super().form_valid(form)
 
 
-class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
+class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn,
+                                   PurchaseOrderModelModelViewQuerySetMixIn,
+                                   DetailView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -379,14 +389,10 @@ class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
                 'po_total_amount', 'po_item_status') if i['po_item_status'] != 'cancelled')
         return context
 
-    def get_queryset(self):
-        return PurchaseOrderModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('ce_model', 'entity')
 
-
-class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn,
+                                   PurchaseOrderModelModelViewQuerySetMixIn,
+                                   DeleteView):
     slug_url_kwarg = 'po_pk'
     slug_field = 'uuid'
     context_object_name = 'po_model'
@@ -402,12 +408,6 @@ class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
         context['page_title'] = _('Delete Purchase Order ') + po_model.po_number
         context['header_title'] = context['page_title']
         return context
-
-    def get_queryset(self):
-        return PurchaseOrderModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:entity-dashboard',
@@ -436,17 +436,14 @@ class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
 
 
 # ACTIONS...
-class BasePurchaseOrderActionActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+class BasePurchaseOrderActionActionView(DjangoLedgerSecurityMixIn,
+                                        PurchaseOrderModelModelViewQuerySetMixIn,
+                                        RedirectView,
+                                        SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'po_pk'
     action_name = None
     commit = True
-
-    def get_queryset(self):
-        return PurchaseOrderModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_redirect_url(self, entity_slug, po_pk, *args, **kwargs):
         return reverse('django_ledger:po-update',

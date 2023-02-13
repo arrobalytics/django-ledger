@@ -323,16 +323,16 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return self.item_type == self.ITEM_TYPE_LABOR
 
     def is_material(self):
-        return self.item_type == self.TYPE_MATERIAL
+        return self.item_type == self.ITEM_TYPE_MATERIAL
 
     def is_equipment(self):
-        return self.item_type == self.TYPE_EQUIPMENT
+        return self.item_type == self.ITEM_TYPE_EQUIPMENT
 
     def is_lump_sum(self):
-        return self.item_type == self.TYPE_LUMP_SUM
+        return self.item_type == self.ITEM_TYPE_LUMP_SUM
 
     def is_other(self):
-        return self.item_type == self.TYPE_OTHER
+        return self.item_type == self.ITEM_TYPE_OTHER
 
     def get_average_cost(self) -> Decimal:
         if self.inventory_received:

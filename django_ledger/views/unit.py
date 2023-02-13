@@ -14,7 +14,19 @@ from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyRepo
                                         DateReportMixIn)
 
 
-class EntityUnitModelListView(DjangoLedgerSecurityMixIn, ListView):
+class EntityUnitModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = EntityUnitModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('entity')
+        return super().get_queryset()
+
+
+class EntityUnitModelListView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/unit/unit_list.html'
     PAGE_TITLE = _('Entity Unit List')
     extra_context = {
@@ -24,14 +36,8 @@ class EntityUnitModelListView(DjangoLedgerSecurityMixIn, ListView):
     }
     context_object_name = 'unit_list'
 
-    def get_queryset(self):
-        return EntityUnitModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity')
 
-
-class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
+class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/unit/unit_detail.html'
     PAGE_TITLE = _('Entity Unit Detail')
     slug_url_kwarg = 'unit_slug'
@@ -41,12 +47,6 @@ class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         # 'header_subtitle_icon': 'dashicons:businesswoman'
     }
     context_object_name = 'unit'
-
-    def get_queryset(self):
-        return EntityUnitModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity')
 
 
 class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
@@ -80,7 +80,7 @@ class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/unit/unit_update.html'
     PAGE_TITLE = _('Entity Unit Update')
     slug_url_kwarg = 'unit_slug'
@@ -90,12 +90,6 @@ class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         'header_title': PAGE_TITLE,
         # 'header_subtitle_icon': 'dashicons:businesswoman'
     }
-
-    def get_queryset(self):
-        return EntityUnitModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity')
 
     def get_form(self, form_class=None):
         return EntityUnitModelUpdateForm(
@@ -133,7 +127,8 @@ class EntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
                        })
 
 
-class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceSheetView):
+class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceSheetView,
+                                                EntityUnitModelModelViewQuerySetMixIn):
     """
     Entity Unit Fiscal Year Balance Sheet View Class
     """
@@ -145,12 +140,6 @@ class FiscalYearEntityUnitModelBalanceSheetView(FiscalYearEntityModelBalanceShee
         context = super().get_context_data(**kwargs)
         context['entity_model'] = self.object.entity
         return context
-
-    def get_queryset(self):
-        return EntityUnitModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('entity')
 
 
 class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):

@@ -124,7 +124,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
                        })
 
 
-class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
+class AccountModelDetailView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()

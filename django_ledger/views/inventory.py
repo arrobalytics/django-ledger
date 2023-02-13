@@ -40,10 +40,12 @@ class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
         return context
 
     def get_queryset(self):
-        return ItemTransactionModel.objects.inventory_pipeline_aggregate(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
+        if not self.queryset:
+            self.queryset = ItemTransactionModel.objects.inventory_pipeline_aggregate(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            )
+        return super().get_queryset()
 
 
 class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
@@ -52,9 +54,11 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
     slug_url_kwarg = 'entity_slug'
 
     def get_queryset(self):
-        return EntityModel.objects.for_user(
-            user_model=self.request.user
-        )
+        if not self.queryset:
+            self.queryset = EntityModel.objects.for_user(
+                user_model=self.request.user
+            )
+        return super().get_queryset()
 
     def counted_inventory(self):
         entity_slug = self.kwargs['entity_slug']
