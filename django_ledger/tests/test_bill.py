@@ -27,7 +27,8 @@ class BillModelTests(DjangoLedgerBaseTest):
     def create_bill(self, amount: Decimal, draft_date: date = None, is_accrued: bool = False) -> tuple[
         EntityModel, BillModel]:
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
-        vendor_model: VendorModel = entity_model.vendors.first()
+        vendor_model: VendorModel = VendorModel.objects.for_entity(entity_slug=entity_model,
+                                                                   user_model=self.user_model).first()
         account_qs = entity_model.get_accounts(
             user_model=self.user_model
         )
@@ -319,7 +320,7 @@ class BillModelTests(DjangoLedgerBaseTest):
                                           'bill_pk': bill_model.uuid
                                       })
 
-            with self.assertNumQueries(8):
+            with self.assertNumQueries(7):          # previously 8
                 bill_detail_response = self.CLIENT.get(bill_detail_url)
             self.assertTrue(bill_detail_response.status_code, 200)
 

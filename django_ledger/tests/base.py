@@ -56,7 +56,6 @@ class DjangoLedgerBaseTest(TestCase):
                 email=cls.USER_EMAIL,
             )
 
-        cls.TZ = get_default_timezone()
         cls.FY_STARTS = [
             '1',
             '2',
@@ -75,7 +74,6 @@ class DjangoLedgerBaseTest(TestCase):
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
         cls.ENTITY_MODEL_QUERYSET = None
 
-        cls.START_DATE = cls.get_random_date()
         cls.create_entity_models(n=cls.N)
         cls.populate_entity_models()
 
