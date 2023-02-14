@@ -282,9 +282,7 @@ class EntityDataGenerator(LoggingMixIn):
                 product_models.append(ItemModel(
                     name=f'Product #{randint(1000, 9999)}',
                     uom=choice(self.uom_models),
-
-                    # cannot be labor...
-                    item_type=choice(ItemModel.ITEM_TYPE_CHOICES[1:])[0],
+                    item_role=ItemModel.ITEM_ROLE_PRODUCT,
                     sku=generate_random_sku(),
                     upc=generate_random_upc(),
                     item_id=generate_random_item_id(),
@@ -301,9 +299,7 @@ class EntityDataGenerator(LoggingMixIn):
                 product_models.append(ItemModel(
                     name=f'Service #{randint(1000, 9999)}',
                     uom=choice(self.uom_models),
-
-                    # services are labor...
-                    item_type=ItemModel.ITEM_TYPE_CHOICES[0][0],
+                    item_role=ItemModel.ITEM_ROLE_SERVICE,
                     sku=generate_random_sku(),
                     upc=generate_random_upc(),
                     item_id=generate_random_item_id(),
@@ -323,14 +319,14 @@ class EntityDataGenerator(LoggingMixIn):
 
     def update_products(self):
         self.logger.info(f'Updating product catalog...')
-        self.product_and_services_models = ItemModel.objects.products_and_services(
+        self.product_and_services_models = ItemModel.objects.products(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
 
     def update_inventory(self):
         self.logger.info(f'Updating inventory...')
-        self.inventory_models = ItemModel.objects.inventory(
+        self.inventory_models = ItemModel.objects.inventory_all(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
         )
@@ -350,6 +346,7 @@ class EntityDataGenerator(LoggingMixIn):
                 name=f'Expense Item {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
                 item_type=choice(ItemModel.ITEM_TYPE_CHOICES)[0],
+                item_role=ItemModel.ITEM_ROLE_EXPENSE,
                 sku=generate_random_sku(),
                 upc=generate_random_upc(),
                 item_id=generate_random_item_id(),
@@ -373,6 +370,7 @@ class EntityDataGenerator(LoggingMixIn):
             ItemModel(
                 name=f'Inventory {randint(1000, 9999)}',
                 uom=choice(self.uom_models),
+                item_role=ItemModel.ITEM_ROLE_INVENTORY,
                 item_type=choice(ItemModel.ITEM_TYPE_CHOICES)[0],
                 item_id=generate_random_item_id(),
                 entity=self.entity_model,

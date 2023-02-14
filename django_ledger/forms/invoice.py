@@ -237,7 +237,7 @@ class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
         self.INVOICE_MODEL: InvoiceModel = invoice_model
         self.ENTITY_SLUG = entity_slug
 
-        items_qs = ItemModel.objects.products_and_services(
+        items_qs = ItemModel.objects.products(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         )

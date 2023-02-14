@@ -667,7 +667,7 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'My Products & Services',
+                        'title': 'Products',
                         'url': reverse('django_ledger:product-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {

@@ -600,7 +600,7 @@ class EntityModelAbstract(MP_Node,
 
         """
         if not item_qs:
-            recorded_qs = self.itemmodel_set.inventory(
+            recorded_qs = self.itemmodel_set.inventory_all(
                 entity_slug=self.slug,
                 user_model=user_model
             )

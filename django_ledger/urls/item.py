@@ -1,10 +1,10 @@
 from django.urls import path
 
 from django_ledger.views import (
-    ProductsAndServicesListView, ProductOrServiceCreateView, UnitOfMeasureModelCreateView,
-    UnitOfMeasureModelListView, UnitOfMeasureModelUpdateView, ProductOrServiceUpdateView,
+    ProductListView, ProductCreateView, UnitOfMeasureModelCreateView,
+    UnitOfMeasureModelListView, UnitOfMeasureModelUpdateView, ProductUpdateView,
     ExpenseItemCreateView, ExpenseItemModelListView, ExpenseItemUpdateView, InventoryItemModelListView,
-    InventoryItemCreateView, InventoryItemUpdateView, UnitOfMeasureModelDeleteView, ProductOrServiceDeleteView)
+    InventoryItemCreateView, InventoryItemUpdateView, UnitOfMeasureModelDeleteView, ProductDeleteView)
 
 urlpatterns = [
     path('<str:entity_slug>/list/uom/', UnitOfMeasureModelListView.as_view(), name='uom-list'),
@@ -12,11 +12,11 @@ urlpatterns = [
     path('<str:entity_slug>/update/uom/<uuid:uom_pk>/', UnitOfMeasureModelUpdateView.as_view(), name='uom-update'),
     path('<str:entity_slug>/delete/uom/<uuid:uom_pk>/', UnitOfMeasureModelDeleteView.as_view(), name='uom-delete'),
 
-    path('<str:entity_slug>/list/product/', ProductsAndServicesListView.as_view(), name='product-list'),
-    path('<str:entity_slug>/create/product/', ProductOrServiceCreateView.as_view(), name='product-create'),
-    path('<str:entity_slug>/update/product/<uuid:item_pk>/', ProductOrServiceUpdateView.as_view(),
+    path('<str:entity_slug>/list/product/', ProductListView.as_view(), name='product-list'),
+    path('<str:entity_slug>/create/product/', ProductCreateView.as_view(), name='product-create'),
+    path('<str:entity_slug>/update/product/<uuid:item_pk>/', ProductUpdateView.as_view(),
          name='product-update'),
-    path('<str:entity_slug>/delete/product/<uuid:item_pk>/', ProductOrServiceDeleteView.as_view(),
+    path('<str:entity_slug>/delete/product/<uuid:item_pk>/', ProductDeleteView.as_view(),
          name='product-delete'),
 
     path('<str:entity_slug>/list/expense/', ExpenseItemModelListView.as_view(), name='expense-list'),

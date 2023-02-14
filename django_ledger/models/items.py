@@ -103,20 +103,62 @@ class ItemModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
 
-    def products_and_services(self, entity_slug: str, user_model):
+    def products(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(is_product_or_service=True)
+        return qs.filter(
+            (
+                    Q(is_product_or_service=True) &
+                    Q(for_inventory=True)
+            ) |
+            Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
+        )
+
+    def services(self, entity_slug: str, user_model):
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            (
+                    Q(is_product_or_service=True) &
+                    Q(for_inventory=False)
+            ) |
+            Q(item_role=ItemModel.ITEM_ROLE_SERVICE)
+        )
 
     def expenses(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
-            is_product_or_service=False,
-            for_inventory=False
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=False)
+            ) | Q(item_role=ItemModel.ITEM_ROLE_EXPENSE)
         )
 
-    def inventory(self, entity_slug: str, user_model):
+    def inventory_wip(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(for_inventory=True).select_related('uom')
+        return qs.filter(
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=True)
+            ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
+        )
+
+    def inventory_all(self, entity_slug: str, user_model):
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(
+            (
+                    (
+                            Q(is_product_or_service=False) &
+                            Q(for_inventory=True)
+                    ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
+            ) |
+            (
+                    (
+                            Q(is_product_or_service=True) &
+                            Q(for_inventory=True)
+                    ) |
+                    Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
+
+            )
+        )
 
     def for_bill(self, entity_slug: str, user_model):
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
@@ -129,10 +171,10 @@ class ItemModelManager(models.Manager):
         )
 
     def for_po(self, entity_slug: str, user_model):
-        return self.inventory(entity_slug=entity_slug, user_model=user_model)
+        return self.inventory_all(entity_slug=entity_slug, user_model=user_model)
 
     def for_estimate(self, entity_slug: str, user_model):
-        return self.products_and_services(entity_slug=entity_slug, user_model=user_model)
+        return self.products(entity_slug=entity_slug, user_model=user_model)
 
     def for_contract(self, entity_slug: str, user_model, ce_model_uuid):
         qs = self.for_estimate(
@@ -276,6 +318,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['upc']),
             models.Index(fields=['item_id']),
             models.Index(fields=['item_number']),
+            models.Index(fields=['item_role']),
         ]
 
     def __str__(self):
@@ -288,30 +331,52 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
     def is_expense(self):
-        return all([
+        if self.item_role:
+            return self.item_role == self.ITEM_ROLE_EXPENSE
+        if all([
             not self.is_product_or_service,
             not self.for_inventory
-        ])
+        ]):
+            self.item_role = self.ITEM_ROLE_EXPENSE
+            return True
+        return False
 
     def is_inventory(self):
-        return all([
+        if self.item_role:
+            return self.item_role == self.ITEM_ROLE_INVENTORY
+
+        if all([
             not self.is_product_or_service,
             self.for_inventory,
-        ])
+        ]):
+            self.item_role = self.ITEM_ROLE_INVENTORY
+            return True
+        return False
 
     def is_product(self):
-        return all([
+        if self.item_role:
+            return self.item_role == self.ITEM_ROLE_PRODUCT
+
+        if all([
             self.is_product_or_service,
             self.for_inventory,
             not self.is_labor()
-        ])
+        ]):
+            self.item_role = self.ITEM_ROLE_PRODUCT
+            return True
+        return False
 
     def is_service(self):
-        return all([
+        if self.item_role:
+            return self.item_role == self.ITEM_ROLE_SERVICE
+        if all([
             self.is_product_or_service,
             not self.for_inventory,
             self.is_labor()
-        ])
+        ]):
+            self.item_role = self.ITEM_ROLE_SERVICE
+            return True
+        return False
 
     def product_or_service_display(self):
         if self.is_product():
@@ -414,7 +479,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
         return self.item_number
 
     def save(self, **kwargs):
-        self.clean()
         if self.can_generate_item_number():
             self.generate_item_number(commit=False)
         super(ItemModelAbstract, self).save(**kwargs)
@@ -433,9 +497,13 @@ class ItemModelAbstract(CreateUpdateMixIn):
         if self.is_expense():
             if not self.expense_account_id:
                 raise ItemModelValidationError(_('Items must have an associated expense accounts.'))
+            if not self.item_type:
+                raise ItemModelValidationError(_('Expenses must have a type.'))
             self.inventory_account = None
             self.earnings_account = None
             self.cogs_account = None
+            self.for_inventory = False
+            self.is_product_or_service = False
 
         elif self.is_product():
             if not all([
@@ -444,7 +512,11 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 self.earnings_account_id
             ]):
                 raise ItemModelValidationError(_('Products must have Inventory, COGS & Earnings accounts.'))
+            # if self.item_type not in self.ITEM_TYPE_CHOICES_PRODUCT_VALUES:
+            #     raise ItemModelValidationError(_(f'Product must be a type of {self.ITEM_TYPE_CHOICES_PRODUCT_VALUES}'))
             self.expense_account = None
+            self.for_inventory = True
+            self.is_product_or_service = True
 
         elif self.is_service():
             if not all([
@@ -454,15 +526,20 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 raise ItemModelValidationError(_('Services must have COGS & Earnings accounts.'))
             self.inventory_account = None
             self.expense_account = None
+            self.for_inventory = False
+            self.is_product_or_service = True
 
         elif self.is_inventory():
             if not all([
                 self.inventory_account_id,
-                # self.cogs_account_id
             ]):
                 raise ItemModelValidationError(_('Items for inventory must have Inventory & COGS accounts.'))
+            if not self.item_type:
+                raise ItemModelValidationError(_('Inventory items must have a type.'))
             self.expense_account = None
             self.earnings_account = None
+            self.for_inventory = True
+            self.is_product_or_service = False
 
 
 # ITEM TRANSACTION MODELS...
