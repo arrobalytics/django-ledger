@@ -1,0 +1,55 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th>{% trans 'Type' %}</th>
+            <th>{% trans 'Item Number' %}</th>
+            <th>{% trans 'Item' %}</th>
+            <th>{% trans 'UOM' %}</th>
+            <th>{% trans 'SKU' %}</th>
+            <th>{% trans 'UPC' %}</th>
+            <th>{% trans 'Earnings Account' %}</th>
+            <th>{% trans 'Actions' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for service in service_list %}
+            <tr>
+                <td>{{ service.product_or_service_display | capfirst }}</td>
+                <td>{{ service.item_number }}</td>
+                <td>{{ service.name }}</td>
+                <td>{{ service.uom }}</td>
+                <td>{{ service.sku }}</td>
+                <td>{{ service.upc }}</td>
+                <td>{{ service.earnings_account }}</td>
+                <td>
+                    <div class="dropdown is-right is-hoverable" id="sercice-action-{{ invoice.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>Actions</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+
+                        <div class="dropdown-menu" id="dropdown-menu-{{ service.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:service-update' entity_slug=entity_slug item_pk=service.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Update' %}</a>
+                                <a href="{% url 'django_ledger:service-delete' entity_slug=entity_slug item_pk=service.uuid %}"
+                                   class="dropdown-item has-text-danger">{% trans 'Delete' %}</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

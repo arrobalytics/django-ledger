@@ -10,7 +10,8 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 
 from django_ledger.forms.item import (
     ProductCreateForm, UnitOfMeasureModelCreateForm, UnitOfMeasureModelUpdateForm, ProductUpdateForm,
-    ExpenseItemCreateForm, ExpenseItemUpdateForm, InventoryItemCreateForm, InventoryItemUpdateForm
+    ExpenseItemCreateForm, ExpenseItemUpdateForm, InventoryItemCreateForm, InventoryItemUpdateForm,
+    ServiceCreateForm, ServiceUpdateForm
 )
 from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
@@ -148,7 +149,7 @@ class UnitOfMeasureModelDeleteView(DjangoLedgerSecurityMixIn, UnitOfMeasureModel
                        })
 
 
-# PRODUCTS AND SERVICES VIEWS...
+# PRODUCTS VIEWS...
 class ProductItemModelModelViewQuerySetMixIn:
     queryset = None
 
@@ -168,7 +169,7 @@ class ProductListView(DjangoLedgerSecurityMixIn,
                       ListView):
     template_name = 'django_ledger/product/product_list.html'
     PAGE_TITLE = _('Products')
-    context_object_name = 'pns_list'
+    context_object_name = 'product_list'
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
@@ -273,6 +274,135 @@ class ProductDeleteView(DjangoLedgerSecurityMixIn,
 
     def get_success_url(self):
         return reverse('django_ledger:product-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+# SERVICES VIEWS...
+class ServiceItemModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = ItemModel.objects.services(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related(
+                'earnings_account', 'cogs_account',
+                'inventory_account', 'uom').order_by('-updated')
+        return super().get_queryset()
+
+
+class ServiceListView(DjangoLedgerSecurityMixIn,
+                      ServiceItemModelModelViewQuerySetMixIn,
+                      ListView):
+    template_name = 'django_ledger/service/service_list.html'
+    PAGE_TITLE = _('Services')
+    context_object_name = 'service_list'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+
+class ServiceCreateView(DjangoLedgerSecurityMixIn,
+                        ServiceItemModelModelViewQuerySetMixIn,
+                        CreateView):
+    template_name = 'django_ledger/service/service_create.html'
+    model = ItemModel
+    PAGE_TITLE = _('Create New Service')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_success_url(self):
+        return reverse('django_ledger:service-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+    def get_form(self, form_class=None):
+        return ServiceCreateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def form_valid(self, form):
+        entity_slug = self.kwargs['entity_slug']
+        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
+        item_model: ItemModel = form.save(commit=False)
+        item_model.entity = entity_model
+        return super().form_valid(form=form)
+
+
+class ServiceUpdateView(DjangoLedgerSecurityMixIn,
+                        ServiceItemModelModelViewQuerySetMixIn,
+                        UpdateView):
+    template_name = 'django_ledger/service/service_update.html'
+    PAGE_TITLE = _('Update Service')
+    context_object_name = 'item'
+    pk_url_kwarg = 'item_pk'
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'zmdi:collection-item'
+    }
+
+    def get_queryset(self):
+        return ItemModel.objects.services(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user
+        )
+
+    def get_form(self, form_class=None):
+        return ServiceUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:service-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+class ServiceDeleteView(DjangoLedgerSecurityMixIn,
+                        ServiceItemModelModelViewQuerySetMixIn,
+                        DeleteView):
+    template_name = 'django_ledger/service/service_delete.html'
+    pk_url_kwarg = 'item_pk'
+    context_object_name = 'item_model'
+
+    def form_valid(self, form):
+        try:
+            # todo: add success message...
+            return super(ServiceDeleteView, self).form_valid(form)
+        except RestrictedError:
+
+            item_model: ItemModel = self.object
+            add_message(self.request,
+                        level=ERROR,
+                        message=f'Unable to delete Product or Service {item_model.name}. '
+                                'Remove dependencies before deleting.',
+                        extra_tags='is-danger')
+
+            return HttpResponseRedirect(
+                redirect_to=reverse('django_ledger:service-list',
+                                    kwargs={
+                                        'entity_slug': self.kwargs['entity_slug']
+                                    })
+            )
+
+    def get_success_url(self):
+        return reverse('django_ledger:service-list',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })

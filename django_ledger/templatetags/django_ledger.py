@@ -672,6 +672,11 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
+                        'title': 'Services',
+                        'url': reverse('django_ledger:service-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
                         'title': 'Business Expenses',
                         'url': reverse('django_ledger:expense-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
@@ -751,12 +756,21 @@ def navigation_menu(context, style):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/product/tags/pns_table.html', takes_context=True)
-def pns_table(context, queryset):
+@register.inclusion_tag('django_ledger/product/tags/product_table.html', takes_context=True)
+def product_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {
         'entity_slug': entity_slug,
-        'pns_list': queryset
+        'product_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/service/tags/services_table.html', takes_context=True)
+def service_table(context, queryset):
+    entity_slug = context['view'].kwargs['entity_slug']
+    return {
+        'entity_slug': entity_slug,
+        'service_list': queryset
     }
 
 

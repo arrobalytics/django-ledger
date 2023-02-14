@@ -323,11 +323,13 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def __str__(self):
         if self.is_expense():
-            return f'Expense Item: {self.name} | {self.get_item_type_display()}'
+            return f'Expense: {self.name} | {self.get_item_type_display()}'
         elif self.is_inventory():
             return f'Inventory: {self.name} | {self.get_item_type_display()}'
-        elif self.is_product_or_service:
-            return f'Product/Service: {self.name} | {self.get_item_type_display()}'
+        elif self.is_service():
+            return f'Service: {self.name} | {self.get_item_type_display()}'
+        elif self.is_product():
+            return f'Product: {self.name} | {self.get_item_type_display()}'
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
     def is_expense(self):
@@ -485,12 +487,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     def clean(self):
 
-        if self.is_product_or_service:
-            if self.is_labor():
-                self.for_inventory = False
-            else:
-                self.for_inventory = True
-
         if self.can_generate_item_number():
             self.generate_item_number(commit=False)
 
@@ -512,8 +508,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 self.earnings_account_id
             ]):
                 raise ItemModelValidationError(_('Products must have Inventory, COGS & Earnings accounts.'))
-            # if self.item_type not in self.ITEM_TYPE_CHOICES_PRODUCT_VALUES:
-            #     raise ItemModelValidationError(_(f'Product must be a type of {self.ITEM_TYPE_CHOICES_PRODUCT_VALUES}'))
+            if self.is_labor():
+                raise ItemModelValidationError(_(f'Product must not be labor...'))
             self.expense_account = None
             self.for_inventory = True
             self.is_product_or_service = True
@@ -528,6 +524,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             self.expense_account = None
             self.for_inventory = False
             self.is_product_or_service = True
+            self.item_type = self.ITEM_TYPE_LABOR
 
         elif self.is_inventory():
             if not all([

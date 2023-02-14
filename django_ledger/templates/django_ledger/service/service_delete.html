@@ -1,0 +1,32 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-6">
+            <form action="{% url 'django_ledger:service-delete' entity_slug=view.kwargs.entity_slug item_pk=item_model.uuid %}"
+                  method="post">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-content has-text-centered">
+                    <p class="title has-text-weight-light">Are you sure you want to delete
+                        {{ item_model }}</p>
+                </div>
+                <div class="card-content has-text-centered">
+                    <a href="{% url 'django_ledger:uom-list' entity_slug=view.kwargs.entity_slug %}"
+                       class="button is-primary">{% trans 'Go Back' %}</a>
+                    <button type="submit" class="button is-danger">{% trans 'Delete' %}</button>
+                </div>
+            </div>
+            </form>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+
+
+
