@@ -717,6 +717,7 @@ class EntityDataGenerator(LoggingMixIn):
             try:
                 invoice_model.mark_as_review(commit=True, date_in_review=date_review)
             except InvoiceModelValidationError as e:
+                # invoice cannot be marked as in review...
                 return
 
             if random() > 0.50:

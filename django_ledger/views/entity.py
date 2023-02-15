@@ -401,7 +401,7 @@ class MonthlyEntityModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearEnti
     """
 
 
-class DateModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityModelCashFlowStatementView):
+class DateEntityModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityModelCashFlowStatementView):
     """
     Date Cash Flow Statement View.
     """

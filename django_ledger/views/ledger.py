@@ -73,10 +73,9 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
 
 
 class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, UpdateView):
-    template_name = 'django_ledger/ledger/ledger_update.html'
     context_object_name = 'ledger'
-    slug_url_kwarg = 'ledger_pk'
-    slug_field = 'uuid'
+    pk_url_kwarg = 'ledger_pk'
+    template_name = 'django_ledger/ledger/ledger_update.html'
 
     def get_form(self, form_class=None):
         return LedgerModelUpdateForm(
@@ -117,9 +116,8 @@ class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
                                        YearlyReportMixIn,
                                        DetailView):
     context_object_name = 'ledger'
+    pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
-    slug_url_kwarg = 'ledger_pk'
-    slug_field = 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -166,9 +164,8 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
                                           YearlyReportMixIn,
                                           DetailView):
     context_object_name = 'ledger'
+    pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/financial_statements/income_statement.html'
-    slug_url_kwarg = 'ledger_pk'
-    slug_field = 'uuid'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -192,4 +189,55 @@ class MonthlyLedgerIncomeStatementView(MonthlyReportMixIn, FiscalYearLedgerIncom
 class DateLedgerIncomeStatementView(DateReportMixIn, FiscalYearLedgerIncomeStatementView):
     """
     Date Income Statement Monthly Report.
+    """
+
+
+# CASH FLOW STATEMENT ----
+class LedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        year = localdate().year
+        return reverse('django_ledger:ledger-cf-year',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug'],
+                           'year': year
+                       })
+
+
+class FiscalYearLedgerModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
+                                                 LedgerModelModelViewQuerySetMixIn,
+                                                 BaseDateNavigationUrlMixIn,
+                                                 EntityUnitMixIn,
+                                                 YearlyReportMixIn,
+                                                 DetailView):
+    """
+    Fiscal Year Cash Flow Statement View.
+    """
+
+    context_object_name = 'ledger'
+    pk_url_kwarg = 'ledger_pk'
+    template_name = 'django_ledger/financial_statements/cash_flow.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = _('Ledger Cash Flow Statement: ') + self.object.name
+        context['header_title'] = context['page_title']
+        return context
+
+
+class QuarterlyLedgerModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+    """
+    Quarter Cash Flow Statement View.
+    """
+
+
+class MonthlyLedgerModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+    """
+    Monthly Cash Flow Statement View.
+    """
+
+
+class DateLedgerModelCashFlowStatementView(DateReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+    """
+    Date Cash Flow Statement View.
     """
