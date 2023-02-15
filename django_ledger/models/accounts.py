@@ -143,7 +143,11 @@ class AccountModelManager(MP_NodeManager):
         return AccountModelQuerySet(self.model).order_by('path')
 
     # todo: search for uses and pass EntityModel whenever possible.
-    def for_entity(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
+    def for_entity(self,
+                   user_model,
+                   entity_slug,
+                   coa_slug: Optional[str] = None,
+                   select_coa_model: bool = True) -> AccountModelQuerySet:
         """
         Ensures that only accounts associated with the given EntityModel are returned.
 
@@ -161,31 +165,34 @@ class AccountModelManager(MP_NodeManager):
         user_model:
             The Django User Model making the request to check for permissions.
 
+        select_coa_model: bool
+            Pre fetches the CoA Model information in the QuerySet. Defaults to True.
+
         Returns
         -------
         AccountModelQuerySet
             A QuerySet of all requested EntityModel Chart of Accounts.
         """
         qs = self.get_queryset()
-        EntityModel = lazy_loader.get_entity_model()
+        if select_coa_model:
+            qs = qs.select_related('coa_model')
 
+        EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_slug, EntityModel):
             entity_model = entity_slug
+            qs = qs.filter(coa_model__entity=entity_model)
         elif isinstance(entity_slug, str):
-            slug = entity_slug
-            entity_model = EntityModel.objects.get(slug__exact=slug)
+            qs = qs.filter(coa_model__entity__slug__exact=entity_slug)
         else:
             raise AccountModelValidationError(message='Must pass an instance of EntityModel or String for entity_slug.')
 
-        qs = qs.filter(
-            Q(coa_model__entity=entity_model) &
-            (
-                    Q(coa_model__entity__admin=user_model) |
-                    Q(coa_model__entity__managers__in=[user_model])
-            )
-        ).order_by('code')
+        if coa_slug:
+            qs = qs.filter(coa_model__slug__exact=coa_slug)
 
-        return qs.filter(coa_model__uuid__exact=entity_model.default_coa_id)
+        return qs.filter(
+            Q(coa_model__entity__admin=user_model) |
+            Q(coa_model__entity__managers__in=[user_model])
+        ).order_by('coa_model')
 
     def for_entity_available(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
         """
@@ -583,7 +590,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             raise AccountModelValidationError('Must assign account role before generate random code')
 
         prefix = self.get_code_prefix()
-        ri = randint(1000, 9999)
+        ri = randint(10000, 99999)
         return f'{prefix}{ri}'
 
     def clean(self):

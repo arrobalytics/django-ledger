@@ -31,7 +31,7 @@
                         <h1 class="is-size-2 has-text-weight-bold">{% trans 'Cash Flow Statement' %}</h1>
                         {% if unit_model %}
                             <h3 class="is-size-4 has-text-weight-bold has-text-success">{{ unit_model.name }} {% trans 'Unit' %}</h3>
-                        {% endif %}s
+                        {% endif %}
                         <h2 class="is-size-2 has-text-weight-light">
                             {% if quarter %}{{ year }} | Q{{ quarter }}
                                 {% elif month %}{{ start_date | date:'F, Y' }}

@@ -5,6 +5,7 @@
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <thead>
         <tr>
+            <th>{% trans 'Type' %}</th>
             <th>{% trans 'Item Number' %}</th>
             <th>{% trans 'Item' %}</th>
             <th>{% trans 'UOM' %}</th>
@@ -15,16 +16,17 @@
         </tr>
         </thead>
         <tbody>
-        {% for pns in pns_list %}
+        {% for product in product_list %}
             <tr>
-                <td>{{ pns.item_number }}</td>
-                <td>{{ pns.name }}</td>
-                <td>{{ pns.uom }}</td>
-                <td>{{ pns.sku }}</td>
-                <td>{{ pns.upc }}</td>
-                <td>{{ pns.earnings_account }}</td>
+                <td>{{ product.product_or_service_display | capfirst }}</td>
+                <td>{{ product.item_number }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.uom }}</td>
+                <td>{{ product.sku }}</td>
+                <td>{{ product.upc }}</td>
+                <td>{{ product.earnings_account }}</td>
                 <td>
-                    <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
+                    <div class="dropdown is-right is-hoverable" id="product-action-{{ invoice.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
@@ -34,11 +36,11 @@
                             </button>
                         </div>
 
-                        <div class="dropdown-menu" id="dropdown-menu-{{ pns.uuid }}" role="menu">
+                        <div class="dropdown-menu" id="dropdown-menu-{{ product.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:product-update' entity_slug=entity_slug item_pk=pns.uuid %}"
+                                <a href="{% url 'django_ledger:product-update' entity_slug=entity_slug item_pk=product.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Update' %}</a>
-                                <a href="{% url 'django_ledger:product-delete' entity_slug=entity_slug item_pk=pns.uuid %}"
+                                <a href="{% url 'django_ledger:product-delete' entity_slug=entity_slug item_pk=product.uuid %}"
                                    class="dropdown-item has-text-danger">{% trans 'Delete' %}</a>
                             </div>
                         </div>

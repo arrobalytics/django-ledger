@@ -115,7 +115,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                  blank=True,
                                  verbose_name=_('Associated Customer Job/Estimate'))
 
-    objects = PurchaseOrderModelManager.from_queryset(queryset_class=PurchaseOrderModelQuerySet)
+    objects = PurchaseOrderModelManager.from_queryset(queryset_class=PurchaseOrderModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -160,6 +160,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.date_draft = draft_date
         if not self.date_draft:
             self.date_draft = localdate()
+        self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
         self.entity = entity_model
         self.clean()
         if commit:
@@ -251,7 +252,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
         if self.is_contract_bound():
             if raise_exception:
-                raise PurchaseOrderModelValidationError(f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
+                raise PurchaseOrderModelValidationError(
+                    f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
             return False
         # check if estimate_model is passed and raise exception if needed...
         is_approved = estimate_model.is_approved()
@@ -284,7 +286,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # DRAFT...
     def mark_as_draft(self, commit: bool = False, **kwargs):
         if not self.can_draft():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as draft.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as draft.')
         self.po_status = self.PO_STATUS_DRAFT
         self.clean()
         if commit:
@@ -309,7 +312,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # REVIEW...
     def mark_as_review(self, date_review: date = None, commit: bool = False, **kwargs):
         if not self.can_review():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as in review.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as in review.')
         itemthrough_qs = self.itemtransactionmodel_set.all()
         if not itemthrough_qs.count():
             raise PurchaseOrderModelValidationError(message='Cannot review a PO without items...')
@@ -342,7 +346,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # APPROVED...
     def mark_as_approved(self, commit: bool = False, date_approved: date = None, **kwargs):
         if not self.can_approve():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as approved.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as approved.')
         self.date_approved = localdate() if not date_approved else date_approved
         self.po_status = self.PO_STATUS_APPROVED
         self.clean()
@@ -370,7 +375,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # CANCEL...
     def mark_as_canceled(self, commit: bool = False, date_canceled: date = None, **kwargs):
         if not self.can_cancel():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
         self.date_canceled = localdate() if not date_canceled else date_canceled
         self.po_status = self.PO_STATUS_CANCELED
         self.clean()
@@ -401,7 +407,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                           commit=False,
                           **kwargs):
         if not self.can_fulfill():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')
         self.date_fulfilled = localdate() if not date_fulfilled else date_fulfilled
         self.po_amount_received = self.po_amount
 
@@ -454,7 +461,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                      commit=False,
                      **kwargs):
         if not self.can_void():
-            raise PurchaseOrderModelValidationError(message=f'Purchase Order {self.po_number} cannot be marked as void.')
+            raise PurchaseOrderModelValidationError(
+                message=f'Purchase Order {self.po_number} cannot be marked as void.')
 
         # all bills associated with this PO...
         bill_model_qs = self.get_po_bill_queryset(

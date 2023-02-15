@@ -1,10 +1,12 @@
-from django.forms import ModelForm, TextInput, Select
+from django.forms import ModelForm, TextInput, Select, ChoiceField
+from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import GROUP_INCOME, COGS, ASSET_CA_INVENTORY, GROUP_EXPENSES
+from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_INVENTORY, GROUP_EXPENSES, GROUP_COGS
 from django_ledger.models import AccountModel, ItemModel, UnitOfMeasureModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
+# #### UNIT OF MEASURES #######
 class UnitOfMeasureModelCreateForm(ModelForm):
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
@@ -33,7 +35,11 @@ class UnitOfMeasureModelUpdateForm(UnitOfMeasureModelCreateForm):
     pass
 
 
-class ProductOrServiceUpdateForm(ModelForm):
+# #### PRODUCT ITEMS #######
+
+class ProductCreateForm(ModelForm):
+    PRODUCT_OR_SERVICE_ROLES = GROUP_INCOME + GROUP_COGS
+    PRODUCT_OR_SERVICE_ROLES.append(ASSET_CA_INVENTORY)
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         self.ENTITY_SLUG = entity_slug
@@ -41,17 +47,26 @@ class ProductOrServiceUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.with_roles(
-            roles=GROUP_INCOME,
+            roles=self.PRODUCT_OR_SERVICE_ROLES,
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
 
-        self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
+        # caches the QS for filtering...
+        len(accounts_qs)
 
-        uom_qs = UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
+        self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
+        self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=GROUP_COGS)
+        self.fields['inventory_account'].queryset = accounts_qs.filter(role__in=[ASSET_CA_INVENTORY])
+
+        if 'uom' in self.fields:
+            uom_qs = UnitOfMeasureModel.objects.for_entity_active(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
+            self.fields['uom'].queryset = uom_qs
+
+        if 'item_type' in self.fields:
+            self.fields['item_type'].choices = ItemModel.ITEM_TYPE_CHOICES_PRODUCT
 
     class Meta:
         model = ItemModel
@@ -61,9 +76,11 @@ class ProductOrServiceUpdateForm(ModelForm):
             'upc',
             'item_id',
             'uom',
-            'item_type',
             'default_amount',
             'earnings_account',
+            'cogs_account',
+            'inventory_account',
+            'sold_as_unit'
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -72,10 +89,13 @@ class ProductOrServiceUpdateForm(ModelForm):
             'uom': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'item_type': Select(attrs={
+            'earnings_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'earnings_account': Select(attrs={
+            'cogs_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'inventory_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'sku': TextInput(attrs={
@@ -87,32 +107,68 @@ class ProductOrServiceUpdateForm(ModelForm):
             'item_id': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'item_type': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
             'default_amount': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
+        labels = {
+            'name': _('Product Name'),
+            'item_type': _('Product Type')
+        }
+
+    def clean(self):
+        item_model: ItemModel = self.instance
+        item_model.item_role = ItemModel.ITEM_ROLE_PRODUCT
+        return super().clean()
 
 
-class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
+class ProductUpdateForm(ProductCreateForm):
+    pass
+
+
+# #### SERVICE ITEMS #######
+
+class ServiceCreateForm(ModelForm):
+    SERVICE_ROLES = GROUP_INCOME + GROUP_COGS
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
-        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
-        uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
+        self.ENTITY_SLUG = entity_slug
+        self.USER_MODEL = user_model
+        super().__init__(*args, **kwargs)
 
-    class Meta(ProductOrServiceUpdateForm.Meta):
+        accounts_qs = AccountModel.objects.with_roles(
+            roles=self.SERVICE_ROLES,
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL).active()
+
+        # caches the QS for filtering...
+        len(accounts_qs)
+
+        self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
+        self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=GROUP_COGS)
+
+        if 'uom' in self.fields:
+            uom_qs = UnitOfMeasureModel.objects.for_entity_active(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
+            self.fields['uom'].queryset = uom_qs
+
+    class Meta:
+        model = ItemModel
         fields = [
             'name',
             'sku',
             'upc',
             'item_id',
             'uom',
-            'item_type',
             'default_amount',
             'earnings_account',
+            'cogs_account',
+            'sold_as_unit'
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -121,10 +177,13 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             'uom': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'item_type': Select(attrs={
+            'earnings_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'earnings_account': Select(attrs={
+            'cogs_account': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'inventory_account': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'sku': TextInput(attrs={
@@ -136,13 +195,30 @@ class ProductOrServiceCreateForm(ProductOrServiceUpdateForm):
             'item_id': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'item_type': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
             'default_amount': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            })
+            }),
+        }
+        labels = {
+            'name': _('Service Name'),
+            'sold_as_unit': _('Sold as Unit?')
         }
 
+    def clean(self):
+        item_model: ItemModel = self.instance
+        item_model.item_role = ItemModel.ITEM_ROLE_SERVICE
+        return super().clean()
 
-class ExpenseItemUpdateForm(ModelForm):
+
+class ServiceUpdateForm(ServiceCreateForm):
+    pass
+
+
+# #### EXPENSE ITEMS #######
+class ExpenseItemCreateForm(ModelForm):
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
@@ -155,16 +231,19 @@ class ExpenseItemUpdateForm(ModelForm):
 
         self.fields['expense_account'].queryset = accounts_qs.filter(role__in=GROUP_EXPENSES)
 
-        uom_qs = UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
+        if 'uom' in self.fields:
+            uom_qs = UnitOfMeasureModel.objects.for_entity(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
+            self.fields['uom'].queryset = uom_qs
 
     class Meta:
         model = ItemModel
         fields = [
             'name',
+            'upc',
+            'sku',
             'uom',
             'item_type',
             'default_amount',
@@ -172,7 +251,8 @@ class ExpenseItemUpdateForm(ModelForm):
         ]
         widgets = {
             'name': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('The item name...')
             }),
             'uom': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -187,7 +267,8 @@ class ExpenseItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'upc': TextInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': _('The UPC code of the item, if any...')
             }),
             'item_id': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -196,21 +277,29 @@ class ExpenseItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
+        labels = {
+            'name': _('Expense Name')
+        }
+
+    def clean(self):
+        item_model: ItemModel = self.instance
+        item_model.item_role = ItemModel.ITEM_ROLE_EXPENSE
+        return super().clean()
 
 
-class ExpenseItemCreateForm(ExpenseItemUpdateForm):
+class ExpenseItemUpdateForm(ExpenseItemCreateForm):
+    class Meta(ExpenseItemCreateForm.Meta):
+        fields = [
+            'name',
+            'upc',
+            'sku',
+            'default_amount',
+            'expense_account',
+        ]
 
-    def __init__(self, entity_slug: str, user_model, *args, **kwargs):
-        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
-        uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
 
-
-class InventoryItemUpdateForm(ModelForm):
-    INVENTORY_ROLES = [COGS, ASSET_CA_INVENTORY] + GROUP_INCOME
+# #### INVENTORY ITEMS #######
+class InventoryItemCreateForm(ModelForm):
 
     def __init__(self, entity_slug: str, user_model, *args, **kwargs):
         self.ENTITY_SLUG = entity_slug
@@ -218,36 +307,29 @@ class InventoryItemUpdateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.with_roles(
-            roles=self.INVENTORY_ROLES,
+            roles=[ASSET_CA_INVENTORY],
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL).active()
+        self.fields['inventory_account'].queryset = accounts_qs
 
-        # evaluating qs...
-        len(accounts_qs)
-
-        self.fields['earnings_account'].queryset = accounts_qs.filter(role__in=GROUP_INCOME)
-        self.fields['inventory_account'].queryset = accounts_qs.filter(role__in=[ASSET_CA_INVENTORY])
-        self.fields['cogs_account'].queryset = accounts_qs.filter(role__in=[COGS])
-
-        uom_qs = UnitOfMeasureModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
+        if 'uom' in self.fields:
+            uom_qs = UnitOfMeasureModel.objects.for_entity_active(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
+            self.fields['uom'].queryset = uom_qs
 
     class Meta:
         model = ItemModel
         fields = [
             'name',
             'uom',
-            'item_type',
             'upc',
+            'sku',
             'item_id',
-            'inventory_account',
-            'cogs_account',
+            'item_type',
             'default_amount',
-            'is_product_or_service',
-            'earnings_account',
+            'inventory_account',
         ]
         widgets = {
             'name': TextInput(attrs={
@@ -271,6 +353,9 @@ class InventoryItemUpdateForm(ModelForm):
             'upc': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'sku': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
             'item_id': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
@@ -278,14 +363,23 @@ class InventoryItemUpdateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
         }
+        labels = {
+            'name': _('Inventory Name')
+        }
+
+    def clean(self):
+        item_model: ItemModel = self.instance
+        item_model.item_role = ItemModel.ITEM_ROLE_INVENTORY
+        return super().clean()
 
 
-class InventoryItemCreateForm(InventoryItemUpdateForm):
-
-    def __init__(self, entity_slug: str, user_model, *args, **kwargs):
-        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
-        uom_qs = UnitOfMeasureModel.objects.for_entity_active(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-        self.fields['uom'].queryset = uom_qs
+class InventoryItemUpdateForm(InventoryItemCreateForm):
+    class Meta(InventoryItemCreateForm.Meta):
+        fields = [
+            'name',
+            'upc',
+            'sku',
+            'item_id',
+            'default_amount',
+            'inventory_account',
+        ]

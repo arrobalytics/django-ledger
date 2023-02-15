@@ -22,8 +22,21 @@ from django_ledger.views.mixins import (
 )
 
 
+class BaseAccountModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = AccountModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+            ).select_related('coa_model', 'coa_model__entity').order_by(
+                'coa_model', 'role', 'code').not_coa_root()
+        return super().get_queryset()
+
+
 # Account Views ----
-class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
+class AccountModelListView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/account/account_list.html'
     context_object_name = 'accounts'
     PAGE_TITLE = _('Entity Accounts')
@@ -40,15 +53,8 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, ListView):
         context['equity_accounts'] = (a for a in qs if a.role_bs == 'equity')
         return context
 
-    def get_queryset(self):
-        return AccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        ).not_coa_root().select_related(
-            'coa_model', 'coa_model__entity').order_by('role', 'code')
 
-
-class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class AccountModelUpdateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, UpdateView):
     context_object_name = 'account'
     template_name = 'django_ledger/account/account_update.html'
     slug_url_kwarg = 'account_pk'
@@ -79,14 +85,8 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                            'entity_slug': entity_slug,
                        })
 
-    def get_queryset(self):
-        return AccountModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-        )
 
-
-class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/account/account_create.html'
     PAGE_TITLE = _('Create Account')
     extra_context = {
@@ -95,12 +95,6 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         'header_subtitle_icon': 'ic:twotone-account-tree'
 
     }
-
-    def get_queryset(self):
-        return AccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_form(self, form_class=None):
         return AccountModelCreateForm(
@@ -114,6 +108,10 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
         entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
         account_model: AccountModel = form.save(commit=False)
+
+        if not entity_model.has_default_coa():
+            entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+
         coa_model = entity_model.default_coa
         coa_model.add_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
@@ -126,7 +124,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
 
-class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
+class AccountModelDetailView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = localdate()
@@ -140,6 +138,7 @@ class AccountModelDetailView(DjangoLedgerSecurityMixIn, RedirectView):
 
 
 class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
+                                 BaseAccountModelViewQuerySetMixIn,
                                  BaseDateNavigationUrlMixIn,
                                  EntityUnitMixIn,
                                  YearlyReportMixIn,
@@ -167,10 +166,8 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         return context
 
     def get_queryset(self):
-        return AccountModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-        ).select_related('coa_model', 'coa_model__entity').prefetch_related('transactionmodel_set')
+        qs = super().get_queryset()
+        return qs.prefetch_related('transactionmodel_set')
 
 
 class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):

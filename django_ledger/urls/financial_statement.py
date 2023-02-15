@@ -109,6 +109,7 @@ urlpatterns = [
          name='unit-ic-date'),
 
     # CASH FLOW STATEMENTS...
+    # Entities...
     path('entity/<slug:entity_slug>/cash-flow-statement/',
          views.EntityModelCashFlowStatementRedirectView.as_view(),
          name='entity-cf'),
@@ -122,8 +123,25 @@ urlpatterns = [
          views.MonthlyEntityModelCashFlowStatementView.as_view(),
          name='entity-cf-month'),
     path('entity/<slug:entity_slug>/cash-flow-statement/date/<int:year>/<int:month>/<int:day>/',
-         views.DateModelCashFlowStatementView.as_view(),
+         views.DateEntityModelCashFlowStatementView.as_view(),
          name='entity-cf-date'),
+
+    # Ledgers...
+    path('entity/<slug:entity_slug>/<uuid:ledger_pk>/cash-flow-statement/',
+         views.LedgerModelCashFlowStatementRedirectView.as_view(),
+         name='ledger-cf'),
+    path('entity/<slug:entity_slug>/<uuid:ledger_pk>/cash-flow-statement/year/<int:year>/',
+         views.FiscalYearLedgerModelCashFlowStatementView.as_view(),
+         name='ledger-cf-year'),
+    path('entity/<slug:entity_slug>/<uuid:ledger_pk>/cash-flow-statement/quarter/<int:year>/<int:quarter>/',
+         views.QuarterlyLedgerModelCashFlowStatementView.as_view(),
+         name='ledger-cf-quarter'),
+    path('entity/<slug:entity_slug>/<uuid:ledger_pk>/cash-flow-statement/month/<int:year>/<int:month>/',
+         views.MonthlyLedgerModelCashFlowStatementView.as_view(),
+         name='ledger-cf-month'),
+    path('entity/<slug:entity_slug>/<uuid:ledger_pk>/cash-flow-statement/date/<int:year>/<int:month>/<int:day>/',
+         views.DateLedgerModelCashFlowStatementView.as_view(),
+         name='ledger-cf-date'),
 
     # Entity Units...
     path('unit/<slug:entity_slug>/<slug:unit_slug>/cash-flow-statement/',

@@ -47,6 +47,7 @@ from django_ledger.models.accounts import AccountModel
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
@@ -163,6 +164,8 @@ class EntityReportMixIn:
             obj = getattr(self, 'object')
             if isinstance(obj, EntityModel):
                 entity = obj
+            elif isinstance(obj, LedgerModel):
+                entity = obj.entity
             elif isinstance(obj, EntityUnitModel):
                 entity = obj.entity
             elif isinstance(obj, AccountModel):
@@ -597,7 +600,7 @@ class EntityModelAbstract(MP_Node,
 
         """
         if not item_qs:
-            recorded_qs = self.itemmodel_set.inventory(
+            recorded_qs = self.itemmodel_set.inventory_all(
                 entity_slug=self.slug,
                 user_model=user_model
             )
@@ -784,7 +787,7 @@ class EntityModelAbstract(MP_Node,
         """
         # todo: this logic will generate always the same slug...
         if not coa_name:
-            coa_name = self.name + ' Default CoA'
+            coa_name = 'Default CoA'
 
         chart_of_accounts = ChartOfAccountModel(
             slug=self.slug + ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6)) + '-coa',

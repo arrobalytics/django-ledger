@@ -6,10 +6,10 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from random import choice
 from string import ascii_lowercase, digits
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -20,6 +20,10 @@ from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
+
+
+class LedgerModelValidationError(ValidationError):
+    pass
 
 
 class LedgerModelQuerySet(models.QuerySet):

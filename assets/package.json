@@ -33,5 +33,6 @@
     "build": "webpack",
     "watch": "webpack --watch"
   },
-  "main": "../django_ledger/static/django_ledger/bundle/djetler.bundle.js"
+  "main": "../django_ledger/static/django_ledger/bundle/djetler.bundle.js",
+  "packageManager": "yarn@3.4.1"
 }

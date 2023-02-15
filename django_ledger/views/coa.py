@@ -15,7 +15,19 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class ChartOfAccountsModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = ChartOfAccountModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user,
+            ).select_related('entity')
+        return super().get_queryset()
+
+
+class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, ChartOfAccountsModelModelViewQuerySetMixIn, UpdateView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/code_of_accounts/coa_update.html'
@@ -33,9 +45,3 @@ class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
                        kwargs={
                            'entity_slug': entity_slug
                        })
-
-    def get_queryset(self):
-        return ChartOfAccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        )

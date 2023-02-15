@@ -28,7 +28,19 @@ from django_ledger.models.bill import BillModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class BillModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
+class BillModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = BillModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('vendor', 'ledger', 'ledger__entity').order_by('-updated')
+        return super().get_queryset()
+
+
+class BillModelListView(DjangoLedgerSecurityMixIn, BillModelModelViewQuerySetMixIn, ArchiveIndexView):
     template_name = 'django_ledger/bills/bill_list.html'
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
@@ -41,23 +53,6 @@ class BillModelListView(DjangoLedgerSecurityMixIn, ArchiveIndexView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'uil:bill'
     }
-
-    def get_queryset(self):
-        return BillModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).select_related('vendor', 'ledger', 'ledger__entity').order_by('-updated')
-
-    def get_allow_future(self):
-        allow_future = self.request.GET.get('allow_future')
-        if allow_future:
-            try:
-                allow_future = int(allow_future)
-                if allow_future in (0, 1):
-                    return bool(allow_future)
-            except ValueError:
-                pass
-        return False
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):

@@ -42,7 +42,7 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
             'parent': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'timestamp': DateInput(attrs={
+            'timestamp': DateTimeInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={

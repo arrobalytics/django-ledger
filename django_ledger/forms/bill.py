@@ -1,6 +1,6 @@
 from django.forms import (ModelForm, DateInput, TextInput, Select,
                           CheckboxInput, BaseModelFormSet,
-                          modelformset_factory, Textarea)
+                          modelformset_factory, Textarea, DateTimeInput)
 from django.forms import ValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -133,7 +133,7 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
         widgets = {
             'xref': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
                                      'placeholder': 'External Reference...'}),
-            'timestamp': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'timestamp': DateTimeInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'amount_due': TextInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES, 'placeholder': '$$$'}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'bill_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

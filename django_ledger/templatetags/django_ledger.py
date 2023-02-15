@@ -197,7 +197,7 @@ def data_import_job_txs_imported(context):
     return context
 
 
-@register.inclusion_tag('django_ledger/journal_entry/tags/jes_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)
 def jes_table(context, next_url=None):
     entity_slug = context['view'].kwargs['entity_slug']
     ledger_pk = context['view'].kwargs['ledger_pk']
@@ -215,7 +215,7 @@ def jes_table(context, next_url=None):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html')
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def journal_entry_txs_table(journal_entry_model, style='detail'):
     txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
@@ -228,7 +228,7 @@ def journal_entry_txs_table(journal_entry_model, style='detail'):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
 def bill_txs_table(context, bill_model: BillModel):
     txs_queryset = TransactionModel.objects.for_bill(
         bill_model=bill_model.uuid,
@@ -244,7 +244,7 @@ def bill_txs_table(context, bill_model: BillModel):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
 def invoice_txs_table(context, invoice_model: InvoiceModel):
     txs_queryset = TransactionModel.objects.for_invoice(
         invoice_model=invoice_model,
@@ -667,8 +667,13 @@ def navigation_menu(context, style):
                     },
                     {
                         'type': 'link',
-                        'title': 'My Products & Services',
+                        'title': 'Products',
                         'url': reverse('django_ledger:product-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Services',
+                        'url': reverse('django_ledger:service-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',
@@ -751,12 +756,21 @@ def navigation_menu(context, style):
     return ctx
 
 
-@register.inclusion_tag('django_ledger/product/tags/pns_table.html', takes_context=True)
-def pns_table(context, queryset):
+@register.inclusion_tag('django_ledger/product/tags/product_table.html', takes_context=True)
+def product_table(context, queryset):
     entity_slug = context['view'].kwargs['entity_slug']
     return {
         'entity_slug': entity_slug,
-        'pns_list': queryset
+        'product_list': queryset
+    }
+
+
+@register.inclusion_tag('django_ledger/service/tags/services_table.html', takes_context=True)
+def service_table(context, queryset):
+    entity_slug = context['view'].kwargs['entity_slug']
+    return {
+        'entity_slug': entity_slug,
+        'service_list': queryset
     }
 
 

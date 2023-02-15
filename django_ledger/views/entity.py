@@ -10,7 +10,6 @@ from datetime import timedelta
 from decimal import Decimal
 from random import randint
 
-from django.contrib.messages import add_message, ERROR
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -28,8 +27,15 @@ from django_ledger.views.mixins import (
 )
 
 
+class EntityModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        return EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
+
+
 # Entity CRUD Views ----
-class EntityModelListView(DjangoLedgerSecurityMixIn, ListView):
+class EntityModelListView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/entity/entitiy_list.html'
     context_object_name = 'entities'
     PAGE_TITLE = _('My Entities')
@@ -38,12 +44,8 @@ class EntityModelListView(DjangoLedgerSecurityMixIn, ListView):
         'page_title': PAGE_TITLE
     }
 
-    def get_queryset(self):
-        return EntityModel.objects.for_user(
-            user_model=self.request.user)
 
-
-class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/entity/entity_create.html'
     form_class = EntityModelCreateForm
     PAGE_TITLE = _('Create Entity')
@@ -102,7 +104,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         )
 
 
-class EntityModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class EntityModelUpdateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, UpdateView):
     context_object_name = 'entity'
     template_name = 'django_ledger/entity/entity_update.html'
     form_class = EntityModelUpdateForm
@@ -117,11 +119,8 @@ class EntityModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     def get_success_url(self):
         return reverse('django_ledger:entity-list')
 
-    def get_queryset(self):
-        return EntityModel.objects.for_user(user_model=self.request.user)
 
-
-class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
+class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMixIn, DeleteView):
     slug_url_kwarg = 'entity_slug'
     context_object_name = 'entity'
     template_name = 'django_ledger/entity/entity_delete.html'
@@ -131,11 +130,6 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, DeleteView):
         context['page_title'] = _('Delete Entity ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_queryset(self):
-        return EntityModel.objects.for_user(
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:home')
@@ -186,6 +180,7 @@ class EntityModelDetailView(DjangoLedgerSecurityMixIn,
 
 
 class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
+                                         EntityModelModelViewQuerySetMixIn,
                                          BaseDateNavigationUrlMixIn,
                                          UnpaidElementsMixIn,
                                          EntityUnitMixIn,
@@ -230,15 +225,6 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
 
         return context
 
-    def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
-        return EntityModel.objects.for_user(
-            user_model=self.request.user).select_related('default_coa')
-
 
 class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):
     """
@@ -271,6 +257,7 @@ class EntityModelBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectVie
 
 
 class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
+                                            EntityModelModelViewQuerySetMixIn,
                                             BaseDateNavigationUrlMixIn,
                                             EntityUnitMixIn,
                                             YearlyReportMixIn,
@@ -289,14 +276,6 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
                                                       slug=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
-
-    def get_queryset(self):
-        """
-        Returns a queryset of all Entities owned or Managed by the User.
-        Queryset is annotated with user_role parameter (owned/managed).
-        :return: The View queryset.
-        """
-        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
@@ -329,6 +308,7 @@ class EntityModelIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, Redirect
 
 
 class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
+                                               EntityModelModelViewQuerySetMixIn,
                                                BaseDateNavigationUrlMixIn,
                                                EntityUnitMixIn,
                                                YearlyReportMixIn,
@@ -349,9 +329,6 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                       slug__exact=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
-
-    def get_queryset(self):
-        return EntityModel.objects.for_user(user_model=self.request.user)
 
 
 class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
@@ -385,6 +362,7 @@ class EntityModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, Redire
 
 
 class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
+                                                 EntityModelModelViewQuerySetMixIn,
                                                  BaseDateNavigationUrlMixIn,
                                                  EntityUnitMixIn,
                                                  YearlyReportMixIn,
@@ -410,9 +388,6 @@ class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
-    def get_queryset(self):
-        return EntityModel.objects.for_user(user_model=self.request.user)
-
 
 class QuarterlyEntityModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearEntityModelCashFlowStatementView):
     """
@@ -426,7 +401,7 @@ class MonthlyEntityModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearEnti
     """
 
 
-class DateModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityModelCashFlowStatementView):
+class DateEntityModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityModelCashFlowStatementView):
     """
     Date Cash Flow Statement View.
     """

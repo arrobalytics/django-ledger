@@ -15,10 +15,12 @@
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
                     </tr>
                 {% endif %}
                 <tr>
                     <th>{% trans 'Account Name' %}</th>
+                    <th>{% trans 'CoA' %}</th>
                     <th>{% trans 'Parent' %}</th>
                     <th>{% trans 'Code' %}</th>
                     <th>{% trans 'Balance Type' %}</th>
@@ -29,6 +31,7 @@
                 </thead>
                 <tbody>
                 {% for role, acc_list in role_list %}
+
                     <tr>
                         <td class="has-text-weight-bold">{{ role | upper }}</td>
                         <td></td>
@@ -37,10 +40,13 @@
                         <td></td>
                         <td></td>
                         <td></td>
+                        <td></td>
                     </tr>
+
                     {% for account in acc_list %}
                         <tr>
                             <td style="{% if account.is_indented %}padding-left: {{ account.get_html_pixel_indent }};{% endif %}">{{ account.name }}</td>
+                            <td>{{ account.coa_model.name }}</td>
                             <td>{% if not account.get_parent.is_coa_root %}{{ account.get_parent }}{% endif %}</td>
                             <td>{{ account.code }}</td>
                             <td>{{ account.get_balance_type_display }}</td>
@@ -49,8 +55,13 @@
                                     <span class="icon has-text-success-dark">
                                         {% icon 'ant-design:check-circle-filled' 24 %}
                                     </span>
+                                {% elif not account.active %}
+                                    <span class="icon has-text-danger-dark">
+                                        {% icon 'mdi:dangerous' 24 %}
+                                    </span>
                                 {% endif %}
                             </td>
+
                             <td class="has-text-centered">
                                 {% if account.locked %}
                                     <span class="icon has-text-success-dark">
@@ -84,6 +95,7 @@
                             </td>
                         </tr>
                     {% endfor %}
+
                 {% endfor %}
 
 

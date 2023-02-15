@@ -43,6 +43,10 @@ from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO
 UserModel = get_user_model()
 
 
+class InvoiceModelValidationError(ValidationError):
+    pass
+
+
 class InvoiceModelQuerySet(models.QuerySet):
     """
    A custom defined QuerySet for the InvoiceModel.
@@ -413,7 +417,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise ValidationError('entity_slug must be an instance of str or EntityModel')
+                raise InvoiceModelValidationError('entity_slug must be an instance of str or EntityModel')
 
             if entity_model.is_accrual_method():
                 self.accrue = True
@@ -468,7 +472,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             i.invoice_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise ValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
+            raise InvoiceModelValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
 
     def get_itemtxs_data(self,
                          queryset: ItemTransactionModelQuerySet = None) -> Tuple[ItemTransactionModelQuerySet, Dict]:
@@ -750,7 +754,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             EstimateModel to check against.
 
         raise_exception: bool
-            If True, raises ValidationError if unable to bind. Else, returns False.
+            If True, raises InvoiceModelValidationError if unable to bind. Else, returns False.
 
         Returns
         _______
@@ -761,13 +765,13 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
         if self.ce_model_id:
             if raise_exception:
-                raise ValidationError(f'Invoice {self.invoice_number} already bound to '
-                                      f'Estimate {self.ce_model.estimate_number}')
+                raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
+                                                  f'Estimate {self.ce_model.estimate_number}')
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise ValidationError(f'Cannot bind estimate that is not approved.')
+            raise InvoiceModelValidationError(f'Cannot bind estimate that is not approved.')
         return all([
             is_approved
         ])
@@ -799,7 +803,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             EstimateModel to bind.
 
         raise_exception: bool
-            Raises ValidationError if unable to bind EstimateModel.
+            Raises InvoiceModelValidationError if unable to bind EstimateModel.
 
         commit: bool
             Commits transaction into current InvoiceModel.
@@ -835,7 +839,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_draft():
-            raise ValidationError(f'Cannot mark PO {self.uuid} as draft...')
+            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as draft...')
         self.invoice_status = self.INVOICE_STATUS_DRAFT
         self.clean()
         if commit:
@@ -905,19 +909,19 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         commit: bool
             Commits transaction into the Database. Defaults to False.
         raise_exception: bool
-            Raises ValidationError if InvoiceModel cannot be marked as in review. Defaults to True.
+            Raises InvoiceModelValidationError if InvoiceModel cannot be marked as in review. Defaults to True.
         """
         if not self.can_review():
-            raise ValidationError(f'Cannot mark PO {self.uuid} as In Review...')
+            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
         self.date_in_review = localdate() if not date_in_review else date_in_review
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
         if not itemtxs_qs.count():
-            raise ValidationError(message='Cannot review an Invoice without items...')
+            raise InvoiceModelValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
-            raise ValidationError(
+            raise InvoiceModelValidationError(
                 f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
             )
 
@@ -1003,7 +1007,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             Forces migration. True if Accounting Method is Accrual.
         """
         if not self.can_approve():
-            raise ValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
@@ -1098,14 +1102,14 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         """
 
         if not self.can_pay():
-            raise ValidationError(f'Cannot mark PO {self.uuid} as Paid...')
+            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Paid...')
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
         self.date_paid = localdate() if not date_paid else date_paid
 
         if self.date_paid > localdate():
-            raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+            raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
 
         self.new_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
@@ -1191,15 +1195,16 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             Commits transaction into DB. Defaults to False.
         """
         if not self.can_void():
-            raise ValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
+            raise InvoiceModelValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
         self.date_void = localdate() if not date_void else date_void
 
         if self.date_void > localdate():
-            raise ValidationError(f'Cannot void {self.__class__.__name__} in the future.')
+            raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
         if self.date_void < self.date_approved:
-            raise ValidationError(f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
-                                  f'{self.date_approved}')
+            raise InvoiceModelValidationError(
+                f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
+                f'{self.date_approved}')
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
@@ -1275,7 +1280,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_cancel():
-            raise ValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
+            raise InvoiceModelValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
 
         self.date_canceled = localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
@@ -1338,7 +1343,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
         """
         if not self.can_delete():
-            raise ValidationError(f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
+            raise InvoiceModelValidationError(
+                f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
         self.delete(**kwargs)
 
     def get_mark_as_delete_html_id(self) -> str:

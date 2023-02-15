@@ -16,7 +16,19 @@ from django_ledger.models.vendor import VendorModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class VendorModelListView(DjangoLedgerSecurityMixIn, ListView):
+class VendorModelModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if not self.queryset:
+            self.queryset = VendorModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).order_by('-updated')
+        return super().get_queryset()
+
+
+class VendorModelListView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, ListView):
     template_name = 'django_ledger/vendor/vendor_list.html'
     context_object_name = 'vendors'
     PAGE_TITLE = _('Vendor List')
@@ -26,14 +38,8 @@ class VendorModelListView(DjangoLedgerSecurityMixIn, ListView):
         'header_subtitle_icon': 'bi:person-lines-fill'
     }
 
-    def get_queryset(self):
-        return VendorModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        ).order_by('-updated')
 
-
-class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
+class VendorModelCreateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/vendor/vendor_create.html'
     PAGE_TITLE = _('Create New Vendor')
     form_class = VendorModelForm
@@ -43,12 +49,6 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'bi:person-lines-fill'
     }
-
-    def get_queryset(self):
-        return VendorModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:vendor-list',
@@ -66,7 +66,7 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         return super().form_valid(form)
 
 
-class VendorModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
+class VendorModelUpdateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, UpdateView):
     template_name = 'django_ledger/vendor/vendor_update.html'
     PAGE_TITLE = _('Vendor Update')
     context_object_name = 'vendor'
@@ -83,12 +83,6 @@ class VendorModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
         context['header_subtitle'] = vendor_model.vendor_number
         context['header_subtitle_icon'] = 'bi:person-lines-fill'
         return context
-
-    def get_queryset(self):
-        return VendorModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
     def get_success_url(self):
         return reverse('django_ledger:vendor-list',
