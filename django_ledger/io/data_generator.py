@@ -679,9 +679,6 @@ class EntityDataGenerator(LoggingMixIn):
             margin = Decimal(random() + 1.5)
             avg_cost = item_model.get_average_cost()
             unit_cost = round(random() * randint(100, 999), 2)
-
-            print(avg_cost)
-
             if item_model.is_product():
                 if item_model.inventory_received is not None and item_model.inventory_received > 0.0:
                     if quantity > item_model.inventory_received:
@@ -711,7 +708,6 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model.save()
 
         if random() > 0.25:
-            print('is review...')
             date_review = self.get_next_date(date_draft)
 
             try:
