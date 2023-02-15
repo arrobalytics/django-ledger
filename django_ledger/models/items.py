@@ -329,7 +329,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         elif self.is_service():
             return f'Service: {self.name} | {self.get_item_type_display()}'
         elif self.is_product():
-            return f'Product: {self.name} | {self.get_item_type_display()}'
+            return f'Product: {self.name}'
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
     def is_expense(self):
@@ -649,13 +649,14 @@ class ItemTransactionModelManager(models.Manager):
 
     def inventory_count(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        PurchaseOrderModel = lazy_loader.get_purchase_order_model()
         qs = qs.filter(
             Q(item_model__for_inventory=True) &
             (
                 # received inventory...
                     (
                             Q(bill_model__isnull=False) &
-                            Q(po_model__po_status='approved') &
+                            Q(po_model__po_status=PurchaseOrderModel.PO_STATUS_APPROVED) &
                             Q(po_item_status__exact=ItemTransactionModel.STATUS_RECEIVED)
                     ) |
 
@@ -975,12 +976,16 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             return ' is-info'
         return ' is-warning'
 
+    def has_po(self):
+        return self.po_model_id is not None
+
     def clean(self):
+        if self.has_po() and not self.po_item_status:
+            self.po_item_status = self.STATUS_NOT_ORDERED
 
         self.update_po_total_amount()
         self.update_cost_estimate()
         self.update_revenue_estimate()
-
         self.update_total_amount()
 
 

@@ -766,7 +766,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if self.ce_model_id:
             if raise_exception:
                 raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
-                                      f'Estimate {self.ce_model.estimate_number}')
+                                                  f'Estimate {self.ce_model.estimate_number}')
             return False
 
         is_approved = estimate_model.is_approved()
@@ -1202,8 +1202,9 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         if self.date_void > localdate():
             raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
         if self.date_void < self.date_approved:
-            raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
-                                  f'{self.date_approved}')
+            raise InvoiceModelValidationError(
+                f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
+                f'{self.date_approved}')
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
@@ -1342,7 +1343,8 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
         Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
         """
         if not self.can_delete():
-            raise InvoiceModelValidationError(f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
+            raise InvoiceModelValidationError(
+                f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
         self.delete(**kwargs)
 
     def get_mark_as_delete_html_id(self) -> str:

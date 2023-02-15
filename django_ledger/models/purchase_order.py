@@ -160,6 +160,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             self.date_draft = draft_date
         if not self.date_draft:
             self.date_draft = localdate()
+        self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
         self.entity = entity_model
         self.clean()
         if commit:
