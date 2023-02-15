@@ -7,7 +7,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.core.exceptions import ValidationError
-from django.forms import ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory, Textarea
+from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory, Textarea,
+                          DateTimeInput)
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
@@ -120,7 +121,7 @@ class BaseInvoiceModelUpdateForm(ModelForm):
             'amount_paid': _('Amount Received')
         }
         widgets = {
-            'timestamp': DateInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
+            'timestamp': DateTimeInput(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'terms': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'invoice_status': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),
             'customer': Select(attrs={'class': DJANGO_LEDGER_FORM_INPUT_CLASSES}),

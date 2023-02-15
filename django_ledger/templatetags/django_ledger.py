@@ -228,7 +228,7 @@ def journal_entry_txs_table(journal_entry_model, style='detail'):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
 def bill_txs_table(context, bill_model: BillModel):
     txs_queryset = TransactionModel.objects.for_bill(
         bill_model=bill_model.uuid,
@@ -244,7 +244,7 @@ def bill_txs_table(context, bill_model: BillModel):
     }
 
 
-@register.inclusion_tag('django_ledger/transaction/tags/txs_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
 def invoice_txs_table(context, invoice_model: InvoiceModel):
     txs_queryset = TransactionModel.objects.for_invoice(
         invoice_model=invoice_model,

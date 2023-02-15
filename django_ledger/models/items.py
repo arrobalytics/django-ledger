@@ -306,19 +306,14 @@ class ItemModelAbstract(CreateUpdateMixIn):
             ('entity', 'item_number')
         ]
         indexes = [
-            models.Index(fields=['inventory_account']),
-            models.Index(fields=['cogs_account']),
-            models.Index(fields=['earnings_account']),
-            models.Index(fields=['expense_account']),
+            models.Index(fields=['item_number']),
+            models.Index(fields=['item_type']),
+            models.Index(fields=['item_role']),
+            models.Index(fields=['upc']),
+            models.Index(fields=['sku']),
             models.Index(fields=['for_inventory']),
             models.Index(fields=['is_product_or_service']),
-            models.Index(fields=['is_active']),
-            models.Index(fields=['item_type']),
-            models.Index(fields=['sku']),
-            models.Index(fields=['upc']),
-            models.Index(fields=['item_id']),
-            models.Index(fields=['item_number']),
-            models.Index(fields=['item_role']),
+            models.Index(fields=['is_active'])
         ]
 
     def __str__(self):
