@@ -10,11 +10,11 @@ class JournalEntryModelCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.LEDGER_PK = ledger_pk
+        self.fields['timestamp'].required = False
 
     class Meta:
         model = JournalEntryModel
         fields = [
-            # 'parent',
             'timestamp',
             'description'
         ]
