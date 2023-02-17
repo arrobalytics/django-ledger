@@ -2,10 +2,12 @@
 
 ### An Accounting, Bookkeeping & Financial Analysis Engine for the Django Framework.
 
-__Django Ledger__ is a double entry accounting system, which aims to power financially driven applications by removing
-the complexity of the accounting domain into a simple, high-level API.
+__Django Ledger__ is a double entry accounting system based on
+the [Django Web Framework](https://www.djangoproject.com),
+which aims to power financially driven applications by removing the complexity of the accounting domain into a simple,
+high-level API. _Prior experience with Django is required to more effectively use this software_. 
 
-__Django Ledger__ was created and is currently maintained and developed by lead developer Miguel Sanda. 
+__Django Ledger__ was created and is currently maintained and developed by lead developer Miguel Sanda.
 If you want to contribute please consider joining our new discord channel here.
 
 ### Join our Discord Channel [Here](https://discord.gg/PEugR227)
@@ -14,16 +16,18 @@ The software is still in early stages of development. For more information, plea
 [Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md).
 
 ### How long until all features are implemented?
+
 Finance and Accounting is a complicated subject. Django Ledger is different from other Django projects
 as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API to
 power financially driven applications. This project in particular, not only requires Python AND Django programming
-experience, but also finance and accounting experience. So, that's the long way of saying, we need your help! 
+experience, but also finance and accounting experience. So, that's the long way of saying, we need your help!
 Join our Discord Channel [here](https://discord.gg/PEugR227) to learn more.
 
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
 __This is the best way to get started twith this project if you are not familiar with the models.__
 
 ### Documentation
+
 Access the latest documentation [here](https://django-ledger.readthedocs.io/en/latest/).
 
 Django Ledger supports:
@@ -67,15 +71,15 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Link Estimate/PO/Bill/Invoice workflow.
     * Journal Entry activity determination & validation (for cash flow).
 * __0.5.2__: Cash flow statement.
-  * Human Readable Journal Entry document numbers.
-  * Hierarchical Account Model Management.
-  * Generate all Django Ledger Model documentation.
+    * Human Readable Journal Entry document numbers.
+    * Hierarchical Account Model Management.
+    * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
-  * Chart of Accounts Import.
-  * Trial Balance Import.
-  * Closing entries and snapshots.
-  * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
-  * GraphQL API.
+    * Chart of Accounts Import.
+    * Trial Balance Import.
+    * Closing entries and snapshots.
+    * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
+    * GraphQL API.
 * __0.5.4__: Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using [behave](https://behave.readthedocs.io/en/latest/) library.

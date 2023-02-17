@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseForbidden
 from django.urls import reverse
-from django.utils.timezone import localdate
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 from django.views.generic.detail import SingleObjectMixin
@@ -195,7 +195,7 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
 
     def get_initial(self):
         return {
-            'timestamp': localdate(),
+            'timestamp': localtime(),
             'ledger': LedgerModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user

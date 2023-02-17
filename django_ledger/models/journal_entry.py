@@ -40,6 +40,7 @@ from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, QuerySet, F
 from django.db.models.functions import Coalesce
 from django.urls import reverse
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
@@ -302,8 +303,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    je_number = models.SlugField(max_length=20, editable=False, verbose_name=_('Journal Entry Number'))
-    timestamp = models.DateTimeField(verbose_name=_('Timestamp'))
+    je_number = models.SlugField(max_length=25, editable=False, verbose_name=_('Journal Entry Number'))
+    timestamp = models.DateTimeField(verbose_name=_('Timestamp'), default=localtime)
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
                                     on_delete=models.RESTRICT,
@@ -1037,6 +1038,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if txs_qs:
             self.is_txs_qs_valid(txs_qs=txs_qs)
+
+        if not self.timestamp:
+            self.timestamp = localtime()
+        elif self.timestamp and self.timestamp > localtime():
+            raise JournalEntryValidationError(message='Cannot create JE Models with timestamp in the future.')
+
         self.generate_je_number(commit=True)
         if verify:
             txs_qs, verified = self.verify()
