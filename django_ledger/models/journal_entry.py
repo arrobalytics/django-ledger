@@ -302,7 +302,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    je_number = models.SlugField(max_length=20, editable=False, verbose_name=_('Journal Entry Number'))
+    je_number = models.SlugField(max_length=25, editable=False, verbose_name=_('Journal Entry Number'))
     timestamp = models.DateTimeField(verbose_name=_('Timestamp'))
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
     entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
