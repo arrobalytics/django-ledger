@@ -1,6 +1,6 @@
 -i https://pypi.org/simple
 asgiref==3.6.0 ; python_version >= '3.7'
-django==4.1.4
+django==4.1.7
 django-treebeard==4.5.1
 faker==15.3.4
 markdown==3.4.1
