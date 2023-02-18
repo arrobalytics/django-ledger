@@ -999,6 +999,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             # CREDIT/DEBIT Balance validation...
             try:
                 is_balance_valid = self.is_balance_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+                if not is_balance_valid:
+                    raise JournalEntryValidationError('Transaction balances are not valid!')
             except JournalEntryValidationError as e:
                 raise e
 
