@@ -137,17 +137,50 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
 
         po_model_qs = self.get_purchase_orders(entity_model)
         for po_model in po_model_qs:
-            po_detail_url = reverse('django_ledger:po-detail',
-                                    kwargs={
-                                        'entity_slug': entity_model.slug,
-                                        'po_pk': po_model.uuid
-                                    })
+            po_detail_url = reverse('django_ledger:po-detail', kwargs={
+                                                                'entity_slug': entity_model.slug,
+                                                                'po_pk': po_model.uuid
+                                                            })
+            po_update_url = reverse('django_ledger:po-update', kwargs={
+                                                                'entity_slug': entity_model.slug,
+                                                                'po_pk': po_model.uuid
+                                                            })
+            po_delete_url = reverse('django_ledger:po-delete', kwargs={
+                                                                'entity_slug': entity_model.slug,
+                                                                'po_pk': po_model.uuid
+                                                            })
+            status = po_model.po_status
+
             with self.assertNumQueries(6):
                 response = self.CLIENT.get(po_detail_url)
-            self.assertEqual(response.status_code, 200, msg=f"Error fetching PO {po_model.uuid} detail.")
+            self.assertEqual(response.status_code, 200, msg=f"Error browsing PO {po_model.uuid} detail page.")
 
             # the correct status is displayed
-            self.assertContains(response, po_status_dict[po_model.po_status])
+            self.assertContains(response, po_status_dict[status])
+            # update link is displayed
+            self.assertContains(response, po_update_url)
 
-            #TODO
-            # assert po-items, assert status changes
+            if status == po_model.PO_STATUS_DRAFT:
+                self.assertContains(response, po_model.get_mark_as_review_html_id())
+                #self.assertContains(response, po_delete_url)
+                self.assertContains(response, po_model.get_mark_as_canceled_html_id())
+
+            elif status == po_model.PO_STATUS_REVIEW:
+                self.assertContains(response, po_model.get_mark_as_draft_html_id())
+                self.assertContains(response, po_model.get_mark_as_approved_html_id())
+                #self.assertContains(response, po_delete_url)
+                self.assertContains(response, po_model.get_mark_as_canceled_html_id())
+                
+            elif status == po_model.PO_STATUS_APPROVED:
+                self.assertContains(response, po_model.get_mark_as_fulfilled_html_id())
+                self.assertContains(response, po_model.get_mark_as_void_html_id())
+
+            # elif status == po_model.PO_STATUS_VOID:
+            #     pass
+
+            # check update page
+            # with self.assertNumQueries(97):                 # WHY IS IT SO MANY??
+            #     response = self.CLIENT.get(po_update_url)
+            # self.assertEqual(response.status_code, 200, msg=f"Error browsing PO {po_model.uuid} update page.")
+
+            # after successful update, redirect to detail page
