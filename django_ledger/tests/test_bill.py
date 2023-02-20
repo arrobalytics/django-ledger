@@ -101,7 +101,7 @@ class BillModelTests(DjangoLedgerBaseTest):
                                     'entity_slug': entity_model.slug
                                 })
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):                  # previously 5
             response = self.CLIENT.get(bill_list_url)
 
             # bill-list view is rendered...

@@ -494,7 +494,7 @@ class EntityDataGenerator(LoggingMixIn):
         bill_model.full_clean()
         bill_model.save()
 
-        if random() > 0.25:
+        if random() > 0.25 and bill_model.amount_due:
             date_in_review = self.get_next_date(date_draft)
             bill_model.mark_as_review(commit=True, date_in_review=date_in_review)
 

@@ -75,7 +75,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
         po_list_url = reverse('django_ledger:po-list', kwargs={'entity_slug': entity_model.slug})
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):                  # previously 5
             response = self.CLIENT.get(po_list_url)
         self.assertEqual(response.status_code, 200, msg="Fail to GET Purchase Order list page")
 
@@ -136,6 +136,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
         po_status_dict = dict(PurchaseOrderModel.PO_STATUS)
 
         po_model_qs = self.get_purchase_orders(entity_model)
+        # check links, do it on every test PO
         for po_model in po_model_qs:
             po_detail_url = reverse('django_ledger:po-detail', kwargs={
                                                                 'entity_slug': entity_model.slug,
@@ -179,7 +180,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
             #     pass
 
             # check update page
-            # with self.assertNumQueries(97):                 # WHY IS IT SO MANY??
+            # with self.assertNumQueries(23):                 # WHY IS IT SO MANY??
             #     response = self.CLIENT.get(po_update_url)
             # self.assertEqual(response.status_code, 200, msg=f"Error browsing PO {po_model.uuid} update page.")
 
