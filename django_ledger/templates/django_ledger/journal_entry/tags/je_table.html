@@ -5,10 +5,10 @@
     <table class="table is-fullwidth is-narrow is-striped django-ledger-table-bottom-margin-150">
         <thead>
         <tr class="has-text-centered">
-            <th>{% trans 'Description' %}</th>
+            <th>{% trans 'Timestamp' %}</th>
             <th>{% trans 'Activity' %}</th>
+            <th>{% trans 'Description' %}</th>
             <th>{% trans 'Document Number' %}</th>
-            <th>{% trans 'Date' %}</th>
             <th>{% trans 'Posted' %}</th>
             <th>{% trans 'Locked' %}</th>
             <th>{% trans 'Unit' %}</th>
@@ -18,10 +18,10 @@
         <tbody>
         {% for je in jes %}
             <tr class="has-text-centered">
-                <td>{{ je.description }}</td>
-                <td>{{ je.get_activity_display }}</td>
-                <td>{{ je.je_number }}</td>
                 <td>{{ je.timestamp }}</td>
+                <td>{{ je.get_activity_display }}</td>
+                <td>{{ je.description }}</td>
+                <td>{{ je.je_number }}</td>
                 <td>
                     {% if je.posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>

@@ -6,8 +6,10 @@
         <div class="card-header-title is-size-2">{% trans 'Journal Entry Detail' %}</div>
     </div>
     <div class="card-content">
-        <h2 class="is-size-2">{% trans 'Date' %}: {{ journal_entry.date | date }}</h2>
-        <h2 class="is-size-2 has-text-weight-light">{% trans 'Unit' %}: {{ journal_entry.get_entity_unit_name }}</h2>
+        <h2 class="is-size-2">{% trans 'Date' %}: {{ journal_entry.timestamp | date }}</h2>
+        {% if journal_entry.unit %}
+            <h2 class="is-size-2 has-text-weight-light">{% trans 'Unit' %}: {{ journal_entry.get_entity_unit_name }}</h2>
+        {% endif %}
         <h3 class="is-size-4">{% trans 'Posted' %}:
             {% if journal_entry.posted %}
                 <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>

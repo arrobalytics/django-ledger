@@ -7,7 +7,7 @@ Contributions to this module:
 """
 from collections import defaultdict
 from datetime import datetime, date
-from itertools import groupby
+from itertools import groupby, chain
 from random import choice
 from typing import List, Set, Union, Tuple, Optional
 
@@ -22,7 +22,7 @@ from django.utils.timezone import localdate, make_aware, is_naive
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
 from django_ledger.io.financial_statements import CashFlowStatement
-from django_ledger.io.io_context import RoleManager, GroupManager, ActivityManager
+from django_ledger.io.io_context import RoleManager, GroupManager, ActivityManager, BalanceSheetManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import LazyLoader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -367,18 +367,21 @@ class IOMixIn:
                process_groups: bool = False,
                process_ratios: bool = False,
                process_activity: bool = False,
+               process_balance_sheet: bool = False,
                equity_only: bool = False,
                by_period: bool = False,
                by_unit: bool = False,
                by_activity: bool = False,
                by_tx_type: bool = False,
                cash_flow_statement: bool = False,
-               digest_name: str = None
+               digest_name: str = None,
                ) -> dict or tuple:
 
-        activity = validate_activity(activity)
+        if activity:
+            activity = validate_activity(activity)
         if role:
             role = roles_module.validate_roles(role)
+
         from_date, to_date = validate_dates(from_date, to_date)
 
         txs_qs, accounts_digest = self.python_digest(
@@ -422,6 +425,18 @@ class IOMixIn:
             )
             io_digest = group_mgr.digest()
 
+            # todo: migrate this to group manager...
+            io_digest['group_account']['GROUP_ASSETS'].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
+            io_digest['group_account']['GROUP_LIABILITIES'].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role']))
+            io_digest['group_account']['GROUP_CAPITAL'].sort(
+                key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
+
+        if process_balance_sheet:
+            balance_sheet_mgr = BalanceSheetManager(tx_digest=io_digest)
+            io_digest = balance_sheet_mgr.digest()
+
         if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=io_digest)
             io_digest = ratio_gen.digest()
@@ -437,8 +452,10 @@ class IOMixIn:
         if not digest_name:
             digest_name = 'tx_digest'
 
-        digest_results = dict()
-        digest_results[digest_name] = io_digest
+        digest_results = {
+            digest_name: io_digest
+        }
+
         return txs_qs, digest_results
 
     def commit_txs(self,

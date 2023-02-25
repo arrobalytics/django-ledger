@@ -1021,12 +1021,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def clean(self,
               verify: bool = False,
+              raise_exception: bool = True,
               txs_qs: Optional[TransactionModelQuerySet] = None) -> Tuple[TransactionModelQuerySet, bool]:
         """
         Customized JournalEntryModel clean method. Generates a JE number if needed. Optional verification hook on clean.
 
         Parameters
         ----------
+        raise_exception: bool
+            Raises exception if JE could not be verified. Defaults to True.
         verify: bool
             Attempts to verify the JournalEntryModel during cleaning.
         txs_qs: TransactionModelQuerySet
@@ -1052,7 +1055,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return txs_qs, self.is_verified()
         return TransactionModel.objects.none(), self.is_verified()
 
-    def save(self, verify: bool = True, post_on_verify: bool = False, *args, **kwargs):
+    def save(self,
+             verify: bool = True,
+             post_on_verify: bool = False,
+             *args, **kwargs):
         # todo this does not show up on docs...
         """
         Custom JournalEntryModel instance save method. Additional options are added to attempt to verify JournalEntryModel
@@ -1073,7 +1079,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         try:
             self.generate_je_number(commit=False)
             if verify:
-                self.clean(verify=True)
+                txs_qs, is_verified = self.clean(verify=True)
                 if self.is_verified() and post_on_verify:
                     # commit is False since the super call takes place at the end of save()
                     self.mark_as_posted(commit=False, verify=False, raise_exception=True)

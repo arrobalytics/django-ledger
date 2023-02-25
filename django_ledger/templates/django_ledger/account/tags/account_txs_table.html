@@ -12,7 +12,7 @@
         </tr>
         {% for tx in transactions %}
             <tr class="has-text-centered">
-                <td>{{ tx.journal_entry.date }}</td>
+                <td>{{ tx.journal_entry.timestamp }}</td>
                 <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{{ tx.description }}</td>

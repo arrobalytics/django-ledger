@@ -3,138 +3,81 @@
 
 <div class="table-container">
     <table class="table is-fullwidth is-narrow is-striped">
-        <thead>
-        <tr>
-            <th>{% trans 'Account Number' %}</th>
-            <th>{% trans 'Account Name' %}</th>
-            {% if by_unit %}
-                <th>{% trans 'Unit' %}</th>
-            {% endif %}
-            <th>{% trans 'Balance Type' %}</th>
-            <th>{% trans 'Balance' %}</th>
-        </tr>
-        </thead>
+        {#        <thead>#}
+        {#        <tr>#}
+        {#            <th class="has-text-centered">{% trans 'Account Code' %}</th>#}
+        {#            <th class="has-text-centered">{% trans 'Account Name' %}</th>#}
+        {#            {% if by_unit %}#}
+        {#                <th class="has-text-centered">{% trans 'Unit' %}</th>#}
+        {#            {% endif %}#}
+        {#            <th class="has-text-centered">{% trans 'Balance Type' %}</th>#}
+        {#            <th class="has-text-centered">{% trans 'Balance' %}</th>#}
+        {#        </tr>#}
+        {#        </thead>#}
+
 
         <tbody>
-        <tr>
-            <td><h2 class="is-size-3">{% trans 'Assets' %}</h2></td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-        </tr>
 
-        {# ASSETS #}
-        {% for acc in tx_digest.group_account.GROUP_ASSETS %}
+        {% for bs_role, bs_role_data in tx_digest.balance_sheet.items %}
             <tr>
-                <td>{{ acc.code }}</td>
-                <td>{{ acc.name }}</td>
+                <td><h2 class="is-size-3">{{ bs_role | upper }}</h2></td>
+                <td></td>
                 {% if by_unit %}
-                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                    <td></td>
                 {% endif %}
-                <td class="has-text-centered">
-                    {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
+                <td></td>
+                <td></td>
+            </tr>
+            <tr>
+                <th class="has-text-centered">{% trans 'Account Code' %}</th>
+                <th class="has-text-centered">{% trans 'Account Name' %}</th>
+                {% if by_unit %}
+                    <th class="has-text-centered">{% trans 'Unit' %}</th>
+                {% endif %}
+                <th class="has-text-centered">{% trans 'Balance Type' %}</th>
+                <th class="has-text-centered">{% trans 'Balance' %}</th>
+            </tr>
+
+            {% for acc_role, acc_data in bs_role_data.roles.items %}
+                <tr class="has-background-grey-light">
+                    <td class="p-3 has-text-weight-bold">{{ acc_data.role_name | upper }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% for acc in acc_data.accounts %}
+                    <tr>
+                        <td>{{ acc.code }}</td>
+                        <td class="has-text-right">{{ acc.name }}</td>
+                        {% if by_unit %}
+                            <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
+                        {% endif %}
+                        <td class="has-text-centered">{{ acc.balance_type.0 | upper }}</td>
+                        <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
+                    </tr>
+                {% endfor %}
+                <tr class="has-text-weight-bold is-selected">
+                    <td></td>
+                    <td>{{ acc_data.role_name | upper }} {% trans 'Total:' %}</td>
+                    <td></td>
+                    <td class="has-text-right">
+                        {% currency_symbol %}{{ acc_data.total_balance | currency_format }}</td>
+                </tr>
+            {% endfor %}
+
+            <tr class="has-text-weight-bold is-size-5">
+                <td>{% trans 'Total' %} {{ bs_role | upper }}</td>
+                <td></td>
+                {% if by_unit %}
+                    <td></td>
+                {% endif %}
+                <td></td>
+                <td>{% currency_symbol %}{{ bs_role_data.total_balance | currency_format }}</td>
             </tr>
         {% endfor %}
 
-        <tr class="has-text-weight-bold">
-            <td>{% trans 'Total Assets' %}</td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_ASSETS | currency_format }}</td>
-        </tr>
 
-        <tr>
-            <td><h2 class="is-size-3">{% trans 'Liabilities' %}</h2></td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-        </tr>
-
-        {# LIABILITIES #}
-        {% for acc in tx_digest.group_account.GROUP_LIABILITIES %}
-            <tr>
-                <td>{{ acc.code }}</td>
-                <td>{{ acc.name }}</td>
-                {% if by_unit %}
-                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
-                {% endif %}
-
-                <td class="has-text-centered">
-                    {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
-            </tr>
-        {% endfor %}
-        <tr class="has-text-weight-bold">
-            <td>{% trans 'Total Liabilities' %}</td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES | currency_format }}</td>
-        </tr>
-
-        <tr class="is-primary">
-            <td><h2 class="is-size-3">{% trans 'Equity' %}</h2></td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td></td>
-        </tr>
-
-        {# CAPITAL #}
-        {% for acc in tx_digest.group_account.GROUP_CAPITAL %}
-            <tr>
-                <td>{{ acc.code }}</td>
-                <td>{{ acc.name }}</td>
-                {% if by_unit %}
-                    <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
-                {% endif %}
-
-                <td class="has-text-centered">
-                    {% if acc.balance_type == 'debit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-down' 24 %}</span>
-                    {% elif acc.balance_type == 'credit' %}
-                        <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
-                    {% endif %}
-                </td>
-                <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
-            </tr>
-        {% endfor %}
-
-        <tr class="has-text-weight-bold">
-            <td>{% trans 'Total Capital' %}</td>
-            <td></td>
-            {% if by_unit %}
-                <td></td>
-            {% endif %}
-            <td></td>
-            <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_CAPITAL | currency_format }}</td>
-        </tr>
-
-        <tr class="has-text-weight-bold">
+        <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Retained Earnings' %}</td>
             <td></td>
             {% if by_unit %}
@@ -143,8 +86,7 @@
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
         </tr>
-
-        <tr class="has-text-weight-bold">
+        <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Total Equity' %}</td>
             <td></td>
             {% if by_unit %}
@@ -153,8 +95,7 @@
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EQUITY | currency_format }}</td>
         </tr>
-
-        <tr class="has-text-weight-bold">
+        <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Total Equity + Liabilities' %}</td>
             <td></td>
             {% if by_unit %}
@@ -163,6 +104,7 @@
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | currency_format }}</td>
         </tr>
+
         </tbody>
     </table>
 </div>

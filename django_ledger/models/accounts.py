@@ -25,6 +25,7 @@ requesting and producing financial statements and financial ratio calculations.
 
 AccountModels may also contain parent/child relationships as implemented by the Django Treebeard functionality.
 """
+from itertools import groupby
 from random import randint
 from typing import Union, List, Optional
 from uuid import uuid4
@@ -127,6 +128,14 @@ class AccountModelQuerySet(MP_NodeQuerySet):
                     Q(coa_model__entity__managers__in=[user_model])
             )
         ).order_by('code')
+
+    def gb_bs_role(self):
+        accounts_gb = list((r, list(gb)) for r, gb in groupby(self, key=lambda acc: acc.get_bs_bucket()))
+        return [
+            (bsr, [
+                (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
+            ]) for bsr, gb in accounts_gb
+        ]
 
 
 class AccountModelManager(MP_NodeManager):
@@ -583,7 +592,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         return self.depth > 2
 
     def get_html_pixel_indent(self):
-        return f'{(self.depth - 2) * 20}px'
+        return f'{(self.depth - 2) * 40}px'
 
     def generate_random_code(self):
         if not self.role:

@@ -89,12 +89,12 @@ def icon(icon_name, size):
 def balance_sheet_statement(context, io_model, to_date=None):
     user_model = context['user']
     activity = context['request'].GET.get('activity')
-    activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
 
     if not to_date:
         to_date = context['to_date']
 
+    # todo: clean this up!...
     prepare_context_by_unit(context)
 
     txs_qs, digest = io_model.digest(
@@ -106,11 +106,14 @@ def balance_sheet_statement(context, io_model, to_date=None):
         by_unit=context['by_unit'],
         to_date=to_date,
         signs=True,
-        process_groups=True)
+        process_groups=True,
+        process_balance_sheet=True)
 
+    # todo: this can be moved to the digest function...
     digest['by_unit'] = context['by_unit']
     digest['unit_model'] = context['unit_model']
     digest['unit_slug'] = context['unit_slug']
+
     return digest
 
 
@@ -294,21 +297,10 @@ def po_table(context, purchase_order_qs):
 
 @register.inclusion_tag('django_ledger/account/tags/accounts_table.html', takes_context=True)
 def accounts_table(context, accounts_qs, title=None):
-    accounts_gb = list((r, list(gb)) for r, gb in groupby(accounts_qs, key=lambda acc: acc.get_bs_bucket()))
-    accounts_gb.sort(key=lambda v: BS_BUCKETS_ORDER.index(v[0]))
-    for r, gb in accounts_gb:
-        gb.sort(key=lambda acc: ACCOUNT_LIST_ROLE_ORDER.index(acc.role))
-    accounts_gb_2 = [
-        (bsr, [
-            (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
-        ]) for bsr, gb in accounts_gb
-    ]
     return {
-        'accounts': accounts_qs,
-        'accounts_gb': accounts_gb,
-        'accounts_gb_2': accounts_gb_2,
         'title': title,
         'entity_slug': context['view'].kwargs['entity_slug'],
+        'accounts_gb': accounts_qs.gb_bs_role(),
     }
 
 

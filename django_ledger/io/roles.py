@@ -407,13 +407,13 @@ ACCOUNT_ROLE_CHOICES = [
         (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
         (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
         (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
-        (LIABILITY_CL_ST_NOTES_PAYABLE, _('Notes Payable')),
+        (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
         (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
         (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
         (LIABILITY_CL_OTHER, _('Other Liabilities')),
 
         # LONG TERM LIABILITIES ----
-        (LIABILITY_LTL_NOTES_PAYABLE, _('Notes Payable')),
+        (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
         (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
         (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
     )),
@@ -456,13 +456,109 @@ ACCOUNT_ROLE_CHOICES = [
     ))
 ]
 
+# ACCOUNT_ROLE_CHOICES = [
+#     (BS_ASSET_ROLE.capitalize(), (
+#         # CURRENT ASSETS ----
+#         (ASSET_CA_CASH, _('Current Asset')),
+#         (ASSET_CA_MKT_SECURITIES, _('Marketable Securities')),
+#         (ASSET_CA_RECEIVABLES, _('Receivables')),
+#         (ASSET_CA_INVENTORY, _('Inventory')),
+#         (ASSET_CA_UNCOLLECTIBLES, _('Uncollectibles')),
+#         (ASSET_CA_PREPAID, _('Prepaid')),
+#         (ASSET_CA_OTHER, _('Other Liquid Assets')),
+#
+#         # LONG TERM INVESTMENTS ---
+#         (ASSET_LTI_NOTES_RECEIVABLE, _('Notes Receivable')),
+#         (ASSET_LTI_LAND, _('Land')),
+#         (ASSET_LTI_SECURITIES, _('Securities')),
+#
+#         # PPE ...
+#         (ASSET_PPE_BUILDINGS, _('Buildings')),
+#         (ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION, _('Buildings - Accum. Depreciation')),
+#         (ASSET_PPE_PLANT, _('Plant')),
+#         (ASSET_PPE_PLANT_ACCUM_DEPRECIATION, _('Plant - Accum. Depreciation')),
+#         (ASSET_PPE_EQUIPMENT, _('Equipment')),
+#         (ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION, _('Equipment - Accum. Depreciation')),
+#
+#         # Other Assets ...
+#         (ASSET_INTANGIBLE_ASSETS, _('Intangible Assets')),
+#         (ASSET_INTANGIBLE_ASSETS_ACCUM_AMORTIZATION, _('Intangible Assets - Accum. Amortization')),
+#         (ASSET_ADJUSTMENTS, _('Other Assets')),
+#     )),
+#     (BS_LIABILITIES_ROLE.capitalize(), (
+#
+#         # CURRENT LIABILITIES ---
+#         (LIABILITY_CL_ACC_PAYABLE, _('Accounts Payable')),
+#         (LIABILITY_CL_WAGES_PAYABLE, _('Wages Payable')),
+#         (LIABILITY_CL_INTEREST_PAYABLE, _('Interest Payable')),
+#         (LIABILITY_CL_TAXES_PAYABLE, _('Taxes Payable')),
+#         (LIABILITY_CL_ST_NOTES_PAYABLE, _('Short Term Notes Payable')),
+#         (LIABILITY_CL_LTD_MATURITIES, _('Current Maturities of Long Tern Debt')),
+#         (LIABILITY_CL_DEFERRED_REVENUE, _('Deferred Revenue')),
+#         (LIABILITY_CL_OTHER, _('Other Liabilities')),
+#
+#         # LONG TERM LIABILITIES ----
+#         (LIABILITY_LTL_NOTES_PAYABLE, _('Long Term Notes Payable')),
+#         (LIABILITY_LTL_BONDS_PAYABLE, _('Bonds Payable')),
+#         (LIABILITY_LTL_MORTGAGE_PAYABLE, _('Mortgage Payable')),
+#     )),
+#     (BS_EQUITY_ROLE.capitalize(), (
+#
+#         # EQUITY ---
+#         (EQUITY_CAPITAL, _('Capital')),
+#         (EQUITY_COMMON_STOCK, _('Common Stock')),
+#         (EQUITY_PREFERRED_STOCK, _('Preferred Stock')),
+#         (EQUITY_ADJUSTMENT, _('Other Equity Adjustments')),
+#         (EQUITY_DIVIDENDS, _('Dividends & Distributions to Shareholders')),
+#     )),
+#     ('Income', (
+#         # INCOME ---
+#         (INCOME_OPERATIONAL, _('Operational Income')),
+#         (INCOME_INVESTING, _('Investing/Passive Income')),
+#         (INCOME_INTEREST, _('Interest Income')),
+#         (INCOME_CAPITAL_GAIN_LOSS, _('Capital Gain/Loss Income')),
+#         (INCOME_OTHER, _('Other Income')),
+#     )),
+#     ('Expenses', (
+#         # COGS ----
+#         (COGS, _('Cost of Goods Sold')),
+#
+#         # EXPENSES ----
+#         (EXPENSE_REGULAR, _('Regular Expense')),
+#         (EXPENSE_INTEREST, _('Interest Expense')),
+#         (EXPENSE_TAXES, _('Tax Expense')),
+#         (EXPENSE_CAPITAL, _('Capital Expense')),
+#         (EXPENSE_DEPRECIATION, _('Depreciation Expense')),
+#         (EXPENSE_AMORTIZATION, _('Amortization Expense')),
+#         (EXPENSE_OTHER, _('Other Expense')),
+#     )),
+#     ('Root', (
+#         (ROOT_COA, 'CoA Root Account'),
+#         (ROOT_ASSETS, 'Assets Root Account'),
+#         (ROOT_LIABILITIES, 'Liabilities Root Account'),
+#         (ROOT_CAPITAL, 'Capital Root Account'),
+#         (ROOT_INCOME, 'Income Root Account'),
+#         (ROOT_COGS, 'COGS Root Account'),
+#         (ROOT_EXPENSES, 'Expenses Root Account'),
+#     ))
+# ]
+
 ACCOUNT_CHOICES_NO_ROOT = [c for c in ACCOUNT_ROLE_CHOICES if c[0] != 'Root']
+
+ROLES_ORDER_ASSETS = [a[0] for a in ACCOUNT_ROLE_CHOICES[0][1]]
+ROLES_ORDER_LIABILITIES = [a[0] for a in ACCOUNT_ROLE_CHOICES[1][1]]
+ROLES_ORDER_CAPITAL = [a[0] for a in ACCOUNT_ROLE_CHOICES[2][1]]
+# ROLES_ORDER_INCOME = [a[0] for a in ACCOUNT_ROLE_CHOICES[3][1]]
+# ROLES_ORDER_EXPENSES = [a[0] for a in ACCOUNT_ROLE_CHOICES[4][1]]
+
 ACCOUNT_LIST_ROLE_ORDER = list(r[0] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT]))
+ACCOUNT_LIST_ROLE_VERBOSE = {r[0]: r[1] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT])}
 
 ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], list())
 ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHOICES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
+
 BS_BUCKETS = {
     '0': 'Root',
     '1': 'Asset',

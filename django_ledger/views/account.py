@@ -45,14 +45,6 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQueryS
         'header_title': PAGE_TITLE
     }
 
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-        context['asset_accounts'] = (a for a in qs if a.role_bs == 'assets')
-        context['liability_accounts'] = (a for a in qs if a.role_bs == 'liabilities')
-        context['equity_accounts'] = (a for a in qs if a.role_bs == 'equity')
-        return context
-
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, UpdateView):
     context_object_name = 'account'
@@ -159,7 +151,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
         account_model: AccountModel = self.object
-        txs_qs = account_model.transactionmodel_set.order_by('-journal_entry__date')
+        txs_qs = account_model.transactionmodel_set.order_by('journal_entry__timestamp')
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
         context['transactions'] = txs_qs

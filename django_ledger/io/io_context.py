@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import groupby, chain
 
 from django_ledger.io import roles as roles_module
 from django_ledger.models.utils import LazyLoader
@@ -24,6 +25,7 @@ class RoleManager:
 
         self.ROLES_ACCOUNTS = dict()
         self.ROLES_BALANCES = dict()
+        self.ROLES_BALANCE_SHEET = dict()
 
         if self.BY_PERIOD:
             self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
@@ -204,3 +206,37 @@ class ActivityManager:
                         key = (acc['unit_uuid'], acc['unit_name'])
                         self.ACTIVITY_BALANCES_BY_UNIT[key][act] = sum(
                             acc['balance'] for acc in acc_list if acc['unit_uuid'] == key[0])
+
+
+class BalanceSheetManager:
+    def __init__(self, tx_digest: dict):
+        self.DIGEST = tx_digest
+
+    def digest(self):
+        if 'group_account' in self.DIGEST:
+            gb_bs = {
+                bsr: list(l) for bsr, l in groupby(
+                    chain.from_iterable(
+                        [
+                            self.DIGEST['group_account']['GROUP_ASSETS'],
+                            self.DIGEST['group_account']['GROUP_LIABILITIES'],
+                            self.DIGEST['group_account']['GROUP_CAPITAL'],
+                        ]
+                    ),
+                    key=lambda acc: acc['role_bs'])
+            }
+            self.DIGEST['balance_sheet'] = {
+                bs_role: {
+                    'total_balance': sum(a['balance'] for a in gb),
+                    'roles': {
+                        r: {
+                            'accounts': list(a)
+                        } for r, a in groupby(list(gb), key=lambda acc: acc['role'])
+                    }
+                } for bs_role, gb in gb_bs.items()
+            }
+            for bs_role, bs_role_data in self.DIGEST['balance_sheet'].items():
+                for acc_role, role_data in bs_role_data['roles'].items():
+                    role_data['total_balance'] = sum(a['balance'] for a in role_data['accounts'])
+                    role_data['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc_role]
+        return self.DIGEST

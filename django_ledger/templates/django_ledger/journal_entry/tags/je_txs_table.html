@@ -5,7 +5,6 @@
     <div class="table-container">
         <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
             <tr>
-                <th>{% trans 'Date' %}</th>
                 <th>{% trans 'Account' %}</th>
                 <th>{% trans 'Account Name' %}</th>
                 <th>{% trans 'Unit' %}</th>
@@ -15,7 +14,6 @@
             </tr>
             {% for tx in txs %}
                 <tr>
-                    <td>{{ tx.journal_entry.date }}</td>
                     <td>{{ tx.account.code }}</td>
                     <td>{{ tx.account.name }}</td>
                     <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit }}{% endif %}</td>

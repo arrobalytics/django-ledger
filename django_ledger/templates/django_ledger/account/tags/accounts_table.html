@@ -1,28 +1,28 @@
 {% load i18n %}
 {% load django_ledger %}
 
-{% for root_role, role_list in accounts_gb_2 %}
+{% for root_role, role_list in accounts_gb %}
     {% with title=root_role %}
         <div class="table-container">
             <table class="table is-fullwidth is-striped is-narrow is-bordered django-ledger-table-bottom-margin-75">
                 <thead>
                 {% if title %}
                     <tr>
-                        <td><h2 class="is-size-3 has-text-weight-light">{{ title }}</h2></td>
+                        <td><h2 class="is-size-3 has-text-weight-light">{{ title | upper }}</h2></td>
                         <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
-                        <td></td>
+{#                        <td></td>#}
+{#                        <td></td>#}
                         <td></td>
                     </tr>
                 {% endif %}
                 <tr>
                     <th>{% trans 'Account Name' %}</th>
                     <th>{% trans 'CoA' %}</th>
-                    <th>{% trans 'Parent' %}</th>
-                    <th>{% trans 'Code' %}</th>
+{#                    <th>{% trans 'Parent' %}</th>#}
+{#                    <th>{% trans 'Code' %}</th>#}
                     <th>{% trans 'Balance Type' %}</th>
                     <th>{% trans 'Active' %}</th>
                     <th>{% trans 'Locked' %}</th>
@@ -33,22 +33,22 @@
                 {% for role, acc_list in role_list %}
 
                     <tr>
-                        <td class="has-text-weight-bold">{{ role | upper }}</td>
+                        <td class="has-text-weight-bold is-underlined">{{ role | upper }}</td>
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td></td>
-                        <td></td>
+{#                        <td></td>#}
+{#                        <td></td>#}
                         <td></td>
                         <td></td>
                     </tr>
 
                     {% for account in acc_list %}
                         <tr>
-                            <td style="{% if account.is_indented %}padding-left: {{ account.get_html_pixel_indent }};{% endif %}">{{ account.name }}</td>
+                            <td style="{% if account.is_indented %}padding-left: {{ account.get_html_pixel_indent }};{% endif %}"><span class="has-text-weight-bold">{{ account.code }}</span>: {{ account.name }}</td>
                             <td>{{ account.coa_model.name }}</td>
-                            <td>{% if not account.get_parent.is_coa_root %}{{ account.get_parent }}{% endif %}</td>
-                            <td>{{ account.code }}</td>
+{#                            <td>{% if not account.get_parent.is_coa_root %}{{ account.get_parent }}{% endif %}</td>#}
+{#                            <td>{{ account.code }}</td>#}
                             <td>{{ account.get_balance_type_display }}</td>
                             <td class="has-text-centered">
                                 {% if account.active %}
@@ -95,10 +95,7 @@
                             </td>
                         </tr>
                     {% endfor %}
-
                 {% endfor %}
-
-
             </table>
         </div>
     {% endwith %}
