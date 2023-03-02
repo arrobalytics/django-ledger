@@ -113,6 +113,7 @@ def balance_sheet_statement(context, io_model, to_date=None):
     digest['by_unit'] = context['by_unit']
     digest['unit_model'] = context['unit_model']
     digest['unit_slug'] = context['unit_slug']
+    digest['entity_slug'] = entity_slug
 
     return digest
 
@@ -220,7 +221,7 @@ def jes_table(context, next_url=None):
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def journal_entry_txs_table(journal_entry_model, style='detail'):
-    txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account')
+    txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account').order_by('account__code')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {

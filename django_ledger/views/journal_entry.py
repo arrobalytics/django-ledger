@@ -59,6 +59,10 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
     }
     http_method_names = ['get']
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
+
 
 class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/journal_entry/je_detail_txs.html'
@@ -68,6 +72,7 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
         'header_title': PAGE_TITLE,
         'page_title': PAGE_TITLE
     }
+    context_object_name = 'journal_entry'
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -88,6 +93,7 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
                 je_model=je_model,
                 ledger_pk=self.kwargs['ledger_pk'],
                 entity_slug=self.kwargs['entity_slug'],
+                queryset=je_model.transactionmodel_set.all().order_by('account__code')
             )
         else:
             context['txs_formset'] = txs_formset

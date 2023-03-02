@@ -3,19 +3,6 @@
 
 <div class="table-container">
     <table class="table is-fullwidth is-narrow is-striped">
-        {#        <thead>#}
-        {#        <tr>#}
-        {#            <th class="has-text-centered">{% trans 'Account Code' %}</th>#}
-        {#            <th class="has-text-centered">{% trans 'Account Name' %}</th>#}
-        {#            {% if by_unit %}#}
-        {#                <th class="has-text-centered">{% trans 'Unit' %}</th>#}
-        {#            {% endif %}#}
-        {#            <th class="has-text-centered">{% trans 'Balance Type' %}</th>#}
-        {#            <th class="has-text-centered">{% trans 'Balance' %}</th>#}
-        {#        </tr>#}
-        {#        </thead>#}
-
-
         <tbody>
 
         {% for bs_role, bs_role_data in tx_digest.balance_sheet.items %}
@@ -27,6 +14,7 @@
                 {% endif %}
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
             <tr>
                 <th class="has-text-centered">{% trans 'Account Code' %}</th>
@@ -35,12 +23,14 @@
                     <th class="has-text-centered">{% trans 'Unit' %}</th>
                 {% endif %}
                 <th class="has-text-centered">{% trans 'Balance Type' %}</th>
-                <th class="has-text-centered">{% trans 'Balance' %}</th>
+                <th class="has-text-centered">{% trans 'Balance Through' %} {{ tx_digest.to_date | date }}</th>
+                <th class="has-text-centered">{% trans 'Actions' %}</th>
             </tr>
 
             {% for acc_role, acc_data in bs_role_data.roles.items %}
                 <tr class="has-background-grey-light">
                     <td class="p-3 has-text-weight-bold">{{ acc_data.role_name | upper }}</td>
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -54,6 +44,26 @@
                         {% endif %}
                         <td class="has-text-centered">{{ acc.balance_type.0 | upper }}</td>
                         <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
+                        <td>
+                            <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
+                                <div class="dropdown-trigger">
+                                    <button class="button is-small is-rounded is-outlined"
+                                            aria-haspopup="true"
+                                            aria-controls="dropdown-menu">
+                                        <span>{% trans 'Actions' %}</span>
+                                        <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                                    </button>
+                                </div>
+                                <div class="dropdown-menu" id="dropdown-menu-{{ acc.uuid }}" role="menu">
+                                    <div class="dropdown-content">
+                                        <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                           class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
+                                        <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                           class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
                 <tr class="has-text-weight-bold is-selected">
@@ -62,6 +72,7 @@
                     <td></td>
                     <td class="has-text-right">
                         {% currency_symbol %}{{ acc_data.total_balance | currency_format }}</td>
+                <td></td>
                 </tr>
             {% endfor %}
 

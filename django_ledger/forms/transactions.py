@@ -49,11 +49,12 @@ class TransactionModelFormSet(BaseModelFormSet):
         self.JE_MODEL: JournalEntryModel = je_model
         self.LEDGER_PK = ledger_pk
         self.ENTITY_SLUG = entity_slug
+        self.queryset = self.JE_MODEL.transactionmodel_set.all().order_by('account__code')
 
         account_qs = AccountModel.objects.for_entity_available(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
-        )
+        ).order_by('code')
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs
@@ -61,14 +62,6 @@ class TransactionModelFormSet(BaseModelFormSet):
                 form.fields['account'].disabled = True
                 form.fields['tx_type'].disabled = True
                 form.fields['amount'].disabled = True
-
-    def get_queryset(self):
-        return TransactionModel.objects.for_journal_entry(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL,
-            je_model=self.JE_MODEL.uuid,
-            ledger_model=self.LEDGER_PK
-        ).order_by('account__code')
 
     def clean(self):
         if any(self.errors):
