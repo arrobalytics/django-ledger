@@ -317,6 +317,9 @@ class IOMixIn:
             self.aggregate_balances(k, g) for k, g in accounts_gb_code
         ]
 
+        for acc in gb_digest:
+            acc['balance_abs'] = abs(acc['balance'])
+
         if signs:
             TransactionModel = lazy_importer.get_txs_model()
             for acc in gb_digest:

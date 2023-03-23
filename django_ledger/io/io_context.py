@@ -254,14 +254,42 @@ class IncomeStatementContextManager:
             self.DIGEST['income_statement'] = {
                 'operating': {
                     'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
-                                 acc['role'] == roles_module.INCOME_OPERATIONAL],
+                                 acc['role'] in roles_module.GROUP_IC_OPERATING_REVENUES],
                     'cogs': [acc for acc in self.DIGEST['group_account']['GROUP_COGS'] if
-                             acc['role'] == roles_module.COGS],
+                             acc['role'] in roles_module.GROUP_IC_OPERATING_COGS],
                     'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
-                                 acc['role'] == roles_module.EXPENSE_REGULAR]
+                                 acc['role'] in roles_module.GROUP_IC_OPERATING_EXPENSES]
                 },
-                ''
+                'other': {
+                    'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                                 acc['role'] in roles_module.GROUP_IC_OTHER_REVENUES],
+                    'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                                 acc['role'] in roles_module.GROUP_IC_OTHER_EXPENSES],
+                }
             }
+
+            self.DIGEST['income_statement']['operating']['net_operating_income'] = sum(
+                acc['balance'] for acc in chain.from_iterable(
+                    al for _, al in self.DIGEST['income_statement']['operating'].items()
+                ))
+
+            self.DIGEST['income_statement']['operating']['gross_profit'] = sum(
+                acc['balance'] for acc in chain.from_iterable(
+                    [
+                        self.DIGEST['income_statement']['operating']['revenues'],
+                        self.DIGEST['income_statement']['operating']['cogs']
+                    ]
+                ))
+
+            self.DIGEST['income_statement']['other']['other_income'] = sum(
+                acc['balance'] for acc in chain.from_iterable(
+                    al for _, al in self.DIGEST['income_statement']['other'].items()
+                ))
+
+            self.DIGEST['income_statement']['net_income'] = self.DIGEST['income_statement']['operating'][
+                'net_operating_income']
+            self.DIGEST['income_statement']['net_income'] += self.DIGEST['income_statement']['other'][
+                'other_income']
         return self.DIGEST
 
 

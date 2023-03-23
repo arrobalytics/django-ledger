@@ -170,7 +170,8 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
         to_date=to_date,
         equity_only=True,
         process_groups=True,
-        income_statement=True
+        income_statement=True,
+        signs=True
     )
 
     digest['by_unit'] = context['by_unit']
