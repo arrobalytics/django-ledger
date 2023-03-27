@@ -17,7 +17,7 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.timezone import localtime, localdate
 
 from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
-                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_REGULAR, EQUITY_CAPITAL,
+                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
 from django_ledger.models import (EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel,
                                   EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
@@ -370,7 +370,7 @@ class EntityDataGenerator(LoggingMixIn):
                 entity=self.entity_model,
                 is_product_or_service=False,
                 for_inventory=False,
-                expense_account=choice(self.accounts_by_role[EXPENSE_REGULAR]),
+                expense_account=choice(self.accounts_by_role[EXPENSE_OPERATIONAL]),
             ) for _ in range(expense_count)
         ]
 

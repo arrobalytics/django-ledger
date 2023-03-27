@@ -31,6 +31,9 @@
                 <tr class="has-background-grey-light">
                     <td class="p-3 has-text-weight-bold">{{ acc_data.role_name | upper }}</td>
                     <td></td>
+                    {% if by_unit %}
+                        <td></td>
+                    {% endif %}
                     <td></td>
                     <td></td>
                     <td></td>
@@ -38,7 +41,7 @@
                 {% for acc in acc_data.accounts %}
                     <tr>
                         <td>{{ acc.code }}</td>
-                        <td class="has-text-right">{{ acc.name }}</td>
+                        <td class="has-text-center">{{ acc.name }}</td>
                         {% if by_unit %}
                             <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                         {% endif %}
@@ -70,9 +73,12 @@
                     <td></td>
                     <td>{{ acc_data.role_name | upper }} {% trans 'Total:' %}</td>
                     <td></td>
+                    {% if by_unit %}
+                        <td></td>
+                    {% endif %}
                     <td class="has-text-right">
                         {% currency_symbol %}{{ acc_data.total_balance | currency_format }}</td>
-                <td></td>
+                    <td></td>
                 </tr>
             {% endfor %}
 
@@ -82,6 +88,7 @@
                 {% if by_unit %}
                     <td></td>
                 {% endif %}
+                <td></td>
                 <td></td>
                 <td>{% currency_symbol %}{{ bs_role_data.total_balance | currency_format }}</td>
             </tr>
@@ -95,6 +102,7 @@
                 <td></td>
             {% endif %}
             <td></td>
+            <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</td>
         </tr>
         <tr class="has-text-weight-bold is-size-5">
@@ -104,6 +112,7 @@
                 <td></td>
             {% endif %}
             <td></td>
+            <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_EQUITY | currency_format }}</td>
         </tr>
         <tr class="has-text-weight-bold is-size-5">
@@ -112,6 +121,7 @@
             {% if by_unit %}
                 <td></td>
             {% endif %}
+            <td></td>
             <td></td>
             <td>{% currency_symbol %}{{ tx_digest.group_balance.GROUP_LIABILITIES_EQUITY | currency_format }}</td>
         </tr>

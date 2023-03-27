@@ -7,7 +7,7 @@ Contributions to this module:
 """
 from collections import defaultdict
 from datetime import datetime, date
-from itertools import groupby, chain
+from itertools import groupby
 from random import choice
 from typing import List, Set, Union, Tuple, Optional
 
@@ -21,8 +21,9 @@ from django.utils.timezone import localdate, make_aware, is_naive
 
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
-from django_ledger.io.financial_statements import CashFlowStatement
-from django_ledger.io.io_context import RoleManager, GroupManager, ActivityManager, BalanceSheetManager
+from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
+                                         BalanceSheetStatementContextManager, IncomeStatementContextManager,
+                                         CashFlowStatementContextManager)
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import LazyLoader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -316,6 +317,9 @@ class IOMixIn:
             self.aggregate_balances(k, g) for k, g in accounts_gb_code
         ]
 
+        for acc in gb_digest:
+            acc['balance_abs'] = abs(acc['balance'])
+
         if signs:
             TransactionModel = lazy_importer.get_txs_model()
             for acc in gb_digest:
@@ -367,14 +371,15 @@ class IOMixIn:
                process_groups: bool = False,
                process_ratios: bool = False,
                process_activity: bool = False,
-               process_balance_sheet: bool = False,
                equity_only: bool = False,
                by_period: bool = False,
                by_unit: bool = False,
                by_activity: bool = False,
                by_tx_type: bool = False,
-               cash_flow_statement: bool = False,
                digest_name: str = None,
+               balance_sheet_statement: bool = False,
+               income_statement: bool = False,
+               cash_flow_statement: bool = False,
                ) -> dict or tuple:
 
         if activity:
@@ -408,7 +413,7 @@ class IOMixIn:
         io_digest['to_date'] = to_date
 
         if process_roles:
-            roles_mgr = RoleManager(
+            roles_mgr = RoleContextManager(
                 tx_digest=io_digest,
                 by_period=by_period,
                 by_unit=by_unit
@@ -418,7 +423,7 @@ class IOMixIn:
             io_digest = roles_mgr.digest()
 
         if process_groups:
-            group_mgr = GroupManager(
+            group_mgr = GroupContextManager(
                 io_digest=io_digest,
                 by_period=by_period,
                 by_unit=by_unit
@@ -433,20 +438,24 @@ class IOMixIn:
             io_digest['group_account']['GROUP_CAPITAL'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
 
-        if process_balance_sheet:
-            balance_sheet_mgr = BalanceSheetManager(tx_digest=io_digest)
-            io_digest = balance_sheet_mgr.digest()
-
         if process_ratios:
             ratio_gen = FinancialRatioManager(tx_digest=io_digest)
             io_digest = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityManager(tx_digest=io_digest, by_unit=by_unit, by_period=by_period)
+            activity_manager = ActivityContextManager(tx_digest=io_digest, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
+        if balance_sheet_statement:
+            balance_sheet_mgr = BalanceSheetStatementContextManager(tx_digest=io_digest)
+            io_digest = balance_sheet_mgr.digest()
+
+        if income_statement:
+            income_statement_mgr = IncomeStatementContextManager(tx_digest=io_digest)
+            io_digest = income_statement_mgr.digest()
+
         if cash_flow_statement:
-            cfs = CashFlowStatement(io_digest=io_digest)
+            cfs = CashFlowStatementContextManager(io_digest=io_digest)
             io_digest = cfs.digest()
 
         if not digest_name:

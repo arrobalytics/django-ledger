@@ -107,7 +107,7 @@ def balance_sheet_statement(context, io_model, to_date=None):
         to_date=to_date,
         signs=True,
         process_groups=True,
-        process_balance_sheet=True)
+        balance_sheet_statement=True)
 
     # todo: this can be moved to the digest function...
     digest['by_unit'] = context['by_unit']
@@ -169,7 +169,10 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
         from_date=from_date,
         to_date=to_date,
         equity_only=True,
-        process_groups=True)
+        process_groups=True,
+        income_statement=True,
+        signs=True
+    )
 
     digest['by_unit'] = context['by_unit']
     digest['unit_model'] = context['unit_model']
