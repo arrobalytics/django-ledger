@@ -16,7 +16,7 @@
 
         {# OPERATING INCOME #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Income' %}</h2></td>
+            <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Revenues' %}</h2></td>
             <td></td>
             {% if by_unit %}
                 <td></td>
@@ -41,6 +41,16 @@
                 <td>{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
+        <tr>
+            <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
+            <td></td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Operating Revenues' %}</h2></td>
+            <td class="is-size-5 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_revenue | currency_format }}</td>
+        </tr>
 
         {# COGS #}
         <tr>
@@ -69,6 +79,16 @@
                 <td>{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
             </tr>
         {% endfor %}
+        <tr>
+            <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
+            <td></td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net COGS' %}</h2></td>
+            <td class="is-size-5 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_cogs | currency_format }}</td>
+        </tr>
 
         {# GROSS PROFIT #}
         <tr>
@@ -77,8 +97,8 @@
                 <td></td>
             {% endif %}
             <td></td>
-            <td><h2 class="is-size-5 has-text-left">{% trans 'Gross Profit' %}</h2></td>
-            <td class="is-size-5 has-text-weight-bold">
+            <td><h2 class="is-size-4 has-text-right">{% trans 'Gross Profit' %}</h2></td>
+            <td class="is-size-4 has-text-weight-bold">
                 {% currency_symbol %}{{ tx_digest.income_statement.operating.gross_profit | currency_format }}</td>
         </tr>
 
@@ -109,6 +129,17 @@
                 <td>{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
             </tr>
         {% endfor %}
+        <tr>
+            <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
+            <td></td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Operating Expenses' %}</h2></td>
+            <td class="is-size-5 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_expenses | currency_format }}</td>
+        </tr>
+
 
         {# NET OPERATING INCOME #}
         <tr>
@@ -117,14 +148,14 @@
                 <td></td>
             {% endif %}
             <td></td>
-            <td><h2 class="is-size-5 has-text-left">{% trans 'Net Operating Income' %}</h2></td>
-            <td class="is-size-5 has-text-weight-bold">
+            <td><h2 class="is-size-4 has-text-right">{% trans 'Net Operating Income (Loss)' %}</h2></td>
+            <td class="is-size-3">
                 {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_income| currency_format }}</td>
         </tr>
 
-        {# OTHER INCOME #}
+        {# OTHER REVENUES #}
         <tr>
-            <td><h2 class="is-size-3 has-text-left">{% trans 'Other Income' %}</h2></td>
+            <td><h2 class="is-size-3 has-text-left">{% trans 'Other Revenues' %}</h2></td>
             <td></td>
             {% if by_unit %}
                 <td></td>
@@ -149,6 +180,17 @@
                 <td class="is-size-5">{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
             </tr>
         {% endfor %}
+        <tr>
+            <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
+            <td></td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Other Income' %}</h2></td>
+            <td class="is-size-5 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_revenues | currency_format }}</td>
+        </tr>
+
 
         {# OTHER EXPENSES #}
         <tr>
@@ -177,17 +219,27 @@
                 <td class="is-size-5">{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
             </tr>
         {% endfor %}
-
-        {# TOTAL OTHER INCOME/LOSS #}
         <tr>
             <td></td>
             {% if by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
-            <td><h2 class="is-size-5 has-text-left">{% trans 'Other Income (Loss)' %}</h2></td>
-            <td class="is-size-5">
-                {% currency_symbol %}{{ tx_digest.income_statement.other.other_income | currency_format }}</td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Other Expenses' %}</h2></td>
+            <td class="is-size-5 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_expenses | currency_format }}</td>
+        </tr>
+
+        {# NET OTHER INCOME/LOSS #}
+        <tr>
+            <td></td>
+            {% if by_unit %}
+                <td></td>
+            {% endif %}
+            <td></td>
+            <td><h2 class="is-size-4 has-text-right">{% trans 'Net Other Income (Loss)' %}</h2></td>
+            <td class="is-size-3">
+                {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_income| currency_format }}</td>
         </tr>
 
 
@@ -197,10 +249,12 @@
             {% if by_unit %}
                 <td></td>
             {% endif %}
-            <td></td>
-            <td><h2 class="is-size-4">{% trans 'Net Income' %}</h2></td>
-            <td class="is-size-5 has-text-weight-bold">
-                {% currency_symbol %}{{ tx_digest.income_statement.net_income | currency_format }}</td>
+            <td>
+                <h4 class="is-size-4 has-text-right">{{ tx_digest.from_date | date }} {% trans 'through' %} {{ tx_digest.to_date | date }}</h4>
+            </td>
+            <td><h2 class="is-size-3 has-text-right">{% trans 'Net Income' %}</h2></td>
+            <td class="is-size-3 has-text-weight-bold">
+                {% currency_symbol %}{{ tx_digest.income_statement.net_income| currency_format }}</td>
         </tr>
 
     </table>

@@ -253,12 +253,18 @@ class IncomeStatementContextManager:
         if 'group_account' in self.DIGEST:
             self.DIGEST['income_statement'] = {
                 'operating': {
-                    'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
-                                 acc['role'] in roles_module.GROUP_IC_OPERATING_REVENUES],
-                    'cogs': [acc for acc in self.DIGEST['group_account']['GROUP_COGS'] if
-                             acc['role'] in roles_module.GROUP_IC_OPERATING_COGS],
-                    'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
-                                 acc['role'] in roles_module.GROUP_IC_OPERATING_EXPENSES]
+                    'revenues': [
+                        acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                        acc['role'] in roles_module.GROUP_IC_OPERATING_REVENUES
+                    ],
+                    'cogs': [
+                        acc for acc in self.DIGEST['group_account']['GROUP_COGS'] if
+                        acc['role'] in roles_module.GROUP_IC_OPERATING_COGS
+                    ],
+                    'expenses': [
+                        acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
+                        acc['role'] in roles_module.GROUP_IC_OPERATING_EXPENSES
+                    ]
                 },
                 'other': {
                     'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
@@ -268,11 +274,7 @@ class IncomeStatementContextManager:
                 }
             }
 
-            self.DIGEST['income_statement']['operating']['net_operating_income'] = sum(
-                acc['balance'] for acc in chain.from_iterable(
-                    al for _, al in self.DIGEST['income_statement']['operating'].items()
-                ))
-
+            # OPERATING INCOME...
             self.DIGEST['income_statement']['operating']['gross_profit'] = sum(
                 acc['balance'] for acc in chain.from_iterable(
                     [
@@ -280,16 +282,45 @@ class IncomeStatementContextManager:
                         self.DIGEST['income_statement']['operating']['cogs']
                     ]
                 ))
-
-            self.DIGEST['income_statement']['other']['other_income'] = sum(
+            self.DIGEST['income_statement']['operating']['net_operating_income'] = sum(
                 acc['balance'] for acc in chain.from_iterable(
-                    al for _, al in self.DIGEST['income_statement']['other'].items()
+                    [
+                        self.DIGEST['income_statement']['operating']['revenues'],
+                        self.DIGEST['income_statement']['operating']['cogs'],
+                        self.DIGEST['income_statement']['operating']['expenses'],
+                    ]
+                ))
+            self.DIGEST['income_statement']['operating']['net_operating_revenue'] = sum(
+                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['revenues']
+            )
+            self.DIGEST['income_statement']['operating']['net_cogs'] = sum(
+                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['cogs']
+            )
+            self.DIGEST['income_statement']['operating']['net_operating_expenses'] = sum(
+                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['expenses']
+            )
+
+
+            # OTHER INCOME....
+            self.DIGEST['income_statement']['other']['net_other_revenues'] = sum(
+                acc['balance'] for acc in self.DIGEST['income_statement']['other']['revenues']
+            )
+            self.DIGEST['income_statement']['other']['net_other_expenses'] = sum(
+                acc['balance'] for acc in self.DIGEST['income_statement']['other']['expenses']
+            )
+            self.DIGEST['income_statement']['other']['net_other_income'] = sum(
+                acc['balance'] for acc in chain.from_iterable(
+                    [
+                        self.DIGEST['income_statement']['other']['revenues'],
+                        self.DIGEST['income_statement']['other']['expenses']
+                    ]
                 ))
 
+            # NET INCOME...
             self.DIGEST['income_statement']['net_income'] = self.DIGEST['income_statement']['operating'][
                 'net_operating_income']
             self.DIGEST['income_statement']['net_income'] += self.DIGEST['income_statement']['other'][
-                'other_income']
+                'net_other_income']
         return self.DIGEST
 
 
