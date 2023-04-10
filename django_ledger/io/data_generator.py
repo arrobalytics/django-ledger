@@ -553,7 +553,7 @@ class EntityDataGenerator(LoggingMixIn):
         # mark as approved...
         if random() > 0.25:
             date_review = self.get_next_date(date_draft)
-            po_model.mark_as_review(commit=True, date_review=date_review)
+            po_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.5:
                 date_approved = self.get_next_date(date_review)
                 po_model.mark_as_approved(commit=True, date_approved=date_approved)

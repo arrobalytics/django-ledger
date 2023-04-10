@@ -999,7 +999,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     # ItemThroughModels...
     def get_itemtxs_data(self,
-                         itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+                         itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
+                         ) -> ItemTransactionModelQuerySet:
+        # todo: this needs to return an aggregate for consistency...
         """
         Returns all ItemTransactionModels associated with the EstimateModel and a total aggregate.
 
@@ -1112,7 +1114,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
-    def update_state(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None):
+    def update_state(self,
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
         itemtxs_qs = self.get_itemtxs_data(itemtxs_qs=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)

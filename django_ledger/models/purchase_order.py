@@ -31,7 +31,7 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.bill import BillModel
+from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
@@ -351,7 +351,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             )
         return queryset, {
             'po_total_amount__sum': sum(i.total_amount for i in queryset),
-            'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset),
+            'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset if i.bill_model_id),
             'total_items': len(queryset)
         }
 
@@ -618,11 +618,22 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # Actions...
 
     # DRAFT...
-    def mark_as_draft(self, commit: bool = False, **kwargs):
+    def mark_as_draft(self, date_draft: Optional[date] = None, commit: bool = False, **kwargs):
+        """
+        Marks PurchaseOrderModel as Draft.
+
+        Parameters
+        ----------
+        date_draft: date
+            Draft date. If None, defaults to localdate().
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
         if not self.can_draft():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as draft.')
         self.po_status = self.PO_STATUS_DRAFT
+        self.date_draft = localdate() if not date_draft else date_draft
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -644,17 +655,28 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _('Do you want to mark Purchase Order %s as Draft?') % self.po_number
 
     # REVIEW...
-    def mark_as_review(self, date_review: date = None, commit: bool = False, **kwargs):
+    def mark_as_review(self, date_in_review: Optional[date] = None, commit: bool = False, **kwargs):
+        """
+        Marks PurchaseOrderModel as In Review.
+
+        Parameters
+        ----------
+        date_in_review: date
+            Draft date. If None, defaults to localdate().
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
         if not self.can_review():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as in review.')
-        itemthrough_qs = self.itemtransactionmodel_set.all()
-        if not itemthrough_qs.count():
+
+        itemtxs_qs, itemtxs_agg = self.get_itemtxs_data()
+        if not itemtxs_qs.count():
             raise PurchaseOrderModelValidationError(message='Cannot review a PO without items...')
         if not self.po_amount:
             raise PurchaseOrderModelValidationError(message='PO amount is zero.')
 
-        self.date_in_review = localdate() if not date_review else date_review
+        self.date_in_review = localdate() if not date_in_review else date_in_review
         self.po_status = self.PO_STATUS_REVIEW
         self.clean()
         if commit:
@@ -678,7 +700,17 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _('Do you want to mark Purchase Order %s as In Review?') % self.po_number
 
     # APPROVED...
-    def mark_as_approved(self, commit: bool = False, date_approved: date = None, **kwargs):
+    def mark_as_approved(self, date_approved: Optional[date] = None, commit: bool = False, **kwargs):
+        """
+        Marks PurchaseOrderModel as Approved.
+
+        Parameters
+        ----------
+        date_approved: date
+            Approved date. If None, defaults to localdate().
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
         if not self.can_approve():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as approved.')
@@ -707,7 +739,17 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _('Do you want to mark Purchase Order %s as Approved?') % self.po_number
 
     # CANCEL...
-    def mark_as_canceled(self, commit: bool = False, date_canceled: date = None, **kwargs):
+    def mark_as_canceled(self, date_canceled: Optional[date] = None, commit: bool = False, **kwargs):
+        """
+        Marks PurchaseOrderModel as Canceled.
+
+        Parameters
+        ----------
+        date_canceled: date
+            Canceled date. If None, defaults to localdate().
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
         if not self.can_cancel():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
@@ -737,17 +779,32 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     # FULFILL...
     def mark_as_fulfilled(self,
                           date_fulfilled: date = None,
-                          po_items: Union[QuerySet, List[ItemTransactionModel]] = None,
-                          commit=False,
+                          po_items: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]] = None,
+                          commit: bool = False,
                           **kwargs):
+        """
+        Marks PurchaseOrderModel as Fulfilled.
+
+        Parameters
+        ----------
+        date_fulfilled: date
+            Fulfilled date. If None, defaults to localdate().
+        po_items: ItemTransactionModelQuerySet or list of ItemTransactionModel.
+            Pre-fetched ItemTransactionModelQuerySet or list of  ItemTransactionModel.
+            Validated if provided.
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
+
         if not self.can_fulfill():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')
-        self.date_fulfilled = localdate() if not date_fulfilled else date_fulfilled
-        self.po_amount_received = self.po_amount
 
         if not po_items:
-            po_items = self.itemtransactionmodel_set.all().select_related('bill_model')
+            po_items, po_items_agg = self.get_itemtxs_data(queryset=po_items)
+
+        self.date_fulfilled = localdate() if not date_fulfilled else date_fulfilled
+        self.po_amount_received = self.po_amount
 
         bill_models = [i.bill_model for i in po_items]
         all_items_billed = all(bill_models)
@@ -767,6 +824,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.clean()
 
         if commit:
+            # todo: what if PO items is list???...
             po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
                 'date_fulfilled',
@@ -789,20 +847,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     # VOID...
     def mark_as_void(self,
-                     entity_slug: str,
-                     user_model,
-                     void_date: date = None,
-                     commit=False,
+                     void_date: Optional[date] = None,
+                     commit: bool = False,
                      **kwargs):
+        """
+        Marks PurchaseOrderModel as Fulfilled.
+
+        Parameters
+        ----------
+        void_date: date
+            Void date. If None, defaults to localdate().
+        commit: bool
+            Commits transaction into the Database. Defaults to False.
+        """
         if not self.can_void():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as void.')
 
         # all bills associated with this PO...
-        bill_model_qs = self.get_po_bill_queryset(
-            entity_slug=entity_slug,
-            user_model=user_model
-        )
+        bill_model_qs = self.get_po_bill_queryset()
         bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
@@ -834,18 +897,41 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     # Conevience Methods...
 
-    def get_po_bill_queryset(self, user_model, entity_slug):
-        return BillModel.objects.for_entity(
-            user_model=user_model,
-            entity_slug=entity_slug
-        ).filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
+    def get_po_bill_queryset(self) -> BillModelQuerySet:
+        """
+        Fetches a BillModelQuerySet of all BillModels associated with the PurchaseOrderModel instance.
+
+        Returns
+        -------
+        BillModelQuerySet
+        """
+        return BillModel.objects.filter(bill_items__purchaseordermodel__uuid__exact=self.uuid)
 
     def get_status_action_date(self):
-        if self.is_fulfilled():
-            return self.date_fulfilled
+        """
+        Current status action date.
+
+        Returns
+        -------
+        date
+            A date. i.e. If status is Approved, return date_approved. If In Review, return date_in_review.
+        """
         return getattr(self, f'date_{self.po_status}')
 
     def _get_next_state_model(self, raise_exception: bool = True):
+        """
+        Fetches the next sequenced state model associated with the PurchaseOrderModel number.
+
+        Parameters
+        ----------
+        raise_exception: bool
+            Raises IntegrityError if unable to secure transaction from DB.
+
+        Returns
+        -------
+        EntityStateModel
+            An instance of EntityStateModel
+        """
         EntityStateModel = lazy_loader.get_entity_state_model()
         EntityModel = lazy_loader.get_entity_model()
         entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
@@ -886,8 +972,16 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def generate_po_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next PurchaseOrder document number available.
-        @param commit: Commit transaction into InvoiceModel.
-        @return: A String, representing the current InvoiceModel instance Document Number.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits transaction into PurchaseOrderModel.
+
+        Returns
+        -------
+        str
+            A String, representing the generated or current PurchaseOrderModel instance Document Number.
         """
         if self.can_generate_po_number():
             with transaction.atomic(durable=True):

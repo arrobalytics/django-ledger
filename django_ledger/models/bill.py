@@ -560,14 +560,14 @@ class BillModelAbstract(LedgerWrapperMixIn,
         )
 
     def update_amount_due(self,
-                          itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None
+                          itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
                           ) -> ItemTransactionModelQuerySet:
         """
         Updates the BillModel amount due.
 
         Parameters
         ----------
-        itemtxs_qs: ItemTransactionModelQuerySet
+        itemtxs_qs: ItemTransactionModelQuerySet or list of ItemTransactionModel
             Optional pre-fetched ItemTransactionModelQuerySet. Avoids additional DB if provided.
             Queryset is validated if provided.
 
