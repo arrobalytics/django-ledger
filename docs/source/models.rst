@@ -50,32 +50,37 @@ Chart of Accounts Model
     :members:
 
 Bill Model
------------------
+----------
 .. automodule:: django_ledger.models.bill
     :members:
 
 Estimate Model
------------------
+--------------
 .. automodule:: django_ledger.models.estimate
     :members:
 
+Purchase Order Model
+--------------------
+.. automodule:: django_ledger.models.purchase_order
+    :members:
+
 Invoice Model
------------------
+-------------
 .. automodule:: django_ledger.models.invoice
     :members:
 
 Customer Model
------------------
+--------------
 .. automodule:: django_ledger.models.customer
     :members:
 
 Vendor Model
------------------
+------------
 .. automodule:: django_ledger.models.vendor
     :members:
 
 MixIns
------------------
+------
 .. automodule:: django_ledger.models.mixins
     :members:
 

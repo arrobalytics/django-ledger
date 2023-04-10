@@ -230,8 +230,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     The base implementation of the JournalEntryModel.
 
     Attributes
-    __________
-    uuid : UUID
+    ----------
+    uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
     je_number: str

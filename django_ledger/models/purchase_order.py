@@ -5,10 +5,20 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
     * Pranav P Tulshyan <Ptulshyan77@gmail.com>
+
+A purchase order is a commercial source document that is issued by a business purchasing department when placing an
+order with its vendors or suppliers. The document indicates the details on the items that are to be purchased, such as
+the types of goods, quantity, and price. In simple terms, it is the contract drafted by the buyer when purchasing goods
+from the seller.
+
+The PurchaseOrderModel is designed to track the status of a Purchase Order and all its items. The PurchaseOrderModel
+starts in draft model by default and goes through different states including InReview, Approved, Fulfilled, Canceled and
+Void. The PurchaseOrderModel also keeps track of when these states take place.
+
 """
 from datetime import date
 from string import ascii_uppercase, digits
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -21,8 +31,11 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, ItemTransactionModel, lazy_loader, BillModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
@@ -33,14 +46,43 @@ class PurchaseOrderModelValidationError(ValidationError):
 
 
 class PurchaseOrderModelQuerySet(models.QuerySet):
+    """
+    A custom defined PurchaseOrderModel QuerySet.
+    """
 
     def approved(self):
+        """
+        Filters the QuerySet to include Approved PurchaseOrderModels only.
+
+        Returns
+        -------
+        PurchaseOrderModelQuerySet
+            A PurchaseOrderModelQuerySet with applied filters.
+        """
         return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_APPROVED)
 
     def fulfilled(self):
+        """
+        Filters the QuerySet to include Fulfilled PurchaseOrderModels only.
+
+        Returns
+        -------
+        PurchaseOrderModelQuerySet
+            A PurchaseOrderModelQuerySet with applied filters.
+        """
         return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_FULFILLED)
 
     def active(self):
+        """
+        Filters the QuerySet to include Active PurchaseOrderModels only.
+        Active PurchaseOrderModels are either approved or fulfilled, which are those that may contain associated
+        transactions on the Ledger.
+
+        Returns
+        -------
+        PurchaseOrderModelQuerySet
+            A PurchaseOrderModelQuerySet with applied filters.
+        """
         return self.filter(
             Q(po_status__exact=PurchaseOrderModel.PO_STATUS_APPROVED) |
             Q(po_status__exact=PurchaseOrderModel.PO_STATUS_FULFILLED)
@@ -48,8 +90,20 @@ class PurchaseOrderModelQuerySet(models.QuerySet):
 
 
 class PurchaseOrderModelManager(models.Manager):
+    """
+    A custom defined PurchaseOrderModel Manager.
+    """
 
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_slug, user_model) -> PurchaseOrderModelQuerySet:
+        """
+        Fetches a QuerySet of PurchaseOrderModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Returns
+        -------
+        PurchaseOrderModelQuerySet
+            A PurchaseOrderModelQuerySet with applied filters.
+        """
         qs = self.get_queryset()
         if isinstance(entity_slug, EntityModel):
             qs = qs.filter(entity=entity_slug)
@@ -62,6 +116,53 @@ class PurchaseOrderModelManager(models.Manager):
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+    """
+    The base implementation of the PurchaseOrderModel.
+
+    Attributes
+    ----------
+    uuid: UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
+    po_number: str
+        A unique human-readable and sequential PO Number identifier. Automatically generated.
+    po_title: str
+        The PurchaseOrderModel instance title.
+    po_status: str
+        One of PO_STATUS values representing the current status of the PurchaseOrderModel instance.
+    po_amount: Decimal
+        The total value of the PurchaseOrderModel instance.
+    po_amount_received: Decimal
+        The PurchaseOrderModel instance total value received to date. Cannot be greater than PO amount.
+    entity: EntityModel
+        The EntityModel associated with the PurchaseOrderModel instance.
+    date_draft: date
+        The draft date represents the date when the PurchaseOrderModel was first created. Defaults to
+        :func:`localdate <django.utils.timezone.localdate>`.
+    date_in_review: date
+        The in review date represents the date when the PurchaseOrderModel was marked as In Review status.
+        Will be null if PurchaseOrderModel is canceled during draft status. Defaults to
+        :func:`localdate <django.utils.timezone.localdate>`.
+    date_approved: date
+        The approved date represents the date when the PurchaseOrderModel was approved. Will be null if
+        PurchaseOrderModel is canceled.
+        Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+    date_fulfilled: date
+        The paid date represents the date when the PurchaseOrderModel was fulfilled and po_amount_received equals
+        po_amount. Will be null if PurchaseOrderModel is canceled.
+        Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+    date_void: date
+        The void date represents the date when the PurchaseOrderModel was void, if applicable.
+        Will be null unless PurchaseOrderModel is void.
+        Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+    date_canceled: date
+        The canceled date represents the date when the PurchaseOrderModel was canceled, if applicable.
+        Will be null unless PurchaseOrderModel is canceled.
+        Defaults to :func:`localdate <django.utils.timezone.localdate>`.
+    po_items:
+        A foreign key reference to the list of ItemTransactionModel that make the PurchaseOrderModel amount.
+    ce_model: EstimateModel
+        A foreign key reference to the EstimateModel associated with the PurchaseOrderModel, if any.
+    """
     PO_STATUS_DRAFT = 'draft'
     PO_STATUS_REVIEW = 'in_review'
     PO_STATUS_APPROVED = 'approved'
@@ -69,6 +170,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     PO_STATUS_VOID = 'void'
     PO_STATUS_CANCELED = 'canceled'
 
+    """The different valid PO Status and their representation in the Database"""
     PO_STATUS = [
         (PO_STATUS_DRAFT, _('Draft')),
         (PO_STATUS_REVIEW, _('In Review')),
@@ -141,115 +243,329 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return f'PO Model: {self.po_number} | {self.get_po_status_display()}'
 
     # Configuration...
+
+    def is_configured(self) -> bool:
+        return all([
+            self.entity_id is not None,
+            self.date_draft,
+            self.po_status
+        ])
+
     def configure(self,
                   entity_slug: str or EntityModel,
                   user_model,
                   draft_date: date = None,
                   commit: bool = False):
+        """
+        A configuration hook which executes all initial PurchaseOrderModel setup on to the EntityModel and all initial
+        values of the EntityModel. Can only call this method once in the lifetime of a PurchaseOrderModel.
 
-        if isinstance(entity_slug, str):
-            entity_qs = EntityModel.objects.for_user(
-                user_model=user_model)
-            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-        elif isinstance(entity_slug, EntityModel):
-            entity_model = entity_slug
-        else:
-            raise PurchaseOrderModelValidationError('entity_slug must be an instance of str or EntityModel')
+        Parameters
+        __________
 
-        if draft_date:
-            self.date_draft = draft_date
-        if not self.date_draft:
-            self.date_draft = localdate()
-        self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
-        self.entity = entity_model
-        self.clean()
-        if commit:
-            self.save()
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel to associate the Bill with.
+
+        user_model:
+            The UserModel making the request to check for QuerySet permissions.
+
+        ledger_posted:
+            An option to mark the BillModel Ledger as posted at the time of configuration. Defaults to False.
+
+        bill_desc: str
+            An optional description appended to the LedgerModel name.
+
+        commit: bool
+            Saves the current BillModel after being configured.
+
+        Returns
+        -------
+        PurchaseOrderModel
+            The configured PurchaseOrderModel instance.
+        """
+        if not self.is_configured():
+            if isinstance(entity_slug, str):
+                entity_qs = EntityModel.objects.for_user(
+                    user_model=user_model)
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+            elif isinstance(entity_slug, EntityModel):
+                entity_model = entity_slug
+            else:
+                raise PurchaseOrderModelValidationError('entity_slug must be an instance of str or EntityModel')
+
+            if draft_date:
+                self.date_draft = draft_date
+            if not self.date_draft:
+                self.date_draft = localdate()
+            self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
+            self.entity = entity_model
+            self.clean()
+            if commit:
+                self.save()
         return self
 
-    # State Update...
-    def get_itemtxs_data(self, queryset: QuerySet = None) -> Tuple:
-        if not queryset:
-            # pylint: disable=no-member
-            queryset = self.itemtransactionmodel_set.all().select_related('bill_model', 'item_model')
+    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+        """
+        Validates that the entire ItemTransactionModelQuerySet is bound to the PurchaseOrderModel.
 
-        return queryset, queryset.aggregate(
-            po_total_amount__sum=Coalesce(Sum('po_total_amount'), 0.0, output_field=models.FloatField()),
-            bill_amount_paid__sum=Coalesce(Sum('bill_model__amount_paid'), 0.0, output_field=models.FloatField()),
-            total_items=Count('uuid')
-        )
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet or list of ItemTransactionModel.
+            ItemTransactionModelQuerySet to validate.
+        """
+        valid = all([
+            i.po_model_id == self.uuid for i in queryset
+        ])
+        if not valid:
+            raise PurchaseOrderModelValidationError(f'Invalid queryset. All items must be assigned to PO {self.uuid}')
+
+    # State Update...
+    def get_itemtxs_data(self,
+                         queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
+                         aggregate_on_db: bool = False) -> Tuple:
+        """
+        Fetches the PurchaseOrderModel Items and aggregates the QuerySet.
+
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet
+            Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
+            Validated if provided.
+        aggregate_on_db: bool
+            If True, performs aggregation of ItemsTransactions in the DB resulting in one additional DB query.
+
+        Returns
+        -------
+        A tuple: ItemTransactionModelQuerySet, dict
+        """
+        if not queryset:
+            queryset = self.itemtransactionmodel_set.all().select_related('bill_model', 'item_model')
+        else:
+            self.validate_item_transaction_qs(queryset)
+
+        if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
+            return queryset, queryset.aggregate(
+                po_total_amount__sum=Coalesce(Sum('po_total_amount'), 0.0, output_field=models.FloatField()),
+                bill_amount_paid__sum=Coalesce(Sum('bill_model__amount_paid'), 0.0, output_field=models.FloatField()),
+                total_items=Count('uuid')
+            )
+        return queryset, {
+            'po_total_amount__sum': sum(i.total_amount for i in queryset),
+            'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset),
+            'total_items': len(queryset)
+        }
 
     def update_state(self,
-                     itemtxs_qs: QuerySet = None,
-                     itemtxs_list: List[ItemTransactionModel] = None) -> Union[Tuple, None]:
-        if itemtxs_qs and itemtxs_list:
-            raise PurchaseOrderModelValidationError('Either queryset or list can be used.')
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
+                     ) -> Tuple:
 
-        if itemtxs_list:
-            self.po_amount = round(sum(a.po_total_amount for a in itemtxs_list if not a.is_canceled()), 2)
-            self.po_amount_received = round(sum(a.po_total_amount for a in itemtxs_list if a.is_received()), 2)
-        else:
-            itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+        """
+        Updates the state of the PurchaseOrderModel.
+
+        Parameters
+        ----------
+        itemtxs_qs: ItemTransactionModelQuerySet or list of ItemTransactionModel
+
+        Returns
+        -------
+        tuple
+            A tuple of ItemTransactionModels and Aggregation
+        """
+        itemtxs_qs, itemtxs_agg = self.get_itemtxs_data(queryset=itemtxs_qs)
+
+        if isinstance(itemtxs_qs, list):
+            self.po_amount = round(sum(a.po_total_amount for a in itemtxs_qs if not a.is_canceled()), 2)
+            self.po_amount_received = round(sum(a.po_total_amount for a in itemtxs_qs if a.is_received()), 2)
+        elif isinstance(itemtxs_qs, ItemTransactionModelQuerySet):
             total_po_amount = round(sum(i.po_total_amount for i in itemtxs_qs if not i.is_canceled()), 2)
             total_received = round(sum(i.po_total_amount for i in itemtxs_qs if i.is_received()), 2)
             self.po_amount = total_po_amount
             self.po_amount_received = total_received
-            return itemtxs_qs, itemtxs_agg
+
+        return itemtxs_qs, itemtxs_agg
 
     # State...
     def is_draft(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Draft status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is Draft, else False.
+        """
         return self.po_status == self.PO_STATUS_DRAFT
 
     def is_review(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Review status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is Review, else False.
+        """
         return self.po_status == self.PO_STATUS_REVIEW
 
     def is_approved(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Approved status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is Approved, else False.
+        """
         return self.po_status == self.PO_STATUS_APPROVED
 
     def is_fulfilled(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Fulfilled status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is in Fulfilled status, else False.
+        """
         return self.po_status == self.PO_STATUS_FULFILLED
 
     def is_canceled(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Canceled status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is in Canceled, else False.
+        """
         return self.po_status == self.PO_STATUS_CANCELED
 
     def is_void(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel is in Void status.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is Void, else False.
+        """
         return self.po_status == self.PO_STATUS_VOID
 
     # Permissions...
     def can_draft(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as Draft.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as Draft, else False.
+        """
         return self.is_review()
 
     def can_review(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as In Review.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as In Review, else False.
+        """
         return self.is_draft()
 
     def can_approve(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as Approved.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as Approved, else False.
+        """
         return self.is_review()
 
     def can_fulfill(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as Fulfilled.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as Fulfilled, else False.
+        """
         return self.is_approved()
 
     def can_cancel(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as Canceled.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as Canceled, else False.
+        """
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
     def can_void(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be marked as Void.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be marked as Void, else False.
+        """
         return self.is_approved()
 
     def can_delete(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel can be deleted.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be deleted, else False.
+        """
         return any([
             self.is_draft(),
             self.is_review()
         ])
 
     def can_edit_items(self) -> bool:
+        """
+        Checks if the PurchaseOrderModel items can be edited.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel items can be edited, else False.
+        """
         return self.is_draft()
 
     def is_contract_bound(self):
+        """
+        Checks if the PurchaseOrderModel is bound to an EstimateModel.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel is bound to an EstimateModel, else False.
+        """
         return self.ce_model_id is not None
 
     def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
+        """
+        Checks if the PurchaseOrderModel ican be bound to an EstimateModel.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can be bound to an EstimateModel, else False.
+        """
         if self.is_contract_bound():
             if raise_exception:
                 raise PurchaseOrderModelValidationError(
@@ -263,14 +579,16 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             is_approved
         ])
 
-    def can_generate_po_number(self):
-        return all([
-            self.date_draft,
-            not self.po_number
-        ])
-
-    # Actions...
     def action_bind_estimate(self, estimate_model, commit: bool = False):
+        """
+        Binds a specific EstimateModel to the PurchaseOrderModel instance.
+        Parameters
+        ----------
+        estimate_model: EstimateModel
+            The EstimateModel to bind.
+        commit: bool
+            Commits the changes in the Database, if True. Defaults to False.
+        """
         try:
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
@@ -282,6 +600,22 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'ce_model',
                 'updated'
             ])
+
+    def can_generate_po_number(self):
+        """
+        Checks if PurchaseOrderModel can generate its Document Number.
+
+        Returns
+        -------
+        bool
+            True if PurchaseOrderModel can generate its po_number, else False.
+        """
+        return all([
+            self.date_draft,
+            not self.po_number
+        ])
+
+    # Actions...
 
     # DRAFT...
     def mark_as_draft(self, commit: bool = False, **kwargs):

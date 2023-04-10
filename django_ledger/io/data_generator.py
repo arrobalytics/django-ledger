@@ -546,7 +546,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info(f'Creating entity purchase order {po_model.po_number}...')
         po_items = po_model.itemtransactionmodel_set.bulk_create(po_items)
-        po_model.update_state(itemtxs_list=po_items)
+        po_model.update_state(itemtxs_qs=po_items)
         po_model.full_clean()
         po_model.save()
 

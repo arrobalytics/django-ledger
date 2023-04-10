@@ -21,12 +21,12 @@ ________
 
 from datetime import date
 from decimal import Decimal
-from typing import Union, Optional, Tuple, Dict
+from typing import Union, Optional, Tuple, Dict, List
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import post_delete
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -34,7 +34,7 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModelQuerySet
+from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel
 from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
@@ -483,13 +483,13 @@ class BillModelAbstract(LedgerWrapperMixIn,
         """
         return f'Bill {self.bill_number} account adjustment.'
 
-    def validate_item_transaction_qs(self, queryset: ItemTransactionModelQuerySet):
+    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
         Parameters
         ----------
-        queryset: ItemTransactionModelQuerySet
+        queryset: ItemTransactionModelQuerySet or list of ItemTransactionModel.
             ItemTransactionModelQuerySet to validate.
         """
         valid = all([
@@ -499,17 +499,20 @@ class BillModelAbstract(LedgerWrapperMixIn,
             raise BillModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: ItemTransactionModelQuerySet = None) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         queryset: Optional[ItemTransactionModelQuerySet] = None,
+                         aggregate_on_db: bool = False,
+                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the BillModel Items and aggregates the QuerySet.
 
         Parameters
-        __________
+        ----------
         queryset:
             Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
-
+        aggregate_on_db: bool
+            If True, performs aggregation of ItemsTransactions in the DB resulting in one additional DB query.
         Returns
-        _______
+        -------
         A tuple: ItemTransactionModelQuerySet, dict
         """
         if not queryset:
@@ -517,6 +520,11 @@ class BillModelAbstract(LedgerWrapperMixIn,
         else:
             self.validate_item_transaction_qs(queryset)
 
+        if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
+            return queryset, queryset.aggregate(
+                total_amount__sum=Sum('total_amount'),
+                total_items=Count('uuid')
+            )
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
