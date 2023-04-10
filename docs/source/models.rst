@@ -5,7 +5,6 @@ Model Dependency Diagram
 -------------------------
 .. image:: ./assets/img/ModelDependency.png
 
-
 Database Fields
 ---------------
 .. image:: ./assets/img/ModelDependencyDetail.png
@@ -23,6 +22,16 @@ Entity Unit Model
 Account Model
 -------------
 .. automodule:: django_ledger.models.accounts
+    :members:
+
+Ledger Model
+------------
+.. automodule:: django_ledger.models.ledger
+    :members:
+
+Transaction Model
+------------
+.. automodule:: django_ledger.models.ledger
     :members:
 
 Journal Entry Model
