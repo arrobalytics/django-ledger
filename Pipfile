@@ -5,10 +5,10 @@ name = "pypi"
 
 [packages]
 django = ">=2.2"
-django-treebeard = "~=4.5.1"
-ofxtools = "~=0.9.5"
-markdown = "~=3.4.1"
-faker = "~=15.3.3"
+django-treebeard = ">=4.5.1"
+ofxtools = ">=0.9.5"
+markdown = ">=3.4.1"
+faker = ">=15.3.3"
 pillow = ">=9.3.0"
 
 [graphql]
