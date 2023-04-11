@@ -24,7 +24,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, QuerySet, F
+from django.db.models import Q, Sum, Count, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -582,6 +582,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def action_bind_estimate(self, estimate_model, commit: bool = False):
         """
         Binds a specific EstimateModel to the PurchaseOrderModel instance.
+
         Parameters
         ----------
         estimate_model: EstimateModel
@@ -642,9 +643,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_draft_html_id(self):
+        """
+        PurchaseOrderModel Mark as Draft HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-draft'
 
     def get_mark_as_draft_url(self):
+        """
+        PurchaseOrderModel Mark as Draft URL ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-draft',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -652,6 +669,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_draft_message(self):
+        """
+        PurchaseOrderModel Mark as Draft Message.
+
+        Returns
+        -------
+        str
+            Message as a String.
+        """
         return _('Do you want to mark Purchase Order %s as Draft?') % self.po_number
 
     # REVIEW...
@@ -687,9 +712,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_review_html_id(self):
+        """
+        PurchaseOrderModel Mark as In Review HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-review'
 
     def get_mark_as_review_url(self):
+        """
+        PurchaseOrderModel Mark as In Review URL ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-review',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -697,6 +738,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_review_message(self):
+        """
+        PurchaseOrderModel Mark as Review Message.
+
+        Returns
+        -------
+        str
+            Message as a String.
+        """
         return _('Do you want to mark Purchase Order %s as In Review?') % self.po_number
 
     # APPROVED...
@@ -726,9 +775,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_approved_html_id(self):
+        """
+        PurchaseOrderModel Mark as Approved HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-approved'
 
     def get_mark_as_approved_url(self):
+        """
+        PurchaseOrderModel Mark as Approved URL ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-approved',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -736,6 +801,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_approved_message(self):
+        """
+        PurchaseOrderModel Mark as Approved Message.
+
+        Returns
+        -------
+        str
+            Message as a String.
+        """
         return _('Do you want to mark Purchase Order %s as Approved?') % self.po_number
 
     # CANCEL...
@@ -764,9 +837,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_canceled_html_id(self):
+        """
+        PurchaseOrderModel Mark as Canceled HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-canceled'
 
     def get_mark_as_canceled_url(self):
+        """
+        PurchaseOrderModel Mark as Canceled URL ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-canceled',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -774,6 +863,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_canceled_message(self):
+        """
+        PurchaseOrderModel Mark as Canceled Message.
+
+        Returns
+        -------
+        str
+            Message as a String.
+        """
         return _('Do you want to mark Purchase Order %s as Canceled?') % self.po_number
 
     # FULFILL...
@@ -833,9 +930,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_fulfilled_html_id(self):
+        """
+        PurchaseOrderModel Mark as Fulfilled HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-fulfilled'
 
     def get_mark_as_fulfilled_url(self):
+        """
+        PurchaseOrderModel Mark as Fulfilled URL ID Tag.
+
+        Returns
+        -------
+        str
+            URL as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-fulfilled',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -843,6 +956,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_fulfilled_message(self):
+        """
+        PurchaseOrderModel Mark as Fulfilled Message.
+
+        Returns
+        -------
+        str
+            Message as a String.
+        """
         return _('Do you want to mark Purchase Order %s as Fulfilled?') % self.po_number
 
     # VOID...
@@ -883,9 +1004,25 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ])
 
     def get_mark_as_void_html_id(self):
+        """
+        PurchaseOrderModel Mark as Void HTML ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return f'djl-{self.uuid}-po-mark-as-void'
 
     def get_mark_as_void_url(self):
+        """
+        PurchaseOrderModel Mark as Void URL ID Tag.
+
+        Returns
+        -------
+        str
+            HTML ID as a String.
+        """
         return reverse('django_ledger:po-action-mark-as-void',
                        kwargs={
                            'entity_slug': self.entity.slug,
@@ -893,9 +1030,15 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                        })
 
     def get_mark_as_void_message(self):
-        return _('Do you want to mark Purchase Order %s as Void?') % self.po_number
+        """
+        PurchaseOrderModel Mark as Void Message.
 
-    # Conevience Methods...
+        Returns
+        -------
+        str
+            Message as a String.
+        """
+        return _('Do you want to mark Purchase Order %s as Void?') % self.po_number
 
     def get_po_bill_queryset(self) -> BillModelQuerySet:
         """

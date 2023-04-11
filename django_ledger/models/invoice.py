@@ -1349,13 +1349,13 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
     def get_mark_as_delete_html_id(self) -> str:
         """
-        InvoiceModel Mark as Delete HTML ID Tag.
+        InvoiceModel Mark as Delete URL.
 
         Returns
         _______
 
         str
-            HTML ID as a String.
+            URL as a String.
         """
         return f'djl-invoice-model-{self.uuid}-mark-as-delete'
 
