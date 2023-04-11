@@ -49,6 +49,11 @@ Chart of Accounts Model
 .. automodule:: django_ledger.models.coa
     :members:
 
+Default Chart of Accounts
+-------------------------
+.. automodule:: django_ledger.models.coa_default
+    :members:
+
 Bill Model
 ----------
 .. automodule:: django_ledger.models.bill

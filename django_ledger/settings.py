@@ -66,6 +66,8 @@ DJANGO_LEDGER_INVOICE_MODEL_ABSTRACT_CLASS = getattr(settings,
                                                      'DJANGO_LEDGER_INVOICE_MODEL_ABSTRACT_CLASS',
                                                      'django_ledger.models.invoice.InvoiceModelAbstract')
 
+DJANGO_LEDGER_DEFAULT_COA = getattr(settings, 'DJANGO_LEDGER_DEFAULT_COA', None)
+
 DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
     'ratios': {
         'current_ratio': {

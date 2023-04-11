@@ -900,8 +900,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Checks if the JournalEntryModel instance can generate its own JE number.
         Conditions are:
-            * The JournalEntryModel must have a LedgerModel instance assigned.
-            * The JournalEntryModel instance must not have a pre-existing JE number.
+        * The JournalEntryModel must have a LedgerModel instance assigned.
+        * The JournalEntryModel instance must not have a pre-existing JE number.
 
         Returns
         -------

@@ -60,11 +60,11 @@ class ChartOfAccountModelManager(models.Manager):
         """
         Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
         multiple Entities. The user has access to bills if:
-            1. Is listed as Manager of Entity.
-            2. Is the Admin of the Entity.
+        1. Is listed as Manager of Entity.
+        2. Is the Admin of the Entity.
 
         Parameters
-        __________
+        ----------
         user_model
             Logged in and authenticated django UserModel instance.
 
