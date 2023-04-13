@@ -151,7 +151,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def __str__(self):
         return self.name
 
-    def is_posted(self):
+    def is_posted(self) -> bool:
         """
         Determines if the LedgerModel instance is posted.
 
@@ -162,7 +162,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.posted is True
 
-    def is_locked(self):
+    def is_locked(self) -> bool:
         """
         Determines if the LedgerModel instance is locked.
 
@@ -173,7 +173,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.locked is True
 
-    def is_hidden(self):
+    def is_hidden(self) -> bool:
         """
         Determines if the LedgerModel instance is hidden.
 
@@ -184,41 +184,50 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.hidden is True
 
-    def get_absolute_url(self):
+    def can_post(self) -> bool:
         """
-        Determines the absolute URL of the LedgerModel instance.
-        Results in additional Database query if entity field is not selected in QuerySet.
+        Determines if the LedgerModel can be marked as posted.
 
         Returns
         -------
-        str
-            URL as a string.
+        bool
+            True if can be posted, else False.
         """
-        return reverse('django_ledger:ledger-detail',
-                       kwargs={
-                           # pylint: disable=no-member
-                           'entity_slug': self.entity.slug,
-                           'ledger_pk': self.uuid
-                       })
+        return self.posted is False
 
-    def get_update_url(self):
+    def can_unpost(self) -> bool:
         """
-        Determines the update URL of the LedgerModel instance.
-        Results in additional Database query if entity field is not selected in QuerySet.
+        Determines if the LedgerModel can be un-posted.
 
         Returns
         -------
-        str
-            URL as a string.
+        bool
+            True if can be un-posted, else False.
         """
-        return reverse('django_ledger:ledger-update',
-                       kwargs={
-                           # pylint: disable=no-member
-                           'entity_slug': self.entity.slug,
-                           'ledger_pk': self.uuid
-                       })
+        return self.posted is True
 
-    # todo: mark as posted?...
+    def can_lock(self) -> bool:
+        """
+        Determines if the LedgerModel can be locked.
+
+        Returns
+        -------
+        bool
+            True if can be locked, else False.
+        """
+        return self.locked is False
+
+    def can_unlock(self) -> bool:
+        """
+        Determines if the LedgerModel can be un-locked.
+
+        Returns
+        -------
+        bool
+            True if can be un-locked, else False.
+        """
+        return self.locked is True
+
     def post(self, commit: bool = False):
         """
         Posts the LedgerModel.
@@ -228,7 +237,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        if not self.posted:
+        if self.can_post():
             self.posted = True
             if commit:
                 self.save(update_fields=[
@@ -245,7 +254,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        if self.posted:
+        if self.can_unpost():
             self.posted = False
             if commit:
                 self.save(update_fields=[
@@ -262,12 +271,13 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        self.locked = True
-        if commit:
-            self.save(update_fields=[
-                'locked',
-                'updated'
-            ])
+        if self.can_lock():
+            self.locked = True
+            if commit:
+                self.save(update_fields=[
+                    'locked',
+                    'updated'
+                ])
 
     def unlock(self, commit: bool = False):
         """
@@ -278,12 +288,46 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        self.locked = False
-        if commit:
-            self.save(update_fields=[
-                'locked',
-                'updated'
-            ])
+        if self.can_unlock():
+            self.locked = False
+            if commit:
+                self.save(update_fields=[
+                    'locked',
+                    'updated'
+                ])
+
+    def get_absolute_url(self) -> str:
+        """
+        Determines the absolute URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:ledger-detail',
+                       kwargs={
+                           # pylint: disable=no-member
+                           'entity_slug': self.entity.slug,
+                           'ledger_pk': self.uuid
+                       })
+
+    def get_update_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:ledger-update',
+                       kwargs={
+                           'entity_slug': self.entity.slug,
+                           'ledger_pk': self.uuid
+                       })
 
 
 class LedgerModel(LedgerModelAbstract):
