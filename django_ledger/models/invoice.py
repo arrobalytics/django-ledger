@@ -37,7 +37,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, LedgerWrapperMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
@@ -201,7 +201,7 @@ class InvoiceModelManager(models.Manager):
         return qs.approved()
 
 
-class InvoiceModelAbstract(LedgerWrapperMixIn,
+class InvoiceModelAbstract(AccrualMixIn,
                            PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
@@ -1544,7 +1544,7 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
             If True, commits into DB the generated InvoiceModel number if generated.
         """
 
-        super(LedgerWrapperMixIn, self).clean()
+        super(AccrualMixIn, self).clean()
         super(PaymentTermsMixIn, self).clean()
 
         if self.accrue:

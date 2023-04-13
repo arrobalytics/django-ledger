@@ -459,7 +459,7 @@ class EntityDataGenerator(LoggingMixIn):
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
             progress=Decimal(str(round(random(), 2))),
-            terms=choice(BillModel.TERMS)[0],
+            terms=choice(BillModel.TERM_CHOICES)[0],
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
@@ -655,7 +655,7 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
             progress=Decimal(str(round(random(), 2))),
-            terms=choice(InvoiceModel.TERMS)[0],
+            terms=choice(InvoiceModel.TERM_CHOICES)[0],
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),

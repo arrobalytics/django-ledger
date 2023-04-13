@@ -30,7 +30,7 @@ Ledger Model
     :members:
 
 Transaction Model
-------------
+-----------------
 .. automodule:: django_ledger.models.ledger
     :members:
 
