@@ -24,11 +24,6 @@ Account Model
 .. automodule:: django_ledger.models.accounts
     :members:
 
-Item Model
-----------
-.. automodule:: django_ledger.models.items
-    :members:
-
 Ledger Model
 ------------
 .. automodule:: django_ledger.models.ledger
@@ -59,7 +54,7 @@ Default Chart of Accounts
 .. automodule:: django_ledger.models.coa_default
     :members:
 
-Item Models
+Item Model
 -----------
 .. automodule:: django_ledger.models.items
     :members:
