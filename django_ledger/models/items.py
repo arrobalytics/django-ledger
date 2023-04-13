@@ -1159,6 +1159,18 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         return self.po_item_status == self.STATUS_RECEIVED
 
+    def is_ordered(self) -> bool:
+        """
+        Determines if the ItemModel instance is ordered.
+        ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
+
+        Returns
+        -------
+        bool
+            True if received, else False.
+        """
+        return self.po_item_status == self.STATUS_RECEIVED
+
     def is_canceled(self):
         """
         Determines if the ItemModel instance is canceled.
@@ -1295,30 +1307,67 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             self.ce_revenue_estimate = Decimal.from_float(self.ce_quantity * self.ce_unit_revenue_estimate)
 
     # HTML TAGS...
-    def html_id(self):
+    def html_id(self) -> str:
+        """
+        Unique ItemModel instance HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-{self.uuid}'
 
-    def html_id_unit_cost(self):
+    def html_id_unit_cost(self) -> str:
+        """
+        Unique ItemModel instance unit cost field HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-unit-cost-id-{self.uuid}'
 
-    def html_id_quantity(self):
+    def html_id_quantity(self) -> str:
+        """
+        Unique ItemModel instance quantity field HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-quantity-id-{self.uuid}'
 
-    def is_cancelled(self):
-        return self.po_item_status == self.STATUS_CANCELED
-
-    def can_create_bill(self):
-        # pylint: disable=no-member
+    def can_create_bill(self) -> bool:
+        """
+        Determines if the ItemModel instance can be associated with a BillModel.
+        Returns
+        -------
+        bool
+            True, if instance can be associated with a BillModel, else False.
+        """
         return self.bill_model_id is None and self.po_item_status in [
-            self.STATUS_ORDERED, self.STATUS_IN_TRANSIT, self.STATUS_RECEIVED
+            self.STATUS_ORDERED,
+            self.STATUS_IN_TRANSIT,
+            self.STATUS_RECEIVED
         ]
 
-    def get_status_css_class(self):
-        if self.po_item_status == self.STATUS_RECEIVED:
+    def get_status_css_class(self) -> str:
+        """
+        Determines the CSS Class used to represent the ItemModel instance in the UI based on its status.
+
+        Returns
+        -------
+        str
+            The CSS class as a String.
+        """
+        if self.is_received():
             return ' is-success'
-        elif self.po_item_status == self.STATUS_CANCELED:
+        elif self.is_canceled():
             return ' is-danger'
-        elif self.po_item_status == self.STATUS_ORDERED:
+        elif self.is_ordered():
             return ' is-info'
         return ' is-warning'
 
