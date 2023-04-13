@@ -176,16 +176,14 @@ class InvoiceModelManager(models.Manager):
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
-        __________
-
+        ----------
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-
         user_model
             The request UserModel to check for privileges.
 
         Returns
-        _______
+        -------
         InvoiceModelQuerySet
             A Filtered InvoiceModelQuerySet.
         """
@@ -218,65 +216,48 @@ class InvoiceModelAbstract(LedgerWrapperMixIn,
 
 
     Attributes
-    __________
-
+    ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
-
     invoice_number: str
         Auto assigned number at creation by generate_invoice_number() function.
         Prefix be customized with DJANGO_LEDGER_INVOICE_NUMBER_PREFIX setting.
         Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
-
     invoice_status: str
         Current status of the InvoiceModel. Must be one of the choices as mentioned under "INVOICE_STATUS".
         By default, the status will be "Draft"
-
     xref: str
         This is the field for capturing of any external reference number like the PO number of the buyer.
         Any other reference number like the Vendor code in buyer books may also be captured.
-
     customer: :obj:`CustomerModel`
         This is the foreign key reference to the CustomerModel from whom the purchase has been made.
-
     additional_info: dict
         Any additional metadata about the InvoiceModel may be stored here as a dictionary object.
         The data is serialized and stored as a JSON document in the Database.
-
     invoice_items:
         A foreign key reference to the list of ItemTransactionModel that make the invoice amount.
-
     ce_model: EstimateModel
         A foreign key to the InvoiceModel associated EstimateModel for overall Job/Contract tracking.
-
     date_draft: date
         The draft date represents the date when the InvoiceModel was first created.
         Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_in_review: date
         The in review date represents the date when the InvoiceModel was marked as In Review status.
         Will be null if InvoiceModel is canceled during draft status. Defaults to
         :func:`localdate <django.utils.timezone.localdate>`.
-
     date_approved: date
         The approved date represents the date when the InvoiceModel was approved.
         Will be null if InvoiceModel is canceled.
         Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_paid: date
         The paid date represents the date when the InvoiceModel was paid and amount_due equals amount_paid.
         Will be null if InvoiceModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_void: date
         The void date represents the date when the InvoiceModel was void, if applicable.
         Will be null unless InvoiceModel is void. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_canceled: date
         The canceled date represents the date when the InvoiceModel was canceled, if applicable.
         Will be null unless InvoiceModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
-    objects: InvoiceModelManager
-        Custom defined InvoiceModelManager.
     """
 
     IS_DEBIT_BALANCE = True
