@@ -126,6 +126,8 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     name = models.CharField(max_length=50, verbose_name=_('Unit of Measure Name'))
     unit_abbr = models.SlugField(max_length=10, verbose_name=_('UoM Abbreviation'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
+
+    # todo: rename to entity_model
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -1385,17 +1387,17 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
 
 class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
-    Base Unit of Measure Model from Abstract.
+    Base UnitOfMeasureModel from Abstract.
     """
 
 
 class ItemTransactionModel(ItemTransactionModelAbstract):
     """
-    Base Item Transaction Model.
+    Base ItemTransactionModel from Abstract.
     """
 
 
 class ItemModel(ItemModelAbstract):
     """
-    Base Item Model from Abstract.
+    Base ItemModel from Abstract.
     """
