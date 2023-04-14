@@ -13,9 +13,10 @@ from collections import defaultdict
 from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Union, Dict
 from uuid import UUID
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
 from django.core.validators import int_list_validator
@@ -29,6 +30,8 @@ from markdown import markdown
 from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
                               validate_io_date)
 from django_ledger.models.utils import lazy_loader
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class SlugNameMixIn(models.Model):
@@ -1086,13 +1089,20 @@ class MarkdownNotesMixIn(models.Model):
 
 class BankAccountInfoMixIn(models.Model):
     """
-    MixIn to add universal bank routing information to DjangoLedger Models.
+    Implements functionality used to add bank account details to base Django Models.
 
-    @account_number: This is the Bank Account number . Only Digits are allowed.
-    @routing_number: User defined routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)'
-    @aba_number: The American Bankers Association Number assigned to each bank.
-    @account_type: Each account will have to select from the available choices Checking, Savings or Money Market.
-    @swift_number: SWIFT electronic communications network number of the bank institution.
+    Attributes
+    ----------
+    account_number: str
+        The Bank Account number. Only Digits are allowed. Max 30 digists.
+    routing_number: str
+        Routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)'. Max 30 digists.
+    aba_number: str
+        The American Bankers Association Number assigned to each bank.
+    account_type: str
+        A choice of ACCOUNT_TYPES. Each account will have to select from the available choices Checking, Savings.
+    swift_number: str
+        SWIFT electronic communications network number of the bank institution.
     """
 
     ACCOUNT_CHECKING = 'checking'
@@ -1132,6 +1142,15 @@ class TaxInfoMixIn(models.Model):
 
 
 class TaxCollectionMixIn(models.Model):
+    """
+    Implements functionality used to add tax collection rates and or withholding to a base Django Model.
+    This field may be used to set a pre-defined withholding rate to a financial instrument, customer, vendor, etc.
+
+    Attributes
+    ----------
+    sales_tax_rate: float
+        The tax rate as a float. A Number between 0.00 and 1.00.
+    """
     sales_tax_rate = models.FloatField(default=0.00000,
                                        verbose_name=_('Sales Tax Rate'),
                                        null=True,
@@ -1146,7 +1165,12 @@ class TaxCollectionMixIn(models.Model):
 
 
 class LoggingMixIn:
+    """
+    Implements functionality used to add logging capabilities to any python class.
+    Useful for production and or testing environments.
+    """
     LOGGER_NAME_ATTRIBUTE = None
+    LOGGER_BYPASS_DEBUG = False
 
     def get_logger_name(self):
         if self.LOGGER_NAME_ATTRIBUTE is None:
@@ -1157,3 +1181,8 @@ class LoggingMixIn:
     def get_logger(self) -> logging.Logger:
         name = self.get_logger_name()
         return logging.getLogger(name)
+
+    def send_log(self, msg, level, force):
+        if self.LOGGER_BYPASS_DEBUG or settings.DEBUG or force:
+            logger = self.get_logger()
+            logger.log(msg=msg, level=level)
