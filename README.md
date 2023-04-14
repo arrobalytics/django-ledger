@@ -75,6 +75,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Hierarchical Account Model Management.
     * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
+    * High level EntityModel API implementation.
     * Chart of Accounts Import.
     * Trial Balance Import.
     * Closing entries and snapshots.
