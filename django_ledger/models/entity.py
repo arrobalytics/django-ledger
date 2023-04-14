@@ -516,6 +516,10 @@ class EntityModelAbstract(MP_Node,
     def __str__(self):
         return f'EntityModel: {self.name}'
 
+    # ## Logging ###
+    def get_logger_name(self):
+        return f'EntityModel {self.uuid}'
+
     def is_admin_user(self, user_model):
         return user_model.id == self.admin_id
 

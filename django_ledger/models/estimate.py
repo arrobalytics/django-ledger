@@ -4,6 +4,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+The EstimateModel provides the means to estimate customer requests, jobs or quotes that may ultimately be considered
+contracts, if approved. The EstimateModels will estimate revenues and costs associated with a specific scope of work
+which is documented using ItemTransactionModels.
+
+Once approved, the user may initiate purchase orders, bills and invoices that will be associated with the EstimateModel
+for tracking purposes. It is however not required to always have an EstimateModel, but recommended in order to be able
+to produce more specific financial reports associated with a specific scope of work.
 """
 from datetime import date
 from decimal import Decimal
@@ -38,7 +46,7 @@ class EstimateModelValidationError(ValidationError):
 
 class EstimateModelQuerySet(models.QuerySet):
     """
-    A custom defined QuerySet for the EstimateModel.
+    A custom-defined LedgerModelManager that implements custom QuerySet methods related to the EstimateModel.
     """
 
     def approved(self):
@@ -94,8 +102,7 @@ class EstimateModelQuerySet(models.QuerySet):
 
 class EstimateModelManager(models.Manager):
     """
-    A custom defined EstimateModelManager that will act as an interface to handling the initial DB queries
-    to the EstimateModel.
+    A custom defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
     """
 
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
@@ -149,67 +156,50 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
-
     estimate_number: str
         Auto assigned number at creation by generate_estimate_number() function.
         Prefix be customized with DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX setting.
         Includes a reference to the Fiscal Year and a sequence number. Max Length is 20.
-
     entity: EntityModel
         The EntityModel associated with te EntityModel instance.
-
     customer: CustomerModel
         The CustomerModel associated with the EstimateModel instance.
-
     title: str
         A string representing the name or title of the EstimateModel instance.
-
     status: str
         The status of the EstimateModel instance. Must be one of Draft, In Review, Approved, Completed Void or Canceled.
-
     terms: str
         The contract terms that will be associated with this EstimateModel instance.
         Choices are Fixed Price, Target Price, Time & Materials and Other.
-
     date_draft: date
         The draft date represents the date when the EstimateModel was first created. Defaults to
         :func:`localdate <django.utils.timezone.localdate>`.
-
     date_in_review: date
         The in review date represents the date when the EstimateModel was marked as In Review status.
         Will be null if EstimateModel is canceled during draft status. Defaults to
         :func:`localdate <django.utils.timezone.localdate>`.
-
     date_approved: date
         The approved date represents the date when the EstimateModel was approved.
         Will be null if EstimateModel is canceled.
         Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_completed: date
         The paid date represents the date when the EstimateModel was completed and fulfilled.
         Will be null if EstimateModel is canceled. Defaults to
         :func:`localdate <django.utils.timezone.localdate>`.
-
     date_void: date
         The void date represents the date when the EstimateModel was void, if applicable.
         Will be null unless EstimateModel is void. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     date_canceled: date
         The canceled date represents the date when the EstimateModel was canceled, if applicable.
         Will be null unless EstimateModel is canceled. Defaults to :func:`localdate <django.utils.timezone.localdate>`.
-
     revenue_estimate: Decimal
         The total estimated revenue of the EstimateModel instance.
-
     labor_estimate: Decimal
         The total labor costs estimate of the EstimateModel instance.
-
     material_estimate: Decimal
         The total material costs estimate of the EstimateModel instance.
-
     equipment_estimate: Decimal
         The total equipment costs estimate of the EstimateModel instance.
-
     other_estimate: Decimal
         the total miscellaneous costs estimate of the EstimateModel instance.
     """
@@ -999,7 +989,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     # ItemThroughModels...
     def get_itemtxs_data(self,
-                         itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+                         itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
+                         ) -> ItemTransactionModelQuerySet:
+        # todo: this needs to return an aggregate for consistency...
         """
         Returns all ItemTransactionModels associated with the EstimateModel and a total aggregate.
 
@@ -1112,7 +1104,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'updated'
             ])
 
-    def update_state(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None):
+    def update_state(self,
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
         itemtxs_qs = self.get_itemtxs_data(itemtxs_qs=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)

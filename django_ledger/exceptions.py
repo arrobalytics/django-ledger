@@ -9,6 +9,10 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.core.exceptions import ValidationError
 
 
+class DjangoLedgerConfigurationError(Exception):
+    pass
+
+
 class InvalidDateInputError(ValidationError):
     pass
 

@@ -459,7 +459,7 @@ class EntityDataGenerator(LoggingMixIn):
         bill_model: BillModel = BillModel(
             vendor=choice(self.vendor_models),
             progress=Decimal(str(round(random(), 2))),
-            terms=choice(BillModel.TERMS)[0],
+            terms=choice(BillModel.TERM_CHOICES)[0],
             amount_due=0,
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
@@ -546,14 +546,14 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info(f'Creating entity purchase order {po_model.po_number}...')
         po_items = po_model.itemtransactionmodel_set.bulk_create(po_items)
-        po_model.update_state(itemtxs_list=po_items)
+        po_model.update_state(itemtxs_qs=po_items)
         po_model.full_clean()
         po_model.save()
 
         # mark as approved...
         if random() > 0.25:
             date_review = self.get_next_date(date_draft)
-            po_model.mark_as_review(commit=True, date_review=date_review)
+            po_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.5:
                 date_approved = self.get_next_date(date_review)
                 po_model.mark_as_approved(commit=True, date_approved=date_approved)
@@ -655,7 +655,7 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model = InvoiceModel(
             customer=choice(self.customer_models),
             progress=Decimal(str(round(random(), 2))),
-            terms=choice(InvoiceModel.TERMS)[0],
+            terms=choice(InvoiceModel.TERM_CHOICES)[0],
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),

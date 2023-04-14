@@ -4,6 +4,16 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+The TransactionModel is the lowest accounting level where the financial information is recorded on the books.
+Every transaction which has an financial implication must be recorded as part of a JournalEntryModel, which in turn
+encapsulates a collection of TransactionModels. Transaction models cannot exist without being part of a validated
+JournalEntryModel. Orphan TransactionModels are not allowed, and this is enforced by the database.
+
+A transaction by definition must perform a CREDIT or a DEBIT to the underlying AccountModel. The IOMixIn plays a crucial
+role in the production of financial statements and sets its foundation in the TransactionModel API to effective query
+amd aggregate transactions at the Database layer without the need of pulling all TransactionModels into memory for the
+production of financial statements.
 """
 from datetime import datetime, date
 from typing import List, Union
@@ -24,18 +34,6 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 
-"""
-The TransactionModel is the lowest accounting level where the financial information is recorded on the books.
-Every transaction which has an financial implication must be recorded as part of a JournalEntryModel, which in turn
-encapsulates a collection of TransactionModels. Transaction models cannot exist without being part of a validated
-JournalEntryModel. Orphan TransactionModels are not allowed, and this is enforced by the database.
-
-A transaction by definition must perform a CREDIT or a DEBIT to the underlying AccountModel. The IOMixIn plays a crucial
-role in the production of financial statements and sets its foundation in the TransactionModel API to effective query
-amd aggregate transactions at the Database layer without the need of pulling all TransactionModels into memory for the
-production of financial statements.
-"""
-
 
 class TransactionModelValidationError(ValidationError):
     pass
@@ -43,7 +41,7 @@ class TransactionModelValidationError(ValidationError):
 
 class TransactionModelQuerySet(QuerySet):
     """
-    A custom defined QuerySet for the TransactionModel.
+    A custom defined EntityUnitModel Queryset.
     """
 
     def posted(self) -> QuerySet:

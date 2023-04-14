@@ -1,6 +1,6 @@
 [project]
 name = "django-ledger"
-version = "0.5.2.17"
+version = "0.5.2.18"
 readme = "README.md"
 requires-python = ">=3.7"
 description = "Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, Chart of Accounts, Entities"
@@ -12,18 +12,18 @@ maintainers = [
     { name = "Miguel Sanda", email = "msanda@arrobalytics.com" }
 ]
 dependencies = [
-    "asgiref==3.5.2; python_version >= '3.7'",
-    "django==4.1.3",
-    "django-treebeard==4.5.1",
-    "faker==15.3.3",
-    "markdown==3.4.1",
-    "ofxtools==0.9.5",
-    "pillow==9.3.0",
-    "python-dateutil==2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-    "six==1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-    "sqlparse==0.4.3; python_version >= '3.5'",
-    "text-unidecode==1.3",
-    "tzdata==2022.2; sys_platform == 'win32'",
+    "asgiref>=3.5.2; python_version >= '3.7'",
+    "django>=2.2",
+    "django-treebeard>=4.5.1",
+    "faker>=15.3.3",
+    "markdown>=3.4.1",
+    "ofxtools>=0.9.5",
+    "pillow>=9.3.0",
+    "python-dateutil>=2.8.2; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+    "six>=1.16.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+    "sqlparse>=0.4.3; python_version >= '3.5'",
+    "text-unidecode>=1.3",
+    "tzdata>=2022.2; sys_platform == 'win32'",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

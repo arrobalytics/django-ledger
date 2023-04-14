@@ -97,22 +97,17 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
 
 
     Attributes
-    __________
+    ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
-
     name: str
         A user defined name for the bank account as a String.
-
     entity_model: EntityModel
         The EntityModel associated with the BankAccountModel instance.
-
     cash_account: AccountModel
         The AccountModel associated with the BankAccountModel instance. Must be an account with role ASSET_CA_CASH.
-
     active: bool
         Determines whether the BackAccountModel instance bank account is active. Defaults to True.
-
     hidden: bool
         Determines whether the BackAccountModel instance bank account is hidden. Defaults to False.
     """

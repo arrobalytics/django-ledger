@@ -29,6 +29,7 @@ class LazyLoader:
     TRANSACTION_MODEL = None
     ENTITY_UNIT_MODEL = None
     PURCHASE_ORDER_MODEL = None
+    ESTIMATE_MODEL = None
 
     def get_entity_model(self):
         if not self.ENTITY_MODEL:
@@ -137,6 +138,12 @@ class LazyLoader:
             from django_ledger.models import EntityUnitModel
             self.ENTITY_UNIT_MODEL = EntityUnitModel
         return self.ENTITY_UNIT_MODEL
+
+    def get_estimate_model(self):
+        if not self.ESTIMATE_MODEL:
+            from django_ledger.models import EstimateModel
+            self.ESTIMATE_MODEL = EstimateModel
+        return self.ESTIMATE_MODEL
 
 
 lazy_loader = LazyLoader()

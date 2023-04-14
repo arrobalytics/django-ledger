@@ -1,37 +1,4 @@
-type Query {
-  allCoa(slug: String!): [ChartOfAccountsModelListNode]
-  allEntityList: [EntityModelListNode]
-  visibleEntityList: [EntityModelListNode]
-  hiddenEntityList: [EntityModelListNode]
-  managedEntityList: [EntityModelListNode]
-  adminEntityList: [EntityModelListNode]
-  entityDetailByUuid(uuid: String!): EntityModelDetailNode
-  entityDetailBySlug(slug: String!): EntityModelDetailNode
-}
-
-type ChartOfAccountsModelListNode implements Node {
-  slug: String!
-  name: String
-  uuid: UUID!
-  locked: Boolean!
-
-  """The ID of the object"""
-  id: ID!
-}
-
-"""An object with an ID"""
-interface Node {
-  """The ID of the object"""
-  id: ID!
-}
-
-"""
-Leverages the internal Python implementation of UUID (uuid.UUID) to provide native UUID objects
-in fields, resolvers and input.
-"""
-scalar UUID
-
-type EntityModelListNode implements Node {
+type EntityModelType implements Node {
   slug: String!
   created: DateTime!
   updated: DateTime
@@ -47,12 +14,24 @@ type EntityModelListNode implements Node {
   isAdmin: Boolean
 }
 
+"""An object with an ID"""
+interface Node {
+  """The ID of the object"""
+  id: ID!
+}
+
 """
 The `DateTime` scalar type represents a DateTime
 value as specified by
 [iso8601](https://en.wikipedia.org/wiki/ISO_8601).
 """
 scalar DateTime
+
+"""
+Leverages the internal Python implementation of UUID (uuid.UUID) to provide native UUID objects
+in fields, resolvers and input.
+"""
+scalar UUID
 
 enum DjangoLedgerEntityModelFyStartMonthChoices {
   """January"""
@@ -92,7 +71,27 @@ enum DjangoLedgerEntityModelFyStartMonthChoices {
   A_12
 }
 
-type EntityModelDetailNode {
+type ChartOfAccountsModelType implements Node {
+  slug: String!
+  name: String
+  uuid: UUID!
+  locked: Boolean!
+
+  """The ID of the object"""
+  id: ID!
+}
+
+type Query {
+  entityModelListAll: [EntityModelType]
+  entityModelListVisible: [EntityModelType]
+  entityModelListHidden: [EntityModelType]
+  entityModelListManaged: [EntityModelType]
+  entityModelListIsAdmin: [EntityModelType]
+  entityModelDetailByUuid(uuid: String!): EntityModelTypeDetail
+  entityModelDetailBySlug(slug: String!): EntityModelTypeDetail
+}
+
+type EntityModelTypeDetail {
   slug: String!
   created: DateTime!
   updated: DateTime
@@ -102,6 +101,6 @@ type EntityModelDetailNode {
   accrualMethod: Boolean!
   fyStartMonth: DjangoLedgerEntityModelFyStartMonthChoices!
   picture: String
-  defaultCoa: ChartOfAccountsModelListNode
+  defaultCoa: ChartOfAccountsModelType
   isAdmin: Boolean
 }

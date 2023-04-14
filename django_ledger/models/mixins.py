@@ -3,15 +3,20 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+
+This module implements the different model MixIns used on different Django Ledger Models to implement common
+functionality.
 """
 import logging
 from collections import defaultdict
 from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union
+from typing import Optional, Union, Dict
+from uuid import UUID
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
 from django.core.validators import int_list_validator
@@ -22,12 +27,24 @@ from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE, \
-    validate_io_date
+from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
+                              validate_io_date)
 from django_ledger.models.utils import lazy_loader
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class SlugNameMixIn(models.Model):
+    """
+    Implements a slug field and a name field to a base Django Model.
+
+    Attributes
+    ----------
+    slug: str
+        A unique slug field to use as an index. Validates that the slug is at least 10 characters long.
+    name: str
+        A human-readable name for display purposes. Maximum 150 characters.
+    """
     slug = models.SlugField(max_length=50,
                             editable=False,
                             unique=True,
@@ -40,14 +57,17 @@ class SlugNameMixIn(models.Model):
     class Meta:
         abstract = True
 
-    def __str__(self):
-        # pylint: disable=invalid-str-returned
-        return self.slug
-
 
 class CreateUpdateMixIn(models.Model):
     """
-    The create and update mixin!
+    Implements a created and an updated field to a base Django Model.
+
+    Attributes
+    ----------
+    created: datetime
+        A created timestamp. Defaults to now().
+    updated: str
+        An updated timestamp used to identify when models are updated.
     """
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True, null=True, blank=True)
@@ -57,6 +77,30 @@ class CreateUpdateMixIn(models.Model):
 
 
 class ContactInfoMixIn(models.Model):
+    """
+    Implements a common set of fields used to document contact information.
+
+    Attributes
+    ----------
+    address_1: str
+        A string used to document the first line of an address. Mandatory. Max length is 70.
+    address_2: str
+        A string used to document the first line of an address. Optional.
+    city: str
+        A string used to document the city. Optional.
+    state: str
+        A string used to document the State of Province. Optional.
+    zip_code: str
+        A string used to document the ZIP code. Optional
+    country: str
+       A string used to document the country. Optional.
+    email: str
+        A string used to document the contact email. Uses django's EmailField for validation.
+    website: str
+        A string used to document the contact website. Uses django's URLField for validation.
+    phone: str
+        A string used to document the contact phone.
+    """
     address_1 = models.CharField(max_length=70, verbose_name=_('Address Line 1'))
     address_2 = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('Address Line 2'))
     city = models.CharField(null=True, blank=True, max_length=70, verbose_name=_('City'))
@@ -80,10 +124,38 @@ class ContactInfoMixIn(models.Model):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
 
 
-class LedgerWrapperMixIn(models.Model):
+class AccrualMixIn(models.Model):
     """
-    The Ledger wrapper!
+    Implements functionality used to track accruable financial instruments to a base Django Model.
+    Examples of this include bills and invoices expenses/income, that depending on the Entity's accrual method, may
+    be recognized on the Income Statement differently.
 
+    Attributes
+    ----------
+    amount_due: Decimal
+        The total amount due of the financial instrument.
+    amount_paid: Decimal
+        The total amount paid or settled.
+    amount_receivable: Decimal
+        The total amount allocated to Accounts Receivable based on the progress.
+    amount_unearned: Decimal
+        The total amount allocated to Accounts Payable based on the progress.
+    amount_earned:
+        The total amount that is recognized on the earnings based on progress.
+    accrue: bool
+        If True, the financial instrument will follow the Accrual Method of Accounting, otherwise it will follow the
+        Cash Method of Accounting. Defaults to the EntityModel preferred method of accounting.
+    progress: Decimal
+        A decimal number representing the amount of progress of the financial instrument. Value is between 0.00 and 1.00.
+    ledger: LedgerModel
+        The LedgerModel associated with the Accruable financial instrument.
+    cash_account: AccountModel
+        The AccountModel used to track cash payments to the financial instrument. Must be of role ASSET_CA_CASH.
+    prepaid_account: AccountModel
+        The AccountModel used to track receivables to the financial instrument. Must be of role ASSET_CA_PREPAID.
+    unearned_account: AccountModel
+        The AccountModel used to track receivables to the financial instrument. Must be of role
+        LIABILITY_CL_DEFERRED_REVENUE.
     """
     IS_DEBIT_BALANCE = None
     REL_NAME_PREFIX = None
@@ -124,7 +196,7 @@ class LedgerWrapperMixIn(models.Model):
 
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
-    # todo: change progress method from percent to currency amount...
+    # todo: change progress method from percent to currency amount and FloatField??...
     progress = models.DecimalField(default=0,
                                    verbose_name=_('Progress Amount'),
                                    decimal_places=2,
@@ -134,6 +206,7 @@ class LedgerWrapperMixIn(models.Model):
                                        MaxValueValidator(limit_value=1)
                                    ])
 
+    # todo: rename to ledger_model...
     ledger = models.OneToOneField('django_ledger.LedgerModel',
                                   editable=False,
                                   verbose_name=_('Ledger'),
@@ -161,7 +234,15 @@ class LedgerWrapperMixIn(models.Model):
         abstract = True
 
     # STATES..
-    def is_configured(self):
+    def is_configured(self) -> bool:
+        """
+        Determines if the accruable financial instrument is properly configured.
+
+        Returns
+        -------
+        bool
+            True if configured, else False.
+        """
         return all([
             self.ledger_id is not None,
             self.cash_account_id is not None,
@@ -170,77 +251,152 @@ class LedgerWrapperMixIn(models.Model):
         ])
 
     def is_posted(self):
+        """
+        Determines if the accruable financial instrument is posted.
+        Results in additional Database query if 'ledger' field is not pre-fetch on QuerySet.
+
+        Returns
+        -------
+        bool
+            True if posted, else False.
+        """
         return self.ledger.posted
 
     # OTHERS...
-    def get_progress(self):
+    def get_progress(self) -> Union[Decimal, float]:
+        """
+        Determines the progress amount based on amount due, amount paid and accrue field.
+
+        Returns
+        -------
+        Decimal
+            Financial instrument progress as a Decimal.
+        """
         if self.accrue:
             return self.progress
         if not self.amount_due:
-            return 0
-        return (self.amount_paid or 0) / self.amount_due
+            return Decimal.from_float(0.00)
+        return (self.amount_paid or Decimal.from_float(0.00)) / self.amount_due
 
-    def get_progress_percent(self):
+    def get_progress_percent(self) -> float:
+        """
+        Determines the progress amount as percent based on amount due, amount paid and accrue field.
+
+        Returns
+        -------
+        float
+            Financial instrument progress as a percent.
+        """
         return round(self.get_progress() * 100, 2)
 
-    def get_amount_cash(self):
+    def get_amount_cash(self) -> Union[Decimal, float]:
+        """
+        Determines the impact to the EntityModel cash balance based on the financial instrument debit or credit
+        configuration. i.e, Invoices are debit financial instrument because payments to invoices increase cash.
+
+        Returns
+        -------
+        float
+            Financial instrument progress as a percent.
+        """
         if self.IS_DEBIT_BALANCE:
             return self.amount_paid
         elif not self.IS_DEBIT_BALANCE:
             return -self.amount_paid
 
-    def get_amount_earned(self):
+    def get_amount_earned(self) -> Union[Decimal, float]:
+        """
+        Determines the impact to the EntityModel earnings based on financial instrument progress.
+
+        Returns
+        -------
+        float or Decimal
+            Financial instrument amount earned.
+        """
         if self.accrue:
-            amount_due = self.amount_due or 0
+            amount_due = self.amount_due or Decimal.from_float(0.00)
             return self.get_progress() * amount_due
         else:
-            return self.amount_paid or 0
+            return self.amount_paid or Decimal.from_float(0.00)
 
-    def get_amount_prepaid(self):
-        payments = self.amount_paid or 0
+    def get_amount_prepaid(self) -> Union[Decimal, float]:
+        """
+        Determines the impact to the EntityModel Accounts Receivable based on financial instrument progress.
+
+        Returns
+        -------
+        float or Decimal
+            Financial instrument amount prepaid.
+        """
+        payments = self.amount_paid or Decimal.from_float(0.00)
         if self.accrue:
             amt_earned = self.get_amount_earned()
-            if all([self.IS_DEBIT_BALANCE,
-                    amt_earned >= payments]):
+            if all([
+                self.IS_DEBIT_BALANCE,
+                amt_earned >= payments
+            ]):
                 return self.get_amount_earned() - payments
-            elif all([not self.IS_DEBIT_BALANCE,
-                      amt_earned <= payments]):
+            elif all([
+                not self.IS_DEBIT_BALANCE,
+                amt_earned <= payments
+            ]):
                 return payments - self.get_amount_earned()
-        return 0
+        return Decimal.from_float(0.00)
 
-    def get_amount_unearned(self):
+    def get_amount_unearned(self) -> Union[Decimal, float]:
+        """
+        Determines the impact to the EntityModel Accounts Payable based on financial instrument progress.
+
+        Returns
+        -------
+        float or Decimal
+            Financial instrument amount unearned.
+        """
         if self.accrue:
             amt_earned = self.get_amount_earned()
-            if all([self.IS_DEBIT_BALANCE,
-                    amt_earned <= self.amount_paid]):
+            if all([
+                self.IS_DEBIT_BALANCE,
+                amt_earned <= self.amount_paid
+            ]):
                 return self.amount_paid - amt_earned
-            elif all([not self.IS_DEBIT_BALANCE,
-                      amt_earned >= self.amount_paid]):
+            elif all([
+                not self.IS_DEBIT_BALANCE,
+                amt_earned >= self.amount_paid
+            ]):
                 return amt_earned - self.amount_paid
-        return 0
+        return Decimal.from_float(0.00)
 
-    def get_amount_open(self):
+    def get_amount_open(self) -> Union[Decimal, float]:
+        """
+        Determines the open amount left to be progressed.
+
+        Returns
+        -------
+        float or Decimal
+            Financial instrument amount open.
+        """
         if self.accrue:
-            amount_due = self.amount_due or 0
+            amount_due = self.amount_due or 0.00
             return amount_due - self.get_amount_earned()
-        else:
-            amount_due = self.amount_due or 0
-            payments = self.amount_paid or 0
-            return amount_due - payments
+        amount_due = self.amount_due or 0.00
+        payments = self.amount_paid or 0.00
+        return amount_due - payments
 
-    def get_migration_data(self, queryset=None):
-        raise NotImplementedError('Must implement get_account_balance_data method.')
+    def get_migration_data(self, queryset: QuerySet = None):
+        raise NotImplementedError('Must implement get_migration_data method.')
 
     def get_migrate_state_desc(self, *args, **kwargs):
-        """
-        Must be implemented.
-        :return:
-        """
+        raise NotImplementedError('Must implement get_migrate_state_desc method.')
 
     def can_migrate(self) -> bool:
         """
-        Function returning if model state can be migrated to related accounts.
-        :return:
+        Determines if the Accruable financial instrument can be migrated to the books.
+        Results in additional Database query if 'ledger' field is not pre-fetch on QuerySet.
+
+        Returns
+        -------
+        bool
+            True if can migrate, else False.
         """
         if not self.ledger_id:
             return False
@@ -249,14 +405,51 @@ class LedgerWrapperMixIn(models.Model):
     def get_tx_type(self,
                     acc_bal_type: dict,
                     adjustment_amount: Decimal):
+        """
+        Determines the transaction type associated with an increase/decrease of an account balance of the financial
+        instrument.
 
-        if adjustment_amount:
-            acc_bal_type = acc_bal_type[0]
-            d_or_i = 'd' if adjustment_amount < 0 else 'i'
-            return self.TX_TYPE_MAPPING[acc_bal_type + d_or_i]
-        return 'debit'
+        Parameters
+        ----------
+        acc_bal_type:
+            The balance type of the account to be adjusted.
+        adjustment_amount: Decimal
+            The adjustment, whether positive or negative.
 
-    def split_amount(self, amount: float, unit_split: dict, account_uuid, account_balance_type) -> dict:
+        Returns
+        -------
+        str
+            The transaction type of the account adjustment.
+        """
+        acc_bal_type = acc_bal_type[0]
+        d_or_i = 'd' if adjustment_amount < 0.00 else 'i'
+        return self.TX_TYPE_MAPPING[acc_bal_type + d_or_i]
+
+    @classmethod
+    def split_amount(cls, amount: Union[Decimal, float],
+                     unit_split: Dict,
+                     account_uuid: UUID,
+                     account_balance_type: str) -> Dict:
+        """
+        Splits an amount into different proportions representing the unit splits.
+        Makes sure that 100% of the amount is numerically allocated taking into consideration decimal points.
+
+        Parameters
+        ----------
+        amount: Decimal or float
+            The amount to be split.
+        unit_split: dict
+            A dictionary with information related to each unit split and proportions.
+        account_uuid: UUID
+            The AccountModel UUID associated with the splits.
+        account_balance_type: str
+            The AccountModel balance type to determine whether to perform a credit or a debit.
+
+        Returns
+        -------
+        dict
+            A dictionary with the split information.
+        """
         running_alloc = 0
         SPLIT_LEN = len(unit_split) - 1
         split_results = dict()
@@ -271,6 +464,16 @@ class LedgerWrapperMixIn(models.Model):
 
     # LOCK/UNLOCK Ledger...
     def lock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        """
+        Convenience method to lock the LedgerModel associated with the Accruable financial instrument.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the transaction in the database. Defaults to False.
+        raise_exception: bool
+            If True, raises ValidationError if LedgerModel already locked.
+        """
         ledger_model = self.ledger
         if ledger_model.locked:
             if raise_exception:
@@ -278,6 +481,16 @@ class LedgerWrapperMixIn(models.Model):
         ledger_model.lock(commit)
 
     def unlock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        """
+        Convenience method to un-lock the LedgerModel associated with the Accruable financial instrument.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the transaction in the database. Defaults to False.
+        raise_exception: bool
+            If True, raises ValidationError if LedgerModel already locked.
+        """
         ledger_model = self.ledger
         if not ledger_model.locked:
             if raise_exception:
@@ -286,6 +499,16 @@ class LedgerWrapperMixIn(models.Model):
 
     # POST/UNPOST Ledger...
     def post_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        """
+        Convenience method to post the LedgerModel associated with the Accruable financial instrument.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the transaction in the database. Defaults to False.
+        raise_exception: bool
+            If True, raises ValidationError if LedgerModel already locked.
+        """
         ledger_model = self.ledger
         if ledger_model.posted:
             if raise_exception:
@@ -293,6 +516,16 @@ class LedgerWrapperMixIn(models.Model):
         ledger_model.post(commit)
 
     def unpost_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        """
+        Convenience method to un-lock the LedgerModel associated with the Accruable financial instrument.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the transaction in the database. Defaults to False.
+        raise_exception: bool
+            If True, raises ValidationError if LedgerModel already locked.
+        """
         ledger_model = self.ledger
         if not ledger_model.posted:
             if raise_exception:
@@ -302,14 +535,44 @@ class LedgerWrapperMixIn(models.Model):
     def migrate_state(self,
                       user_model,
                       entity_slug: str,
-                      itemtxs_qs: QuerySet = None,
+                      itemtxs_qs: Optional[QuerySet] = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
-                      je_date: Union[str, date, datetime] = None,
-                      verify_journal_entries: bool = True,
+                      je_date: Optional[Union[str, date, datetime]] = None,
                       raise_exception: bool = True,
                       **kwargs):
+
+        """
+        Migrates the current Accruable financial instrument into the books. The main objective of the migrate_state
+        method is to determine the JournalEntry and TransactionModels necessary to accurately reflect the financial
+        instrument state in the books.
+
+        Parameters
+        ----------
+        user_model
+            The Django User Model.
+        entity_slug: str
+            The EntityModel slug.
+        itemtxs_qs: ItemTransactionModelQuerySet
+            The pre-fetched ItemTransactionModelQuerySet containing the item information associated with the financial
+            element migration. If provided, will avoid additional database query.
+        force_migrate: bool
+            Forces migration of the financial instrument bypassing the can_migrate() check.
+        commit: bool
+            If True the migration will be committed in the database. Defaults to True.
+        void: bool
+            If True, the migration will perform a VOID actions of the financial instrument.
+        je_date: date
+            The JournalEntryModel date to be used for this migration.
+        raise_exception: bool
+            Raises ValidationError if migration is not allowed. Defaults to True.
+
+        Returns
+        -------
+        tuple
+            A tuple of the ItemTransactionModel and the Digest Result from IOMixIn.
+        """
 
         if self.can_migrate() or force_migrate:
 
@@ -510,38 +773,63 @@ class LedgerWrapperMixIn(models.Model):
                 balance_tx_data(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
-                if verify_journal_entries:
-                    for _, je in je_list.items():
-                        # will independently verify and populate appropriate activity for JE.
-                        je.clean(verify=True)
-                        if je.is_verified():
-                            je.mark_as_posted(commit=False, verify=False, raise_exception=True)
-                            je.mark_as_locked(commit=False, raise_exception=True)
+                for _, je in je_list.items():
+                    # will independently verify and populate appropriate activity for JE.
+                    je.clean(verify=True)
+                    if je.is_verified():
+                        je.mark_as_posted(commit=False, verify=False, raise_exception=True)
+                        je.mark_as_locked(commit=False, raise_exception=True)
 
-                    if all([je.is_verified() for _, je in je_list.items()]):
-                        # only if all JEs have been verified will be posted and locked...
-                        JournalEntryModel.objects.bulk_update(
-                            objs=[je for _, je in je_list.items()],
-                            fields=['posted', 'locked', 'activity']
-                        )
+                if all([je.is_verified() for _, je in je_list.items()]):
+                    # only if all JEs have been verified will be posted and locked...
+                    JournalEntryModel.objects.bulk_update(
+                        objs=[je for _, je in je_list.items()],
+                        fields=['posted', 'locked', 'activity']
+                    )
 
-            return item_data, digest_data
+            return item_data, txs_digest
         else:
             if raise_exception:
                 raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
-    def void_state(self, commit: bool = False):
+    def void_state(self, commit: bool = False) -> Dict:
+        """
+        Determines the VOID state of the financial instrument.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the new financial instrument state into the model.
+
+        Returns
+        -------
+        dict
+            A dictionary with new amount_paid, amount_receivable, amount_unearned and amount_earned as keys.
+        """
         void_state = {
-            'amount_paid': Decimal.from_float(0.0),
-            'amount_receivable': Decimal.from_float(0.0),
-            'amount_unearned': Decimal.from_float(0.0),
-            'amount_earned': Decimal.from_float(0.0),
+            'amount_paid': Decimal.from_float(0.00),
+            'amount_receivable': Decimal.from_float(0.00),
+            'amount_unearned': Decimal.from_float(0.00),
+            'amount_earned': Decimal.from_float(0.00),
         }
         if commit:
             self.update_state(void_state)
         return void_state
 
     def new_state(self, commit: bool = False):
+        """
+        Determines the new state of the financial instrument based on progress.
+
+        Parameters
+        ----------
+        commit: bool
+            Commits the new financial instrument state into the model.
+
+        Returns
+        -------
+        dict
+            A dictionary with new amount_paid, amount_receivable, amount_unearned and amount_earned as keys.
+        """
         new_state = {
             'amount_paid': self.get_amount_cash(),
             'amount_receivable': self.get_amount_prepaid(),
@@ -552,7 +840,15 @@ class LedgerWrapperMixIn(models.Model):
             self.update_state(new_state)
         return new_state
 
-    def update_state(self, state: dict = None):
+    def update_state(self, state: Optional[Dict] = None):
+        """
+        Updates the state on the financial instrument.
+
+        Parameters
+        ----------
+        state: dict
+            Optional user provided state to use.
+        """
         if not state:
             state = self.new_state()
         self.amount_paid = abs(state['amount_paid'])
@@ -596,13 +892,13 @@ class LedgerWrapperMixIn(models.Model):
                 raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
         if self.accrue and self.progress is None:
-            self.progress = 0
+            self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
 
         if self.is_paid():
-            self.progress = Decimal(1.0)
+            self.progress = Decimal.from_float(1.0)
             self.amount_paid = self.amount_due
             today = localdate()
 
@@ -622,7 +918,7 @@ class LedgerWrapperMixIn(models.Model):
             ]):
                 raise ValidationError('Voided element cannot have any balance.')
 
-            self.progress = 0
+            self.progress = Decimal.from_float(0.00)
 
         if self.can_migrate():
             self.update_state()
@@ -630,7 +926,15 @@ class LedgerWrapperMixIn(models.Model):
 
 class PaymentTermsMixIn(models.Model):
     """
-    Payment Terms MixIn!
+    Implements functionality used to track dates relate to various payment terms.
+    Examples of this include tracking bills and invoices that are due on receipt, 30, 60 or 90 days after they are
+    approved.
+
+    Attributes
+    ----------
+    terms: str
+        A choice of TERM_CHOICES that determines the payment terms.
+
     """
     TERMS_ON_RECEIPT = 'on_receipt'
     TERMS_NET_30 = 'net_30'
@@ -638,35 +942,103 @@ class PaymentTermsMixIn(models.Model):
     TERMS_NET_90 = 'net_90'
     TERMS_NET_90_PLUS = 'net_90+'
 
-    TERMS = [
+    TERM_CHOICES = [
         (TERMS_ON_RECEIPT, 'Due On Receipt'),
         (TERMS_NET_30, 'Net 30 Days'),
         (TERMS_NET_60, 'Net 60 Days'),
         (TERMS_NET_90, 'Net 90 Days'),
     ]
 
+    TERM_DAYS_MAPPING = {
+        TERMS_ON_RECEIPT: 0,
+        TERMS_NET_30: 30,
+        TERMS_NET_60: 60,
+        TERMS_NET_90: 90,
+        TERMS_NET_90_PLUS: 120
+    }
+
     terms = models.CharField(max_length=10,
                              default='on_receipt',
-                             choices=TERMS,
+                             choices=TERM_CHOICES,
                              verbose_name=_('Terms'))
     date_due = models.DateField(verbose_name=_('Due Date'), null=True, blank=True)
 
     class Meta:
         abstract = True
 
-    def get_terms_start_date(self) -> Optional[date]:
+    def get_terms_start_date(self) -> date:
+        """
+        Determines the start date for the terms of payment.
+
+        Returns
+        -------
+        date
+            The date when terms of payment starts.
+        """
         raise NotImplementedError(
             f'Must implement get_terms_start_date() for {self.__class__.__name__}'
         )
 
+    def get_terms_net_90_plus(self) -> int:
+        """
+        Determines the number of days for 90+ days terms of payment.
+
+        Returns
+        -------
+        date
+            The date when terms of payment starts.
+        """
+        return 120
+
+    def get_terms_timedelta_days(self) -> int:
+        """
+        Determines the number of days from the terms start date.
+
+        Returns
+        -------
+        int
+            The number of days as integer.
+        """
+        if self.terms == self.TERMS_NET_90_PLUS:
+            return self.get_terms_net_90_plus()
+        return self.TERM_DAYS_MAPPING[self.terms]
+
+    def get_terms_timedelta(self) -> timedelta:
+        """
+        Calculates a timedelta relative to the terms start date.
+
+        Returns
+        -------
+        timedelta
+            Timedelta relative to terms start date.
+        """
+        return timedelta(days=self.get_terms_timedelta_days())
+
     def due_in_days(self) -> Optional[int]:
+        """
+        Determines how many days until the due date.
+
+        Returns
+        -------
+        int
+            Days as integer.
+        """
         if self.date_due:
             td = self.date_due - localdate()
             if td.days < 0:
                 return 0
             return td.days
 
+    # todo: is this necessary?...
     def net_due_group(self):
+        """
+        Determines the group where the financial instrument falls based on the number of days until the due date.
+
+        Returns
+        -------
+        str
+            The terms group as a string.
+        """
         due_in = self.due_in_days()
         if due_in == 0:
             return self.TERMS_ON_RECEIPT
@@ -682,15 +1054,19 @@ class PaymentTermsMixIn(models.Model):
         terms_start_date = self.get_terms_start_date()
         if terms_start_date:
             if self.terms != self.TERMS_ON_RECEIPT:
-                # pylint: disable=no-member
-                self.date_due = terms_start_date + timedelta(days=int(self.terms.split('_')[-1]))
+                self.date_due = terms_start_date + self.get_terms_timedelta()
             else:
                 self.date_due = terms_start_date
 
 
 class MarkdownNotesMixIn(models.Model):
     """
-    MarkDown Notes MixIn!
+    Implements functionality used to add a Mark-Down notes to a base Django Model.
+
+    Attributes
+    ----------
+    markdown_notes: str
+        A string of text representing the mark-down document.
     """
     markdown_notes = models.TextField(blank=True, null=True, verbose_name=_('Markdown Notes'))
 
@@ -698,6 +1074,14 @@ class MarkdownNotesMixIn(models.Model):
         abstract = True
 
     def notes_html(self):
+        """
+        Compiles the markdown_notes field into html.
+
+        Returns
+        -------
+        str
+            Compiled HTML document as a string.
+        """
         if not self.markdown_notes:
             return ''
         return markdown(force_str(self.markdown_notes))
@@ -705,13 +1089,20 @@ class MarkdownNotesMixIn(models.Model):
 
 class BankAccountInfoMixIn(models.Model):
     """
-    MixIn to add universal bank routing information to DjangoLedger Models.
+    Implements functionality used to add bank account details to base Django Models.
 
-    @account_number: This is the Bank Account number . Only Digits are allowed.
-    @routing_number: User defined routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)'
-    @aba_number: The American Bankers Association Number assigned to each bank.
-    @account_type: Each account will have to select from the available choices Checking, Savings or Money Market.
-    @swift_number: SWIFT electronic communications network number of the bank institution.
+    Attributes
+    ----------
+    account_number: str
+        The Bank Account number. Only Digits are allowed. Max 30 digists.
+    routing_number: str
+        Routing number for the concerned bank account. Also called as 'Routing Transit Number (RTN)'. Max 30 digists.
+    aba_number: str
+        The American Bankers Association Number assigned to each bank.
+    account_type: str
+        A choice of ACCOUNT_TYPES. Each account will have to select from the available choices Checking, Savings.
+    swift_number: str
+        SWIFT electronic communications network number of the bank institution.
     """
 
     ACCOUNT_CHECKING = 'checking'
@@ -751,6 +1142,15 @@ class TaxInfoMixIn(models.Model):
 
 
 class TaxCollectionMixIn(models.Model):
+    """
+    Implements functionality used to add tax collection rates and or withholding to a base Django Model.
+    This field may be used to set a pre-defined withholding rate to a financial instrument, customer, vendor, etc.
+
+    Attributes
+    ----------
+    sales_tax_rate: float
+        The tax rate as a float. A Number between 0.00 and 1.00.
+    """
     sales_tax_rate = models.FloatField(default=0.00000,
                                        verbose_name=_('Sales Tax Rate'),
                                        null=True,
@@ -765,7 +1165,12 @@ class TaxCollectionMixIn(models.Model):
 
 
 class LoggingMixIn:
+    """
+    Implements functionality used to add logging capabilities to any python class.
+    Useful for production and or testing environments.
+    """
     LOGGER_NAME_ATTRIBUTE = None
+    LOGGER_BYPASS_DEBUG = False
 
     def get_logger_name(self):
         if self.LOGGER_NAME_ATTRIBUTE is None:
@@ -776,3 +1181,8 @@ class LoggingMixIn:
     def get_logger(self) -> logging.Logger:
         name = self.get_logger_name()
         return logging.getLogger(name)
+
+    def send_log(self, msg, level, force):
+        if self.LOGGER_BYPASS_DEBUG or settings.DEBUG or force:
+            logger = self.get_logger()
+            logger.log(msg=msg, level=level)

@@ -9,7 +9,7 @@ Contributions to this module:
 default_app_config = 'django_ledger.apps.DjangoLedgerConfig'
 
 """Django Ledger"""
-__version__ = '0.5.2.17'
+__version__ = '0.5.2.18'
 __license__ = 'GPLv3 License'
 
 __author__ = 'Miguel Sanda'

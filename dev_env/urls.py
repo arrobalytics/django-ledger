@@ -1,4 +1,4 @@
-from django.conf.global_settings import DEBUG
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 
@@ -13,10 +13,10 @@ urlpatterns = [
 try:
     if DJANGO_LEDGER_GRAPHQL_ENABLED:
         from django_ledger.contrib.django_ledger_graphene.api import schema
-        from django_ledger.contrib.django_ledger_graphene.views import ProtectedOAuth2GraphQLView
+        from django_ledger.contrib.django_ledger_graphene.views import DjangoLedgerOAuth2GraphQLView
 
         urlpatterns += [
-            path('api/v1/graphql/', ProtectedOAuth2GraphQLView.as_view(graphiql=DEBUG, schema=schema)),
+            path('api/v1/graphql/', DjangoLedgerOAuth2GraphQLView.as_view(graphiql=settings.DEBUG, schema=schema)),
             path('api/v1/o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
         ]
 

@@ -230,42 +230,33 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     The base implementation of the JournalEntryModel.
 
     Attributes
-    __________
-    uuid : UUID
+    ----------
+    uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
-
     je_number: str
         A unique, sequential, human-readable alphanumeric Journal Entry Number (a.k.a Voucher or Document Number in
         other commercial bookkeeping software). Contains the fiscal year under which the JE takes place within the
         EntityModel as a prefix.
-
     timestamp: datetime
         The date of the JournalEntryModel. This date is applied to all TransactionModels contained within the JE, and
         drives the financial statements of the EntityModel.
-
     description: str
         A user defined description for the JournalEntryModel.
-
     entity_unit: EntityUnitModel
         A logical, self-contained, user defined class or structure defined withing the EntityModel.
         See EntityUnitModel documentation for more details.
-
     activity: str
         Programmatically determined based on the JE transactions and must be a value from ACTIVITIES. Gives
         additional insight of the nature of the JournalEntryModel in order to produce the Statement of Cash Flows for the
         EntityModel.
-
     origin: str
         A string giving additional information behind the origin or trigger of the JournalEntryModel.
         For example: reconciliations, migrations, auto-generated, etc. Any string value is valid. Max 30 characters.
-
     posted: bool
         Determines if the JournalLedgerModel is posted, which means is affecting the books. Defaults to False.
-
     locked: bool
         Determines  if the JournalEntryModel is locked, which the creation or updates of new transactions are not
         allowed.
-
     ledger: LedgerModel
         The LedgerModel associated with this JournalEntryModel. Cannot be null.
     """
@@ -900,8 +891,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Checks if the JournalEntryModel instance can generate its own JE number.
         Conditions are:
-            * The JournalEntryModel must have a LedgerModel instance assigned.
-            * The JournalEntryModel instance must not have a pre-existing JE number.
+        * The JournalEntryModel must have a LedgerModel instance assigned.
+        * The JournalEntryModel instance must not have a pre-existing JE number.
 
         Returns
         -------

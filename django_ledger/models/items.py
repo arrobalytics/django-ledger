@@ -3,34 +3,43 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Pranav P Tulshyan <ptulshyan77@gmail.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan <ptulshyan77@gmail.com>
 
+The Items refer to the additional detail provided to Bills, Invoices, Purchase Orders and Estimates for the purposes of
+documenting a breakdown of materials, labor, equipment, and other resources used for the purposes of the business
+operations.
+
+The items associated with any of the aforementioned models are responsible for calculating the different amounts
+that ultimately drive the behavior of Journal Entries onto the company books.
+
+Each item must be assigned a UnitOfMeasureModel which is the way or method used to quantify such resource. Examples
+are Pounds, Gallons, Man Hours, etc used to measure how resources are quantified when associated with a specific
+ItemTransactionModel. If many unit of measures are used for the same item, it would constitute a different item hence a
+new record must be created.
+
+ItemsTransactionModels constitute the way multiple items and used resources are associated with Bills, Invoices,
+Purchase Orders and Estimates. Each transaction will record the unit of measure and quantity of each resource.
+Totals will be calculated and associated with the containing model at the time of update.
 """
 from decimal import Decimal
 from string import ascii_lowercase, digits
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When, QuerySet
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
                                     DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
                                     DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
-
-"""
-The Item list is a collection of all the products that are sold by any organization.
-The tems may include Products or even services.
-
-"""
 
 
 class ItemModelValidationError(ValidationError):
@@ -39,9 +48,35 @@ class ItemModelValidationError(ValidationError):
 
 # UNIT OF MEASURES MODEL....
 class UnitOfMeasureModelManager(models.Manager):
+    """
+    A custom defined QuerySet Manager for the UnitOfMeasureModel.
+    """
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug: str, user_model) -> QuerySet:
+        """
+        Fetches the UnitOfMeasureModels associated with the provided EntityModel and UserModel.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The EntityModel slug or EntityModel used to filter the QuerySet.
+        user_model: UserModel
+            The Django UserModel to check permissions.
+
+        Returns
+        -------
+        QuerySet
+            A QuerySet with applied filters.
+        """
         qs = self.get_queryset()
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            return qs.filter(
+                Q(entity=entity_slug) &
+                (
+                        Q(entity__admin=user_model) |
+                        Q(entity__managers__in=[user_model])
+                )
+            )
         return qs.filter(
             Q(entity__slug__exact=entity_slug) &
             (
@@ -51,15 +86,48 @@ class UnitOfMeasureModelManager(models.Manager):
         )
 
     def for_entity_active(self, entity_slug: str, user_model):
+        """
+        Fetches the Active UnitOfMeasureModels associated with the provided EntityModel and UserModel.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The EntityModel slug or EntityModel used to filter the QuerySet.
+        user_model: UserModel
+            The Django UserModel to check permissions.
+
+        Returns
+        -------
+        QuerySet
+            A QuerySet with applied filters.
+        """
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
 
 
 class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
+    """
+    Base implementation of a Unit of Measure assigned to each Item Transaction.
+
+    Attributes
+    ----------
+    uuid: UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
+    name: str
+        The name of the unit of measure. Maximum of 50 characters.
+    unit_abbr: str
+        An abbreviation of the unit of measure used as an identifier or slug for URLs and queries.
+    is_active: bool
+        A boolean representing of the UnitOfMeasureModel instance is active to be used on new transactions.
+    entity: EntityModel
+        The EntityModel associated with the UnitOfMeasureModel instance.
+    """
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=50, verbose_name=_('Unit of Measure Name'))
     unit_abbr = models.SlugField(max_length=10, verbose_name=_('UoM Abbreviation'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
+
+    # todo: rename to entity_model
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -82,15 +150,53 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
 
 # ITEM MODEL....
 class ItemModelQuerySet(models.QuerySet):
+    """
+    A custom-defined ItemModelQuerySet that implements custom QuerySet methods related to the ItemModel.
+    """
 
     def active(self):
+        """
+        Filters the QuerySet to only active Item Models.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A QuerySet with applied filters.
+        """
         return self.filter(active=True)
 
 
 class ItemModelManager(models.Manager):
+    """
+    A custom defined ItemModelManager that implement custom QuerySet methods related to the ItemModel
+    """
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.get_queryset()
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            return qs.filter(
+                Q(entity=entity_slug) &
+                (
+                        Q(entity__managers__in=[user_model]) |
+                        Q(entity__admin=user_model)
+                )
+            ).select_related('uom')
         return qs.filter(
             Q(entity__slug__exact=entity_slug) &
             (
@@ -99,11 +205,43 @@ class ItemModelManager(models.Manager):
             )
         ).select_related('uom')
 
-    def for_entity_active(self, entity_slug: str, user_model):
+    def for_entity_active(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of Active ItemModel associated with a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
 
-    def products(self, entity_slug: str, user_model):
+    def products(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that only qualify as products for a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
@@ -113,7 +251,23 @@ class ItemModelManager(models.Manager):
             Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
         )
 
-    def services(self, entity_slug: str, user_model):
+    def services(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that only qualify as active services for a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
@@ -123,7 +277,23 @@ class ItemModelManager(models.Manager):
             Q(item_role=ItemModel.ITEM_ROLE_SERVICE)
         )
 
-    def expenses(self, entity_slug: str, user_model):
+    def expenses(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that only qualify as active products for a specific EntityModel & UserModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
@@ -132,8 +302,25 @@ class ItemModelManager(models.Manager):
             ) | Q(item_role=ItemModel.ITEM_ROLE_EXPENSE)
         )
 
-    def inventory_wip(self, entity_slug: str, user_model):
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+    def inventory_wip(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that only qualify as inventory in progress for a specific EntityModel &
+        UserModel. These types of items cannot be sold as they are not considered a finished product.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
                     Q(is_product_or_service=False) &
@@ -141,8 +328,25 @@ class ItemModelManager(models.Manager):
             ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
         )
 
-    def inventory_all(self, entity_slug: str, user_model):
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+    def inventory_all(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that qualify as inventory for a specific EntityModel &
+        UserModel. These types of items may be finished or unfinished.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
                     (
@@ -160,7 +364,24 @@ class ItemModelManager(models.Manager):
             )
         )
 
-    def for_bill(self, entity_slug: str, user_model):
+    def for_bill(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that can only be used for BillModels for a specific EntityModel &
+        UserModel. These types of items qualify as expenses or inventory purchases.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(
             (
@@ -170,22 +391,103 @@ class ItemModelManager(models.Manager):
             Q(for_inventory=True)
         )
 
-    def for_po(self, entity_slug: str, user_model):
+    def for_po(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that can only be used for PurchaseOrders for a specific EntityModel &
+        UserModel. These types of items qualify as inventory purchases.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
         return self.inventory_all(entity_slug=entity_slug, user_model=user_model)
 
     def for_estimate(self, entity_slug: str, user_model):
-        return self.products(entity_slug=entity_slug, user_model=user_model)
+        """
+        Returns a QuerySet of ItemModels that can only be used for EstimateModels for a specific EntityModel &
+        UserModel. These types of items qualify as products.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
 
-    def for_contract(self, entity_slug: str, user_model, ce_model_uuid):
-        qs = self.for_estimate(
-            entity_slug=entity_slug,
-            user_model=user_model
-        )
-        qs = qs.filter(itemtransactionmodel__ce_model_id=ce_model_uuid)
-        return qs.distinct('uuid')
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.products(entity_slug=entity_slug, user_model=user_model)
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
+    """
+    Base implementation of the ItemModel.
+
+    Attributes
+    ----------
+    uuid: UUID
+        This is a unique primary key generated for the table. The default value of this field is uuid4().
+    name: str
+        Human readable name of the ItemModel instance. Maximum of 100 characters.
+    item_role: str
+        A choice of ITEM_ROLE_CHOICES that determines whether the ItemModel should be treated as an expense, inventory,
+        service or product.
+    item_type: str
+        A choice of ITEM_TYPE_CHOICES that determines whether the ItemModel should be treated as labor, material,
+        equipment, lump sum or other.
+    uom: UnitOfMeasureModel
+        The assigned UnitOfMeasureModel of the ItemModel instance. Mandatory.
+    sku: str
+        The SKU number associated with the ItemModel instance. Maximum 50 characters.
+    upc: str
+        The UPC number associated with the ItemModel instance. Maximum 50 characters.
+    item_id: str
+        EntityModel specific id associated with the ItemModel instance. Maximum 50 characters.
+    item_number: str
+        Auto generated human-readable item number.
+    is_active: bool
+        Determines if the ItemModel instance is considered active. Defaults to True.
+    default_amount: Decimal
+        The default, prepopulated monetary amount of the ItemModel instance .
+    for_inventory: bool
+        Legacy field used to determine if the ItemModel instance is considered an inventory item. Mandatory.
+        Superseded by item_role field. Will be deprecated.
+    is_product_or_service: bool
+        Legacy field used to determine if the ItemModel instance is considered a product or service item. Mandatory.
+        Superseded by item_role field. Will be deprecated.
+    sold_as_unit: bool
+        Determines if only whole numbers can be used when specifying the quantity on ItemTransactionModels.
+    inventory_account: AccountModel
+        Inventory account associated with the ItemModel instance. Enforced if ItemModel instance is_inventory() is True.
+    inventory_received: Decimal
+        Holds the total quantity of the inventory received for the whole EntityModel instance.
+    inventory_received_value: Decimal
+        Holds the total monetary value of the inventory received for the whole EntityModel instance.
+    cogs_account: AccountModel
+        COGS account associated with the ItemModel instance. Enforced if ItemModel instance is_inventory() is True.
+    earnings_account: AccountModel
+        Earnings account associated with the ItemModel instance. Enforced if ItemModel instance is_product() or
+         is_service() is True.
+    expense_account: AccountModel
+        Expense account associated with the ItemModel instance. Enforced if ItemModel instance is_expense() is True.
+    additional_info: dict
+        Additional user defined information stored as JSON document in the Database.
+    entity: EntityModel
+        The EntityModel associated with the ItemModel instance.
+    """
     REL_NAME_PREFIX = 'item'
 
     ITEM_TYPE_LABOR = 'L'
@@ -224,6 +526,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
+
+    # todo: rename this and remove 'id' from it.
     item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
     item_number = models.CharField(max_length=30, editable=False, verbose_name=_('Item Number'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
@@ -293,6 +597,8 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                        null=True,
                                        default=dict,
                                        verbose_name=_('Item Additional Info'))
+
+    # todo: rename to entity_model...
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -843,47 +1149,97 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             return f'Estimate/Contract Model: {self.ce_model_id} | {self.ce_cost_estimate}'
         return f'Orphan {self.__class__.__name__}: {self.uuid}'
 
-    def is_received(self):
+    def is_received(self) -> bool:
+        """
+        Determines if the ItemModel instance is received.
+        ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
+
+        Returns
+        -------
+        bool
+            True if received, else False.
+        """
+        return self.po_item_status == self.STATUS_RECEIVED
+
+    def is_ordered(self) -> bool:
+        """
+        Determines if the ItemModel instance is ordered.
+        ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
+
+        Returns
+        -------
+        bool
+            True if received, else False.
+        """
         return self.po_item_status == self.STATUS_RECEIVED
 
     def is_canceled(self):
+        """
+        Determines if the ItemModel instance is canceled.
+        ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
+
+        Returns
+        -------
+        bool
+            True if canceled, else False.
+        """
         return self.po_item_status == self.STATUS_CANCELED
 
     # ItemTransactionModel Associations...
-    def for_estimate(self) -> bool:
+    def has_estimate(self) -> bool:
         """
-        True if ItemTransactionModel is associated with an EstimateModel, else False.
-        @return: True/False
+        Determines if the ItemModel instance is associated with an EstimateModel.
+
+        Returns
+        -------
+        bool
+            True if associated with an EstimateModel, else False.
         """
         return self.ce_model_id is not None
 
-    def for_po(self):
+    def has_po(self) -> bool:
         """
-        True if ItemTransactionModel is associated with a PurchaseOrderModel, else False.
-        @return:  True/False
+        Determines if the ItemModel instance is associated with a PurchaseOrderModel.
+
+        Returns
+        -------
+        bool
+            True if associated with an PurchaseOrderModel, else False.
         """
         return self.po_model_id is not None
 
-    def for_invoice(self):
+    def has_invoice(self):
         """
-        True if ItemTransactionModel is associated with an InvoiceModel, else False.
-        @return:  True/False
+        Determines if the ItemModel instance is associated with a InvoiceModel.
+
+        Returns
+        -------
+        bool
+            True if associated with an InvoiceModel, else False.
         """
         return self.invoice_model_id is not None
 
-    def for_bill(self):
+    def has_bill(self):
         """
-        True if ItemTransactionModel is associated with a BillModel, else False.
-        @return:  True/False
+        Determines if the ItemModel instance is associated with a BillModel.
+
+        Returns
+        -------
+        bool
+            True if associated with an BillModel, else False.
         """
         return self.bill_model_id is not None
 
     # TRANSACTIONS...
     def update_total_amount(self):
+        """
+        Hook that updates and checks the ItemModel instance fields according to its associations.
+        Calculates and updates total_amount accordingly. Called on every clean() call.
+        """
         if any([
-            self.for_bill(),
-            self.for_invoice(),
-            self.for_po()
+            self.has_bill(),
+            self.has_invoice(),
+            self.has_po()
         ]):
             if self.quantity is None:
                 self.quantity = 0.0
@@ -891,11 +1247,9 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             if self.unit_cost is None:
                 self.unit_cost = 0.0
 
-            self.total_amount = round(
-                Decimal.from_float(self.quantity * self.unit_cost), self.DECIMAL_PLACES
-            )
+            self.total_amount = round(Decimal.from_float(self.quantity * self.unit_cost), self.DECIMAL_PLACES)
 
-            if self.for_po():
+            if self.has_po():
 
                 if self.quantity > self.po_quantity:
                     raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
@@ -916,18 +1270,25 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
 
     # PURCHASE ORDER...
     def update_po_total_amount(self):
-        if self.for_po():
+        """
+        Hook that updates and checks the ItemModel instance purchase order fields according to its associations.
+        Calculates and updates po_total_amount accordingly. Called on every clean() call.
+        """
+        if self.has_po():
             if self.po_quantity is None:
                 self.po_quantity = 0.0
             if self.po_unit_cost is None:
                 self.po_unit_cost = 0.0
 
-            self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost),
-                                         self.DECIMAL_PLACES)
+            self.po_total_amount = round(Decimal.from_float(self.po_quantity * self.po_unit_cost), self.DECIMAL_PLACES)
 
     # ESTIMATE/CONTRACTS...
     def update_cost_estimate(self):
-        if self.for_estimate():
+        """
+        Hook that updates and checks the ItemModel instance cost estimate fields according to its associations.
+        Calculates and updates ce_cost_estimate accordingly. Called on every clean() call.
+        """
+        if self.has_estimate():
             if self.ce_quantity is None:
                 self.ce_quantity = 0.00
             if self.ce_unit_cost_estimate is None:
@@ -936,7 +1297,11 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
                                           self.DECIMAL_PLACES)
 
     def update_revenue_estimate(self):
-        if self.for_estimate():
+        """
+        Hook that updates and checks the ItemModel instance revenue estimate fields according to its associations.
+        Calculates and updates ce_revenue_estimate accordingly. Called on every clean() call.
+        """
+        if self.has_estimate():
             if self.ce_quantity is None:
                 self.ce_quantity = 0.00
             if self.ce_unit_revenue_estimate is None:
@@ -944,35 +1309,69 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             self.ce_revenue_estimate = Decimal.from_float(self.ce_quantity * self.ce_unit_revenue_estimate)
 
     # HTML TAGS...
-    def html_id(self):
+    def html_id(self) -> str:
+        """
+        Unique ItemModel instance HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-{self.uuid}'
 
-    def html_id_unit_cost(self):
+    def html_id_unit_cost(self) -> str:
+        """
+        Unique ItemModel instance unit cost field HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-unit-cost-id-{self.uuid}'
 
-    def html_id_quantity(self):
+    def html_id_quantity(self) -> str:
+        """
+        Unique ItemModel instance quantity field HTML ID.
+
+        Returns
+        _______
+        str
+            HTML ID as a String.
+        """
         return f'djl-item-quantity-id-{self.uuid}'
 
-    def is_cancelled(self):
-        return self.po_item_status == self.STATUS_CANCELED
-
-    def can_create_bill(self):
-        # pylint: disable=no-member
+    def can_create_bill(self) -> bool:
+        """
+        Determines if the ItemModel instance can be associated with a BillModel.
+        Returns
+        -------
+        bool
+            True, if instance can be associated with a BillModel, else False.
+        """
         return self.bill_model_id is None and self.po_item_status in [
-            self.STATUS_ORDERED, self.STATUS_IN_TRANSIT, self.STATUS_RECEIVED
+            self.STATUS_ORDERED,
+            self.STATUS_IN_TRANSIT,
+            self.STATUS_RECEIVED
         ]
 
-    def get_status_css_class(self):
-        if self.po_item_status == self.STATUS_RECEIVED:
+    def get_status_css_class(self) -> str:
+        """
+        Determines the CSS Class used to represent the ItemModel instance in the UI based on its status.
+
+        Returns
+        -------
+        str
+            The CSS class as a String.
+        """
+        if self.is_received():
             return ' is-success'
-        elif self.po_item_status == self.STATUS_CANCELED:
+        elif self.is_canceled():
             return ' is-danger'
-        elif self.po_item_status == self.STATUS_ORDERED:
+        elif self.is_ordered():
             return ' is-info'
         return ' is-warning'
-
-    def has_po(self):
-        return self.po_model_id is not None
 
     def clean(self):
         if self.has_po() and not self.po_item_status:
@@ -988,17 +1387,17 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
 
 class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
-    Base Unit of Measure Model from Abstract.
+    Base UnitOfMeasureModel from Abstract.
     """
 
 
 class ItemTransactionModel(ItemTransactionModelAbstract):
     """
-    Base Item Transaction Model.
+    Base ItemTransactionModel from Abstract.
     """
 
 
 class ItemModel(ItemModelAbstract):
     """
-    Base Item Model from Abstract.
+    Base ItemModel from Abstract.
     """
