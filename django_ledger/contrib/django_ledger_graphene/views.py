@@ -5,7 +5,7 @@ from oauth2_provider.views import ProtectedResourceView
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class ProtectedOAuth2GraphQLView(
+class DjangoLedgerOAuth2GraphQLView(
     ProtectedResourceView,
     GraphQLView
 ):

@@ -18,7 +18,7 @@ ENTITY_MODEL_BASE_FIELDS = [
 ]
 
 
-class EntityModelListNode(DjangoObjectType):
+class EntityModelType(DjangoObjectType):
     is_admin = graphene.Boolean()
 
     def resolve_is_admin(self, info):
@@ -34,21 +34,20 @@ class EntityModelListNode(DjangoObjectType):
         interfaces = (relay.Node,)
 
 
-class EntityModelDetailNode(EntityModelListNode):
+class EntityModelDetailNode(EntityModelType):
     class Meta:
         model = EntityModel
         fields = ENTITY_MODEL_BASE_FIELDS + [
-            'default_coa',
-            # 'chartofaccountmodel_set'
+            'default_coa'
         ]
 
 
 class EntityModelQuery(graphene.ObjectType):
-    all_entity_list = graphene.List(EntityModelListNode)
-    visible_entity_list = graphene.List(EntityModelListNode)
-    hidden_entity_list = graphene.List(EntityModelListNode)
-    managed_entity_list = graphene.List(EntityModelListNode)
-    admin_entity_list = graphene.List(EntityModelListNode)
+    all_entity_list = graphene.List(EntityModelType)
+    visible_entity_list = graphene.List(EntityModelType)
+    hidden_entity_list = graphene.List(EntityModelType)
+    managed_entity_list = graphene.List(EntityModelType)
+    admin_entity_list = graphene.List(EntityModelType)
 
     entity_detail_by_uuid = graphene.Field(EntityModelDetailNode, uuid=graphene.String(required=True))
     entity_detail_by_slug = graphene.Field(EntityModelDetailNode, slug=graphene.String(required=True))
@@ -84,8 +83,8 @@ class EntityModelQuery(graphene.ObjectType):
     # detail...
     def resolve_entity_detail_by_slug(self, info, slug, **kwargs):
         qs: EntityModelQuerySet = EntityModelQuery.get_base_queryset(info)
-        return qs.select_related('default_coa', ).get(slug__exact=slug)
+        return qs.select_related('default_coa').get(slug__exact=slug)
 
     def resolve_entity_detail_by_uuid(self, info, uuid, **kwargs):
         qs: EntityModelQuerySet = EntityModelQuery.get_base_queryset(info)
-        return qs.select_related('default_coa', ).get(uuid__exact=uuid)
+        return qs.select_related('default_coa').get(uuid__exact=uuid)
