@@ -558,7 +558,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "allEntityList",
+              "name": "entityModelListAll",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -574,7 +574,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "visibleEntityList",
+              "name": "entityModelListVisible",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -590,7 +590,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "hiddenEntityList",
+              "name": "entityModelListHidden",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -606,7 +606,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "managedEntityList",
+              "name": "entityModelListManaged",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -622,7 +622,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "adminEntityList",
+              "name": "entityModelListIsAdmin",
               "type": {
                 "kind": "LIST",
                 "name": null,
@@ -653,10 +653,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "entityDetailByUuid",
+              "name": "entityModelDetailByUuid",
               "type": {
                 "kind": "OBJECT",
-                "name": "EntityModelDetailNode",
+                "name": "EntityModelTypeDetail",
                 "ofType": null
               }
             },
@@ -680,10 +680,10 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "entityDetailBySlug",
+              "name": "entityModelDetailBySlug",
               "type": {
                 "kind": "OBJECT",
-                "name": "EntityModelDetailNode",
+                "name": "EntityModelTypeDetail",
                 "ofType": null
               }
             }
@@ -862,7 +862,7 @@
           "inputFields": null,
           "interfaces": [],
           "kind": "OBJECT",
-          "name": "EntityModelDetailNode",
+          "name": "EntityModelTypeDetail",
           "possibleTypes": null
         },
         {

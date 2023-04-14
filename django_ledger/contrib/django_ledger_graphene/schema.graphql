@@ -82,16 +82,16 @@ type ChartOfAccountsModelType implements Node {
 }
 
 type Query {
-  allEntityList: [EntityModelType]
-  visibleEntityList: [EntityModelType]
-  hiddenEntityList: [EntityModelType]
-  managedEntityList: [EntityModelType]
-  adminEntityList: [EntityModelType]
-  entityDetailByUuid(uuid: String!): EntityModelDetailNode
-  entityDetailBySlug(slug: String!): EntityModelDetailNode
+  entityModelListAll: [EntityModelType]
+  entityModelListVisible: [EntityModelType]
+  entityModelListHidden: [EntityModelType]
+  entityModelListManaged: [EntityModelType]
+  entityModelListIsAdmin: [EntityModelType]
+  entityModelDetailByUuid(uuid: String!): EntityModelTypeDetail
+  entityModelDetailBySlug(slug: String!): EntityModelTypeDetail
 }
 
-type EntityModelDetailNode {
+type EntityModelTypeDetail {
   slug: String!
   created: DateTime!
   updated: DateTime
