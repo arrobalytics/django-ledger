@@ -913,7 +913,12 @@ class EntityModelAbstract(MP_Node,
             coa_model = self.default_coa
 
         account_model = AccountModel(**account_model_kwargs)
+        account_model.clean_fields()
+        account_model.clean()
         return coa_model, coa_model.create_account(account_model=account_model)
+
+
+
 
     # ##### INVENTORY MANAGEMENT ####
     @staticmethod
@@ -1470,23 +1475,6 @@ class EntityModel(EntityModelAbstract):
     """
     Entity Model Base Class From Abstract
     """
-
-
-def entitymodel_presave(instance: EntityModel, **kwargs):
-    if not instance.slug:
-        instance.generate_slug(commit=False)
-
-
-pre_save.connect(entitymodel_presave, EntityModel)
-
-
-# instance.ledgermodel_set.create(
-#     name=_(f'{instance.name} First Ledger'),
-#     posted=True
-# )
-
-
-# post_init.connect(entitymodel_postinit, EntityModel)
 
 
 class EntityManagementModel(EntityManagementModelAbstract):

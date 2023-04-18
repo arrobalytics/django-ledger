@@ -616,11 +616,3 @@ class AccountModel(AccountModelAbstract):
     """
     Base Account Model from Account Model Abstract Class
     """
-
-
-def accountmodel_presave(instance: AccountModel, **kwargs):
-    instance.clean_fields()
-    instance.clean()
-
-
-pre_save.connect(accountmodel_presave, sender=AccountModel)
