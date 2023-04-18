@@ -33,17 +33,18 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
                                     GROUP_ASSETS,
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
-                                    ROOT_GROUP, BS_BUCKETS, ROOT_GROUP_META, ROOT_ASSETS, ROOT_LIABILITIES,
-                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES, ROOT_COA)
+                                    ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
+                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA)
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
-from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE
+from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
 
 DEBIT = 'debit'
 """A constant, identifying a DEBIT Account or DEBIT transaction in the respective database fields"""
@@ -165,15 +166,12 @@ class AccountModelManager(MP_NodeManager):
         entity_slug: EntityModel or str
             The EntityModel or EntityModel slug to pull accounts from. If slug is passed and coa_slug is None will
             result in an additional Database query to determine the default code of accounts.
-
         coa_slug: str
             Explicitly specify which chart of accounts to use. If None, will pull default Chart of Accounts.
             Discussed in detail in the CoA Model CoA slug,  basically helps in identifying the complete Chart of
             Accounts for a particular EntityModel.
-
         user_model:
             The Django User Model making the request to check for permissions.
-
         select_coa_model: bool
             Pre fetches the CoA Model information in the QuerySet. Defaults to True.
 
@@ -607,21 +605,22 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         if not self.code and DJANGO_LEDGER_ACCOUNT_CODE_GENERATE:
             self.code = self.generate_random_code()
 
-        pf = self.get_code_prefix()
-        if self.code[0] != pf:
-            raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
-                                              f'must start with {pf} for CoA consistency')
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        self.clean()
-        super(AccountModelAbstract, self).save(
-            force_insert=False,
-            force_update=False,
-            using=None,
-            update_fields=None)
+        if DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX:
+            pf = self.get_code_prefix()
+            if self.code[0] != pf:
+                raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
+                                                  f'must start with {pf} for CoA consistency')
 
 
 class AccountModel(AccountModelAbstract):
     """
     Base Account Model from Account Model Abstract Class
     """
+
+
+def accountmodel_presave(instance: AccountModel, **kwargs):
+    instance.clean_fields()
+    instance.clean()
+
+
+pre_save.connect(accountmodel_presave, sender=AccountModel)

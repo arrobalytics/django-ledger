@@ -46,7 +46,7 @@ class ChartOfAccountsModelValidationError(ValidationError):
     pass
 
 
-class ChartOfAccountQuerySet(models.QuerySet):
+class ChartOfAccountModelQuerySet(models.QuerySet):
     pass
 
 
@@ -56,7 +56,7 @@ class ChartOfAccountModelManager(models.Manager):
     to the ChartOfAccountModel.
     """
 
-    def for_user(self, user_model) -> ChartOfAccountQuerySet:
+    def for_user(self, user_model) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
         multiple Entities. The user has access to bills if:
@@ -86,7 +86,7 @@ class ChartOfAccountModelManager(models.Manager):
             )
         )
 
-    def for_entity(self, entity_slug, user_model) -> ChartOfAccountQuerySet:
+    def for_entity(self, entity_slug, user_model) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -161,7 +161,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                                on_delete=models.CASCADE)
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     description = models.TextField(verbose_name=_('CoA Description'), null=True, blank=True)
-    objects = ChartOfAccountModelManager.from_queryset(queryset_class=ChartOfAccountQuerySet)()
+    objects = ChartOfAccountModelManager.from_queryset(queryset_class=ChartOfAccountModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -276,13 +276,16 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=f'Invalid root queryset for CoA {self.name}'
                 )
 
-    def add_account(self, account_model: AccountModel, root_account_qs: Optional[AccountModelQuerySet] = None):
+    def create_account(self, account_model: AccountModel, root_account_qs: Optional[AccountModelQuerySet] = None):
         if not account_model.coa_model_id:
+
             if not root_account_qs:
                 root_account_qs = self.get_coa_root_accounts_qs()
             else:
                 self.validate_account_model_qs(root_account_qs)
+
             l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
+
             account_model.coa_model = self
             account_model = l2_root_node.add_child(instance=account_model)
         return account_model
