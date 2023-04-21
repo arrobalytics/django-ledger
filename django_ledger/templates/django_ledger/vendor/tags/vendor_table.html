@@ -9,6 +9,8 @@
             <th class="has-text-centered">{% trans 'Vendor Number' %}</th>
             <th class="has-text-centered">{% trans 'Vendor' %}</th>
             <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Active' %}</th>
+            <th class="has-text-centered">{% trans 'Hidden' %}</th>
             <th class="has-text-centered">{% trans 'Actions' %}</th>
         </tr>
         </thead>
@@ -18,6 +20,28 @@
                 <td>{{ vendor.vendor_number }}</td>
                 <td>{{ vendor.vendor_name }}</td>
                 <td>{{ vendor.address_1 }}</td>
+                <td>
+                    {% if vendor.active %}
+                        <span class="icon has-text-success-dark">
+                                        {% icon 'ant-design:check-circle-filled' 24 %}
+                                    </span>
+                    {% elif not vendor.active %}
+                        <span class="icon has-text-danger-dark">
+                                        {% icon 'mdi:dangerous' 24 %}
+                                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vendor.hidden %}
+                        <span class="icon has-text-success-dark">
+                                        {% icon 'ant-design:check-circle-filled' 24 %}
+                                    </span>
+                    {% elif not vendor.hidden %}
+                        <span class="icon has-text-danger-dark">
+                                        {% icon 'mdi:dangerous' 24 %}
+                                    </span>
+                    {% endif %}
+                </td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="vendor-action-{{ vendor.uuid }}">
 
@@ -34,7 +58,7 @@
                              id="dropdown-menu-{{ vendor.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-{#                                <a href="" class="dropdown-item has-text-success">View</a>#}
+                                {#                                <a href="" class="dropdown-item has-text-success">View</a>#}
                                 <a href="{% url 'django_ledger:vendor-update' entity_slug=view.kwargs.entity_slug vendor_pk=vendor.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Update' %}</a>
                             </div>

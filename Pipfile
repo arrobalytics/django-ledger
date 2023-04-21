@@ -27,6 +27,7 @@ furo = "*"
 twine = "*"
 python-dotenv = "*"
 tabulate = "*"
+myst_parser = "*"
 
 [requires]
 python_version = "3.11"

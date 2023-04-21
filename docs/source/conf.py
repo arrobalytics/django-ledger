@@ -32,7 +32,7 @@ django.setup()
 # -- Project information -----------------------------------------------------
 
 project = 'Django Ledger'
-copyright = '2022, EDMA Group Inc'
+copyright = '2023, EDMA Group Inc'
 author = 'Miguel Sanda'
 
 # -- General configuration ---------------------------------------------------
@@ -43,7 +43,8 @@ author = 'Miguel Sanda'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'myst_parser'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,3 +66,9 @@ html_theme = 'furo'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['assets']
+
+source_suffix = {
+    '.rst': 'restructuredtext',
+    '.txt': 'markdown',
+    '.md': 'markdown',
+}

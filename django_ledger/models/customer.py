@@ -140,7 +140,6 @@ class CustomerModelManager(models.Manager):
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
                 Q(entity_model=entity_slug) &
-                Q(active=True) &
                 (
                         Q(entity_model__admin=user_model) |
                         Q(entity_model__managers__in=[user_model])
@@ -148,7 +147,6 @@ class CustomerModelManager(models.Manager):
             )
         return qs.filter(
             Q(entity_model__slug__exact=entity_slug) &
-            Q(active=True) &
             (
                     Q(entity_model__admin=user_model) |
                     Q(entity_model__managers__in=[user_model])
@@ -210,18 +208,20 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         abstract = True
         verbose_name = _('Customer')
         indexes = [
+            models.Index(fields=['entity_model', 'customer_number']),
             models.Index(fields=['created']),
             models.Index(fields=['updated']),
             models.Index(fields=['active']),
             models.Index(fields=['hidden']),
-            models.Index(fields=['customer_number']),
         ]
         unique_together = [
             ('entity_model', 'customer_number')
         ]
 
     def __str__(self):
-        return f'Customer: {self.customer_name}'
+        if not self.customer_number:
+            f'Unknown Customer: {self.customer_name}'
+        return f'{self.customer_number}: {self.customer_name}'
 
     def can_generate_customer_number(self) -> bool:
         """

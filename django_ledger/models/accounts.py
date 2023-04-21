@@ -138,6 +138,9 @@ class AccountModelQuerySet(MP_NodeQuerySet):
             ]) for bsr, gb in accounts_gb
         ]
 
+    def is_role_default(self):
+        return self.filter(role_default=True)
+
 
 class AccountModelManager(MP_NodeManager):
     """
@@ -445,6 +448,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     code = models.CharField(max_length=10, verbose_name=_('Account Code'), validators=[account_code_validator])
     name = models.CharField(max_length=100, verbose_name=_('Account Name'))
     role = models.CharField(max_length=30, choices=ACCOUNT_ROLE_CHOICES, verbose_name=_('Account Role'))
+    role_default = models.BooleanField(null=True, blank=True, verbose_name=_('Coa Role Default Account'))
     balance_type = models.CharField(max_length=6, choices=BALANCE_TYPE, verbose_name=_('Account Balance Type'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     active = models.BooleanField(default=False, verbose_name=_('Active'))
@@ -461,7 +465,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         verbose_name = _('Account')
         verbose_name_plural = _('Accounts')
         unique_together = [
-            ('coa_model', 'code')
+            ('coa_model', 'code'),
+            ('coa_model', 'role', 'role_default')
         ]
         indexes = [
             models.Index(fields=['role']),
@@ -616,3 +621,11 @@ class AccountModel(AccountModelAbstract):
     """
     Base Account Model from Account Model Abstract Class
     """
+
+
+def accountmodel_presave(instance: AccountModel, **kwargs):
+    if instance.role_default is False:
+        instance.role_default = None
+
+
+pre_save.connect(receiver=accountmodel_presave, sender=AccountModel)

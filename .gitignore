@@ -108,7 +108,7 @@ venv.bak/
 .idea/
 
 node_modules
-notebooks/
+dev_notebooks/
 data/
 oauth_codes.json
 http-client.private.env.json

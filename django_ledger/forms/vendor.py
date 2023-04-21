@@ -31,7 +31,9 @@ class VendorModelForm(ModelForm):
             'phone',
             'email',
             'website',
-            'tax_id_number'
+            'tax_id_number',
+            'hidden',
+            'active'
         ]
         widgets = {
             'vendor_name': TextInput(attrs={

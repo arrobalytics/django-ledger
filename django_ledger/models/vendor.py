@@ -18,7 +18,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F
+from django.db.models import Q, F, QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, BankAccountInfoMixIn, TaxInfoMixIn
@@ -30,10 +30,60 @@ class VendorModelValidationError(ValidationError):
     pass
 
 
-class VendorModelQuerySet(models.QuerySet):
+class VendorModelQuerySet(QuerySet):
     """
     Custom defined VendorModel QuerySet.
     """
+
+    def active(self) -> QuerySet:
+        """
+        Active vendors can be assigned to new bills and show on dropdown menus and views.
+
+        Returns
+        -------
+        VendorModelQuerySet
+            A QuerySet of active Vendors.
+        """
+        return self.filter(active=True)
+
+    def inactive(self) -> QuerySet:
+        """
+        Active vendors can be assigned to new bills and show on dropdown menus and views.
+        Marking VendorModels as inactive can help reduce Database load to populate select inputs and also inactivate
+        VendorModels that are not relevant to the Entity anymore. Also, it makes de UI cleaner by not populating
+        unnecessary choices.
+
+        Returns
+        -------
+        VendorModelQuerySet
+            A QuerySet of inactive Vendors.
+        """
+        return self.filter(active=False)
+
+    def hidden(self) -> QuerySet:
+        """
+        Hidden vendors do not show on dropdown menus, but may be used via APIs or any other method that does not
+        involve the UI.
+
+        Returns
+        -------
+        VendorModelQuerySet
+            A QuerySet of hidden Vendors.
+        """
+        return self.filter(hidden=True)
+
+    def visible(self) -> QuerySet:
+        """
+        Visible vendors show on dropdown menus and views. Visible vendors are active and not hidden.
+
+        Returns
+        -------
+        VendorModelQuerySet
+            A QuerySet of visible Vendors.
+        """
+        return self.filter(
+            Q(hidden=False) & Q(active=True)
+        )
 
 
 class VendorModelManager(models.Manager):
@@ -68,7 +118,6 @@ class VendorModelManager(models.Manager):
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
                 Q(entity_model=entity_slug) &
-                Q(active=True) &
                 (
                         Q(entity_model__admin=user_model) |
                         Q(entity_model__managers__in=[user_model])
@@ -76,7 +125,6 @@ class VendorModelManager(models.Manager):
             )
         return qs.filter(
             Q(entity_model__slug__exact=entity_slug) &
-            Q(active=True) &
             (
                     Q(entity_model__admin=user_model) |
                     Q(entity_model__managers__in=[user_model])
@@ -116,7 +164,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         A text field to capture the description about the vendor.
 
     active: bool
-        We can set any customer code to be active or inactive. Defaults to True.
+        We can set any vendor to be active or inactive. Defaults to True.
 
     hidden: bool
         Hidden VendorModel don't show on the UI. Defaults to False.
@@ -144,6 +192,8 @@ class VendorModelAbstract(ContactInfoMixIn,
     class Meta:
         verbose_name = _('Vendor')
         indexes = [
+            models.Index(fields=['entity_model', 'vendor_number']),
+            models.Index(fields=['vendor_number']),
             models.Index(fields=['created']),
             models.Index(fields=['updated']),
             models.Index(fields=['active']),
@@ -155,7 +205,9 @@ class VendorModelAbstract(ContactInfoMixIn,
         abstract = True
 
     def __str__(self):
-        return f'Vendor: {self.vendor_name}'
+        if not self.vendor_number:
+            f'Unknown Vendor: {self.vendor_name}'
+        return f'{self.vendor_number}: {self.vendor_name}'
 
     def can_generate_vendor_number(self) -> bool:
         """
@@ -165,7 +217,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         Returns
         -------
         bool
-            True if customer model can be generated, else False.
+            True if vendor number can be generated, else False.
         """
         return all([
             self.entity_model_id,

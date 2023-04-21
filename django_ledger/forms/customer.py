@@ -32,7 +32,9 @@ class CustomerModelForm(ModelForm):
             'phone',
             'email',
             'website',
-            'sales_tax_rate'
+            'sales_tax_rate',
+            'active',
+            'hidden'
         ]
         help_texts = {
             'sales_tax_rate': _('Example: 3.50% should be entered as 0.0035')

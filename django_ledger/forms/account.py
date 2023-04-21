@@ -1,11 +1,11 @@
 from typing import Optional
 
-from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError
+from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError, CheckboxInput
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
 from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
-from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
+from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 """
@@ -38,12 +38,19 @@ class AccountModelCreateForm(ModelForm):
         self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
         self.fields['code'].required = False
 
+    def clean_role_default(self):
+        role_default = self.cleaned_data['role_default']
+        if not role_default:
+            return None
+        return role_default
+
     class Meta:
         model = AccountModel
         fields = [
             'code',
             'name',
             'role',
+            'role_default',
             'balance_type',
         ]
         widgets = {
@@ -58,6 +65,7 @@ class AccountModelCreateForm(ModelForm):
             'role': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'role_default': CheckboxInput(),
             'balance_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
@@ -104,6 +112,12 @@ class AccountModelUpdateForm(MoveNodeForm):
             (i.uuid, f'{"-" * (i.depth - 1)} {i}') for i in qs
         ]
 
+    def clean_role_default(self):
+        role_default = self.cleaned_data['role_default']
+        if not role_default:
+            return None
+        return role_default
+
     class Meta:
         model = AccountModel
         exclude = ('depth', 'numchild', 'path', 'balance_type', 'role')
@@ -116,5 +130,6 @@ class AccountModelUpdateForm(MoveNodeForm):
             }),
             'name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            })
+            }),
+            'role_default': CheckboxInput(),
         }

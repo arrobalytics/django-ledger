@@ -35,22 +35,24 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import IOMixIn
-from django_ledger.io.roles import ASSET_CA_CASH, EQUITY_CAPITAL, EQUITY_COMMON_STOCK, EQUITY_PREFERRED_STOCK
+from django_ledger.io import roles as roles_module
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
+from django_ledger.models.bank_account import BankAccountModelQuerySet
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
+from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
 from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
+from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
 
 UserModel = get_user_model()
 
@@ -500,8 +502,7 @@ class EntityModelAbstract(MP_Node,
                                       verbose_name=_('Managers'))
 
     hidden = models.BooleanField(default=False)
-    accrual_method = models.BooleanField(default=False,
-                                         verbose_name=_('Use Accrual Method'))
+    accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
@@ -668,13 +669,14 @@ class EntityModelAbstract(MP_Node,
             chart_of_accounts: ChartOfAccountModel = self.default_coa
 
         coa_accounts_qs = chart_of_accounts.accountmodel_set.all()
+
+        # forces evaluation
         len(coa_accounts_qs)
 
         coa_has_accounts = coa_accounts_qs.not_coa_root().exists()
 
         if not coa_has_accounts or force:
             root_accounts = coa_accounts_qs.is_coa_root()
-            logger = self.get_logger()
 
             root_maps = {
                 root_accounts.get(role__exact=k): [
@@ -689,28 +691,37 @@ class EntityModelAbstract(MP_Node,
             }
 
             for root_acc, acc_model_list in root_maps.items():
-                for account_model in acc_model_list:
+                for i, account_model in enumerate(acc_model_list):
+                    account_model.role_default = True if i == 0 else None
                     account_model.clean()
-
-            coa_root_qs = chart_of_accounts.get_coa_root_accounts_qs()
-            for root_acc, acc_model_list in root_maps.items():
-                for account_model in acc_model_list:
-                    logger.info(msg=f'Adding Account {account_model.code}: {account_model.name}...')
-                    # root_acc.add_child(instance=account_model)
                     chart_of_accounts.create_account(account_model)
+
         else:
             if not ignore_if_default_coa:
                 raise ValidationError(f'Entity {self.name} already has existing accounts. '
                                       'Use force=True to bypass this check')
 
-    def validate_chart_of_accounts(self,
-                                   coa_model: ChartOfAccountModel,
-                                   raise_exception: bool = True):
+    def validate_chart_of_accounts_for_entity(self,
+                                              coa_model: ChartOfAccountModel,
+                                              raise_exception: bool = True) -> bool:
         if coa_model.entity_id == self.uuid:
             return True
         if raise_exception:
             raise EntityModelValidationError(
                 f'Invalid ChartOfAccounts model {coa_model.slug} for EntityModel {self.slug}')
+        return False
+
+    def validate_account_model_for_coa(self,
+                                       account_model: AccountModel,
+                                       coa_model: ChartOfAccountModel,
+                                       raise_exception: bool = True) -> bool:
+        valid = self.validate_chart_of_accounts_for_entity(coa_model, raise_exception=raise_exception)
+        if valid and account_model.coa_model_id == coa_model.uuid:
+            return True
+        if raise_exception:
+            raise EntityModelValidationError(
+                f'Invalid AccountModel model {account_model.uuid} for EntityModel {self.slug}'
+            )
         return False
 
     def get_all_coa_accounts(self,
@@ -743,7 +754,7 @@ class EntityModelAbstract(MP_Node,
             account_model_qs
         }
 
-    # ##### ACCOUNT MODELS ###
+    # ##### ACCOUNT MANAGEMENT ######
 
     def get_all_accounts(self, active: bool = True, order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
         """
@@ -763,12 +774,56 @@ class EntityModelAbstract(MP_Node,
 
         account_model_qs = AccountModel.objects.filter(
             coa_model__entity__uuid__exact=self.uuid
-        ).select_related('coa_model')
+        ).select_related('coa_model', 'coa_model__entity')
 
         if active:
             account_model_qs = account_model_qs.active()
         if order_by:
             account_model_qs = account_model_qs.order_by(*order_by)
+        return account_model_qs
+
+    def get_coa_accounts(self,
+                         coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                         active: bool = True,
+                         order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
+        """
+        Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
+
+        Parameters
+        ----------
+        coa_model: ChartOfAccountModel, UUID, str
+            The ChartOfAccountsModel UUID, model instance or slug to pull accounts from. If None, will use default CoA.
+        active: bool
+            Selects only active accounts.
+        order_by: list of strings.
+            Optional list of fields passed to the order_by QuerySet method.
+
+        Returns
+        -------
+        AccountModelQuerySet
+            The AccountModelQuerySet of the assigned default CoA.
+        """
+
+        if not coa_model:
+            account_model_qs = self.default_coa.accountmodel_set.all().select_related('coa_model', 'coa_model__entity')
+        else:
+            account_model_qs = AccountModel.objects.filter(
+                coa_model__entity__uuid__exact=self.uuid
+            ).select_related('coa_model', 'coa_model__entity')
+
+            if isinstance(coa_model, ChartOfAccountModel):
+                self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=True)
+            if isinstance(coa_model, str):
+                account_model_qs = account_model_qs.filter(coa_model__slug__exact=coa_model)
+            elif isinstance(coa_model, UUID):
+                account_model_qs = account_model_qs.filter(coa_model__uuid__exact=coa_model)
+
+        if active:
+            account_model_qs = account_model_qs.active()
+
+        if order_by:
+            account_model_qs = account_model_qs.order_by(*order_by)
+
         return account_model_qs
 
     def get_default_coa_accounts(self,
@@ -797,58 +852,7 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(message=_('No default_coa found.'))
             return
 
-        account_model_qs = AccountModel.objects.filter(
-            coa_model_id=self.default_coa_id,
-            coa_model__entity__uuid__exact=self.uuid
-        ).select_related('coa_model')
-
-        if active:
-            account_model_qs = account_model_qs.active()
-
-        if order_by:
-            account_model_qs = account_model_qs.order_by(*order_by)
-
-        return account_model_qs
-
-    def get_coa_accounts(self,
-                         coa_model: Union[ChartOfAccountModel, UUID, str],
-                         active: bool = True,
-                         order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
-        """
-        Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
-
-        Parameters
-        ----------
-        coa_model: ChartOfAccountModel, UUID, str
-            The ChartOfAccountsModel UUID, model instance or slug to pull accounts from.
-        active: bool
-            Selects only active accounts.
-        order_by: list of strings.
-            Optional list of fields passed to the order_by QuerySet method.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            The AccountModelQuerySet of the assigned default CoA.
-        """
-        if isinstance(coa_model, ChartOfAccountModel):
-            self.validate_chart_of_accounts(coa_model=coa_model, raise_exception=True)
-
-        account_model_qs = AccountModel.objects.filter(
-            coa_model__entity__uuid__exact=self.uuid
-        ).select_related('coa_model')
-
-        if active:
-            account_model_qs = account_model_qs.active()
-
-        if isinstance(coa_model, str):
-            return account_model_qs.filter(coa_model__slug__exact=coa_model)
-        elif isinstance(coa_model, UUID):
-            return account_model_qs.filter(coa_model__uuid__exact=coa_model)
-
-        if order_by:
-            account_model_qs = account_model_qs.order_by(*order_by)
-        return account_model_qs.filter(coa_model=coa_model)
+        return self.get_coa_accounts(active=active, order_by=order_by)
 
     def get_accounts_with_codes(self,
                                 code_list: Union[str, List[str]],
@@ -880,6 +884,16 @@ class EntityModelAbstract(MP_Node,
             return account_model_qs.filter(code__exact=code_list)
         return account_model_qs.filter(code__in=code_list)
 
+    def get_default_account_for_role(self,
+                                     role: str,
+                                     coa_model: Optional[ChartOfAccountModel] = None,
+                                     account_model_qs: Optional[AccountModelQuerySet] = None) -> AccountModel:
+        if not coa_model:
+            coa_model = self.default_coa
+        else:
+            self.validate_chart_of_accounts_for_entity(coa_model)
+        account_model = coa_model.accountmodel_set.get(role__exact=role, role_default=True)
+
     def create_account_model(self,
                              account_model_kwargs: Dict,
                              coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
@@ -908,17 +922,186 @@ class EntityModelAbstract(MP_Node,
             elif isinstance(coa_model, str):
                 coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
-                self.validate_chart_of_accounts(coa_model=coa_model, raise_exception=raise_exception)
+                self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
         else:
             coa_model = self.default_coa
 
         account_model = AccountModel(**account_model_kwargs)
-        account_model.clean_fields()
         account_model.clean()
         return coa_model, coa_model.create_account(account_model=account_model)
 
+    # ### VENDOR MANAGEMENT ####
 
+    def get_vendors(self, active: bool = True) -> VendorModelQuerySet:
+        """
+        Fetches the VendorModels associated with the EntityModel instance.
 
+        Parameters
+        ----------
+        active: bool
+            Active VendorModels only. Defaults to True.
+
+        Returns
+        -------
+        VendorModelQuerySet
+            The EntityModel instance VendorModelQuerySet with applied filters.
+        """
+        vendor_qs = self.vendormodel_set.all().select_related('entity_model')
+        if active:
+            vendor_qs = vendor_qs.active()
+        return vendor_qs
+
+    def get_vendor_by_number(self, vendor_number: str):
+        vendor_model_qs = self.get_vendors()
+        return vendor_model_qs.get(vendor_number__exact=vendor_number)
+
+    def get_vendor_by_uuid(self, vendor_uuid: Union[str, UUID]):
+        vendor_model_qs = self.get_vendors()
+        return vendor_model_qs.get(uuid__exact=vendor_uuid)
+
+    def create_vendor_model(self, vendor_model_kwargs: Dict, commit: bool = True) -> VendorModel:
+        """
+        Creates a new VendorModel associated with the EntityModel instance.
+
+        Parameters
+        ----------
+        vendor_model_kwargs: dict
+            The kwargs to be used for the new VendorModel.
+        commit: bool
+            Saves the VendorModel instance in the Database.
+
+        Returns
+        -------
+        VendorModel
+        """
+        vendor_model = VendorModel(entity_model=self, **vendor_model_kwargs)
+        vendor_model.clean()
+        if commit:
+            vendor_model.save()
+        return vendor_model
+
+    # ### CUSTOMER MANAGEMENT ####
+
+    def get_customers(self, active: bool = True) -> CustomerModelQueryset:
+        """
+        Fetches the CustomerModel associated with the EntityModel instance.
+
+        Parameters
+        ----------
+        active: bool
+            Active CustomerModel only. Defaults to True.
+
+        Returns
+        -------
+        CustomerModelQueryset
+            The EntityModel instance CustomerModelQueryset with applied filters.
+        """
+        customer_model_qs = self.customermodel_set.all().select_related('entity_model')
+        if active:
+            customer_model_qs = customer_model_qs.active()
+        return customer_model_qs
+
+    def create_customer_model(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
+        """
+        Creates a new CustomerModel associated with the EntityModel instance.
+
+        Parameters
+        ----------
+        customer_model_kwargs: dict
+            The kwargs to be used for the new CustomerModel.
+        commit: bool
+            Saves the CustomerModel instance in the Database.
+
+        Returns
+        -------
+        CustomerModel
+        """
+        customer_model = CustomerModel(entity_model=self, **customer_model_kwargs)
+        customer_model.clean()
+        if commit:
+            customer_model.save()
+        return customer_model
+
+    # ### BILL MANAGEMENT ####
+    def get_bills(self):
+        BillModel = lazy_loader.get_bill_model()
+        return BillModel.objects.filter(
+            ledger__entity__uuid__exact=self.uuid
+        ).select_related('ledger', 'ledger__entity')
+
+    def create_bill_model(self,
+                          vendor_model: Union[VendorModel, UUID, str],
+                          xref: Optional[str],
+                          additional_info: Optional[Dict] = None,
+                          ledger_name: Optional[str] = None,
+                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                          cash_account: Optional[AccountModel] = None,
+                          prepaid_account: Optional[AccountModel] = None,
+                          payable_account: Optional[AccountModel] = None,
+                          commit: bool = True):
+
+        BillModel = lazy_loader.get_bill_model()
+
+        if isinstance(vendor_model, VendorModel):
+            if not vendor_model.entity_model_id == self.uuid:
+                raise EntityModelValidationError(f'VendorModel {vendor_model.uuid} belongs to a different EntityModel.')
+        elif isinstance(vendor_model, UUID):
+            vendor_model = self.get_vendor_by_uuid(vendor_uuid=vendor_model)
+        elif isinstance(vendor_model, str):
+            vendor_model = self.get_vendor_by_number(vendor_number=vendor_model)
+        else:
+            raise EntityModelValidationError('VendorModel must be an instance of VendorModel, UUID or str.')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.ASSET_CA_CASH,
+            roles_module.ASSET_CA_PREPAID,
+            roles_module.LIABILITY_CL_ACC_PAYABLE
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        bill_model = BillModel(
+            vendor=vendor_model,
+            xref=xref,
+            additional_info=additional_info,
+            cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
+            prepaid_account=account_model_qs.get(
+                role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
+            unearned_account=account_model_qs.get(
+                role=roles_module.LIABILITY_CL_ACC_PAYABLE) if not payable_account else payable_account
+        )
+
+        _, bill_model = bill_model.configure(entity_slug=self,
+                                             bill_desc=ledger_name,
+                                             commit=commit,
+                                             commit_ledger=commit)
+
+        return bill_model
+
+    # ### INVOICE MANAGEMENT ####
+    def get_invoices(self):
+        InvoiceModel = lazy_loader.get_invoice_model()
+        return InvoiceModel.objects.filter(
+            ledger__entity__uuid__exact=self.uuid
+        ).select_related('ledger', 'ledger__entity')
+
+    # ### PURCHASE ORDER MANAGEMENT ####
+    def get_purchase_orders(self):
+        return self.purchaseordermodel_set.all().select_related('entity')
+
+    # ### ESTIMATE MODEL MANAGEMENT ####
+    def get_estimate_models(self):
+        return self.estimatemodel_set.all().select_related('entity')
+
+    # ### BANK ACCOUNT MODEL MANAGEMENT ###
+    def get_bank_account_models(self, active: bool = True) -> BankAccountModelQuerySet:
+        bank_account_qs = self.bankaccountmodel_set.all().select_related('entity_model')
+        if active:
+            bank_account_qs = bank_account_qs.active()
+        return bank_account_qs
 
     # ##### INVENTORY MANAGEMENT ####
     @staticmethod
@@ -1122,10 +1305,10 @@ class EntityModelAbstract(MP_Node,
 
             account_qs = AccountModel.objects.with_roles(
                 roles=[
-                    EQUITY_CAPITAL,
-                    EQUITY_COMMON_STOCK,
-                    EQUITY_PREFERRED_STOCK,
-                    ASSET_CA_CASH
+                    roles_module.EQUITY_CAPITAL,
+                    roles_module.EQUITY_COMMON_STOCK,
+                    roles_module.EQUITY_PREFERRED_STOCK,
+                    roles_module.ASSET_CA_CASH
                 ],
                 entity_slug=self.slug,
                 user_model=user_model
