@@ -931,7 +931,6 @@ class EntityModelAbstract(MP_Node,
         return coa_model, coa_model.create_account(account_model=account_model)
 
     # ### VENDOR MANAGEMENT ####
-
     def get_vendors(self, active: bool = True) -> VendorModelQuerySet:
         """
         Fetches the VendorModels associated with the EntityModel instance.
@@ -1000,6 +999,14 @@ class EntityModelAbstract(MP_Node,
         if active:
             customer_model_qs = customer_model_qs.active()
         return customer_model_qs
+
+    def get_customer_by_number(self, customer_number: str):
+        customer_model_qs = self.get_customers()
+        return customer_model_qs.get(customer_number__exact=customer_number)
+
+    def get_customer_by_uuid(self, customer_uuid: Union[str, UUID]):
+        customer_model_qs = self.get_customers()
+        return customer_model_qs.get(uuid__exact=customer_uuid)
 
     def create_customer_model(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
         """
@@ -1087,6 +1094,57 @@ class EntityModelAbstract(MP_Node,
         return InvoiceModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
         ).select_related('ledger', 'ledger__entity')
+
+    def create_invoice_model(self,
+                             customer_model: Union[VendorModel, UUID, str],
+                             additional_info: Optional[Dict] = None,
+                             ledger_name: Optional[str] = None,
+                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                             cash_account: Optional[AccountModel] = None,
+                             prepaid_account: Optional[AccountModel] = None,
+                             payable_account: Optional[AccountModel] = None,
+                             commit: bool = True):
+
+        InvoiceModel = lazy_loader.get_invoice_model()
+
+        if isinstance(customer_model, CustomerModel):
+            if not customer_model.entity_model_id == self.uuid:
+                raise EntityModelValidationError(
+                    f'CustomerModel {customer_model.uuid} belongs to a different EntityModel.')
+        elif isinstance(customer_model, UUID):
+            customer_model = self.get_customer_by_uuid(customer_uuid=customer_model)
+        elif isinstance(customer_model, str):
+            customer_model = self.get_customer_by_number(customer_number=customer_model)
+        else:
+            raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.ASSET_CA_CASH,
+            roles_module.ASSET_CA_PREPAID,
+            roles_module.LIABILITY_CL_ACC_PAYABLE
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        invoice_model = InvoiceModel(
+            vendor=customer_model,
+            additional_info=additional_info,
+            cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
+            prepaid_account=account_model_qs.get(
+                role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
+            unearned_account=account_model_qs.get(
+                role=roles_module.LIABILITY_CL_ACC_PAYABLE) if not payable_account else payable_account
+        )
+
+        _, invoice_model = invoice_model.configure(entity_slug=self,
+                                                   bill_desc=ledger_name,
+                                                   commit=commit,
+                                                   commit_ledger=commit)
+
+        return invoice_model
 
     # ### PURCHASE ORDER MANAGEMENT ####
     def get_purchase_orders(self):
