@@ -29,7 +29,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -360,7 +360,7 @@ class InvoiceModelAbstract(AccrualMixIn,
     def is_configured(self) -> bool:
         return all([
             super().is_configured(),
-            self.invoice_number
+            self.invoice_status
         ])
 
     def configure(self,
@@ -397,8 +397,9 @@ class InvoiceModelAbstract(AccrualMixIn,
 
         if not self.is_configured():
             if isinstance(entity_slug, str):
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=user_model)
+                if not user_model:
+                    raise InvoiceModelValidationError(_('Must pass user_model when using entity_slug.'))
+                entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
@@ -1579,6 +1580,14 @@ class InvoiceModel(InvoiceModelAbstract):
     """
     Base Invoice Model from Abstract.
     """
+
+
+def invoicemodel_presave(instance: InvoiceModel, **kwargs):
+    if instance.can_generate_invoice_number():
+        instance.generate_invoice_number(commit=False)
+
+
+pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)
 
 
 def invoicemodel_predelete(instance: InvoiceModel, **kwargs):

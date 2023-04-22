@@ -440,7 +440,6 @@ class BillModelAbstract(AccrualMixIn,
         # todo: add raise_exception flag, check if this is consistent...
 
         if not self.is_configured():
-
             if isinstance(entity_slug, str):
                 if not user_model:
                     raise BillModelValidationError(_('Must pass user_model when using entity_slug.'))

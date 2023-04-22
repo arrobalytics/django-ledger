@@ -1038,13 +1038,13 @@ class EntityModelAbstract(MP_Node,
 
     def create_bill_model(self,
                           vendor_model: Union[VendorModel, UUID, str],
-                          xref: Optional[str],
-                          additional_info: Optional[Dict] = None,
-                          ledger_name: Optional[str] = None,
-                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                          xref: Optional[str] = None,
                           cash_account: Optional[AccountModel] = None,
                           prepaid_account: Optional[AccountModel] = None,
                           payable_account: Optional[AccountModel] = None,
+                          additional_info: Optional[Dict] = None,
+                          ledger_name: Optional[str] = None,
+                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                           commit: bool = True):
 
         BillModel = lazy_loader.get_bill_model()
@@ -1066,7 +1066,6 @@ class EntityModelAbstract(MP_Node,
             roles_module.ASSET_CA_PREPAID,
             roles_module.LIABILITY_CL_ACC_PAYABLE
         ]).is_role_default()
-
         # evaluates the queryset...
         len(account_model_qs)
 
@@ -1097,12 +1096,12 @@ class EntityModelAbstract(MP_Node,
 
     def create_invoice_model(self,
                              customer_model: Union[VendorModel, UUID, str],
-                             additional_info: Optional[Dict] = None,
-                             ledger_name: Optional[str] = None,
-                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                              cash_account: Optional[AccountModel] = None,
                              prepaid_account: Optional[AccountModel] = None,
                              payable_account: Optional[AccountModel] = None,
+                             additional_info: Optional[Dict] = None,
+                             ledger_name: Optional[str] = None,
+                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                              commit: bool = True):
 
         InvoiceModel = lazy_loader.get_invoice_model()
@@ -1119,7 +1118,6 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-
         account_model_qs = account_model_qs.with_roles(roles=[
             roles_module.ASSET_CA_CASH,
             roles_module.ASSET_CA_PREPAID,
@@ -1130,7 +1128,7 @@ class EntityModelAbstract(MP_Node,
         len(account_model_qs)
 
         invoice_model = InvoiceModel(
-            vendor=customer_model,
+            customer=customer_model,
             additional_info=additional_info,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
@@ -1140,7 +1138,7 @@ class EntityModelAbstract(MP_Node,
         )
 
         _, invoice_model = invoice_model.configure(entity_slug=self,
-                                                   bill_desc=ledger_name,
+                                                   invoice_desc=ledger_name,
                                                    commit=commit,
                                                    commit_ledger=commit)
 
