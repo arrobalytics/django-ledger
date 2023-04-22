@@ -21,11 +21,13 @@ from string import ascii_uppercase, digits
 from typing import Tuple, List, Union, Optional
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, Count, F
 from django.db.models.functions import Coalesce
+from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -39,6 +41,8 @@ from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
+
+UserModel = get_user_model()
 
 
 class PurchaseOrderModelValidationError(ValidationError):
@@ -252,9 +256,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ])
 
     def configure(self,
-                  entity_slug: str or EntityModel,
-                  user_model,
-                  draft_date: date = None,
+                  entity_slug: Union[str, EntityModel],
+                  user_model: Optional[UserModel] = None,
+                  draft_date: Optional[date] = None,
+                  estimate_model=None,
                   commit: bool = False):
         """
         A configuration hook which executes all initial PurchaseOrderModel setup on to the EntityModel and all initial
@@ -285,20 +290,23 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         """
         if not self.is_configured():
             if isinstance(entity_slug, str):
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=user_model)
+                if not user_model:
+                    raise PurchaseOrderModelValidationError(_('Must pass user_model when using entity_slug.'))
+                entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
                 raise PurchaseOrderModelValidationError('entity_slug must be an instance of str or EntityModel')
 
-            if draft_date:
-                self.date_draft = draft_date
-            if not self.date_draft:
-                self.date_draft = localdate()
+            self.date_draft = localdate() if not draft_date else draft_date
             self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
+
+            if estimate_model:
+                self.action_bind_estimate(estimate_model=estimate_model, commit=False)
+
             self.entity = entity_model
+
             self.clean()
             if commit:
                 self.save()
@@ -1145,13 +1153,16 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if self.can_generate_po_number():
             self.generate_po_number(commit=True)
 
-    def save(self, **kwargs):
-        if self.can_generate_po_number():
-            self.generate_po_number(commit=True)
-        super(PurchaseOrderModelAbstract, self).save(**kwargs)
-
 
 class PurchaseOrderModel(PurchaseOrderModelAbstract):
     """
     Purchase Order Base Model
     """
+
+
+def purchaseordermodel_presave(instance: PurchaseOrderModel, **kwargs):
+    if instance.can_generate_po_number():
+        instance.generate_po_number(commit=False)
+
+
+pre_save.connect(receiver=purchaseordermodel_presave, sender=PurchaseOrderModel)

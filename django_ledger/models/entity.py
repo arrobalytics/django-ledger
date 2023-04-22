@@ -892,7 +892,10 @@ class EntityModelAbstract(MP_Node,
             coa_model = self.default_coa
         else:
             self.validate_chart_of_accounts_for_entity(coa_model)
-        account_model = coa_model.accountmodel_set.get(role__exact=role, role_default=True)
+
+        if not account_model_qs:
+            return coa_model.accountmodel_set.get(role__exact=role, role_default=True)
+        return account_model_qs.get(coa_model=coa_model, role__exact=role, role_default=True)
 
     def create_account_model(self,
                              account_model_kwargs: Dict,
@@ -958,7 +961,7 @@ class EntityModelAbstract(MP_Node,
         vendor_model_qs = self.get_vendors()
         return vendor_model_qs.get(uuid__exact=vendor_uuid)
 
-    def create_vendor_model(self, vendor_model_kwargs: Dict, commit: bool = True) -> VendorModel:
+    def create_vendor(self, vendor_model_kwargs: Dict, commit: bool = True) -> VendorModel:
         """
         Creates a new VendorModel associated with the EntityModel instance.
 
@@ -1008,6 +1011,10 @@ class EntityModelAbstract(MP_Node,
         customer_model_qs = self.get_customers()
         return customer_model_qs.get(uuid__exact=customer_uuid)
 
+    def validate_customer(self, customer_model: CustomerModel):
+        if customer_model.entity_model_id != self.uuid:
+            raise EntityModelValidationError(f'Invalid CustomerModel {self.uuid} for EntityModel {self.uuid}...')
+
     def create_customer_model(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
         """
         Creates a new CustomerModel associated with the EntityModel instance.
@@ -1036,16 +1043,16 @@ class EntityModelAbstract(MP_Node,
             ledger__entity__uuid__exact=self.uuid
         ).select_related('ledger', 'ledger__entity')
 
-    def create_bill_model(self,
-                          vendor_model: Union[VendorModel, UUID, str],
-                          xref: Optional[str] = None,
-                          cash_account: Optional[AccountModel] = None,
-                          prepaid_account: Optional[AccountModel] = None,
-                          payable_account: Optional[AccountModel] = None,
-                          additional_info: Optional[Dict] = None,
-                          ledger_name: Optional[str] = None,
-                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                          commit: bool = True):
+    def create_bill(self,
+                    vendor_model: Union[VendorModel, UUID, str],
+                    xref: Optional[str] = None,
+                    cash_account: Optional[AccountModel] = None,
+                    prepaid_account: Optional[AccountModel] = None,
+                    payable_account: Optional[AccountModel] = None,
+                    additional_info: Optional[Dict] = None,
+                    ledger_name: Optional[str] = None,
+                    coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                    commit: bool = True):
 
         BillModel = lazy_loader.get_bill_model()
 
@@ -1094,15 +1101,15 @@ class EntityModelAbstract(MP_Node,
             ledger__entity__uuid__exact=self.uuid
         ).select_related('ledger', 'ledger__entity')
 
-    def create_invoice_model(self,
-                             customer_model: Union[VendorModel, UUID, str],
-                             cash_account: Optional[AccountModel] = None,
-                             prepaid_account: Optional[AccountModel] = None,
-                             payable_account: Optional[AccountModel] = None,
-                             additional_info: Optional[Dict] = None,
-                             ledger_name: Optional[str] = None,
-                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                             commit: bool = True):
+    def create_invoice(self,
+                       customer_model: Union[VendorModel, UUID, str],
+                       cash_account: Optional[AccountModel] = None,
+                       prepaid_account: Optional[AccountModel] = None,
+                       payable_account: Optional[AccountModel] = None,
+                       additional_info: Optional[Dict] = None,
+                       ledger_name: Optional[str] = None,
+                       coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                       commit: bool = True):
 
         InvoiceModel = lazy_loader.get_invoice_model()
 
@@ -1148,11 +1155,47 @@ class EntityModelAbstract(MP_Node,
     def get_purchase_orders(self):
         return self.purchaseordermodel_set.all().select_related('entity')
 
-    # ### ESTIMATE MODEL MANAGEMENT ####
+    def create_purchase_order(self,
+                              draft_date: Optional[date] = None,
+                              estimate_model=None,
+                              commit: bool = True):
+        PurchaseOrderModel = lazy_loader.get_purchase_order_model()
+        po_model = PurchaseOrderModel()
+        return po_model.configure(
+            entity_slug=self,
+            draft_date=draft_date,
+            estimate_model=estimate_model,
+            commit=commit
+        )
+
+    # ### ESTIMATE/CONTRACT MANAGEMENT ####
     def get_estimate_models(self):
         return self.estimatemodel_set.all().select_related('entity')
 
-    # ### BANK ACCOUNT MODEL MANAGEMENT ###
+    def create_estimate(self,
+                        customer_model: Union[CustomerModel, UUID, str],
+                        draft_date: Optional[date] = None,
+                        commit: bool = True):
+
+        if isinstance(customer_model, CustomerModel):
+            self.validate_customer(customer_model)
+        elif isinstance(customer_model, str):
+            customer_model = self.get_customer_by_number(customer_number=customer_model)
+        elif isinstance(customer_model, UUID):
+            customer_model = self.get_customer_by_uuid(customer_uuid=customer_model)
+        else:
+            raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
+
+        EstimateModel = lazy_loader.get_estimate_model()
+        estimate_model = EstimateModel()
+        return estimate_model.configure(
+            entity_slug=self,
+            date_draft=draft_date,
+            customer_model=customer_model,
+            commit=commit
+        )
+
+    # ### BANK ACCOUNT MANAGEMENT ####
     def get_bank_account_models(self, active: bool = True) -> BankAccountModelQuerySet:
         bank_account_qs = self.bankaccountmodel_set.all().select_related('entity_model')
         if active:

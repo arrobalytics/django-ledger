@@ -19,6 +19,7 @@ from string import ascii_uppercase, digits
 from typing import Union, Optional, List
 from uuid import uuid4, UUID
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.db import models, transaction, IntegrityError
@@ -38,6 +39,8 @@ from django_ledger.models.purchase_order import PurchaseOrderModelQuerySet
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
+
+UserModel = get_user_model()
 
 
 class EstimateModelValidationError(ValidationError):
@@ -325,10 +328,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def configure(self,
                   entity_slug: Union[EntityModel, UUID, str],
-                  user_model,
                   customer_model: CustomerModel,
+                  user_model: Optional[UserModel] = None,
                   date_draft: Optional[date] = None,
-                  raise_exception: bool = True,
                   commit: bool = False):
         """
         A configuration hook which executes all initial EstimateModel setup.
@@ -338,19 +340,14 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ----------
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Bill with.
-
         user_model:
             The UserModel making the request to check for QuerySet permissions.
-
         date_draft: date
             The draft date to use. If None defaults to localdate().
-
         customer_model: CustomerModel
             The CustomerModel to be associated with this EstimateModel instance.
-
         commit: bool
             Saves the current EstimateModel after being configured.
-
         raise_exception: bool
             If True, raises EstimateModelValidationError when model is already configured.
 
@@ -359,28 +356,24 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         EstimateModel
             The configured EstimateModel instance.
         """
-        if self.is_configured():
-            if raise_exception:
-                raise EstimateModelValidationError(
-                    message=f'{self.__class__.__name__} already configured...'
-                )
-            return
+        if not self.is_configured():
+            if isinstance(entity_slug, str):
+                if not user_model:
+                    raise EstimateModelValidationError(_('Must pass user_model when using entity_slug.'))
+                entity_qs = EntityModel.objects.for_user(user_model=user_model)
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+            elif isinstance(entity_slug, EntityModel):
+                entity_model = entity_slug
+            else:
+                raise ValidationError('entity_slug must be an instance of str or EntityModel')
 
-        if isinstance(entity_slug, str):
-            entity_qs = EntityModel.objects.for_user(user_model=user_model)
-            entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-        elif isinstance(entity_slug, EntityModel):
-            entity_model = entity_slug
-        else:
-            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+            self.entity = entity_model
+            self.customer = customer_model
+            if not date_draft:
+                self.date_draft = localdate()
 
-        self.entity = entity_model
-        self.customer = customer_model
-        if not date_draft:
-            self.date_draft = localdate()
-
-        if commit:
-            self.save()
+            if commit:
+                self.save()
         return self
 
     # State....
