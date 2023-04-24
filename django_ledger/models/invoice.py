@@ -368,7 +368,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                   user_model: Optional[UserModel] = None,
                   date_draft: Optional[date] = None,
                   ledger_posted: bool = False,
-                  invoice_desc: str = None,
+                  ledger_name: Optional[str] = None,
                   commit: bool = False,
                   commit_ledger: bool = False):
         """
@@ -380,10 +380,12 @@ class InvoiceModelAbstract(AccrualMixIn,
 
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Invoice with.
-        user_model:
+        user_model: UserModel
             The UserModel making the request to check for QuerySet permissions.
-        ledger_posted:
+        ledger_posted: bool
             An option to mark the InvoiceModel Ledger as posted at the time of configuration. Defaults to False.
+        ledger_name: str
+            Optional additional InvoiceModel ledger name or description.
         invoice_desc: str
             An optional description appended to the LedgerModel name.
         commit: bool
@@ -416,13 +418,11 @@ class InvoiceModelAbstract(AccrualMixIn,
             self.date_draft = localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
-            ledger_model: LedgerModel = LedgerModel(
-                entity=entity_model,
-                posted=ledger_posted
-            )
+            ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+
             ledger_name = f'Invoice {self.uuid}'
-            if invoice_desc:
-                ledger_name += f' | {invoice_desc}'
+            if ledger_name:
+                ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
             ledger_model.clean()
 

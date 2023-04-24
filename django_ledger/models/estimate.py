@@ -331,7 +331,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                   customer_model: CustomerModel,
                   user_model: Optional[UserModel] = None,
                   date_draft: Optional[date] = None,
-                  commit: bool = False):
+                  estimate_title: Optional[str] = None,
+                  commit: bool = False,
+                  raise_exception: bool = True):
         """
         A configuration hook which executes all initial EstimateModel setup.
         Can only call this method once in the lifetime of a EstimateModel.
@@ -348,6 +350,8 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             The CustomerModel to be associated with this EstimateModel instance.
         commit: bool
             Saves the current EstimateModel after being configured.
+        estimate_title: str
+            Optional EstimateModel title.
         raise_exception: bool
             If True, raises EstimateModelValidationError when model is already configured.
 
@@ -357,20 +361,33 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             The configured EstimateModel instance.
         """
         if not self.is_configured():
-            if isinstance(entity_slug, str):
+            if isinstance(entity_slug, (str, UUID)):
                 if not user_model:
-                    raise EstimateModelValidationError(_('Must pass user_model when using entity_slug.'))
+                    if raise_exception:
+                        raise EstimateModelValidationError(_('Must pass user_model when using entity_slug.'))
+                    return
                 entity_qs = EntityModel.objects.for_user(user_model=user_model)
-                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                if isinstance(entity_slug, str):
+                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+                elif isinstance(entity_slug, UUID):
+                    entity_model: EntityModel = get_object_or_404(entity_qs, uuid__exact=entity_slug)
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise ValidationError('entity_slug must be an instance of str or EntityModel')
+                if raise_exception:
+                    raise EstimateModelValidationError('entity_slug must be an instance of str or EntityModel')
+                return
+
+            if estimate_title:
+                self.title = estimate_title
 
             self.entity = entity_model
+
             self.customer = customer_model
             if not date_draft:
                 self.date_draft = localdate()
+
+            self.clean()
 
             if commit:
                 self.save()

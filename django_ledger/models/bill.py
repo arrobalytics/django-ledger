@@ -409,7 +409,7 @@ class BillModelAbstract(AccrualMixIn,
                   user_model: Optional[UserModel] = None,
                   date_draft: Optional[date] = None,
                   ledger_posted: bool = False,
-                  bill_desc: str = None,
+                  ledger_name: str = None,
                   commit: bool = False,
                   commit_ledger: bool = False):
         """
@@ -417,16 +417,16 @@ class BillModelAbstract(AccrualMixIn,
         values of the BillModel. Can only call this method once in the lifetime of a BillModel.
 
         Parameters
-        __________
+        ----------
 
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Bill with.
-        user_model:
+        user_model: UserModel
             The UserModel making the request to check for QuerySet permissions.
-        ledger_posted:
+        ledger_posted: bool
             An option to mark the BillModel Ledger as posted at the time of configuration. Defaults to False.
-        bill_desc: str
-            An optional description appended to the LedgerModel name.
+        ledger_name: str
+            Optional additional InvoiceModel ledger name or description.
         commit: bool
             Saves the current BillModel after being configured.
         commit_ledger: bool
@@ -460,14 +460,13 @@ class BillModelAbstract(AccrualMixIn,
             self.date_draft = localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
-            ledger_model: LedgerModel = LedgerModel(
-                entity=entity_model,
-                posted=ledger_posted
-            )
+            ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+
             ledger_name = f'Bill {self.uuid}'
-            if bill_desc:
-                ledger_name += f' | {bill_desc}'
+            if ledger_name:
+                ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
+
             ledger_model.clean()
 
             self.ledger = ledger_model

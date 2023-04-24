@@ -1088,7 +1088,7 @@ class EntityModelAbstract(MP_Node,
         )
 
         _, bill_model = bill_model.configure(entity_slug=self,
-                                             bill_desc=ledger_name,
+                                             ledger_name=ledger_name,
                                              commit=commit,
                                              commit_ledger=commit)
 
@@ -1145,7 +1145,7 @@ class EntityModelAbstract(MP_Node,
         )
 
         _, invoice_model = invoice_model.configure(entity_slug=self,
-                                                   invoice_desc=ledger_name,
+                                                   ledger_name=ledger_name,
                                                    commit=commit,
                                                    commit_ledger=commit)
 
@@ -1173,6 +1173,7 @@ class EntityModelAbstract(MP_Node,
         return self.estimatemodel_set.all().select_related('entity')
 
     def create_estimate(self,
+                        estimate_title: str,
                         customer_model: Union[CustomerModel, UUID, str],
                         draft_date: Optional[date] = None,
                         commit: bool = True):
@@ -1192,6 +1193,7 @@ class EntityModelAbstract(MP_Node,
             entity_slug=self,
             date_draft=draft_date,
             customer_model=customer_model,
+            estimate_title=estimate_title,
             commit=commit
         )
 
