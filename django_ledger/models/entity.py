@@ -35,13 +35,14 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import IOMixIn
 from django_ledger.io import roles as roles_module
+from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.bank_account import BankAccountModelQuerySet
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
@@ -108,7 +109,7 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self):
         """Sets the custom queryset as the default."""
-        return EntityModelQuerySet(self.model).order_by('path')
+        return EntityModelQuerySet(self.model).order_by('path').select_related('admin', 'default_coa')
 
     def for_user(self, user_model):
         """
@@ -519,7 +520,7 @@ class EntityModelAbstract(MP_Node,
         ]
 
     def __str__(self):
-        return f'EntityModel: {self.name}'
+        return f'EntityModel {self.slug}: {self.name}'
 
     # ## Logging ###
     def get_logger_name(self):
@@ -605,10 +606,11 @@ class EntityModelAbstract(MP_Node,
         """
         return self.default_coa_id is not None
 
-    def get_default_coa(self, raise_exception: bool) -> ChartOfAccountModel:
+    def get_default_coa(self, raise_exception: bool = True) -> Optional[ChartOfAccountModel]:
         if not self.default_coa_id:
             if raise_exception:
                 raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
+        return self.default_coa
 
     def create_chart_of_accounts(self,
                                  assign_as_default: bool = False,
@@ -691,8 +693,15 @@ class EntityModelAbstract(MP_Node,
             }
 
             for root_acc, acc_model_list in root_maps.items():
+                roles_set = set(account_model.role for account_model in acc_model_list)
                 for i, account_model in enumerate(acc_model_list):
-                    account_model.role_default = True if i == 0 else None
+                    account_model.role_default = True if account_model.role in roles_set else False
+
+                    try:
+                        roles_set.remove(account_model.role)
+                    except KeyError:
+                        pass
+
                     account_model.clean()
                     chart_of_accounts.create_account(account_model)
 
@@ -813,6 +822,7 @@ class EntityModelAbstract(MP_Node,
 
             if isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=True)
+                account_model_qs = account_model_qs.filter(coa_model=coa_model)
             if isinstance(coa_model, str):
                 account_model_qs = account_model_qs.filter(coa_model__slug__exact=coa_model)
             elif isinstance(coa_model, UUID):
@@ -856,8 +866,8 @@ class EntityModelAbstract(MP_Node,
 
     def get_accounts_with_codes(self,
                                 code_list: Union[str, List[str]],
-                                coa_model: Optional[
-                                    Union[ChartOfAccountModel, UUID, str]] = None) -> AccountModelQuerySet:
+                                coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
+                                ) -> AccountModelQuerySet:
         """
         Fetches the AccountModelQuerySet with provided code list.
 
@@ -897,10 +907,10 @@ class EntityModelAbstract(MP_Node,
             return coa_model.accountmodel_set.get(role__exact=role, role_default=True)
         return account_model_qs.get(coa_model=coa_model, role__exact=role, role_default=True)
 
-    def create_account_model(self,
-                             account_model_kwargs: Dict,
-                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                             raise_exception: bool = True) -> Tuple[ChartOfAccountModel, AccountModel]:
+    def create_account(self,
+                       account_model_kwargs: Dict,
+                       coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                       raise_exception: bool = True) -> Tuple[ChartOfAccountModel, AccountModel]:
         """
         Creates a new AccountModel for the EntityModel.
 
@@ -1015,7 +1025,7 @@ class EntityModelAbstract(MP_Node,
         if customer_model.entity_model_id != self.uuid:
             raise EntityModelValidationError(f'Invalid CustomerModel {self.uuid} for EntityModel {self.uuid}...')
 
-    def create_customer_model(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
+    def create_customer(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
         """
         Creates a new CustomerModel associated with the EntityModel instance.
 
@@ -1169,7 +1179,7 @@ class EntityModelAbstract(MP_Node,
         )
 
     # ### ESTIMATE/CONTRACT MANAGEMENT ####
-    def get_estimate_models(self):
+    def get_estimates(self):
         return self.estimatemodel_set.all().select_related('entity')
 
     def create_estimate(self,
@@ -1457,6 +1467,19 @@ class EntityModelAbstract(MP_Node,
             je_ledger=ledger
         )
         return ledger
+
+    # ### RANDOM DATA GENERATION ####
+
+    def populate_random_data(self, start_date: date):
+        EntityDataGenerator = lazy_loader.get_entity_data_generator()
+        data_generator = EntityDataGenerator(
+            user_model=self.admin,
+            days_forward=30,
+            start_date=start_date,
+            entity_model=self,
+            capital_contribution=Decimal.from_float(50000.00)
+        )
+        data_generator.populate_entity()
 
     # URLS ----
     def get_dashboard_url(self) -> str:
@@ -1765,3 +1788,11 @@ class EntityManagementModel(EntityManagementModelAbstract):
     """
     EntityManagement Model Base Class From Abstract
     """
+
+
+def entitymodel_presave(instance: EntityModel, **kwargs):
+    if not instance.slug:
+        instance.generate_slug(commit=False)
+
+
+pre_save.connect(receiver=entitymodel_presave, sender=EntityModel)

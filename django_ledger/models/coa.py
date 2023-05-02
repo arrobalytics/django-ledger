@@ -233,7 +233,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             # add coa root...
             role_meta = ROOT_GROUP_META[ROOT_COA]
             account_pk = uuid4()
-            logger.info(msg=f'Adding {role_meta} node...')
             coa_root_account_model = AccountModel.add_root(
                 instance=AccountModel(
                     uuid=account_pk,
@@ -252,7 +251,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 if root_role not in existing_root_roles:
                     account_pk = uuid4()
                     role_meta = ROOT_GROUP_META[root_role]
-                    logger.info(msg=f'Adding {role_meta} node...')
                     coa_root_account_model.add_child(
                         instance=AccountModel(
                             uuid=account_pk,

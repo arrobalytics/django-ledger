@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Django Ledger - The Django Book Keeping Engine.
-==================================================
+===============================================
 
 .. autosummary::
    :toctree: generated
