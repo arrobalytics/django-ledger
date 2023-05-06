@@ -225,10 +225,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
     invoice_status: str
         Current status of the InvoiceModel. Must be one of the choices as mentioned under "INVOICE_STATUS".
-        By default, the status will be "Draft"
-    xref: str
-        This is the field for capturing of any external reference number like the PO number of the buyer.
-        Any other reference number like the Vendor code in buyer books may also be captured.
+        By default, the status will be "Draft".
     customer: :obj:`CustomerModel`
         This is the foreign key reference to the CustomerModel from whom the purchase has been made.
     additional_info: dict
@@ -420,9 +417,9 @@ class InvoiceModelAbstract(AccrualMixIn,
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
 
-            ledger_name = f'Invoice {self.uuid}'
-            if ledger_name:
-                ledger_name += f' | {ledger_name}'
+            if not ledger_name:
+                ledger_name = f'Invoice {self.uuid}'
+            ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
             ledger_model.clean()
 

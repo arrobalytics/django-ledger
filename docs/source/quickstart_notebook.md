@@ -1,11 +1,12 @@
 ```python
 import os
-from datetime import date
+from datetime import date, datetime
 from random import randint
 
 import django
 
 # for easier visualization it is recommended to use pandas to render data...
+# if pandas is not installed, you may install it with this command: pip install -U pandas
 # pandas is not a dependecy of django_ledger...
 import pandas as pd
 
@@ -95,7 +96,7 @@ entity_model.has_default_coa()
 default_coa_model = entity_model.get_default_coa()
 ```
 
-# Chart of Accounts
+# Chart of Accounts (CoA)
 
 ## Django Ledger support multiple chart of accounts.
 
@@ -216,11 +217,6 @@ customer_model = entity_model.create_customer(customer_model_kwargs={
 })
 ```
 
-
-```python
-customer_model
-```
-
 # Vendors
 
 ## Get Vendors
@@ -241,11 +237,6 @@ vendor_model = entity_model.create_vendor(vendor_model_kwargs={
 })
 ```
 
-
-```python
-vendor_model
-```
-
 # Invoices
 
 ## Get Invoices
@@ -261,11 +252,6 @@ pd.DataFrame(invoices_qs.values())
 
 ```python
 invoice_model = entity_model.create_invoice(customer_model='C-0000000006')
-```
-
-
-```python
-invoice_model
 ```
 
 # Bills
@@ -285,11 +271,6 @@ pd.DataFrame(bills_qs.values())
 bill_model = entity_model.create_bill(vendor_model='V-0000000002')
 ```
 
-
-```python
-bill_model
-```
-
 # Purchase Orders
 
 ## Get Purchase Orders
@@ -305,11 +286,6 @@ pd.DataFrame(purchase_orders_qs.values())
 
 ```python
 purchase_order = entity_model.create_purchase_order()
-```
-
-
-```python
-purchase_order
 ```
 
 # Estimates/Contracts
@@ -332,7 +308,107 @@ estimate_model = entity_model.create_estimate(
 )
 ```
 
+# Bank Accounts
+
+## Get Bank Accounts
+
 
 ```python
-estimate_model
+bank_accounts_qs = entity_model.get_bank_accounts()
+pd.DataFrame(bank_accounts_qs.values())
+```
+
+## Create Bank Account
+
+
+```python
+bank_account_model = entity_model.create_bank_account(name='A big bank account!',
+                                                      account_type='checking')
+```
+
+# Financial Statements
+
+## Balance Sheet
+
+
+```python
+txs_qs, io_digest = entity_model.get_balance_sheet(
+    user_model=user_model,
+    to_date=date(2022,12,31)
+)
+```
+
+### The digest object contains all relevant financial data for the requested period
+#### The balance sheet information is summarized in its own namespace
+
+
+```python
+io_digest['tx_digest']['balance_sheet']
+```
+
+## Income Statement
+
+
+```python
+txs_qs, io_digest = entity_model.get_income_statement(
+    user_model=user_model,
+    from_date=date(2022,1,1),
+    to_date=date(2022,12,31)
+)
+```
+
+### The digest object contains all relevant financial data for the requested period
+#### The income statement information is summarized in its own namespace
+
+
+```python
+io_digest['tx_digest']['income_statement']
+```
+
+## Cash Flow Statement
+
+
+```python
+txs_qs, io_digest = entity_model.get_cash_flow_statement(
+    user_model=user_model,
+    from_date=date(2022,1,1),
+    to_date=date(2022,12,31)
+)
+```
+
+### The digest object contains all relevant financial data for the requested period
+#### The cash flow statement information is summarized in its own namespace
+
+
+```python
+io_digest['tx_digest']['cash_flow_statement']
+```
+
+## All Financial Statements in a single call
+
+
+```python
+txs_qs, io_digest = entity_model.get_financial_statements(
+    user_model=user_model,
+    from_date=date(2022,1,1),
+    to_date=date(2022,12,31)
+)
+```
+
+### The digest object contains all relevant financial data for the requested period
+#### All financial statements are summarized in its own namespace
+
+
+```python
+io_digest['tx_digest']['balance_sheet']
+```
+
+
+```python
+io_digest['tx_digest']['income_statement']
+```
+
+
+```python
+io_digest['tx_digest']['cash_flow_statement']
 ```

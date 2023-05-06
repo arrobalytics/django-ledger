@@ -25,7 +25,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import validate_io_date, lazy_importer
+from django_ledger.io import validate_io_date
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
@@ -33,6 +33,7 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
+from django_ledger.models.utils import lazy_loader
 
 
 class TransactionModelValidationError(ValidationError):
@@ -327,7 +328,7 @@ class TransactionModelAdmin(models.Manager):
                              entity_slug=entity_slug,
                              ledger_model=ledger_model)
 
-        if isinstance(je_model, lazy_importer.get_journal_entry_model()):
+        if isinstance(je_model, lazy_loader.get_journal_entry_model()):
             return qs.filter(journal_entry=je_model)
         return qs.filter(journal_entry__uuid__exact=je_model)
 

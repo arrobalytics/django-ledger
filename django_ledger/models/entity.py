@@ -34,7 +34,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -44,7 +44,7 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 from django_ledger.io import roles as roles_module
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
-from django_ledger.models.bank_account import BankAccountModelQuerySet
+from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
@@ -1208,11 +1208,39 @@ class EntityModelAbstract(MP_Node,
         )
 
     # ### BANK ACCOUNT MANAGEMENT ####
-    def get_bank_account_models(self, active: bool = True) -> BankAccountModelQuerySet:
+    def get_bank_accounts(self, active: bool = True) -> BankAccountModelQuerySet:
         bank_account_qs = self.bankaccountmodel_set.all().select_related('entity_model')
         if active:
             bank_account_qs = bank_account_qs.active()
         return bank_account_qs
+
+    def create_bank_account(self,
+                            name: str,
+                            account_type: str,
+                            active=False,
+                            cash_account: Optional[AccountModel] = None,
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                            bank_account_model_kwargs: Optional[Dict] = None,
+                            commit: bool = True):
+        if bank_account_model_kwargs is None:
+            bank_account_model_kwargs = dict()
+        if account_type not in BankAccountModel.VALID_ACCOUNT_TYPES:
+            raise EntityModelValidationError(
+                _(f'Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}'))
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_CASH).is_role_default()
+        bank_account_model = BankAccountModel(
+            name=name,
+            entity_model=self,
+            account_type=account_type,
+            active=active,
+            cash_account=account_model_qs.get() if not cash_account else cash_account,
+            **bank_account_model_kwargs
+        )
+        bank_account_model.clean()
+        if commit:
+            bank_account_model.save()
+        return bank_account_model
 
     # ##### INVENTORY MANAGEMENT ####
     @staticmethod
@@ -1467,6 +1495,69 @@ class EntityModelAbstract(MP_Node,
             je_ledger=ledger
         )
         return ledger
+
+    # #### FINANCIAL STATEMENTS ####
+
+    def get_balance_sheet(self,
+                          to_date: Union[date, datetime],
+                          user_model: UserModel,
+                          txs_queryset: Optional[QuerySet] = None,
+                          **kwargs: Dict) -> Tuple[QuerySet, Dict]:
+        return self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            balance_sheet_statement=True,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+    def get_income_statement(self,
+                             from_date: Union[date, datetime],
+                             to_date: Union[date, datetime],
+                             user_model: UserModel,
+                             txs_queryset: Optional[QuerySet] = None,
+                             **kwargs) -> Tuple[QuerySet, Dict]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            income_statement=True,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+    def get_cash_flow_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                user_model: UserModel,
+                                txs_queryset: Optional[QuerySet] = None,
+                                **kwargs) -> Tuple[QuerySet, Dict]:
+
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            cash_flow_statement=True,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+    def get_financial_statements(self,
+                                 from_date: Union[date, datetime],
+                                 to_date: Union[date, datetime],
+                                 user_model: UserModel,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 **kwargs) -> Tuple[QuerySet, Dict]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            balance_sheet_statement=True,
+            income_statement=True,
+            cash_flow_statement=True,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
 
     # ### RANDOM DATA GENERATION ####
 
