@@ -30,7 +30,7 @@ __This is the best way to get started twith this project if you are not familiar
 
 Access the latest documentation and QuickStart guide [here](https://django-ledger.readthedocs.io/en/latest/).
 Also, you may download the QuickStart Jupyter Notebook
-[here](https://github.com/arrobalytics/django-ledger/blob/notebooks/QuickStart%20Notebook.ipynb).
+[here](https://github.com/arrobalytics/django-ledger/blob/develop/notebooks/QuickStart%20Notebook.ipynb).
 
 Django Ledger supports:
 
