@@ -24,10 +24,11 @@ from decimal import Decimal
 from typing import Union, Optional, Tuple, Dict, List
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, Count
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -38,6 +39,8 @@ from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransac
 from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
+
+UserModel = get_user_model()
 
 
 class BillModelValidationError(ValidationError):
@@ -394,34 +397,40 @@ class BillModelAbstract(AccrualMixIn,
     def __str__(self):
         return f'Bill: {self.bill_number}'
 
+    def is_configured(self) -> bool:
+        return all([
+            super().is_configured(),
+            self.bill_status
+        ])
+
     # Configuration...
     def configure(self,
                   entity_slug: Union[str, EntityModel],
-                  user_model,
+                  user_model: Optional[UserModel] = None,
+                  date_draft: Optional[date] = None,
                   ledger_posted: bool = False,
-                  bill_desc: str = None,
-                  commit: bool = False):
+                  ledger_name: str = None,
+                  commit: bool = False,
+                  commit_ledger: bool = False):
         """
         A configuration hook which executes all initial BillModel setup on to the LedgerModel and all initial
         values of the BillModel. Can only call this method once in the lifetime of a BillModel.
 
         Parameters
-        __________
+        ----------
 
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Bill with.
-
-        user_model:
+        user_model: UserModel
             The UserModel making the request to check for QuerySet permissions.
-
-        ledger_posted:
+        ledger_posted: bool
             An option to mark the BillModel Ledger as posted at the time of configuration. Defaults to False.
-
-        bill_desc: str
-            An optional description appended to the LedgerModel name.
-
+        ledger_name: str
+            Optional additional InvoiceModel ledger name or description.
         commit: bool
             Saves the current BillModel after being configured.
+        commit_ledger: bool
+            Saves the BillModel's LedgerModel while being configured.
 
         Returns
         -------
@@ -431,35 +440,39 @@ class BillModelAbstract(AccrualMixIn,
         # todo: add raise_exception flag, check if this is consistent...
 
         if not self.is_configured():
-            if not self.ledger_id:
-                if isinstance(entity_slug, str):
-                    entity_qs = EntityModel.objects.for_user(
-                        user_model=user_model)
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
-                elif isinstance(entity_slug, EntityModel):
-                    entity_model = entity_slug
-                else:
-                    raise BillModelValidationError('entity_slug must be an instance of str or EntityModel')
+            if isinstance(entity_slug, str):
+                if not user_model:
+                    raise BillModelValidationError(_('Must pass user_model when using entity_slug.'))
+                entity_qs = EntityModel.objects.for_user(user_model=user_model)
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+            elif isinstance(entity_slug, EntityModel):
+                entity_model = entity_slug
+            else:
+                raise BillModelValidationError('entity_slug must be an instance of str or EntityModel')
 
             if entity_model.is_accrual_method():
                 self.accrue = True
-                self.progress = 1
+                self.progress = Decimal.from_float(1.00)
             else:
                 self.accrue = False
 
+            self.bill_status = self.BILL_STATUS_DRAFT
+            self.date_draft = localdate() if not date_draft else date_draft
+
             LedgerModel = lazy_loader.get_ledger_model()
-            ledger_model: LedgerModel = LedgerModel(
-                entity=entity_model,
-                posted=ledger_posted
-            )
+            ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+
             ledger_name = f'Bill {self.uuid}'
-            if bill_desc:
-                ledger_name += f' | {bill_desc}'
+            if ledger_name:
+                ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
+
             ledger_model.clean()
 
             self.ledger = ledger_model
-            self.ledger.save()
+
+            if commit_ledger:
+                self.ledger.save()
 
             if self.can_generate_bill_number():
                 self.generate_bill_number(commit=commit)
@@ -1674,30 +1687,29 @@ class BillModelAbstract(AccrualMixIn,
         super(PaymentTermsMixIn, self).clean()
 
         if self.accrue:
-            self.progress = Decimal('1.00')
+            self.progress = Decimal.from_float(1.00)
 
         if self.is_draft():
-            self.amount_paid = Decimal('0.00')
+            self.amount_paid = Decimal.from_float(0.00)
             self.paid = False
             self.date_paid = None
 
         if not self.additional_info:
             self.additional_info = dict()
 
-    def save(self, **kwargs):
-        """
-        Save method for BillModel. Results in a DB query if bill number has not been generated and the BillModel is
-        eligible to generate a bill_number.
-        """
-        if self.can_generate_bill_number():
-            self.generate_bill_number(commit=False)
-        super(BillModelAbstract, self).save(**kwargs)
-
 
 class BillModel(BillModelAbstract):
     """
     Base BillModel from Abstract.
     """
+
+
+def billmodel_presave(instance: BillModel, **kwargs):
+    if instance.can_generate_bill_number():
+        instance.generate_bill_number(commit=False)
+
+
+pre_save.connect(receiver=billmodel_presave, sender=BillModel)
 
 
 def billmodel_predelete(instance: BillModel, **kwargs):

@@ -223,6 +223,8 @@ class AccrualMixIn(models.Model):
                                         null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
+
+    # todo: rename to payable account...
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.RESTRICT,
                                          blank=True,
@@ -1107,10 +1109,11 @@ class BankAccountInfoMixIn(models.Model):
 
     ACCOUNT_CHECKING = 'checking'
     ACCOUNT_SAVINGS = 'savings'
-    ACCOUNT_TYPES = [
+    ACCOUNT_TYPE_CHOICES = [
         (ACCOUNT_CHECKING, _('Checking')),
         (ACCOUNT_SAVINGS, _('Savings'))
     ]
+    VALID_ACCOUNT_TYPES = tuple(atc[0] for atc in ACCOUNT_TYPE_CHOICES)
 
     account_number = models.CharField(max_length=30, null=True, blank=True,
                                       validators=[
@@ -1122,7 +1125,7 @@ class BankAccountInfoMixIn(models.Model):
                                       ], verbose_name=_('Routing Number'))
     aba_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('ABA Number'))
     swift_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number'))
-    account_type = models.CharField(choices=ACCOUNT_TYPES,
+    account_type = models.CharField(choices=ACCOUNT_TYPE_CHOICES,
                                     max_length=10,
                                     default=ACCOUNT_CHECKING,
                                     verbose_name=_('Account Type'))

@@ -1,6 +1,6 @@
 [project]
 name = "django-ledger"
-version = "0.5.2.18"
+version = "0.5.3.0"
 readme = "README.md"
 requires-python = ">=3.7"
 description = "Bookkeeping & Financial analysis backend for Django. Balance Sheet, Income Statements, Chart of Accounts, Entities"

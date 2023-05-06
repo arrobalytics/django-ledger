@@ -31,6 +31,8 @@ class LazyLoader:
     PURCHASE_ORDER_MODEL = None
     ESTIMATE_MODEL = None
 
+    ENTITY_DATA_GENERATOR = None
+
     def get_entity_model(self):
         if not self.ENTITY_MODEL:
             from django_ledger.models import EntityModel
@@ -144,6 +146,12 @@ class LazyLoader:
             from django_ledger.models import EstimateModel
             self.ESTIMATE_MODEL = EstimateModel
         return self.ESTIMATE_MODEL
+
+    def get_entity_data_generator(self):
+        if not self.ENTITY_DATA_GENERATOR:
+            from django_ledger.io.data_generator import EntityDataGenerator
+            self.ENTITY_DATA_GENERATOR = EntityDataGenerator
+        return self.ENTITY_DATA_GENERATOR
 
 
 lazy_loader = LazyLoader()

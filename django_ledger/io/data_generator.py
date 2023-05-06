@@ -470,7 +470,8 @@ class EntityDataGenerator(LoggingMixIn):
 
         ledger_model, bill_model = bill_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model)
+            user_model=self.user_model,
+            commit_ledger=True)
 
         bill_model.full_clean()
         bill_model.save()
@@ -572,7 +573,8 @@ class EntityDataGenerator(LoggingMixIn):
 
                     ledger_model, bill_model = bill_model.configure(
                         entity_slug=self.entity_model.slug,
-                        user_model=self.user_model
+                        user_model=self.user_model,
+                        commit_ledger=True
                     )
 
                     bill_model.terms = choice([
@@ -632,6 +634,7 @@ class EntityDataGenerator(LoggingMixIn):
                                 if random() > 0.20:
                                     for po_i in po_items:
                                         po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
+                                        po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                                         po_i.full_clean()
 
                                     # todo: can pass po items??..
@@ -665,7 +668,9 @@ class EntityDataGenerator(LoggingMixIn):
         self.logger.info(f'Creating entity invoice {invoice_model.invoice_number}...')
         ledger_model, invoice_model = invoice_model.configure(
             entity_slug=self.entity_model,
-            user_model=self.user_model)
+            user_model=self.user_model,
+            commit_ledger=True
+        )
 
         invoice_model.full_clean()
         invoice_model.save()

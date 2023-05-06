@@ -10,9 +10,10 @@ A Bank Account refers to the financial institution which holds financial assets 
 A bank account usually holds cash, which is a Current Asset. Transactions may be imported using the open financial
 format specification OFX into a staging area for final disposition into the EntityModel ledger.
 """
-
+from typing import Optional
 from uuid import uuid4
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, QuerySet
@@ -21,6 +22,12 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
 from django_ledger.models.utils import lazy_loader
+
+UserModel = get_user_model()
+
+
+class BankAccountValidationError(ValidationError):
+    pass
 
 
 class BankAccountModelQuerySet(QuerySet):
@@ -130,17 +137,19 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
 
     def configure(self,
                   entity_slug,
-                  user_model,
+                  user_model: Optional[UserModel],
                   commit: bool = False):
 
         EntityModel = lazy_loader.get_entity_model()
         if isinstance(entity_slug, str):
+            if not user_model:
+                raise BankAccountValidationError(_('Must pass user_model when using entity_slug.'))
             entity_model_qs = EntityModel.objects.for_user(user_model=user_model)
             entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
         elif isinstance(entity_slug, EntityModel):
             entity_model = entity_slug
         else:
-            raise ValidationError('entity_slug must be an instance of str or EntityModel')
+            raise BankAccountValidationError('entity_slug must be an instance of str or EntityModel')
 
         self.entity_model = entity_model
         self.clean()
@@ -164,7 +173,7 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        return self.name
+        return f'{self.get_account_type_display()} Bank Account: {self.name}'
 
     def can_activate(self) -> bool:
         return self.active is False
@@ -175,7 +184,7 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     def mark_as_active(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_activate():
             if raise_exception:
-                raise ValidationError('Bank Account cannot be activated.')
+                raise BankAccountValidationError('Bank Account cannot be activated.')
         self.active = True
         if commit:
             self.save(update_fields=[
@@ -186,7 +195,7 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     def mark_as_inactive(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_inactivate():
             if raise_exception:
-                raise ValidationError('Bank Account cannot be deactivated.')
+                raise BankAccountValidationError('Bank Account cannot be deactivated.')
         self.active = False
         if commit:
             self.save(update_fields=[

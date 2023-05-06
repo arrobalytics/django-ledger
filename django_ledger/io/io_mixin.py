@@ -25,18 +25,16 @@ from django_ledger.io.io_context import (RoleContextManager, GroupContextManager
                                          BalanceSheetStatementContextManager, IncomeStatementContextManager,
                                          CashFlowStatementContextManager)
 from django_ledger.io.ratios import FinancialRatioManager
-from django_ledger.models.utils import LazyLoader
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
                                     DJANGO_LEDGER_TRANSACTION_CORRECTION)
 
 UserModel = get_user_model()
 
-lazy_importer = LazyLoader()
-
 
 def diff_tx_data(tx_data: list, raise_exception: bool = True):
     IS_TX_MODEL = False
-    TransactionModel = lazy_importer.get_txs_model()
+    TransactionModel = lazy_loader.get_txs_model()
 
     if isinstance(tx_data[0], TransactionModel):
         CREDITS = sum(tx.amount for tx in tx_data if tx.tx_type == 'credit')
@@ -136,7 +134,7 @@ def validate_dates(
 
 def validate_activity(activity: str, raise_404: bool = False):
     # idea: move to model???...
-    JournalEntryModel = lazy_importer.get_journal_entry_model()
+    JournalEntryModel = lazy_loader.get_journal_entry_model()
     valid = activity in JournalEntryModel.VALID_ACTIVITIES
     if activity and not valid:
         exception = ValidationError(f'{activity} is invalid. Choices are {JournalEntryModel.VALID_ACTIVITIES}.')
@@ -157,7 +155,7 @@ class IOMixIn:
 
     def database_digest(self,
                         user_model: UserModel,
-                        queryset: QuerySet,
+                        txs_queryset: QuerySet,
                         from_date: date = None,
                         to_date: date = None,
                         activity: str = None,
@@ -172,68 +170,66 @@ class IOMixIn:
                         by_period: bool = False,
                         by_unit: bool = False):
 
-        if not queryset:
-            TransactionModel = lazy_importer.get_txs_model()
+        if not txs_queryset:
+            TransactionModel = lazy_loader.get_txs_model()
 
             # If IO is on entity model....
-            if isinstance(self, lazy_importer.get_entity_model()):
+            if isinstance(self, lazy_loader.get_entity_model()):
                 if unit_slug:
-                    txs_qs = TransactionModel.objects.for_unit(
+                    txs_queryset = TransactionModel.objects.for_unit(
                         user_model=user_model,
                         entity_slug=entity_slug or self.slug,
                         unit_slug=unit_slug
                     )
                 else:
-                    txs_qs = TransactionModel.objects.for_entity(
+                    txs_queryset = TransactionModel.objects.for_entity(
                         user_model=user_model,
                         entity_slug=self
                     )
 
             # If IO is on ledger model....
-            elif isinstance(self, lazy_importer.get_ledger_model()):
-                txs_qs = TransactionModel.objects.for_ledger(
+            elif isinstance(self, lazy_loader.get_ledger_model()):
+                txs_queryset = TransactionModel.objects.for_ledger(
                     user_model=user_model,
                     entity_slug=entity_slug,
                     ledger_model=self
                 )
             # If IO is on unit model....
-            elif isinstance(self, lazy_importer.get_unit_model()):
+            elif isinstance(self, lazy_loader.get_unit_model()):
                 if not entity_slug:
                     raise ValidationError('Calling digest from Entity Unit requires entity_slug')
-                txs_qs = TransactionModel.objects.for_unit(
+                txs_queryset = TransactionModel.objects.for_unit(
                     user_model=user_model,
                     entity_slug=entity_slug,
                     unit_slug=self
                 )
             else:
-                txs_qs = TransactionModel.objects.none()
-        else:
-            txs_qs = queryset
+                txs_queryset = TransactionModel.objects.none()
 
         if exclude_zero_bal:
-            txs_qs = txs_qs.filter(amount__gt=0)
+            txs_queryset = txs_queryset.filter(amount__gt=0)
 
         if posted:
-            txs_qs = txs_qs.posted()
+            txs_queryset = txs_queryset.posted()
 
         if from_date:
-            txs_qs = txs_qs.from_date(from_date=from_date)
+            txs_queryset = txs_queryset.from_date(from_date=from_date)
 
         if to_date:
-            txs_qs = txs_qs.to_date(to_date=to_date)
+            txs_queryset = txs_queryset.to_date(to_date=to_date)
 
         if accounts:
             if not isinstance(accounts, str):
                 accounts = [accounts]
-            txs_qs = txs_qs.for_accounts(account_list=accounts)
+            txs_queryset = txs_queryset.for_accounts(account_list=accounts)
 
         if activity:
             if isinstance(activity, str):
                 activity = [activity]
-            txs_qs = txs_qs.for_activity(activity_list=activity)
+            txs_queryset = txs_queryset.for_activity(activity_list=activity)
 
         if role:
-            txs_qs = txs_qs.for_roles(role_list=role)
+            txs_queryset = txs_queryset.for_roles(role_list=role)
 
         VALUES = [
             'account__uuid',
@@ -262,11 +258,11 @@ class IOMixIn:
             VALUES.append('tx_type')
             ORDER_BY.append('tx_type')
 
-        return txs_qs.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
     def python_digest(self,
                       user_model: UserModel,
-                      queryset: QuerySet,
+                      txs_queryset: QuerySet,
                       to_date: date = None,
                       from_date: date = None,
                       equity_only: bool = False,
@@ -284,9 +280,9 @@ class IOMixIn:
         if equity_only:
             role = roles_module.GROUP_EARNINGS
 
-        txs_qs = self.database_digest(
+        txs_queryset = self.database_digest(
             user_model=user_model,
-            queryset=queryset,
+            txs_queryset=txs_queryset,
             to_date=to_date,
             from_date=from_date,
             entity_slug=entity_slug,
@@ -299,11 +295,11 @@ class IOMixIn:
             by_tx_type=by_tx_type,
             by_period=by_period)
 
-        for tx in txs_qs:
-            if tx['account__balance_type'] != tx['tx_type']:
-                tx['balance'] = -tx['balance']
+        for tx_model in txs_queryset:
+            if tx_model['account__balance_type'] != tx_model['tx_type']:
+                tx_model['balance'] = -tx_model['balance']
 
-        accounts_gb_code = groupby(txs_qs,
+        accounts_gb_code = groupby(txs_queryset,
                                    key=lambda a: (
                                        a['account__uuid'],
                                        a.get('journal_entry__entity_unit__uuid') if by_unit else None,
@@ -321,7 +317,7 @@ class IOMixIn:
             acc['balance_abs'] = abs(acc['balance'])
 
         if signs:
-            TransactionModel = lazy_importer.get_txs_model()
+            TransactionModel = lazy_loader.get_txs_model()
             for acc in gb_digest:
                 if any([
                     all([acc['role_bs'] == roles_module.BS_ASSET_ROLE,
@@ -334,7 +330,7 @@ class IOMixIn:
                 ]):
                     acc['balance'] = -acc['balance']
 
-        return txs_qs, gb_digest
+        return txs_queryset, gb_digest
 
     @staticmethod
     def aggregate_balances(k, g):
@@ -366,7 +362,7 @@ class IOMixIn:
                signs: bool = True,
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
-               queryset: QuerySet = None,
+               txs_queryset: QuerySet = None,
                process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -390,7 +386,7 @@ class IOMixIn:
         from_date, to_date = validate_dates(from_date, to_date)
 
         txs_qs, accounts_digest = self.python_digest(
-            queryset=queryset,
+            txs_queryset=txs_queryset,
             user_model=user_model,
             accounts=accounts,
             role=role,
@@ -422,7 +418,7 @@ class IOMixIn:
             # idea: change digest() name to something else? maybe aggregate, calculate?...
             io_digest = roles_mgr.digest()
 
-        if process_groups:
+        if process_groups or balance_sheet_statement or income_statement or cash_flow_statement:
             group_mgr = GroupContextManager(
                 io_digest=io_digest,
                 by_period=by_period,
@@ -499,7 +495,7 @@ class IOMixIn:
         balance_tx_data(je_txs)
 
         if all([
-            isinstance(self, lazy_importer.get_entity_model()),
+            isinstance(self, lazy_loader.get_entity_model()),
             not je_ledger
         ]):
             raise ValidationError('Must pass an instance of LedgerModel')
@@ -507,7 +503,7 @@ class IOMixIn:
         if not je_ledger:
             je_ledger = self
 
-        JournalEntryModel = lazy_importer.get_journal_entry_model()
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
 
         je_date = validate_io_date(dt=je_date)
 
@@ -521,7 +517,7 @@ class IOMixIn:
         # verify is False, no transactions are present yet....
         je_model.save(verify=False)
 
-        TransactionModel = lazy_importer.get_txs_model()
+        TransactionModel = lazy_loader.get_txs_model()
         txs_models = [
             TransactionModel(
                 account_id=tx['account_id'],

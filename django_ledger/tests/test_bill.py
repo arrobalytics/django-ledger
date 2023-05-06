@@ -28,9 +28,7 @@ class BillModelTests(DjangoLedgerBaseTest):
         EntityModel, BillModel]:
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
         vendor_model: VendorModel = entity_model.vendors.first()
-        account_qs = entity_model.get_accounts(
-            user_model=self.user_model
-        )
+        account_qs = entity_model.get_default_coa_accounts()
 
         len(account_qs)  # force evaluation
 
@@ -263,7 +261,7 @@ class BillModelTests(DjangoLedgerBaseTest):
                                 })
         self.assertContains(response, bill_list_url)
 
-        account_qs = entity_model.get_accounts(
+        account_qs = entity_model.get_default_accounts(
             user_model=self.user_model
         )
 

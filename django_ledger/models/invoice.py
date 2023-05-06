@@ -29,7 +29,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F
-from django.db.models.signals import post_delete
+from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -225,10 +225,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         Includes a reference to the Fiscal Year, Entity Unit and a sequence number. Max Length is 20.
     invoice_status: str
         Current status of the InvoiceModel. Must be one of the choices as mentioned under "INVOICE_STATUS".
-        By default, the status will be "Draft"
-    xref: str
-        This is the field for capturing of any external reference number like the PO number of the buyer.
-        Any other reference number like the Vendor code in buyer books may also be captured.
+        By default, the status will be "Draft".
     customer: :obj:`CustomerModel`
         This is the foreign key reference to the CustomerModel from whom the purchase has been made.
     additional_info: dict
@@ -357,12 +354,20 @@ class InvoiceModelAbstract(AccrualMixIn,
     def __str__(self):
         return f'Invoice: {self.invoice_number}'
 
+    def is_configured(self) -> bool:
+        return all([
+            super().is_configured(),
+            self.invoice_status
+        ])
+
     def configure(self,
                   entity_slug: Union[EntityModel, str],
-                  user_model: UserModel,
+                  user_model: Optional[UserModel] = None,
+                  date_draft: Optional[date] = None,
                   ledger_posted: bool = False,
-                  invoice_desc: str = None,
-                  commit: bool = False):
+                  ledger_name: Optional[str] = None,
+                  commit: bool = False,
+                  commit_ledger: bool = False):
         """
         A configuration hook which executes all initial InvoiceModel setup on to the LedgerModel and all initial
         values of the InvoiceModel. Can only call this method once in the lifetime of a InvoiceModel.
@@ -372,19 +377,18 @@ class InvoiceModelAbstract(AccrualMixIn,
 
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Invoice with.
-
-        user_model:
+        user_model: UserModel
             The UserModel making the request to check for QuerySet permissions.
-
-        ledger_posted:
+        ledger_posted: bool
             An option to mark the InvoiceModel Ledger as posted at the time of configuration. Defaults to False.
-
+        ledger_name: str
+            Optional additional InvoiceModel ledger name or description.
         invoice_desc: str
             An optional description appended to the LedgerModel name.
-
         commit: bool
             Saves the current InvoiceModel after being configured.
-
+        commit_ledger: bool
+            Saves the InvoiceModel's LedgerModel while being configured.
         Returns
         -------
         A tuple of LedgerModel, InvoiceModel
@@ -392,8 +396,9 @@ class InvoiceModelAbstract(AccrualMixIn,
 
         if not self.is_configured():
             if isinstance(entity_slug, str):
-                entity_qs = EntityModel.objects.for_user(
-                    user_model=user_model)
+                if not user_model:
+                    raise InvoiceModelValidationError(_('Must pass user_model when using entity_slug.'))
+                entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
@@ -402,23 +407,26 @@ class InvoiceModelAbstract(AccrualMixIn,
 
             if entity_model.is_accrual_method():
                 self.accrue = True
-                self.progress = Decimal('1.00')
+                self.progress = Decimal.from_float(1.00)
             else:
                 self.accrue = False
 
+            self.invoice_status = self.INVOICE_STATUS_DRAFT
+            self.date_draft = localdate() if not date_draft else date_draft
+
             LedgerModel = lazy_loader.get_ledger_model()
-            ledger_model: LedgerModel = LedgerModel(
-                entity=entity_model,
-                posted=ledger_posted
-            )
-            ledger_name = f'Invoice {self.uuid}'
-            if invoice_desc:
-                ledger_name += f' | {invoice_desc}'
+            ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+
+            if not ledger_name:
+                ledger_name = f'Invoice {self.uuid}'
+            ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
             ledger_model.clean()
 
             self.ledger = ledger_model
-            self.ledger.save()
+
+            if commit_ledger:
+                self.ledger.save()
 
             if self.can_generate_invoice_number():
                 self.generate_invoice_number(commit=commit)
@@ -1569,6 +1577,14 @@ class InvoiceModel(InvoiceModelAbstract):
     """
     Base Invoice Model from Abstract.
     """
+
+
+def invoicemodel_presave(instance: InvoiceModel, **kwargs):
+    if instance.can_generate_invoice_number():
+        instance.generate_invoice_number(commit=False)
+
+
+pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)
 
 
 def invoicemodel_predelete(instance: InvoiceModel, **kwargs):

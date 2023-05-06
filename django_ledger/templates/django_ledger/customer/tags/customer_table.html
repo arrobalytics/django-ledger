@@ -8,6 +8,8 @@
             <th class="has-text-centered">{% trans 'Customer Number' %}</th>
             <th class="has-text-centered">{% trans 'Customer' %}</th>
             <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Active' %}</th>
+            <th class="has-text-centered">{% trans 'Hidden' %}</th>
             <th class="has-text-centered">{% trans 'Actions' %}</th>
         </tr>
         </thead>
@@ -17,6 +19,28 @@
                 <td>{{ customer.customer_number }}</td>
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
+                <td>
+                    {% if customer.active %}
+                        <span class="icon has-text-success-dark">
+                                        {% icon 'ant-design:check-circle-filled' 24 %}
+                                    </span>
+                    {% elif not customer.active %}
+                        <span class="icon has-text-danger-dark">
+                                        {% icon 'mdi:dangerous' 24 %}
+                                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if customer.hidden %}
+                        <span class="icon has-text-success-dark">
+                                        {% icon 'ant-design:check-circle-filled' 24 %}
+                                    </span>
+                    {% elif not customer.hidden %}
+                        <span class="icon has-text-danger-dark">
+                                        {% icon 'mdi:dangerous' 24 %}
+                                    </span>
+                    {% endif %}
+                </td>
                 <td>
                     <div class="dropdown is-right is-hoverable"
                          id="customer-action-{{ customer.uuid }}">

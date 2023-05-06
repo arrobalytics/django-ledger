@@ -28,7 +28,9 @@ __This is the best way to get started twith this project if you are not familiar
 
 ### Documentation
 
-Access the latest documentation [here](https://django-ledger.readthedocs.io/en/latest/).
+Access the latest documentation and QuickStart guide [here](https://django-ledger.readthedocs.io/en/latest/).
+Also, you may download the QuickStart Jupyter Notebook
+[here](https://github.com/arrobalytics/django-ledger/blob/notebooks/QuickStart%20Notebook.ipynb).
 
 Django Ledger supports:
 
@@ -75,12 +77,12 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Hierarchical Account Model Management.
     * Generate all Django Ledger Model documentation.
 * __0.5.3__: Closing entries, snapshots & trial balance import.
-    * High level EntityModel API implementation.
-    * Chart of Accounts Import.
-    * Trial Balance Import.
-    * Closing entries and snapshots.
-    * Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
-    * GraphQL API.
+    * __0.5.3.0__: High Level EntityModel API.
+    * __0.5.3.1__: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
+    * __0.5.3.2__: Closing entries and snapshots.
+    * __0.5.3.3__: Chart of Accounts Import.
+    * __0.5.3.4__: Trial Balance Import.
+    * __0.5.3.5__: GraphQL API.
 * __0.5.4__: Testing framework implementation that will include:
     * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
     * Behavioral Driven Testing using [behave](https://behave.readthedocs.io/en/latest/) library.
@@ -111,16 +113,14 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 ### Version 0.8
 
 * User roles and permissions on views to support read/write permissions for assigned managers to entities.
-* Customer jobs & job tracking.
-* Client proposals & estimates.
 * User preferences and settings & account creation views.
 * Update package and code documentation.
 
 ### Version 0.9
 
-* Enable Hierarchical Entity structures via MPTT.
+* Enable Hierarchical Entity structures via TreeBeard.
 * Consolidated financial statements.
-* Intercompany transactions.
+* InterCompany transactions.
 * Update package and code documentation.
 
 ### Version 1.0

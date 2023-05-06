@@ -105,7 +105,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
             entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
 
         coa_model = entity_model.default_coa
-        coa_model.add_account(account_model=account_model)
+        coa_model.create_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
