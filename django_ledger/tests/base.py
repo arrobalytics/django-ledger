@@ -16,7 +16,6 @@ UserModel = get_user_model()
 
 
 class DjangoLedgerBaseTest(TestCase):
-
     FY_STARTS = None
     CAPITAL_CONTRIBUTION = None
     START_DATE = None
@@ -56,7 +55,6 @@ class DjangoLedgerBaseTest(TestCase):
                 email=cls.USER_EMAIL,
             )
 
-        cls.TZ = get_default_timezone()
         cls.FY_STARTS = [
             '1',
             '2',
@@ -75,7 +73,6 @@ class DjangoLedgerBaseTest(TestCase):
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
         cls.ENTITY_MODEL_QUERYSET = None
 
-        cls.START_DATE = cls.get_random_date()
         cls.create_entity_models(n=cls.N)
         cls.populate_entity_models()
 
@@ -108,7 +105,7 @@ class DjangoLedgerBaseTest(TestCase):
     @classmethod
     def get_random_entity_data(cls) -> dict:
         return {
-            'slug': f'a-cool-slug-{randint(10000,99999)}',
+            'slug': f'a-cool-slug-{randint(10000, 99999)}',
             'name': f'Testing Inc-{randint(100000, 999999)}',
             'address_1': f'{randint(100000, 999999)} Main St',
             'address_2': f'Suite {randint(1000, 9999)}',
@@ -122,6 +119,11 @@ class DjangoLedgerBaseTest(TestCase):
             'admin': cls.user_model
         }
 
+    def get_random_entity_model(self) -> EntityModel:
+        if self.ENTITY_MODEL_QUERYSET:
+            return choice(self.ENTITY_MODEL_QUERYSET)
+        raise ValueError('EntityModels have not been populated.')
+
     @classmethod
     def create_entity_models(cls, save=True, n: int = 5):
         cls.refresh_test_data(n)
@@ -131,7 +133,7 @@ class DjangoLedgerBaseTest(TestCase):
             entity_model.clean()
             if save:
                 entity_model.save()
-    
+
     @classmethod
     def populate_entity_models(cls):
         entities_qs = EntityModel.objects.all()

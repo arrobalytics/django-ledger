@@ -419,6 +419,8 @@ class BillModelAbstract(AccrualMixIn,
         Parameters
         ----------
 
+        date_draft: date
+            Optional date to use as Draft Date. Defaults to localdate() if None.
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Bill with.
         user_model: UserModel
@@ -462,9 +464,9 @@ class BillModelAbstract(AccrualMixIn,
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
 
-            ledger_name = f'Bill {self.uuid}'
-            if ledger_name:
-                ledger_name += f' | {ledger_name}'
+            if not ledger_name:
+                ledger_name = f'Bill {self.uuid}'
+            ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
 
             ledger_model.clean()
@@ -529,7 +531,11 @@ class BillModelAbstract(AccrualMixIn,
         A tuple: ItemTransactionModelQuerySet, dict
         """
         if not queryset:
-            queryset = self.itemtransactionmodel_set.select_related('item_model', 'po_model', 'bill_model').all()
+            queryset = self.itemtransactionmodel_set.all().select_related(
+                'item_model',
+                'entity_unit',
+                'po_model',
+                'bill_model')
         else:
             self.validate_item_transaction_qs(queryset)
 
@@ -862,6 +868,14 @@ class BillModelAbstract(AccrualMixIn,
             self.is_draft(),
             self.is_configured()
         ])
+
+    # --> URLs <---
+    def get_absolute_url(self):
+        return reverse('django_ledger:bill-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'bill_pk': self.uuid
+                       })
 
     # --> ACTIONS <---
     def action_bind_estimate(self, estimate_model, commit: bool = False, raise_exception: bool = True):

@@ -378,10 +378,10 @@ class AccrualMixIn(models.Model):
             Financial instrument amount open.
         """
         if self.accrue:
-            amount_due = self.amount_due or 0.00
+            amount_due = self.amount_due or Decimal.from_float(0.00)
             return amount_due - self.get_amount_earned()
-        amount_due = self.amount_due or 0.00
-        payments = self.amount_paid or 0.00
+        amount_due = self.amount_due or Decimal.from_float(0.00)
+        payments = self.amount_paid or Decimal.from_float(0.00)
         return amount_due - payments
 
     def get_migration_data(self, queryset: QuerySet = None):

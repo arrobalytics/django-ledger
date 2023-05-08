@@ -322,7 +322,9 @@ class DjangoLedgerPermissionMixIn(PermissionRequiredMixin):
         return self.request.user.is_authenticated
 
 
-class DjangoLedgerSecurityMixIn(DjangoLedgerPermissionMixIn, DjangoLedgerAccessMixIn, LoginRequiredMixin):
+class DjangoLedgerSecurityMixIn(DjangoLedgerPermissionMixIn,
+                                DjangoLedgerAccessMixIn,
+                                LoginRequiredMixin):
     pass
 
 

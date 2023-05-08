@@ -495,7 +495,7 @@ class EntityDataGenerator(LoggingMixIn):
         bill_model.full_clean()
         bill_model.save()
 
-        if random() > 0.25:
+        if random() > 0.25 and bill_model.amount_due:
             date_in_review = self.get_next_date(date_draft)
             bill_model.mark_as_review(commit=True, date_in_review=date_in_review)
 
@@ -552,7 +552,7 @@ class EntityDataGenerator(LoggingMixIn):
         po_model.save()
 
         # mark as approved...
-        if random() > 0.25:
+        if random() > 0.25 and po_model.po_amount:
             date_review = self.get_next_date(date_draft)
             po_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.5:
@@ -712,7 +712,7 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model.full_clean()
         invoice_model.save()
 
-        if random() > 0.25:
+        if random() > 0.25 and invoice_model.amount_due:
             date_review = self.get_next_date(date_draft)
 
             try:

@@ -479,7 +479,12 @@ class InvoiceModelAbstract(AccrualMixIn,
         """
 
         if not queryset:
-            queryset = self.itemtransactionmodel_set.all().select_related('item_model')
+            queryset = self.itemtransactionmodel_set.all().select_related(
+                'item_model',
+                'entity_unit',
+                'po_model',
+                'invoice_model'
+            )
         else:
             self.validate_item_transaction_qs(queryset)
 

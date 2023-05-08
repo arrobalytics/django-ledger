@@ -1051,7 +1051,7 @@ class EntityModelAbstract(MP_Node,
         BillModel = lazy_loader.get_bill_model()
         return BillModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
-        ).select_related('ledger', 'ledger__entity')
+        ).select_related('ledger', 'ledger__entity', 'vendor')
 
     def create_bill(self,
                     vendor_model: Union[VendorModel, UUID, str],
@@ -1109,7 +1109,7 @@ class EntityModelAbstract(MP_Node,
         InvoiceModel = lazy_loader.get_invoice_model()
         return InvoiceModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
-        ).select_related('ledger', 'ledger__entity')
+        ).select_related('ledger', 'ledger__entity', 'customer')
 
     def create_invoice(self,
                        customer_model: Union[VendorModel, UUID, str],

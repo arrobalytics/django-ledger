@@ -40,32 +40,6 @@ class BillModelModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-class BillModelListView(DjangoLedgerSecurityMixIn, BillModelModelViewQuerySetMixIn, ArchiveIndexView):
-    template_name = 'django_ledger/bills/bill_list.html'
-    context_object_name = 'bills'
-    PAGE_TITLE = _('Bill List')
-    date_field = 'date_draft'
-    paginate_by = 20
-    paginate_orphans = 2
-    allow_empty = True
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE,
-        'header_subtitle_icon': 'uil:bill'
-    }
-
-
-class BillModelYearListView(YearArchiveView, BillModelListView):
-    paginate_by = 10
-    make_object_list = True
-
-
-class BillModelMonthListView(MonthArchiveView, BillModelListView):
-    paginate_by = 10
-    month_format = '%m'
-    date_list_period = 'year'
-
-
 class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/bills/bill_create.html'
     PAGE_TITLE = _('Create Bill')
@@ -156,6 +130,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
         bill_model: BillModel = form.save(commit=False)
         ledger_model, bill_model = bill_model.configure(
             entity_slug=self.kwargs['entity_slug'],
+            commit_ledger=True,
             ledger_posted=False,
             user_model=self.request.user)
 
@@ -201,17 +176,6 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
             po_model_items_qs.update(bill_model=bill_model)
             return HttpResponseRedirect(self.get_success_url())
 
-        elif self.for_estimate:
-            estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
-            estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
-            bill_model.ce_model_id = estimate_model.uuid
-            bill_model.clean()
-            bill_model.save()
-            return HttpResponseRedirect(self.get_success_url())
-
         return super(BillModelCreateView, self).form_valid(form)
 
     def get_success_url(self):
@@ -237,6 +201,32 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                        })
 
 
+class BillModelListView(DjangoLedgerSecurityMixIn, BillModelModelViewQuerySetMixIn, ArchiveIndexView):
+    template_name = 'django_ledger/bills/bill_list.html'
+    context_object_name = 'bills'
+    PAGE_TITLE = _('Bill List')
+    date_field = 'date_draft'
+    paginate_by = 20
+    paginate_orphans = 2
+    allow_empty = True
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE,
+        'header_subtitle_icon': 'uil:bill'
+    }
+
+
+class BillModelYearListView(YearArchiveView, BillModelListView):
+    paginate_by = 10
+    make_object_list = True
+
+
+class BillModelMonthListView(MonthArchiveView, BillModelListView):
+    paginate_by = 10
+    month_format = '%m'
+    date_list_period = 'year'
+
+
 class BillModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
     slug_url_kwarg = 'bill_pk'
     slug_field = 'uuid'
@@ -255,9 +245,7 @@ class BillModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         context['header_title'] = title
 
         bill_model: BillModel = self.object
-        bill_items_qs, item_data = bill_model.get_itemtxs_data(
-            queryset=bill_model.itemtransactionmodel_set.all()
-        )
+        bill_items_qs, item_data = bill_model.get_itemtxs_data()
         context['bill_items'] = bill_items_qs
         context['total_amount__sum'] = item_data['total_amount__sum']
 
@@ -280,10 +268,14 @@ class BillModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
         return BillModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        ).prefetch_related(
-            'itemtransactionmodel_set',
-            'ledger__journal_entries__entity_unit'
-        ).select_related('ledger', 'ledger__entity', 'vendor', 'cash_account', 'prepaid_account', 'unearned_account')
+        ).select_related(
+            'ledger',
+            'ledger__entity',
+            'vendor',
+            'cash_account',
+            'prepaid_account',
+            'unearned_account'
+        )
 
 
 class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):

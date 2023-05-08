@@ -381,7 +381,7 @@ class PurchaseOrderModelDetailView(DjangoLedgerSecurityMixIn,
 
         po_model: PurchaseOrderModel = self.object
         po_items_qs, item_data = po_model.get_itemtxs_data(
-            queryset=po_model.itemtransactionmodel_set.all().select_related('item_model')
+            queryset=po_model.itemtransactionmodel_set.all().select_related('item_model', 'bill_model')
         )
         context['po_items'] = po_items_qs
         context['po_total_amount'] = sum(
@@ -415,7 +415,7 @@ class PurchaseOrderModelDeleteView(DjangoLedgerSecurityMixIn,
                            'entity_slug': self.kwargs['entity_slug'],
                        })
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, request, *args, **kwargs):
         po_model: PurchaseOrderModel = self.get_object()
         self.object = po_model
         po_items_qs = po_model.itemtransactionmodel_set.filter(bill_model__isnull=False)

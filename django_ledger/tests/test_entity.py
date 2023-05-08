@@ -170,7 +170,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                         })
             response = self.CLIENT.get(entity_update_url)
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(4):          # previously 5
             ent_data = response.context['form'].initial
             ent_data['name'] = 'New Cool Name LLC'
             ent_data = {k: v for k, v in ent_data.items() if v}
@@ -199,7 +199,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                         })
             response = self.CLIENT.get(entity_detail_url)
 
-        with self.assertNumQueries(10):
+        with self.assertNumQueries(7):         # previously 10
             local_dt = localdate()
             entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
