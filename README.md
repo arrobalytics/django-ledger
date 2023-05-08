@@ -67,6 +67,17 @@ Django Ledger supports:
 More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics.com/blog/2021/12/07/django-ledger-v05/)
 .
 
+* __0.5__: Testing framework implementation that will include:
+    * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
+    * Behavioral Driven Testing using [behave](https://behave.readthedocs.io/en/latest/) library.
+    * __Need help!!!! If you want to contribute PLEASE ADD UNIT TESTS!!!__
+    * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
+        * Document code and functions within code base.
+        * Generate HTML documentation.
+    * Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output __(
+      help needed!)__.
+    * Update package and code documentation.
+    * Bugfixes & UI/UX Enhancements.
 * __0.5.0__: Inventory tracking.
     * Average Cost.
 * __0.5.1__: Customer estimates & contract tracking.
@@ -76,24 +87,12 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Human Readable Journal Entry document numbers.
     * Hierarchical Account Model Management.
     * Generate all Django Ledger Model documentation.
-* __0.5.3__: Closing entries, snapshots & trial balance import.
-    * __0.5.3.0__: High Level EntityModel API.
-    * __0.5.3.1__: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
-    * __0.5.3.2__: Closing entries and snapshots.
-    * __0.5.3.3__: Chart of Accounts Import.
-    * __0.5.3.4__: Trial Balance Import.
-    * __0.5.3.5__: GraphQL API.
-* __0.5.4__: Testing framework implementation that will include:
-    * Unit tests using the [Built-in Django](https://docs.djangoproject.com/en/3.1/topics/testing/) unit test modules.
-    * Behavioral Driven Testing using [behave](https://behave.readthedocs.io/en/latest/) library.
-    * __Need help!!!! If you want to contribute PLEASE ADD UNIT TESTS!!!__
-* Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
-    * Document code and functions within code base.
-    * Generate HTML documentation.
-* Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output __(
-  help needed!)__.
-* Update package and code documentation.
-* Bugfixes & UI/UX Enhancements.
+* __0.5.3__: High Level EntityModel API.
+* __0.5.4__: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
+* __0.5.5__: Closing entries and snapshots.
+* __0.5.6__: Chart of Accounts Import.
+* __0.5.7__: Trial Balance Import.
+* __0.5.8__: GraphQL API.
 
 ### Version 0.6
 
