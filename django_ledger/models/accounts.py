@@ -107,6 +107,9 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         roles = validate_roles(roles)
         return self.filter(role__in=roles)
 
+    def expenses(self):
+        return self.filter(role__in=GROUP_EXPENSES)
+
     def is_coa_root(self):
         return self.filter(role__in=ROOT_GROUP)
 

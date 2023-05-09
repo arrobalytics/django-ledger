@@ -48,7 +48,8 @@ from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAcco
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
-from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
+from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet, UnitOfMeasureModel,
+                                        UnitOfMeasureModelQuerySet, ItemModel)
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.unit import EntityUnitModel
@@ -822,7 +823,7 @@ class EntityModelAbstract(MP_Node,
 
             if isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=True)
-                account_model_qs = account_model_qs.filter(coa_model=coa_model)
+                account_model_qs = coa_model.accountmodel_set.all()
             if isinstance(coa_model, str):
                 account_model_qs = account_model_qs.filter(coa_model__slug__exact=coa_model)
             elif isinstance(coa_model, UUID):
@@ -1242,7 +1243,202 @@ class EntityModelAbstract(MP_Node,
             bank_account_model.save()
         return bank_account_model
 
+    # #### ITEM MANAGEMENT ###
+
+    def validate_item_qs(self, item_qs: ItemModelQuerySet, raise_exception: bool = True) -> bool:
+        for item_model in item_qs:
+            if item_model.entity_id != self.uuid:
+                if raise_exception:
+                    raise EntityModelValidationError(f'Invalid item_qs provided for entity {self.slug}...')
+                return False
+        return True
+
+    def get_uom_all(self) -> UnitOfMeasureModelQuerySet:
+        return self.unitofmeasuremodel_set.all().select_related('entity')
+
+    def get_items_all(self, active: bool = True) -> ItemModelQuerySet:
+        qs = self.itemmodel_set.all().select_related(
+            'uom',
+            'entity',
+            'inventory_account',
+            'cogs_account',
+            'earnings_account',
+            'expense_account'
+        )
+        if active:
+            return qs.active()
+        return qs
+
+    def get_items_products(self, active: bool = True) -> ItemModelQuerySet:
+        qs = self.get_items_all(active=active)
+        return qs.products()
+
+    def create_item_product(self,
+                            name: str,
+                            item_type: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
+
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.ASSET_CA_INVENTORY,
+            roles_module.COGS,
+            roles_module.INCOME_OPERATIONAL
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        product_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_PRODUCT,
+            item_type=item_type,
+            inventory_account=account_model_qs.filter(role=roles_module.ASSET_CA_INVENTORY).get(),
+            earnings_account=account_model_qs.filter(role=roles_module.INCOME_OPERATIONAL).get(),
+            cogs_account=account_model_qs.filter(role=roles_module.COGS).get()
+        )
+        product_model.clean()
+        product_model.clean_fields()
+        product_model.save()
+        return product_model
+
+    def get_items_services(self, active: bool = True) -> ItemModelQuerySet:
+        qs = self.get_items_all(active=active)
+        return qs.services()
+
+    def create_item_service(self,
+                            name: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
+
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.COGS,
+            roles_module.INCOME_OPERATIONAL
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        service_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_SERVICE,
+            item_type=ItemModel.ITEM_TYPE_LABOR,
+            earnings_account=account_model_qs.filter(role=roles_module.INCOME_OPERATIONAL).get(),
+            cogs_account=account_model_qs.filter(role=roles_module.COGS).get()
+        )
+        service_model.clean()
+        service_model.clean_fields()
+        service_model.save()
+        return service_model
+
+    def get_items_expenses(self, active: bool = True) -> ItemModelQuerySet:
+        qs = self.get_items_all(active=active)
+        return qs.expenses()
+
+    def create_item_expense(self,
+                            name: str,
+                            expense_type: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            expense_account: Union[UUID, AccountModel],
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
+
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.GROUP_EXPENSES)
+        if isinstance(expense_account, UUID):
+            expense_account = account_model_qs.get(uuid__exact=expense_account)
+        elif isinstance(expense_account, AccountModel):
+            if expense_account.coa_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        expense_item_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_EXPENSE,
+            item_type=expense_type,
+            expense_account=expense_account
+        )
+        expense_item_model.clean()
+        expense_item_model.clean_fields()
+        expense_item_model.save()
+        return expense_item_model
+
     # ##### INVENTORY MANAGEMENT ####
+
+    def get_items_inventory(self, active: bool = True):
+        qs = self.get_items_all(active=active)
+        return qs.inventory_all()
+
+    def get_items_inventory_wip(self, active: bool = True):
+        qs = self.get_items_all(active=active)
+        return qs.inventory_wip()
+
+    def create_item_inventory(self,
+                              name: str,
+                              uom_model: Union[UUID, UnitOfMeasureModel],
+                              item_type: str,
+                              inventory_account: Optional[Union[UUID, AccountModel]] = None,
+                              coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                              commit: bool = True):
+
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_INVENTORY)
+        if not inventory_account:
+            inventory_account = account_model_qs.is_role_default().get()
+        elif isinstance(inventory_account, UUID):
+            inventory_account = account_model_qs.get(uuid__exact=inventory_account)
+        elif isinstance(inventory_account, AccountModel):
+            if inventory_account.coa_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+            elif inventory_account.coa_model_id != coa_model.uuid:
+                raise EntityModelValidationError(f'Invalid account for coa {coa_model.slug}...')
+
+        inventory_item_model = ItemModel(
+            name=name,
+            uom=uom_model,
+            entity=self,
+            item_type=item_type,
+            item_role=ItemModel.ITEM_ROLE_INVENTORY,
+            inventory_account=inventory_account
+        )
+        inventory_item_model.clean()
+        inventory_item_model.clean_fields()
+        if commit:
+            inventory_item_model.save()
+        return inventory_item_model
+
     @staticmethod
     def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
         """
@@ -1336,16 +1532,12 @@ class EntityModelAbstract(MP_Node,
         return adjustment
 
     def update_inventory(self,
-                         user_model,
                          commit: bool = False) -> Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]:
         """
         Triggers an inventory recount with optional commitment of transaction.
 
         Parameters
         ----------
-        user_model: UserModel
-            The Django UserModel making the request.
-
         commit:
             Updates all inventory ItemModels with the new inventory count.
 
@@ -1360,15 +1552,9 @@ class EntityModelAbstract(MP_Node,
         ItemTransactionModel = lazy_loader.get_item_transaction_model()
         ItemModel = lazy_loader.get_item_model()
 
-        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(
-            entity_slug=self.slug,
-            user_model=user_model
-        )
-        recorded_qs: ItemModelQuerySet = self.recorded_inventory(user_model=user_model, as_values=False)
-        recorded_qs_values = self.recorded_inventory(
-            user_model=user_model,
-            item_qs=recorded_qs,
-            as_values=True)
+        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(entity_slug=self.slug)
+        recorded_qs: ItemModelQuerySet = self.recorded_inventory(as_values=False)
+        recorded_qs_values = self.recorded_inventory(item_qs=recorded_qs, as_values=True)
 
         adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
 
@@ -1391,7 +1577,6 @@ class EntityModelAbstract(MP_Node,
         return adj, counted_qs, recorded_qs
 
     def recorded_inventory(self,
-                           user_model,
                            item_qs: Optional[ItemModelQuerySet] = None,
                            as_values: bool = True) -> ItemModelQuerySet:
         """
@@ -1402,9 +1587,6 @@ class EntityModelAbstract(MP_Node,
 
         Parameters
         ----------
-        user_model: UserModel
-            The Django UserModel making the request.
-
         item_qs: ItemModelQuerySet
             Pre fetched ItemModelQuerySet. Avoids additional DB Query.
 
@@ -1419,11 +1601,9 @@ class EntityModelAbstract(MP_Node,
 
         """
         if not item_qs:
-            recorded_qs = self.itemmodel_set.inventory_all(
-                entity_slug=self.slug,
-                user_model=user_model
-            )
+            recorded_qs = self.itemmodel_set.all().inventory_all()
         else:
+            self.validate_item_qs(item_qs)
             recorded_qs = item_qs
         if as_values:
             return recorded_qs.values(

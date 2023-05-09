@@ -96,6 +96,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 
 ### Version 0.6
 
+* IO Digest Context Manager
 * Credit Line Models.
 * Time tracking.
 * Transaction tagging.

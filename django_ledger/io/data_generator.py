@@ -329,31 +329,31 @@ class EntityDataGenerator(LoggingMixIn):
 
     def update_products(self):
         self.logger.info(f'Updating product catalog...')
-        self.product_models = ItemModel.objects.products(
+        self.product_models = ItemModel.objects.for_entity(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
-        )
+        ).products()
 
     def update_services(self):
         self.logger.info(f'Updating service catalog...')
-        self.service_models = ItemModel.objects.services(
+        self.service_models = ItemModel.objects.for_entity(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
-        )
+        ).services()
 
     def update_inventory(self):
         self.logger.info(f'Updating inventory...')
-        self.inventory_models = ItemModel.objects.inventory_all(
+        self.inventory_models = ItemModel.objects.for_entity(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
-        )
+        ).inventory_all()
 
     def update_expenses(self):
         self.logger.info(f'Updating expenses...')
-        self.expense_models = ItemModel.objects.expenses(
+        self.expense_models = ItemModel.objects.for_entity(
             entity_slug=self.entity_model.slug,
             user_model=self.user_model
-        )
+        ).expenses()
 
     def create_expenses(self):
         self.logger.info(f'Creating entity expense items...')
@@ -648,7 +648,7 @@ class EntityDataGenerator(LoggingMixIn):
                                         commit=True)
 
                                     self.entity_model.update_inventory(
-                                        user_model=self.user_model,
+                                        # user_model=self.user_model,
                                         commit=True)
 
                                     self.update_products()
@@ -736,7 +736,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
                     self.entity_model.update_inventory(
-                        user_model=self.user_model,
+                        # user_model=self.user_model,
                         commit=True
                     )
                     self.update_inventory()
@@ -773,7 +773,7 @@ class EntityDataGenerator(LoggingMixIn):
     def recount_inventory(self):
         self.logger.info(f'Recounting inventory...')
         self.entity_model.update_inventory(
-            user_model=self.user_model,
+            # user_model=self.user_model,
             commit=True
         )
 
