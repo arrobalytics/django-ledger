@@ -608,6 +608,20 @@ class EntityModelAbstract(MP_Node,
         return self.default_coa_id is not None
 
     def get_default_coa(self, raise_exception: bool = True) -> Optional[ChartOfAccountModel]:
+        """
+        Fetches the EntityModel default Chart of Account.
+
+        Parameters
+        ----------
+        raise_exception: bool
+            Raises exception if no default CoA has been assigned.
+
+        Returns
+        -------
+        ChartOfAccountModel
+            The EntityModel default ChartOfAccount.
+        """
+
         if not self.default_coa_id:
             if raise_exception:
                 raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
@@ -663,15 +677,34 @@ class EntityModelAbstract(MP_Node,
                              activate_accounts: bool = False,
                              force: bool = False,
                              ignore_if_default_coa: bool = True,
-                             chart_of_accounts: Optional[ChartOfAccountModel] = None,
+                             coa_model: Optional[ChartOfAccountModel] = None,
                              commit: bool = True):
+        """
+        Populates the EntityModel default CoA with the default Chart of Account list provided by Django Ledger or user
+        defined. See DJANGO_LEDGER_DEFAULT_COA setting.
 
-        if not chart_of_accounts:
+        Parameters
+        ----------
+        activate_accounts: bool
+            Activates all AccountModels for immediate use. Defaults to False.
+        force: bool
+            Forces the creation of accounts even if other accounts are present. Defaults to False.
+        ignore_if_default_coa: bool
+            Raises exception if EntityModel already has a default CoA. Defaults to True.
+        coa_model: ChartOfAccountModel
+            Optional CoA Model to populate. Will be validated against EntityModel if provided.
+        commit: bool
+        '   Commits the newly created CoA into the Database. Defaults to True.
+        """
+
+        if not coa_model:
             if not self.has_default_coa():
                 self.create_chart_of_accounts(assign_as_default=True, commit=commit)
-            chart_of_accounts: ChartOfAccountModel = self.default_coa
+            coa_model: ChartOfAccountModel = self.default_coa
+        else:
+            self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
 
-        coa_accounts_qs = chart_of_accounts.accountmodel_set.all()
+        coa_accounts_qs = coa_model.accountmodel_set.all()
 
         # forces evaluation
         len(coa_accounts_qs)
@@ -704,12 +737,12 @@ class EntityModelAbstract(MP_Node,
                         pass
 
                     account_model.clean()
-                    chart_of_accounts.create_account(account_model)
+                    coa_model.create_account(account_model)
 
         else:
             if not ignore_if_default_coa:
-                raise ValidationError(f'Entity {self.name} already has existing accounts. '
-                                      'Use force=True to bypass this check')
+                raise EntityModelValidationError(f'Entity {self.name} already has existing accounts. '
+                                                 'Use force=True to bypass this check')
 
     def validate_chart_of_accounts_for_entity(self,
                                               coa_model: ChartOfAccountModel,
@@ -1356,7 +1389,7 @@ class EntityModelAbstract(MP_Node,
                             name: str,
                             expense_type: str,
                             uom_model: Union[UUID, UnitOfMeasureModel],
-                            expense_account: Union[UUID, AccountModel],
+                            expense_account: Optional[Union[UUID, AccountModel]] = None,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
 
         if isinstance(uom_model, UUID):
@@ -1366,15 +1399,14 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=roles_module.GROUP_EXPENSES)
-        if isinstance(expense_account, UUID):
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.EXPENSE_OPERATIONAL)
+        if not expense_account:
+            expense_account = account_model_qs.is_role_default().get()
+        elif isinstance(expense_account, UUID):
             expense_account = account_model_qs.get(uuid__exact=expense_account)
         elif isinstance(expense_account, AccountModel):
             if expense_account.coa_model.entity_id != self.uuid:
                 raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
-
-        # evaluates the queryset...
-        len(account_model_qs)
 
         expense_item_model = ItemModel(
             entity=self,
