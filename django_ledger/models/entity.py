@@ -41,7 +41,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module
+from django_ledger.io import roles as roles_module, validate_roles
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
@@ -747,6 +747,21 @@ class EntityModelAbstract(MP_Node,
     def validate_chart_of_accounts_for_entity(self,
                                               coa_model: ChartOfAccountModel,
                                               raise_exception: bool = True) -> bool:
+        """
+        Validates the CoA Model against the EntityModel instance.
+
+        Parameters
+        ----------
+        coa_model: ChartOfAccountModel
+            The CoA Model to validate.
+        raise_exception: bool
+            Raises EntityModelValidationError if CoA Model is not valid for the EntityModel instance.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
         if coa_model.entity_id == self.uuid:
             return True
         if raise_exception:
@@ -758,7 +773,26 @@ class EntityModelAbstract(MP_Node,
                                        account_model: AccountModel,
                                        coa_model: ChartOfAccountModel,
                                        raise_exception: bool = True) -> bool:
+        """
+        Validates that the AccountModel provided belongs to the CoA Model provided.
+
+        Parameters
+        ----------
+        account_model: AccountModel
+            The AccountModel to validate.
+        coa_model: ChartOfAccountModel
+            The ChartOfAccountModel to validate against.
+        raise_exception: bool
+            Raises EntityModelValidationError if AccountModel is invalid for the EntityModel and CoA instance.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
         valid = self.validate_chart_of_accounts_for_entity(coa_model, raise_exception=raise_exception)
+        if not valid:
+            return valid
         if valid and account_model.coa_model_id == coa_model.uuid:
             return True
         if raise_exception:
@@ -930,16 +964,31 @@ class EntityModelAbstract(MP_Node,
 
     def get_default_account_for_role(self,
                                      role: str,
-                                     coa_model: Optional[ChartOfAccountModel] = None,
-                                     account_model_qs: Optional[AccountModelQuerySet] = None) -> AccountModel:
+                                     coa_model: Optional[ChartOfAccountModel] = None) -> AccountModel:
+        """
+        Gets the given role default AccountModel from the provided CoA.
+        CoA will be validated against the EntityModel instance.
+
+        Parameters
+        ----------
+        role: str
+            The CoA role to fetch the corresponding default Account Model.
+        coa_model: ChartOfAccountModel
+            The CoA Model to pull default account from. If not provided, will use EntityModel default CoA.
+
+        Returns
+        -------
+        AccountModel
+            The default account model for the specified CoA role.
+        """
+        validate_roles(role, raise_exception=True)
         if not coa_model:
             coa_model = self.default_coa
         else:
             self.validate_chart_of_accounts_for_entity(coa_model)
 
-        if not account_model_qs:
-            return coa_model.accountmodel_set.get(role__exact=role, role_default=True)
-        return account_model_qs.get(coa_model=coa_model, role__exact=role, role_default=True)
+        account_model_qs = coa_model.accountmodel_set.all().is_role_default()
+        return account_model_qs.get(role__exact=role)
 
     def create_account(self,
                        account_model_kwargs: Dict,
@@ -1082,6 +1131,13 @@ class EntityModelAbstract(MP_Node,
 
     # ### BILL MANAGEMENT ####
     def get_bills(self):
+        """
+        Fetches a QuerySet of BillModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        BillModelQuerySet
+        """
         BillModel = lazy_loader.get_bill_model()
         return BillModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
@@ -1097,7 +1153,38 @@ class EntityModelAbstract(MP_Node,
                     ledger_name: Optional[str] = None,
                     coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                     commit: bool = True):
+        """
+        Creates a new BillModel for the EntityModel instance.
+        Bill will have DRAFT status.
 
+        Parameters
+        ----------
+        vendor_model: VendorModel or UUID or str
+            The VendorModel, VendorModel UUID or VendorModel Number
+        xref: str
+            Optional External Reference for the Bill (i.e. Vendor invoice number.)
+        cash_account: AccountModel
+            Optional CASH AccountModel associated with the new BillModel. Defaults to CASH default AccountModel role.
+        prepaid_account: AccountModel
+            Optional PREPAID AccountModel associated with the new BillModel for accruing purposes.
+            Defaults to PREPAID default AccountModel role.
+        payable_account: AccountModel
+            Optional PAYABLE AccountModel associated with the new BillModel for accruing purposes.
+            Defaults to ACCOUNTS PAYABLE default AccountModel role.
+        additional_info: Dict
+            Additional user-defined information stored as JSON in the Database.
+        ledger_name: str
+            Optional LedgerModel name to be assigned to the BillModel instance.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels
+        commit: bool
+            If True, commits the new BillModel in the Database.
+
+        Returns
+        -------
+        BillModel
+            The newly created BillModel in DRAFT state.
+        """
         BillModel = lazy_loader.get_bill_model()
 
         if isinstance(vendor_model, VendorModel):
@@ -1140,6 +1227,13 @@ class EntityModelAbstract(MP_Node,
 
     # ### INVOICE MANAGEMENT ####
     def get_invoices(self):
+        """
+        Fetches a QuerySet of InvoiceModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        InvoiceModelQuerySet
+        """
         InvoiceModel = lazy_loader.get_invoice_model()
         return InvoiceModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
@@ -1279,6 +1373,20 @@ class EntityModelAbstract(MP_Node,
     # #### ITEM MANAGEMENT ###
 
     def validate_item_qs(self, item_qs: ItemModelQuerySet, raise_exception: bool = True) -> bool:
+        """
+        Validates the given ItemModelQuerySet against the EntityModel instance.
+        Parameters
+        ----------
+        item_qs: ItemModelQuerySet
+            The ItemModelQuerySet to validate.
+        raise_exception: bool
+            Raises EntityModelValidationError if ItemModelQuerySet is not valid.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
         for item_model in item_qs:
             if item_model.entity_id != self.uuid:
                 if raise_exception:
@@ -1287,9 +1395,30 @@ class EntityModelAbstract(MP_Node,
         return True
 
     def get_uom_all(self) -> UnitOfMeasureModelQuerySet:
+        """
+        Fetches the EntityModel instance Unit of Measures QuerySet.
+
+        Returns
+        -------
+        UnitOfMeasureModelQuerySet
+        """
         return self.unitofmeasuremodel_set.all().select_related('entity')
 
     def get_items_all(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.itemmodel_set.all().select_related(
             'uom',
             'entity',
@@ -1303,6 +1432,20 @@ class EntityModelAbstract(MP_Node,
         return qs
 
     def get_items_products(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Products.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.get_items_all(active=active)
         return qs.products()
 
@@ -1344,6 +1487,20 @@ class EntityModelAbstract(MP_Node,
         return product_model
 
     def get_items_services(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Services.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.get_items_all(active=active)
         return qs.services()
 
@@ -1382,6 +1539,20 @@ class EntityModelAbstract(MP_Node,
         return service_model
 
     def get_items_expenses(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Products.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.get_items_all(active=active)
         return qs.expenses()
 
@@ -1424,10 +1595,38 @@ class EntityModelAbstract(MP_Node,
     # ##### INVENTORY MANAGEMENT ####
 
     def get_items_inventory(self, active: bool = True):
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as inventory.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.get_items_all(active=active)
         return qs.inventory_all()
 
     def get_items_inventory_wip(self, active: bool = True):
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as work in progress inventory.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         qs = self.get_items_all(active=active)
         return qs.inventory_wip()
 
@@ -1560,7 +1759,6 @@ class EntityModelAbstract(MP_Node,
                 adjustment[uid]['count_diff'] -= counted
                 adjustment[uid]['value_diff'] -= recorded_data['value']
                 adjustment[uid]['avg_cost_diff'] -= avg_cost
-
         return adjustment
 
     def update_inventory(self,

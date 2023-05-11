@@ -142,7 +142,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         ]
 
     def is_role_default(self):
-        return self.filter(role_default=True)
+        return self.not_coa_root().filter(role_default=True)
 
 
 class AccountModelManager(MP_NodeManager):
