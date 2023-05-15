@@ -326,6 +326,54 @@ bank_account_model = entity_model.create_bank_account(name='A big bank account!'
                                                       account_type='checking')
 ```
 
+# Items
+
+## Unit of Measures
+
+
+```python
+uom_qs = entity_model.get_uom_all()
+pd.DataFrame(uom_qs.values())
+```
+
+## Expenses
+
+
+```python
+expenses_qs = entity_model.get_items_expenses()
+pd.DataFrame(expenses_qs.values())
+```
+
+## Services
+
+
+```python
+services_qs = entity_model.get_items_services()
+pd.DataFrame(services_qs.values())
+```
+
+## Products
+
+
+```python
+products_qs = entity_model.get_items_products()
+pd.DataFrame(products_qs.values())
+```
+
+## Inventory
+
+
+```python
+inventory_qs = entity_model.get_items_inventory()
+pd.DataFrame(inventory_qs.values())
+```
+
+
+```python
+inventory_wip_qs = entity_model.get_items_inventory_wip()
+pd.DataFrame(inventory_wip_qs.values())
+```
+
 # Financial Statements
 
 ## Balance Sheet
