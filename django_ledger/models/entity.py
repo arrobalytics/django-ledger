@@ -1529,6 +1529,37 @@ class EntityModelAbstract(MP_Node,
         """
         return self.unitofmeasuremodel_set.all().select_related('entity')
 
+    def create_uom(self, name: str, unit_abbr: str, active: bool = True, commit: bool = True) -> UnitOfMeasureModel:
+        """
+        Creates a new Unit of Measure Model associated with the EntityModel instance
+
+        Parameters
+        ----------
+        name: str
+            The user defined name of the new Unit of Measure Model instance.
+        unit_abbr: str
+            The unique slug abbreviation of the UoM model. Will be indexed.
+        active: bool
+            Mark this UoM as active.
+        commit: bool
+            Saves the model in the DB if True. Defaults to True
+
+        Returns
+        -------
+        UnitOfMeasureModel
+        """
+        uom_model = UnitOfMeasureModel(
+            name=name,
+            unit_abbr=unit_abbr,
+            is_active=active,
+            entity=self
+        )
+        uom_model.clean()
+        uom_model.clean_fields()
+        if commit:
+            uom_model.save()
+        return uom_model
+
     def get_items_all(self, active: bool = True) -> ItemModelQuerySet:
         """
         Fetches all EntityModel instance ItemModel's.
