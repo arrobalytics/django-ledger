@@ -579,6 +579,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 raise PurchaseOrderModelValidationError(
                     f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
             return False
+        elif self.entity_id != estimate_model.entity_id:
+            if raise_exception:
+                raise PurchaseOrderModelValidationError(
+                    f'Invalid EstimateModel for entity {self.entity.slug}'
+                )
+            return False
+
         # check if estimate_model is passed and raise exception if needed...
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
