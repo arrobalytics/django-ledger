@@ -110,15 +110,8 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
-        self.account_models = AccountModel.objects.for_entity_available(
-            entity_slug=self.entity_model,
-            user_model=self.user_model
-        ).order_by('role')
-
-        self.accounts_by_role = {
-            g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)
-        }
-
+        self.account_models = self.entity_model.get_coa_accounts(order_by=('role', 'code'))
+        self.accounts_by_role = {g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)}
         self.create_vendors()
         self.create_customers()
         self.create_entity_units()
@@ -779,4 +772,5 @@ class EntityDataGenerator(LoggingMixIn):
 
     def create_coa(self):
         entity_model = self.entity_model
-        entity_model.populate_default_coa(activate_accounts=True)
+        coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+        entity_model.populate_default_coa(coa_model=coa_model, activate_accounts=True)

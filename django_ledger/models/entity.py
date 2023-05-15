@@ -862,7 +862,7 @@ class EntityModelAbstract(MP_Node,
     def get_coa_accounts(self,
                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                          active: bool = True,
-                         order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
+                         order_by: Optional[Tuple] = ('code',)) -> AccountModelQuerySet:
         """
         Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
 
