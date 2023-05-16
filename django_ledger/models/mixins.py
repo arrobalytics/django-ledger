@@ -950,6 +950,7 @@ class PaymentTermsMixIn(models.Model):
         (TERMS_NET_60, 'Net 60 Days'),
         (TERMS_NET_90, 'Net 90 Days'),
     ]
+    TERM_CHOICES_VALID = tuple(i[0] for i in TERM_CHOICES)
 
     TERM_DAYS_MAPPING = {
         TERMS_ON_RECEIPT: 0,

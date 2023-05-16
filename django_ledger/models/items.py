@@ -464,6 +464,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         (ITEM_TYPE_LUMP_SUM, _('Lump Sum')),
         (ITEM_TYPE_OTHER, _('Other')),
     ]
+    ITEM_TYPE_VALID_CHOICES = {i[0] for i in ITEM_TYPE_CHOICES}
 
     ITEM_ROLE_EXPENSE = 'expense'
     ITEM_ROLE_INVENTORY = 'inventory'

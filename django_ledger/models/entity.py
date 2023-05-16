@@ -1145,6 +1145,8 @@ class EntityModelAbstract(MP_Node,
 
     def create_bill(self,
                     vendor_model: Union[VendorModel, UUID, str],
+                    terms: str,
+                    date_draft: Optional[date] = None,
                     xref: Optional[str] = None,
                     cash_account: Optional[AccountModel] = None,
                     prepaid_account: Optional[AccountModel] = None,
@@ -1161,6 +1163,10 @@ class EntityModelAbstract(MP_Node,
         ----------
         vendor_model: VendorModel or UUID or str
             The VendorModel, VendorModel UUID or VendorModel Number
+        terms: str
+            Payment terms of the new BillModel. A choice of BillModel.TERM_CHOICES_VALID
+        date_draft: date
+            Date to use as draft date for the new BillModel.
         xref: str
             Optional External Reference for the Bill (i.e. Vendor invoice number.)
         cash_account: AccountModel
@@ -1204,12 +1210,14 @@ class EntityModelAbstract(MP_Node,
             roles_module.ASSET_CA_PREPAID,
             roles_module.LIABILITY_CL_ACC_PAYABLE
         ]).is_role_default()
+
         # evaluates the queryset...
         len(account_model_qs)
 
         bill_model = BillModel(
-            vendor=vendor_model,
             xref=xref,
+            vendor=vendor_model,
+            terms=terms,
             additional_info=additional_info,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
@@ -1220,6 +1228,7 @@ class EntityModelAbstract(MP_Node,
 
         _, bill_model = bill_model.configure(entity_slug=self,
                                              ledger_name=ledger_name,
+                                             date_draft=date_draft,
                                              commit=commit,
                                              commit_ledger=commit)
 
@@ -1241,6 +1250,7 @@ class EntityModelAbstract(MP_Node,
 
     def create_invoice(self,
                        customer_model: Union[VendorModel, UUID, str],
+                       terms: str,
                        cash_account: Optional[AccountModel] = None,
                        prepaid_account: Optional[AccountModel] = None,
                        payable_account: Optional[AccountModel] = None,
@@ -1258,6 +1268,8 @@ class EntityModelAbstract(MP_Node,
         ----------
         customer_model: CustomerModel or UUID or str
             The CustomerModel, CustomerModel UUID or CustomerModel Number
+        terms: str
+            A choice of InvoiceModel.TERM_CHOICES_VALID
         cash_account: AccountModel
             Optional CASH AccountModel associated with the new InvoiceModel. Defaults to CASH default AccountModel role.
         prepaid_account: AccountModel
@@ -1308,6 +1320,7 @@ class EntityModelAbstract(MP_Node,
         invoice_model = InvoiceModel(
             customer=customer_model,
             additional_info=additional_info,
+            terms=terms,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
                 role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
@@ -1335,6 +1348,7 @@ class EntityModelAbstract(MP_Node,
         return self.purchaseordermodel_set.all().select_related('entity')
 
     def create_purchase_order(self,
+                              po_title: Optional[str] = None,
                               estimate_model=None,
                               date_draft: Optional[date] = None,
                               commit: bool = True):
@@ -1344,6 +1358,8 @@ class EntityModelAbstract(MP_Node,
 
         Parameters
         ----------
+        po_title: str
+            The user defined title for the new Purchase Order Model.
         date_draft: date
             Optional date to use as Draft Date. Defaults to localdate() if None.
         estimate_model: EstimateModel
@@ -1362,7 +1378,8 @@ class EntityModelAbstract(MP_Node,
             entity_slug=self,
             draft_date=date_draft,
             estimate_model=estimate_model,
-            commit=commit
+            commit=commit,
+            po_title=po_title
         )
 
     # ### ESTIMATE/CONTRACT MANAGEMENT ####
@@ -1378,6 +1395,7 @@ class EntityModelAbstract(MP_Node,
 
     def create_estimate(self,
                         estimate_title: str,
+                        terms: str,
                         customer_model: Union[CustomerModel, UUID, str],
                         date_draft: Optional[date] = None,
                         commit: bool = True):
@@ -1393,6 +1411,8 @@ class EntityModelAbstract(MP_Node,
             Optional date to use as Draft Date. Defaults to localdate() if None.
         customer_model: CustomerModel or UUID or str
             The CustomerModel, CustomerModel UUID or CustomerModel Number
+        terms: str
+            A choice of EstimateModel.CONTRACT_TERMS_CHOICES_VALID
         commit: bool
             If True, commits the new PO in the Database. Defaults to True.
 
@@ -1411,7 +1431,7 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
 
         EstimateModel = lazy_loader.get_estimate_model()
-        estimate_model = EstimateModel()
+        estimate_model = EstimateModel(terms=terms)
         return estimate_model.configure(
             entity_slug=self,
             date_draft=date_draft,

@@ -422,6 +422,7 @@ class InvoiceModelAbstract(AccrualMixIn,
             ledger_name += f' | {ledger_name}'
             ledger_model.name = ledger_name
             ledger_model.clean()
+            ledger_model.clean_fields()
 
             self.ledger = ledger_model
 
@@ -432,6 +433,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                 self.generate_invoice_number(commit=commit)
 
             self.clean()
+            self.clean_fields()
 
             if commit:
                 self.save()

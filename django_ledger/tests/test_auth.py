@@ -1,7 +1,7 @@
 from django.urls import reverse
 
-from django_ledger.tests.base import DjangoLedgerBaseTest
 from dev_env.settings import LOGIN_URL
+from django_ledger.tests.base import DjangoLedgerBaseTest
 
 
 class AuthTest(DjangoLedgerBaseTest):
