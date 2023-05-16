@@ -1395,7 +1395,7 @@ class EntityModelAbstract(MP_Node,
 
     def create_estimate(self,
                         estimate_title: str,
-                        terms: str,
+                        contract_terms: str,
                         customer_model: Union[CustomerModel, UUID, str],
                         date_draft: Optional[date] = None,
                         commit: bool = True):
@@ -1411,7 +1411,7 @@ class EntityModelAbstract(MP_Node,
             Optional date to use as Draft Date. Defaults to localdate() if None.
         customer_model: CustomerModel or UUID or str
             The CustomerModel, CustomerModel UUID or CustomerModel Number
-        terms: str
+        contract_terms: str
             A choice of EstimateModel.CONTRACT_TERMS_CHOICES_VALID
         commit: bool
             If True, commits the new PO in the Database. Defaults to True.
@@ -1431,7 +1431,7 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
 
         EstimateModel = lazy_loader.get_estimate_model()
-        estimate_model = EstimateModel(terms=terms)
+        estimate_model = EstimateModel(terms=contract_terms)
         return estimate_model.configure(
             entity_slug=self,
             date_draft=date_draft,

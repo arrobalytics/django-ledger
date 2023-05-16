@@ -414,7 +414,7 @@ class EntityDataGenerator(LoggingMixIn):
             estimate_title=f'Customer Estimate {date_draft}',
             date_draft=date_draft,
             customer_model=choice(self.customer_models),
-            terms=choice(EstimateModel.CONTRACT_TERMS_CHOICES_VALID),
+            contract_terms=choice(EstimateModel.CONTRACT_TERMS_CHOICES_VALID),
             commit=True
         )
         self.logger.info(f'Creating entity estimate {estimate_model.estimate_number}...')

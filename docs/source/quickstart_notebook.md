@@ -23,6 +23,9 @@ django.setup()
 
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.estimate import EstimateModel
 from django.contrib.auth import get_user_model
 from django_ledger.io import roles
 ```
@@ -252,7 +255,10 @@ pd.DataFrame(invoices_qs.values())
 
 
 ```python
-invoice_model = entity_model.create_invoice(customer_model='C-0000000006')
+invoice_model = entity_model.create_invoice(
+    customer_model='C-0000000006',
+    terms=InvoiceModel.TERMS_NET_30
+)
 ```
 
 # Bills
@@ -269,7 +275,10 @@ pd.DataFrame(bills_qs.values())
 
 
 ```python
-bill_model = entity_model.create_bill(vendor_model='V-0000000002')
+bill_model = entity_model.create_bill(
+    vendor_model='V-0000000002',
+    terms=BillModel.TERMS_NET_60
+)
 ```
 
 # Purchase Orders
@@ -305,7 +314,8 @@ pd.DataFrame(estimates_qs.values())
 ```python
 estimate_model = entity_model.create_estimate(
     estimate_title='A quote for new potential customer!', 
-    customer_model='C-0000000009'
+    customer_model='C-0000000009',
+    contract_terms=EstimateModel.CONTRACT_TERMS_FIXED
 )
 ```
 
