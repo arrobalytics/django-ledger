@@ -62,8 +62,8 @@ class EstimateModelQuerySet(models.QuerySet):
             A EstimateModelQuerySet with applied filters.
         """
         return self.filter(
-            Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
-            Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED) |
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
         )
 
     def not_approved(self):
@@ -76,8 +76,8 @@ class EstimateModelQuerySet(models.QuerySet):
             A EstimateModelQuerySet with applied filters.
         """
         return self.exclude(
-            Q(status__exact=EstimateModelAbstract.CJ_STATUS_APPROVED) |
-            Q(status__exact=EstimateModelAbstract.CJ_STATUS_COMPLETED)
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_APPROVED) |
+            Q(status__exact=EstimateModelAbstract.CONTRACT_STATUS_COMPLETED)
         )
 
     def contracts(self):
@@ -206,31 +206,33 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     other_estimate: Decimal
         the total miscellaneous costs estimate of the EstimateModel instance.
     """
-    CJ_STATUS_DRAFT = 'draft'
-    CJ_STATUS_REVIEW = 'in_review'
-    CJ_STATUS_APPROVED = 'approved'
-    CJ_STATUS_COMPLETED = 'completed'
-    CJ_STATUS_VOID = 'void'
-    CJ_STATUS_CANCELED = 'canceled'
-    CJ_STATUS = [
-        (CJ_STATUS_DRAFT, _('Draft')),
-        (CJ_STATUS_REVIEW, _('In Review')),
-        (CJ_STATUS_APPROVED, _('Approved')),
-        (CJ_STATUS_COMPLETED, _('Completed')),
-        (CJ_STATUS_VOID, _('Void')),
-        (CJ_STATUS_CANCELED, _('Canceled')),
+    CONTRACT_STATUS_DRAFT = 'draft'
+    CONTRACT_STATUS_REVIEW = 'in_review'
+    CONTRACT_STATUS_APPROVED = 'approved'
+    CONTRACT_STATUS_COMPLETED = 'completed'
+    CONTRACT_STATUS_VOID = 'void'
+    CONTRACT_STATUS_CANCELED = 'canceled'
+    CONTRACT_STATUS_CHOICES = [
+        (CONTRACT_STATUS_DRAFT, _('Draft')),
+        (CONTRACT_STATUS_REVIEW, _('In Review')),
+        (CONTRACT_STATUS_APPROVED, _('Approved')),
+        (CONTRACT_STATUS_COMPLETED, _('Completed')),
+        (CONTRACT_STATUS_VOID, _('Void')),
+        (CONTRACT_STATUS_CANCELED, _('Canceled')),
     ]
+    CONTRACT_STATUS_CHOICES_VALID = tuple(i[0] for i in CONTRACT_STATUS_CHOICES)
 
-    CJ_TERMS_FIXED = 'fixed'
-    CJ_TERMS_TARGET_PRICE = 'target'
-    CJ_TERMS_TM = 't&m'
-    CJ_TERMS_OTHER = 'other'
-    CONTRACT_TERMS = [
-        (CJ_TERMS_FIXED, _('Fixed Price')),
-        (CJ_TERMS_TARGET_PRICE, _('Target Price')),
-        (CJ_TERMS_TM, _('Time & Materials')),
-        (CJ_TERMS_OTHER, _('Other'))
+    CONTRACT_TERMS_FIXED = 'fixed'
+    CONTRACT_TERMS_TARGET_PRICE = 'target'
+    CONTRACT_TERMS_TM = 't&m'
+    CONTRACT_TERMS_OTHER = 'other'
+    CONTRACT_TERMS_CHOICES = [
+        (CONTRACT_TERMS_FIXED, _('Fixed Price')),
+        (CONTRACT_TERMS_TARGET_PRICE, _('Target Price')),
+        (CONTRACT_TERMS_TM, _('Time & Materials')),
+        (CONTRACT_TERMS_OTHER, _('Other'))
     ]
+    CONTRACT_TERMS_CHOICES_VALID = tuple(i[0] for i in CONTRACT_TERMS_CHOICES)
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     estimate_number = models.SlugField(max_length=20,
@@ -241,7 +243,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('Entity Model'))
     customer = models.ForeignKey('django_ledger.CustomerModel', on_delete=models.RESTRICT, verbose_name=_('Customer'))
-    terms = models.CharField(max_length=10, choices=CONTRACT_TERMS, verbose_name=_('Contract Terms'))
+    terms = models.CharField(max_length=10, choices=CONTRACT_TERMS_CHOICES, verbose_name=_('Contract Terms'))
     title = models.CharField(max_length=250,
                              verbose_name=_('Customer Estimate Title'),
                              validators=[
@@ -249,9 +251,9 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                                                     message=_(f'EstimateModel Title length must be greater than 5'))
                              ])
     status = models.CharField(max_length=10,
-                              choices=CJ_STATUS,
+                              choices=CONTRACT_STATUS_CHOICES,
                               verbose_name=_('Estimate Model Status'),
-                              default=CJ_STATUS_DRAFT)
+                              default=CONTRACT_STATUS_DRAFT)
 
     date_draft = models.DateField(null=True, blank=True, verbose_name=_('Date Draft'))
     date_in_review = models.DateField(null=True, blank=True, verbose_name=_('Date In Review'))
@@ -388,6 +390,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 self.date_draft = localdate()
 
             self.clean()
+            self.clean_fields()
 
             if commit:
                 self.save()
@@ -404,7 +407,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is in Draft status, else False.
         """
-        return self.status == self.CJ_STATUS_DRAFT
+        return self.status == self.CONTRACT_STATUS_DRAFT
 
     def is_review(self) -> bool:
         """
@@ -415,7 +418,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is In Review status, else False.
         """
-        return self.status == self.CJ_STATUS_REVIEW
+        return self.status == self.CONTRACT_STATUS_REVIEW
 
     def is_approved(self) -> bool:
         """
@@ -426,7 +429,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is in Approved status, else False.
         """
-        return self.status == self.CJ_STATUS_APPROVED
+        return self.status == self.CONTRACT_STATUS_APPROVED
 
     def is_completed(self) -> bool:
         """
@@ -437,7 +440,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is in Completed status, else False.
         """
-        return self.status == self.CJ_STATUS_COMPLETED
+        return self.status == self.CONTRACT_STATUS_COMPLETED
 
     def is_canceled(self) -> bool:
         """
@@ -448,7 +451,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is in Canceled status, else False.
         """
-        return self.status == self.CJ_STATUS_CANCELED
+        return self.status == self.CONTRACT_STATUS_CANCELED
 
     def is_void(self):
         """
@@ -459,7 +462,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         bool
             True if EstimateModel is in Void status, else False.
         """
-        return self.status == self.CJ_STATUS_VOID
+        return self.status == self.CONTRACT_STATUS_VOID
 
     def is_contract(self):
         """
@@ -610,7 +613,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         """
         if not self.can_draft():
             raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as draft...')
-        self.status = self.CJ_STATUS_DRAFT
+        self.status = self.CONTRACT_STATUS_DRAFT
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -691,7 +694,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not date_in_review:
             date_in_review = localdate()
         self.date_in_review = date_in_review
-        self.status = self.CJ_STATUS_REVIEW
+        self.status = self.CONTRACT_STATUS_REVIEW
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -756,7 +759,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not date_approved:
             date_approved = localdate()
         self.date_approved = date_approved
-        self.status = self.CJ_STATUS_APPROVED
+        self.status = self.CONTRACT_STATUS_APPROVED
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -819,7 +822,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not date_completed:
             date_completed = localdate()
         self.date_completed = date_completed
-        self.status = self.CJ_STATUS_COMPLETED
+        self.status = self.CONTRACT_STATUS_COMPLETED
         self.clean()
         if commit:
             self.clean()
@@ -883,7 +886,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not date_canceled:
             date_canceled = localdate()
         self.date_canceled = date_canceled
-        self.status = self.CJ_STATUS_CANCELED
+        self.status = self.CONTRACT_STATUS_CANCELED
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -946,7 +949,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not date_void:
             date_void = localdate()
         self.date_void = date_void
-        self.status = self.CJ_STATUS_VOID
+        self.status = self.CONTRACT_STATUS_VOID
         self.clean()
         if commit:
             self.save(update_fields=[

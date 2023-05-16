@@ -8,7 +8,7 @@ Contributions to this module:
 
 import sys
 from itertools import chain
-from typing import Set
+from typing import Set, List, Union
 
 from django.utils.translation import gettext as _
 
@@ -609,10 +609,25 @@ for group in ROLES_GROUPS:
     GROUPS_DIRECTORY[group] = getattr(mod, group)
 
 
-def validate_roles(roles) -> Set[str]:
+def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -> Set[str]:
+    """
+    Validates a given role identifier against the valid role available.
+    Parameters
+    ----------
+    roles: str or list
+        The role or list of roles to validate.
+    raise_exception: bool
+        Raises InvalidRoleError if any of the roles provided if not valid.
+
+    Returns
+    -------
+    set
+        A set of the valid roles.
+    """
     if isinstance(roles, str):
         roles = set(roles)
     for r in roles:
         if r not in VALID_ROLES:
-            raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
+            if raise_exception:
+                raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
     return set(roles)

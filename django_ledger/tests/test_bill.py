@@ -85,7 +85,7 @@ class BillModelTests(DjangoLedgerBaseTest):
             response = self.CLIENT.get(url, follow=False)
             redirect_url = urlparse(response.url)
             redirect_path = redirect_url.path
-            login_path = DJANGO_LEDGER_LOGIN_URL
+            login_path = reverse(viewname='django_ledger:login')
 
             self.assertEqual(response.status_code, 302, msg=f'{path} view is not protected.')
             self.assertEqual(redirect_path, login_path, msg=f'{path} view not redirecting to correct auth URL.')

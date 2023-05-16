@@ -41,14 +41,15 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module
+from django_ledger.io import roles as roles_module, validate_roles
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
-from django_ledger.models.items import ItemModelQuerySet, ItemTransactionModelQuerySet
+from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet, UnitOfMeasureModel,
+                                        UnitOfMeasureModelQuerySet, ItemModel)
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.unit import EntityUnitModel
@@ -607,6 +608,20 @@ class EntityModelAbstract(MP_Node,
         return self.default_coa_id is not None
 
     def get_default_coa(self, raise_exception: bool = True) -> Optional[ChartOfAccountModel]:
+        """
+        Fetches the EntityModel default Chart of Account.
+
+        Parameters
+        ----------
+        raise_exception: bool
+            Raises exception if no default CoA has been assigned.
+
+        Returns
+        -------
+        ChartOfAccountModel
+            The EntityModel default ChartOfAccount.
+        """
+
         if not self.default_coa_id:
             if raise_exception:
                 raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
@@ -662,15 +677,34 @@ class EntityModelAbstract(MP_Node,
                              activate_accounts: bool = False,
                              force: bool = False,
                              ignore_if_default_coa: bool = True,
-                             chart_of_accounts: Optional[ChartOfAccountModel] = None,
+                             coa_model: Optional[ChartOfAccountModel] = None,
                              commit: bool = True):
+        """
+        Populates the EntityModel default CoA with the default Chart of Account list provided by Django Ledger or user
+        defined. See DJANGO_LEDGER_DEFAULT_COA setting.
 
-        if not chart_of_accounts:
+        Parameters
+        ----------
+        activate_accounts: bool
+            Activates all AccountModels for immediate use. Defaults to False.
+        force: bool
+            Forces the creation of accounts even if other accounts are present. Defaults to False.
+        ignore_if_default_coa: bool
+            Raises exception if EntityModel already has a default CoA. Defaults to True.
+        coa_model: ChartOfAccountModel
+            Optional CoA Model to populate. Will be validated against EntityModel if provided.
+        commit: bool
+        '   Commits the newly created CoA into the Database. Defaults to True.
+        """
+
+        if not coa_model:
             if not self.has_default_coa():
                 self.create_chart_of_accounts(assign_as_default=True, commit=commit)
-            chart_of_accounts: ChartOfAccountModel = self.default_coa
+            coa_model: ChartOfAccountModel = self.default_coa
+        else:
+            self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
 
-        coa_accounts_qs = chart_of_accounts.accountmodel_set.all()
+        coa_accounts_qs = coa_model.accountmodel_set.all()
 
         # forces evaluation
         len(coa_accounts_qs)
@@ -703,16 +737,31 @@ class EntityModelAbstract(MP_Node,
                         pass
 
                     account_model.clean()
-                    chart_of_accounts.create_account(account_model)
+                    coa_model.create_account(account_model)
 
         else:
             if not ignore_if_default_coa:
-                raise ValidationError(f'Entity {self.name} already has existing accounts. '
-                                      'Use force=True to bypass this check')
+                raise EntityModelValidationError(f'Entity {self.name} already has existing accounts. '
+                                                 'Use force=True to bypass this check')
 
     def validate_chart_of_accounts_for_entity(self,
                                               coa_model: ChartOfAccountModel,
                                               raise_exception: bool = True) -> bool:
+        """
+        Validates the CoA Model against the EntityModel instance.
+
+        Parameters
+        ----------
+        coa_model: ChartOfAccountModel
+            The CoA Model to validate.
+        raise_exception: bool
+            Raises EntityModelValidationError if CoA Model is not valid for the EntityModel instance.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
         if coa_model.entity_id == self.uuid:
             return True
         if raise_exception:
@@ -724,7 +773,26 @@ class EntityModelAbstract(MP_Node,
                                        account_model: AccountModel,
                                        coa_model: ChartOfAccountModel,
                                        raise_exception: bool = True) -> bool:
+        """
+        Validates that the AccountModel provided belongs to the CoA Model provided.
+
+        Parameters
+        ----------
+        account_model: AccountModel
+            The AccountModel to validate.
+        coa_model: ChartOfAccountModel
+            The ChartOfAccountModel to validate against.
+        raise_exception: bool
+            Raises EntityModelValidationError if AccountModel is invalid for the EntityModel and CoA instance.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
         valid = self.validate_chart_of_accounts_for_entity(coa_model, raise_exception=raise_exception)
+        if not valid:
+            return valid
         if valid and account_model.coa_model_id == coa_model.uuid:
             return True
         if raise_exception:
@@ -794,7 +862,7 @@ class EntityModelAbstract(MP_Node,
     def get_coa_accounts(self,
                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                          active: bool = True,
-                         order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
+                         order_by: Optional[Tuple] = ('code',)) -> AccountModelQuerySet:
         """
         Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
 
@@ -822,7 +890,7 @@ class EntityModelAbstract(MP_Node,
 
             if isinstance(coa_model, ChartOfAccountModel):
                 self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=True)
-                account_model_qs = account_model_qs.filter(coa_model=coa_model)
+                account_model_qs = coa_model.accountmodel_set.all()
             if isinstance(coa_model, str):
                 account_model_qs = account_model_qs.filter(coa_model__slug__exact=coa_model)
             elif isinstance(coa_model, UUID):
@@ -896,16 +964,31 @@ class EntityModelAbstract(MP_Node,
 
     def get_default_account_for_role(self,
                                      role: str,
-                                     coa_model: Optional[ChartOfAccountModel] = None,
-                                     account_model_qs: Optional[AccountModelQuerySet] = None) -> AccountModel:
+                                     coa_model: Optional[ChartOfAccountModel] = None) -> AccountModel:
+        """
+        Gets the given role default AccountModel from the provided CoA.
+        CoA will be validated against the EntityModel instance.
+
+        Parameters
+        ----------
+        role: str
+            The CoA role to fetch the corresponding default Account Model.
+        coa_model: ChartOfAccountModel
+            The CoA Model to pull default account from. If not provided, will use EntityModel default CoA.
+
+        Returns
+        -------
+        AccountModel
+            The default account model for the specified CoA role.
+        """
+        validate_roles(role, raise_exception=True)
         if not coa_model:
             coa_model = self.default_coa
         else:
             self.validate_chart_of_accounts_for_entity(coa_model)
 
-        if not account_model_qs:
-            return coa_model.accountmodel_set.get(role__exact=role, role_default=True)
-        return account_model_qs.get(coa_model=coa_model, role__exact=role, role_default=True)
+        account_model_qs = coa_model.accountmodel_set.all().is_role_default()
+        return account_model_qs.get(role__exact=role)
 
     def create_account(self,
                        account_model_kwargs: Dict,
@@ -1048,6 +1131,13 @@ class EntityModelAbstract(MP_Node,
 
     # ### BILL MANAGEMENT ####
     def get_bills(self):
+        """
+        Fetches a QuerySet of BillModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        BillModelQuerySet
+        """
         BillModel = lazy_loader.get_bill_model()
         return BillModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
@@ -1055,6 +1145,8 @@ class EntityModelAbstract(MP_Node,
 
     def create_bill(self,
                     vendor_model: Union[VendorModel, UUID, str],
+                    terms: str,
+                    date_draft: Optional[date] = None,
                     xref: Optional[str] = None,
                     cash_account: Optional[AccountModel] = None,
                     prepaid_account: Optional[AccountModel] = None,
@@ -1063,7 +1155,42 @@ class EntityModelAbstract(MP_Node,
                     ledger_name: Optional[str] = None,
                     coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                     commit: bool = True):
+        """
+        Creates a new BillModel for the EntityModel instance.
+        Bill will have DRAFT status.
 
+        Parameters
+        ----------
+        vendor_model: VendorModel or UUID or str
+            The VendorModel, VendorModel UUID or VendorModel Number
+        terms: str
+            Payment terms of the new BillModel. A choice of BillModel.TERM_CHOICES_VALID
+        date_draft: date
+            Date to use as draft date for the new BillModel.
+        xref: str
+            Optional External Reference for the Bill (i.e. Vendor invoice number.)
+        cash_account: AccountModel
+            Optional CASH AccountModel associated with the new BillModel. Defaults to CASH default AccountModel role.
+        prepaid_account: AccountModel
+            Optional PREPAID AccountModel associated with the new BillModel for accruing purposes.
+            Defaults to PREPAID default AccountModel role.
+        payable_account: AccountModel
+            Optional PAYABLE AccountModel associated with the new BillModel for accruing purposes.
+            Defaults to ACCOUNTS PAYABLE default AccountModel role.
+        additional_info: Dict
+            Additional user-defined information stored as JSON in the Database.
+        ledger_name: str
+            Optional LedgerModel name to be assigned to the BillModel instance.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels
+        commit: bool
+            If True, commits the new BillModel in the Database.
+
+        Returns
+        -------
+        BillModel
+            The newly created BillModel in DRAFT state.
+        """
         BillModel = lazy_loader.get_bill_model()
 
         if isinstance(vendor_model, VendorModel):
@@ -1083,12 +1210,14 @@ class EntityModelAbstract(MP_Node,
             roles_module.ASSET_CA_PREPAID,
             roles_module.LIABILITY_CL_ACC_PAYABLE
         ]).is_role_default()
+
         # evaluates the queryset...
         len(account_model_qs)
 
         bill_model = BillModel(
-            vendor=vendor_model,
             xref=xref,
+            vendor=vendor_model,
+            terms=terms,
             additional_info=additional_info,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
@@ -1099,6 +1228,7 @@ class EntityModelAbstract(MP_Node,
 
         _, bill_model = bill_model.configure(entity_slug=self,
                                              ledger_name=ledger_name,
+                                             date_draft=date_draft,
                                              commit=commit,
                                              commit_ledger=commit)
 
@@ -1106,6 +1236,13 @@ class EntityModelAbstract(MP_Node,
 
     # ### INVOICE MANAGEMENT ####
     def get_invoices(self):
+        """
+        Fetches a QuerySet of InvoiceModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        InvoiceModelQuerySet
+        """
         InvoiceModel = lazy_loader.get_invoice_model()
         return InvoiceModel.objects.filter(
             ledger__entity__uuid__exact=self.uuid
@@ -1113,14 +1250,50 @@ class EntityModelAbstract(MP_Node,
 
     def create_invoice(self,
                        customer_model: Union[VendorModel, UUID, str],
+                       terms: str,
                        cash_account: Optional[AccountModel] = None,
                        prepaid_account: Optional[AccountModel] = None,
                        payable_account: Optional[AccountModel] = None,
                        additional_info: Optional[Dict] = None,
                        ledger_name: Optional[str] = None,
                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                       date_draft: Optional[date] = None,
                        commit: bool = True):
 
+        """
+        Creates a new InvoiceModel for the EntityModel instance.
+        Invoice will have DRAFT status.
+
+        Parameters
+        ----------
+        customer_model: CustomerModel or UUID or str
+            The CustomerModel, CustomerModel UUID or CustomerModel Number
+        terms: str
+            A choice of InvoiceModel.TERM_CHOICES_VALID
+        cash_account: AccountModel
+            Optional CASH AccountModel associated with the new InvoiceModel. Defaults to CASH default AccountModel role.
+        prepaid_account: AccountModel
+            Optional PREPAID AccountModel associated with the new InvoiceModel for accruing purposes.
+            Defaults to PREPAID default AccountModel role.
+        payable_account: AccountModel
+            Optional PAYABLE AccountModel associated with the new InvoiceModel for accruing purposes.
+            Defaults to ACCOUNTS PAYABLE default AccountModel role.
+        additional_info: Dict
+            Additional user-defined information stored as JSON in the Database.
+        ledger_name: str
+            Optional LedgerModel name to be assigned to the InvoiceModel instance.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels
+        date_draft: date
+            Optional date to use as Draft Date. Defaults to localdate() if None.
+        commit: bool
+            If True, commits the new BillModel in the Database.
+
+        Returns
+        -------
+        InvoiceModel
+            The newly created InvoiceModel in DRAFT state.
+        """
         InvoiceModel = lazy_loader.get_invoice_model()
 
         if isinstance(customer_model, CustomerModel):
@@ -1147,6 +1320,7 @@ class EntityModelAbstract(MP_Node,
         invoice_model = InvoiceModel(
             customer=customer_model,
             additional_info=additional_info,
+            terms=terms,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
                 role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
@@ -1157,37 +1331,96 @@ class EntityModelAbstract(MP_Node,
         _, invoice_model = invoice_model.configure(entity_slug=self,
                                                    ledger_name=ledger_name,
                                                    commit=commit,
+                                                   date_draft=date_draft,
                                                    commit_ledger=commit)
 
         return invoice_model
 
     # ### PURCHASE ORDER MANAGEMENT ####
     def get_purchase_orders(self):
+        """
+        Fetches a QuerySet of PurchaseOrderModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        PurchaseOrderModelQuerySet
+        """
         return self.purchaseordermodel_set.all().select_related('entity')
 
     def create_purchase_order(self,
-                              draft_date: Optional[date] = None,
+                              po_title: Optional[str] = None,
                               estimate_model=None,
+                              date_draft: Optional[date] = None,
                               commit: bool = True):
+        """
+        Creates a new PurchaseOrderModel for the EntityModel instance.
+        PO will have DRAFT status.
+
+        Parameters
+        ----------
+        po_title: str
+            The user defined title for the new Purchase Order Model.
+        date_draft: date
+            Optional date to use as Draft Date. Defaults to localdate() if None.
+        estimate_model: EstimateModel
+            The EstimateModel to associate the PO for tracking.
+        commit: bool
+            If True, commits the new PO in the Database. Defaults to True.
+
+        Returns
+        -------
+        PurchaseOrderModel
+            The newly created PurchaseOrderModel in DRAFT state.
+        """
         PurchaseOrderModel = lazy_loader.get_purchase_order_model()
         po_model = PurchaseOrderModel()
         return po_model.configure(
             entity_slug=self,
-            draft_date=draft_date,
+            draft_date=date_draft,
             estimate_model=estimate_model,
-            commit=commit
+            commit=commit,
+            po_title=po_title
         )
 
     # ### ESTIMATE/CONTRACT MANAGEMENT ####
     def get_estimates(self):
+        """
+        Fetches a QuerySet of EstimateModels associated with the EntityModel instance.
+
+        Returns
+        -------
+        EstimateModelQuerySet
+        """
         return self.estimatemodel_set.all().select_related('entity')
 
     def create_estimate(self,
                         estimate_title: str,
+                        contract_terms: str,
                         customer_model: Union[CustomerModel, UUID, str],
-                        draft_date: Optional[date] = None,
+                        date_draft: Optional[date] = None,
                         commit: bool = True):
+        """
+        Creates a new EstimateModel for the EntityModel instance.
+        Estimate will have DRAFT status.
 
+        Parameters
+        ----------
+        estimate_title: str
+            A user defined title for the Estimate.
+        date_draft: date
+            Optional date to use as Draft Date. Defaults to localdate() if None.
+        customer_model: CustomerModel or UUID or str
+            The CustomerModel, CustomerModel UUID or CustomerModel Number
+        contract_terms: str
+            A choice of EstimateModel.CONTRACT_TERMS_CHOICES_VALID
+        commit: bool
+            If True, commits the new PO in the Database. Defaults to True.
+
+        Returns
+        -------
+        PurchaseOrderModel
+            The newly created PurchaseOrderModel in DRAFT state.
+        """
         if isinstance(customer_model, CustomerModel):
             self.validate_customer(customer_model)
         elif isinstance(customer_model, str):
@@ -1198,10 +1431,10 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
 
         EstimateModel = lazy_loader.get_estimate_model()
-        estimate_model = EstimateModel()
+        estimate_model = EstimateModel(terms=contract_terms)
         return estimate_model.configure(
             entity_slug=self,
-            date_draft=draft_date,
+            date_draft=date_draft,
             customer_model=customer_model,
             estimate_title=estimate_title,
             commit=commit
@@ -1209,6 +1442,18 @@ class EntityModelAbstract(MP_Node,
 
     # ### BANK ACCOUNT MANAGEMENT ####
     def get_bank_accounts(self, active: bool = True) -> BankAccountModelQuerySet:
+        """
+        Fetches a QuerySet of BankAccountModels associated with the EntityModel instance.
+
+        Parameters
+        ----------
+        active: bool
+            If True, returns only active Bank Accounts. Defaults to True.
+
+        Returns
+        -------
+        BankAccountModelQuerySet
+        """
         bank_account_qs = self.bankaccountmodel_set.all().select_related('entity_model')
         if active:
             bank_account_qs = bank_account_qs.active()
@@ -1222,6 +1467,34 @@ class EntityModelAbstract(MP_Node,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                             bank_account_model_kwargs: Optional[Dict] = None,
                             commit: bool = True):
+
+        """
+        Creates a new BankAccountModel for the EntityModel instance.
+        Estimate will have DRAFT status.
+
+        Parameters
+        ----------
+        name: str
+            A user defined name for the BankAccountModel.
+        account_type: date
+            A choice of BankAccountModel.VALID_ACCOUNT_TYPES.
+        active: bool
+            Marks the account as active.
+        cash_account: AccountModel
+            Optional CASH AccountModel associated with the new InvoiceModel. Defaults to CASH default AccountModel role.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels.
+        commit: bool
+            If True, commits the new BankAccountModel in the Database. Defaults to True.
+        bank_account_model_kwargs: Dict
+            Additional kwargs for the new BankAccountModel instance.
+
+        Returns
+        -------
+        PurchaseOrderModel
+            The newly created PurchaseOrderModel in DRAFT state.
+        """
+
         if bank_account_model_kwargs is None:
             bank_account_model_kwargs = dict()
         if account_type not in BankAccountModel.VALID_ACCOUNT_TYPES:
@@ -1242,7 +1515,427 @@ class EntityModelAbstract(MP_Node,
             bank_account_model.save()
         return bank_account_model
 
+    # #### ITEM MANAGEMENT ###
+
+    def validate_item_qs(self, item_qs: ItemModelQuerySet, raise_exception: bool = True) -> bool:
+        """
+        Validates the given ItemModelQuerySet against the EntityModel instance.
+        Parameters
+        ----------
+        item_qs: ItemModelQuerySet
+            The ItemModelQuerySet to validate.
+        raise_exception: bool
+            Raises EntityModelValidationError if ItemModelQuerySet is not valid.
+
+        Returns
+        -------
+        bool
+            True if valid, else False.
+        """
+        for item_model in item_qs:
+            if item_model.entity_id != self.uuid:
+                if raise_exception:
+                    raise EntityModelValidationError(f'Invalid item_qs provided for entity {self.slug}...')
+                return False
+        return True
+
+    def get_uom_all(self) -> UnitOfMeasureModelQuerySet:
+        """
+        Fetches the EntityModel instance Unit of Measures QuerySet.
+
+        Returns
+        -------
+        UnitOfMeasureModelQuerySet
+        """
+        return self.unitofmeasuremodel_set.all().select_related('entity')
+
+    def create_uom(self, name: str, unit_abbr: str, active: bool = True, commit: bool = True) -> UnitOfMeasureModel:
+        """
+        Creates a new Unit of Measure Model associated with the EntityModel instance
+
+        Parameters
+        ----------
+        name: str
+            The user defined name of the new Unit of Measure Model instance.
+        unit_abbr: str
+            The unique slug abbreviation of the UoM model. Will be indexed.
+        active: bool
+            Mark this UoM as active.
+        commit: bool
+            Saves the model in the DB if True. Defaults to True
+
+        Returns
+        -------
+        UnitOfMeasureModel
+        """
+        uom_model = UnitOfMeasureModel(
+            name=name,
+            unit_abbr=unit_abbr,
+            is_active=active,
+            entity=self
+        )
+        uom_model.clean()
+        uom_model.clean_fields()
+        if commit:
+            uom_model.save()
+        return uom_model
+
+    def get_items_all(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.itemmodel_set.all().select_related(
+            'uom',
+            'entity',
+            'inventory_account',
+            'cogs_account',
+            'earnings_account',
+            'expense_account'
+        )
+        if active:
+            return qs.active()
+        return qs
+
+    def get_items_products(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Products.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.get_items_all(active=active)
+        return qs.products()
+
+    def create_item_product(self,
+                            name: str,
+                            item_type: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                            commit: bool = True) -> ItemModel:
+        """
+        Creates a new items of type PRODUCT.
+
+        Parameters
+        ----------
+        name: str
+            Name of the new service.
+        item_type: str
+            The type of product. A choice of ItemModel.ITEM_TYPE_CHOICES
+        uom_model:
+            The UOM UUID or UnitOfMeasureModel of the Service. Will be validated if provided.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels.
+        commit: bool
+            Commits the ItemModel in the DB. Defaults to True.
+        Returns
+        -------
+        ItemModel
+            The created Product.
+        """
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.ASSET_CA_INVENTORY,
+            roles_module.COGS,
+            roles_module.INCOME_OPERATIONAL
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        product_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_PRODUCT,
+            item_type=item_type,
+            inventory_account=account_model_qs.filter(role=roles_module.ASSET_CA_INVENTORY).get(),
+            earnings_account=account_model_qs.filter(role=roles_module.INCOME_OPERATIONAL).get(),
+            cogs_account=account_model_qs.filter(role=roles_module.COGS).get()
+        )
+        product_model.clean()
+        product_model.clean_fields()
+        if commit:
+            product_model.save()
+        return product_model
+
+    def get_items_services(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Services.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.get_items_all(active=active)
+        return qs.services()
+
+    def create_item_service(self,
+                            name: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                            commit: bool = True) -> ItemModel:
+        """
+        Creates a new items of type SERVICE.
+
+        Parameters
+        ----------
+        name: str
+            Name of the new service.
+        uom_model:
+            The UOM UUID or UnitOfMeasureModel of the Service. Will be validated if provided.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels.
+        commit: bool
+            Commits the ItemModel in the DB. Defaults to True.
+
+        Returns
+        -------
+        ItemModel
+            The created Service.
+        """
+
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=[
+            roles_module.COGS,
+            roles_module.INCOME_OPERATIONAL
+        ]).is_role_default()
+
+        # evaluates the queryset...
+        len(account_model_qs)
+
+        service_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_SERVICE,
+            item_type=ItemModel.ITEM_TYPE_LABOR,
+            earnings_account=account_model_qs.filter(role=roles_module.INCOME_OPERATIONAL).get(),
+            cogs_account=account_model_qs.filter(role=roles_module.COGS).get()
+        )
+        service_model.clean()
+        service_model.clean_fields()
+        if commit:
+            service_model.save()
+        return service_model
+
+    def get_items_expenses(self, active: bool = True) -> ItemModelQuerySet:
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as Products.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.get_items_all(active=active)
+        return qs.expenses()
+
+    def create_item_expense(self,
+                            name: str,
+                            expense_type: str,
+                            uom_model: Union[UUID, UnitOfMeasureModel],
+                            expense_account: Optional[Union[UUID, AccountModel]] = None,
+                            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                            commit: bool = True) -> ItemModel:
+
+        """
+        Creates a new items of type EXPENSE.
+
+        Parameters
+        ----------
+        name: str
+            The name of the new service.
+        expense_type: str
+            The type of expense. A choice of ItemModel.ITEM_TYPE_CHOICES
+        uom_model:
+            The UOM UUID or UnitOfMeasureModel of the Service. Will be validated if provided.
+        expense_account: AccountModel
+            Optional EXPENSE_OPERATIONAL AccountModel associated with the new Expense Item.
+            Defaults to EXPENSE_OPERATIONAL default AccountModel role.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels.
+        commit: bool
+            Commits the ItemModel in the DB. Defaults to True.
+
+        Returns
+        -------
+        ItemModel
+        """
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.EXPENSE_OPERATIONAL)
+        if not expense_account:
+            expense_account = account_model_qs.is_role_default().get()
+        elif isinstance(expense_account, UUID):
+            expense_account = account_model_qs.get(uuid__exact=expense_account)
+        elif isinstance(expense_account, AccountModel):
+            if expense_account.coa_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+
+        expense_item_model = ItemModel(
+            entity=self,
+            name=name,
+            uom=uom_model,
+            item_role=ItemModel.ITEM_ROLE_EXPENSE,
+            item_type=expense_type,
+            expense_account=expense_account
+        )
+        expense_item_model.clean()
+        expense_item_model.clean_fields()
+        if commit:
+            expense_item_model.save()
+        return expense_item_model
+
     # ##### INVENTORY MANAGEMENT ####
+
+    def get_items_inventory(self, active: bool = True):
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as inventory.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.get_items_all(active=active)
+        return qs.inventory_all()
+
+    def get_items_inventory_wip(self, active: bool = True):
+        """
+        Fetches all EntityModel instance ItemModel's that qualify as work in progress inventory.
+        QuerySet selects relevant related fields to avoid additional
+        DB queries for most use cases.
+
+        Parameters
+        ----------
+        active: bool
+            Filters the QuerySet to active accounts only. Defaults to True.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        qs = self.get_items_all(active=active)
+        return qs.inventory_wip()
+
+    def create_item_inventory(self,
+                              name: str,
+                              uom_model: Union[UUID, UnitOfMeasureModel],
+                              item_type: str,
+                              inventory_account: Optional[Union[UUID, AccountModel]] = None,
+                              coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                              commit: bool = True):
+        """
+        Creates a new items of type INVENTORY.
+
+        Parameters
+        ----------
+        name: str
+            The name of the new service.
+        item_type: str
+            The type of expense. A choice of ItemModel.ITEM_TYPE_CHOICES
+        uom_model:
+            The UOM UUID or UnitOfMeasureModel of the Service. Will be validated if provided.
+        inventory_account: AccountModel
+            Optional ASSET_CA_INVENTORY AccountModel associated with the new Expense Item.
+            Defaults to ASSET_CA_INVENTORY default AccountModel role.
+        coa_model: ChartOfAccountModel
+            Optional ChartOfAccountsModel to use when fetching default role AccountModels.
+        commit: bool
+            Commits the ItemModel in the DB. Defaults to True.
+
+
+        Returns
+        -------
+        ItemModel
+        """
+        if isinstance(uom_model, UUID):
+            uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
+        elif isinstance(uom_model, UnitOfMeasureModel):
+            if uom_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
+        account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_INVENTORY)
+        if not inventory_account:
+            inventory_account = account_model_qs.is_role_default().get()
+        elif isinstance(inventory_account, UUID):
+            inventory_account = account_model_qs.get(uuid__exact=inventory_account)
+        elif isinstance(inventory_account, AccountModel):
+            if inventory_account.coa_model.entity_id != self.uuid:
+                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+            elif inventory_account.coa_model_id != coa_model.uuid:
+                raise EntityModelValidationError(f'Invalid account for coa {coa_model.slug}...')
+
+        inventory_item_model = ItemModel(
+            name=name,
+            uom=uom_model,
+            entity=self,
+            item_type=item_type,
+            item_role=ItemModel.ITEM_ROLE_INVENTORY,
+            inventory_account=inventory_account
+        )
+        inventory_item_model.clean()
+        inventory_item_model.clean_fields()
+        if commit:
+            inventory_item_model.save()
+        return inventory_item_model
+
     @staticmethod
     def inventory_adjustment(counted_qs, recorded_qs) -> defaultdict:
         """
@@ -1332,20 +2025,15 @@ class EntityModelAbstract(MP_Node,
                 adjustment[uid]['count_diff'] -= counted
                 adjustment[uid]['value_diff'] -= recorded_data['value']
                 adjustment[uid]['avg_cost_diff'] -= avg_cost
-
         return adjustment
 
     def update_inventory(self,
-                         user_model,
                          commit: bool = False) -> Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]:
         """
         Triggers an inventory recount with optional commitment of transaction.
 
         Parameters
         ----------
-        user_model: UserModel
-            The Django UserModel making the request.
-
         commit:
             Updates all inventory ItemModels with the new inventory count.
 
@@ -1360,15 +2048,9 @@ class EntityModelAbstract(MP_Node,
         ItemTransactionModel = lazy_loader.get_item_transaction_model()
         ItemModel = lazy_loader.get_item_model()
 
-        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(
-            entity_slug=self.slug,
-            user_model=user_model
-        )
-        recorded_qs: ItemModelQuerySet = self.recorded_inventory(user_model=user_model, as_values=False)
-        recorded_qs_values = self.recorded_inventory(
-            user_model=user_model,
-            item_qs=recorded_qs,
-            as_values=True)
+        counted_qs: ItemTransactionModelQuerySet = ItemTransactionModel.objects.inventory_count(entity_slug=self.slug)
+        recorded_qs: ItemModelQuerySet = self.recorded_inventory(as_values=False)
+        recorded_qs_values = self.recorded_inventory(item_qs=recorded_qs, as_values=True)
 
         adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
 
@@ -1391,7 +2073,6 @@ class EntityModelAbstract(MP_Node,
         return adj, counted_qs, recorded_qs
 
     def recorded_inventory(self,
-                           user_model,
                            item_qs: Optional[ItemModelQuerySet] = None,
                            as_values: bool = True) -> ItemModelQuerySet:
         """
@@ -1402,9 +2083,6 @@ class EntityModelAbstract(MP_Node,
 
         Parameters
         ----------
-        user_model: UserModel
-            The Django UserModel making the request.
-
         item_qs: ItemModelQuerySet
             Pre fetched ItemModelQuerySet. Avoids additional DB Query.
 
@@ -1419,11 +2097,9 @@ class EntityModelAbstract(MP_Node,
 
         """
         if not item_qs:
-            recorded_qs = self.itemmodel_set.inventory_all(
-                entity_slug=self.slug,
-                user_model=user_model
-            )
+            recorded_qs = self.itemmodel_set.all().inventory_all()
         else:
+            self.validate_item_qs(item_qs)
             recorded_qs = item_qs
         if as_values:
             return recorded_qs.values(

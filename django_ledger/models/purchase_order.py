@@ -257,6 +257,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def configure(self,
                   entity_slug: Union[str, EntityModel],
+                  po_title: Optional[str] = None,
                   user_model: Optional[UserModel] = None,
                   draft_date: Optional[date] = None,
                   estimate_model=None,
@@ -267,19 +268,14 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         Parameters
         __________
-
         entity_slug: str or EntityModel
             The entity slug or EntityModel to associate the Bill with.
-
         user_model:
             The UserModel making the request to check for QuerySet permissions.
-
         ledger_posted:
             An option to mark the BillModel Ledger as posted at the time of configuration. Defaults to False.
-
         bill_desc: str
             An optional description appended to the LedgerModel name.
-
         commit: bool
             Saves the current BillModel after being configured.
 
@@ -307,7 +303,16 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
             self.entity = entity_model
 
+            if self.can_generate_po_number():
+                self.generate_po_number(commit=commit)
+
+            if not po_title and not self.po_title and self.po_number:
+                self.po_title = f'PO Number {self.po_number}'
+            else:
+                self.po_title = po_title
+
             self.clean()
+            self.clean_fields()
             if commit:
                 self.save()
         return self
@@ -579,6 +584,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 raise PurchaseOrderModelValidationError(
                     f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
             return False
+        elif self.entity_id != estimate_model.entity_id:
+            if raise_exception:
+                raise PurchaseOrderModelValidationError(
+                    f'Invalid EstimateModel for entity {self.entity.slug}'
+                )
+            return False
+
         # check if estimate_model is passed and raise exception if needed...
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:

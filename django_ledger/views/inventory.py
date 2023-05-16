@@ -62,19 +62,12 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
 
     def counted_inventory(self):
         entity_slug = self.kwargs['entity_slug']
-        user_model = self.request.user
-        return ItemTransactionModel.objects.inventory_count(
-            entity_slug=entity_slug,
-            user_model=user_model
-        )
+        return ItemTransactionModel.objects.inventory_count(entity_slug=entity_slug)
 
     def recorded_inventory(self, queryset=None, as_values=True):
         entity_model: EntityModel = self.get_object()
         user_model = self.request.user
-        recorded_qs = entity_model.recorded_inventory(
-            user_model=user_model,
-            item_qs=queryset
-        )
+        recorded_qs = entity_model.recorded_inventory(item_qs=queryset)
         return recorded_qs
 
     def get_context_data(self, adjustment=None, counted_qs=None, recorded_qs=None, **kwargs):
@@ -124,7 +117,5 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
 
     def update_inventory(self):
         entity_model: EntityModel = self.get_object()
-        adj, counted_qs, recorded_qs = entity_model.update_inventory(
-            user_model=self.request.user,
-            commit=True)
+        adj, counted_qs, recorded_qs = entity_model.update_inventory(commit=True)
         return adj, counted_qs, recorded_qs

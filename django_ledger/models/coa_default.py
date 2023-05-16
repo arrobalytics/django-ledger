@@ -309,6 +309,16 @@ DEFAULT_CHART_OF_ACCOUNTS = [
 
 ]
 
+
+def get_default_coa() -> List[Dict]:
+    if DJANGO_LEDGER_DEFAULT_COA is not None and isinstance(DJANGO_LEDGER_DEFAULT_COA, list):
+        return DJANGO_LEDGER_DEFAULT_COA
+    return DEFAULT_CHART_OF_ACCOUNTS
+
+
+if DJANGO_LEDGER_DEFAULT_COA:
+    DJANGO_LEDGER_DEFAULT_COA = get_default_coa()
+
 PREFIX_MAP = {
     'in': ROOT_INCOME,
     'ex': ROOT_EXPENSES,
@@ -335,12 +345,6 @@ def verify_unique_code():
     code_set = set(code_list)
     if not len(code_list) == len(code_set):
         raise DjangoLedgerConfigurationError('Default CoA is not unique.')
-
-
-def get_default_coa() -> List[Dict]:
-    if DJANGO_LEDGER_DEFAULT_COA is not None and isinstance(DJANGO_LEDGER_DEFAULT_COA, list):
-        return DJANGO_LEDGER_DEFAULT_COA
-    return DEFAULT_CHART_OF_ACCOUNTS
 
 
 def get_default_coa_rst(default_coa: Optional[Dict] = None) -> str:

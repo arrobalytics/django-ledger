@@ -155,10 +155,10 @@ class ProductItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.products(
+            self.queryset = ItemModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).select_related(
+            ).products().select_related(
                 'earnings_account', 'cogs_account',
                 'inventory_account', 'uom').order_by('-updated')
         return super().get_queryset()
@@ -285,10 +285,10 @@ class ServiceItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.services(
+            self.queryset = ItemModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).select_related(
+            ).services().select_related(
                 'earnings_account', 'cogs_account',
                 'inventory_account', 'uom').order_by('-updated')
         return super().get_queryset()
@@ -355,10 +355,10 @@ class ServiceUpdateView(DjangoLedgerSecurityMixIn,
     }
 
     def get_queryset(self):
-        return ItemModel.objects.services(
+        return ItemModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).services()
 
     def get_form(self, form_class=None):
         return ServiceUpdateForm(
@@ -415,10 +415,10 @@ class ExpenseItemItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.expenses(
+            self.queryset = ItemModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).select_related('expense_account', 'uom').order_by('-updated')
+            ).expenses().select_related('expense_account', 'uom').order_by('-updated')
         return super().get_queryset()
 
 
@@ -499,10 +499,10 @@ class InventoryItemItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.inventory_wip(
+            self.queryset = ItemModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).select_related('inventory_account', 'cogs_account', 'uom').order_by('-updated')
+            ).inventory_wip().select_related('inventory_account', 'cogs_account', 'uom').order_by('-updated')
         return super().get_queryset()
 
 

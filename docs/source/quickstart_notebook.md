@@ -22,6 +22,10 @@ os.chdir('../')
 django.setup()
 
 from django_ledger.models.entity import EntityModel
+from django_ledger.models.items import ItemModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.estimate import EstimateModel
 from django.contrib.auth import get_user_model
 from django_ledger.io import roles
 ```
@@ -156,18 +160,18 @@ coa_accounts_by_coa_slug_qs = entity_model.get_coa_accounts(coa_model=default_co
 pd.DataFrame(coa_accounts_by_coa_slug_qs.values())
 ```
 
+
+```python
+# coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(code_list=['ABC'], 
+#                                                                 coa_model=another_coa_model)
+# pd.DataFrame(coa_accounts_by_codes_qs.values())
+```
+
 ## Get Accounts With Codes and CoA Model
 
 
 ```python
 coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(code_list=['1010', '1050'])
-pd.DataFrame(coa_accounts_by_codes_qs.values())
-```
-
-
-```python
-coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(code_list=['1010', '1050'], 
-                                                                coa_model=another_coa_model)
 pd.DataFrame(coa_accounts_by_codes_qs.values())
 ```
 
@@ -251,7 +255,10 @@ pd.DataFrame(invoices_qs.values())
 
 
 ```python
-invoice_model = entity_model.create_invoice(customer_model='C-0000000006')
+invoice_model = entity_model.create_invoice(
+    customer_model='C-0000000006',
+    terms=InvoiceModel.TERMS_NET_30
+)
 ```
 
 # Bills
@@ -268,7 +275,10 @@ pd.DataFrame(bills_qs.values())
 
 
 ```python
-bill_model = entity_model.create_bill(vendor_model='V-0000000002')
+bill_model = entity_model.create_bill(
+    vendor_model='V-0000000002',
+    terms=BillModel.TERMS_NET_60
+)
 ```
 
 # Purchase Orders
@@ -304,7 +314,8 @@ pd.DataFrame(estimates_qs.values())
 ```python
 estimate_model = entity_model.create_estimate(
     estimate_title='A quote for new potential customer!', 
-    customer_model='C-0000000009'
+    customer_model='C-0000000009',
+    contract_terms=EstimateModel.CONTRACT_TERMS_FIXED
 )
 ```
 
@@ -324,6 +335,139 @@ pd.DataFrame(bank_accounts_qs.values())
 ```python
 bank_account_model = entity_model.create_bank_account(name='A big bank account!',
                                                       account_type='checking')
+```
+
+# Items
+
+## Unit of Measures
+
+### Get Unit of Measures
+
+
+```python
+uom_qs = entity_model.get_uom_all()
+pd.DataFrame(uom_qs.values())
+```
+
+### Create a UOM
+
+
+```python
+uom_model_ft = entity_model.create_uom(
+    name='Linear Feet',
+    unit_abbr='lin-ft'
+)
+```
+
+### Get Some UoMs
+
+
+```python
+uom_model_unit = uom_qs.get(unit_abbr__exact='unit')
+uom_model_man_hr = uom_qs.get(unit_abbr__exact='man-hour')
+```
+
+## Expenses
+
+### Get Expense Items
+
+
+```python
+expenses_qs = entity_model.get_items_expenses()
+pd.DataFrame(expenses_qs.values())
+```
+
+### Create Expense Item
+
+
+```python
+expense_item_model = entity_model.create_item_expense(
+    name='Premium Pencils',
+    uom_model=uom_model_unit,
+    expense_type=ItemModel.ITEM_TYPE_MATERIAL
+)
+```
+
+
+```python
+expense_item_model.is_expense()
+```
+
+## Services
+
+### Get Service Items
+
+
+```python
+services_qs = entity_model.get_items_services()
+pd.DataFrame(services_qs.values())
+```
+
+### Create Service Item
+
+
+```python
+service_model = entity_model.create_item_service(
+    name='Yoga Class',
+    uom_model=uom_model_man_hr
+)
+```
+
+
+```python
+service_model.is_service()
+```
+
+## Products
+
+### Get Product Items
+
+
+```python
+products_qs = entity_model.get_items_products()
+pd.DataFrame(products_qs.values())
+```
+
+### Create Product Items
+
+
+```python
+product_model = entity_model.create_item_product(
+    name='1/2" Premium PVC Pipe',
+    uom_model=uom_model_ft,
+    item_type=ItemModel.ITEM_TYPE_MATERIAL
+)
+```
+
+
+```python
+product_model.is_product()
+```
+
+## Inventory
+
+### Get Inventory Items
+
+
+```python
+inventory_qs = entity_model.get_items_inventory()
+pd.DataFrame(inventory_qs.values())
+```
+
+### Create Inventory Items
+
+
+```python
+inventory_model = entity_model.create_item_inventory(
+    name='A Home to Flip!',
+    uom_model=uom_model_unit,
+    item_type=ItemModel.ITEM_TYPE_LUMP_SUM
+)
+```
+
+
+```python
+inventory_model.is_inventory()
 ```
 
 # Financial Statements

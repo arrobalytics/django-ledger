@@ -470,6 +470,7 @@ class BillModelAbstract(AccrualMixIn,
             ledger_model.name = ledger_name
 
             ledger_model.clean()
+            ledger_model.clean_fields()
 
             self.ledger = ledger_model
 
@@ -480,6 +481,7 @@ class BillModelAbstract(AccrualMixIn,
                 self.generate_bill_number(commit=commit)
 
             self.clean()
+            self.clean_fields()
 
             if commit:
                 self.save()

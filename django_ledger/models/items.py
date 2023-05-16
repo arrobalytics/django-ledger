@@ -46,6 +46,10 @@ class ItemModelValidationError(ValidationError):
     pass
 
 
+class UnitOfMeasureModelQuerySet(models.QuerySet):
+    pass
+
+
 # UNIT OF MEASURES MODEL....
 class UnitOfMeasureModelManager(models.Manager):
     """
@@ -133,7 +137,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
                                on_delete=models.CASCADE,
                                verbose_name=_('UoM Entity'))
 
-    objects = UnitOfMeasureModelManager()
+    objects = UnitOfMeasureModelManager.from_queryset(queryset_class=UnitOfMeasureModelQuerySet)()
 
     class Meta:
         abstract = True
@@ -163,7 +167,102 @@ class ItemModelQuerySet(models.QuerySet):
         ItemModelQuerySet
             A QuerySet with applied filters.
         """
-        return self.filter(active=True)
+        return self.filter(is_active=True)
+
+    def products(self):
+        """
+        Filters the QuerySet to ItemModels that only qualify as products.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    Q(is_product_or_service=True) &
+                    Q(for_inventory=True)
+            ) |
+            Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
+        )
+
+    def services(self):
+        """
+        Filters the QuerySet to ItemModels that only qualify as services.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    Q(is_product_or_service=True) &
+                    Q(for_inventory=False)
+            ) |
+            Q(item_role=ItemModel.ITEM_ROLE_SERVICE)
+        )
+
+    def expenses(self):
+        """
+        Filters the QuerySet to ItemModels that only qualify as expenses.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=False)
+            ) | Q(item_role=ItemModel.ITEM_ROLE_EXPENSE)
+        )
+
+    def inventory_wip(self):
+        """
+        Filters the QuerySet to ItemModels that only qualify as inventory.
+        These types of items cannot be sold as they are not considered a finished product.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=True)
+            ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
+        )
+
+    def inventory_all(self):
+        """
+        Filters the QuerySet to ItemModels that only qualify as inventory.
+        These types of items may be finished or unfinished.
+
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    (
+                            Q(is_product_or_service=False) &
+                            Q(for_inventory=True)
+                    ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
+            ) |
+            (
+                    (
+                            Q(is_product_or_service=True) &
+                            Q(for_inventory=True)
+                    ) |
+                    Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
+
+            )
+        )
 
 
 class ItemModelManager(models.Manager):
@@ -225,145 +324,6 @@ class ItemModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
 
-    def products(self, entity_slug, user_model):
-        """
-        Returns a QuerySet of ItemModels that only qualify as products for a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
-
-        Returns
-        -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
-        """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            (
-                    Q(is_product_or_service=True) &
-                    Q(for_inventory=True)
-            ) |
-            Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
-        )
-
-    def services(self, entity_slug, user_model):
-        """
-        Returns a QuerySet of ItemModels that only qualify as active services for a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
-
-        Returns
-        -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
-        """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            (
-                    Q(is_product_or_service=True) &
-                    Q(for_inventory=False)
-            ) |
-            Q(item_role=ItemModel.ITEM_ROLE_SERVICE)
-        )
-
-    def expenses(self, entity_slug, user_model):
-        """
-        Returns a QuerySet of ItemModels that only qualify as active products for a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
-
-        Returns
-        -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
-        """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            (
-                    Q(is_product_or_service=False) &
-                    Q(for_inventory=False)
-            ) | Q(item_role=ItemModel.ITEM_ROLE_EXPENSE)
-        )
-
-    def inventory_wip(self, entity_slug, user_model):
-        """
-        Returns a QuerySet of ItemModels that only qualify as inventory in progress for a specific EntityModel &
-        UserModel. These types of items cannot be sold as they are not considered a finished product.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
-
-        Returns
-        -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
-        """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            (
-                    Q(is_product_or_service=False) &
-                    Q(for_inventory=True)
-            ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
-        )
-
-    def inventory_all(self, entity_slug, user_model):
-        """
-        Returns a QuerySet of ItemModels that qualify as inventory for a specific EntityModel &
-        UserModel. These types of items may be finished or unfinished.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
-
-        Returns
-        -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
-        """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            (
-                    (
-                            Q(is_product_or_service=False) &
-                            Q(for_inventory=True)
-                    ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
-            ) |
-            (
-                    (
-                            Q(is_product_or_service=True) &
-                            Q(for_inventory=True)
-                    ) |
-                    Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
-
-            )
-        )
-
     def for_bill(self, entity_slug, user_model):
         """
         Returns a QuerySet of ItemModels that can only be used for BillModels for a specific EntityModel &
@@ -409,7 +369,8 @@ class ItemModelManager(models.Manager):
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        return self.inventory_all(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        return qs.inventory_all()
 
     def for_estimate(self, entity_slug: str, user_model):
         """
@@ -429,7 +390,8 @@ class ItemModelManager(models.Manager):
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        return self.products(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.products()
 
 
 class ItemModelAbstract(CreateUpdateMixIn):
@@ -502,6 +464,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
         (ITEM_TYPE_LUMP_SUM, _('Lump Sum')),
         (ITEM_TYPE_OTHER, _('Other')),
     ]
+    ITEM_TYPE_VALID_CHOICES = {i[0] for i in ITEM_TYPE_CHOICES}
 
     ITEM_ROLE_EXPENSE = 'expense'
     ITEM_ROLE_INVENTORY = 'inventory'
@@ -852,6 +815,13 @@ class ItemTransactionModelQuerySet(models.QuerySet):
     def is_ordered(self):
         return self.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
+    def is_orphan(self):
+        return self.filter(
+            Q(bill_model_id__isnull=True) &
+            Q(po_model_id__isnull=True) &
+            Q(ce_model_id__isnull=True)
+        )
+
     def get_estimate_aggregate(self):
         return {
             'ce_cost_estimate__sum': sum(i.ce_cost_estimate for i in self),
@@ -907,50 +877,15 @@ class ItemTransactionModelManager(models.Manager):
             Q(invoice_model__ce_model_id__exact=ce_pk)
         )
 
-    def inventory_pipeline(self, entity_slug, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            Q(item_model__for_inventory=True) &
-            Q(bill_model__isnull=False) &
-            Q(po_item_status__in=[
-                ItemTransactionModel.STATUS_ORDERED,
-                ItemTransactionModel.STATUS_IN_TRANSIT,
-                ItemTransactionModel.STATUS_RECEIVED,
-            ])
-        )
+    # INVENTORY METHODS....
+    def for_entity_inventory(self, entity_slug):
+        qs = self.get_queryset()
+        return qs.filter(item_model__entity__slug__exact=entity_slug)
 
-    def inventory_pipeline_aggregate(self, entity_slug: str, user_model):
-        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.values(
-            'item_model__name',
-            'item_model__uom__name',
-            'po_item_status').annotate(
-            total_quantity=Sum('quantity'),
-            total_value=Sum('total_amount')
-        )
-
-    def inventory_pipeline_ordered(self, entity_slug, user_model):
-        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
-
-    def inventory_pipeline_intransit(self, entity_slug, user_model):
-        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
-
-    def inventory_pipeline_received(self, entity_slug, user_model):
-        qs = self.inventory_pipeline(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
-
-    def inventory_invoiced(self, entity_slug, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(
-            Q(item_model__for_inventory=True) &
-            Q(invoice_model__isnull=False)
-        )
-
-    def inventory_count(self, entity_slug, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+    # Todo move this to QuerySet....
+    def inventory_count(self, entity_slug):
         PurchaseOrderModel = lazy_loader.get_purchase_order_model()
+        qs = self.for_entity_inventory(entity_slug)
         qs = qs.filter(
             Q(item_model__for_inventory=True) &
             (
@@ -996,12 +931,45 @@ class ItemTransactionModelManager(models.Manager):
                                   output_field=DecimalField(decimal_places=3)), Value(0.0), output_field=DecimalField())
         )
 
-    def is_orphan(self, entity_slug, user_model):
-        qs = self.get_queryset()
+    def inventory_pipeline(self, entity_slug):
+        qs = self.for_entity_inventory(entity_slug)
         return qs.filter(
-            Q(bill_model_id__isnull=True) &
-            Q(po_model_id__isnull=True) &
-            Q(ce_model_id__isnull=True)
+            Q(item_model__for_inventory=True) &
+            Q(bill_model__isnull=False) &
+            Q(po_item_status__in=[
+                ItemTransactionModel.STATUS_ORDERED,
+                ItemTransactionModel.STATUS_IN_TRANSIT,
+                ItemTransactionModel.STATUS_RECEIVED,
+            ])
+        )
+
+    def inventory_pipeline_aggregate(self, entity_slug: str):
+        qs = self.inventory_pipeline(entity_slug=entity_slug)
+        return qs.values(
+            'item_model__name',
+            'item_model__uom__name',
+            'po_item_status').annotate(
+            total_quantity=Sum('quantity'),
+            total_value=Sum('total_amount')
+        )
+
+    def inventory_pipeline_ordered(self, entity_slug):
+        qs = self.inventory_pipeline(entity_slug=entity_slug)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
+
+    def inventory_pipeline_in_transit(self, entity_slug):
+        qs = self.inventory_pipeline(entity_slug=entity_slug)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
+
+    def inventory_pipeline_received(self, entity_slug):
+        qs = self.inventory_pipeline(entity_slug=entity_slug)
+        return qs.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
+
+    def inventory_invoiced(self, entity_slug):
+        qs = self.for_entity_inventory(entity_slug)
+        return qs.filter(
+            Q(item_model__for_inventory=True) &
+            Q(invoice_model__isnull=False)
         )
 
 

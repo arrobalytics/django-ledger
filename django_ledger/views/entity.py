@@ -86,7 +86,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
 
         if default_coa:
             entity_model.populate_default_coa(activate_accounts=activate_accounts,
-                                              chart_of_accounts=default_coa_model)
+                                              coa_model=default_coa_model)
 
         if sample_data:
             entity_generator = EntityDataGenerator(

@@ -11,7 +11,7 @@ from decimal import Decimal
 from itertools import groupby
 from random import randint, random, choice, choices
 from string import ascii_uppercase
-from typing import Union
+from typing import Union, Optional
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.timezone import localtime, localdate
@@ -19,10 +19,10 @@ from django.utils.timezone import localtime, localdate
 from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
                                     LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
-from django_ledger.models import (EntityModel, TransactionModel, AccountModel, VendorModel, CustomerModel,
+from django_ledger.models import (EntityModel, TransactionModel, VendorModel, CustomerModel,
                                   EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
-                                  BillModel, ItemTransactionModel, PurchaseOrderModel, InvoiceModel,
-                                  EstimateModel, LoggingMixIn, InvoiceModelValidationError)
+                                  BillModel, ItemTransactionModel, InvoiceModel,
+                                  EstimateModel, LoggingMixIn, InvoiceModelValidationError, ChartOfAccountModel)
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
 
 try:
@@ -64,6 +64,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.DAYS_FORWARD = days_forward
 
         self.entity_model: EntityModel = entity_model
+        self.default_coa: Optional[ChartOfAccountModel] = None
         self.capital_contribution = capital_contribution
         self.user_model = user_model
 
@@ -110,15 +111,8 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
-        self.account_models = AccountModel.objects.for_entity_available(
-            entity_slug=self.entity_model,
-            user_model=self.user_model
-        ).order_by('role')
-
-        self.accounts_by_role = {
-            g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)
-        }
-
+        self.account_models = self.entity_model.get_coa_accounts(order_by=('role', 'code'))
+        self.accounts_by_role = {g: list(v) for g, v in groupby(self.account_models, key=lambda a: a.role)}
         self.create_vendors()
         self.create_customers()
         self.create_entity_units()
@@ -155,6 +149,12 @@ class EntityDataGenerator(LoggingMixIn):
             next_date = self.local_date
         return next_date
 
+    def create_coa(self):
+        entity_model = self.entity_model
+        coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+        entity_model.populate_default_coa(coa_model=coa_model, activate_accounts=True)
+        self.default_coa = entity_model.default_coa
+
     def create_entity_units(self, nb_units: int = None):
         self.logger.info(f'Creating entity units...')
         nb_units = self.NB_UNITS if not nb_units else nb_units
@@ -180,22 +180,22 @@ class EntityDataGenerator(LoggingMixIn):
         self.logger.info('Creating vendors...')
         vendor_count = randint(10, 20)
         vendor_models = [
-            VendorModel(
-                vendor_name=self.fk.name() if random() > .7 else self.fk.company(),
-                entity_model=self.entity_model,
-                address_1=self.fk.street_address(),
-                address_2=self.fk.building_number() if random() < .2 else None,
-                city=self.fk.city(),
-                state=self.fk.state_abbr(),
-                zip_code=self.fk.postcode(),
-                phone=self.fk.phone_number(),
-                country=self.COUNTRY,
-                email=self.fk.email(),
-                website=self.fk.url(),
-                active=True,
-                hidden=False,
-                description='A cool vendor description.'
-            ) for _ in range(vendor_count)
+            self.entity_model.create_vendor(
+                vendor_model_kwargs={
+                    'vendor_name': self.fk.name() if random() > .7 else self.fk.company(),
+                    'address_1': self.fk.street_address(),
+                    'address_2': self.fk.building_number() if random() < .2 else None,
+                    'city': self.fk.city(),
+                    'state': self.fk.state_abbr(),
+                    'zip_code': self.fk.postcode(),
+                    'phone': self.fk.phone_number(),
+                    'country': self.COUNTRY,
+                    'email': self.fk.email(),
+                    'website': self.fk.url(),
+                    'active': True,
+                    'hidden': False,
+                    'description': 'A cool vendor description.'
+                }, commit=False) for _ in range(vendor_count)
         ]
 
         for vendor in vendor_models:
@@ -207,22 +207,22 @@ class EntityDataGenerator(LoggingMixIn):
         self.logger.info(f'Creating entity customers...')
         customer_count = randint(10, 20)
         customer_models = [
-            CustomerModel(
-                customer_name=self.fk.name() if random() > .2 else self.fk.company(),
-                entity_model=self.entity_model,
-                address_1=self.fk.street_address() + self.fk.street_suffix(),
-                address_2=self.fk.building_number() if random() > .2 else None,
-                city=self.fk.city(),
-                state=self.fk.state_abbr(),
-                zip_code=self.fk.postcode(),
-                country=self.COUNTRY,
-                phone=self.fk.phone_number(),
-                email=self.fk.email(),
-                website=self.fk.url(),
-                active=True,
-                hidden=False,
-                description=f'A cool customer description. We love customers!'
-            ) for _ in range(customer_count)
+            self.entity_model.create_customer(
+                customer_model_kwargs={
+                    'customer_name': self.fk.name() if random() > .2 else self.fk.company(),
+                    'address_1': self.fk.street_address() + self.fk.street_suffix(),
+                    'address_2': self.fk.building_number() if random() > .2 else None,
+                    'city': self.fk.city(),
+                    'state': self.fk.state_abbr(),
+                    'zip_code': self.fk.postcode(),
+                    'country': self.COUNTRY,
+                    'phone': self.fk.phone_number(),
+                    'email': self.fk.email(),
+                    'website': self.fk.url(),
+                    'active': True,
+                    'hidden': False,
+                    'description': f'A cool customer description. We love customers!'
+                }) for _ in range(customer_count)
         ]
 
         for customer in customer_models:
@@ -233,44 +233,59 @@ class EntityDataGenerator(LoggingMixIn):
     def create_bank_accounts(self):
         self.logger.info(f'Creating entity accounts...')
         bank_account_models = [
-            BankAccountModel(name=f'{self.entity_model.name} Checking Account',
-                             account_number=self.fk.bban(),
-                             routing_number=self.fk.swift11(),
-                             aba_number=self.fk.swift(),
-                             account_type='checking',
-                             active=True,
-                             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
-                             entity_model=self.entity_model),
-            BankAccountModel(name=f'{self.entity_model.name} Savings Account',
-                             account_number=self.fk.bban(),
-                             routing_number=self.fk.swift11(),
-                             aba_number=self.fk.swift(),
-                             active=True,
-                             account_type='savings',
-                             cash_account=choice(self.accounts_by_role['asset_ca_cash']),
-                             entity_model=self.entity_model),
+            self.entity_model.create_bank_account(
+                name=f'{self.entity_model.name} Checking Account',
+                account_type=BankAccountModel.ACCOUNT_CHECKING,
+                active=True,
+                cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
+                bank_account_model_kwargs={
+                    'aba_number': self.fk.swift(),
+                    'routing_number': str(randint(0, 9999999)).zfill(9),
+                    'account_number': str(randint(0, 9999999)).zfill(9)
+                },
+                commit=False
+            ),
+            self.entity_model.create_bank_account(
+                name=f'{self.entity_model.name} Savings Account',
+                account_type=BankAccountModel.ACCOUNT_SAVINGS,
+                active=True,
+                cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
+                bank_account_model_kwargs={
+                    'aba_number': self.fk.swift(),
+                    'routing_number': str(randint(0, 9999999)).zfill(9),
+                    'account_number': str(randint(0, 9999999)).zfill(9)
+                },
+                commit=False
+            )
         ]
         for ba in bank_account_models:
-            ba.clean()
+            ba.full_clean()
 
         self.bank_account_models = BankAccountModel.objects.bulk_create(bank_account_models, ignore_conflicts=True)
 
     def create_uom_models(self):
         self.logger.info(f'Creating entity Unit of Measures...')
+
         UOMs = {
             'unit': 'Unit',
-            'ln.ft': 'Linear Feet',
-            'sq.ft': 'Square Feet',
+            'ln-ft': 'Linear Feet',
+            'sq-ft': 'Square Fee t',
             'lb': 'Pound',
             'pallet': 'Pallet',
             'man-hour': 'Man Hour'
         }
 
         uom_models = [
-            UnitOfMeasureModel(unit_abbr=abbr,
-                               entity=self.entity_model,
-                               name=name) for abbr, name in UOMs.items()
+            self.entity_model.create_uom(
+                unit_abbr=abbr,
+                name=name,
+                commit=False
+            ) for abbr, name in UOMs.items()
         ]
+
+        for uom in uom_models:
+            uom.full_clean()
+
         self.uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
 
     def create_products(self):
@@ -327,34 +342,6 @@ class EntityDataGenerator(LoggingMixIn):
         ItemModel.objects.bulk_create(service_item_models)
         self.update_services()
 
-    def update_products(self):
-        self.logger.info(f'Updating product catalog...')
-        self.product_models = ItemModel.objects.products(
-            entity_slug=self.entity_model.slug,
-            user_model=self.user_model
-        )
-
-    def update_services(self):
-        self.logger.info(f'Updating service catalog...')
-        self.service_models = ItemModel.objects.services(
-            entity_slug=self.entity_model.slug,
-            user_model=self.user_model
-        )
-
-    def update_inventory(self):
-        self.logger.info(f'Updating inventory...')
-        self.inventory_models = ItemModel.objects.inventory_all(
-            entity_slug=self.entity_model.slug,
-            user_model=self.user_model
-        )
-
-    def update_expenses(self):
-        self.logger.info(f'Updating expenses...')
-        self.expense_models = ItemModel.objects.expenses(
-            entity_slug=self.entity_model.slug,
-            user_model=self.user_model
-        )
-
     def create_expenses(self):
         self.logger.info(f'Creating entity expense items...')
         expense_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
@@ -406,17 +393,30 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.inventory_models = ItemModel.objects.bulk_create(inventory_models)
 
-    def create_estimate(self, date_draft: date):
-        estimate_model: EstimateModel = EstimateModel(
-            terms=choice(EstimateModel.CONTRACT_TERMS)[0],
-            title=f'Customer Estimate {date_draft}',
-            date_draft=date_draft
-        )
-        estimate_model.configure(entity_slug=self.entity_model,
-                                 user_model=self.user_model,
-                                 customer_model=choice(self.customer_models))
+    def update_products(self):
+        self.logger.info(f'Updating product catalog...')
+        self.product_models = self.entity_model.get_items_products()
 
-        estimate_model.save()
+    def update_services(self):
+        self.logger.info(f'Updating service catalog...')
+        self.service_models = self.entity_model.get_items_services()
+
+    def update_inventory(self):
+        self.logger.info(f'Updating inventory...')
+        self.inventory_models = self.entity_model.get_items_inventory()
+
+    def update_expenses(self):
+        self.logger.info(f'Updating expenses...')
+        self.expense_models = self.entity_model.get_items_expenses()
+
+    def create_estimate(self, date_draft: date):
+        estimate_model = self.entity_model.create_estimate(
+            estimate_title=f'Customer Estimate {date_draft}',
+            date_draft=date_draft,
+            customer_model=choice(self.customer_models),
+            contract_terms=choice(EstimateModel.CONTRACT_TERMS_CHOICES_VALID),
+            commit=True
+        )
         self.logger.info(f'Creating entity estimate {estimate_model.estimate_number}...')
 
         estimate_items = [
@@ -455,26 +455,18 @@ class EntityDataGenerator(LoggingMixIn):
                 date_canceled = self.get_next_date(date_in_review)
                 estimate_model.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
-    def create_bill(self, date_draft):
-        bill_model: BillModel = BillModel(
-            vendor=choice(self.vendor_models),
-            progress=Decimal(str(round(random(), 2))),
-            terms=choice(BillModel.TERM_CHOICES)[0],
-            amount_due=0,
+    def create_bill(self, date_draft: date):
+        bill_model = self.entity_model.create_bill(
+            vendor_model=choice(self.vendor_models),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
-            unearned_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
+            payable_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
+            terms=choice(BillModel.TERM_CHOICES_VALID),
             date_draft=date_draft,
-            additional_info=dict()
+            additional_info=dict(),
+            commit=True
         )
 
-        ledger_model, bill_model = bill_model.configure(
-            entity_slug=self.entity_model,
-            user_model=self.user_model,
-            commit_ledger=True)
-
-        bill_model.full_clean()
-        bill_model.save()
         self.logger.info(f'Creating entity bill {bill_model.bill_number}...')
 
         bill_items = [
@@ -527,10 +519,8 @@ class EntityDataGenerator(LoggingMixIn):
                 bill_model.mark_as_canceled(date_canceled=canceled_date)
 
     def create_po(self, date_draft: date):
-        po_model: PurchaseOrderModel = PurchaseOrderModel(date_draft=date_draft)
-        po_model = po_model.configure(entity_slug=self.entity_model, user_model=self.user_model)
-        po_model.po_title = f'PO Title for {po_model.po_number}'
-        po_model.save()
+
+        po_model = self.entity_model.create_purchase_order(date_draft=date_draft)
 
         po_items = [
             ItemTransactionModel(
@@ -563,29 +553,15 @@ class EntityDataGenerator(LoggingMixIn):
                     date_fulfilled = self.get_next_date(date_approved)
                     date_bill_draft = date_fulfilled - timedelta(days=randint(1, 3))
 
-                    bill_model: BillModel = BillModel(
+                    bill_model = self.entity_model.create_bill(
+                        vendor_model=choice(self.vendor_models),
+                        terms=choice(BillModel.TERM_CHOICES_VALID),
                         date_draft=date_bill_draft,
-                        vendor=choice(self.vendor_models))
-
-                    bill_model.cash_account = choice(self.accounts_by_role[ASSET_CA_CASH])
-                    bill_model.prepaid_account = choice(self.accounts_by_role[ASSET_CA_PREPAID])
-                    bill_model.unearned_account = choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE])
-
-                    ledger_model, bill_model = bill_model.configure(
-                        entity_slug=self.entity_model.slug,
-                        user_model=self.user_model,
-                        commit_ledger=True
+                        cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
+                        prepaid_account=choice(self.accounts_by_role[ASSET_CA_PREPAID]),
+                        payable_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
+                        commit=True
                     )
-
-                    bill_model.terms = choice([
-                        BillModel.TERMS_ON_RECEIPT,
-                        BillModel.TERMS_NET_30,
-                        BillModel.TERMS_NET_60,
-                        BillModel.TERMS_NET_90
-                    ])
-
-                    bill_model.full_clean()
-                    bill_model.save()
 
                     for po_i in po_items:
                         po_i.po_total_amount = round(po_i.po_total_amount, 2)
@@ -648,32 +624,24 @@ class EntityDataGenerator(LoggingMixIn):
                                         commit=True)
 
                                     self.entity_model.update_inventory(
-                                        user_model=self.user_model,
+                                        # user_model=self.user_model,
                                         commit=True)
 
                                     self.update_products()
                                     self.update_inventory()
 
     def create_invoice(self, date_draft: date):
-        invoice_model = InvoiceModel(
-            customer=choice(self.customer_models),
-            progress=Decimal(str(round(random(), 2))),
-            terms=choice(InvoiceModel.TERM_CHOICES)[0],
+        invoice_model = self.entity_model.create_invoice(
+            customer_model=choice(self.customer_models),
+            terms=choice(InvoiceModel.TERM_CHOICES_VALID),
             cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
-            unearned_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
+            payable_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date_draft=date_draft,
-            additional_info=dict()
+            additional_info=dict(),
+            commit=True
         )
         self.logger.info(f'Creating entity invoice {invoice_model.invoice_number}...')
-        ledger_model, invoice_model = invoice_model.configure(
-            entity_slug=self.entity_model,
-            user_model=self.user_model,
-            commit_ledger=True
-        )
-
-        invoice_model.full_clean()
-        invoice_model.save()
 
         invoice_items = list()
 
@@ -736,7 +704,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
                     self.entity_model.update_inventory(
-                        user_model=self.user_model,
+                        # user_model=self.user_model,
                         commit=True
                     )
                     self.update_inventory()
@@ -773,10 +741,6 @@ class EntityDataGenerator(LoggingMixIn):
     def recount_inventory(self):
         self.logger.info(f'Recounting inventory...')
         self.entity_model.update_inventory(
-            user_model=self.user_model,
+            # user_model=self.user_model,
             commit=True
         )
-
-    def create_coa(self):
-        entity_model = self.entity_model
-        entity_model.populate_default_coa(activate_accounts=True)
