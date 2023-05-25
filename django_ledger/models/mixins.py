@@ -29,6 +29,7 @@ from markdown import markdown
 
 from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
                               validate_io_date)
+from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -1190,3 +1191,16 @@ class LoggingMixIn:
         if self.LOGGER_BYPASS_DEBUG or settings.DEBUG or force:
             logger = self.get_logger()
             logger.log(msg=msg, level=level)
+
+
+class ItemTransactionQuerySet:
+    pass
+
+
+class ItemizeMixIn:
+
+    def get_item_qs(self) -> ItemModelQuerySet:
+        raise NotImplementedError()
+
+    def get_itemtxs_qs(self) -> ItemTransactionQuerySet:
+        raise NotImplementedError()

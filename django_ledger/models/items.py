@@ -480,6 +480,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=100, verbose_name=_('Item Name'))
 
+    # todo: rename this and remove 'id' from it.
+    item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
+    item_number = models.CharField(max_length=30, editable=False, verbose_name=_('Item Number'))
     item_role = models.CharField(max_length=10, choices=ITEM_ROLE_CHOICES, null=True, blank=True)
     item_type = models.CharField(max_length=1, choices=ITEM_TYPE_CHOICES, null=True, blank=True)
 
@@ -490,9 +493,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
     sku = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('SKU Code'))
     upc = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('UPC Code'))
 
-    # todo: rename this and remove 'id' from it.
-    item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
-    item_number = models.CharField(max_length=30, editable=False, verbose_name=_('Item Number'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
 
     default_amount = models.DecimalField(max_digits=20,

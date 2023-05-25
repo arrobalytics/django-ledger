@@ -36,7 +36,8 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
+                                         PaymentTermsMixIn, ItemizeMixIn)
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
 
@@ -242,6 +243,7 @@ class BillModelManager(models.Manager):
 
 
 class BillModelAbstract(AccrualMixIn,
+                        ItemizeMixIn,
                         PaymentTermsMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
