@@ -37,7 +37,8 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
+    ItemizeMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
@@ -202,6 +203,7 @@ class InvoiceModelManager(models.Manager):
 
 
 class InvoiceModelAbstract(AccrualMixIn,
+                           ItemizeMixIn,
                            PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
@@ -439,18 +441,8 @@ class InvoiceModelAbstract(AccrualMixIn,
                 self.save()
         return self.ledger, self
 
-    def get_migrate_state_desc(self):
-        """
-        Description used when migrating transactions into the LedgerModel.
-
-        Returns
-        _______
-        str
-            Description as a string.
-        """
-        return f'Invoice {self.invoice_number} account adjustment.'
-
-    def validate_item_transaction_qs(self, queryset: ItemTransactionModelQuerySet):
+    # ### ItemizeMixIn implementation START...
+    def validate_itemtxs_qs(self, queryset: ItemTransactionModelQuerySet):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the InvoiceModel.
 
@@ -488,12 +480,25 @@ class InvoiceModelAbstract(AccrualMixIn,
                 'invoice_model'
             )
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
 
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
         }
+
+    # ### ItemizeMixIn implementation END...
+
+    def get_migrate_state_desc(self):
+        """
+        Description used when migrating transactions into the LedgerModel.
+
+        Returns
+        _______
+        str
+            Description as a string.
+        """
+        return f'Invoice {self.invoice_number} account adjustment.'
 
     def get_migration_data(self,
                            queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
@@ -509,7 +514,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         if not queryset:
             queryset = self.itemtransactionmodel_set.all()
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
 
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                                               'entity_unit__uuid',

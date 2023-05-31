@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, List
 from uuid import UUID
 
 from django.conf import settings
@@ -29,7 +29,6 @@ from markdown import markdown
 
 from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
                               validate_io_date)
-from django_ledger.models.items import ItemModelQuerySet
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -1197,10 +1196,81 @@ class ItemTransactionQuerySet:
     pass
 
 
+class ItemizeError(ValidationError):
+    pass
+
+
 class ItemizeMixIn:
 
-    def get_item_qs(self) -> ItemModelQuerySet:
+    def get_item_model_qs(self):
         raise NotImplementedError()
 
-    def get_itemtxs_qs(self) -> ItemTransactionQuerySet:
+    def get_itemtxs_data(self):
+        raise NotImplementedError()
+
+    def validate_itemtxs(self, itemtxs):
+        if isinstance(itemtxs, dict):
+            if all([
+                all([
+                    isinstance(d, dict),
+                    'unit_cost' in d,
+                    'quantity' in d,
+                    'total_amount' in d
+                ]) for i, d in itemtxs.items()
+            ]):
+                return
+        raise ItemizeError('itemtxs must be an instance of list.')
+
+    def can_migrate_itemtxs(self) -> bool:
+        raise NotImplementedError()
+
+    def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
+        if self.can_migrate_itemtxs():
+            self.validate_itemtxs(itemtxs)
+            item_model_qs = self.get_item_model_qs()
+            # item_number_set = set(i['item_number'] for i in itemtxs)
+            item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
+            item_model_qs_map = {
+                i.item_number: i for i in item_model_qs
+            }
+
+            if itemtxs.keys() != item_model_qs_map.keys():
+                raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
+
+            # evaluates the qs
+            len(item_model_qs)
+
+            ItemTransactionModel = lazy_loader.get_item_transaction_model()
+            itemtxs_batch = [
+                ItemTransactionModel(
+                    bill_model=self,
+                    item_model=item_model_qs_map[item_number],
+                    quantity=i['quantity'],
+                    unit_cost=i['unit_cost']
+                ) for item_number, i in itemtxs.items()
+            ]
+
+            for itx in itemtxs_batch:
+                itx.clean_fields()
+                itx.clean()
+
+            if commit:
+                itemtxs_qs, agg = self.get_itemtxs_data()
+                if not append:
+                    itemtxs_qs.delete()
+                itemtxs_batch = ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+            return itemtxs_batch
+
+    # def get_itemtxs_template_by_unit_price(self, n: int, ) -> List[Dict]:
+    #     return [{
+    #         'item_number': None,
+    #         'unit_price': None,
+    #         'quantity': None,
+    #         'total_amount': None
+    #     } for i in range(n)]
+
+    def validate_itemtxs_qs(self):
+        raise NotImplementedError()
+
+    def create_itemtxs(self, item_id, unit_price, quantity):
         raise NotImplementedError()

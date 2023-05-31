@@ -264,6 +264,23 @@ class ItemModelQuerySet(models.QuerySet):
             )
         )
 
+    def bills(self):
+        """
+        Filters the QuerySet to ItemModels that are eligible only for bills..
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        return self.filter(
+            (
+                    Q(is_product_or_service=False) &
+                    Q(for_inventory=False)
+            ) |
+            Q(for_inventory=True)
+        )
+
 
 class ItemModelManager(models.Manager):
     """

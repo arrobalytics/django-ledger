@@ -1234,6 +1234,10 @@ class EntityModelAbstract(MP_Node,
 
         return bill_model
 
+    def get_items_for_bill(self) -> ItemModelQuerySet:
+        item_model_qs: ItemModelQuerySet = self.itemmodel_set.all()
+        return item_model_qs.select_related('uom', 'entity').bills()
+
     # ### INVOICE MANAGEMENT ####
     def get_invoices(self):
         """
