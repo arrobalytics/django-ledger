@@ -1250,6 +1250,16 @@ class ItemizeMixIn:
                 ) for item_number, i in itemtxs.items()
             ]
 
+        if isinstance(self, PurchaseOrder):
+            return [
+                ItemTransactionModel(
+                    po_model=self,
+                    item_model=item_model_qs_map[item_number],
+                    po_quantity=i['quantity'],
+                    po_unit_cost=i['unit_cost'],
+                ) for item_number, i in itemtxs.items()
+            ]
+
         BillModel = lazy_loader.get_bill_model()
         InvoiceModel = lazy_loader.get_invoice_model()
 

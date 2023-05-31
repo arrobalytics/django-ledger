@@ -530,8 +530,7 @@ class BillModelAbstract(AccrualMixIn,
     def get_itemtxs_data(self,
                          queryset: Optional[ItemTransactionModelQuerySet] = None,
                          aggregate_on_db: bool = False,
-                         lazy_agg: bool = False,
-                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         lazy_agg: bool = False) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the BillModel Items and aggregates the QuerySet.
 

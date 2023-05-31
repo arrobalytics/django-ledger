@@ -287,6 +287,9 @@ class ItemModelQuerySet(models.QuerySet):
     def estimates(self):
         return self.invoices()
 
+    def purchase_orders(self):
+        return self.inventory_all()
+
 
 class ItemModelManager(models.Manager):
     """
