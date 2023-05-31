@@ -159,7 +159,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
         context['header_subtitle'] = ce_model.title
         context['header_subtitle_icon'] = 'eos-icons:job'
         if not itemtxs_formset:
-            itemtxs_qs: ItemTransactionModelQuerySet = ce_model.get_itemtxs_data()
+            itemtxs_qs, _ = ce_model.get_itemtxs_data()
             itemtxs_agg = itemtxs_qs.get_estimate_aggregate()
             if ce_model.can_update_items():
                 itemtxs_formset = CanEditEstimateItemModelFormset(
@@ -176,7 +176,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
                     queryset=itemtxs_qs
                 )
         else:
-            itemtxs_qs = ce_model.get_itemtxs_data(itemtxs_qs=itemtxs_formset.queryset)
+            itemtxs_qs, _ = ce_model.get_itemtxs_data(queryset=itemtxs_formset.queryset)
             itemtxs_agg = itemtxs_qs.get_estimate_aggregate()
 
         context['ce_revenue_estimate__sum'] = itemtxs_agg['ce_revenue_estimate__sum']

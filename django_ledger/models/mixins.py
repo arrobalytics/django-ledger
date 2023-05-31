@@ -1205,7 +1205,7 @@ class ItemizeMixIn:
     def get_item_model_qs(self):
         raise NotImplementedError()
 
-    def get_itemtxs_data(self):
+    def get_itemtxs_data(self, queryset=None, aggregate_on_db: bool = False, lazy_agg: bool = False):
         raise NotImplementedError()
 
     def validate_itemtxs(self, itemtxs):
@@ -1219,55 +1219,76 @@ class ItemizeMixIn:
                 ]) for i, d in itemtxs.items()
             ]):
                 return
-        raise ItemizeError('itemtxs must be an instance of list.')
+        raise ItemizeError('itemtxs must be an instance of dict.')
 
     def can_migrate_itemtxs(self) -> bool:
         raise NotImplementedError()
 
+    def _get_itemtxs_batch(self, itemtxs):
+
+        ItemTransactionModel = lazy_loader.get_item_transaction_model()
+        EstimateModel = lazy_loader.get_estimate_model()
+        PurchaseOrder = lazy_loader.get_purchase_order_model()
+
+        item_model_qs = self.get_item_model_qs()
+        item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
+        item_model_qs_map = {
+            i.item_number: i for i in item_model_qs
+        }
+
+        if itemtxs.keys() != item_model_qs_map.keys():
+            raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
+
+        if isinstance(self, EstimateModel):
+            return [
+                ItemTransactionModel(
+                    ce_model=self,
+                    item_model=item_model_qs_map[item_number],
+                    ce_quantity=i['quantity'],
+                    ce_unit_cost_estimate=i['unit_cost'],
+                    ce_unit_revenue_estimate=i['unit_revenue'],
+                ) for item_number, i in itemtxs.items()
+            ]
+
+        BillModel = lazy_loader.get_bill_model()
+        InvoiceModel = lazy_loader.get_invoice_model()
+
+        return [
+            ItemTransactionModel(
+                bill_model=self if isinstance(self, BillModel) else None,
+                invoice_model=self if isinstance(self, InvoiceModel) else None,
+                # ce_model=self if isinstance(self, EstimateModel) else None,
+                # po_model=self if isinstance(self, PurchaseOrderModel) else None,
+                item_model=item_model_qs_map[item_number],
+                quantity=i['quantity'],
+                unit_cost=i['unit_cost']
+            ) for item_number, i in itemtxs.items()
+        ]
+
     def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
         if self.can_migrate_itemtxs():
             self.validate_itemtxs(itemtxs)
-            item_model_qs = self.get_item_model_qs()
-            # item_number_set = set(i['item_number'] for i in itemtxs)
-            item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
-            item_model_qs_map = {
-                i.item_number: i for i in item_model_qs
-            }
 
-            if itemtxs.keys() != item_model_qs_map.keys():
-                raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
-
-            # evaluates the qs
-            len(item_model_qs)
-
-            ItemTransactionModel = lazy_loader.get_item_transaction_model()
-            itemtxs_batch = [
-                ItemTransactionModel(
-                    bill_model=self,
-                    item_model=item_model_qs_map[item_number],
-                    quantity=i['quantity'],
-                    unit_cost=i['unit_cost']
-                ) for item_number, i in itemtxs.items()
-            ]
+            itemtxs_batch = self._get_itemtxs_batch(itemtxs)
 
             for itx in itemtxs_batch:
                 itx.clean_fields()
                 itx.clean()
 
             if commit:
-                itemtxs_qs, agg = self.get_itemtxs_data()
-                if not append:
-                    itemtxs_qs.delete()
-                itemtxs_batch = ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
-            return itemtxs_batch
 
-    # def get_itemtxs_template_by_unit_price(self, n: int, ) -> List[Dict]:
-    #     return [{
-    #         'item_number': None,
-    #         'unit_price': None,
-    #         'quantity': None,
-    #         'total_amount': None
-    #     } for i in range(n)]
+                ItemTransactionModel = lazy_loader.get_item_transaction_model()
+
+                if append:
+                    ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+                    itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
+                    return itemtxs_qs
+
+                itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
+                itemtxs_qs.delete()
+                return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+
+            return itemtxs_batch
 
     def validate_itemtxs_qs(self):
         raise NotImplementedError()

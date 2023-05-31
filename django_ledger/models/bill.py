@@ -495,10 +495,17 @@ class BillModelAbstract(AccrualMixIn,
         return self.is_draft()
 
     def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
-        itemtxs_batch = super().migrate_itemtxs(commit=commit, append=append)
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, append=append)
+        self.update_amount_due(itemtxs_qs=itemtxs_batch)
+        self.new_state(commit=True)
 
-        # if commit:
-        #     self
+        if commit:
+            self.save(update_fields=['amount_due',
+                                     'amount_receivable',
+                                     'amount_unearned',
+                                     'amount_earned',
+                                     'updated'])
+        return itemtxs_batch
 
     def get_item_model_qs(self) -> ItemModelQuerySet:
         return ItemModel.objects.filter(
@@ -523,6 +530,7 @@ class BillModelAbstract(AccrualMixIn,
     def get_itemtxs_data(self,
                          queryset: Optional[ItemTransactionModelQuerySet] = None,
                          aggregate_on_db: bool = False,
+                         lazy_agg: bool = False,
                          ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the BillModel Items and aggregates the QuerySet.
@@ -554,7 +562,7 @@ class BillModelAbstract(AccrualMixIn,
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
-        }
+        } if not lazy_agg else None
 
     # ### ItemizeMixIn implementation END...
 

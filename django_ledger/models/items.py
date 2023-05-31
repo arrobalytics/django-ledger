@@ -281,6 +281,12 @@ class ItemModelQuerySet(models.QuerySet):
             Q(for_inventory=True)
         )
 
+    def invoices(self):
+        return self.filter(is_product_or_service=True)
+
+    def estimates(self):
+        return self.invoices()
+
 
 class ItemModelManager(models.Manager):
     """

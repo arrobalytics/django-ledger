@@ -28,14 +28,14 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet
+from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
     ItemizeMixIn
@@ -442,6 +442,28 @@ class InvoiceModelAbstract(AccrualMixIn,
         return self.ledger, self
 
     # ### ItemizeMixIn implementation START...
+
+    def can_migrate_itemtxs(self) -> bool:
+        return self.is_draft()
+
+    def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, append=append)
+        self.update_amount_due(itemtxs_qs=itemtxs_batch)
+        self.new_state(commit=True)
+
+        if commit:
+            self.save(update_fields=['amount_due',
+                                     'amount_receivable',
+                                     'amount_unearned',
+                                     'amount_earned',
+                                     'updated'])
+        return itemtxs_batch
+
+    def get_item_model_qs(self) -> ItemModelQuerySet:
+        return ItemModel.objects.filter(
+            entity_id__exact=self.ledger.entity_id
+        ).invoices()
+
     def validate_itemtxs_qs(self, queryset: ItemTransactionModelQuerySet):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the InvoiceModel.
@@ -458,7 +480,10 @@ class InvoiceModelAbstract(AccrualMixIn,
             raise InvoiceModelValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: ItemTransactionModelQuerySet = None) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         queryset: ItemTransactionModelQuerySet = None,
+                         aggregate_on_db: bool = False,
+                         lazy_agg: bool = False,
+                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the InvoiceModel Items and aggregates the QuerySet.
 
@@ -482,10 +507,16 @@ class InvoiceModelAbstract(AccrualMixIn,
         else:
             self.validate_itemtxs_qs(queryset)
 
+        if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
+            return queryset, queryset.aggregate(
+                total_amount__sum=Sum('total_amount'),
+                total_items=Count('uuid')
+            )
+
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
-        }
+        } if not lazy_agg else None
 
     # ### ItemizeMixIn implementation END...
 

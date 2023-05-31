@@ -16,21 +16,21 @@
                             <div>
                                 <p class="heading">{% trans 'Revenue Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-revenue">
-                                    {% currency_symbol %}{{ estimate_model.revenue_estimate  | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.get_revenue_estimate  | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
                             <div>
                                 <p class="heading">{% trans 'Cost Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ estimate_model.cost_estimate  | absolute | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.get_cost_estimate  | absolute | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
                             <div>
                                 <p class="heading">{% trans 'Profit Estimate' %}:
                                 <p class="title" id="djl-cj-detail-estimated-cost">
-                                    {% currency_symbol %}{{ estimate_model.profit_estimate | currency_format }}</p>
+                                    {% currency_symbol %}{{ estimate_model.get_profit_estimate | currency_format }}</p>
                             </div>
                         </div>
                         <div class="level-item has-text-centered">
