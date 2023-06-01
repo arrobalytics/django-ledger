@@ -446,8 +446,8 @@ class InvoiceModelAbstract(AccrualMixIn,
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
-    def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
-        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, append=append)
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
         self.new_state(commit=True)
 

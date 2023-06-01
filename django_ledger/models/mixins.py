@@ -1201,6 +1201,9 @@ class ItemizeError(ValidationError):
 
 
 class ItemizeMixIn:
+    ITEMIZE_APPEND = 'append'
+    ITEMIZE_REPLACE = 'replace'
+    ITEMIZE_UPDATE = 'update'
 
     def get_item_model_qs(self):
         raise NotImplementedError()
@@ -1224,7 +1227,7 @@ class ItemizeMixIn:
     def can_migrate_itemtxs(self) -> bool:
         raise NotImplementedError()
 
-    def _get_itemtxs_batch(self, itemtxs):
+    def _get_itemtxs_batch(self, itemtxs, operation):
 
         ItemTransactionModel = lazy_loader.get_item_transaction_model()
         EstimateModel = lazy_loader.get_estimate_model()
@@ -1232,9 +1235,7 @@ class ItemizeMixIn:
 
         item_model_qs = self.get_item_model_qs()
         item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
-        item_model_qs_map = {
-            i.item_number: i for i in item_model_qs
-        }
+        item_model_qs_map = {i.item_number: i for i in item_model_qs}
 
         if itemtxs.keys() != item_model_qs_map.keys():
             raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
@@ -1267,19 +1268,17 @@ class ItemizeMixIn:
             ItemTransactionModel(
                 bill_model=self if isinstance(self, BillModel) else None,
                 invoice_model=self if isinstance(self, InvoiceModel) else None,
-                # ce_model=self if isinstance(self, EstimateModel) else None,
-                # po_model=self if isinstance(self, PurchaseOrderModel) else None,
                 item_model=item_model_qs_map[item_number],
                 quantity=i['quantity'],
                 unit_cost=i['unit_cost']
             ) for item_number, i in itemtxs.items()
         ]
 
-    def migrate_itemtxs(self, itemtxs: Dict, commit: bool = False, append: bool = False):
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
         if self.can_migrate_itemtxs():
             self.validate_itemtxs(itemtxs)
 
-            itemtxs_batch = self._get_itemtxs_batch(itemtxs)
+            itemtxs_batch = self._get_itemtxs_batch(itemtxs, operation)
 
             for itx in itemtxs_batch:
                 itx.clean_fields()
@@ -1289,14 +1288,18 @@ class ItemizeMixIn:
 
                 ItemTransactionModel = lazy_loader.get_item_transaction_model()
 
-                if append:
+                if operation == self.ITEMIZE_APPEND:
                     ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
                     itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
                     return itemtxs_qs
-
-                itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
-                itemtxs_qs.delete()
-                return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+                elif operation == self.ITEMIZE_REPLACE:
+                    itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
+                    itemtxs_qs.delete()
+                    return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+                elif operation == self.ITEMIZE_UPDATE:
+                    item_model_qs = self.get_item_model_qs()
+                    item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
+                    item_model_qs_map = {i.item_number: i for i in item_model_qs}
 
             return itemtxs_batch
 
