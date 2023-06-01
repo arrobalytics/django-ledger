@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union, Dict
+from typing import Optional, Union, Dict, List
 from uuid import UUID
 
 from django.conf import settings
@@ -682,7 +682,7 @@ class AccrualMixIn(models.Model):
             }
 
             if not void:
-                new_state = self.new_state(commit=commit)
+                new_state = self.get_state(commit=commit)
             else:
                 new_state = self.void_state(commit=commit)
 
@@ -818,7 +818,7 @@ class AccrualMixIn(models.Model):
             self.update_state(void_state)
         return void_state
 
-    def new_state(self, commit: bool = False):
+    def get_state(self, commit: bool = False):
         """
         Determines the new state of the financial instrument based on progress.
 
@@ -852,7 +852,7 @@ class AccrualMixIn(models.Model):
             Optional user provided state to use.
         """
         if not state:
-            state = self.new_state()
+            state = self.get_state()
         self.amount_paid = abs(state['amount_paid'])
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
@@ -1190,3 +1190,174 @@ class LoggingMixIn:
         if self.LOGGER_BYPASS_DEBUG or settings.DEBUG or force:
             logger = self.get_logger()
             logger.log(msg=msg, level=level)
+
+
+class ItemTransactionQuerySet:
+    pass
+
+
+class ItemizeError(ValidationError):
+    pass
+
+
+class ItemizeMixIn:
+    ITEMIZE_APPEND = 'append'
+    ITEMIZE_REPLACE = 'replace'
+    ITEMIZE_UPDATE = 'update'
+
+    def get_item_model_qs(self):
+        """
+        Fetches the ItemModelQuerySet eligible to itemize.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
+        raise NotImplementedError()
+
+    def get_itemtxs_data(self, queryset=None, aggregate_on_db: bool = False, lazy_agg: bool = False):
+        """
+        Fetches the ItemTransactionModelQuerySet associated with the model.
+
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet
+            Pre-fetched ItemTransactionModelQuerySet. Validated if provided.
+        aggregate_on_db: bool
+            If True, performs aggregation at the DB layer. Defaults to False.
+        lazy_agg: bool
+            If True, performs queryset aggregation metrics. Defaults to False.
+
+        Returns
+        -------
+        tuple
+            ItemModelQuerySet, dict
+        """
+        raise NotImplementedError()
+
+    def validate_itemtxs(self, itemtxs):
+        """
+        Validates the provided item transaction list.
+
+        Parameters
+        ----------
+        itemtxs: dict
+            Item transaction list to replace/aggregate.
+        """
+        if isinstance(itemtxs, dict):
+            if all([
+                all([
+                    isinstance(d, dict),
+                    'unit_cost' in d,
+                    'quantity' in d,
+                    'total_amount' in d
+                ]) for i, d in itemtxs.items()
+            ]):
+                return
+        raise ItemizeError('itemtxs must be an instance of dict.')
+
+    def can_migrate_itemtxs(self) -> bool:
+        """
+        Checks if item transaction list can be migrated.
+
+        Returns
+        -------
+        bool
+        """
+        raise NotImplementedError()
+
+    def _get_itemtxs_batch(self, itemtxs):
+        ItemTransactionModel = lazy_loader.get_item_transaction_model()
+        EstimateModel = lazy_loader.get_estimate_model()
+        PurchaseOrder = lazy_loader.get_purchase_order_model()
+
+        item_model_qs = self.get_item_model_qs()
+        item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
+        item_model_qs_map = {i.item_number: i for i in item_model_qs}
+
+        if itemtxs.keys() != item_model_qs_map.keys():
+            raise ItemizeError(message=f'Got items {itemtxs.keys()}, but only {item_model_qs_map.keys()} exists.')
+
+        if isinstance(self, EstimateModel):
+            return [
+                ItemTransactionModel(
+                    ce_model=self,
+                    item_model=item_model_qs_map[item_number],
+                    ce_quantity=i['quantity'],
+                    ce_unit_cost_estimate=i['unit_cost'],
+                    ce_unit_revenue_estimate=i['unit_revenue'],
+                ) for item_number, i in itemtxs.items()
+            ]
+
+        if isinstance(self, PurchaseOrder):
+            return [
+                ItemTransactionModel(
+                    po_model=self,
+                    item_model=item_model_qs_map[item_number],
+                    po_quantity=i['quantity'],
+                    po_unit_cost=i['unit_cost'],
+                ) for item_number, i in itemtxs.items()
+            ]
+
+        BillModel = lazy_loader.get_bill_model()
+        InvoiceModel = lazy_loader.get_invoice_model()
+
+        return [
+            ItemTransactionModel(
+                bill_model=self if isinstance(self, BillModel) else None,
+                invoice_model=self if isinstance(self, InvoiceModel) else None,
+                item_model=item_model_qs_map[item_number],
+                quantity=i['quantity'],
+                unit_cost=i['unit_cost']
+            ) for item_number, i in itemtxs.items()
+        ]
+
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        """
+        Migrates a predefined item transaction list.
+
+        Parameters
+        ----------
+        itemtxs: dict
+            A dictionary where keys are the document number (invoice/bill number, etc) and values are a dictionary:
+        operation: str
+            A choice of ITEMIZE_REPLACE, ITEMIZE_APPEND, ITEMIZE_UPDATE
+        commit: bool
+            If True, commits transaction into the DB. Default to False
+
+        Returns
+        -------
+        list
+            A list of ItemTransactionModel appended or created.
+        """
+        if operation == self.ITEMIZE_UPDATE:
+            raise NotImplementedError(f'Operation {operation} not yet implemented.')
+
+        if self.can_migrate_itemtxs():
+            self.validate_itemtxs(itemtxs)
+
+            itemtxs_batch = self._get_itemtxs_batch(itemtxs)
+
+            for itx in itemtxs_batch:
+                itx.clean_fields()
+                itx.clean()
+
+            if commit:
+
+                ItemTransactionModel = lazy_loader.get_item_transaction_model()
+
+                if operation == self.ITEMIZE_APPEND:
+                    ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+                    itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
+                    return itemtxs_qs
+                elif operation == self.ITEMIZE_REPLACE:
+                    itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
+                    itemtxs_qs.delete()
+                    return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
+            return itemtxs_batch
+
+    def validate_itemtxs_qs(self):
+        """
+        Validates that the provided item transaction list is valid.
+        """
+        raise NotImplementedError()

@@ -38,10 +38,10 @@
             <th></th>
             <th>{% trans 'Total' %}</th>
             <th>
-                {% currency_symbol %}{{ ce_model.cost_estimate | currency_format }}
+                {% currency_symbol %}{{ ce_model.get_cost_estimate | currency_format }}
             </th>
             <th>
-                {% currency_symbol %}{{ ce_model.revenue_estimate | currency_format }}
+                {% currency_symbol %}{{ ce_model.get_revenue_estimate | currency_format }}
             </th>
         </tr>
         </tfoot>

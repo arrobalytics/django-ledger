@@ -258,7 +258,7 @@ def invoice_txs_table(context, invoice_model: InvoiceModel):
         invoice_model=invoice_model,
         user_model=context['request'].user,
         entity_slug=context['view'].kwargs['entity_slug']
-    ).select_related('journal_entry').order_by('-journal_entry__date')
+    ).select_related('journal_entry').order_by('-journal_entry__timestamp')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {

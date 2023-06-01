@@ -28,16 +28,17 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet
+from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
+    ItemizeMixIn
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
@@ -202,6 +203,7 @@ class InvoiceModelManager(models.Manager):
 
 
 class InvoiceModelAbstract(AccrualMixIn,
+                           ItemizeMixIn,
                            PaymentTermsMixIn,
                            MarkdownNotesMixIn,
                            CreateUpdateMixIn):
@@ -439,18 +441,30 @@ class InvoiceModelAbstract(AccrualMixIn,
                 self.save()
         return self.ledger, self
 
-    def get_migrate_state_desc(self):
-        """
-        Description used when migrating transactions into the LedgerModel.
+    # ### ItemizeMixIn implementation START...
 
-        Returns
-        _______
-        str
-            Description as a string.
-        """
-        return f'Invoice {self.invoice_number} account adjustment.'
+    def can_migrate_itemtxs(self) -> bool:
+        return self.is_draft()
 
-    def validate_item_transaction_qs(self, queryset: ItemTransactionModelQuerySet):
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        self.update_amount_due(itemtxs_qs=itemtxs_batch)
+        self.get_state(commit=True)
+
+        if commit:
+            self.save(update_fields=['amount_due',
+                                     'amount_receivable',
+                                     'amount_unearned',
+                                     'amount_earned',
+                                     'updated'])
+        return itemtxs_batch
+
+    def get_item_model_qs(self) -> ItemModelQuerySet:
+        return ItemModel.objects.filter(
+            entity_id__exact=self.ledger.entity_id
+        ).invoices()
+
+    def validate_itemtxs_qs(self, queryset: ItemTransactionModelQuerySet):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the InvoiceModel.
 
@@ -466,7 +480,10 @@ class InvoiceModelAbstract(AccrualMixIn,
             raise InvoiceModelValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: ItemTransactionModelQuerySet = None) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         queryset: ItemTransactionModelQuerySet = None,
+                         aggregate_on_db: bool = False,
+                         lazy_agg: bool = False,
+                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the InvoiceModel Items and aggregates the QuerySet.
 
@@ -488,12 +505,31 @@ class InvoiceModelAbstract(AccrualMixIn,
                 'invoice_model'
             )
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
+
+        if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
+            return queryset, queryset.aggregate(
+                total_amount__sum=Sum('total_amount'),
+                total_items=Count('uuid')
+            )
 
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
-        }
+        } if not lazy_agg else None
+
+    # ### ItemizeMixIn implementation END...
+
+    def get_migrate_state_desc(self):
+        """
+        Description used when migrating transactions into the LedgerModel.
+
+        Returns
+        _______
+        str
+            Description as a string.
+        """
+        return f'Invoice {self.invoice_number} account adjustment.'
 
     def get_migration_data(self,
                            queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
@@ -509,7 +545,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         if not queryset:
             queryset = self.itemtransactionmodel_set.all()
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
 
         return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
                                                               'entity_unit__uuid',
@@ -1107,7 +1143,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         if self.date_paid > localdate():
             raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
 
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
         self.clean()
 

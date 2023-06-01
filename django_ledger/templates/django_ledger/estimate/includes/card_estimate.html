@@ -12,9 +12,9 @@
         <h2 class="is-size-3">{% trans 'Status' %}: {{ estimate_model.get_status_display }}</h2>
         <h3 class="has-text-weight-bold is-size-4 has-text-success">
             {% trans 'Estimated Revenue' %}:
-            {% currency_symbol %}{{ estimate_model.revenue_estimate }}</h3>
+            {% currency_symbol %}{{ estimate_model.get_revenue_estimate | currency_format }}</h3>
         <h3 class="is-size-4 has-text-info">{% trans 'Profit Estimate' %}:
-            {% currency_symbol %}{{ estimate_model.profit_estimate }}</h3>
+            {% currency_symbol %}{{ estimate_model.get_profit_estimate | currency_format }}</h3>
         <br>
         <p class="has-text-weight-bold">{% trans 'Cost Breakdown' %}:</p>
         <h3 class="has-text-weight-light is-italic is-size-5">
@@ -40,11 +40,11 @@
             <h2 class="mt-2">{% trans 'Cost Progress' %}</h2>
             <progress class="progress is-warning is-large"
                       value="{{ contract_progress.bill_amount_paid__sum }}"
-                      max="{{ contract_progress.cost_estimate }}"></progress>
+                      max="{{ contract_progress.get_cost_estimate }}"></progress>
             <h2>{% trans 'Invoice Progress' %}</h2>
             <progress class="progress is-info is-large"
                       value="{{ contract_progress.bill_amount_paid__sum }}"
-                      max="{{ contract_progress.revenue_estimate }}"></progress>
+                      max="{{ contract_progress.get_revenue_estimate }}"></progress>
             <h2>{% trans 'Received Progress' %}</h2>
             <progress class="progress is-success is-large"
                       value="{{ contract_progress.bill_amount_paid__sum }}"
@@ -82,14 +82,6 @@
             {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}
         {% endif %}
 
-        {# MARK APPROVE #}
-        {#        {% if estimate_model.can_approve %}#}
-        {#            <a onclick="djLedger.toggleModal('{{ estimate_model.get_mark_as_approved_html_id }}')"#}
-        {#               id="{{ estimate_model.get_mark_as_approved_html_id }}-button"#}
-        {#               class="card-footer-item has-text-info has-text-centered">{% trans 'Mark as Draft' %}</a>#}
-        {# MARK AS DRAFT MODAL #}
-        {#            {% modal_action_v2 estimate_model estimate_model.get_mark_as_approved_url estimate_model.get_mark_as_approved_message estimate_model.get_mark_as_approved_html_id %}#}
-        {#        {% endif %}#}
 
     </footer>
 </div>

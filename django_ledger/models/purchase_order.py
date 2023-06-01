@@ -18,7 +18,7 @@ Void. The PurchaseOrderModel also keeps track of when these states take place.
 """
 from datetime import date
 from string import ascii_uppercase, digits
-from typing import Tuple, List, Union, Optional
+from typing import Tuple, List, Union, Optional, Dict
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -35,8 +35,8 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet
-from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
+from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
@@ -92,6 +92,9 @@ class PurchaseOrderModelQuerySet(models.QuerySet):
             Q(po_status__exact=PurchaseOrderModel.PO_STATUS_FULFILLED)
         )
 
+    def draft(self):
+        return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_DRAFT)
+
 
 class PurchaseOrderModelManager(models.Manager):
     """
@@ -119,7 +122,9 @@ class PurchaseOrderModelManager(models.Manager):
         )
 
 
-class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+class PurchaseOrderModelAbstract(CreateUpdateMixIn,
+                                 ItemizeMixIn,
+                                 MarkdownNotesMixIn):
     """
     The base implementation of the PurchaseOrderModel.
 
@@ -332,10 +337,30 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not valid:
             raise PurchaseOrderModelValidationError(f'Invalid queryset. All items must be assigned to PO {self.uuid}')
 
-    # State Update...
+    # ### ItemizeMixIn implementation START...
+
+    def can_migrate_itemtxs(self) -> bool:
+        return self.is_draft()
+
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        self.update_state(itemtxs_qs=itemtxs_batch)
+        self.clean()
+        if commit:
+            self.save(update_fields=['po_amount',
+                                     'po_amount_received',
+                                     'updated'])
+        return itemtxs_batch
+
+    def get_item_model_qs(self) -> ItemModelQuerySet:
+        return ItemModel.objects.filter(
+            entity_id__exact=self.entity_id
+        ).purchase_orders()
+
     def get_itemtxs_data(self,
                          queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
-                         aggregate_on_db: bool = False) -> Tuple:
+                         aggregate_on_db: bool = False,
+                         lazy_agg: bool = False) -> Tuple:
         """
         Fetches the PurchaseOrderModel Items and aggregates the QuerySet.
 
@@ -366,8 +391,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             'po_total_amount__sum': sum(i.total_amount for i in queryset),
             'bill_amount_paid__sum': sum(i.bill_model.amount_paid for i in queryset if i.bill_model_id),
             'total_items': len(queryset)
-        }
+        } if not lazy_agg else None
 
+    # ### ItemizeMixIn implementation END...
     def update_state(self,
                      itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
                      ) -> Tuple:

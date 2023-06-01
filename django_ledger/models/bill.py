@@ -35,8 +35,9 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn
+from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
+from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
+                                         PaymentTermsMixIn, ItemizeMixIn)
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
 
@@ -242,6 +243,7 @@ class BillModelManager(models.Manager):
 
 
 class BillModelAbstract(AccrualMixIn,
+                        ItemizeMixIn,
                         PaymentTermsMixIn,
                         MarkdownNotesMixIn,
                         CreateUpdateMixIn):
@@ -488,19 +490,29 @@ class BillModelAbstract(AccrualMixIn,
 
         return self.ledger, self
 
-    # State..
-    def get_migrate_state_desc(self) -> str:
-        """
-        Description used when migrating transactions into the LedgerModel.
+    # ### ItemizeMixIn implementation START...
+    def can_migrate_itemtxs(self) -> bool:
+        return self.is_draft()
 
-        Returns
-        _______
-        str
-            Description as a string.
-        """
-        return f'Bill {self.bill_number} account adjustment.'
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        self.update_amount_due(itemtxs_qs=itemtxs_batch)
+        self.get_state(commit=True)
 
-    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+        if commit:
+            self.save(update_fields=['amount_due',
+                                     'amount_receivable',
+                                     'amount_unearned',
+                                     'amount_earned',
+                                     'updated'])
+        return itemtxs_batch
+
+    def get_item_model_qs(self) -> ItemModelQuerySet:
+        return ItemModel.objects.filter(
+            entity_id__exact=self.ledger.entity_id
+        ).bills()
+
+    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
@@ -518,7 +530,7 @@ class BillModelAbstract(AccrualMixIn,
     def get_itemtxs_data(self,
                          queryset: Optional[ItemTransactionModelQuerySet] = None,
                          aggregate_on_db: bool = False,
-                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         lazy_agg: bool = False) -> Tuple[ItemTransactionModelQuerySet, Dict]:
         """
         Fetches the BillModel Items and aggregates the QuerySet.
 
@@ -539,7 +551,7 @@ class BillModelAbstract(AccrualMixIn,
                 'po_model',
                 'bill_model')
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
 
         if aggregate_on_db and isinstance(queryset, ItemTransactionModelQuerySet):
             return queryset, queryset.aggregate(
@@ -549,7 +561,21 @@ class BillModelAbstract(AccrualMixIn,
         return queryset, {
             'total_amount__sum': sum(i.total_amount for i in queryset),
             'total_items': len(queryset)
-        }
+        } if not lazy_agg else None
+
+    # ### ItemizeMixIn implementation END...
+
+    # State..
+    def get_migrate_state_desc(self) -> str:
+        """
+        Description used when migrating transactions into the LedgerModel.
+
+        Returns
+        _______
+        str
+            Description as a string.
+        """
+        return f'Bill {self.bill_number} account adjustment.'
 
     def get_migration_data(self,
                            queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
@@ -565,7 +591,7 @@ class BillModelAbstract(AccrualMixIn,
         if not queryset:
             queryset = self.itemtransactionmodel_set.all()
         else:
-            self.validate_item_transaction_qs(queryset)
+            self.validate_itemtxs_qs(queryset)
 
         return queryset.order_by('item_model__expense_account__uuid',
                                  'entity_unit__uuid',
@@ -601,7 +627,6 @@ class BillModelAbstract(AccrualMixIn,
         self.amount_due = round(itemtxs_agg['total_amount__sum'], 2)
         return itemtxs_qs
 
-    # State
     def is_draft(self) -> bool:
         """
         Checks if the BillModel is in Draft status.
@@ -1014,7 +1039,7 @@ class BillModelAbstract(AccrualMixIn,
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
         else:
-            self.validate_item_transaction_qs(queryset=itemtxs_qs)
+            self.validate_itemtxs_qs(queryset=itemtxs_qs)
 
         if not itemtxs_qs.count():
             raise BillModelValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
@@ -1117,7 +1142,7 @@ class BillModelAbstract(AccrualMixIn,
             )
         self.bill_status = self.BILL_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -1226,13 +1251,13 @@ class BillModelAbstract(AccrualMixIn,
                 f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
 
         self.bill_status = self.BILL_STATUS_PAID
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.clean()
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
         else:
-            self.validate_item_transaction_qs(queryset=itemtxs_qs)
+            self.validate_itemtxs_qs(queryset=itemtxs_qs)
 
         if commit:
             self.save(update_fields=[

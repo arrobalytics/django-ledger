@@ -16,7 +16,7 @@ to produce more specific financial reports associated with a specific scope of w
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
@@ -33,8 +33,8 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
-from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel
-from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModelQuerySet, ItemModel
+from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
 from django_ledger.models.purchase_order import PurchaseOrderModelQuerySet
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
 
@@ -102,6 +102,9 @@ class EstimateModelQuerySet(models.QuerySet):
         """
         return self.not_approved()
 
+    def draft(self):
+        return self.filter(status__exact=EstimateModelAbstract.CONTRACT_STATUS_DRAFT)
+
 
 class EstimateModelManager(models.Manager):
     """
@@ -147,7 +150,9 @@ class EstimateModelManager(models.Manager):
         )
 
 
-class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
+class EstimateModelAbstract(CreateUpdateMixIn,
+                            ItemizeMixIn,
+                            MarkdownNotesMixIn):
     """
     This is the main abstract class which the EstimateModel database will inherit from.
     The EstimateModel inherits functionality from the following MixIns:
@@ -1000,17 +1005,58 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_html_id(self):
         return f'djl-customer-estimate-id-{self.uuid}'
 
-    # ItemThroughModels...
+    # ### ItemizeMixIn implementation START...
+    def can_migrate_itemtxs(self) -> bool:
+        return self.is_draft()
+
+    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
+        self.update_state(itemtxs_qs=itemtxs_batch)
+        self.clean()
+
+        if commit:
+            self.save(update_fields=[
+                'revenue_estimate',
+                'labor_estimate',
+                'equipment_estimate',
+                'material_estimate',
+                'other_estimate',
+                'updated'
+            ])
+
+        return itemtxs_batch
+
+    def get_item_model_qs(self) -> ItemModelQuerySet:
+        return ItemModel.objects.filter(
+            entity_id__exact=self.entity_id
+        ).estimates()
+
+    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+        """
+        Validates that the entire ItemTransactionModelQuerySet is bound to the EstimateModel.
+
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet or list of ItemTransactionModel.
+            ItemTransactionModelQuerySet to validate.
+        """
+        valid = all([
+            i.ce_model_id == self.uuid for i in queryset
+        ])
+        if not valid:
+            raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
+
     def get_itemtxs_data(self,
-                         itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
-                         ) -> ItemTransactionModelQuerySet:
-        # todo: this needs to return an aggregate for consistency...
+                         queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
+                         aggregate_on_db: bool = False,
+                         lazy_agg: bool = False):
+
         """
         Returns all ItemTransactionModels associated with the EstimateModel and a total aggregate.
 
         Parameters
         ----------
-        itemtxs_qs: ItemTransactionModelQuerySet
+        queryset: ItemTransactionModelQuerySet
             ItemTransactionModelQuerySet to use. Avoids additional DB query if provided.
             Validated if provided.
 
@@ -1018,13 +1064,14 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         -------
         ItemTransactionModelQuerySet
         """
-        if not itemtxs_qs:
-            itemtxs_qs = self.itemtransactionmodel_set.select_related('item_model').all()
+        if not queryset:
+            queryset = self.itemtransactionmodel_set.select_related('item_model').all()
         else:
-            self.validate_item_transaction_qs(itemtxs_qs)
+            self.validate_item_transaction_qs(queryset)
+        # todo: this needs to return an aggregate for consistency...
+        return queryset, None
 
-        return itemtxs_qs
-
+    # ### ItemizeMixIn implementation END...
     def get_itemtxs_annotation(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None):
         """
         Gets an annotated ItemTransactionModelQuerySet with additional average unit cost & revenue.
@@ -1041,7 +1088,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         tuple
             The original ItemTransactionModelQuerySet and the annotated ItemTransactionModelQuerySet.
         """
-        itemtxs_qs = self.get_itemtxs_data(itemtxs_qs)
+        itemtxs_qs, _ = self.get_itemtxs_data(itemtxs_qs)
         return itemtxs_qs, itemtxs_qs.values(
             'item_model_id', 'item_model__name'
         ).annotate(
@@ -1071,7 +1118,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         commit: bool
             If True, the new revenue estimate will be committed into the DB.
         """
-        itemtxs_qs = self.get_itemtxs_data(itemtxs_qs)
+        itemtxs_qs, _ = self.get_itemtxs_data(itemtxs_qs)
         self.revenue_estimate = sum(i.ce_revenue_estimate for i in itemtxs_qs)
 
         if commit:
@@ -1092,7 +1139,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         commit: bool
             If True, the new revenue estimate will be committed into the DB.
         """
-        itemtxs_qs = self.get_itemtxs_data(itemtxs_qs=itemtxs_qs)
+        itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         estimates = {
             'labor': sum(a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_labor()),
             'material': sum(a.ce_cost_estimate for a in itemtxs_qs if a.item_model.is_material()),
@@ -1119,7 +1166,7 @@ class EstimateModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
     def update_state(self,
                      itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
-        itemtxs_qs = self.get_itemtxs_data(itemtxs_qs=itemtxs_qs)
+        itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
 

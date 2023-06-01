@@ -68,8 +68,8 @@
                         {% else %}
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">You Still Owe</p>
-                                    <p class="title has-text-danger">
+                                    <p class="heading">You Are Owed</p>
+                                    <p class="title has-text-success">
                                         {% currency_symbol %}{{ invoice.get_amount_open | currency_format }}</p>
                                 </div>
                             </div>
