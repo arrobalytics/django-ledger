@@ -1206,12 +1206,44 @@ class ItemizeMixIn:
     ITEMIZE_UPDATE = 'update'
 
     def get_item_model_qs(self):
+        """
+        Fetches the ItemModelQuerySet eligible to itemize.
+
+        Returns
+        -------
+        ItemModelQuerySet
+        """
         raise NotImplementedError()
 
     def get_itemtxs_data(self, queryset=None, aggregate_on_db: bool = False, lazy_agg: bool = False):
+        """
+        Fetches the ItemTransactionModelQuerySet associated with the model.
+
+        Parameters
+        ----------
+        queryset: ItemTransactionModelQuerySet
+            Pre-fetched ItemTransactionModelQuerySet. Validated if provided.
+        aggregate_on_db: bool
+            If True, performs aggregation at the DB layer. Defaults to False.
+        lazy_agg: bool
+            If True, performs queryset aggregation metrics. Defaults to False.
+
+        Returns
+        -------
+        tuple
+            ItemModelQuerySet, dict
+        """
         raise NotImplementedError()
 
     def validate_itemtxs(self, itemtxs):
+        """
+        Validates the provided item transaction list.
+
+        Parameters
+        ----------
+        itemtxs: dict
+            Item transaction list to replace/aggregate.
+        """
         if isinstance(itemtxs, dict):
             if all([
                 all([
@@ -1225,10 +1257,16 @@ class ItemizeMixIn:
         raise ItemizeError('itemtxs must be an instance of dict.')
 
     def can_migrate_itemtxs(self) -> bool:
+        """
+        Checks if item transaction list can be migrated.
+
+        Returns
+        -------
+        bool
+        """
         raise NotImplementedError()
 
-    def _get_itemtxs_batch(self, itemtxs, operation):
-
+    def _get_itemtxs_batch(self, itemtxs):
         ItemTransactionModel = lazy_loader.get_item_transaction_model()
         EstimateModel = lazy_loader.get_estimate_model()
         PurchaseOrder = lazy_loader.get_purchase_order_model()
@@ -1275,10 +1313,30 @@ class ItemizeMixIn:
         ]
 
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+        """
+        Migrates a predefined item transaction list.
+
+        Parameters
+        ----------
+        itemtxs: dict
+            A dictionary where keys are the document number (invoice/bill number, etc) and values are a dictionary:
+        operation: str
+            A choice of ITEMIZE_REPLACE, ITEMIZE_APPEND, ITEMIZE_UPDATE
+        commit: bool
+            If True, commits transaction into the DB. Default to False
+
+        Returns
+        -------
+        list
+            A list of ItemTransactionModel appended or created.
+        """
+        if operation == self.ITEMIZE_UPDATE:
+            raise NotImplementedError(f'Operation {operation} not yet implemented.')
+
         if self.can_migrate_itemtxs():
             self.validate_itemtxs(itemtxs)
 
-            itemtxs_batch = self._get_itemtxs_batch(itemtxs, operation)
+            itemtxs_batch = self._get_itemtxs_batch(itemtxs)
 
             for itx in itemtxs_batch:
                 itx.clean_fields()
@@ -1296,15 +1354,10 @@ class ItemizeMixIn:
                     itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
                     itemtxs_qs.delete()
                     return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
-                elif operation == self.ITEMIZE_UPDATE:
-                    item_model_qs = self.get_item_model_qs()
-                    item_model_qs = item_model_qs.filter(item_number__in=itemtxs.keys())
-                    item_model_qs_map = {i.item_number: i for i in item_model_qs}
-
             return itemtxs_batch
 
     def validate_itemtxs_qs(self):
-        raise NotImplementedError()
-
-    def create_itemtxs(self, item_id, unit_price, quantity):
+        """
+        Validates that the provided item transaction list is valid.
+        """
         raise NotImplementedError()
