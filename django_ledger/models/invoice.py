@@ -449,7 +449,7 @@ class InvoiceModelAbstract(AccrualMixIn,
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
-        self.new_state(commit=True)
+        self.get_state(commit=True)
 
         if commit:
             self.save(update_fields=['amount_due',
@@ -1143,7 +1143,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         if self.date_paid > localdate():
             raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
 
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
         self.clean()
 

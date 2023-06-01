@@ -497,7 +497,7 @@ class BillModelAbstract(AccrualMixIn,
     def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
-        self.new_state(commit=True)
+        self.get_state(commit=True)
 
         if commit:
             self.save(update_fields=['amount_due',
@@ -1142,7 +1142,7 @@ class BillModelAbstract(AccrualMixIn,
             )
         self.bill_status = self.BILL_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -1251,7 +1251,7 @@ class BillModelAbstract(AccrualMixIn,
                 f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
 
         self.bill_status = self.BILL_STATUS_PAID
-        self.new_state(commit=True)
+        self.get_state(commit=True)
         self.clean()
 
         if not itemtxs_qs:

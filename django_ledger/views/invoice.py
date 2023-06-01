@@ -327,7 +327,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
 
                     itemtxs_list = itemtxs_formset.save()
                     itemtxs_qs = invoice_model.update_amount_due()
-                    invoice_model.new_state(commit=True)
+                    invoice_model.get_state(commit=True)
                     invoice_model.clean()
                     invoice_model.save(
                         update_fields=['amount_due',

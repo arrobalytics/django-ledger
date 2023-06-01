@@ -682,7 +682,7 @@ class AccrualMixIn(models.Model):
             }
 
             if not void:
-                new_state = self.new_state(commit=commit)
+                new_state = self.get_state(commit=commit)
             else:
                 new_state = self.void_state(commit=commit)
 
@@ -818,7 +818,7 @@ class AccrualMixIn(models.Model):
             self.update_state(void_state)
         return void_state
 
-    def new_state(self, commit: bool = False):
+    def get_state(self, commit: bool = False):
         """
         Determines the new state of the financial instrument based on progress.
 
@@ -852,7 +852,7 @@ class AccrualMixIn(models.Model):
             Optional user provided state to use.
         """
         if not state:
-            state = self.new_state()
+            state = self.get_state()
         self.amount_paid = abs(state['amount_paid'])
         self.amount_receivable = state['amount_receivable']
         self.amount_unearned = state['amount_unearned']
