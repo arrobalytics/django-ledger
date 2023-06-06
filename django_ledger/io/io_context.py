@@ -12,18 +12,18 @@ lazy_importer = LazyLoader()
 class RoleContextManager:
 
     def __init__(self,
-                 tx_digest: dict,
+                 io_digest: dict,
                  by_period: bool = False,
                  by_unit: bool = False):
 
         self.BY_PERIOD = by_period
         self.BY_UNIT = by_unit
 
-        self.DIGEST = tx_digest
+        self.DIGEST = io_digest
         self.DIGEST['role_account'] = None
         self.DIGEST['role_balance'] = None
 
-        self.ACCOUNTS = tx_digest['accounts']
+        self.ACCOUNTS = io_digest['accounts']
 
         self.ROLES_ACCOUNTS = dict()
         self.ROLES_BALANCES = dict()
@@ -151,18 +151,18 @@ class GroupContextManager:
 class ActivityContextManager:
 
     def __init__(self,
-                 tx_digest: dict,
+                 io_digest: dict,
                  by_unit: bool = False,
                  by_period: bool = False):
 
-        self.DIGEST = tx_digest
+        self.DIGEST = io_digest
         self.DIGEST['activity_account'] = None
         self.DIGEST['activity_balance'] = None
 
         self.BY_PERIOD = by_period
         self.BY_UNIT = by_unit
 
-        self.ACCOUNTS = tx_digest['accounts']
+        self.ACCOUNTS = io_digest['accounts']
         self.ACTIVITY_ACCOUNTS = dict()
         self.ACTIVITY_BALANCES = dict()
 
@@ -211,8 +211,8 @@ class ActivityContextManager:
 
 
 class BalanceSheetStatementContextManager:
-    def __init__(self, tx_digest: dict):
-        self.DIGEST = tx_digest
+    def __init__(self, io_digest: dict):
+        self.DIGEST = io_digest
 
     def digest(self):
         if 'group_account' in self.DIGEST:
@@ -246,8 +246,8 @@ class BalanceSheetStatementContextManager:
 
 class IncomeStatementContextManager:
 
-    def __init__(self, tx_digest: dict):
-        self.DIGEST = tx_digest
+    def __init__(self, io_digest: dict):
+        self.DIGEST = io_digest
 
     def digest(self):
         if 'group_account' in self.DIGEST:
@@ -327,6 +327,7 @@ class IncomeStatementContextManager:
 class CashFlowStatementContextManager:
     CFS_DIGEST_KEY = 'cash_flow_statement'
 
+    # todo: implement by period and by unit...
     def __init__(self,
                  io_digest: dict,
                  by_period: bool = False,

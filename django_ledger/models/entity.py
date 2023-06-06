@@ -41,7 +41,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module, validate_roles
+from django_ledger.io import roles as roles_module, validate_roles, IODigest
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
@@ -2182,12 +2182,13 @@ class EntityModelAbstract(MP_Node,
                           to_date: Union[date, datetime],
                           user_model: UserModel,
                           txs_queryset: Optional[QuerySet] = None,
-                          **kwargs: Dict) -> Tuple[QuerySet, Dict]:
+                          **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             to_date=to_date,
             balance_sheet_statement=True,
             txs_queryset=txs_queryset,
+            as_io_digest=True,
             **kwargs
         )
 

@@ -18,11 +18,19 @@ try:
     from graphene_django import __version__
     from oauth2_provider import __version__
 
-    DJANGO_LEDGER_GRAPHQL_ENABLED = True
+    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = True
 except ImportError:
-    DJANGO_LEDGER_GRAPHQL_ENABLED = False
+    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = False
 
-logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_ENABLED}')
+try:
+    from fpdf import FPDF
+
+    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = True
+except ImportError:
+    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = False
+
+
+logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
 
 DJANGO_LEDGER_BILL_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_BILL_NUMBER_LENGTH', 10)
 DJANGO_LEDGER_INVOICE_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_INVOICE_NUMBER_LENGTH', 10)

@@ -9,7 +9,7 @@ from collections import defaultdict
 from datetime import datetime, date
 from itertools import groupby
 from random import choice
-from typing import List, Set, Union, Tuple, Optional
+from typing import List, Set, Union, Tuple, Optional, Dict
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -24,6 +24,7 @@ from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
                                          BalanceSheetStatementContextManager, IncomeStatementContextManager,
                                          CashFlowStatementContextManager)
+from django_ledger.io.io_digest import IODigest
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -354,6 +355,7 @@ class IOMixIn:
     # idea: make this method return a Digest class?...
     def digest(self,
                user_model: UserModel,
+               as_io_digest: bool = False,
                accounts: Optional[Union[Set[str], List[str]]] = None,
                role: Optional[Union[Set[str], List[str]]] = None,
                activity: str = None,
@@ -376,7 +378,7 @@ class IOMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               ) -> dict or tuple:
+               ) -> Union[Tuple, IODigest]:
 
         if activity:
             activity = validate_activity(activity)
@@ -404,13 +406,15 @@ class IOMixIn:
         )
 
         io_digest = defaultdict(lambda: dict())
+        io_digest['io_model'] = self
+        io_digest['txs_qs'] = txs_qs
         io_digest['accounts'] = accounts_digest
         io_digest['from_date'] = from_date
         io_digest['to_date'] = to_date
 
         if process_roles:
             roles_mgr = RoleContextManager(
-                tx_digest=io_digest,
+                io_digest=io_digest,
                 by_period=by_period,
                 by_unit=by_unit
             )
@@ -418,7 +422,12 @@ class IOMixIn:
             # idea: change digest() name to something else? maybe aggregate, calculate?...
             io_digest = roles_mgr.digest()
 
-        if process_groups or balance_sheet_statement or income_statement or cash_flow_statement:
+        if any([
+            process_groups,
+            balance_sheet_statement,
+            income_statement,
+            cash_flow_statement
+        ]):
             group_mgr = GroupContextManager(
                 io_digest=io_digest,
                 by_period=by_period,
@@ -439,20 +448,23 @@ class IOMixIn:
             io_digest = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(tx_digest=io_digest, by_unit=by_unit, by_period=by_period)
+            activity_manager = ActivityContextManager(io_digest=io_digest, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(tx_digest=io_digest)
+            balance_sheet_mgr = BalanceSheetStatementContextManager(io_digest=io_digest)
             io_digest = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(tx_digest=io_digest)
+            income_statement_mgr = IncomeStatementContextManager(io_digest=io_digest)
             io_digest = income_statement_mgr.digest()
 
         if cash_flow_statement:
             cfs = CashFlowStatementContextManager(io_digest=io_digest)
             io_digest = cfs.digest()
+
+        if as_io_digest:
+            return IODigest(io_digest=io_digest)
 
         if not digest_name:
             digest_name = 'tx_digest'
