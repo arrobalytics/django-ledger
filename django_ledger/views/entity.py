@@ -20,7 +20,8 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel)
-from django_ledger.report.balance_sheet import BalanceSheetReport
+from django_ledger.report.balance_sheet import BalanceSheetPDFReport
+from django_ledger.report.income_statement import IncomeStatementPDFReport
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
@@ -285,7 +286,7 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
             to_date=self.get_to_date(),
             user_model=self.request.user
         )
-        bs_pdf = BalanceSheetReport(io_digest=io_digest)
+        bs_pdf = BalanceSheetPDFReport('P', 'mm', 'A4', io_digest=io_digest)
         bs_pdf.create_pdf_report()
         return bs_pdf
 
@@ -338,6 +339,7 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/income_statement.html'
+    pdf_report = False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -351,6 +353,27 @@ class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                       slug__exact=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
+
+    def get_ic_pdf(self):
+        entity_model: EntityModel = self.object
+        io_digest = entity_model.get_income_statement(
+            from_date=self.get_from_date(),
+            to_date=self.get_to_date(),
+            user_model=self.request.user
+        )
+        bs_pdf = IncomeStatementPDFReport('P', 'mm', 'A4', io_digest=io_digest)
+        bs_pdf.create_pdf_report()
+        return bs_pdf
+
+    def get(self, request, **kwargs):
+        if self.pdf_report:
+            self.object: EntityModel = self.get_object()
+            bs_pdf = self.get_ic_pdf()
+            response = HttpResponse(bs_pdf.output(dest='S').encode('latin-1'))
+            response['Content-Disposition'] = f'attachment; filename={self.object.name}-IncomeStatement.pdf'
+            response['Content-Type'] = 'application/pdf'
+            return response
+        return super().get(request, **kwargs)
 
 
 class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):

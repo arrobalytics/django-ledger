@@ -44,17 +44,19 @@
             {% income_statement_table io_model=object %}
 
             {% if ledger %}
-                <a class="button is-fullwidth is-dark is-small my-2"
+                <a class="button is-fullwidth is-dark my-2"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">Go
                     Back</a>
             {% elif entity %}
-                <a class="button is-fullwidth is-dark is-small my-2"
+                <a class="button is-fullwidth is-dark my-2"
                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Go
                     Back</a>
             {% endif %}
-            <a class="button is-fullwidth is-light is-small my-2"
+            <a class="button is-fullwidth is-light my-2"
                href="?by_unit=1">{% trans 'By Unit' %}</a>
 
+            <a class="button is-fullwidth is-link my-2"
+               href="{% url 'django_ledger:entity-ic-year-pdf' entity_slug=view.kwargs.entity_slug year=year %}">{% trans 'Download PDF' %}</a>
         </div>
     </div>
 

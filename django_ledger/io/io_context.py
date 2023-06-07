@@ -284,6 +284,11 @@ class IncomeStatementContextManager:
                 }
             }
 
+            for activity, ic_section in self.DIGEST['income_statement'].items():
+                for section, acc_list in ic_section.items():
+                    for acc in acc_list:
+                        acc['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc['role']]
+
             # OPERATING INCOME...
             self.DIGEST['income_statement']['operating']['gross_profit'] = sum(
                 acc['balance'] for acc in chain.from_iterable(

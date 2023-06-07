@@ -2161,7 +2161,6 @@ class EntityModelAbstract(MP_Node,
             'description': f'Sample data for {self.name}'
         })
 
-        # pylint: disable=no-member
         ledger = self.ledgermodel_set.create(
             name=ledger_name,
             posted=ledger_posted
@@ -2197,13 +2196,14 @@ class EntityModelAbstract(MP_Node,
                              to_date: Union[date, datetime],
                              user_model: UserModel,
                              txs_queryset: Optional[QuerySet] = None,
-                             **kwargs) -> Tuple[QuerySet, Dict]:
+                             **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
             to_date=to_date,
             income_statement=True,
             txs_queryset=txs_queryset,
+            as_io_digest=True,
             **kwargs
         )
 
