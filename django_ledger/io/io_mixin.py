@@ -405,22 +405,22 @@ class IOMixIn:
             by_tx_type=by_tx_type
         )
 
-        io_digest = defaultdict(lambda: dict())
-        io_digest['io_model'] = self
-        io_digest['txs_qs'] = txs_qs
-        io_digest['accounts'] = accounts_digest
-        io_digest['from_date'] = from_date
-        io_digest['to_date'] = to_date
+        io_data = defaultdict(lambda: dict())
+        io_data['io_model'] = self
+        io_data['txs_qs'] = txs_qs
+        io_data['accounts'] = accounts_digest
+        io_data['from_date'] = from_date
+        io_data['to_date'] = to_date
 
         if process_roles:
             roles_mgr = RoleContextManager(
-                io_digest=io_digest,
+                io_data=io_data,
                 by_period=by_period,
                 by_unit=by_unit
             )
 
             # idea: change digest() name to something else? maybe aggregate, calculate?...
-            io_digest = roles_mgr.digest()
+            io_data = roles_mgr.digest()
 
         if any([
             process_groups,
@@ -429,48 +429,48 @@ class IOMixIn:
             cash_flow_statement
         ]):
             group_mgr = GroupContextManager(
-                io_digest=io_digest,
+                io_data=io_data,
                 by_period=by_period,
                 by_unit=by_unit
             )
-            io_digest = group_mgr.digest()
+            io_data = group_mgr.digest()
 
             # todo: migrate this to group manager...
-            io_digest['group_account']['GROUP_ASSETS'].sort(
+            io_data['group_account']['GROUP_ASSETS'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
-            io_digest['group_account']['GROUP_LIABILITIES'].sort(
+            io_data['group_account']['GROUP_LIABILITIES'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role']))
-            io_digest['group_account']['GROUP_CAPITAL'].sort(
+            io_data['group_account']['GROUP_CAPITAL'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
 
         if process_ratios:
-            ratio_gen = FinancialRatioManager(tx_digest=io_digest)
-            io_digest = ratio_gen.digest()
+            ratio_gen = FinancialRatioManager(io_data=io_data)
+            io_data = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(io_digest=io_digest, by_unit=by_unit, by_period=by_period)
+            activity_manager = ActivityContextManager(io_data=io_data, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(io_digest=io_digest)
-            io_digest = balance_sheet_mgr.digest()
+            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_data)
+            io_data = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(io_digest=io_digest)
-            io_digest = income_statement_mgr.digest()
+            income_statement_mgr = IncomeStatementContextManager(io_data=io_data)
+            io_data = income_statement_mgr.digest()
 
         if cash_flow_statement:
-            cfs = CashFlowStatementContextManager(io_digest=io_digest)
-            io_digest = cfs.digest()
+            cfs = CashFlowStatementContextManager(io_data=io_data)
+            io_data = cfs.digest()
 
         if as_io_digest:
-            return IODigest(io_digest=io_digest)
+            return IODigest(io_data=io_data)
 
         if not digest_name:
             digest_name = 'tx_digest'
 
         digest_results = {
-            digest_name: io_digest
+            digest_name: io_data
         }
 
         return txs_qs, digest_results

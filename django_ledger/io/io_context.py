@@ -12,18 +12,18 @@ lazy_importer = LazyLoader()
 class RoleContextManager:
 
     def __init__(self,
-                 io_digest: dict,
+                 io_data: dict,
                  by_period: bool = False,
                  by_unit: bool = False):
 
         self.BY_PERIOD = by_period
         self.BY_UNIT = by_unit
 
-        self.DIGEST = io_digest
+        self.DIGEST = io_data
         self.DIGEST['role_account'] = None
         self.DIGEST['role_balance'] = None
 
-        self.ACCOUNTS = io_digest['accounts']
+        self.ACCOUNTS = io_data['accounts']
 
         self.ROLES_ACCOUNTS = dict()
         self.ROLES_BALANCES = dict()
@@ -82,19 +82,19 @@ class GroupContextManager:
     GROUP_BALANCE_BY_PERIOD_KEY = 'group_balance_by_period'
 
     def __init__(self,
-                 io_digest: dict,
+                 io_data: dict,
                  by_period: bool = False,
                  by_unit: bool = False):
 
         self.BY_PERIOD = by_period
         self.BY_UNIT = by_unit
 
-        self.IO_DIGEST = io_digest
+        self.IO_DIGEST = io_data
 
         self.IO_DIGEST[self.GROUP_ACCOUNTS_KEY] = None
         self.IO_DIGEST[self.GROUP_BALANCE_KEY] = None
 
-        self.DIGEST_ACCOUNTS = io_digest['accounts']
+        self.DIGEST_ACCOUNTS = io_data['accounts']
 
         self.GROUPS_ACCOUNTS = dict()
         self.GROUPS_BALANCES = dict()
@@ -151,18 +151,18 @@ class GroupContextManager:
 class ActivityContextManager:
 
     def __init__(self,
-                 io_digest: dict,
+                 io_data: dict,
                  by_unit: bool = False,
                  by_period: bool = False):
 
-        self.DIGEST = io_digest
+        self.DIGEST = io_data
         self.DIGEST['activity_account'] = None
         self.DIGEST['activity_balance'] = None
 
         self.BY_PERIOD = by_period
         self.BY_UNIT = by_unit
 
-        self.ACCOUNTS = io_digest['accounts']
+        self.ACCOUNTS = io_data['accounts']
         self.ACTIVITY_ACCOUNTS = dict()
         self.ACTIVITY_BALANCES = dict()
 
@@ -211,8 +211,8 @@ class ActivityContextManager:
 
 
 class BalanceSheetStatementContextManager:
-    def __init__(self, io_digest: dict):
-        self.DIGEST = io_digest
+    def __init__(self, io_data: dict):
+        self.DIGEST = io_data
 
     def digest(self):
         if 'group_account' in self.DIGEST:
@@ -227,9 +227,11 @@ class BalanceSheetStatementContextManager:
                     ),
                     key=lambda acc: acc['role_bs'])
             }
-            self.DIGEST['balance_sheet'] = {
+
+            bs_context = {
                 bs_role: {
                     'total_balance': sum(a['balance'] for a in gb),
+                    'is_block': True,
                     'roles': {
                         r: {
                             'accounts': list(a)
@@ -237,17 +239,25 @@ class BalanceSheetStatementContextManager:
                     }
                 } for bs_role, gb in gb_bs.items()
             }
-            for bs_role, bs_role_data in self.DIGEST['balance_sheet'].items():
+
+            for bs_role, bs_role_data in bs_context.items():
                 for acc_role, role_data in bs_role_data['roles'].items():
                     role_data['total_balance'] = sum(a['balance'] for a in role_data['accounts'])
                     role_data['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc_role]
+
+            bs_context['equity_balance'] = self.DIGEST['group_balance']['GROUP_EQUITY']
+            bs_context['retained_earnings_balance'] = self.DIGEST['group_balance']['GROUP_EARNINGS']
+            bs_context['liabilities_equity_balance'] = self.DIGEST['group_balance']['GROUP_LIABILITIES_EQUITY']
+
+            self.DIGEST['balance_sheet'] = bs_context
+
         return self.DIGEST
 
 
 class IncomeStatementContextManager:
 
-    def __init__(self, io_digest: dict):
-        self.DIGEST = io_digest
+    def __init__(self, io_data: dict):
+        self.DIGEST = io_data
 
     def digest(self):
         if 'group_account' in self.DIGEST:
@@ -300,7 +310,6 @@ class IncomeStatementContextManager:
                 acc['balance'] for acc in self.DIGEST['income_statement']['operating']['expenses']
             )
 
-
             # OTHER INCOME....
             self.DIGEST['income_statement']['other']['net_other_revenues'] = sum(
                 acc['balance'] for acc in self.DIGEST['income_statement']['other']['revenues']
@@ -329,10 +338,10 @@ class CashFlowStatementContextManager:
 
     # todo: implement by period and by unit...
     def __init__(self,
-                 io_digest: dict,
+                 io_data: dict,
                  by_period: bool = False,
                  by_unit: bool = False):
-        self.IO_DIGEST = io_digest
+        self.IO_DIGEST = io_data
         self.CASH_ACCOUNTS = [a for a in self.IO_DIGEST['accounts'] if a['role'] == roles_module.ASSET_CA_CASH]
         self.JE_MODEL = lazy_loader.get_journal_entry_model()
 

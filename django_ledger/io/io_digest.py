@@ -13,13 +13,13 @@ class IODigestValidationError(ValidationError):
 
 class IODigest:
 
-    def __init__(self, io_digest: defaultdict):
-        self.IO_DIGEST: defaultdict = io_digest
-        self.IO_MODEL = self.IO_DIGEST['io_model']
-        self.TXS_QS = self.IO_DIGEST['txs_qs']
+    def __init__(self, io_data: defaultdict):
+        self.IO_DATA: defaultdict = io_data
+        self.IO_MODEL = self.IO_DATA['io_model']
+        self.TXS_QS = self.IO_DATA['txs_qs']
 
     def get_to_date(self) -> date:
-        return self.IO_DIGEST['to_date']
+        return self.IO_DATA['to_date']
 
     def is_entity_model(self) -> bool:
         return isinstance(
@@ -41,11 +41,11 @@ class IODigest:
 
     # Balance Sheet...
     def has_balance_sheet(self) -> bool:
-        return 'balance_sheet' in self.IO_DIGEST
+        return 'balance_sheet' in self.IO_DATA
 
     def get_balance_sheet_data(self, raise_exception: bool = True) -> Dict:
         try:
-            return self.IO_DIGEST['balance_sheet']
+            return self.IO_DATA['balance_sheet']
         except KeyError:
             if raise_exception:
                 raise IODigestValidationError(

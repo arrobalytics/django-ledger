@@ -10,7 +10,7 @@ from datetime import timedelta
 from decimal import Decimal
 from random import randint
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -20,6 +20,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
 from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel)
+from django_ledger.report.balance_sheet import BalanceSheetReport
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
@@ -265,6 +266,7 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
+    pdf_report = False
 
     def get_context_data(self, **kwargs):
         context = super(FiscalYearEntityModelBalanceSheetView, self).get_context_data(**kwargs)
@@ -276,6 +278,26 @@ class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
                                                       slug=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
+
+    def get_bs_pdf(self):
+        entity_model: EntityModel = self.object
+        io_digest = entity_model.get_balance_sheet(
+            to_date=self.get_to_date(),
+            user_model=self.request.user
+        )
+        bs_pdf = BalanceSheetReport(io_digest=io_digest)
+        bs_pdf.create_pdf_report()
+        return bs_pdf
+
+    def get(self, request, **kwargs):
+        if self.pdf_report:
+            self.object: EntityModel = self.get_object()
+            bs_pdf = self.get_bs_pdf()
+            response = HttpResponse(bs_pdf.output(dest='S').encode('latin-1'))
+            response['Content-Disposition'] = f'attachment; filename={self.object.name}-BalanceSheet.pdf'
+            response['Content-Type'] = 'application/pdf'
+            return response
+        return super().get(request, **kwargs)
 
 
 class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
