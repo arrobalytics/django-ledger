@@ -142,8 +142,14 @@ See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/bl
 
 ## Quick Start
 
-Django Ledger comes with a default CoA ready to use, or you could use your own. Make sure to select the appropriate
-option when creating new entities.
+Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need a working knowledge of Django and a working Django 
+Project before you can use Django Ledger. A good place to start is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-project).
+Make sure you refer to the django version you are using. A quick way to start a new django project is to run the
+following command:
+
+```shell script
+django-admin startproject django-ledger-project
+```
 
 * Install Django Ledger
 
@@ -160,7 +166,7 @@ To install Django Virtual Environment
 pipenv install django-ledger
 ```
 
-* Add django_ledger to INSTALLED_APPS
+* Add django_ledger to INSTALLED_APPS in you new Django Project.
 
 ```python
 INSTALLED_APPS = [
@@ -170,7 +176,7 @@ INSTALLED_APPS = [
 ]
 ```
 
-* Add URLs to your project:
+* Add URLs to your project's __urls.py__:
 
 ```python
 from django.urls import include, path
@@ -188,7 +194,7 @@ urlpatterns = [
 python manage.py createsuperuser
 ```
 
-* Navigate to Django Ledger root view assigned in your project urlpattern setting.
+* Navigate to Django Ledger root view assigned in your project urlpatterns setting.
 * Use your user credentials.
 
 # How To Set Up Django Ledger for Development
