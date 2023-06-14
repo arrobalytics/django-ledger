@@ -7,8 +7,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, R
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.models import EntityUnitModel, EntityModel
-from django_ledger.views.entity import (
-    FiscalYearEntityModelIncomeStatementView)
+from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
 from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn,
                                         DateReportMixIn, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn)
 
@@ -188,19 +187,19 @@ class FiscalYearEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn,
     template_name = 'django_ledger/financial_statements/income_statement.html'
 
 
-class QuarterlyEntityUnitModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class QuarterlyIncomeStatementView(QuarterlyReportMixIn, FiscalYearIncomeStatementView):
     """
     Entity Unit Fiscal Quarter Income Statement View Class
     """
 
 
-class MonthlyEntityUnitModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class MonthlyIncomeStatementView(MonthlyReportMixIn, FiscalYearIncomeStatementView):
     """
     Entity Unit Fiscal Month Income Statement View Class
     """
 
 
-class DateEntityUnitModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class DateIncomeStatementView(DateReportMixIn, FiscalYearIncomeStatementView):
     """
     Entity Unit Date Income Statement View Class
     """
