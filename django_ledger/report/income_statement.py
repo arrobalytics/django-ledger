@@ -15,10 +15,12 @@ class IncomeStatementPDFReport(BasePDFSupport):
             'role': {
                 'title': '',
                 'spacing': 10,
+                'align': 'L',
             },
             'code': {
                 'title': 'Account Code',
                 'spacing': 15,
+                'align': 'L',
             },
             'name': {
                 'title': 'Account Name',
@@ -82,29 +84,10 @@ class IncomeStatementPDFReport(BasePDFSupport):
             )
             self.ln(5)
 
-        # self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE)
-        # self.cell(
-        #     w=20,
-        #     h=2,
-        #     txt='Total {r}'.format(r=acc['role_name'])
-        # )
-
-        # self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
-        # self.set_x(180)
-        # self.cell(
-        #     w=20,
-        #     h=2,
-        #     align='R',
-        #     txt='{space} {s}{tot}'.format(space=' ' * 173,
-        #                                   s=currency_symbol(),
-        #                                   tot=currency_format(section_data['total_balance']))
-        # )
-        # self.ln(h=7)
-
     def print_operating_revenues(self):
 
         self.print_section_title('Operating Revenues')
-        self.print_headers()
+        self.ln(8)
 
         ic_data = self.IO_DIGEST.get_income_statement_data()
         operating_section = ic_data['operating']
@@ -115,21 +98,22 @@ class IncomeStatementPDFReport(BasePDFSupport):
             h=2,
             txt='Net Operating Revenue'
         )
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 175,
-                                          s=currency_symbol(),
-                                          tot=currency_format(operating_section['net_operating_revenue']))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(operating_section['net_operating_revenue']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_operating_cogs(self):
         self.print_section_title('LESS: Cost of Goods Sold')
-        self.print_headers()
+        self.ln(8)
 
         ic_data = self.IO_DIGEST.get_income_statement_data()
         operating_section = ic_data['operating']
@@ -140,45 +124,47 @@ class IncomeStatementPDFReport(BasePDFSupport):
             h=2,
             txt='Net COGS'
         )
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 175,
-                                          s=currency_symbol(),
-                                          tot=currency_format(abs(operating_section['net_cogs'])))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(-operating_section['net_cogs']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_operating_gross_profit(self):
         ic_data = self.IO_DIGEST.get_income_statement_data()
         operating_section = ic_data['operating']
 
-        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 2)
         self.cell(
             w=20,
             h=2,
             txt='Gross Profit (Op. Revenue - COGS)'
         )
 
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 2)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 2)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 157,
-                                          s=currency_symbol(),
-                                          tot=currency_format(operating_section['gross_profit']))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(operating_section['gross_profit']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_operating_expenses(self):
 
         self.print_section_title('Operating Expense')
-        self.print_headers()
+        self.ln(8)
 
         ic_data = self.IO_DIGEST.get_income_statement_data()
         operating_section = ic_data['operating']
@@ -189,17 +175,18 @@ class IncomeStatementPDFReport(BasePDFSupport):
             h=2,
             txt='Net Operating Expense'
         )
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 175,
-                                          s=currency_symbol(),
-                                          tot=currency_format(abs(operating_section['net_operating_expenses'])))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(-operating_section['net_operating_expenses']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_net_operating_income(self):
         ic_data = self.IO_DIGEST.get_income_statement_data()
@@ -218,7 +205,7 @@ class IncomeStatementPDFReport(BasePDFSupport):
 
     def print_other_revenues(self):
         self.print_section_title('Other Revenues')
-        self.print_headers()
+        self.ln(8)
 
         ic_data = self.IO_DIGEST.get_income_statement_data()
         other_section = ic_data['other']
@@ -229,21 +216,22 @@ class IncomeStatementPDFReport(BasePDFSupport):
             h=2,
             txt='Net Other Revenue'
         )
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 175,
-                                          s=currency_symbol(),
-                                          tot=currency_format(other_section['net_other_revenues']))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(other_section['net_other_revenues']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_other_expenses(self):
         self.print_section_title('Other Expenses')
-        self.print_headers()
+        self.ln(8)
 
         ic_data = self.IO_DIGEST.get_income_statement_data()
         other_section = ic_data['other']
@@ -254,17 +242,18 @@ class IncomeStatementPDFReport(BasePDFSupport):
             h=2,
             txt='Net Other Expenses'
         )
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
         self.set_x(180)
         self.cell(
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(space=' ' * 175,
-                                          s=currency_symbol(),
-                                          tot=currency_format(other_section['net_other_expenses']))
+            txt='{s}{tot}'.format(s=currency_symbol(),
+                                  tot=currency_format(other_section['net_other_expenses']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
     def print_net_other_income(self):
         ic_data = self.IO_DIGEST.get_income_statement_data()
@@ -295,7 +284,14 @@ class IncomeStatementPDFReport(BasePDFSupport):
         )
         self.ln(h=5)
 
+    def get_pdf_filename(self):
+        dt_fmt = '%Y%m%d'
+        f_name = f'IS{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}-'
+        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}_{self.get_entity_name()}'
+        return f_name
+
     def create_pdf_report(self):
+        self.print_headers()
         self.print_operating_revenues()
         self.print_operating_cogs()
         self.print_operating_gross_profit()

@@ -387,6 +387,9 @@ class IOMixIn:
 
         from_date, to_date = validate_dates(from_date, to_date)
 
+        if cash_flow_statement:
+            by_activity = True
+
         txs_qs, accounts_digest = self.python_digest(
             txs_queryset=txs_queryset,
             user_model=user_model,

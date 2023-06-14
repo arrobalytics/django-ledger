@@ -15,10 +15,12 @@ class BalanceSheetPDFReport(BasePDFSupport):
             'role': {
                 'title': '',
                 'spacing': 10,
+                'align': 'L',
             },
             'code': {
                 'title': 'Account Code',
                 'spacing': 15,
+                'align': 'L',
             },
             'name': {
                 'title': 'Account Name',
@@ -52,6 +54,7 @@ class BalanceSheetPDFReport(BasePDFSupport):
         for r, d in section_data['roles'].items():
             # # print role name...
             self.set_font(self.FONT_FAMILY, style='U', size=self.FONT_SIZE)
+            self.set_x(15)
             self.cell(
                 w=self.get_string_width(d['role_name']),
                 h=2,
@@ -93,29 +96,30 @@ class BalanceSheetPDFReport(BasePDFSupport):
                 )
                 self.ln(5)
 
-            self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE)
+            self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE)
             self.cell(
                 w=20,
                 h=2,
                 txt='Total {r}'.format(r=d['role_name'])
             )
 
-            self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+            self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE + 1)
             self.set_x(180)
             self.cell(
                 w=20,
                 h=2,
                 align='R',
-                txt='{space} {s}{tot}'.format(space=' ' * 173,
-                                              s=currency_symbol(),
-                                              tot=currency_format(d['total_balance']))
+                txt='{s}{tot}'.format(s=currency_symbol(),
+                                      tot=currency_format(d['total_balance']))
             )
-            self.ln(h=7)
+            self.ln(3)
+            self.print_hline()
+            self.ln(5)
 
     def print_assets(self):
 
         self.print_section_title('Assets')
-        self.print_headers()
+        self.ln(8)
 
         # accounts data....
         bs_data = self.IO_DIGEST.get_balance_sheet_data()
@@ -167,7 +171,7 @@ class BalanceSheetPDFReport(BasePDFSupport):
 
         self.print_section_data(section_data)
 
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE)
+        self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE)
         self.cell(
             w=20,
             h=2,
@@ -178,12 +182,13 @@ class BalanceSheetPDFReport(BasePDFSupport):
             w=20,
             h=2,
             align='R',
-            txt='{space} {s}{tot}'.format(r='Retained Earnings',
-                                          space=' ' * 190,
-                                          s=currency_symbol(),
-                                          tot=currency_format(bs_data['retained_earnings_balance']))
+            txt='{s}{tot}'.format(r='Retained Earnings',
+                                  s=currency_symbol(),
+                                  tot=currency_format(bs_data['retained_earnings_balance']))
         )
-        self.ln(h=7)
+        self.ln(h=3)
+        self.print_hline()
+        self.ln(5)
 
         self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
         self.set_x(180)
@@ -208,7 +213,13 @@ class BalanceSheetPDFReport(BasePDFSupport):
         )
         self.ln(h=5)
 
+    def get_pdf_filename(self):
+        dt_fmt = '%Y%m%d'
+        f_name = f'BS{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}_{self.get_entity_name()}'
+        return f_name
+
     def create_pdf_report(self):
+        self.print_headers()
         self.print_assets()
         self.print_liabilities()
         self.print_equity()

@@ -52,9 +52,9 @@ def absolute(value):
 
 @register.filter(name='currency_format')
 def currency_format(value):
-    if value:
-        return number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
-    return 0.00
+    if not value:
+        value = 0.00
+    return number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
 
 
 @register.filter(name='percentage')

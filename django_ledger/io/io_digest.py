@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import date
-from typing import Dict
+from typing import Dict, Optional
 
 from django.core.exceptions import ValidationError
 
@@ -17,11 +17,25 @@ class IODigest:
         self.IO_DATA: defaultdict = io_data
         self.IO_MODEL = self.IO_DATA['io_model']
         self.TXS_QS = self.IO_DATA['txs_qs']
+        self.STRFTIME_FORMAT = '%B %d, %Y'
 
-    def get_from_date(self) -> date:
-        return self.IO_DATA['from_date']
+    def get_strftime_format(self):
+        return self.STRFTIME_FORMAT
 
-    def get_to_date(self) -> date:
+    def get_from_date(self, as_str: bool = True, fmt=None) -> Optional[date]:
+        from_date = self.IO_DATA['from_date']
+        if from_date:
+            if as_str:
+                if not fmt:
+                    fmt = self.get_strftime_format()
+                return from_date.strftime(fmt)
+            return from_date
+
+    def get_to_date(self, as_str: bool = True, fmt=None) -> date:
+        if as_str:
+            if not fmt:
+                fmt = self.get_strftime_format()
+            return self.IO_DATA['to_date'].strftime(fmt)
         return self.IO_DATA['to_date']
 
     def is_entity_model(self) -> bool:
@@ -66,4 +80,17 @@ class IODigest:
             if raise_exception:
                 raise IODigestValidationError(
                     'IO Digest does not have income statement information available.'
+                )
+
+    # Cash Flow Statement...
+    def has_cash_flow_statement(self):
+        return 'cash_flow_statement' in self.IO_DATA
+
+    def get_cash_flow_statement_data(self, raise_exception: bool = True) -> Dict:
+        try:
+            return self.IO_DATA['cash_flow_statement']
+        except KeyError:
+            if raise_exception:
+                raise IODigestValidationError(
+                    'IO Digest does not have cash flow statement information available.'
                 )

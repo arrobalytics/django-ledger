@@ -2212,7 +2212,7 @@ class EntityModelAbstract(MP_Node,
                                 to_date: Union[date, datetime],
                                 user_model: UserModel,
                                 txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Tuple[QuerySet, Dict]:
+                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
 
         return self.digest(
             user_model=user_model,
@@ -2220,6 +2220,7 @@ class EntityModelAbstract(MP_Node,
             to_date=to_date,
             cash_flow_statement=True,
             txs_queryset=txs_queryset,
+            as_io_digest=True,
             **kwargs
         )
 

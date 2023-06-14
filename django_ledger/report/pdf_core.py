@@ -1,4 +1,5 @@
 from typing import Optional, Dict
+from fpdf import FPDF, XPos, YPos
 
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
@@ -20,7 +21,8 @@ class PDFReportValidationError(ValidationError):
     pass
 
 
-class BasePDFSupport(*load_support()):
+# class BasePDFSupport(*load_support()):
+class BasePDFSupport(FPDF):
     FOOTER_LOGO_PATH = 'django_ledger/logo/django-ledger-logo-report.png'
 
     def __init__(self,
@@ -32,28 +34,31 @@ class BasePDFSupport(*load_support()):
             raise NotImplementedError('PDF support not enabled.')
 
         super().__init__(*args, **kwargs)
+        self.REPORT_TYPE: Optional[str]
         self.FONT_SIZE: int = 9
-        self.FONT_FAMILY: str = 'Arial'
+        self.FONT_FAMILY: str = 'helvetica'
+        self.PAGE_WIDTH = 210
         self.IO_DIGEST: IODigest = io_digest
         self.CURRENCY_SYMBOL = currency_symbol()
-        self.set_font(family=self.FONT_FAMILY, size=self.FONT_SIZE)
+        self.set_default_font()
         self.alias_nb_pages()
         self.add_page()
         self.TABLE_HEADERS: Optional[Dict]
 
-    def header(self):
+    def set_default_font(self):
         self.set_font(
             family=self.FONT_FAMILY,
-            style='B',
-            size=self.FONT_SIZE)
+            size=self.FONT_SIZE
+        )
 
-        # Report Type
+    def header(self):
+        # # Report Type
         self.set_font(
-            family='Arial',
+            family=self.FONT_FAMILY,
             size=self.FONT_SIZE + 2
         )
         w = self.get_string_width(self.get_report_type())
-        self.set_x((210 - w) / 2)
+        self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w, 3, self.get_report_type(), ln=1)
 
         # Report Title
@@ -62,14 +67,15 @@ class BasePDFSupport(*load_support()):
             size=self.FONT_SIZE + 6,
             style='B'
         )
-        entity_title = self.get_entity_title()
+        entity_title = self.get_entity_name()
         w = self.get_string_width(entity_title)
-        self.set_x((210 - w) / 2)
+        self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
                   h=6,
                   txt=entity_title,
                   border=0,
-                  ln=1,
+                  new_x=XPos.LMARGIN,
+                  new_y=YPos.NEXT,
                   align='C')
 
         # Period
@@ -78,8 +84,10 @@ class BasePDFSupport(*load_support()):
             size=self.FONT_SIZE - 1,
             style='I'
         )
-        from_date = self.IO_DIGEST.get_from_date().strftime('%m-%d-%Y')
-        to_date = self.IO_DIGEST.get_to_date().strftime('%m-%d-%Y')
+
+        from_date = self.IO_DIGEST.get_from_date(as_str=True)
+        to_date = self.IO_DIGEST.get_to_date(as_str=True)
+
         if from_date and to_date:
             period = f'From {from_date} through {to_date}'
         elif to_date:
@@ -87,59 +95,94 @@ class BasePDFSupport(*load_support()):
         else:
             raise PDFReportValidationError('PDF report must have dates specified.')
         w = self.get_string_width(period)
-        self.set_x((210 - w) / 2)
+        self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
                   h=5,
                   txt=period,
+                  new_x=XPos.LMARGIN,
+                  new_y=YPos.NEXT,
                   align='C')
 
         # Line break
         self.ln(10)
+        self.set_default_font()
 
     def print_headers(self):
         for k, header in self.TABLE_HEADERS.items():
-            self.set_font(self.FONT_FAMILY, header.get('style', ''), self.FONT_SIZE)
+            self.set_font(
+                family=self.FONT_FAMILY,
+                style=header.get('style', ''),
+                size=self.FONT_SIZE)
             w = self.get_string_width(header['title']) + header['spacing']
             self.cell(
                 w=w,
                 h=5,
                 txt=header['title'],
-                align=header.get('align'),
+                align=header['align'],
             )
         self.ln(8)
+        self.set_default_font()
 
-    def print_section_title(self, title):
-        self.set_font(self.FONT_FAMILY, 'BU', self.FONT_SIZE + 4)
-
-        # Assets title...
+    def print_amount(self, amt, zoom=0):
+        self.set_x(178)
+        self.set_font(
+            family=self.FONT_FAMILY,
+            size=self.FONT_SIZE + zoom
+        )
         self.cell(
             w=20,
-            h=10,
-            txt=title,
-            ln=1
+            h=5,
+            markdown=True,
+            align='R',
+            txt=f'**{self.CURRENCY_SYMBOL}{currency_format(amt)}**'
+        )
+        self.set_default_font()
 
+    def print_hline(self):
+        self.line(
+            x1=self.get_x(),
+            y1=self.get_y(),
+            x2=self.get_x() + self.PAGE_WIDTH - 20,
+            y2=self.get_y()
         )
 
-    def get_entity_title(self):
+    def get_entity_name(self):
         if self.IO_DIGEST.is_entity_model():
             return self.IO_DIGEST.IO_MODEL.name
 
     def get_report_type(self):
-        return self.REPORT_TYPE
+        raise NotImplementedError(f'Must define REPORT_TYPE on {self.__class__.__name__}')
 
     def get_report_footer_logo_path(self) -> str:
         return finders.find(self.FOOTER_LOGO_PATH)
 
+    def print_section_title(self, title, style='BU', zoom=4, w=160, align='L'):
+        self.set_font(
+            family=self.FONT_FAMILY,
+            style=style,
+            size=self.FONT_SIZE + zoom
+        )
+        # Assets title...
+        self.cell(
+            w=w,
+            h=6,
+            txt=title,
+            align=align
+        )
+        self.set_default_font()
+
     def footer(self):
-        # Position at 1.5 cm from bottom
         self.set_y(-25)
-        # Arial italic 8
         self.set_font(self.FONT_FAMILY, 'I', 8)
-        # Page number
         self.cell(0, 5, 'Page ' + str(self.page_no()) + '/{nb}', 0, 1, 'C')
         self.set_font(family=self.FONT_FAMILY, size=self.FONT_SIZE - 3)
         self.cell(0, 5, 'Powered by:', 0, 1, 'C')
-        self.image(self.get_report_footer_logo_path(), w=30, x=(200 - 30) / 2, link='https://www.djangoledger.com')
+        self.image(self.get_report_footer_logo_path(),
+                   w=30, x=(200 - 30) / 2,
+                   link='https://www.djangoledger.com')
 
     def create_pdf_report(self):
+        raise NotImplementedError()
+
+    def get_pdf_filename(self):
         raise NotImplementedError()
