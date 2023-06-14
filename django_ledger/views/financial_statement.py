@@ -20,7 +20,7 @@ from django_ledger.report.income_statement import IncomeStatementPDFReport
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
-    BaseDateNavigationUrlMixIn
+    BaseDateNavigationUrlMixIn, PDFReportMixIn
 )
 
 
@@ -48,11 +48,20 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
                                  BaseDateNavigationUrlMixIn,
                                  EntityUnitMixIn,
                                  YearlyReportMixIn,
+                                 PDFReportMixIn,
                                  DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
-    pdf = False
+    pdf_report_class = BalanceSheetPDFReport
+
+    def get_pdf_io_digest(self):
+        entity_model: EntityModel = self.get_object()
+        self.object = entity_model
+        return entity_model.get_balance_sheet(
+            to_date=self.get_to_date(),
+            user_model=self.request.user
+        )
 
     def get_context_data(self, **kwargs):
         context = super(FiscalYearBalanceSheetView, self).get_context_data(**kwargs)
@@ -64,28 +73,6 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
                                                       slug=unit_slug,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
-
-    def get_pdf(self):
-        entity_model: EntityModel = self.object
-        io_digest = entity_model.get_balance_sheet(
-            to_date=self.get_to_date(),
-            user_model=self.request.user
-        )
-        bs_pdf = BalanceSheetPDFReport('P', 'mm', 'A4', io_digest=io_digest)
-        bs_pdf.create_pdf_report()
-        return bs_pdf
-
-    def get(self, request, **kwargs):
-        if self.pdf:
-            self.object: EntityModel = self.get_object()
-            pdf = self.get_pdf()
-            response = HttpResponse(
-                bytes(pdf.output()),
-                content_type="application/pdf",
-            )
-            response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
-            return response
-        return super().get(request, **kwargs)
 
 
 class QuarterlyBalanceSheetView(QuarterlyReportMixIn, FiscalYearBalanceSheetView):
@@ -122,11 +109,12 @@ class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
                                     BaseDateNavigationUrlMixIn,
                                     EntityUnitMixIn,
                                     YearlyReportMixIn,
+                                    PDFReportMixIn,
                                     DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/income_statement.html'
-    pdf = False
+    pdf_report_class = IncomeStatementPDFReport
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -141,28 +129,14 @@ class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
-    def get_pdf(self):
-        entity_model: EntityModel = self.object
-        io_digest = entity_model.get_income_statement(
+    def get_pdf_io_digest(self):
+        entity_model: EntityModel = self.get_object()
+        self.object = entity_model
+        return entity_model.get_income_statement(
             from_date=self.get_from_date(),
             to_date=self.get_to_date(),
             user_model=self.request.user
         )
-        bs_pdf = IncomeStatementPDFReport('P', 'mm', 'A4', io_digest=io_digest)
-        bs_pdf.create_pdf_report()
-        return bs_pdf
-
-    def get(self, request, **kwargs):
-        if self.pdf:
-            self.object: EntityModel = self.get_object()
-            pdf = self.get_pdf()
-            response = HttpResponse(
-                bytes(pdf.output()),
-                content_type="application/pdf",
-            )
-            response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
-            return response
-        return super().get(request, **kwargs)
 
 
 class QuarterlyIncomeStatementView(QuarterlyReportMixIn, FiscalYearIncomeStatementView):
@@ -200,6 +174,7 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                       BaseDateNavigationUrlMixIn,
                                       EntityUnitMixIn,
                                       YearlyReportMixIn,
+                                      PDFReportMixIn,
                                       DetailView):
     """
     Fiscal Year Cash Flow Statement View.
@@ -208,7 +183,7 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/cash_flow.html'
-    pdf = False
+    pdf_report_class = CashFlowStatementPDFReport
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -223,28 +198,14 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
-    def get_pdf(self):
-        entity_model: EntityModel = self.object
-        io_digest = entity_model.get_cash_flow_statement(
+    def get_pdf_io_digest(self):
+        entity_model: EntityModel = self.get_object()
+        self.object = entity_model
+        return entity_model.get_cash_flow_statement(
             from_date=self.get_from_date(),
             to_date=self.get_to_date(),
             user_model=self.request.user
         )
-        bs_pdf = CashFlowStatementPDFReport('P', 'mm', 'A4', io_digest=io_digest)
-        bs_pdf.create_pdf_report()
-        return bs_pdf
-
-    def get(self, request, **kwargs):
-        if self.pdf:
-            self.object: EntityModel = self.get_object()
-            pdf = self.get_pdf()
-            response = HttpResponse(
-                bytes(pdf.output()),
-                content_type="application/pdf",
-            )
-            response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
-            return response
-        return super().get(request, **kwargs)
 
 
 class QuarterlyCashFlowStatementView(QuarterlyReportMixIn, FiscalYearCashFlowStatementView):
