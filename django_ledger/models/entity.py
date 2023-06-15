@@ -25,6 +25,7 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional, List, Dict
@@ -2191,10 +2192,34 @@ class EntityModelAbstract(MP_Node,
             **kwargs
         )
 
+    def get_balance_sheet_statement_pdf(self,
+                                        to_date: Union[date, datetime],
+                                        filepath: Optional[Path] = None,
+                                        as_bytes: bool = False,
+                                        user_model: Optional[UserModel] = None,
+                                        txs_queryset: Optional[QuerySet] = None,
+                                        **kwargs
+                                        ):
+
+        io_digest = self.get_balance_sheet(
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset
+        )
+
+        pdf_klass = lazy_loader.get_balance_sheet_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
+        pdf.create_pdf_report()
+        if as_bytes:
+            return bytes(pdf.output())
+        if filepath:
+            pdf.output(filepath)
+        return pdf
+
     def get_income_statement(self,
                              from_date: Union[date, datetime],
                              to_date: Union[date, datetime],
-                             user_model: UserModel,
+                             user_model: Optional[UserModel] = None,
                              txs_queryset: Optional[QuerySet] = None,
                              **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
         return self.digest(
@@ -2206,6 +2231,31 @@ class EntityModelAbstract(MP_Node,
             as_io_digest=True,
             **kwargs
         )
+
+    def get_income_statement_pdf(self,
+                                 from_date: Union[date, datetime],
+                                 to_date: Union[date, datetime],
+                                 filepath: Optional[Path] = None,
+                                 as_bytes: bool = False,
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 **kwargs
+                                 ):
+
+        io_digest = self.get_income_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset
+        )
+        pdf_klass = lazy_loader.get_income_statement_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
+        pdf.create_pdf_report()
+        if as_bytes:
+            return bytes(pdf.output())
+        if filepath:
+            pdf.output(filepath)
+        return pdf
 
     def get_cash_flow_statement(self,
                                 from_date: Union[date, datetime],
@@ -2223,6 +2273,31 @@ class EntityModelAbstract(MP_Node,
             as_io_digest=True,
             **kwargs
         )
+
+    def get_cash_flow_statement_pdf(self,
+                                    from_date: Union[date, datetime],
+                                    to_date: Union[date, datetime],
+                                    filepath: Optional[Path] = None,
+                                    as_bytes: bool = False,
+                                    user_model: Optional[UserModel] = None,
+                                    txs_queryset: Optional[QuerySet] = None,
+                                    **kwargs
+                                    ):
+
+        io_digest = self.get_cash_flow_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset
+        )
+        pdf_klass = lazy_loader.get_cash_flow_statement_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
+        pdf.create_pdf_report()
+        if as_bytes:
+            return bytes(pdf.output())
+        if filepath:
+            pdf.output(filepath)
+        return pdf
 
     def get_financial_statements(self,
                                  from_date: Union[date, datetime],

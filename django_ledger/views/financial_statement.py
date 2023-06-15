@@ -53,12 +53,13 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
-    pdf_report_class = BalanceSheetPDFReport
 
-    def get_pdf_io_digest(self):
-        entity_model: EntityModel = self.get_object()
-        self.object = entity_model
-        return entity_model.get_balance_sheet(
+    # pdf_report_class = BalanceSheetPDFReport
+
+    def get_pdf(self):
+        self.object = self.get_object()
+        entity_model: EntityModel = self.object
+        return entity_model.get_balance_sheet_statement_pdf(
             to_date=self.get_to_date(),
             user_model=self.request.user
         )
@@ -129,10 +130,10 @@ class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
-    def get_pdf_io_digest(self):
-        entity_model: EntityModel = self.get_object()
-        self.object = entity_model
-        return entity_model.get_income_statement(
+    def get_pdf(self):
+        self.object = self.get_object()
+        entity_model: EntityModel = self.object
+        return entity_model.get_income_statement_pdf(
             from_date=self.get_from_date(),
             to_date=self.get_to_date(),
             user_model=self.request.user
@@ -198,10 +199,10 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                                       entity__slug__exact=self.kwargs['entity_slug'])
         return context
 
-    def get_pdf_io_digest(self):
-        entity_model: EntityModel = self.get_object()
-        self.object = entity_model
-        return entity_model.get_cash_flow_statement(
+    def get_pdf(self):
+        self.object = self.get_object()
+        entity_model: EntityModel = self.object
+        return entity_model.get_cash_flow_statement_pdf(
             from_date=self.get_from_date(),
             to_date=self.get_to_date(),
             user_model=self.request.user

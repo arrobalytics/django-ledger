@@ -33,6 +33,10 @@ class LazyLoader:
 
     ENTITY_DATA_GENERATOR = None
 
+    BALANCE_SHEET_PDF_REPORT_CLASS = None
+    INCOME_STATEMENT_PDF_REPORT_CLASS = None
+    CASH_FLOW_STATEMENT_PDF_REPORT_CLASS = None
+
     def get_entity_model(self):
         if not self.ENTITY_MODEL:
             from django_ledger.models import EntityModel
@@ -152,6 +156,24 @@ class LazyLoader:
             from django_ledger.io.data_generator import EntityDataGenerator
             self.ENTITY_DATA_GENERATOR = EntityDataGenerator
         return self.ENTITY_DATA_GENERATOR
+
+    def get_balance_sheet_pdf_report_class(self):
+        if not self.BALANCE_SHEET_PDF_REPORT_CLASS:
+            from django_ledger.report.balance_sheet import BalanceSheetPDFReport
+            self.BALANCE_SHEET_PDF_REPORT_CLASS = BalanceSheetPDFReport
+        return self.BALANCE_SHEET_PDF_REPORT_CLASS
+
+    def get_income_statement_pdf_report_class(self):
+        if not self.INCOME_STATEMENT_PDF_REPORT_CLASS:
+            from django_ledger.report.income_statement import IncomeStatementPDFReport
+            self.INCOME_STATEMENT_PDF_REPORT_CLASS = IncomeStatementPDFReport
+        return self.INCOME_STATEMENT_PDF_REPORT_CLASS
+
+    def get_cash_flow_statement_pdf_report_class(self):
+        if not self.CASH_FLOW_STATEMENT_PDF_REPORT_CLASS:
+            from django_ledger.report.cash_flow_statement import CashFlowStatementPDFReport
+            self.CASH_FLOW_STATEMENT_PDF_REPORT_CLASS = CashFlowStatementPDFReport
+        return self.CASH_FLOW_STATEMENT_PDF_REPORT_CLASS
 
 
 lazy_loader = LazyLoader()

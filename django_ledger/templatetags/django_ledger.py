@@ -7,7 +7,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from calendar import month_abbr
-from itertools import groupby
 from random import randint
 
 from django import template
@@ -19,7 +18,6 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.io import BS_BUCKETS_ORDER, ACCOUNT_LIST_ROLE_ORDER
 from django_ledger.io.io_mixin import validate_activity
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.settings import (

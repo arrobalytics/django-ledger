@@ -455,22 +455,9 @@ class BaseDateNavigationUrlMixIn:
 
 class PDFReportMixIn:
     pdf = False
-    pdf_report_class = None
-
-    def get_pdf_io_digest(self) -> IODigest:
-        raise ImproperlyConfigured('Must implement get_pdf_io_digest() function.')
-
-    def get_pdf_report_class(self):
-        if not self.pdf_report_class:
-            raise ImproperlyConfigured('Must implement get_pdf_report_class() function.')
-        return self.pdf_report_class
 
     def get_pdf(self) -> FPDF:
-        io_digest = self.get_pdf_io_digest()
-        PDFReportClass = self.get_pdf_report_class()
-        bs_pdf = PDFReportClass('P', 'mm', 'A4', io_digest=io_digest)
-        bs_pdf.create_pdf_report()
-        return bs_pdf
+        raise NotImplementedError('Must implement get_pdf()')
 
     def get_pdf_response(self) -> HttpResponse:
         pdf = self.get_pdf()

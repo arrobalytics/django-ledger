@@ -8,11 +8,13 @@ from django_ledger.io import IODigest
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
 
+if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+    from fpdf import FPDF, XPos, YPos
+
 
 def load_support():
     support = list()
     if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-        from fpdf import FPDF
         support.append(FPDF)
     return support
 
@@ -21,8 +23,7 @@ class PDFReportValidationError(ValidationError):
     pass
 
 
-# class BasePDFSupport(*load_support()):
-class BasePDFSupport(FPDF):
+class BasePDFSupport(*load_support()):
     FOOTER_LOGO_PATH = 'django_ledger/logo/django-ledger-logo-report.png'
 
     def __init__(self,

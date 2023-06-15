@@ -155,14 +155,14 @@ class IOMixIn:
     """
 
     def database_digest(self,
-                        user_model: UserModel,
                         txs_queryset: QuerySet,
+                        entity_slug: str = None,
+                        unit_slug: str = None,
+                        user_model: UserModel = None,
                         from_date: date = None,
                         to_date: date = None,
                         activity: str = None,
                         role: str = None,
-                        entity_slug: str = None,
-                        unit_slug: str = None,
                         accounts: str or List[str] or Set[str] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
@@ -262,8 +262,8 @@ class IOMixIn:
         return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
     def python_digest(self,
-                      user_model: UserModel,
-                      txs_queryset: QuerySet,
+                      txs_queryset: Optional[QuerySet] = None,
+                      user_model: Optional[UserModel] = None,
                       to_date: date = None,
                       from_date: date = None,
                       equity_only: bool = False,
@@ -354,17 +354,17 @@ class IOMixIn:
 
     # idea: make this method return a Digest class?...
     def digest(self,
-               user_model: UserModel,
+               entity_slug: str = None,
+               unit_slug: str = None,
+               user_model: UserModel = None,
+               txs_queryset: QuerySet = None,
                as_io_digest: bool = False,
                accounts: Optional[Union[Set[str], List[str]]] = None,
                role: Optional[Union[Set[str], List[str]]] = None,
                activity: str = None,
-               entity_slug: str = None,
-               unit_slug: str = None,
                signs: bool = True,
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
-               txs_queryset: QuerySet = None,
                process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -379,6 +379,12 @@ class IOMixIn:
                income_statement: bool = False,
                cash_flow_statement: bool = False,
                ) -> Union[Tuple, IODigest]:
+
+        # if not any([
+        #     entity_slug,
+        #     unit_slug,
+        # ]):
+        #     raise IOError('Must provide either entity_slug or unit_slug.')
 
         if activity:
             activity = validate_activity(activity)
