@@ -2213,7 +2213,7 @@ class EntityModelAbstract(MP_Node,
         if as_bytes:
             return bytes(pdf.output())
         if filepath:
-            pdf.output(filepath)
+            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
         return pdf
 
     def get_income_statement(self,
@@ -2254,7 +2254,7 @@ class EntityModelAbstract(MP_Node,
         if as_bytes:
             return bytes(pdf.output())
         if filepath:
-            pdf.output(filepath)
+            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
         return pdf
 
     def get_cash_flow_statement(self,
@@ -2296,7 +2296,7 @@ class EntityModelAbstract(MP_Node,
         if as_bytes:
             return bytes(pdf.output())
         if filepath:
-            pdf.output(filepath)
+            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
         return pdf
 
     def get_financial_statements(self,

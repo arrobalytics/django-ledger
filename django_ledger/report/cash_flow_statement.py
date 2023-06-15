@@ -205,8 +205,8 @@ class CashFlowStatementPDFReport(BasePDFSupport):
 
     def get_pdf_filename(self):
         dt_fmt = '%Y%m%d'
-        f_name = f'CFS{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}-'
-        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}_{self.get_entity_name()}'
+        f_name = f'{self.get_entity_name()}_CashFlowStatement_{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}-'
+        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
         return f_name
 
     def create_pdf_report(self):

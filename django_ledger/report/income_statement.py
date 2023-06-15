@@ -286,8 +286,8 @@ class IncomeStatementPDFReport(BasePDFSupport):
 
     def get_pdf_filename(self):
         dt_fmt = '%Y%m%d'
-        f_name = f'IS{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}-'
-        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}_{self.get_entity_name()}'
+        f_name = f'{self.get_entity_name()}_IncomeStatement_{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}_'
+        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
         return f_name
 
     def create_pdf_report(self):
