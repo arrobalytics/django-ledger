@@ -379,15 +379,20 @@ class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
 
         invoice_model: InvoiceModel = self.object
         itemtxs_qs, itemtxs_agg = invoice_model.get_itemtxs_data()
-        context['invoice_items'] = itemtxs_qs
+        context['itemtxs_qs'] = itemtxs_qs
         context['total_amount_due'] = itemtxs_agg['total_amount__sum']
         return context
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.prefetch_related(
-            'itemtransactionmodel_set'
-        ).select_related('cash_account', 'prepaid_account', 'unearned_account')
+        return qs.select_related(
+            'ledger',
+            'ledger__entity',
+            'customer',
+            'cash_account',
+            'prepaid_account',
+            'unearned_account'
+        )
 
 
 class InvoiceModelDeleteView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, DeleteView):

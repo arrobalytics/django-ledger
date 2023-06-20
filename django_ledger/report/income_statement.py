@@ -47,7 +47,7 @@ class IncomeStatementPDFReport(BasePDFSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_type(self):
+    def get_report_name(self):
         return 'Income Statement'
 
     def print_section_data(self, section_data):
@@ -286,7 +286,7 @@ class IncomeStatementPDFReport(BasePDFSupport):
 
     def get_pdf_filename(self):
         dt_fmt = '%Y%m%d'
-        f_name = f'{self.get_entity_name()}_IncomeStatement_{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}_'
+        f_name = f'{self.get_report_title()}_IncomeStatement_{self.IO_DIGEST.get_from_date(fmt=dt_fmt)}_'
         f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
         return f_name
 

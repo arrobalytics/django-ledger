@@ -1,3 +1,5 @@
+from django.urls import reverse
+
 from django_ledger.io import IODigest
 from django_ledger.report.pdf_core import BasePDFSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
@@ -46,8 +48,8 @@ class BalanceSheetPDFReport(BasePDFSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_type(self):
-        return 'Balance Sheet'
+    def get_report_name(self):
+        return 'Balance Sheet Statement'
 
     def print_section_data(self, section_data):
 
@@ -123,53 +125,52 @@ class BalanceSheetPDFReport(BasePDFSupport):
 
         # accounts data....
         bs_data = self.IO_DIGEST.get_balance_sheet_data()
-        section_data = bs_data['assets']
+        section_data = bs_data.get('assets')
 
-        self.print_section_data(section_data)
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 3)
-        self.set_x(180)
-        self.cell(
-            w=20,
-            h=2,
-            align='R',
-            txt='Total Assets: {s}{tot}'.format(s=currency_symbol(),
-                                                tot=currency_format(section_data['total_balance']))
-        )
+        if section_data:
+            self.print_section_data(section_data)
+            self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 3)
+            self.set_x(180)
+            self.cell(
+                w=20,
+                h=2,
+                align='R',
+                txt='Total Assets: {s}{tot}'.format(s=currency_symbol(),
+                                                    tot=currency_format(section_data['total_balance']))
+            )
         self.ln(h=5)
 
     def print_liabilities(self):
-
-        self.ln(10)
-
         self.print_section_title('Liabilities')
-        self.print_headers()
+        self.ln(8)
 
         # accounts data....
         bs_data = self.IO_DIGEST.get_balance_sheet_data()
-        section_data = bs_data['liabilities']
-
-        self.print_section_data(section_data)
-        self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
-        self.set_x(180)
-        self.cell(
-            w=20,
-            h=2,
-            align='R',
-            txt='Total Liabilities: {s}{tot}'.format(s=currency_symbol(),
-                                                     tot=currency_format(section_data['total_balance']))
-        )
+        section_data = bs_data.get('liabilities')
+        if section_data:
+            self.print_section_data(section_data)
+            self.set_font(self.FONT_FAMILY, style='BU', size=self.FONT_SIZE + 1)
+            self.set_x(180)
+            self.cell(
+                w=20,
+                h=2,
+                align='R',
+                txt='Total Liabilities: {s}{tot}'.format(s=currency_symbol(),
+                                                         tot=currency_format(section_data['total_balance']))
+            )
         self.ln(h=5)
 
     def print_equity(self):
 
         self.print_section_title('Equity')
-        self.print_headers()
+        self.ln(8)
 
         # accounts data....
         bs_data = self.IO_DIGEST.get_balance_sheet_data()
-        section_data = bs_data['equity']
+        section_data = bs_data.get('equity')
 
-        self.print_section_data(section_data)
+        if section_data:
+            self.print_section_data(section_data)
 
         self.set_font(self.FONT_FAMILY, style='B', size=self.FONT_SIZE)
         self.cell(
@@ -215,7 +216,7 @@ class BalanceSheetPDFReport(BasePDFSupport):
 
     def get_pdf_filename(self):
         dt_fmt = '%Y%m%d'
-        f_name = f'{self.get_entity_name()}_BalanceSheet_{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
+        f_name = f'{self.get_report_title()}_BalanceSheet_{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
         return f_name
 
     def create_pdf_report(self):

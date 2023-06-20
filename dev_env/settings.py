@@ -1,8 +1,9 @@
 import os
+from pathlib import Path
 
 from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:

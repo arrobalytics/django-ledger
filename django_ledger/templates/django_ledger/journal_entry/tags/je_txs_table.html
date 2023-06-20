@@ -5,6 +5,7 @@
     <div class="table-container">
         <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
             <tr>
+                <th>{% trans 'Timestamp' %}</th>
                 <th>{% trans 'Account' %}</th>
                 <th>{% trans 'Account Name' %}</th>
                 <th>{% trans 'Unit' %}</th>
@@ -14,15 +15,17 @@
             </tr>
             {% for tx in txs %}
                 <tr>
+                    <td>{{ tx.journal_entry.timestamp }}</td>
                     <td>{{ tx.account.code }}</td>
                     <td>{{ tx.account.name }}</td>
-                    <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit }}{% endif %}</td>
+                    <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit.name }}{% endif %}</td>
                     <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                     <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                     <td>{% if tx.description %}{{ tx.description }}{% endif %}</td>
                 </tr>
             {% endfor %}
             <tr class="has-text-weight-bold">
+                <td></td>
                 <td></td>
                 <td></td>
                 <td class="has-text-right">Total</td>

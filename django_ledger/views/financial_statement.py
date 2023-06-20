@@ -6,7 +6,6 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
@@ -14,7 +13,6 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, RedirectView
 
 from django_ledger.models import (EntityModel, EntityUnitModel)
-from django_ledger.report.balance_sheet import BalanceSheetPDFReport
 from django_ledger.report.cash_flow_statement import CashFlowStatementPDFReport
 from django_ledger.report.income_statement import IncomeStatementPDFReport
 from django_ledger.views.mixins import (
@@ -32,7 +30,7 @@ class EntityModelModelViewQuerySetMixIn:
 
 
 # BALANCE SHEET -----------
-class BalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -54,14 +52,13 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
 
-    # pdf_report_class = BalanceSheetPDFReport
-
     def get_pdf(self):
         self.object = self.get_object()
         entity_model: EntityModel = self.object
         return entity_model.get_balance_sheet_statement_pdf(
             to_date=self.get_to_date(),
-            user_model=self.request.user
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
         )
 
     def get_context_data(self, **kwargs):
@@ -76,26 +73,36 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
         return context
 
 
-class QuarterlyBalanceSheetView(QuarterlyReportMixIn, FiscalYearBalanceSheetView):
+class QuarterlyBalanceSheetView(FiscalYearBalanceSheetView, QuarterlyReportMixIn):
     """
     Quarter Balance Sheet View.
     """
 
+    def get_pdf(self):
+        self.object = self.get_object()
+        entity_model: EntityModel = self.object
+        context = self.get_context_data()
+        return entity_model.get_balance_sheet_statement_pdf(
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
 
-class MonthlyBalanceSheetView(MonthlyReportMixIn, FiscalYearBalanceSheetView):
+
+class MonthlyBalanceSheetView(FiscalYearBalanceSheetView, MonthlyReportMixIn):
     """
     Monthly Balance Sheet View.
     """
 
 
-class DateBalanceSheetView(DateReportMixIn, FiscalYearBalanceSheetView):
+class DateBalanceSheetView(FiscalYearBalanceSheetView, DateReportMixIn):
     """
     Date Balance Sheet View.
     """
 
 
 # INCOME STATEMENT ------------
-class IncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
         return reverse('django_ledger:entity-ic-year',
@@ -133,33 +140,35 @@ class FiscalYearIncomeStatementView(DjangoLedgerSecurityMixIn,
     def get_pdf(self):
         self.object = self.get_object()
         entity_model: EntityModel = self.object
+        context = self.get_context_data()
         return entity_model.get_income_statement_pdf(
-            from_date=self.get_from_date(),
-            to_date=self.get_to_date(),
-            user_model=self.request.user
+            from_date=context['from_date'],
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
         )
 
 
-class QuarterlyIncomeStatementView(QuarterlyReportMixIn, FiscalYearIncomeStatementView):
+class QuarterlyIncomeStatementView(FiscalYearIncomeStatementView, QuarterlyReportMixIn):
     """
     Quarter Income Statement View.
     """
 
 
-class MonthlyIncomeStatementView(MonthlyReportMixIn, FiscalYearIncomeStatementView):
+class MonthlyIncomeStatementView(FiscalYearIncomeStatementView, MonthlyReportMixIn):
     """
     Monthly Income Statement View.
     """
 
 
-class DateModelIncomeStatementView(DateReportMixIn, FiscalYearIncomeStatementView):
+class DateModelIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
     """
     Date Income Statement View.
     """
 
 
 # CASH FLOW STATEMENT ----
-class CashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -202,26 +211,28 @@ class FiscalYearCashFlowStatementView(DjangoLedgerSecurityMixIn,
     def get_pdf(self):
         self.object = self.get_object()
         entity_model: EntityModel = self.object
+        context = self.get_context_data()
         return entity_model.get_cash_flow_statement_pdf(
-            from_date=self.get_from_date(),
-            to_date=self.get_to_date(),
-            user_model=self.request.user
+            from_date=context['from_date'],
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
         )
 
 
-class QuarterlyCashFlowStatementView(QuarterlyReportMixIn, FiscalYearCashFlowStatementView):
+class QuarterlyCashFlowStatementView(FiscalYearCashFlowStatementView, QuarterlyReportMixIn):
     """
     Quarter Cash Flow Statement View.
     """
 
 
-class MonthlyCashFlowStatementView(MonthlyReportMixIn, FiscalYearCashFlowStatementView):
+class MonthlyCashFlowStatementView(FiscalYearCashFlowStatementView, MonthlyReportMixIn):
     """
     Monthly Cash Flow Statement View.
     """
 
 
-class DateCashFlowStatementView(DateReportMixIn, FiscalYearCashFlowStatementView):
+class DateCashFlowStatementView(FiscalYearCashFlowStatementView, DateReportMixIn):
     """
     Date Cash Flow Statement View.
     """

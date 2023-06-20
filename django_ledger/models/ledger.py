@@ -296,6 +296,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
+    def get_entity_name(self) -> str:
+        return self.entity.name
+
     def get_absolute_url(self) -> str:
         """
         Determines the absolute URL of the LedgerModel instance.

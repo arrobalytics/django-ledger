@@ -5,6 +5,7 @@ from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 
 from django_ledger.io import IODigest
+from django_ledger.models import LedgerModel, EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
 
@@ -29,13 +30,15 @@ class BasePDFSupport(*load_support()):
     def __init__(self,
                  *args,
                  io_digest: IODigest,
+                 report_subtitle: Optional[str] = None,
                  **kwargs):
 
         if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
             raise NotImplementedError('PDF support not enabled.')
 
         super().__init__(*args, **kwargs)
-        self.REPORT_TYPE: Optional[str]
+        self.REPORT_TYPE: Optional[str] = None
+        self.REPORT_SUBTITLE: Optional[str] = report_subtitle
         self.FONT_SIZE: int = 9
         self.FONT_FAMILY: str = 'helvetica'
         self.PAGE_WIDTH = 210
@@ -58,9 +61,9 @@ class BasePDFSupport(*load_support()):
             family=self.FONT_FAMILY,
             size=self.FONT_SIZE + 2
         )
-        w = self.get_string_width(self.get_report_type())
+        w = self.get_string_width(self.get_report_name())
         self.set_x((self.PAGE_WIDTH - w) / 2)
-        self.cell(w, 3, self.get_report_type(), ln=1)
+        self.cell(w, 3, self.get_report_name(), ln=1)
 
         # Report Title
         self.set_font(
@@ -68,16 +71,32 @@ class BasePDFSupport(*load_support()):
             size=self.FONT_SIZE + 6,
             style='B'
         )
-        entity_title = self.get_entity_name()
-        w = self.get_string_width(entity_title)
+        report_title = self.get_report_title()
+        w = self.get_string_width(report_title)
         self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
                   h=6,
-                  txt=entity_title,
+                  txt=report_title,
                   border=0,
                   new_x=XPos.LMARGIN,
                   new_y=YPos.NEXT,
                   align='C')
+
+        if self.REPORT_SUBTITLE:
+            self.set_font(
+                family=self.FONT_FAMILY,
+                size=self.FONT_SIZE,
+                style='UI'
+            )
+            w = self.get_string_width(self.REPORT_SUBTITLE)
+            self.set_x((self.PAGE_WIDTH - w) / 2)
+            self.cell(w=w,
+                      h=6,
+                      txt=self.REPORT_SUBTITLE.title(),
+                      border=0,
+                      new_x=XPos.LMARGIN,
+                      new_y=YPos.NEXT,
+                      align='C')
 
         # Period
         self.set_font(
@@ -147,11 +166,23 @@ class BasePDFSupport(*load_support()):
             y2=self.get_y()
         )
 
-    def get_entity_name(self):
+    def get_report_title(self):
         if self.IO_DIGEST.is_entity_model():
             return self.IO_DIGEST.IO_MODEL.name
+        elif self.IO_DIGEST.is_ledger_model():
+            ledger_model: LedgerModel = self.IO_DIGEST.IO_MODEL
+            if self.REPORT_SUBTITLE:
+                return ledger_model.get_entity_name()
+            return f'{ledger_model.get_entity_name()} | Ledger **{str(ledger_model.uuid)[-6:]}'
+        elif self.IO_DIGEST.is_unit_model():
+            unit_model: EntityUnitModel = self.IO_DIGEST.IO_MODEL
+            if self.REPORT_SUBTITLE:
+                return unit_model.get_entity_name()
+            return f'{unit_model.get_entity_name()} | Unit {unit_model.name}'
+        raise PDFReportValidationError('get_report_title() not implemented for'
+                                       f' IO_MODEL {self.IO_DIGEST.IO_MODEL.__class__.__name__}')
 
-    def get_report_type(self):
+    def get_report_name(self):
         raise NotImplementedError(f'Must define REPORT_TYPE on {self.__class__.__name__}')
 
     def get_report_footer_logo_path(self) -> str:

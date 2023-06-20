@@ -17,7 +17,7 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
     MonthlyReportMixIn, DjangoLedgerSecurityMixIn, DateReportMixIn, BaseDateNavigationUrlMixIn,
-    EntityUnitMixIn)
+    EntityUnitMixIn, PDFReportMixIn)
 
 
 class LedgerModelModelViewQuerySetMixIn:
@@ -98,7 +98,7 @@ class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
 
 
 # Ledger Balance Sheet Views...
-class BaseLedgerBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -109,12 +109,13 @@ class BaseLedgerBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
         })
 
 
-class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                       LedgerModelModelViewQuerySetMixIn,
-                                       BaseDateNavigationUrlMixIn,
-                                       EntityUnitMixIn,
-                                       YearlyReportMixIn,
-                                       DetailView):
+class FiscalYearLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn,
+                                            LedgerModelModelViewQuerySetMixIn,
+                                            BaseDateNavigationUrlMixIn,
+                                            EntityUnitMixIn,
+                                            YearlyReportMixIn,
+                                            PDFReportMixIn,
+                                            DetailView):
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
@@ -125,20 +126,31 @@ class FiscalYearLedgerBalanceSheetView(DjangoLedgerSecurityMixIn,
         context['header_title'] = context['page_title']
         return context
 
+    def get_pdf(self):
+        self.object = self.get_object()
+        ledger_model: LedgerModel = self.object
+        context = self.get_context_data()
+        return ledger_model.get_balance_sheet_statement_pdf(
+            entity_slug=ledger_model.entity.slug,
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
 
-class QuarterlyLedgerBalanceSheetView(QuarterlyReportMixIn, FiscalYearLedgerBalanceSheetView):
+
+class QuarterlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, QuarterlyReportMixIn):
     """
     Quarter Balance Sheet View.
     """
 
 
-class MonthlyLedgerBalanceSheetView(MonthlyReportMixIn, FiscalYearLedgerBalanceSheetView):
+class MonthlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, MonthlyReportMixIn):
     """
     Monthly Balance Sheet View.
     """
 
 
-class DateLedgerBalanceSheetView(DateReportMixIn, FiscalYearLedgerBalanceSheetView):
+class DateLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, DateReportMixIn):
     """
     Date Balance Sheet View.
     """
@@ -162,6 +174,7 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
                                           BaseDateNavigationUrlMixIn,
                                           EntityUnitMixIn,
                                           YearlyReportMixIn,
+                                          PDFReportMixIn,
                                           DetailView):
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
@@ -173,33 +186,46 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
         context['header_title'] = context['page_title']
         return context
 
+    def get_pdf(self):
+        self.object = self.get_object()
+        ledger_model: LedgerModel = self.object
+        context = self.get_context_data()
+        return ledger_model.get_income_statement_pdf(
+            entity_slug=ledger_model.entity.slug,
+            from_date=context['from_date'],
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
 
-class QuarterlyLedgerIncomeStatementView(QuarterlyReportMixIn, FiscalYearLedgerIncomeStatementView):
+
+class QuarterlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, QuarterlyReportMixIn):
     """
     Quarterly Income Statement Quarter Report.
     """
 
 
-class MonthlyLedgerIncomeStatementView(MonthlyReportMixIn, FiscalYearLedgerIncomeStatementView):
+class MonthlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, MonthlyReportMixIn):
     """
     Monthly Income Statement Monthly Report.
     """
 
 
-class DateLedgerIncomeStatementView(DateReportMixIn, FiscalYearLedgerIncomeStatementView):
+class DateLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, DateReportMixIn):
     """
     Date Income Statement Monthly Report.
     """
 
 
 # CASH FLOW STATEMENT ----
-class LedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseLedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
         return reverse('django_ledger:ledger-cf-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
+                           'ledger_pk': self.kwargs['ledger_pk'],
                            'year': year
                        })
 
@@ -209,6 +235,7 @@ class FiscalYearLedgerModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                                  BaseDateNavigationUrlMixIn,
                                                  EntityUnitMixIn,
                                                  YearlyReportMixIn,
+                                                 PDFReportMixIn,
                                                  DetailView):
     """
     Fiscal Year Cash Flow Statement View.
@@ -224,20 +251,32 @@ class FiscalYearLedgerModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
         context['header_title'] = context['page_title']
         return context
 
+    def get_pdf(self):
+        self.object = self.get_object()
+        ledger_model: LedgerModel = self.object
+        context = self.get_context_data()
+        return ledger_model.get_cash_flow_statement_pdf(
+            entity_slug=ledger_model.entity.slug,
+            from_date=context['from_date'],
+            to_date=context['to_date'],
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
 
-class QuarterlyLedgerModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+
+class QuarterlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, QuarterlyReportMixIn):
     """
     Quarter Cash Flow Statement View.
     """
 
 
-class MonthlyLedgerModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+class MonthlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, MonthlyReportMixIn):
     """
     Monthly Cash Flow Statement View.
     """
 
 
-class DateLedgerModelCashFlowStatementView(DateReportMixIn, FiscalYearLedgerModelCashFlowStatementView):
+class DateLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, DateReportMixIn):
     """
     Date Cash Flow Statement View.
     """

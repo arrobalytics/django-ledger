@@ -350,6 +350,27 @@ class ItemModelManager(models.Manager):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
         return qs.filter(is_active=True)
 
+    def for_invoice(self, entity_slug, user_model):
+        """
+        Returns a QuerySet of ItemModels that can only be used for InvoiceModels for a specific EntityModel &
+        UserModel. These types of items qualify as products or services sold.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        entity_slug: str or EntityModel
+            The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            The request UserModel to check for privileges.
+
+        Returns
+        -------
+        ItemModelQuerySet
+            A Filtered ItemModelQuerySet.
+        """
+        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        return qs.filter(is_product_or_service=True)
+
     def for_bill(self, entity_slug, user_model):
         """
         Returns a QuerySet of ItemModels that can only be used for BillModels for a specific EntityModel &

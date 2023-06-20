@@ -32,6 +32,7 @@ from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -137,7 +138,7 @@ class EntityModelManager(MP_NodeManager):
         )
 
 
-class EntityReportMixIn:
+class FiscalPeriodMixIn:
     """
     This class encapsulates the functionality needed to determine the start and end of all financial periods of an
     EntityModel. At the moment of creation, an EntityModel must be assigned a calendar month which is going to
@@ -420,7 +421,7 @@ class EntityModelAbstract(MP_Node,
                           ContactInfoMixIn,
                           IOMixIn,
                           LoggingMixIn,
-                          EntityReportMixIn):
+                          FiscalPeriodMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -2175,146 +2176,6 @@ class EntityModelAbstract(MP_Node,
             je_ledger=ledger
         )
         return ledger
-
-    # #### FINANCIAL STATEMENTS ####
-
-    def get_balance_sheet(self,
-                          to_date: Union[date, datetime],
-                          user_model: UserModel,
-                          txs_queryset: Optional[QuerySet] = None,
-                          **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            to_date=to_date,
-            balance_sheet_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_balance_sheet_statement_pdf(self,
-                                        to_date: Union[date, datetime],
-                                        filepath: Optional[Path] = None,
-                                        as_bytes: bool = False,
-                                        user_model: Optional[UserModel] = None,
-                                        txs_queryset: Optional[QuerySet] = None,
-                                        **kwargs
-                                        ):
-
-        io_digest = self.get_balance_sheet(
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset
-        )
-
-        pdf_klass = lazy_loader.get_balance_sheet_pdf_report_class()
-        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
-        pdf.create_pdf_report()
-        if as_bytes:
-            return bytes(pdf.output())
-        if filepath:
-            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
-        return pdf
-
-    def get_income_statement(self,
-                             from_date: Union[date, datetime],
-                             to_date: Union[date, datetime],
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
-                             **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            income_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_income_statement_pdf(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
-                                 filepath: Optional[Path] = None,
-                                 as_bytes: bool = False,
-                                 user_model: Optional[UserModel] = None,
-                                 txs_queryset: Optional[QuerySet] = None,
-                                 **kwargs
-                                 ):
-
-        io_digest = self.get_income_statement(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset
-        )
-        pdf_klass = lazy_loader.get_income_statement_pdf_report_class()
-        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
-        pdf.create_pdf_report()
-        if as_bytes:
-            return bytes(pdf.output())
-        if filepath:
-            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
-        return pdf
-
-    def get_cash_flow_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                user_model: UserModel,
-                                txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
-
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            cash_flow_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_cash_flow_statement_pdf(self,
-                                    from_date: Union[date, datetime],
-                                    to_date: Union[date, datetime],
-                                    filepath: Optional[Path] = None,
-                                    as_bytes: bool = False,
-                                    user_model: Optional[UserModel] = None,
-                                    txs_queryset: Optional[QuerySet] = None,
-                                    **kwargs
-                                    ):
-
-        io_digest = self.get_cash_flow_statement(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset
-        )
-        pdf_klass = lazy_loader.get_cash_flow_statement_pdf_report_class()
-        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest)
-        pdf.create_pdf_report()
-        if as_bytes:
-            return bytes(pdf.output())
-        if filepath:
-            pdf.output(filepath.joinpath(pdf.get_pdf_filename()))
-        return pdf
-
-    def get_financial_statements(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
-                                 user_model: UserModel,
-                                 txs_queryset: Optional[QuerySet] = None,
-                                 **kwargs) -> Tuple[QuerySet, Dict]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            balance_sheet_statement=True,
-            income_statement=True,
-            cash_flow_statement=True,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
 
     # ### RANDOM DATA GENERATION ####
 

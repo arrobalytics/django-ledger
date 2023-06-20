@@ -57,7 +57,7 @@
                href="?by_unit=1">{% trans 'By Unit' %}</a>
 
             <a class="button is-fullwidth is-link my-2"
-               href="{% url 'django_ledger:entity-cf-year-pdf' entity_slug=view.kwargs.entity_slug year=year %}">{% trans 'Download PDF' %}</a>
+               href="{{ request.path }}?format=pdf">{% trans 'Download PDF' %}</a>
 
         </div>
     </div>

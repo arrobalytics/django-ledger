@@ -21,7 +21,7 @@
                 <div class="columns">
                     <div class="column">
                         {% if entity %}
-                            <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
+                            <h1 class="is-size-2 has-text-weight-light">{{ entity.name }}</h1>
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% elif unit_model %}
@@ -53,7 +53,7 @@
                href="?by_unit=1">{% trans 'By Unit' %}</a>
 
             <a class="button is-fullwidth is-link my-2"
-               href="{% url 'django_ledger:entity-bs-year-pdf' entity_slug=view.kwargs.entity_slug year=year %}">{% trans 'Download PDF' %}</a>
+               href="{{ request.path }}?format=pdf">{% trans 'Download PDF' %}</a>
 
         </div>
     </div>

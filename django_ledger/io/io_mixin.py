@@ -8,9 +8,11 @@ Contributions to this module:
 from collections import defaultdict
 from datetime import datetime, date
 from itertools import groupby
+from pathlib import Path
 from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum, QuerySet
@@ -149,7 +151,134 @@ class IOError(ValidationError):
     pass
 
 
-class IOMixIn:
+class IOPDFMixIn:
+
+    def get_balance_sheet(self,
+                          to_date: Union[date, datetime],
+                          user_model: UserModel,
+                          txs_queryset: Optional[QuerySet] = None,
+                          **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            balance_sheet_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_balance_sheet_statement_pdf(self,
+                                        to_date: Union[date, datetime],
+                                        subtitle: Optional[str] = None,
+                                        filepath: Optional[Path] = None,
+                                        filename: Optional[str] = None,
+                                        user_model: Optional[UserModel] = None,
+                                        txs_queryset: Optional[QuerySet] = None,
+                                        **kwargs
+                                        ):
+        io_digest = self.get_balance_sheet(
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        pdf_klass = lazy_loader.get_balance_sheet_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
+        pdf.create_pdf_report()
+        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+        filename = pdf.get_pdf_filename() if not filename else filename
+        filepath = base_dir.joinpath(filename)
+        pdf.output(filepath)
+        return pdf
+
+    def get_income_statement(self,
+                             from_date: Union[date, datetime],
+                             to_date: Union[date, datetime],
+                             user_model: Optional[UserModel] = None,
+                             txs_queryset: Optional[QuerySet] = None,
+                             **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            income_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_income_statement_pdf(self,
+                                 from_date: Union[date, datetime],
+                                 to_date: Union[date, datetime],
+                                 subtitle: Optional[str] = None,
+                                 filepath: Optional[Path] = None,
+                                 filename: Optional[str] = None,
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 **kwargs
+                                 ):
+        io_digest = self.get_income_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+        pdf_klass = lazy_loader.get_income_statement_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
+        pdf.create_pdf_report()
+        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+        filename = pdf.get_pdf_filename() if not filename else filename
+        filepath = base_dir.joinpath(filename)
+        pdf.output(filepath)
+        return pdf
+
+    def get_cash_flow_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                user_model: UserModel,
+                                txs_queryset: Optional[QuerySet] = None,
+                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            cash_flow_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_cash_flow_statement_pdf(self,
+                                    from_date: Union[date, datetime],
+                                    to_date: Union[date, datetime],
+                                    subtitle: Optional[str] = None,
+                                    filepath: Optional[Path] = None,
+                                    filename: Optional[str] = None,
+                                    user_model: Optional[UserModel] = None,
+                                    txs_queryset: Optional[QuerySet] = None,
+                                    **kwargs
+                                    ):
+        io_digest = self.get_cash_flow_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        pdf_klass = lazy_loader.get_cash_flow_statement_pdf_report_class()
+        pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
+        pdf.create_pdf_report()
+        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+        filename = pdf.get_pdf_filename() if not filename else filename
+        filepath = base_dir.joinpath(filename)
+        pdf.output(filepath)
+        return pdf
+
+
+class IODatabaseMixIn:
     """
     Controls how transactions are recorded into the ledger.
     """
@@ -176,6 +305,10 @@ class IOMixIn:
 
             # If IO is on entity model....
             if isinstance(self, lazy_loader.get_entity_model()):
+                if entity_slug:
+                    if entity_slug != self.slug:
+                        raise IOError('Inconsistent entity_slug. '
+                                              f'Provided {entity_slug} with actual {self.slug}')
                 if unit_slug:
                     txs_queryset = TransactionModel.objects.for_unit(
                         user_model=user_model,
@@ -190,6 +323,8 @@ class IOMixIn:
 
             # If IO is on ledger model....
             elif isinstance(self, lazy_loader.get_ledger_model()):
+                if not entity_slug:
+                    raise IOError('Calling digest from Ledger Model requires entity_slug explicitly for safety')
                 txs_queryset = TransactionModel.objects.for_ledger(
                     user_model=user_model,
                     entity_slug=entity_slug,
@@ -198,7 +333,7 @@ class IOMixIn:
             # If IO is on unit model....
             elif isinstance(self, lazy_loader.get_unit_model()):
                 if not entity_slug:
-                    raise ValidationError('Calling digest from Entity Unit requires entity_slug')
+                    raise IOError('Calling digest from Entity Unit requires entity_slug explicitly for safety')
                 txs_queryset = TransactionModel.objects.for_unit(
                     user_model=user_model,
                     entity_slug=entity_slug,
@@ -553,3 +688,10 @@ class IOMixIn:
 
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
+
+
+class IOMixIn(
+    IODatabaseMixIn,
+    IOPDFMixIn
+):
+    pass
