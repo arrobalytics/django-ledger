@@ -4,7 +4,9 @@ build:
   tools:
     python: "3.10"
 formats:
-  - all
+  - htmlzip
+  - epub
+  - pdf
 sphinx:
   configuration: docs/source/conf.py
 python:
