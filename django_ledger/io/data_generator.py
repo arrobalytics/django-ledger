@@ -649,9 +649,8 @@ class EntityDataGenerator(LoggingMixIn):
             item_model: ItemModel = choice(self.product_models)
             quantity = Decimal.from_float(round(random() * randint(1, 2), 2))
             entity_unit = choice(self.entity_unit_models) if random() > .75 else None
-            margin = Decimal(random() + 1.5)
+            margin = Decimal(random() + 3.5)
             avg_cost = item_model.get_average_cost()
-            unit_cost = round(random() * randint(100, 999), 2)
             if item_model.is_product():
                 if item_model.inventory_received is not None and item_model.inventory_received > 0.0:
                     if quantity > item_model.inventory_received:
@@ -665,15 +664,19 @@ class EntityDataGenerator(LoggingMixIn):
                     quantity = 0.0
                     unit_cost = 0.0
 
-            itm = ItemTransactionModel(
-                invoice_model=invoice_model,
-                item_model=item_model,
-                quantity=quantity,
-                unit_cost=unit_cost,
-                entity_unit=entity_unit
-            )
-            itm.full_clean()
-            invoice_items.append(itm)
+                if all([
+                    quantity > 0.00,
+                    unit_cost > 0.00
+                ]):
+                    itm = ItemTransactionModel(
+                        invoice_model=invoice_model,
+                        item_model=item_model,
+                        quantity=quantity,
+                        unit_cost=unit_cost,
+                        entity_unit=entity_unit
+                    )
+                    itm.full_clean()
+                    invoice_items.append(itm)
 
         invoice_items = invoice_model.itemtransactionmodel_set.bulk_create(invoice_items)
         invoice_model.update_amount_due(itemtxs_qs=invoice_items)

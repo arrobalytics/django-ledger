@@ -418,14 +418,10 @@ class InvoiceModelAbstract(AccrualMixIn,
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
-
-            if not ledger_name:
-                ledger_name = f'Invoice {self.uuid}'
-            ledger_name += f' | {ledger_name}'
+            ledger_name = f'Invoice {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
             ledger_model.clean()
             ledger_model.clean_fields()
-
             self.ledger = ledger_model
 
             if commit_ledger:
@@ -628,6 +624,21 @@ class InvoiceModelAbstract(AccrualMixIn,
             True if InvoiceModel is Paid, else False.
         """
         return self.invoice_status == self.INVOICE_STATUS_PAID
+
+    def is_active(self):
+        """
+        Checks if the InvoiceModel has the potential to impact the books and produce financial statements status.
+
+        Returns
+        _______
+        bool
+            True if InvoiceModel is Active, else False.
+        """
+        return any([
+            self.is_paid(),
+            self.is_approved(),
+            self.is_void()
+        ])
 
     def is_canceled(self) -> bool:
         """
@@ -1582,6 +1593,9 @@ class InvoiceModelAbstract(AccrualMixIn,
                 if commit:
                     self.save(update_fields=['invoice_number'])
         return self.invoice_number
+
+    def generate_descriptive_title(self) -> str:
+        return f'Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
 
     def clean(self, commit: bool = True):
         """

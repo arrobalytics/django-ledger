@@ -137,7 +137,7 @@
             <td></td>
             <td><h2 class="is-size-5 has-text-right">{% trans 'Net Operating Expenses' %}</h2></td>
             <td class="is-size-5 has-text-weight-bold">
-                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_expenses | currency_format }}</td>
+                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_expenses | absolute | currency_format }}</td>
         </tr>
 
 
@@ -186,7 +186,7 @@
                 <td></td>
             {% endif %}
             <td></td>
-            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Other Income' %}</h2></td>
+            <td><h2 class="is-size-5 has-text-right">{% trans 'Net Other Revenues' %}</h2></td>
             <td class="is-size-5 has-text-weight-bold">
                 {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_revenues | currency_format }}</td>
         </tr>

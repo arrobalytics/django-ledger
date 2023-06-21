@@ -197,7 +197,7 @@ class TransactionModelAdmin(models.Manager):
 
         May include TransactionModels from multiple Entities.
 
-        The user has access to bills if:
+        The user has access to transactions if:
             1. Is listed as Manager of Entity.
             2. Is the Admin of the Entity.
 
@@ -211,24 +211,27 @@ class TransactionModelAdmin(models.Manager):
         TransactionModelQuerySet
             Returns a TransactionModelQuerySet with applied filters.
         """
-        return self.filter(
+        qs = self.get_queryset()
+        return qs.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
             Q(journal_entry__ledger__entity__managers__in=[user_model])
-        ).select_related('account')
+        )
 
     def for_entity(self,
-                   user_model,
-                   entity_slug: Union[EntityModel, str]) -> TransactionModelQuerySet:
+                   entity_slug: Union[EntityModel, str],
+                   user_model=None,
+                   ) -> TransactionModelQuerySet:
         """
-        Fetches a QuerySet of TransactionModels that the UserModel as access to and belong only to the specified
-        EntityModel.
+        Fetches a QuerySet of TransactionModels associated with the specified
+        EntityModel. For security if UserModel is provided, will make sure the user_model provided is either the admin
+        or the manager of the entity.
 
         Parameters
         ----------
-        user_model
-            Logged in and authenticated django UserModel instance.
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
+        user_model
+            Optional logged in and authenticated Django UserModel instance to match against Entity Admin or Managers.
 
         Returns
         -------
@@ -236,12 +239,14 @@ class TransactionModelAdmin(models.Manager):
             Returns a TransactionModelQuerySet with applied filters.
         """
 
-        # todo: make this exhaustive!
-        qs = self.for_user(user_model=user_model)
+        if user_model:
+            qs = self.for_user(user_model=user_model)
+        else:
+            qs = self.get_queryset()
+
         if isinstance(entity_slug, EntityModel):
             return qs.filter(journal_entry__ledger__entity=entity_slug)
-        elif isinstance(entity_slug, str):
-            return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
+        return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
     def for_ledger(self,
                    user_model,

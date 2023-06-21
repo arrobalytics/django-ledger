@@ -1,7 +1,7 @@
 ```python
 import os
 from datetime import date, datetime
-from random import randint
+from random import randint, choices, random
 
 import django
 
@@ -47,9 +47,15 @@ user_model = UserModel.objects.get(username__exact=MY_USERNAME)
 entity_model = EntityModel(
     name='One Big Company, LLC',
     admin=user_model,
+    accrual_method=True
 )
 entity_model.clean()
 entity_model = EntityModel.add_root(instance=entity_model)
+```
+
+
+```python
+entity_model.slug
 ```
 
 # Chart of Accounts
@@ -261,6 +267,39 @@ invoice_model = entity_model.create_invoice(
 )
 ```
 
+
+```python
+# invoice_model.
+```
+
+## Add Items to Invoices
+
+
+```python
+invoices_item_models = invoice_model.get_item_model_qs()
+
+K = 6
+
+invoice_itemtxs = {
+    im.item_number: {
+        'unit_cost': round(random() * 10, 2),
+        'quantity': round(random() * 100, 2),
+        'total_amount': None
+    } for im in choices(invoices_item_models, k=K)
+}
+
+# Choose operation ITEMIZE_APPEND to append itemtxs...
+invoice_itemtxs = invoice_model.migrate_itemtxs(itemtxs=invoice_itemtxs,
+                                                commit=True,
+                                                operation=InvoiceModel.ITEMIZE_REPLACE)
+invoice_itemtxs
+```
+
+
+```python
+invoice_model.amount_due
+```
+
 # Bills
 
 ## Get Bills
@@ -281,6 +320,35 @@ bill_model = entity_model.create_bill(
 )
 ```
 
+## Add Items to Bills
+
+
+```python
+bill_item_models = bill_model.get_item_model_qs()
+
+K = 6
+
+bill_itemtxs = {
+    im.item_number: {
+        'unit_cost': round(random() * 10, 2),
+        'quantity': round(random() * 100, 2),
+        'total_amount': None
+    } for im in choices(bill_item_models, k=K)
+}
+
+# Choose operation ITEMIZE_APPEND to append itemtxs...
+bill_itemtxs = bill_model.migrate_itemtxs(itemtxs=bill_itemtxs,
+                                          commit=True,
+                                          operation=BillModel.ITEMIZE_REPLACE)
+
+bill_itemtxs
+```
+
+
+```python
+bill_model.amount_due
+```
+
 # Purchase Orders
 
 ## Get Purchase Orders
@@ -295,7 +363,36 @@ pd.DataFrame(purchase_orders_qs.values())
 
 
 ```python
-purchase_order = entity_model.create_purchase_order()
+po_model = entity_model.create_purchase_order()
+```
+
+## Add Items to Purchase Orders
+
+
+```python
+po_item_models = po_model.get_item_model_qs()
+
+K = 6
+
+po_itemtxs = {
+    im.item_number: {
+        'unit_cost': round(random() * 10, 2),
+        'quantity': round(random() * 100, 2),
+        'total_amount': None
+    } for im in choices(po_item_models, k=K)
+}
+
+# Choose operation ITEMIZE_APPEND to append itemtxs...
+po_itemtxs = po_model.migrate_itemtxs(itemtxs=po_itemtxs,
+                                      commit=True,
+                                      operation=EstimateModel.ITEMIZE_REPLACE)
+
+po_itemtxs
+```
+
+
+```python
+po_model.po_amount
 ```
 
 # Estimates/Contracts
@@ -317,6 +414,51 @@ estimate_model = entity_model.create_estimate(
     customer_model='C-0000000009',
     contract_terms=EstimateModel.CONTRACT_TERMS_FIXED
 )
+```
+
+## Add Items to Estimates
+
+
+```python
+estimate_item_models = estimate_model.get_item_model_qs()
+
+K = 6
+
+estimate_itemtxs = {
+    im.item_number: {
+        'unit_cost': round(random() * 10, 2),
+        'unit_revenue': round(random() * 20, 2),
+        'quantity': round(random() * 100, 2),
+        'total_amount': None
+    } for im in choices(estimate_item_models, k=K)
+}
+
+# Choose operation ITEMIZE_APPEND to append itemtxs...
+estimate_itemtxs = estimate_model.migrate_itemtxs(itemtxs=estimate_itemtxs,
+                                                  commit=True,
+                                                  operation=EstimateModel.ITEMIZE_REPLACE)
+
+estimate_itemtxs
+```
+
+
+```python
+estimate_model.get_cost_estimate()
+```
+
+
+```python
+estimate_model.get_revenue_estimate()
+```
+
+
+```python
+estimate_model.get_profit_estimate()
+```
+
+
+```python
+estimate_model.get_gross_margin_estimate(as_percent=True)
 ```
 
 # Bank Accounts
@@ -476,83 +618,91 @@ inventory_model.is_inventory()
 
 
 ```python
-txs_qs, io_digest = entity_model.get_balance_sheet(
-    user_model=user_model,
-    to_date=date(2022,12,31)
+bs_report = entity_model.get_balance_sheet_statement(
+    to_date=date(2022,12,31),
+    save_pdf=True,
 )
+# save_pdf=True saves the PDF report in the project's BASE_DIR.
+# filename and filepath may also be specified...
 ```
 
-### The digest object contains all relevant financial data for the requested period
-#### The balance sheet information is summarized in its own namespace
+### Balance Sheet Statement Raw Data
 
 
 ```python
-io_digest['tx_digest']['balance_sheet']
+bs_report.get_report_data()
 ```
 
 ## Income Statement
 
 
 ```python
-txs_qs, io_digest = entity_model.get_income_statement(
-    user_model=user_model,
+ic_report = entity_model.get_income_statement(
     from_date=date(2022,1,1),
-    to_date=date(2022,12,31)
+    to_date=date(2022,12,31),
+    save_pdf=True
 )
+# save_pdf=True saves the PDF report in the project's BASE_DIR.
+# filename and filepath may also be specified...
 ```
 
-### The digest object contains all relevant financial data for the requested period
-#### The income statement information is summarized in its own namespace
+### Income Statement Raw Data
 
 
 ```python
-io_digest['tx_digest']['income_statement']
+ic_report.get_report_data()
 ```
 
 ## Cash Flow Statement
 
 
 ```python
-txs_qs, io_digest = entity_model.get_cash_flow_statement(
+cf_report = entity_model.get_cash_flow_statement(
+    from_date=date(2022,1,1),
+    to_date=date(2022,12,31),
+    save_pdf=True
+)
+# save_pdf=True saves the PDF report in the project's BASE_DIR.
+# filename and filepath may also be specified...
+```
+
+### Cash Flow Statement Raw Data
+
+
+```python
+cf_report.get_report_data()
+```
+
+## All Financial Statements Data in a single Call
+
+
+```python
+reports = entity_model.get_financial_statements(
     user_model=user_model,
     from_date=date(2022,1,1),
-    to_date=date(2022,12,31)
+    to_date=date(2022,12,31),
+    save_pdf=True
 )
-```
-
-### The digest object contains all relevant financial data for the requested period
-#### The cash flow statement information is summarized in its own namespace
-
-
-```python
-io_digest['tx_digest']['cash_flow_statement']
-```
-
-## All Financial Statements in a single call
-
-
-```python
-txs_qs, io_digest = entity_model.get_financial_statements(
-    user_model=user_model,
-    from_date=date(2022,1,1),
-    to_date=date(2022,12,31)
-)
-```
-
-### The digest object contains all relevant financial data for the requested period
-#### All financial statements are summarized in its own namespace
-
-
-```python
-io_digest['tx_digest']['balance_sheet']
+# save_pdf=True saves the PDF report in the project's BASE_DIR.
+# filename and filepath may also be specified...
 ```
 
 
 ```python
-io_digest['tx_digest']['income_statement']
+reports.balance_sheet_statement.get_report_data()
 ```
 
 
 ```python
-io_digest['tx_digest']['cash_flow_statement']
+reports.income_statement.get_report_data()
+```
+
+
+```python
+reports.cash_flow_statement.get_report_data()
+```
+
+
+```python
+
 ```

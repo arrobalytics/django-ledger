@@ -11,21 +11,21 @@ RATIO_NA = 0
 
 class FinancialRatioManager:
 
-    def __init__(self, tx_digest):
-        self.DIGEST = tx_digest
-        self.ACCOUNTS = tx_digest['accounts']
+    def __init__(self, io_data):
+        self.DIGEST = io_data
+        self.ACCOUNTS = io_data['accounts']
         self.RATIO_NA = RATIO_NA
 
-        self.quick_assets = tx_digest['group_balance']['GROUP_QUICK_ASSETS']
-        self.assets = tx_digest['group_balance']['GROUP_ASSETS']
-        self.current_liabilities = tx_digest['group_balance']['GROUP_CURRENT_LIABILITIES']
-        self.current_assets = tx_digest['group_balance']['GROUP_CURRENT_ASSETS']
-        self.equity = tx_digest['group_balance']['GROUP_CAPITAL']
-        self.liabilities = tx_digest['group_balance']['GROUP_LIABILITIES']
-        self.net_income = tx_digest['group_balance']['GROUP_EARNINGS']
-        self.net_sales = tx_digest['group_balance']['GROUP_NET_SALES']
-        self.net_profit = tx_digest['group_balance']['GROUP_NET_PROFIT']
-        self.gross_profit = tx_digest['group_balance']['GROUP_GROSS_PROFIT']
+        self.quick_assets = io_data['group_balance']['GROUP_QUICK_ASSETS']
+        self.assets = io_data['group_balance']['GROUP_ASSETS']
+        self.current_liabilities = io_data['group_balance']['GROUP_CURRENT_LIABILITIES']
+        self.current_assets = io_data['group_balance']['GROUP_CURRENT_ASSETS']
+        self.equity = io_data['group_balance']['GROUP_CAPITAL']
+        self.liabilities = io_data['group_balance']['GROUP_LIABILITIES']
+        self.net_income = io_data['group_balance']['GROUP_EARNINGS']
+        self.net_sales = io_data['group_balance']['GROUP_NET_SALES']
+        self.net_profit = io_data['group_balance']['GROUP_NET_PROFIT']
+        self.gross_profit = io_data['group_balance']['GROUP_GROSS_PROFIT']
         self.RATIOS = dict()
 
     def digest(self):

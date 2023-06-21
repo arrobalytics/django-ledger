@@ -9,7 +9,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.urls import path, include
 
 from django_ledger import views
-from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_ENABLED
+from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
 
 app_name = 'django_ledger'
 
@@ -40,5 +40,5 @@ urlpatterns = [
     path('', views.RootUrlView.as_view(), name='root'),
 ]
 
-if DJANGO_LEDGER_GRAPHQL_ENABLED:
+if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
     pass

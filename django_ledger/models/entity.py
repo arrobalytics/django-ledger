@@ -25,12 +25,14 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
+from pathlib import Path
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -41,7 +43,7 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module, validate_roles
+from django_ledger.io import roles as roles_module, validate_roles, IODigest
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
@@ -136,7 +138,7 @@ class EntityModelManager(MP_NodeManager):
         )
 
 
-class EntityReportMixIn:
+class FiscalPeriodMixIn:
     """
     This class encapsulates the functionality needed to determine the start and end of all financial periods of an
     EntityModel. At the moment of creation, an EntityModel must be assigned a calendar month which is going to
@@ -419,7 +421,7 @@ class EntityModelAbstract(MP_Node,
                           ContactInfoMixIn,
                           IOMixIn,
                           LoggingMixIn,
-                          EntityReportMixIn):
+                          FiscalPeriodMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -2161,7 +2163,6 @@ class EntityModelAbstract(MP_Node,
             'description': f'Sample data for {self.name}'
         })
 
-        # pylint: disable=no-member
         ledger = self.ledgermodel_set.create(
             name=ledger_name,
             posted=ledger_posted
@@ -2175,69 +2176,6 @@ class EntityModelAbstract(MP_Node,
             je_ledger=ledger
         )
         return ledger
-
-    # #### FINANCIAL STATEMENTS ####
-
-    def get_balance_sheet(self,
-                          to_date: Union[date, datetime],
-                          user_model: UserModel,
-                          txs_queryset: Optional[QuerySet] = None,
-                          **kwargs: Dict) -> Tuple[QuerySet, Dict]:
-        return self.digest(
-            user_model=user_model,
-            to_date=to_date,
-            balance_sheet_statement=True,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-
-    def get_income_statement(self,
-                             from_date: Union[date, datetime],
-                             to_date: Union[date, datetime],
-                             user_model: UserModel,
-                             txs_queryset: Optional[QuerySet] = None,
-                             **kwargs) -> Tuple[QuerySet, Dict]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            income_statement=True,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-
-    def get_cash_flow_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                user_model: UserModel,
-                                txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Tuple[QuerySet, Dict]:
-
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            cash_flow_statement=True,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-
-    def get_financial_statements(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
-                                 user_model: UserModel,
-                                 txs_queryset: Optional[QuerySet] = None,
-                                 **kwargs) -> Tuple[QuerySet, Dict]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            balance_sheet_statement=True,
-            income_statement=True,
-            cash_flow_statement=True,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
 
     # ### RANDOM DATA GENERATION ####
 

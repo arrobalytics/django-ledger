@@ -1,8 +1,9 @@
 import os
+from pathlib import Path
 
-from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_ENABLED
+from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
@@ -21,7 +22,7 @@ INSTALLED_APPS = [
     'django_ledger',
 ]
 
-if DJANGO_LEDGER_GRAPHQL_ENABLED:
+if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
     INSTALLED_APPS += [
         'graphene_django',
         'oauth2_provider'
@@ -107,7 +108,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if DJANGO_LEDGER_GRAPHQL_ENABLED:
+if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
     GRAPHENE = {
         'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
         'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,

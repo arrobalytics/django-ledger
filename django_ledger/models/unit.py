@@ -182,6 +182,9 @@ class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn
                            'entity_slug': self.slug
                        })
 
+    def get_entity_name(self) -> str:
+        return self.entity.name
+
     def create_entity_unit_slug(self,
                                 name: Optional[str] = None,
                                 force: bool = False,

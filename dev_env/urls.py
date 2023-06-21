@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 
-from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_ENABLED
+from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -11,7 +11,7 @@ urlpatterns = [
 
 # GraphQl API Support...
 try:
-    if DJANGO_LEDGER_GRAPHQL_ENABLED:
+    if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
         from django_ledger.contrib.django_ledger_graphene.api import schema
         from django_ledger.contrib.django_ledger_graphene.views import DjangoLedgerOAuth2GraphQLView
 

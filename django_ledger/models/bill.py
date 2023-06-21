@@ -465,15 +465,10 @@ class BillModelAbstract(AccrualMixIn,
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
-
-            if not ledger_name:
-                ledger_name = f'Bill {self.uuid}'
-            ledger_name += f' | {ledger_name}'
+            ledger_name = f'Bill {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
-
             ledger_model.clean()
             ledger_model.clean_fields()
-
             self.ledger = ledger_model
 
             if commit_ledger:
@@ -681,6 +676,21 @@ class BillModelAbstract(AccrualMixIn,
             True if BillModel is Canceled, else False.
         """
         return self.bill_status == self.BILL_STATUS_CANCELED
+
+    def is_active(self):
+        """
+        Checks if the BillModel has the potential to impact the books and produce financial statements status.
+
+        Returns
+        _______
+        bool
+            True if BillModel is Active, else False.
+        """
+        return any([
+            self.is_paid(),
+            self.is_approved(),
+            self.is_void()
+        ])
 
     def is_void(self) -> bool:
         """
@@ -1711,6 +1721,9 @@ class BillModelAbstract(AccrualMixIn,
                     self.save(update_fields=['bill_number', 'updated'])
 
         return self.bill_number
+
+    def generate_descriptive_title(self) -> str:
+        return f'Bill {self.bill_number} | {self.get_bill_status_display()} {self.get_status_action_date()} | {self.vendor.vendor_name}'
 
     def clean(self, commit: bool = True):
         """

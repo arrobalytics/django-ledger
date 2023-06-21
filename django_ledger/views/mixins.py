@@ -8,53 +8,25 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import monthrange
 from datetime import timedelta, date
-from typing import Tuple
+from enum import Enum
+from typing import Tuple, Optional
 
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, PermissionRequiredMixin
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import Http404
+from django.http import Http404, HttpResponse, HttpResponseNotFound
 from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
+from fpdf import FPDF
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
-from django_ledger.models.entity import EntityReportMixIn
+from django_ledger.models.entity import FiscalPeriodMixIn
+from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 
-# class SessionConfigurationMixIn:
-#
-#     def get(self, *args, **kwargs):
-#         response = super().get(*args, **kwargs)
-#         request = getattr(self, 'request')
-#         try:
-#             entity_model = getattr(self, 'object')
-#             if entity_model and isinstance(entity_model, EntityModel):
-#                 set_default_entity(request, entity_model)
-#         except AttributeError:
-#             pass
-#         return response
-
-
-class SuccessUrlNextMixIn:
-
-    def has_next_url(self):
-        return self.request.GET.get('next') is not None
-
-    def get_success_url(self):
-        next = self.request.GET.get('next')
-        if next:
-            return next
-        # elif self.kwargs.get('entity_slug'):
-        #     return reverse('django_ledger:entity-dashboard',
-        #                    kwargs={
-        #                        'entity_slug': self.kwargs['entity_slug']
-        #                    })
-        return reverse('django_ledger:home')
-
-
-class YearlyReportMixIn(YearMixin, EntityReportMixIn):
+class YearlyReportMixIn(YearMixin, FiscalPeriodMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -97,7 +69,7 @@ class YearlyReportMixIn(YearMixin, EntityReportMixIn):
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, EntityReportMixIn):
+class QuarterlyReportMixIn(YearMixin, FiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -310,6 +282,23 @@ class FromToDatesMixIn:
         return param_date
 
 
+class SuccessUrlNextMixIn:
+
+    def has_next_url(self):
+        return self.request.GET.get('next') is not None
+
+    def get_success_url(self):
+        next = self.request.GET.get('next')
+        if next:
+            return next
+        # elif self.kwargs.get('entity_slug'):
+        #     return reverse('django_ledger:entity-dashboard',
+        #                    kwargs={
+        #                        'entity_slug': self.kwargs['entity_slug']
+        #                    })
+        return reverse('django_ledger:home')
+
+
 class DjangoLedgerAccessMixIn(AccessMixin):
 
     def get_login_url(self):
@@ -449,3 +438,65 @@ class BaseDateNavigationUrlMixIn:
                                                      k: v for k, v in self.kwargs.items() if
                                                      k in self.BASE_DATE_URL_KWARGS
                                                  })
+
+
+class PDFReportMixIn:
+    class PDFReportEnum:
+        BS = 'BS'
+        IS = 'IS'
+        CFS = 'CFS'
+
+    pdf_report_enum = PDFReportEnum
+    pdf_report_type: Optional[PDFReportEnum] = None
+    pdf_format_query_param = 'format'
+    pdf_format_query_param_value = 'pdf'
+    pdf_subtitle_query_param = 'report_subtitle'
+    pdf_io_mixin_function_map = {
+        PDFReportEnum.BS: 'get_balance_sheet_statement',
+        PDFReportEnum.IS: 'get_income_statement',
+        PDFReportEnum.CFS: 'get_cash_flow_statement',
+    }
+
+    def get_pdf_func_name(self):
+        if not self.pdf_report_type:
+            raise NotImplementedError(f'Must define pdf_report_type from {self.PDFReportEnum.__name__}')
+        return self.pdf_io_mixin_function_map[self.pdf_report_type]
+
+    def get_pdf(self):
+        self.object = self.get_object()
+        io_model = self.object
+        pdf_func_name = self.get_pdf_func_name()
+        return getattr(io_model, pdf_func_name)(
+            entity_slug=self.kwargs.get('entity_slug'),
+            from_date=self.get_pdf_from_date(),
+            to_date=self.get_pdf_to_date(),
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
+
+    def get_pdf_subtitle(self) -> str:
+        return self.request.GET.get(self.pdf_subtitle_query_param)
+
+    def get_pdf_from_date(self) -> Optional[date]:
+        ctx = getattr(self, 'get_context_data')()
+        return ctx['from_date']
+
+    def get_pdf_to_date(self) -> date:
+        ctx = getattr(self, 'get_context_data')()
+        return ctx['to_date']
+
+    def get_pdf_response(self) -> HttpResponse:
+        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+            return HttpResponseNotFound()
+        pdf = self.get_pdf()
+        response = HttpResponse(
+            bytes(pdf.output()),
+            content_type="application/pdf",
+        )
+        response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
+        return response
+
+    def get(self, request, **kwargs):
+        if request.GET.get(self.pdf_format_query_param) == self.pdf_format_query_param_value:
+            return self.get_pdf_response()
+        return super().get(request, **kwargs)

@@ -21,7 +21,7 @@
                 <div class="columns">
                     <div class="column">
                         {% if entity %}
-                            <h1 class="is-size-2 has-text-weight-light">{% session_entity_name %}</h1>
+                            <h1 class="is-size-2 has-text-weight-light">{{ entity.name }}</h1>
                         {% elif ledger %}
                             <h1 class="is-size-2 has-text-weight-light">{{ ledger.name }}</h1>
                         {% elif unit_model %}
@@ -43,14 +43,17 @@
 
             {% balance_sheet_statement io_model=object %}
             {% if entity %}
-                <a class="button is-fullwidth is-dark is-small mb-1"
+                <a class="button is-fullwidth is-dark mb-1"
                    href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% elif ledger %}
-                <a class="button is-fullwidth is-dark is-small my-2"
+                <a class="button is-fullwidth is-dark my-2"
                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
-            <a class="button is-fullwidth is-light is-small my-2"
+            <a class="button is-fullwidth is-light my-2"
                href="?by_unit=1">{% trans 'By Unit' %}</a>
+
+            <a class="button is-fullwidth is-link my-2"
+               href="{{ request.path }}?format=pdf">{% trans 'Download PDF' %}</a>
 
         </div>
     </div>

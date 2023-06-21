@@ -98,7 +98,7 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {% for invoice_item in invoice_items %}
+                                    {% for invoice_item in itemtxs_qs %}
                                         <tr>
                                             <td>{{ invoice_item.item_model }}</td>
                                             <td>{% currency_symbol %}{{ invoice_item.unit_cost | currency_format }}</td>
@@ -124,6 +124,31 @@
                         </div>
                     </div>
                 </div>
+                {% if invoice.is_active %}
+                    <div class="column is-12">
+                        <div class="buttons is-centered">
+                            <a href="{% url 'django_ledger:ledger-bs' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id %}"
+                               class="button is-info is-light is-outlined">{% trans 'Balance Sheet' %}</a>
+                            <a href="{% url 'django_ledger:ledger-ic' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id %}"
+                               class="button is-info is-light is-outlined">{% trans 'Income Statement' %}</a>
+                            <a href="{% url 'django_ledger:ledger-cf' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id %}"
+                               class="button is-info is-light is-outlined">{% trans 'Cash Flow Statement' %}</a>
+                        </div>
+                        <div class="column is-12">
+                            <div class="buttons is-centered">
+                                <a href="{% url 'django_ledger:ledger-bs-year' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id year=invoice.get_status_action_date.year %}?format=pdf&report_subtitle={{ invoice.generate_descriptive_title }}"
+                                   class="button is-success is-light is-outlined">
+                                    {% trans 'Balance Sheet PDF' %}{% icon 'bytesize:download' 24 %}</a>
+                                <a href="{% url 'django_ledger:ledger-ic-year' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id year=invoice.get_status_action_date.year %}?format=pdf&report_subtitle={{ invoice.generate_descriptive_title }}"
+                                   class="button is-success is-light is-outlined">
+                                    {% trans 'Income Statement PDF' %}{% icon 'bytesize:download' 24 %}</a>
+                                <a href="{% url 'django_ledger:ledger-cf-year' entity_slug=view.kwargs.entity_slug ledger_pk=invoice.ledger_id year=invoice.get_status_action_date.year %}?format=pdf&report_subtitle={{ invoice.generate_descriptive_title }}"
+                                   class="button is-success is-light is-outlined">
+                                    {% trans 'Cash Flow Statement PDF' %}{% icon 'bytesize:download' 24 %}</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
                 <div class="column is-12">
                     <div class="card">
                         <div class="card-header">

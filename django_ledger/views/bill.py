@@ -246,7 +246,7 @@ class BillModelDetailView(DjangoLedgerSecurityMixIn, DetailView):
 
         bill_model: BillModel = self.object
         bill_items_qs, item_data = bill_model.get_itemtxs_data()
-        context['bill_items'] = bill_items_qs
+        context['itemtxs_qs'] = bill_items_qs
         context['total_amount__sum'] = item_data['total_amount__sum']
 
         if not bill_model.is_configured():

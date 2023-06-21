@@ -5,12 +5,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from datetime import datetime, date
 from itertools import groupby
+from pathlib import Path
 from random import choice
-from typing import List, Set, Union, Tuple, Optional
+from typing import List, Set, Union, Tuple, Optional, Dict
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum, QuerySet
@@ -24,6 +26,7 @@ from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
                                          BalanceSheetStatementContextManager, IncomeStatementContextManager,
                                          CashFlowStatementContextManager)
+from django_ledger.io.io_digest import IODigest
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -144,24 +147,245 @@ def validate_activity(activity: str, raise_404: bool = False):
     return activity
 
 
-class IOError(ValidationError):
+class IOValidationError(ValidationError):
     pass
 
 
-class IOMixIn:
+class IOReportMixIn:
+    PDF_REPORT_ORIENTATION = 'P'
+    PDF_REPORT_MEASURE_UNIT = 'mm'
+    PDF_REPORT_PAGE_SIZE = 'Letter'
+
+    ReportTuple = namedtuple('ReportTuple',
+                             field_names=[
+                                 'balance_sheet_statement',
+                                 'income_statement',
+                                 'cash_flow_statement'
+                             ])
+
+    def digest_balance_sheet(self,
+                             to_date: Union[date, datetime],
+                             user_model: UserModel,
+                             txs_queryset: Optional[QuerySet] = None,
+                             **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            balance_sheet_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_balance_sheet_statement(self,
+                                    to_date: Union[date, datetime],
+                                    subtitle: Optional[str] = None,
+                                    filepath: Optional[Path] = None,
+                                    filename: Optional[str] = None,
+                                    user_model: Optional[UserModel] = None,
+                                    txs_queryset: Optional[QuerySet] = None,
+                                    save_pdf: bool = False,
+                                    **kwargs
+                                    ):
+        io_digest = self.digest_balance_sheet(
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        report_klass = lazy_loader.get_balance_sheet_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def digest_income_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                user_model: Optional[UserModel] = None,
+                                txs_queryset: Optional[QuerySet] = None,
+                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            income_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_income_statement(self,
+                             from_date: Union[date, datetime],
+                             to_date: Union[date, datetime],
+                             subtitle: Optional[str] = None,
+                             filepath: Optional[Path] = None,
+                             filename: Optional[str] = None,
+                             user_model: Optional[UserModel] = None,
+                             txs_queryset: Optional[QuerySet] = None,
+                             save_pdf: bool = False,
+                             **kwargs
+                             ):
+        io_digest = self.digest_income_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+        report_klass = lazy_loader.get_income_statement_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def digest_cash_flow_statement(self,
+                                   from_date: Union[date, datetime],
+                                   to_date: Union[date, datetime],
+                                   user_model: UserModel,
+                                   txs_queryset: Optional[QuerySet] = None,
+                                   **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            cash_flow_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_cash_flow_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                subtitle: Optional[str] = None,
+                                filepath: Optional[Path] = None,
+                                filename: Optional[str] = None,
+                                user_model: Optional[UserModel] = None,
+                                txs_queryset: Optional[QuerySet] = None,
+                                save_pdf: bool = False,
+                                **kwargs):
+
+        io_digest = self.digest_cash_flow_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        report_klass = lazy_loader.get_cash_flow_statement_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def get_financial_statements(self,
+                                 from_date: Union[date, datetime],
+                                 to_date: Union[date, datetime],
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 save_pdf: bool = False,
+                                 filepath: Optional[Path] = None,
+                                 **kwargs) -> ReportTuple:
+
+        io_digest = self.digest(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            balance_sheet_statement=True,
+            income_statement=True,
+            cash_flow_statement=True,
+            as_io_digest=True,
+            **kwargs
+        )
+
+        bs_report_klass = lazy_loader.get_balance_sheet_report_class()
+        bs_report = bs_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+        is_report_klass = lazy_loader.get_income_statement_report_class()
+        is_report = is_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+        cfs_report_klass = lazy_loader.get_cash_flow_statement_report_class()
+        cfs_report = cfs_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            bs_report.create_pdf_report()
+            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename()))
+
+            is_report.create_pdf_report()
+            is_report.output(base_dir.joinpath(is_report.get_pdf_filename()))
+
+            cfs_report.create_pdf_report()
+            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename()))
+
+        return self.ReportTuple(
+            balance_sheet_statement=bs_report,
+            income_statement=is_report,
+            cash_flow_statement=cfs_report
+        )
+
+
+class IODatabaseMixIn:
     """
     Controls how transactions are recorded into the ledger.
     """
 
     def database_digest(self,
-                        user_model: UserModel,
                         txs_queryset: QuerySet,
+                        entity_slug: str = None,
+                        unit_slug: str = None,
+                        user_model: UserModel = None,
                         from_date: date = None,
                         to_date: date = None,
                         activity: str = None,
                         role: str = None,
-                        entity_slug: str = None,
-                        unit_slug: str = None,
                         accounts: str or List[str] or Set[str] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
@@ -175,6 +399,10 @@ class IOMixIn:
 
             # If IO is on entity model....
             if isinstance(self, lazy_loader.get_entity_model()):
+                if entity_slug:
+                    if entity_slug != self.slug:
+                        raise IOValidationError('Inconsistent entity_slug. '
+                                                f'Provided {entity_slug} with actual {self.slug}')
                 if unit_slug:
                     txs_queryset = TransactionModel.objects.for_unit(
                         user_model=user_model,
@@ -189,6 +417,9 @@ class IOMixIn:
 
             # If IO is on ledger model....
             elif isinstance(self, lazy_loader.get_ledger_model()):
+                if not entity_slug:
+                    raise IOValidationError(
+                        'Calling digest from Ledger Model requires entity_slug explicitly for safety')
                 txs_queryset = TransactionModel.objects.for_ledger(
                     user_model=user_model,
                     entity_slug=entity_slug,
@@ -197,7 +428,8 @@ class IOMixIn:
             # If IO is on unit model....
             elif isinstance(self, lazy_loader.get_unit_model()):
                 if not entity_slug:
-                    raise ValidationError('Calling digest from Entity Unit requires entity_slug')
+                    raise IOValidationError(
+                        'Calling digest from Entity Unit requires entity_slug explicitly for safety')
                 txs_queryset = TransactionModel.objects.for_unit(
                     user_model=user_model,
                     entity_slug=entity_slug,
@@ -261,8 +493,8 @@ class IOMixIn:
         return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
     def python_digest(self,
-                      user_model: UserModel,
-                      txs_queryset: QuerySet,
+                      txs_queryset: Optional[QuerySet] = None,
+                      user_model: Optional[UserModel] = None,
                       to_date: date = None,
                       from_date: date = None,
                       equity_only: bool = False,
@@ -353,16 +585,17 @@ class IOMixIn:
 
     # idea: make this method return a Digest class?...
     def digest(self,
-               user_model: UserModel,
+               entity_slug: str = None,
+               unit_slug: str = None,
+               user_model: UserModel = None,
+               txs_queryset: QuerySet = None,
+               as_io_digest: bool = False,
                accounts: Optional[Union[Set[str], List[str]]] = None,
                role: Optional[Union[Set[str], List[str]]] = None,
                activity: str = None,
-               entity_slug: str = None,
-               unit_slug: str = None,
                signs: bool = True,
                to_date: Union[str, datetime, date] = None,
                from_date: Union[str, datetime, date] = None,
-               txs_queryset: QuerySet = None,
                process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -376,7 +609,18 @@ class IOMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               ) -> dict or tuple:
+               ) -> Union[Tuple, IODigest]:
+
+        io_data = defaultdict(lambda: dict())
+        io_data['io_model'] = self
+        io_data['from_date'] = from_date
+        io_data['to_date'] = to_date
+
+        if balance_sheet_statement:
+            from_date = None
+
+        if cash_flow_statement:
+            by_activity = True
 
         if activity:
             activity = validate_activity(activity)
@@ -403,62 +647,68 @@ class IOMixIn:
             by_tx_type=by_tx_type
         )
 
-        io_digest = defaultdict(lambda: dict())
-        io_digest['accounts'] = accounts_digest
-        io_digest['from_date'] = from_date
-        io_digest['to_date'] = to_date
+        io_data['txs_qs'] = txs_qs
+        io_data['accounts'] = accounts_digest
 
         if process_roles:
             roles_mgr = RoleContextManager(
-                tx_digest=io_digest,
+                io_data=io_data,
                 by_period=by_period,
                 by_unit=by_unit
             )
 
             # idea: change digest() name to something else? maybe aggregate, calculate?...
-            io_digest = roles_mgr.digest()
+            io_data = roles_mgr.digest()
 
-        if process_groups or balance_sheet_statement or income_statement or cash_flow_statement:
+        if any([
+            process_groups,
+            balance_sheet_statement,
+            income_statement,
+            cash_flow_statement
+        ]):
             group_mgr = GroupContextManager(
-                io_digest=io_digest,
+                io_data=io_data,
                 by_period=by_period,
                 by_unit=by_unit
             )
-            io_digest = group_mgr.digest()
+            io_data = group_mgr.digest()
 
             # todo: migrate this to group manager...
-            io_digest['group_account']['GROUP_ASSETS'].sort(
+            io_data['group_account']['GROUP_ASSETS'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
-            io_digest['group_account']['GROUP_LIABILITIES'].sort(
+            io_data['group_account']['GROUP_LIABILITIES'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role']))
-            io_digest['group_account']['GROUP_CAPITAL'].sort(
+            io_data['group_account']['GROUP_CAPITAL'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
 
         if process_ratios:
-            ratio_gen = FinancialRatioManager(tx_digest=io_digest)
-            io_digest = ratio_gen.digest()
+            ratio_gen = FinancialRatioManager(io_data=io_data)
+            io_data = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(tx_digest=io_digest, by_unit=by_unit, by_period=by_period)
+            activity_manager = ActivityContextManager(io_data=io_data, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(tx_digest=io_digest)
-            io_digest = balance_sheet_mgr.digest()
+            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_data)
+            io_data = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(tx_digest=io_digest)
-            io_digest = income_statement_mgr.digest()
+            income_statement_mgr = IncomeStatementContextManager(io_data=io_data)
+            io_data = income_statement_mgr.digest()
 
         if cash_flow_statement:
-            cfs = CashFlowStatementContextManager(io_digest=io_digest)
-            io_digest = cfs.digest()
+            cfs = CashFlowStatementContextManager(io_data=io_data)
+            io_data = cfs.digest()
+
+        if as_io_digest:
+            return IODigest(io_data=io_data)
 
         if not digest_name:
             digest_name = 'tx_digest'
 
         digest_results = {
-            digest_name: io_digest
+            digest_name: io_data
         }
 
         return txs_qs, digest_results
@@ -532,3 +782,10 @@ class IOMixIn:
 
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
+
+
+class IOMixIn(
+    IODatabaseMixIn,
+    IOReportMixIn
+):
+    pass

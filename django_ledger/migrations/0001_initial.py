@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-created'],
                 'abstract': False,
             },
-            bases=(models.Model, django_ledger.io.io_mixin.IOMixIn, django_ledger.models.mixins.LoggingMixIn, django_ledger.models.entity.EntityReportMixIn),
+            bases=(models.Model, django_ledger.io.io_mixin.IOMixIn, django_ledger.models.mixins.LoggingMixIn, django_ledger.models.entity.FiscalPeriodMixIn),
         ),
         migrations.CreateModel(
             name='EntityUnitModel',

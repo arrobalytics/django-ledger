@@ -134,7 +134,7 @@
                                 </span>
                             </p>
                             <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
-                                <span class="has-text-weight-bold">{{ bill.date_paid | timesince }}</span>
+                                <span class="has-text-weight-bold">{{ bill.date_paid | date }}</span>
                                 {% if bill.xref %}
                                     <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ bill.xref }}</p>
                                 {% endif %}

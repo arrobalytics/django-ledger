@@ -7,7 +7,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from calendar import month_abbr
-from itertools import groupby
 from random import randint
 
 from django import template
@@ -19,9 +18,8 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.io import BS_BUCKETS_ORDER, ACCOUNT_LIST_ROLE_ORDER
 from django_ledger.io.io_mixin import validate_activity
-from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
+from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel, ItemTransactionModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
@@ -52,9 +50,9 @@ def absolute(value):
 
 @register.filter(name='currency_format')
 def currency_format(value):
-    if value:
-        return number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
-    return 0
+    if not value:
+        value = 0.00
+    return number_format(value, decimal_pos=2, use_l10n=True, force_grouping=True)
 
 
 @register.filter(name='percentage')
@@ -242,10 +240,11 @@ def bill_txs_table(context, bill_model: BillModel):
         bill_model=bill_model.uuid,
         user_model=context['request'].user,
         entity_slug=context['view'].kwargs['entity_slug']
-    ).select_related('journal_entry').order_by('-journal_entry__timestamp')
+    ).select_related('journal_entry').order_by('journal_entry__timestamp')
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {
+        'style': 'detail',
         'txs': txs_queryset,
         'total_debits': total_debits,
         'total_credits': total_credits
@@ -262,6 +261,7 @@ def invoice_txs_table(context, invoice_model: InvoiceModel):
     total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
     total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
     return {
+        'style': 'detail',
         'txs': txs_queryset,
         'total_debits': total_debits,
         'total_credits': total_credits

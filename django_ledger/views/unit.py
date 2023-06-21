@@ -7,10 +7,10 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, R
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.models import EntityUnitModel, EntityModel
-from django_ledger.views.entity import (
-    FiscalYearEntityModelIncomeStatementView)
+from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
 from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn,
-                                        DateReportMixIn, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn)
+                                        DateReportMixIn, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn,
+                                        PDFReportMixIn)
 
 
 class EntityUnitModelModelViewQuerySetMixIn:
@@ -114,7 +114,7 @@ class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQu
 
 
 # BALANCE SHEET.....
-class EntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -131,6 +131,7 @@ class FiscalYearEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn,
                                                 BaseDateNavigationUrlMixIn,
                                                 EntityUnitMixIn,
                                                 YearlyReportMixIn,
+                                                PDFReportMixIn,
                                                 DetailView):
     """
     Entity Unit Fiscal Year Balance Sheet View Class
@@ -139,6 +140,7 @@ class FiscalYearEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn,
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
+    pdf_report_type = 'BS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -146,26 +148,26 @@ class FiscalYearEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn,
         return context
 
 
-class QuarterlyEntityUnitModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
+class QuarterlyEntityUnitModelBalanceSheetView(FiscalYearEntityUnitModelBalanceSheetView, QuarterlyReportMixIn):
     """
     Entity Unit Fiscal Quarter Balance Sheet View Class.
     """
 
 
-class MonthlyEntityUnitModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityUnitModelBalanceSheetView):
+class MonthlyEntityUnitModelBalanceSheetView(FiscalYearEntityUnitModelBalanceSheetView, MonthlyReportMixIn):
     """
     Entity Unit Fiscal Month Balance Sheet View Class.
     """
 
 
-class DateEntityUnitModelBalanceSheetView(DateReportMixIn, MonthlyEntityUnitModelBalanceSheetView):
+class DateEntityUnitModelBalanceSheetView(MonthlyEntityUnitModelBalanceSheetView, DateReportMixIn):
     """
     Entity Unit Date Balance Sheet View Class.
     """
 
 
 # INCOME STATEMENT....
-class EntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -182,32 +184,39 @@ class FiscalYearEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn,
                                                    BaseDateNavigationUrlMixIn,
                                                    EntityUnitMixIn,
                                                    YearlyReportMixIn,
+                                                   PDFReportMixIn,
                                                    DetailView):
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/income_statement.html'
+    pdf_report_type = 'IS'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['entity_model'] = self.object.entity
+        return context
 
 
-class QuarterlyEntityUnitModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class QuarterlyIncomeStatementView(FiscalYearIncomeStatementView, QuarterlyReportMixIn):
     """
     Entity Unit Fiscal Quarter Income Statement View Class
     """
 
 
-class MonthlyEntityUnitModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class MonthlyIncomeStatementView(FiscalYearIncomeStatementView, MonthlyReportMixIn):
     """
     Entity Unit Fiscal Month Income Statement View Class
     """
 
 
-class DateEntityUnitModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeStatementView):
+class DateIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
     """
     Entity Unit Date Income Statement View Class
     """
 
 
 # CASHFLOW STATEMENT
-class EntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = localdate().year
@@ -224,26 +233,35 @@ class FiscalYearEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
                                                      BaseDateNavigationUrlMixIn,
                                                      EntityUnitMixIn,
                                                      YearlyReportMixIn,
+                                                     PDFReportMixIn,
                                                      DetailView):
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/cash_flow.html'
+    pdf_report_type = 'CFS'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['entity_model'] = self.object.entity
+        return context
 
 
-class QuarterlyEntityUnitModelCashFlowStatementView(QuarterlyReportMixIn,
-                                                    FiscalYearEntityUnitModelCashFlowStatementView):
+class QuarterlyEntityUnitModelCashFlowStatementView(FiscalYearEntityUnitModelCashFlowStatementView,
+                                                    QuarterlyReportMixIn):
     """
     Entity Unit Fiscal Quarter Cash Flow Statement View Class
     """
 
 
-class MonthlyEntityUnitModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearEntityUnitModelCashFlowStatementView):
+class MonthlyEntityUnitModelCashFlowStatementView(FiscalYearEntityUnitModelCashFlowStatementView,
+                                                  MonthlyReportMixIn):
     """
     Entity Unit Fiscal Month Cash Flow Statement View Class
     """
 
 
-class DateEntityUnitModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityUnitModelCashFlowStatementView):
+class DateEntityUnitModelCashFlowStatementView(FiscalYearEntityUnitModelCashFlowStatementView,
+                                               DateReportMixIn):
     """
     Entity Unit Date Cash Flow Statement View Class
     """

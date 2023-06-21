@@ -11,7 +11,6 @@ from decimal import Decimal
 from random import randint
 
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
@@ -19,7 +18,7 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import (EntityModel, EntityUnitModel, ItemTransactionModel, TransactionModel)
+from django_ledger.models import (EntityModel, ItemTransactionModel, TransactionModel)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
@@ -241,167 +240,4 @@ class MonthlyEntityDashboardView(FiscalYearEntityModelDashboardView, MonthlyRepo
 class DateEntityDashboardView(FiscalYearEntityModelDashboardView, DateReportMixIn):
     """
     Date-specific Entity Dashboard View.
-    """
-
-
-# BALANCE SHEET -----------
-class EntityModelBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
-
-    def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
-        return reverse('django_ledger:entity-bs-year',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'year': year
-                       })
-
-
-class FiscalYearEntityModelBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                            EntityModelModelViewQuerySetMixIn,
-                                            BaseDateNavigationUrlMixIn,
-                                            EntityUnitMixIn,
-                                            YearlyReportMixIn,
-                                            DetailView):
-    context_object_name = 'entity'
-    slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/financial_statements/balance_sheet.html'
-
-    def get_context_data(self, **kwargs):
-        context = super(FiscalYearEntityModelBalanceSheetView, self).get_context_data(**kwargs)
-        context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
-        context['header_title'] = context['page_title']
-        unit_slug = self.request.GET.get('unit')
-        if unit_slug:
-            context['unit_model'] = get_object_or_404(EntityUnitModel,
-                                                      slug=unit_slug,
-                                                      entity__slug__exact=self.kwargs['entity_slug'])
-        return context
-
-
-class QuarterlyEntityModelBalanceSheetView(QuarterlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
-    """
-    Quarter Balance Sheet View.
-    """
-
-
-class MonthlyEntityModelBalanceSheetView(MonthlyReportMixIn, FiscalYearEntityModelBalanceSheetView):
-    """
-    Monthly Balance Sheet View.
-    """
-
-
-class DateEntityModelBalanceSheetView(DateReportMixIn, FiscalYearEntityModelBalanceSheetView):
-    """
-    Date Balance Sheet View.
-    """
-
-
-# INCOME STATEMENT ------------
-class EntityModelIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
-    def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
-        return reverse('django_ledger:entity-ic-year',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'year': year
-                       })
-
-
-class FiscalYearEntityModelIncomeStatementView(DjangoLedgerSecurityMixIn,
-                                               EntityModelModelViewQuerySetMixIn,
-                                               BaseDateNavigationUrlMixIn,
-                                               EntityUnitMixIn,
-                                               YearlyReportMixIn,
-                                               DetailView):
-    context_object_name = 'entity'
-    slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/financial_statements/income_statement.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        entity_model: EntityModel = self.object
-        context['page_title'] = _('Income Statement: ') + entity_model.name
-        context['header_title'] = _('Income Statement: ') + entity_model.name
-        unit_slug = self.kwargs.get('unit_slug')
-        if unit_slug:
-            entity_unit_qs = entity_model.entityunitmodel_set.all()
-            context['unit_model'] = get_object_or_404(entity_unit_qs,
-                                                      slug__exact=unit_slug,
-                                                      entity__slug__exact=self.kwargs['entity_slug'])
-        return context
-
-
-class QuarterlyEntityModelIncomeStatementView(QuarterlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
-    """
-    Quarter Income Statement View.
-    """
-
-
-class MonthlyEntityModelIncomeStatementView(MonthlyReportMixIn, FiscalYearEntityModelIncomeStatementView):
-    """
-    Monthly Income Statement View.
-    """
-
-
-class DateModelIncomeStatementView(DateReportMixIn, FiscalYearEntityModelIncomeStatementView):
-    """
-    Date Income Statement View.
-    """
-
-
-# CASH FLOW STATEMENT ----
-class EntityModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
-
-    def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
-        return reverse('django_ledger:entity-cf-year',
-                       kwargs={
-                           'entity_slug': self.kwargs['entity_slug'],
-                           'year': year
-                       })
-
-
-class FiscalYearEntityModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
-                                                 EntityModelModelViewQuerySetMixIn,
-                                                 BaseDateNavigationUrlMixIn,
-                                                 EntityUnitMixIn,
-                                                 YearlyReportMixIn,
-                                                 DetailView):
-    """
-    Fiscal Year Cash Flow Statement View.
-    """
-
-    context_object_name = 'entity'
-    slug_url_kwarg = 'entity_slug'
-    template_name = 'django_ledger/financial_statements/cash_flow.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        entity_model: EntityModel = self.object
-        context['page_title'] = _('Cash Flow Statement: ') + entity_model.name
-        context['header_title'] = _('Cash Flow Statement: ') + entity_model.name
-        unit_slug = self.kwargs.get('unit_slug')
-        if unit_slug:
-            entity_unit_qs = entity_model.entityunitmodel_set.all()
-            context['unit_model'] = get_object_or_404(entity_unit_qs,
-                                                      slug__exact=unit_slug,
-                                                      entity__slug__exact=self.kwargs['entity_slug'])
-        return context
-
-
-class QuarterlyEntityModelCashFlowStatementView(QuarterlyReportMixIn, FiscalYearEntityModelCashFlowStatementView):
-    """
-    Quarter Cash Flow Statement View.
-    """
-
-
-class MonthlyEntityModelCashFlowStatementView(MonthlyReportMixIn, FiscalYearEntityModelCashFlowStatementView):
-    """
-    Monthly Cash Flow Statement View.
-    """
-
-
-class DateEntityModelCashFlowStatementView(DateReportMixIn, FiscalYearEntityModelCashFlowStatementView):
-    """
-    Date Cash Flow Statement View.
     """
