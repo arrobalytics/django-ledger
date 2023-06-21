@@ -39,8 +39,8 @@ Django Ledger supports:
 - Financial Statements (Income Statement, Balance Sheet & Cash Flow Statement).
 - Purchase Orders, Sales Orders (Estimates), Bills and Invoices.
 - Automatic financial ratio & insight calculations.
+- High Level Entity API.
 - Multi tenancy (multiple companies/users/clients).
-- Hierarchical entity management (for consolidated financial statements - v0.9).
 - Self-contained Ledgers, Journal Entries & Transactions.
 - Basic OFX & QFX file import.
 - Bills & Invoices with optional cash/accrual functionality.
@@ -79,16 +79,16 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
       help needed!)__.
     * Update package and code documentation.
     * Bugfixes & UI/UX Enhancements.
-* __0.5.0__: Inventory tracking.
+* ~~__0.5.0__~~: Inventory tracking.
     * Average Cost.
-* __0.5.1__: Customer estimates & contract tracking.
+* ~~__0.5.1__~~: Customer estimates & contract tracking.
     * Link Estimate/PO/Bill/Invoice workflow.
     * Journal Entry activity determination & validation (for cash flow).
-* __0.5.2__: Cash flow statement.
+* ~~__0.5.2__~~: Cash flow statement.
     * Human Readable Journal Entry document numbers.
     * Hierarchical Account Model Management.
     * Generate all Django Ledger Model documentation.
-* __0.5.3__: High Level EntityModel API.
+* ~~__0.5.3__~~: High Level EntityModel API.
 * __0.5.4__: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
 * __0.5.5__: Closing entries and snapshots.
 * __0.5.6__: Chart of Accounts Import.
@@ -171,7 +171,7 @@ pipenv install django
 * Install Django Ledger
 
 ```shell script
-pipenv install django-ledger
+pipenv install django-ledger --categories graphql,pdf
 ```
 
 * Activate your new virtual environment:
