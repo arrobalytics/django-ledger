@@ -186,6 +186,16 @@ pipenv install django-ledger[graphql,pdf]
 pipenv shell
 ```
 
+* Add django_ledger to INSTALLED_APPS in you new Django Project.
+
+```python
+INSTALLED_APPS = [
+    ...,
+    'django_ledger',
+    ...,
+]
+```
+
 * Perform database migrations:
 
 ```shell
@@ -196,16 +206,6 @@ python manage.py migrate
 
 ```shell
 python manage.py createsuperuser
-```
-
-* Add django_ledger to INSTALLED_APPS in you new Django Project.
-
-```python
-INSTALLED_APPS = [
-    ...,
-    'django_ledger',
-    ...,
-]
 ```
 
 * Add URLs to your project's __urls.py__:
@@ -226,8 +226,9 @@ urlpatterns = [
 python manage.py runserver
 ```
 
-* Navigate to Django Ledger root view assigned in your project urlpatterns setting.
-* Use your user credentials.
+* Navigate to Django Ledger root view assigned in your project urlpatterns setting (typically http://127.0.0.1:8000/ledger
+if you followed this installation guide).
+* Use your superuser credentials to login.
 
 # How To Set Up Django Ledger for Development
 
