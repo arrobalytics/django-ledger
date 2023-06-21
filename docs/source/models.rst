@@ -31,7 +31,7 @@ Ledger Model
 
 Transaction Model
 -----------------
-.. automodule:: django_ledger.models.ledger
+.. automodule:: django_ledger.models.transaction
     :members:
 
 Journal Entry Model

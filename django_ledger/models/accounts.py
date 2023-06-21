@@ -412,9 +412,9 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     code: str
         Each account will have its own alphanumeric code.
         For example:
-           * Cash Account -> Code 1010.
-           * Inventory -> 1200.
-        Maximum Length allowed is 10.
+        * Cash Account -> Code 1010.
+        * Inventory -> 1200.
+        * Maximum Length allowed is 10.
 
     name: str
         This is the user defined name  of the Account. the maximum length for Name of the ledger allowed is 100
@@ -425,10 +425,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     balance_type: str
         Each account will have a default Account type i.e. Either Debit or Credit.
         For example:
-            * Assets like Cash, Inventory, Accounts Receivable or Expenses like Rent, Salary will have
-              balance_type=DEBIT.
-            * Liabilities, Equities and Income like Payables, Loans, Income, Sales, Reserves will have
-              balance_type=CREDIT.
+        * Assets like Cash, Inventory, Accounts Receivable or Expenses like Rent, Salary will have balance_type=DEBIT.
+        * Liabilities, Equities and Income like Payables, Loans, Income, Sales, Reserves will have balance_type=CREDIT.
 
     locked: bool
         This determines whether any transactions can be added in the account. Before making any update to the
