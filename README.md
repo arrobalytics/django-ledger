@@ -150,16 +150,22 @@ is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-pro
 Make sure you refer to the django version you are using. A quick way to start a new django project is to run the
 following command:
 
+* Install Django:
+
+```shell
+pip install django
+```
+
 * Install Python Pipenv:
 
 ```shell script
 pip install pipenv
 ```
 
-* Go to your desired development folder and run:
+* Go to your desired development folder and create a new django project:
 
 ```shell
-mkdir django-ledger-project && cd django-ledger-project
+django-admin startproject django_ledger_project && cd django_ledger_project
 ```
 
 * Install Django on you virtual environment.
@@ -171,19 +177,13 @@ pipenv install django
 * Install Django Ledger
 
 ```shell script
-pipenv install django-ledger --categories graphql,pdf
+pipenv install django-ledger[graphql,pdf]
 ```
 
 * Activate your new virtual environment:
 
 ```shell
 pipenv shell
-```
-
-* Create a new django project.
-
-```shell script
-django-admin startproject django-ledger-project
 ```
 
 * Perform database migrations:

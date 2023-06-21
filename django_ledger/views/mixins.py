@@ -8,7 +8,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import monthrange
 from datetime import timedelta, date
-from enum import Enum
 from typing import Tuple, Optional
 
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, PermissionRequiredMixin
@@ -19,7 +18,6 @@ from django.urls import reverse
 from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
-from fpdf import FPDF
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
 from django_ledger.models.entity import FiscalPeriodMixIn
@@ -466,13 +464,15 @@ class PDFReportMixIn:
         self.object = self.get_object()
         io_model = self.object
         pdf_func_name = self.get_pdf_func_name()
-        return getattr(io_model, pdf_func_name)(
+        pdf = getattr(io_model, pdf_func_name)(
             entity_slug=self.kwargs.get('entity_slug'),
             from_date=self.get_pdf_from_date(),
             to_date=self.get_pdf_to_date(),
             user_model=self.request.user,
             subtitle=self.get_pdf_subtitle()
         )
+        pdf.create_pdf_report()
+        return pdf
 
     def get_pdf_subtitle(self) -> str:
         return self.request.GET.get(self.pdf_subtitle_query_param)
@@ -487,7 +487,7 @@ class PDFReportMixIn:
 
     def get_pdf_response(self) -> HttpResponse:
         if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            return HttpResponseNotFound()
+            return HttpResponseNotFound(content='PDF format is not supported')
         pdf = self.get_pdf()
         response = HttpResponse(
             bytes(pdf.output()),
