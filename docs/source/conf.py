@@ -12,6 +12,8 @@
 #
 import os
 import sys
+from pathlib import Path
+from shutil import copy
 
 import django
 
@@ -20,11 +22,16 @@ sys.path.insert(0, HERE)
 
 BASE_DIR = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, BASE_DIR)
+BASE_DIR_PATH = Path(BASE_DIR)
 
 # print(f'conf_path: {HERE}, project_path: {BASE_DIR}')
 
 os.environ["DJANGO_SETTINGS_MODULE"] = "dev_env.settings"
 django.setup()
+
+# copies the readme into the source docs files.
+# file is included in .gitignore
+copy(src=BASE_DIR_PATH.joinpath('README.md'), dst=BASE_DIR_PATH.joinpath('docs/source/'))
 
 # sys.path.insert(0, os.path.abspath('.'))
 

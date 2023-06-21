@@ -112,4 +112,4 @@ dev_notebooks/
 data/
 oauth_codes.json
 http-client.private.env.json
-assets/.yarn
+docs/source/README.md
