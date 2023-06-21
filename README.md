@@ -141,7 +141,7 @@ See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/bl
 * GraphQL API - See
   details [here.](https://github.com/arrobalytics/django-ledger/tree/develop/django_ledger/contrib/django_ledger_graphql)
 
-## Quick Start
+# Installation
 
 Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need a working knowledge of
 Django and a working Django
@@ -150,7 +150,7 @@ is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-pro
 Make sure you refer to the django version you are using. A quick way to start a new django project is to run the
 following command:
 
-To install Python Pipenv
+* Install Python Pipenv:
 
 ```shell script
 pip install pipenv
