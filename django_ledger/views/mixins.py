@@ -8,7 +8,8 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import monthrange
 from datetime import timedelta, date
-from typing import Tuple
+from enum import Enum
+from typing import Tuple, Optional
 
 from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, PermissionRequiredMixin
 from django.core.exceptions import ValidationError
@@ -440,15 +441,55 @@ class BaseDateNavigationUrlMixIn:
 
 
 class PDFReportMixIn:
+
+    class PDFReportEnum:
+        BS = 'BS'
+        IS = 'IS'
+        CFS = 'CFS'
+
+    pdf_report_enum = PDFReportEnum
+    pdf_report_type: Optional[PDFReportEnum] = None
     pdf_format_query_param = 'format'
     pdf_format_query_param_value = 'pdf'
     pdf_subtitle_query_param = 'report_subtitle'
+    pdf_io_mixin_function_map = {
+        PDFReportEnum.BS: 'get_balance_sheet_statement_pdf',
+        PDFReportEnum.IS: 'get_income_statement_pdf',
+        PDFReportEnum.CFS: 'get_cash_flow_statement_pdf',
+    }
 
-    def get_pdf(self) -> FPDF:
-        raise NotImplementedError('Must implement get_pdf()')
+    # def get_pdf(self) -> FPDF:
+    #     raise NotImplementedError('Must implement get_pdf()')
+
+    def get_pdf_func_name(self):
+        if not self.pdf_report_type:
+            raise NotImplementedError(f'Must define pdf_report_type from {self.PDFReportEnum.__name__}')
+        return self.pdf_io_mixin_function_map[self.pdf_report_type]
+
+    def get_pdf(self):
+        self.object = self.get_object()
+        io_model = self.object
+        pdf_func_name = self.get_pdf_func_name()
+        return getattr(io_model, pdf_func_name)(
+            entity_slug=self.kwargs.get('entity_slug'),
+            from_date=self.get_pdf_from_date(),
+            to_date=self.get_pdf_to_date(),
+            user_model=self.request.user,
+            subtitle=self.get_pdf_subtitle()
+        )
 
     def get_pdf_subtitle(self) -> str:
         return self.request.GET.get(self.pdf_subtitle_query_param)
+
+    def get_pdf_from_date(self) -> Optional[date]:
+        if self.pdf_report_type == self.PDFReportEnum.BS:
+            return
+        ctx = getattr(self, 'get_context_data')()
+        return ctx['from_date']
+
+    def get_pdf_to_date(self) -> date:
+        ctx = getattr(self, 'get_context_data')()
+        return ctx['to_date']
 
     def get_pdf_response(self) -> HttpResponse:
         if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:

@@ -174,6 +174,7 @@ class IOPDFMixIn:
                                         filename: Optional[str] = None,
                                         user_model: Optional[UserModel] = None,
                                         txs_queryset: Optional[QuerySet] = None,
+                                        save_pdf: bool = False,
                                         **kwargs
                                         ):
         io_digest = self.get_balance_sheet(
@@ -186,10 +187,11 @@ class IOPDFMixIn:
         pdf_klass = lazy_loader.get_balance_sheet_pdf_report_class()
         pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
         pdf.create_pdf_report()
-        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-        filename = pdf.get_pdf_filename() if not filename else filename
-        filepath = base_dir.joinpath(filename)
-        pdf.output(filepath)
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = pdf.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            pdf.output(filepath)
         return pdf
 
     def get_income_statement(self,
@@ -216,6 +218,7 @@ class IOPDFMixIn:
                                  filename: Optional[str] = None,
                                  user_model: Optional[UserModel] = None,
                                  txs_queryset: Optional[QuerySet] = None,
+                                 save_pdf: bool = False,
                                  **kwargs
                                  ):
         io_digest = self.get_income_statement(
@@ -228,10 +231,11 @@ class IOPDFMixIn:
         pdf_klass = lazy_loader.get_income_statement_pdf_report_class()
         pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
         pdf.create_pdf_report()
-        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-        filename = pdf.get_pdf_filename() if not filename else filename
-        filepath = base_dir.joinpath(filename)
-        pdf.output(filepath)
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = pdf.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            pdf.output(filepath)
         return pdf
 
     def get_cash_flow_statement(self,
@@ -258,6 +262,7 @@ class IOPDFMixIn:
                                     filename: Optional[str] = None,
                                     user_model: Optional[UserModel] = None,
                                     txs_queryset: Optional[QuerySet] = None,
+                                    save_pdf: bool = False,
                                     **kwargs
                                     ):
         io_digest = self.get_cash_flow_statement(
@@ -271,10 +276,11 @@ class IOPDFMixIn:
         pdf_klass = lazy_loader.get_cash_flow_statement_pdf_report_class()
         pdf = pdf_klass('P', 'mm', 'A4', io_digest=io_digest, report_subtitle=subtitle)
         pdf.create_pdf_report()
-        base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-        filename = pdf.get_pdf_filename() if not filename else filename
-        filepath = base_dir.joinpath(filename)
-        pdf.output(filepath)
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = pdf.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            pdf.output(filepath)
         return pdf
 
 

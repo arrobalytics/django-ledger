@@ -119,23 +119,13 @@ class FiscalYearLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn,
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
+    pdf_report_type = 'BS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Ledger Balance Sheet: ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_pdf(self):
-        self.object = self.get_object()
-        ledger_model: LedgerModel = self.object
-        context = self.get_context_data()
-        return ledger_model.get_balance_sheet_statement_pdf(
-            entity_slug=ledger_model.entity.slug,
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
 
 
 class QuarterlyLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, QuarterlyReportMixIn):
@@ -186,18 +176,6 @@ class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
         context['header_title'] = context['page_title']
         return context
 
-    def get_pdf(self):
-        self.object = self.get_object()
-        ledger_model: LedgerModel = self.object
-        context = self.get_context_data()
-        return ledger_model.get_income_statement_pdf(
-            entity_slug=ledger_model.entity.slug,
-            from_date=context['from_date'],
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
-
 
 class QuarterlyLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, QuarterlyReportMixIn):
     """
@@ -244,24 +222,13 @@ class FiscalYearLedgerModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/financial_statements/cash_flow.html'
+    pdf_report_type = 'CFS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = _('Ledger Cash Flow Statement: ') + self.object.name
         context['header_title'] = context['page_title']
         return context
-
-    def get_pdf(self):
-        self.object = self.get_object()
-        ledger_model: LedgerModel = self.object
-        context = self.get_context_data()
-        return ledger_model.get_cash_flow_statement_pdf(
-            entity_slug=ledger_model.entity.slug,
-            from_date=context['from_date'],
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
 
 
 class QuarterlyLedgerModelCashFlowStatementView(FiscalYearLedgerModelCashFlowStatementView, QuarterlyReportMixIn):

@@ -1722,7 +1722,7 @@ class BillModelAbstract(AccrualMixIn,
 
         return self.bill_number
 
-    def generate_descriptive_title(self):
+    def generate_descriptive_title(self) -> str:
         return f'Bill {self.bill_number} | {self.get_bill_status_display()} {self.get_status_action_date()} | {self.vendor.vendor_name}'
 
     def clean(self, commit: bool = True):

@@ -140,23 +140,12 @@ class FiscalYearEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn,
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/balance_sheet.html'
+    pdf_report_type = 'BS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['entity_model'] = self.object.entity
         return context
-
-    def get_pdf(self):
-        self.object = self.get_object()
-        unit_model: EntityUnitModel = self.object
-        entity_model: EntityModel = unit_model.entity
-        context = self.get_context_data()
-        return unit_model.get_balance_sheet_statement_pdf(
-            entity_slug=entity_model.slug,
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
 
 
 class QuarterlyEntityUnitModelBalanceSheetView(FiscalYearEntityUnitModelBalanceSheetView, QuarterlyReportMixIn):
@@ -200,24 +189,12 @@ class FiscalYearEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn,
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/income_statement.html'
+    pdf_report_type = 'IS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['entity_model'] = self.object.entity
         return context
-
-    def get_pdf(self):
-        self.object = self.get_object()
-        unit_model: EntityUnitModel = self.object
-        entity_model: EntityModel = unit_model.entity
-        context = self.get_context_data()
-        return unit_model.get_income_statement_pdf(
-            entity_slug=entity_model.slug,
-            from_date=context['from_date'],
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
 
 
 class QuarterlyIncomeStatementView(FiscalYearIncomeStatementView, QuarterlyReportMixIn):
@@ -261,24 +238,12 @@ class FiscalYearEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
     context_object_name = 'unit_model'
     slug_url_kwarg = 'unit_slug'
     template_name = 'django_ledger/financial_statements/cash_flow.html'
+    pdf_report_type = 'CFS'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['entity_model'] = self.object.entity
         return context
-
-    def get_pdf(self):
-        self.object = self.get_object()
-        unit_model: EntityUnitModel = self.object
-        entity_model: EntityModel = unit_model.entity
-        context = self.get_context_data()
-        return unit_model.get_cash_flow_statement_pdf(
-            entity_slug=entity_model.slug,
-            from_date=context['from_date'],
-            to_date=context['to_date'],
-            user_model=self.request.user,
-            subtitle=self.get_pdf_subtitle()
-        )
 
 
 class QuarterlyEntityUnitModelCashFlowStatementView(FiscalYearEntityUnitModelCashFlowStatementView,

@@ -1594,6 +1594,9 @@ class InvoiceModelAbstract(AccrualMixIn,
                     self.save(update_fields=['invoice_number'])
         return self.invoice_number
 
+    def generate_descriptive_title(self) -> str:
+        return f'Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
+
     def clean(self, commit: bool = True):
         """
         Clean method for InvoiceModel. Results in a DB query if invoice number has not been generated and the
