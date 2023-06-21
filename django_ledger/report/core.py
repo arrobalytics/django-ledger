@@ -1,5 +1,4 @@
 from typing import Optional, Dict
-from fpdf import FPDF, XPos, YPos
 
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
@@ -13,6 +12,10 @@ if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
     from fpdf import FPDF, XPos, YPos
 
 
+class PDFReportValidationError(ValidationError):
+    pass
+
+
 def load_support():
     support = list()
     if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
@@ -20,11 +23,7 @@ def load_support():
     return support
 
 
-class PDFReportValidationError(ValidationError):
-    pass
-
-
-class BasePDFSupport(*load_support()):
+class BaseReportSupport(*load_support()):
     FOOTER_LOGO_PATH = 'django_ledger/logo/django-ledger-logo-report.png'
 
     def __init__(self,
@@ -185,6 +184,9 @@ class BasePDFSupport(*load_support()):
     def get_report_name(self):
         raise NotImplementedError(f'Must define REPORT_TYPE on {self.__class__.__name__}')
 
+    def get_report_data(self):
+        raise NotImplementedError()
+
     def get_report_footer_logo_path(self) -> str:
         return finders.find(self.FOOTER_LOGO_PATH)
 
@@ -208,10 +210,14 @@ class BasePDFSupport(*load_support()):
         self.set_font(self.FONT_FAMILY, 'I', 8)
         self.cell(0, 5, 'Page ' + str(self.page_no()) + '/{nb}', 0, 1, 'C')
         self.set_font(family=self.FONT_FAMILY, size=self.FONT_SIZE - 3)
-        self.cell(0, 5, 'Powered by:', 0, 1, 'C')
         self.image(self.get_report_footer_logo_path(),
                    w=30, x=(200 - 30) / 2,
                    link='https://www.djangoledger.com')
+        self.ln(1)
+        self.cell(0, 5,
+                  'Powered by Django Ledger. Open Source software under GPLv3 License. '
+                  'Created by Miguel Sanda <msanda@arrobalytics.com>',
+                  0, 1, 'C')
 
     def create_pdf_report(self):
         raise NotImplementedError()

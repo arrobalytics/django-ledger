@@ -56,7 +56,7 @@ class IODigest:
             lazy_loader.get_unit_model()
         )
 
-    # Balance Sheet...
+    # Balance Sheet Data...
     def has_balance_sheet(self) -> bool:
         return 'balance_sheet' in self.IO_DATA
 
@@ -69,7 +69,7 @@ class IODigest:
                     'IO Digest does not have balance sheet information available.'
                 )
 
-    # Income Statement...
+    # Income Statement Data...
     def has_income_statement(self) -> bool:
         return 'income_statement' in self.IO_DATA
 
@@ -82,7 +82,7 @@ class IODigest:
                     'IO Digest does not have income statement information available.'
                 )
 
-    # Cash Flow Statement...
+    # Cash Flow Statement Data...
     def has_cash_flow_statement(self):
         return 'cash_flow_statement' in self.IO_DATA
 

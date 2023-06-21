@@ -1,18 +1,20 @@
+from typing import Optional, Dict
+
 from django.urls import reverse
 
 from django_ledger.io import IODigest
-from django_ledger.report.pdf_core import BasePDFSupport, PDFReportValidationError
+from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
 
 
-class BalanceSheetPDFReport(BasePDFSupport):
+class BalanceSheetReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigest, **kwargs):
+    def __init__(self, *args, io_digest: IODigest, report_subtitle: Optional[str] = None, **kwargs):
 
         if not io_digest.has_balance_sheet():
             raise PDFReportValidationError('IO Digest does not have balance sheet information.')
-        super().__init__(*args, io_digest=io_digest, **kwargs)
+        super().__init__(*args, io_digest=io_digest, report_subtitle=report_subtitle, **kwargs)
         self.TABLE_HEADERS = {
             'role': {
                 'title': '',
@@ -48,7 +50,10 @@ class BalanceSheetPDFReport(BasePDFSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_name(self):
+    def get_report_data(self) -> Dict:
+        return self.IO_DIGEST.get_balance_sheet_data()
+
+    def get_report_name(self) -> str:
         return 'Balance Sheet Statement'
 
     def print_section_data(self, section_data):
@@ -71,7 +76,6 @@ class BalanceSheetPDFReport(BasePDFSupport):
                 self.cell(
                     w=self.TABLE_HEADERS['role']['width'],
                     h=account_height,
-                    # txt=d['role_name']
                     txt=''
                 )
                 self.cell(
@@ -79,11 +83,21 @@ class BalanceSheetPDFReport(BasePDFSupport):
                     h=account_height,
                     txt='      {code}'.format(code=acc['code'])
                 )
-                self.cell(
-                    w=self.TABLE_HEADERS['name']['width'],
-                    h=account_height,
-                    txt=acc['name']
-                )
+
+                if acc['activity']:
+                    act = ' '.join(acc['activity'].split('_')).lower()
+                    self.cell(
+                        w=self.TABLE_HEADERS['name']['width'],
+                        h=account_height,
+                        txt=f'{acc["name"]} ({act})'
+                    )
+                else:
+                    self.cell(
+                        w=self.TABLE_HEADERS['name']['width'],
+                        h=account_height,
+                        txt=acc['name']
+                    )
+
                 self.cell(
                     w=self.TABLE_HEADERS['balance_type']['width'],
                     h=account_height,

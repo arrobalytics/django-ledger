@@ -1,16 +1,18 @@
+from typing import Optional, Dict
+
 from django_ledger.io import IODigest
-from django_ledger.report.pdf_core import BasePDFSupport, PDFReportValidationError
+from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
 
 
-class IncomeStatementPDFReport(BasePDFSupport):
+class IncomeStatementReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigest, **kwargs):
+    def __init__(self, *args, io_digest: IODigest, report_subtitle: Optional[str] = None, **kwargs):
 
         if not io_digest.has_income_statement():
             raise PDFReportValidationError('IO Digest does not have income statement information.')
-        super().__init__(*args, io_digest=io_digest, **kwargs)
+        super().__init__(*args, io_digest=io_digest, report_subtitle=report_subtitle, **kwargs)
         self.TABLE_HEADERS = {
             'role': {
                 'title': '',
@@ -47,7 +49,10 @@ class IncomeStatementPDFReport(BasePDFSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_name(self):
+    def get_report_data(self) -> Dict:
+        return self.IO_DIGEST.get_income_statement_data()
+
+    def get_report_name(self) -> str:
         return 'Income Statement'
 
     def print_section_data(self, section_data):

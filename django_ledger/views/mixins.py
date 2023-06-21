@@ -441,7 +441,6 @@ class BaseDateNavigationUrlMixIn:
 
 
 class PDFReportMixIn:
-
     class PDFReportEnum:
         BS = 'BS'
         IS = 'IS'
@@ -453,13 +452,10 @@ class PDFReportMixIn:
     pdf_format_query_param_value = 'pdf'
     pdf_subtitle_query_param = 'report_subtitle'
     pdf_io_mixin_function_map = {
-        PDFReportEnum.BS: 'get_balance_sheet_statement_pdf',
-        PDFReportEnum.IS: 'get_income_statement_pdf',
-        PDFReportEnum.CFS: 'get_cash_flow_statement_pdf',
+        PDFReportEnum.BS: 'get_balance_sheet_statement',
+        PDFReportEnum.IS: 'get_income_statement',
+        PDFReportEnum.CFS: 'get_cash_flow_statement',
     }
-
-    # def get_pdf(self) -> FPDF:
-    #     raise NotImplementedError('Must implement get_pdf()')
 
     def get_pdf_func_name(self):
         if not self.pdf_report_type:
@@ -482,8 +478,6 @@ class PDFReportMixIn:
         return self.request.GET.get(self.pdf_subtitle_query_param)
 
     def get_pdf_from_date(self) -> Optional[date]:
-        if self.pdf_report_type == self.PDFReportEnum.BS:
-            return
         ctx = getattr(self, 'get_context_data')()
         return ctx['from_date']
 

@@ -5,7 +5,7 @@
 __Django Ledger__ is a double entry accounting system based on
 the [Django Web Framework](https://www.djangoproject.com),
 which aims to power financially driven applications by removing the complexity of the accounting domain into a simple,
-high-level API. _Prior experience with Django is required to more effectively use this software_. 
+high-level API. _Prior experience with Django is required to more effectively use this software_.
 
 __Django Ledger__ was created and is currently maintained and developed by lead developer Miguel Sanda.
 If you want to contribute please consider joining our new discord channel here.
@@ -74,7 +74,8 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Start creating basic package documentation via [Sphinx](https://www.sphinx-doc.org/en/master/)
         * Document code and functions within code base.
         * Generate HTML documentation.
-    * Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output __(
+    * Work with Accountants, Subject Experts and Developers to define an initial list of Unit Tests to validate output _
+      _(
       help needed!)__.
     * Update package and code documentation.
     * Bugfixes & UI/UX Enhancements.
@@ -142,28 +143,59 @@ See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/bl
 
 ## Quick Start
 
-Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need a working knowledge of Django and a working Django 
-Project before you can use Django Ledger. A good place to start is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-project).
+Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need a working knowledge of
+Django and a working Django
+Project before you can use Django Ledger. A good place to start
+is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-project).
 Make sure you refer to the django version you are using. A quick way to start a new django project is to run the
 following command:
 
+To install Python Pipenv
+
 ```shell script
-django-admin startproject django-ledger-project
+pip install pipenv
+```
+
+* Go to your desired development folder and run:
+
+```shell
+mkdir django-ledger-project && cd django-ledger-project
+```
+
+* Install Django on you virtual environment.
+
+```shell
+pipenv install django
 ```
 
 * Install Django Ledger
 
 ```shell script
-pip install django-ledger
+pipenv install django-ledger
 ```
 
-To install Django Virtual Environment
-```pip install pipenv```
+* Activate your new virtual environment:
 
-* Or with pipenv:
+```shell
+pipenv shell
+```
+
+* Create a new django project.
 
 ```shell script
-pipenv install django-ledger
+django-admin startproject django-ledger-project
+```
+
+* Perform database migrations:
+
+```shell
+python manage.py migrate
+```
+
+* Add Django SuperUser and follow the prompts.
+
+```shell
+python manage.py createsuperuser
 ```
 
 * Add django_ledger to INSTALLED_APPS in you new Django Project.
@@ -188,10 +220,10 @@ urlpatterns = [
 ]
 ```
 
-* Add Django SuperUser if necessary.
+* Run your project:
 
 ```shell
-python manage.py createsuperuser
+python manage.py runserver
 ```
 
 * Navigate to Django Ledger root view assigned in your project urlpatterns setting.
@@ -266,3 +298,9 @@ python manage.py test django_ledger
 ![django ledger income statement](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_balance_sheet.png)
 ![django ledger bill](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_bill.png)
 ![django ledger invoice](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_invoice.png)
+
+# Financial Statements Screenshots
+
+![balance_sheet_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/BalanceSheetStatement.png)
+![income_statement_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/IncomeStatement.png)
+![cash_flow_statement_report](https://django-ledger.us-east-1.linodeobjects.com/public/img/CashFlowStatement.png)

@@ -1,16 +1,18 @@
+from typing import Optional, Dict
+
 from django_ledger.io import IODigest
-from django_ledger.report.pdf_core import BasePDFSupport, PDFReportValidationError
+from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_format
 
 
-class CashFlowStatementPDFReport(BasePDFSupport):
+class CashFlowStatementReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigest, **kwargs):
+    def __init__(self, *args, io_digest: IODigest, report_subtitle: Optional[str] = None, **kwargs):
 
         if not io_digest.has_cash_flow_statement():
             raise PDFReportValidationError('IO Digest does not have income statement information.')
-        super().__init__(*args, io_digest=io_digest, **kwargs)
+        super().__init__(*args, io_digest=io_digest, report_subtitle=report_subtitle, **kwargs)
         self.TABLE_HEADERS = {
             'empty_1': {
                 'title': '',
@@ -27,7 +29,10 @@ class CashFlowStatementPDFReport(BasePDFSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_name(self):
+    def get_report_data(self) -> Dict:
+        return self.IO_DIGEST.get_cash_flow_statement_data()
+
+    def get_report_name(self) -> str:
         return 'Cash Flow Statement'
 
     def print_amount(self, amt, zoom=0):
