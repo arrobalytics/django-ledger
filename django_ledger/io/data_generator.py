@@ -730,15 +730,14 @@ class EntityDataGenerator(LoggingMixIn):
         capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
         cash_acc = choice(self.bank_account_models).cash_account
 
-        ledger_model: LedgerModel = self.entity_model.add_equity(
-            user_model=self.user_model,
-            amount=self.capital_contribution,
+        self.entity_model.deposit_capital(
             cash_account=cash_acc,
-            equity_account=capital_acc,
-            txs_date=self.start_date,
-            ledger_name='Entity Funding for Sample Data',
+            capital_account=capital_acc,
+            amount=self.capital_contribution,
+            je_timestamp=self.start_date,
+            je_posted=True,
             ledger_posted=True,
-            je_posted=True
+            description='Entity Funding for Sample Data',
         )
 
     def recount_inventory(self):

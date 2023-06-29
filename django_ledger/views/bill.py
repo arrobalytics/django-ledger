@@ -141,7 +141,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
                 user_model=self.request.user)
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
-            bill_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
+            bill_model.bind_estimate(estimate_model=estimate_model, commit=False)
 
         elif self.for_purchase_order:
             po_pk = self.kwargs['po_pk']

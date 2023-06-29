@@ -22,7 +22,7 @@ from django_ledger.models import (EntityModel, ItemTransactionModel, Transaction
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
-    EntityDigestMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
+    DigestContextMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
 )
 
 
@@ -183,7 +183,7 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
                                          BaseDateNavigationUrlMixIn,
                                          UnpaidElementsMixIn,
                                          EntityUnitMixIn,
-                                         EntityDigestMixIn,
+                                         DigestContextMixIn,
                                          YearlyReportMixIn,
                                          DetailView):
     context_object_name = 'entity'
@@ -194,6 +194,9 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
 
     FETCH_UNPAID_BILLS = True
     FETCH_UNPAID_INVOICES = True
+
+    IO_DIGEST = True
+    IO_DIGEST_EQUITY = True
 
     def get_context_data(self, **kwargs):
         context = super(FiscalYearEntityModelDashboardView, self).get_context_data(**kwargs)
@@ -211,16 +214,12 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
 
         url_pointer = 'entity' if not unit_slug else 'unit'
         context['pnl_chart_id'] = f'djl-entity-pnl-chart-{randint(10000, 99999)}'
-        context['pnl_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-pnl',
-                                                kwargs=KWARGS)
+        context['pnl_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-pnl', kwargs=KWARGS)
         context['payables_chart_id'] = f'djl-entity-payables-chart-{randint(10000, 99999)}'
-        context['payables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-payables',
-                                                     kwargs=KWARGS)
+        context['payables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-payables', kwargs=KWARGS)
         context['receivables_chart_id'] = f'djl-entity-receivables-chart-{randint(10000, 99999)}'
         context['receivables_chart_endpoint'] = reverse(f'django_ledger:{url_pointer}-json-net-receivables',
                                                         kwargs=KWARGS)
-
-        context = self.get_entity_digest(context)
 
         return context
 

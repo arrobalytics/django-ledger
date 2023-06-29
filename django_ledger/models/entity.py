@@ -25,33 +25,32 @@ from calendar import monthrange
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
-from pathlib import Path
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
+from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module, validate_roles, IODigest
+from django_ledger.io import roles as roles_module, validate_roles
 from django_ledger.io.io_mixin import IOMixIn
-from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
+from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
-from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet, UnitOfMeasureModel,
-                                        UnitOfMeasureModelQuerySet, ItemModel)
+from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet,
+                                        UnitOfMeasureModel, UnitOfMeasureModelQuerySet, ItemModel)
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, ContactInfoMixIn, LoggingMixIn
 from django_ledger.models.unit import EntityUnitModel
@@ -746,6 +745,7 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Entity {self.name} already has existing accounts. '
                                                  'Use force=True to bypass this check')
 
+    # Model Validators....
     def validate_chart_of_accounts_for_entity(self,
                                               coa_model: ChartOfAccountModel,
                                               raise_exception: bool = True) -> bool:
@@ -802,6 +802,15 @@ class EntityModelAbstract(MP_Node,
                 f'Invalid AccountModel model {account_model.uuid} for EntityModel {self.slug}'
             )
         return False
+
+    @staticmethod
+    def validate_account_model_for_role(account_model: AccountModel, role: str):
+        if account_model.role != role:
+            raise EntityModelValidationError(f'Invalid account role: {account_model.role}, expected {role}')
+
+    def validate_ledger_model_for_entity(self, ledger_model: Union[LedgerModel, UUID, str]):
+        if ledger_model.entity_id != self.uuid:
+            raise EntityModelValidationError(f'Invalid LedgerModel {ledger_model.uuid} for entity {self.slug}')
 
     def get_all_coa_accounts(self,
                              order_by: Optional[Tuple[str]] = ('code',),
@@ -2112,70 +2121,91 @@ class EntityModelAbstract(MP_Node,
                 'uuid', 'name', 'uom__name', 'inventory_received', 'inventory_received_value')
         return recorded_qs
 
-    def add_equity(self,
-                   user_model,
-                   cash_account: Union[str, AccountModel],
-                   equity_account: Union[str, AccountModel],
-                   txs_date: Union[date, str],
-                   amount: Decimal,
-                   ledger_name: str,
-                   ledger_posted: bool = False,
-                   je_posted: bool = False):
+    # COMMON TRANSACTIONS...
+    def deposit_capital(self,
+                        amount: Union[Decimal, float],
+                        cash_account: Optional[Union[AccountModel, BankAccountModel]] = None,
+                        capital_account: Optional[AccountModel] = None,
+                        description: Optional[str] = None,
+                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                        ledger_model: Optional[Union[LedgerModel, UUID]] = None,
+                        ledger_posted: bool = False,
+                        je_timestamp: Optional[Union[datetime, date, str]] = None,
+                        je_posted: bool = False):
 
-        if not isinstance(cash_account, AccountModel) and not isinstance(equity_account, AccountModel):
-
-            account_qs = AccountModel.objects.with_roles(
-                roles=[
-                    roles_module.EQUITY_CAPITAL,
-                    roles_module.EQUITY_COMMON_STOCK,
-                    roles_module.EQUITY_PREFERRED_STOCK,
-                    roles_module.ASSET_CA_CASH
-                ],
-                entity_slug=self.slug,
-                user_model=user_model
-            )
-
-            cash_account_model = account_qs.get(code__exact=cash_account)
-            equity_account_model = account_qs.get(code__exact=equity_account)
-
-        elif isinstance(cash_account, AccountModel) and isinstance(equity_account, AccountModel):
-            cash_account_model = cash_account
-            equity_account_model = equity_account
-
+        if coa_model:
+            self.validate_chart_of_accounts_for_entity(coa_model)
         else:
-            raise ValidationError(
-                message=f'Both cash_account and equity account must be an instance of str or AccountMode.'
-                        f' Got. Cash Account: {cash_account.__class__.__name__} and '
-                        f'Equity Account: {equity_account.__class__.__name__}'
-            )
+            coa_model = self.get_default_coa()
+
+        ROLES_NEEDED = list()
+        if not cash_account:
+            ROLES_NEEDED.append(roles_module.ASSET_CA_CASH)
+
+        if not capital_account:
+            ROLES_NEEDED.append(roles_module.EQUITY_CAPITAL)
+
+        account_model_qs = self.get_coa_accounts(coa_model=coa_model)
+        account_model_qs = account_model_qs.with_roles(roles=ROLES_NEEDED).is_role_default()
+
+        if not cash_account or not capital_account:
+            if cash_account or capital_account:
+                len(account_model_qs)
+
+        if cash_account:
+            if isinstance(cash_account, BankAccountModel):
+                cash_account = cash_account.cash_account
+            self.validate_account_model_for_coa(account_model=cash_account, coa_model=coa_model)
+            self.validate_account_model_for_role(cash_account, roles_module.ASSET_CA_CASH)
+        else:
+            cash_account = account_model_qs.filter(role__exact=roles_module.ASSET_CA_CASH).get()
+
+        if capital_account:
+            self.validate_account_model_for_coa(account_model=capital_account, coa_model=coa_model)
+            self.validate_account_model_for_role(capital_account, roles_module.EQUITY_CAPITAL)
+        else:
+            capital_account = account_model_qs.filter(role__exact=roles_module.EQUITY_CAPITAL).get()
+
+        if not je_timestamp:
+            je_timestamp = localtime()
+
+        if not description:
+            description = f'Capital Deposit on {je_timestamp.isoformat()}...'
 
         txs = list()
         txs.append({
-            'account_id': cash_account_model.uuid,
-            'tx_type': 'debit',
+            'account': cash_account,
+            'tx_type': DEBIT,
             'amount': amount,
-            'description': f'Sample data for {self.name}'
+            'description': description
         })
         txs.append({
-            'account_id': equity_account_model.uuid,
-            'tx_type': 'credit',
+            'account': capital_account,
+            'tx_type': CREDIT,
             'amount': amount,
-            'description': f'Sample data for {self.name}'
+            'description': description
         })
 
-        ledger = self.ledgermodel_set.create(
-            name=ledger_name,
-            posted=ledger_posted
-        )
+        if not ledger_model:
+            ledger_model = self.ledgermodel_set.create(
+                name=f'Capital Deposit on {je_timestamp.isoformat()}.',
+                posted=ledger_posted
+            )
+        else:
+            if isinstance(ledger_model, LedgerModel):
+                self.validate_ledger_model_for_entity(ledger_model)
+            else:
+                ledger_model_qs = LedgerModel.objects.filter(entity__uuid__exact=self.uuid)
+                ledger_model = ledger_model_qs.get(uuid__exact=ledger_model)
 
-        # todo: this needs to be changes to use the JournalEntryModel API for validation...
         self.commit_txs(
-            je_date=txs_date,
+            je_timestamp=je_timestamp,
             je_txs=txs,
             je_posted=je_posted,
-            je_ledger=ledger
+            je_ledger_model=ledger_model
         )
-        return ledger
+
+        return ledger_model
 
     # ### RANDOM DATA GENERATION ####
 

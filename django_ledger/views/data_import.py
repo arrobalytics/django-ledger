@@ -244,7 +244,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
 
                 je_model, txs_models = ledger_model.commit_txs(
                     je_posted=True,
-                    je_date=now().date(),
+                    je_timestamp=now(),
                     je_txs=txs_digest,
                     je_desc='OFX Import JE',
                     je_activity='op'

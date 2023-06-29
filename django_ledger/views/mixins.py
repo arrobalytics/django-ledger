@@ -331,38 +331,60 @@ class EntityUnitMixIn:
         return unit_slug
 
 
-class EntityDigestMixIn:
+class DigestContextMixIn:
+    IO_DIGEST = False
+    IO_DIGEST_EQUITY = False
 
-    def get_entity_digest(self, context, from_date=None, end_date=None, **kwargs):
-        by_period = self.request.GET.get('by_period')
-        entity_model: EntityModel = self.object
-        if not end_date:
-            end_date = context['to_date']
-        if not from_date:
-            from_date = context['from_date']
+    def get_context_data(self, **kwargs):
+        context = super(DigestContextMixIn, self).get_context_data(**kwargs)
+        return self.get_io_digest(context=context, **kwargs)
 
-        unit_slug = self.get_unit_slug()
+    def get_io_digest(self, context, from_date=None, to_date=None, **kwargs):
+        if any([self.IO_DIGEST,
+                self.IO_DIGEST_EQUITY]):
 
-        qs_all, digest = entity_model.digest(user_model=self.request.user,
-                                             to_date=end_date,
-                                             unit_slug=unit_slug,
-                                             by_period=True if by_period else False,
-                                             process_ratios=True,
-                                             process_roles=True,
-                                             process_groups=True)
+            by_period = self.request.GET.get('by_period')
+            entity_model: EntityModel = self.object
+            if not to_date:
+                to_date = context['to_date']
+            if not from_date:
+                from_date = context['from_date']
 
-        qs_equity, equity_digest = entity_model.digest(user_model=self.request.user,
-                                                       digest_name='equity_digest',
-                                                       to_date=end_date,
-                                                       from_date=from_date,
-                                                       unit_slug=unit_slug,
-                                                       by_period=True if by_period else False,
-                                                       process_ratios=False,
-                                                       process_roles=False,
-                                                       process_groups=True)
-        context.update(digest)
-        context.update(equity_digest)
-        context['date_filter'] = end_date
+            # gets the unit if view inherits EntityUnitMixIn...
+            if hasattr(self, 'get_unit_slug'):
+                unit_slug = getattr(self, 'get_unit_slug')()
+            else:
+                unit_slug = None
+
+            txs_queryset = None
+
+            if self.IO_DIGEST:
+                txs_queryset, digest = entity_model.digest(user_model=self.request.user,
+                                                     to_date=to_date,
+                                                     unit_slug=unit_slug,
+                                                     by_period=True if by_period else False,
+                                                     process_ratios=True,
+                                                     process_roles=True,
+                                                     process_groups=True)
+
+                context.update(digest)
+
+            if self.IO_DIGEST_EQUITY:
+                qs_equity, equity_digest = entity_model.digest(user_model=self.request.user,
+                                                               digest_name='equity_digest',
+                                                               to_date=to_date,
+                                                               from_date=from_date,
+                                                               unit_slug=unit_slug,
+                                                               by_period=True if by_period else False,
+                                                               process_ratios=False,
+                                                               process_roles=False,
+                                                               process_groups=True,
+                                                               txs_queryset=txs_queryset)
+
+                context.update(equity_digest)
+
+            # how is this used??....
+            context['date_filter'] = to_date
         return context
 
 
