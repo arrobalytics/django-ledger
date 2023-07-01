@@ -26,7 +26,7 @@ from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
                                          BalanceSheetStatementContextManager, IncomeStatementContextManager,
                                          CashFlowStatementContextManager)
-from django_ledger.io.io_digest import IODigest
+from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -169,7 +169,7 @@ class IOReportMixIn:
                              to_date: Union[date, datetime],
                              user_model: UserModel,
                              txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                             **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -217,7 +217,7 @@ class IOReportMixIn:
                                 to_date: Union[date, datetime],
                                 user_model: Optional[UserModel] = None,
                                 txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                                **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -267,7 +267,7 @@ class IOReportMixIn:
                                    to_date: Union[date, datetime],
                                    user_model: UserModel,
                                    txs_queryset: Optional[QuerySet] = None,
-                                   **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                                   **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -611,7 +611,7 @@ class IODatabaseMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               ) -> Union[Tuple, IODigest]:
+               ) -> Union[Tuple, IODigestContextManager]:
 
         if balance_sheet_statement:
             from_date = None
@@ -704,7 +704,7 @@ class IODatabaseMixIn:
             io_data = cfs.digest()
 
         if as_io_digest:
-            return IODigest(io_data=io_data)
+            return IODigestContextManager(io_data=io_data)
 
         if not digest_name:
             digest_name = 'tx_digest'

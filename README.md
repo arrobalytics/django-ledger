@@ -89,7 +89,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Hierarchical Account Model Management.
     * Generate all Django Ledger Model documentation.
 * ~~__0.5.3__~~: High Level EntityModel API.
-* __0.5.4__: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
+* ~~__0.5.4__~~: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
 * __0.5.5__: Closing entries and snapshots.
 * __0.5.6__: Chart of Accounts Import.
 * __0.5.7__: Trial Balance Import.
@@ -97,7 +97,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 
 ### Version 0.6
 
-* IO Digest Context Manager
+
 * Credit Line Models.
 * Time tracking.
 * Transaction tagging.
@@ -119,7 +119,7 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 
 ### Version 0.9
 
-* Enable Hierarchical Entity structures via TreeBeard.
+* Enable Hierarchical Entity Structures.
 * Consolidated financial statements.
 * InterCompany transactions.
 * Update package and code documentation.

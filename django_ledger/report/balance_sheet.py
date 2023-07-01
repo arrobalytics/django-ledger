@@ -2,7 +2,7 @@ from typing import Optional, Dict
 
 from django.urls import reverse
 
-from django_ledger.io import IODigest
+from django_ledger.io import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
@@ -10,7 +10,7 @@ from django_ledger.templatetags.django_ledger import currency_symbol, currency_f
 
 class BalanceSheetReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigest, report_subtitle: Optional[str] = None, **kwargs):
+    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: Optional[str] = None, **kwargs):
 
         if not io_digest.has_balance_sheet():
             raise PDFReportValidationError('IO Digest does not have balance sheet information.')

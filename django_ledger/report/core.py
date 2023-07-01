@@ -3,7 +3,7 @@ from typing import Optional, Dict
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 
-from django_ledger.io import IODigest
+from django_ledger.io import IODigestContextManager
 from django_ledger.models import LedgerModel, EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
@@ -28,7 +28,7 @@ class BaseReportSupport(*load_support()):
 
     def __init__(self,
                  *args,
-                 io_digest: IODigest,
+                 io_digest: IODigestContextManager,
                  report_subtitle: Optional[str] = None,
                  **kwargs):
 
@@ -41,7 +41,7 @@ class BaseReportSupport(*load_support()):
         self.FONT_SIZE: int = 9
         self.FONT_FAMILY: str = 'helvetica'
         self.PAGE_WIDTH = 210
-        self.IO_DIGEST: IODigest = io_digest
+        self.IO_DIGEST: IODigestContextManager = io_digest
         self.CURRENCY_SYMBOL = currency_symbol()
         self.set_default_font()
         self.alias_nb_pages()
