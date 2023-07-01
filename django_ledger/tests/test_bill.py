@@ -10,8 +10,7 @@ from django.utils.timezone import localdate
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE, \
     LIABILITY_CL_ACC_PAYABLE
-from django_ledger.models import EntityModel, BillModel, VendorModel, AccountModel
-from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
+from django_ledger.models import EntityModel, BillModel, VendorModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.bill import urlpatterns as bill_urls
 

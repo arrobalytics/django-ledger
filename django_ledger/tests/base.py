@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date, timedelta
 from decimal import Decimal
 from logging import getLogger, DEBUG
 from random import randint, choice
@@ -38,7 +38,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.USERNAME: str = 'testuser'
         cls.PASSWORD: str = 'NeverUseThisPassword12345'
         cls.USER_EMAIL: str = 'testuser@djangoledger.com'
-        cls.N: int = 3
+        cls.N: int = 2
 
         cls.DAYS_FWD: int = randint(180, 180 * 3)
         cls.TZ = get_default_timezone()
@@ -149,3 +149,6 @@ class DjangoLedgerBaseTest(TestCase):
             cls.logger.info(f'Populating Entity {entity_model.name}...')
             data_generator.populate_entity()
         cls.ENTITY_MODEL_QUERYSET = entities_qs
+
+    def get_random_draft_date(self):
+        return self.START_DATE + timedelta(days=randint(0, 365))

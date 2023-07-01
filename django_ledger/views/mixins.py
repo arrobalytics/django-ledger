@@ -360,12 +360,12 @@ class DigestContextMixIn:
 
             if self.IO_DIGEST:
                 txs_queryset, digest = entity_model.digest(user_model=self.request.user,
-                                                     to_date=to_date,
-                                                     unit_slug=unit_slug,
-                                                     by_period=True if by_period else False,
-                                                     process_ratios=True,
-                                                     process_roles=True,
-                                                     process_groups=True)
+                                                           to_date=to_date,
+                                                           unit_slug=unit_slug,
+                                                           by_period=True if by_period else False,
+                                                           process_ratios=True,
+                                                           process_roles=True,
+                                                           process_groups=True)
 
                 context.update(digest)
 

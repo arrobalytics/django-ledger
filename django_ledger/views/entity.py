@@ -133,10 +133,7 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
     def get_success_url(self):
         return reverse('django_ledger:home')
 
-    def post(self, request, *args, **kwargs):
-        return self.delete(request, *args, **kwargs)
-
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
         entity_model: EntityModel = self.get_object()
         entity_model.default_coa = None
         entity_model.save(update_fields=['default_coa'])
@@ -151,7 +148,7 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
             entity_slug=self.kwargs['entity_slug']
         ).delete()
 
-        return super().delete(request, *args, **kwargs)
+        return super().form_valid(form=form)
 
 
 # DASHBOARD VIEWS START ----

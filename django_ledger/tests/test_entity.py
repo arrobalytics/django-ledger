@@ -2,12 +2,12 @@ from datetime import date
 from random import choice
 from urllib.parse import urlparse
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.timezone import localdate
 
 from django_ledger.models import EntityModel
-from django_ledger.settings import DJANGO_LEDGER_LOGIN_URL
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.entity import urlpatterns as entity_urls
 
@@ -51,12 +51,8 @@ class EntityModelTests(DjangoLedgerBaseTest):
                 response = self.CLIENT.get(url, follow=False)
                 redirect_url = urlparse(response.url)
                 redirect_path = redirect_url.path
-                login_path = DJANGO_LEDGER_LOGIN_URL
-
-                self.assertEqual(response.status_code, 302,
-                                 msg='EntityModelListView is not protected.')
-                self.assertEqual(redirect_path, login_path,
-                                 msg='EntityModelListView not redirecting to correct auth URL.')
+                self.assertEqual(response.status_code, 302, msg=f'{path} is not protected.')
+                self.assertEqual(redirect_path, settings.LOGIN_URL, msg=f'{path} not redirecting to correct auth URL.')
 
     def test_entity_create(self):
         """
@@ -170,7 +166,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                         })
             response = self.CLIENT.get(entity_update_url)
 
-        with self.assertNumQueries(4):          # previously 5
+        with self.assertNumQueries(4):  # previously 5
             ent_data = response.context['form'].initial
             ent_data['name'] = 'New Cool Name LLC'
             ent_data = {k: v for k, v in ent_data.items() if v}
@@ -199,7 +195,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                         })
             response = self.CLIENT.get(entity_detail_url)
 
-        with self.assertNumQueries(7):         # previously 10
+        with self.assertNumQueries(7):  # previously 10
             local_dt = localdate()
             entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
