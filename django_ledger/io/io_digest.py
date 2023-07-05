@@ -22,7 +22,7 @@ class IODigestContextManager:
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
 
-    def get_from_date(self, as_str: bool = True, fmt=None) -> Optional[date]:
+    def get_from_date(self, as_str: bool = False, fmt=None) -> Optional[date]:
         from_date = self.IO_DATA['from_date']
         if from_date:
             if as_str:
@@ -31,7 +31,7 @@ class IODigestContextManager:
                 return from_date.strftime(fmt)
             return from_date
 
-    def get_to_date(self, as_str: bool = True, fmt=None) -> date:
+    def get_to_date(self, as_str: bool = False, fmt=None) -> date:
         if as_str:
             if not fmt:
                 fmt = self.get_strftime_format()

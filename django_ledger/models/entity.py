@@ -507,6 +507,8 @@ class EntityModelAbstract(MP_Node,
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    last_closing = models.DateField(null=True, blank=True, verbose_name=_('Last date when books where closed.'))
+    closing_data = models.JSONField(null=True, blank=True)
     picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
@@ -2207,6 +2209,11 @@ class EntityModelAbstract(MP_Node,
 
         return ledger_model
 
+    # ### CLOSING DATA ###
+
+    def has_closing_data(self):
+        return self.closing_data is not None
+
     # ### RANDOM DATA GENERATION ####
 
     def populate_random_data(self, start_date: date):
@@ -2423,36 +2430,10 @@ class EntityModelAbstract(MP_Node,
         super(EntityModelAbstract, self).clean()
 
 
-class EntityManagementModelAbstract(CreateUpdateMixIn):
+class EntityModel(EntityModelAbstract):
     """
-    Entity Management Model responsible for manager permissions to read/write.
+    Entity Model Base Class From Abstract
     """
-    PERMISSIONS = [
-        ('read', _('Read Permissions')),
-        ('write', _('Read/Write Permissions')),
-        ('suspended', _('No Permissions'))
-    ]
-
-    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Entity'),
-                               related_name='entity_permissions')
-    user = models.ForeignKey(UserModel,
-                             on_delete=models.CASCADE,
-                             verbose_name=_('Manager'),
-                             related_name='entity_permissions')
-    permission_level = models.CharField(max_length=10,
-                                        default='read',
-                                        choices=PERMISSIONS,
-                                        verbose_name=_('Permission Level'))
-
-    class Meta:
-        abstract = True
-        indexes = [
-            models.Index(fields=['entity', 'user']),
-            models.Index(fields=['user', 'entity'])
-        ]
 
 
 class EntityStateModelAbstract(models.Model):
@@ -2517,10 +2498,36 @@ class EntityStateModel(EntityStateModelAbstract):
     """
 
 
-class EntityModel(EntityModelAbstract):
+class EntityManagementModelAbstract(CreateUpdateMixIn):
     """
-    Entity Model Base Class From Abstract
+    Entity Management Model responsible for manager permissions to read/write.
     """
+    PERMISSIONS = [
+        ('read', _('Read Permissions')),
+        ('write', _('Read/Write Permissions')),
+        ('suspended', _('No Permissions'))
+    ]
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Entity'),
+                               related_name='entity_permissions')
+    user = models.ForeignKey(UserModel,
+                             on_delete=models.CASCADE,
+                             verbose_name=_('Manager'),
+                             related_name='entity_permissions')
+    permission_level = models.CharField(max_length=10,
+                                        default='read',
+                                        choices=PERMISSIONS,
+                                        verbose_name=_('Permission Level'))
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['entity', 'user']),
+            models.Index(fields=['user', 'entity'])
+        ]
 
 
 class EntityManagementModel(EntityManagementModelAbstract):
