@@ -11,7 +11,7 @@ class IODigestValidationError(ValidationError):
     pass
 
 
-class IODigest:
+class IODigestContextManager:
 
     def __init__(self, io_data: defaultdict):
         self.IO_DATA: defaultdict = io_data

@@ -311,13 +311,18 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             if self.can_generate_po_number():
                 self.generate_po_number(commit=commit)
 
-            if not po_title and not self.po_title and self.po_number:
-                self.po_title = f'PO Number {self.po_number}'
-            else:
-                self.po_title = po_title
+            if not self.po_title:
+                if all([
+                    po_title is None,
+                    self.po_title is None or not len(self.po_title),
+                    self.po_number is not None
+                ]):
+                    self.po_title = f'PO Number {self.po_number}'
+                else:
+                    self.po_title = po_title
 
-            self.clean()
             self.clean_fields()
+            self.clean()
             if commit:
                 self.save()
         return self

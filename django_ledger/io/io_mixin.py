@@ -19,14 +19,14 @@ from django.db.models import Sum, QuerySet
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import localdate, make_aware, is_naive
+from django.utils.timezone import make_aware, is_naive, localtime
 
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
                                          BalanceSheetStatementContextManager, IncomeStatementContextManager,
                                          CashFlowStatementContextManager)
-from django_ledger.io.io_digest import IODigest
+from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
@@ -96,19 +96,21 @@ def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
     return True
 
 
-def validate_io_date(dt: Union[str, date, datetime], no_parse_localdate: bool = True) -> Union[datetime]:
-    if isinstance(dt, date):
-        dt = make_aware(datetime.combine(
-            dt,
-            datetime.min.time()
-        ))
-        return dt
+def validate_io_date(dt: Union[str, date, datetime], no_parse_localdate: bool = True) -> Optional[datetime]:
+    if not dt:
+        return
 
+    if isinstance(dt, date):
+        dt = make_aware(
+            value=datetime.combine(
+                dt,
+                datetime.min.time()
+            ))
+        return dt
     elif isinstance(dt, datetime):
         if is_naive(dt):
             return make_aware(dt)
         return dt
-
     elif isinstance(dt, str):
         # try to parse a date object from string...
         fdt = parse_date(dt)
@@ -124,7 +126,7 @@ def validate_io_date(dt: Union[str, date, datetime], no_parse_localdate: bool = 
         return fdt
 
     if no_parse_localdate:
-        return localdate()
+        return localtime()
 
 
 def validate_dates(
@@ -167,7 +169,7 @@ class IOReportMixIn:
                              to_date: Union[date, datetime],
                              user_model: UserModel,
                              txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                             **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -215,7 +217,7 @@ class IOReportMixIn:
                                 to_date: Union[date, datetime],
                                 user_model: Optional[UserModel] = None,
                                 txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                                **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -265,7 +267,7 @@ class IOReportMixIn:
                                    to_date: Union[date, datetime],
                                    user_model: UserModel,
                                    txs_queryset: Optional[QuerySet] = None,
-                                   **kwargs) -> Union[IODigest, Tuple[QuerySet, Dict]]:
+                                   **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -609,12 +611,7 @@ class IODatabaseMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               ) -> Union[Tuple, IODigest]:
-
-        io_data = defaultdict(lambda: dict())
-        io_data['io_model'] = self
-        io_data['from_date'] = from_date
-        io_data['to_date'] = to_date
+               ) -> Union[Tuple, IODigestContextManager]:
 
         if balance_sheet_statement:
             from_date = None
@@ -628,6 +625,11 @@ class IODatabaseMixIn:
             role = roles_module.validate_roles(role)
 
         from_date, to_date = validate_dates(from_date, to_date)
+
+        io_data = defaultdict(lambda: dict())
+        io_data['io_model'] = self
+        io_data['from_date'] = from_date
+        io_data['to_date'] = to_date
 
         txs_qs, accounts_digest = self.python_digest(
             txs_queryset=txs_queryset,
@@ -702,7 +704,7 @@ class IODatabaseMixIn:
             io_data = cfs.digest()
 
         if as_io_digest:
-            return IODigest(io_data=io_data)
+            return IODigestContextManager(io_data=io_data)
 
         if not digest_name:
             digest_name = 'tx_digest'
@@ -714,10 +716,10 @@ class IODatabaseMixIn:
         return txs_qs, digest_results
 
     def commit_txs(self,
-                   je_date: Union[str, datetime, date],
-                   je_txs: list,
+                   je_timestamp: Union[str, datetime, date],
+                   je_txs: List[Dict],
                    je_posted: bool = False,
-                   je_ledger=None,
+                   je_ledger_model=None,
                    je_desc=None,
                    je_origin=None):
         """
@@ -731,36 +733,39 @@ class IODatabaseMixIn:
             'staged_tx_model': StagedTransactionModel or None
         }]
 
-        :param je_date:
+        :param je_timestamp:
         :param je_txs:
         :param je_activity:
         :param je_posted:
-        :param je_ledger:
+        :param je_ledger_model:
         :param je_desc:
         :param je_origin:
         :param je_parent:
         :return:
         """
+
+        # if isinstance(self, lazy_loader.get_entity_model()):
+
         # Validates that credits/debits balance.
         balance_tx_data(je_txs)
 
         if all([
             isinstance(self, lazy_loader.get_entity_model()),
-            not je_ledger
+            not je_ledger_model
         ]):
             raise ValidationError('Must pass an instance of LedgerModel')
 
-        if not je_ledger:
-            je_ledger = self
+        if not je_ledger_model:
+            je_ledger_model = self
 
         JournalEntryModel = lazy_loader.get_journal_entry_model()
 
-        je_date = validate_io_date(dt=je_date)
+        je_timestamp = validate_io_date(dt=je_timestamp)
 
         je_model = JournalEntryModel(
-            ledger=je_ledger,
+            ledger=je_ledger_model,
             description=je_desc,
-            timestamp=je_date,
+            timestamp=je_timestamp,
             origin=je_origin,
         )
 
@@ -770,13 +775,10 @@ class IODatabaseMixIn:
         TransactionModel = lazy_loader.get_txs_model()
         txs_models = [
             TransactionModel(
-                account_id=tx['account_id'],
-                tx_type=tx['tx_type'],
-                amount=tx['amount'],
-                description=tx['description'],
+                **txm_kwargs,
                 journal_entry=je_model,
-                stagedtransactionmodel=tx.get('staged_tx_model')
-            ) for tx in je_txs
+                stagedtransactionmodel=txm_kwargs.get('staged_tx_model')
+            ) for txm_kwargs in je_txs
         ]
         txs_models = TransactionModel.objects.bulk_create(txs_models)
 

@@ -142,7 +142,7 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
                 user_model=self.request.user)
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
-            invoice_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
+            invoice_model.bind_estimate(estimate_model=estimate_model, commit=False)
 
         return super().form_valid(form=form)
 

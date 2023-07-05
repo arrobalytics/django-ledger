@@ -1,6 +1,6 @@
 from typing import Optional, Dict
 
-from django_ledger.io import IODigest
+from django_ledger.io import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_format
@@ -8,7 +8,7 @@ from django_ledger.templatetags.django_ledger import currency_format
 
 class CashFlowStatementReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigest, report_subtitle: Optional[str] = None, **kwargs):
+    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: Optional[str] = None, **kwargs):
 
         if not io_digest.has_cash_flow_statement():
             raise PDFReportValidationError('IO Digest does not have income statement information.')

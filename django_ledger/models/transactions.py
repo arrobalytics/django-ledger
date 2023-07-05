@@ -16,9 +16,10 @@ amd aggregate transactions at the Database layer without the need of pulling all
 production of financial statements.
 """
 from datetime import datetime, date
-from typing import List, Union
+from typing import List, Union, Optional
 from uuid import uuid4, UUID
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -34,6 +35,8 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
+
+UserModel = get_user_model()
 
 
 class TransactionModelValidationError(ValidationError):
@@ -219,7 +222,7 @@ class TransactionModelAdmin(models.Manager):
 
     def for_entity(self,
                    entity_slug: Union[EntityModel, str],
-                   user_model=None,
+                   user_model: Optional[UserModel] = None,
                    ) -> TransactionModelQuerySet:
         """
         Fetches a QuerySet of TransactionModels associated with the specified
@@ -230,8 +233,9 @@ class TransactionModelAdmin(models.Manager):
         ----------
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
+        user_model: Optional Django UserModel
             Optional logged in and authenticated Django UserModel instance to match against Entity Admin or Managers.
+            Will make sure the authenticated user has access to the EntityModel transactions.
 
         Returns
         -------

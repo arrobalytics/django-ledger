@@ -20,7 +20,7 @@ ________
 >>> invoice_model.save()
 """
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Union, Optional, Tuple, Dict
 from uuid import uuid4
@@ -32,7 +32,7 @@ from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import post_delete, pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
+from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
@@ -836,7 +836,86 @@ class InvoiceModelAbstract(AccrualMixIn,
         ])
 
     # ACTIONS...
-    def action_bind_estimate(self, estimate_model, commit: bool = False):
+
+    def can_make_payment(self) -> bool:
+        """
+        Checks if the BillModel can accept a payment.
+
+
+        Returns
+        _______
+
+        bool
+            True if can bind provided PurchaseOderModel, else False.
+        """
+        return self.is_approved()
+
+    def make_payment(self,
+                     payment_amount: Union[Decimal, float, int],
+                     payment_date: Optional[Union[datetime, date]] = None,
+                     commit: bool = False,
+                     raise_exception: bool = True):
+        """
+        Makes a payment to the InvoiceModel.
+
+        Parameters
+        __________
+
+        payment_amount: Decimal ot float
+            The payment amount to process.
+
+        payment_date: datetime or date.
+            Date or timestamp of the payment being applied.
+
+        commit: bool
+            If True, commits the transaction into the DB. Defaults to False.
+
+        raise_exception: bool
+            If True, raises InvoiceModelValidationError if payment exceeds amount due, else False.
+
+        Returns
+        _______
+
+        bool
+            True if can make payment, else False.
+        """
+
+        if isinstance(payment_amount, float):
+            payment_amount = Decimal.from_float(payment_amount)
+        elif isinstance(payment_amount, int):
+            payment_amount = Decimal.from_float(float(payment_amount))
+        self.amount_paid += payment_amount
+
+        if self.amount_paid > self.amount_due:
+            if raise_exception:
+                raise InvoiceModelValidationError(
+                    f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
+                )
+            return
+
+        self.get_state(commit=True)
+        self.clean()
+
+        if not payment_date:
+            payment_date = localtime()
+
+        if commit:
+            self.migrate_state(
+                user_model=None,
+                entity_slug=self.ledger.entity.slug,
+                je_timestamp=payment_date,
+                raise_exception=True
+            )
+            self.save(
+                update_fields=[
+                    'amount_paid',
+                    'amount_earned',
+                    'amount_unearned',
+                    'amount_receivable',
+                    'updated'
+                ])
+
+    def bind_estimate(self, estimate_model, commit: bool = False):
         """
         Binds InvoiceModel to a given EstimateModel. Raises ValueError if EstimateModel cannot be bound.
 
@@ -1067,7 +1146,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                 self.migrate_state(
                     entity_slug=entity_slug,
                     user_model=user_model,
-                    je_date=date_approved,
+                    je_timestamp=date_approved,
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit)
@@ -1164,7 +1243,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                 user_model=user_model,
                 entity_slug=entity_slug,
                 force_migrate=True,
-                je_date=date_paid
+                je_timestamp=date_paid
             )
             self.lock_ledger(commit=True)
 
@@ -1596,6 +1675,14 @@ class InvoiceModelAbstract(AccrualMixIn,
 
     def generate_descriptive_title(self) -> str:
         return f'Bill {self.invoice_number} | {self.get_invoice_status_display()} {self.get_status_action_date()} | {self.customer.customer_name}'
+
+    # --> URLs <---
+    def get_absolute_url(self):
+        return reverse('django_ledger:invoice-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'invoice_pk': self.uuid
+                       })
 
     def clean(self, commit: bool = True):
         """

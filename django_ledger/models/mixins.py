@@ -535,13 +535,14 @@ class AccrualMixIn(models.Model):
         ledger_model.post(commit)
 
     def migrate_state(self,
+                      # todo: remove usermodel param...
                       user_model,
                       entity_slug: str,
                       itemtxs_qs: Optional[QuerySet] = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
-                      je_date: Optional[Union[str, date, datetime]] = None,
+                      je_timestamp: Optional[Union[str, date, datetime]] = None,
                       raise_exception: bool = True,
                       **kwargs):
 
@@ -565,7 +566,7 @@ class AccrualMixIn(models.Model):
             If True the migration will be committed in the database. Defaults to True.
         void: bool
             If True, the migration will perform a VOID actions of the financial instrument.
-        je_date: date
+        je_timestamp: date
             The JournalEntryModel date to be used for this migration.
         raise_exception: bool
             Raises ValidationError if migration is not allowed. Defaults to True.
@@ -579,6 +580,7 @@ class AccrualMixIn(models.Model):
         if self.can_migrate() or force_migrate:
 
             # getting current ledger state
+            # todo: validate itemtxs_qs...?
             txs_qs, txs_digest = self.ledger.digest(
                 user_model=user_model,
                 entity_slug=entity_slug,
@@ -589,11 +591,11 @@ class AccrualMixIn(models.Model):
                 by_unit=True
             )
 
-            digest_data = txs_digest['tx_digest']['accounts']
+            accounts_data = txs_digest['tx_digest']['accounts']
 
             # Index (account_uuid, unit_uuid, balance_type, role)
             current_ledger_state = {
-                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in digest_data
+                (a['account_uuid'], a['unit_uuid'], a['balance_type']): a['balance'] for a in accounts_data
                 # (a['account_uuid'], a['unit_uuid'], a['balance_type'], a['role']): a['balance'] for a in digest_data
             }
 
@@ -736,10 +738,10 @@ class AccrualMixIn(models.Model):
 
                 unit_uuids = list(set(k[1] for k in idx_keys))
 
-                if je_date:
-                    je_date = validate_io_date(dt=je_date)
+                if je_timestamp:
+                    je_timestamp = validate_io_date(dt=je_timestamp)
 
-                now_timestamp = localtime() if not je_date else je_date
+                now_timestamp = localtime() if not je_timestamp else je_timestamp
                 je_list = {
                     u: JournalEntryModel(
                         entity_unit_id=u,
