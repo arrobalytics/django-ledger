@@ -1,0 +1,12 @@
+schemaVersion: 2.2.0
+attributes:
+   space:
+      instanceType: regular
+      editor:
+         type: PyCharm
+         version: '2023.1'
+         updateChannel: EAP
+components:
+   - name: dev-environment
+     container:
+        image: python:3.11.4-slim-bookworm
