@@ -9,4 +9,4 @@ attributes:
 components:
    - name: dev-environment
      container:
-        image: python:3.11.4-slim-bookworm
+        image: python:3.11-bookworm
