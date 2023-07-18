@@ -507,9 +507,11 @@ class EntityModelAbstract(MP_Node,
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
-    last_closing = models.DateField(null=True, blank=True, verbose_name=_('Last date when books where closed.'))
-    closing_data = models.JSONField(null=True, blank=True)
     picture = models.ImageField(blank=True, null=True)
+
+    closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last date when books where closed.'))
+    closing_data = models.JSONField(null=True, blank=True, verbose_name=_('Closing Data'))
+
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
     node_order_by = ['uuid']

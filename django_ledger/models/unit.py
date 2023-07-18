@@ -107,7 +107,10 @@ class EntityUnitModelManager(MP_NodeManager):
         )
 
 
-class EntityUnitModelAbstract(MP_Node, IOMixIn, SlugNameMixIn, CreateUpdateMixIn):
+class EntityUnitModelAbstract(MP_Node,
+                              IOMixIn,
+                              SlugNameMixIn,
+                              CreateUpdateMixIn):
     """
     Base implementation of the EntityUnitModel.
 

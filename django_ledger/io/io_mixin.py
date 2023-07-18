@@ -153,227 +153,6 @@ class IOValidationError(ValidationError):
     pass
 
 
-class IOReportMixIn:
-    PDF_REPORT_ORIENTATION = 'P'
-    PDF_REPORT_MEASURE_UNIT = 'mm'
-    PDF_REPORT_PAGE_SIZE = 'Letter'
-
-    ReportTuple = namedtuple('ReportTuple',
-                             field_names=[
-                                 'balance_sheet_statement',
-                                 'income_statement',
-                                 'cash_flow_statement'
-                             ])
-
-    def digest_balance_sheet(self,
-                             to_date: Union[date, datetime],
-                             user_model: UserModel,
-                             txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            to_date=to_date,
-            balance_sheet_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_balance_sheet_statement(self,
-                                    to_date: Union[date, datetime],
-                                    subtitle: Optional[str] = None,
-                                    filepath: Optional[Path] = None,
-                                    filename: Optional[str] = None,
-                                    user_model: Optional[UserModel] = None,
-                                    txs_queryset: Optional[QuerySet] = None,
-                                    save_pdf: bool = False,
-                                    **kwargs
-                                    ):
-        io_digest = self.digest_balance_sheet(
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-
-        report_klass = lazy_loader.get_balance_sheet_report_class()
-        report = report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest,
-            report_subtitle=subtitle
-        )
-        if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
-            filepath = base_dir.joinpath(filename)
-            report.create_pdf_report()
-            report.output(filepath)
-        return report
-
-    def digest_income_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                user_model: Optional[UserModel] = None,
-                                txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            income_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_income_statement(self,
-                             from_date: Union[date, datetime],
-                             to_date: Union[date, datetime],
-                             subtitle: Optional[str] = None,
-                             filepath: Optional[Path] = None,
-                             filename: Optional[str] = None,
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
-                             save_pdf: bool = False,
-                             **kwargs
-                             ):
-        io_digest = self.digest_income_statement(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-        report_klass = lazy_loader.get_income_statement_report_class()
-        report = report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest,
-            report_subtitle=subtitle
-        )
-        if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
-            filepath = base_dir.joinpath(filename)
-            report.create_pdf_report()
-            report.output(filepath)
-        return report
-
-    def digest_cash_flow_statement(self,
-                                   from_date: Union[date, datetime],
-                                   to_date: Union[date, datetime],
-                                   user_model: UserModel,
-                                   txs_queryset: Optional[QuerySet] = None,
-                                   **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            from_date=from_date,
-            to_date=to_date,
-            cash_flow_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
-
-    def get_cash_flow_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                subtitle: Optional[str] = None,
-                                filepath: Optional[Path] = None,
-                                filename: Optional[str] = None,
-                                user_model: Optional[UserModel] = None,
-                                txs_queryset: Optional[QuerySet] = None,
-                                save_pdf: bool = False,
-                                **kwargs):
-
-        io_digest = self.digest_cash_flow_statement(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset,
-            **kwargs
-        )
-
-        report_klass = lazy_loader.get_cash_flow_statement_report_class()
-        report = report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest,
-            report_subtitle=subtitle
-        )
-        if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
-            filepath = base_dir.joinpath(filename)
-            report.create_pdf_report()
-            report.output(filepath)
-        return report
-
-    def get_financial_statements(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
-                                 user_model: Optional[UserModel] = None,
-                                 txs_queryset: Optional[QuerySet] = None,
-                                 save_pdf: bool = False,
-                                 filepath: Optional[Path] = None,
-                                 **kwargs) -> ReportTuple:
-
-        io_digest = self.digest(
-            from_date=from_date,
-            to_date=to_date,
-            user_model=user_model,
-            txs_queryset=txs_queryset,
-            balance_sheet_statement=True,
-            income_statement=True,
-            cash_flow_statement=True,
-            as_io_digest=True,
-            **kwargs
-        )
-
-        bs_report_klass = lazy_loader.get_balance_sheet_report_class()
-        bs_report = bs_report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
-        )
-        is_report_klass = lazy_loader.get_income_statement_report_class()
-        is_report = is_report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
-        )
-        cfs_report_klass = lazy_loader.get_cash_flow_statement_report_class()
-        cfs_report = cfs_report_klass(
-            self.PDF_REPORT_ORIENTATION,
-            self.PDF_REPORT_MEASURE_UNIT,
-            self.PDF_REPORT_PAGE_SIZE,
-            io_digest=io_digest
-        )
-
-        if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
-            bs_report.create_pdf_report()
-            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename()))
-
-            is_report.create_pdf_report()
-            is_report.output(base_dir.joinpath(is_report.get_pdf_filename()))
-
-            cfs_report.create_pdf_report()
-            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename()))
-
-        return self.ReportTuple(
-            balance_sheet_statement=bs_report,
-            income_statement=is_report,
-            cash_flow_statement=cfs_report
-        )
-
-
 class IODatabaseMixIn:
     """
     Controls how transactions are recorded into the ledger.
@@ -786,8 +565,249 @@ class IODatabaseMixIn:
         return je_model, txs_models
 
 
+class IOReportMixIn:
+    PDF_REPORT_ORIENTATION = 'P'
+    PDF_REPORT_MEASURE_UNIT = 'mm'
+    PDF_REPORT_PAGE_SIZE = 'Letter'
+
+    ReportTuple = namedtuple('ReportTuple',
+                             field_names=[
+                                 'balance_sheet_statement',
+                                 'income_statement',
+                                 'cash_flow_statement'
+                             ])
+
+    def digest_balance_sheet(self,
+                             to_date: Union[date, datetime],
+                             user_model: Optional[UserModel] = None,
+                             txs_queryset: Optional[QuerySet] = None,
+                             **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            balance_sheet_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_balance_sheet_statement(self,
+                                    to_date: Union[date, datetime],
+                                    subtitle: Optional[str] = None,
+                                    filepath: Optional[Path] = None,
+                                    filename: Optional[str] = None,
+                                    user_model: Optional[UserModel] = None,
+                                    txs_queryset: Optional[QuerySet] = None,
+                                    save_pdf: bool = False,
+                                    **kwargs
+                                    ):
+        io_digest = self.digest_balance_sheet(
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        report_klass = lazy_loader.get_balance_sheet_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def digest_income_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                user_model: Optional[UserModel] = None,
+                                txs_queryset: Optional[QuerySet] = None,
+                                **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            income_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_income_statement(self,
+                             from_date: Union[date, datetime],
+                             to_date: Union[date, datetime],
+                             subtitle: Optional[str] = None,
+                             filepath: Optional[Path] = None,
+                             filename: Optional[str] = None,
+                             user_model: Optional[UserModel] = None,
+                             txs_queryset: Optional[QuerySet] = None,
+                             save_pdf: bool = False,
+                             **kwargs
+                             ):
+        io_digest = self.digest_income_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+        report_klass = lazy_loader.get_income_statement_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def digest_cash_flow_statement(self,
+                                   from_date: Union[date, datetime],
+                                   to_date: Union[date, datetime],
+                                   user_model: UserModel,
+                                   txs_queryset: Optional[QuerySet] = None,
+                                   **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            from_date=from_date,
+            to_date=to_date,
+            cash_flow_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+    def get_cash_flow_statement(self,
+                                from_date: Union[date, datetime],
+                                to_date: Union[date, datetime],
+                                subtitle: Optional[str] = None,
+                                filepath: Optional[Path] = None,
+                                filename: Optional[str] = None,
+                                user_model: Optional[UserModel] = None,
+                                txs_queryset: Optional[QuerySet] = None,
+                                save_pdf: bool = False,
+                                **kwargs):
+
+        io_digest = self.digest_cash_flow_statement(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            **kwargs
+        )
+
+        report_klass = lazy_loader.get_cash_flow_statement_report_class()
+        report = report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest,
+            report_subtitle=subtitle
+        )
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            filename = report.get_pdf_filename() if not filename else filename
+            filepath = base_dir.joinpath(filename)
+            report.create_pdf_report()
+            report.output(filepath)
+        return report
+
+    def get_financial_statements(self,
+                                 from_date: Union[date, datetime],
+                                 to_date: Union[date, datetime],
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 save_pdf: bool = False,
+                                 filepath: Optional[Path] = None,
+                                 **kwargs) -> ReportTuple:
+
+        io_digest = self.digest(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            txs_queryset=txs_queryset,
+            balance_sheet_statement=True,
+            income_statement=True,
+            cash_flow_statement=True,
+            as_io_digest=True,
+            **kwargs
+        )
+
+        bs_report_klass = lazy_loader.get_balance_sheet_report_class()
+        bs_report = bs_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+        is_report_klass = lazy_loader.get_income_statement_report_class()
+        is_report = is_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+        cfs_report_klass = lazy_loader.get_cash_flow_statement_report_class()
+        cfs_report = cfs_report_klass(
+            self.PDF_REPORT_ORIENTATION,
+            self.PDF_REPORT_MEASURE_UNIT,
+            self.PDF_REPORT_PAGE_SIZE,
+            io_digest=io_digest
+        )
+
+        if save_pdf:
+            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            bs_report.create_pdf_report()
+            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename()))
+
+            is_report.create_pdf_report()
+            is_report.output(base_dir.joinpath(is_report.get_pdf_filename()))
+
+            cfs_report.create_pdf_report()
+            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename()))
+
+        return self.ReportTuple(
+            balance_sheet_statement=bs_report,
+            income_statement=is_report,
+            cash_flow_statement=cfs_report
+        )
+
+
+class IOClosingEntryMixIn:
+
+    def get_closing_entry_data(self,
+                               to_date: Union[date, datetime],
+                               from_date: Union[date, datetime],
+                               user_model: Optional[UserModel] = None,
+                               txs_queryset: Optional[QuerySet] = None,
+                               **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+        return self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            from_date=from_date,
+            balance_sheet_statement=True,
+            txs_queryset=txs_queryset,
+            as_io_digest=True,
+            **kwargs
+        )
+
+
 class IOMixIn(
     IODatabaseMixIn,
-    IOReportMixIn
+    IOReportMixIn,
+    IOClosingEntryMixIn
 ):
     pass

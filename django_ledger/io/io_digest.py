@@ -19,6 +19,9 @@ class IODigestContextManager:
         self.TXS_QS = self.IO_DATA['txs_qs']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 
+    def get_io_data(self) -> defaultdict:
+        return self.IO_DATA
+
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
 
