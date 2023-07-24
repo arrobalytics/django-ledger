@@ -32,9 +32,10 @@ from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -42,7 +43,7 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module, validate_roles
+from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
@@ -162,7 +163,6 @@ class FiscalPeriodMixIn:
             * 4 -> April.
             * 9 -> September.
         """
-        # fy: int = getattr(self, 'fy_start_month')
 
         try:
             fy: int = getattr(self, 'fy_start_month')
@@ -414,13 +414,50 @@ class FiscalPeriodMixIn:
         return y
 
 
+class ClosingEntryMixIn:
+
+    def get_closing_entry_data(self,
+                               to_date: Union[date, datetime],
+                               from_date: Union[date, datetime],
+                               user_model: Optional[UserModel] = None,
+                               txs_queryset: Optional[QuerySet] = None,
+                               **kwargs: Dict) -> List[Dict]:
+        io_digest: IODigestContextManager = self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            from_date=from_date,
+            txs_queryset=txs_queryset,
+            by_unit=True,
+            by_period=True,
+            by_activity=True,
+            as_io_digest=True,
+            **kwargs
+        )
+        return io_digest.get_closing_entry_data()
+
+    def save_closing_entry_data_for_month(self,
+                                          year: int,
+                                          month: int,
+                                          **kwargs: Dict) -> List[Dict]:
+        day_start, day_end = monthrange(year, month)
+        start_dt = date(year=year, month=month, day=day_start)
+        end_dt = date(year=year, month=month, day=day_end)
+        ce_data = self.get_closing_entry_data(
+            from_date=start_dt,
+            to_date=end_dt,
+            **kwargs
+        )
+        return ce_data
+
+
 class EntityModelAbstract(MP_Node,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
                           IOMixIn,
                           LoggingMixIn,
-                          FiscalPeriodMixIn):
+                          FiscalPeriodMixIn,
+                          ClosingEntryMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -510,7 +547,7 @@ class EntityModelAbstract(MP_Node,
     picture = models.ImageField(blank=True, null=True)
 
     closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last date when books where closed.'))
-    closing_data = models.JSONField(null=True, blank=True, verbose_name=_('Closing Data'))
+    closing_data = models.JSONField(null=True, blank=True, verbose_name=_('Closing Data'), encoder=DjangoJSONEncoder)
 
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
@@ -2438,6 +2475,7 @@ class EntityModel(EntityModelAbstract):
     """
 
 
+# ## ENTITY STATE....
 class EntityStateModelAbstract(models.Model):
     KEY_JOURNAL_ENTRY = 'je'
     KEY_PURCHASE_ORDER = 'po'
@@ -2500,6 +2538,7 @@ class EntityStateModel(EntityStateModelAbstract):
     """
 
 
+# ## ENTITY MANAGEMENT.....
 class EntityManagementModelAbstract(CreateUpdateMixIn):
     """
     Entity Management Model responsible for manager permissions to read/write.

@@ -409,6 +409,9 @@ class IODatabaseMixIn:
         io_data['io_model'] = self
         io_data['from_date'] = from_date
         io_data['to_date'] = to_date
+        io_data['by_unit'] = by_unit
+        io_data['by_period'] = by_unit
+        io_data['by_activity'] = by_activity
 
         txs_qs, accounts_digest = self.python_digest(
             txs_queryset=txs_queryset,
@@ -786,28 +789,11 @@ class IOReportMixIn:
         )
 
 
-class IOClosingEntryMixIn:
 
-    def get_closing_entry_data(self,
-                               to_date: Union[date, datetime],
-                               from_date: Union[date, datetime],
-                               user_model: Optional[UserModel] = None,
-                               txs_queryset: Optional[QuerySet] = None,
-                               **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
-        return self.digest(
-            user_model=user_model,
-            to_date=to_date,
-            from_date=from_date,
-            balance_sheet_statement=True,
-            txs_queryset=txs_queryset,
-            as_io_digest=True,
-            **kwargs
-        )
 
 
 class IOMixIn(
     IODatabaseMixIn,
-    IOReportMixIn,
-    IOClosingEntryMixIn
+    IOReportMixIn
 ):
     pass

@@ -18,6 +18,14 @@ class IODigestContextManager:
         self.IO_MODEL = self.IO_DATA['io_model']
         self.TXS_QS = self.IO_DATA['txs_qs']
         self.STRFTIME_FORMAT = '%B %d, %Y'
+        self.CLOSING_DATA_KEYS = (
+            'account_uuid',
+            'unit_uuid',
+            'activity',
+            'period_year',
+            'period_month',
+            'balance'
+        )
 
     def get_io_data(self) -> defaultdict:
         return self.IO_DATA
@@ -59,6 +67,15 @@ class IODigestContextManager:
             lazy_loader.get_unit_model()
         )
 
+    def is_by_unit(self) -> bool:
+        return self.IO_DATA['by_unit']
+
+    def is_by_period(self) -> bool:
+        return self.IO_DATA['by_period']
+
+    def is_by_activity(self) -> bool:
+        return self.IO_DATA['by_activity']
+
     # Balance Sheet Data...
     def has_balance_sheet(self) -> bool:
         return 'balance_sheet' in self.IO_DATA
@@ -97,3 +114,11 @@ class IODigestContextManager:
                 raise IODigestValidationError(
                     'IO Digest does not have cash flow statement information available.'
                 )
+
+    # CLOSING ENTRIES...
+
+    def get_closing_entry_data(self):
+        io_data = self.get_io_data()
+        return [{
+            k: v for k, v in ad.items() if k in self.CLOSING_DATA_KEYS
+        } for ad in io_data['accounts']]
