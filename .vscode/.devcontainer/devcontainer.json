@@ -1,0 +1,4 @@
+{
+  "name": "Django Ledger Development Codespace",
+  "image": "python:3.11-bookworm"
+}
