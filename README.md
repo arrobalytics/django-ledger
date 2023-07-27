@@ -10,7 +10,7 @@ high-level API. _Prior experience with Django is required to more effectively us
 __Django Ledger__ was created and is currently maintained and developed by lead developer Miguel Sanda.
 If you want to contribute please consider joining our new discord channel here.
 
-### Join our Discord Channel [Here](https://discord.gg/PEugR227)
+### Join our Discord Channel [Here](https://discord.gg/eBSCVPfE)
 
 The software is still in early stages of development. For more information, please check the
 [Roadmap](https://github.com/arrobalytics/django-ledger/blob/develop/ROADMAP.md).
