@@ -255,21 +255,21 @@ class IODatabaseMixIn:
         ANNOTATE = {'balance': Sum('amount')}
         ORDER_BY = ['account__uuid']
 
+        if by_unit:
+            ORDER_BY.append('journal_entry__entity_unit__uuid')
+            VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
+
         if by_period:
             ORDER_BY.append('journal_entry__timestamp')
             ANNOTATE['dt_idx'] = TruncMonth('journal_entry__timestamp')
 
-        if by_unit:
-            VALUES += ['journal_entry__entity_unit__uuid', 'journal_entry__entity_unit__name']
-            ORDER_BY.append('journal_entry__entity_unit__uuid')
-
         if by_activity:
-            VALUES.append('journal_entry__activity')
             ORDER_BY.append('journal_entry__activity')
+            VALUES.append('journal_entry__activity')
 
         if by_tx_type:
-            VALUES.append('tx_type')
             ORDER_BY.append('tx_type')
+            VALUES.append('tx_type')
 
         return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
@@ -312,6 +312,16 @@ class IODatabaseMixIn:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
                 tx_model['balance'] = -tx_model['balance']
 
+        # txs_list = list(txs_queryset)
+        # txs_list.sort(key=lambda a: (
+        #     a['account__uuid'],
+        #     str(a.get('journal_entry__entity_unit__uuid', '')) if by_unit else '',
+        #     a['dt_idx'].year if by_period else 0,
+        #     a['dt_idx'].month if by_period else 0,
+        #     str(a['journal_entry__activity']) if by_activity else None,
+        #     a['tx_type'] if by_tx_type else '',
+        # ))
+
         accounts_gb_code = groupby(txs_queryset,
                                    key=lambda a: (
                                        a['account__uuid'],
@@ -322,9 +332,7 @@ class IODatabaseMixIn:
                                        a.get('tx_type') if by_tx_type else None,
                                    ))
 
-        gb_digest = [
-            self.aggregate_balances(k, g) for k, g in accounts_gb_code
-        ]
+        gb_digest = [self.aggregate_balances(k, g) for k, g in accounts_gb_code]
 
         for acc in gb_digest:
             acc['balance_abs'] = abs(acc['balance'])
@@ -364,7 +372,6 @@ class IODatabaseMixIn:
             'balance': sum(a['balance'] for a in gl),
         }
 
-    # idea: make this method return a Digest class?...
     def digest(self,
                entity_slug: str = None,
                unit_slug: str = None,
@@ -410,8 +417,9 @@ class IODatabaseMixIn:
         io_data['from_date'] = from_date
         io_data['to_date'] = to_date
         io_data['by_unit'] = by_unit
-        io_data['by_period'] = by_unit
+        io_data['by_period'] = by_period
         io_data['by_activity'] = by_activity
+        io_data['by_tx_type'] = by_tx_type
 
         txs_qs, accounts_digest = self.python_digest(
             txs_queryset=txs_queryset,
@@ -787,9 +795,6 @@ class IOReportMixIn:
             income_statement=is_report,
             cash_flow_statement=cfs_report
         )
-
-
-
 
 
 class IOMixIn(

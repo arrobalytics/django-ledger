@@ -32,7 +32,6 @@ from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.core.serializers.json import DjangoJSONEncoder
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet
@@ -438,7 +437,7 @@ class ClosingEntryMixIn:
     def save_closing_entry_data_for_month(self,
                                           year: int,
                                           month: int,
-                                          **kwargs: Dict) -> List[Dict]:
+                                          **kwargs: Dict) -> List:
         day_start, day_end = monthrange(year, month)
         start_dt = date(year=year, month=month, day=day_start)
         end_dt = date(year=year, month=month, day=day_end)
@@ -447,7 +446,24 @@ class ClosingEntryMixIn:
             to_date=end_dt,
             **kwargs
         )
-        return ce_data
+
+        ClosingEntryModel = lazy_loader.get_closing_entry_model()
+        ce_model_list = [
+            ClosingEntryModel(
+                entity_model=self,
+                account_model_id=ce['account_uuid'],
+                unit_model_id=ce['unit_uuid'],
+                fiscal_year=ce['period_year'],
+                fiscal_month=ce['period_month'],
+                activity=ce['activity'],
+                balance=ce['balance']
+            ) for ce in ce_data
+        ]
+
+        for ce in ce_model_list:
+            ce.clean()
+
+        return ce_model_list
 
 
 class EntityModelAbstract(MP_Node,
@@ -545,10 +561,6 @@ class EntityModelAbstract(MP_Node,
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     picture = models.ImageField(blank=True, null=True)
-
-    closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last date when books where closed.'))
-    closing_data = models.JSONField(null=True, blank=True, verbose_name=_('Closing Data'), encoder=DjangoJSONEncoder)
-
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
     node_order_by = ['uuid']
