@@ -417,35 +417,21 @@ class ClosingEntryMixIn:
 
     def get_closing_entry_data(self,
                                to_date: Union[date, datetime],
-                               from_date: Union[date, datetime],
+                               from_date: Optional[Union[date, datetime]] = None,
                                user_model: Optional[UserModel] = None,
                                txs_queryset: Optional[QuerySet] = None,
-                               **kwargs: Dict) -> List[Dict]:
+                               **kwargs: Dict) -> List:
         io_digest: IODigestContextManager = self.digest(
             user_model=user_model,
             to_date=to_date,
             from_date=from_date,
             txs_queryset=txs_queryset,
             by_unit=True,
-            by_period=True,
             by_activity=True,
             as_io_digest=True,
             **kwargs
         )
-        return io_digest.get_closing_entry_data()
-
-    def save_closing_entry_data_for_month(self,
-                                          year: int,
-                                          month: int,
-                                          **kwargs: Dict) -> List:
-        day_start, day_end = monthrange(year, month)
-        start_dt = date(year=year, month=month, day=day_start)
-        end_dt = date(year=year, month=month, day=day_end)
-        ce_data = self.get_closing_entry_data(
-            from_date=start_dt,
-            to_date=end_dt,
-            **kwargs
-        )
+        ce_data = io_digest.get_closing_entry_data()
 
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
         ce_model_list = [
@@ -453,8 +439,8 @@ class ClosingEntryMixIn:
                 entity_model=self,
                 account_model_id=ce['account_uuid'],
                 unit_model_id=ce['unit_uuid'],
-                fiscal_year=ce['period_year'],
-                fiscal_month=ce['period_month'],
+                fiscal_year=to_date.year,
+                fiscal_month=to_date.month,
                 activity=ce['activity'],
                 balance=ce['balance']
             ) for ce in ce_data
@@ -464,6 +450,43 @@ class ClosingEntryMixIn:
             ce.clean()
 
         return ce_model_list
+
+    def get_closing_entry_data_for_month(self,
+                                         year: int,
+                                         month: int,
+                                         **kwargs: Dict) -> List:
+        _, day_end = monthrange(year, month)
+        end_dt = date(year=year, month=month, day=day_end)
+        return self.get_closing_entry_data(to_date=end_dt, **kwargs)
+
+    def get_closing_entry_data_for_fiscal_year(self,
+                                               fiscal_year: int,
+                                               **kwargs: Dict) -> List:
+        end_dt = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_data(to_date=end_dt, **kwargs)
+
+    def get_closing_entry_fiscal_year(self, fiscal_year: int):
+        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.closingentrymodel_set.filter(
+            fiscal_year=end_dt.year,
+            fiscal_month=end_dt.month
+        )
+
+    def get_closing_entry_month(self, year: int, month: int):
+        return self.closingentrymodel_set.filter(
+            fiscal_year=year,
+            fiscal_month=month
+        )
+
+    def save_closing_entry_fiscal_year(self, fiscal_year: int):
+        closing_entry_qs = self.get_closing_entry_fiscal_year(fiscal_year=fiscal_year)
+        closing_entry_qs.delete()
+        ce_data = self.get_closing_entry_data_for_fiscal_year(fiscal_year=fiscal_year)
+        ClosingEntryModel = lazy_loader.get_closing_entry_model()
+        return ClosingEntryModel.objects.bulk_create(
+            objs=ce_data,
+            batch_size=100
+        )
 
 
 class EntityModelAbstract(MP_Node,

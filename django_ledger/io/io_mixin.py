@@ -183,7 +183,7 @@ class IODatabaseMixIn:
                 if entity_slug:
                     if entity_slug != self.slug:
                         raise IOValidationError('Inconsistent entity_slug. '
-                                                f'Provided {entity_slug} with actual {self.slug}')
+                                                f'Provided {entity_slug} does not match actual {self.slug}')
                 if unit_slug:
                     txs_queryset = TransactionModel.objects.for_unit(
                         user_model=user_model,

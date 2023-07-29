@@ -32,9 +32,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                                    verbose_name=_('Entity Model'))
     fiscal_year = models.SmallIntegerField(verbose_name=_('Fiscal Year'))
     fiscal_month = models.SmallIntegerField(verbose_name=_('Fiscal Month'),
-                                            choices=EntityModel.FY_MONTHS,
-                                            null=True,
-                                            blank=True)
+                                            choices=EntityModel.FY_MONTHS)
     activity = models.CharField(max_length=20,
                                 choices=JournalEntryModel.ACTIVITIES,
                                 null=True,
@@ -57,30 +55,11 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                     'entity_model',
                     'account_model',
                     'fiscal_year',
-                    'unit_model',
                     'fiscal_month',
+                    'unit_model',
                     'activity'
                 ],
                 name='unique_ce_all'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year'
-                ],
-                condition=Q(unit_model=None) & Q(fiscal_month=None) & Q(activity=None),
-                name='unique_ce_opt_1'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'unit_model'
-                ],
-                condition=Q(fiscal_month=None) & Q(activity=None),
-                name='unique_ce_opt_2'
             ),
             models.UniqueConstraint(
                 fields=[
@@ -90,39 +69,18 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                     'fiscal_month'
                 ],
                 condition=Q(unit_model=None) & Q(activity=None),
-                name='unique_ce_opt_3'
+                name='unique_ce_opt_1'
             ),
             models.UniqueConstraint(
                 fields=[
                     'entity_model',
                     'account_model',
                     'fiscal_year',
-                    'activity'
-                ],
-                condition=Q(unit_model=None) & Q(fiscal_month=None),
-                name='unique_ce_opt_4'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'unit_model',
-                    'fiscal_month'
+                    'fiscal_month',
+                    'unit_model'
                 ],
                 condition=Q(activity=None),
-                name='unique_ce_opt_5'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'unit_model',
-                    'activity'
-                ],
-                condition=Q(fiscal_month=None),
-                name='unique_ce_opt_6'
+                name='unique_ce_opt_2'
             ),
             models.UniqueConstraint(
                 fields=[
@@ -133,8 +91,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                     'activity'
                 ],
                 condition=Q(unit_model=None),
-                name='unique_ce_opt_7'
-            ),
+                name='unique_ce_opt_3'
+            )
         ]
         indexes = [
             models.Index(fields=['entity_model']),
@@ -150,12 +108,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        if self.is_fiscal_year_closing():
-            return f'{self.__class__.__name__}: {self.fiscal_year} | {self.balance}'
         return f'{self.__class__.__name__}: {self.fiscal_year}/{self.fiscal_month} | {self.balance}'
-
-    def is_fiscal_year_closing(self) -> bool:
-        return self.fiscal_month is None
 
 
 class ClosingEntryModel(ClosingEntryModelAbstract):
