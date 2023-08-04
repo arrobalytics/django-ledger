@@ -31,7 +31,9 @@ from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core import serializers
+from django.core.cache import caches
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet
@@ -56,6 +58,7 @@ from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, Contac
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
+from django_ledger.settings import DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
 
 UserModel = get_user_model()
 
@@ -415,12 +418,12 @@ class FiscalPeriodMixIn:
 
 class ClosingEntryMixIn:
 
-    def get_closing_entry_data(self,
-                               to_date: Union[date, datetime],
-                               from_date: Optional[Union[date, datetime]] = None,
-                               user_model: Optional[UserModel] = None,
-                               txs_queryset: Optional[QuerySet] = None,
-                               **kwargs: Dict) -> List:
+    def get_closing_entry_digest(self,
+                                 to_date: Union[date, datetime],
+                                 from_date: Optional[Union[date, datetime]] = None,
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 **kwargs: Dict) -> List:
         io_digest: IODigestContextManager = self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -451,42 +454,88 @@ class ClosingEntryMixIn:
 
         return ce_model_list
 
-    def get_closing_entry_data_for_month(self,
-                                         year: int,
-                                         month: int,
-                                         **kwargs: Dict) -> List:
+    # ---> Closing Entry For Month <---
+    def get_closing_entry_digest_for_month(self, year: int, month: int, **kwargs: Dict) -> List:
         _, day_end = monthrange(year, month)
         end_dt = date(year=year, month=month, day=day_end)
-        return self.get_closing_entry_data(to_date=end_dt, **kwargs)
+        return self.get_closing_entry_digest(to_date=end_dt, **kwargs)
 
-    def get_closing_entry_data_for_fiscal_year(self,
-                                               fiscal_year: int,
-                                               **kwargs: Dict) -> List:
+    def get_closing_entry_queryset_for_month(self, year: int, month: int):
+        return self.closingentrymodel_set.filter(
+            fiscal_year=year,
+            fiscal_month=month
+        )
+
+    def save_closing_entry_for_month(self, year: int, month: int):
+        closing_entry_qs = self.get_closing_entry_queryset_for_month(year=year, month=month)
+        closing_entry_qs.delete()
+        ce_data = self.get_closing_entry_digest_for_month(year=year, month=month)
+        ClosingEntryModel = lazy_loader.get_closing_entry_model()
+        return ClosingEntryModel.objects.bulk_create(
+            objs=ce_data,
+            batch_size=100
+        )
+
+    # ---> Closing Entry For Fiscal Year <---
+    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> List:
         end_dt = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.get_closing_entry_data(to_date=end_dt, **kwargs)
+        return self.get_closing_entry_digest(to_date=end_dt, **kwargs)
 
-    def get_closing_entry_fiscal_year(self, fiscal_year: int):
+    def get_closing_entry_queryset_for_fiscal_year(self, fiscal_year: int):
         end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
         return self.closingentrymodel_set.filter(
             fiscal_year=end_dt.year,
             fiscal_month=end_dt.month
         )
 
-    def get_closing_entry_month(self, year: int, month: int):
-        return self.closingentrymodel_set.filter(
-            fiscal_year=year,
-            fiscal_month=month
-        )
-
-    def save_closing_entry_fiscal_year(self, fiscal_year: int):
-        closing_entry_qs = self.get_closing_entry_fiscal_year(fiscal_year=fiscal_year)
+    def save_closing_entry_for_fiscal_year(self, fiscal_year: int):
+        closing_entry_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=fiscal_year)
         closing_entry_qs.delete()
-        ce_data = self.get_closing_entry_data_for_fiscal_year(fiscal_year=fiscal_year)
+        ce_data = self.get_closing_entry_digest_for_fiscal_year(fiscal_year=fiscal_year)
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
         return ClosingEntryModel.objects.bulk_create(
             objs=ce_data,
             batch_size=100
         )
+
+    # ---> Closing Entry Cache Keys <----
+    def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
+        month_str = str(month).zfill(2)
+        return f'closing_entry_{year}{month_str}_{self.uuid}'
+
+    def get_closing_entry_cache_key_for_fiscal_year(self, fiscal_year: int) -> str:
+        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        month_str = str(end_dt.month).zfill(2)
+        return f'closing_entry_{end_dt.year}{month_str}_{self.uuid}'
+
+    # ----> Closing Entry Caching < -----
+
+    def get_closing_entry_cache_fiscal_year(self, fiscal_year: int, cache_name: str = 'default', **kwargs):
+        cache_system = caches[cache_name]
+        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=end_dt.year)
+        ce_ser = cache_system.get(ce_cache_key)
+        if ce_ser:
+            ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
+            return list(ce.object for ce in ce_qs_serde_gen)
+
+        return self.save_closing_entry_cache_fiscal_year(fiscal_year=fiscal_year, cache_name=cache_name, **kwargs)
+
+    def save_closing_entry_cache_fiscal_year(self,
+                                             fiscal_year: int,
+                                             cache_name: str = 'default',
+                                             timeout: Optional[int] = None):
+        cache_system = caches[cache_name]
+        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        ce_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=end_dt.year)
+        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=end_dt.year)
+        ce_ser = serializers.serialize(format='json', queryset=ce_qs)
+
+        if not timeout:
+            timeout = DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
+
+        cache_system.set(ce_cache_key, ce_ser, timeout)
+        return list(ce_qs)
 
 
 class EntityModelAbstract(MP_Node,
@@ -583,6 +632,7 @@ class EntityModelAbstract(MP_Node,
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
     picture = models.ImageField(blank=True, null=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
@@ -603,6 +653,82 @@ class EntityModelAbstract(MP_Node,
     # ## Logging ###
     def get_logger_name(self):
         return f'EntityModel {self.uuid}'
+
+    # ## ENTITY CREATION ###
+    @classmethod
+    def create_entity(cls,
+                      name: str,
+                      use_accrual_method: bool,
+                      admin: UserModel,
+                      fy_start_month: int,
+                      parent_entity=None):
+        """
+        Convenience Method to Create a new Entity Model. This is the preferred method to create new Entities in order
+        to properly handle potential parent/child relationships between EntityModels.
+
+        Parameters
+        ----------
+        name: str
+            The name of the new Entity.
+        use_accrual_method: bool
+            If True, accrual method of accounting will be used, otherwise Cash Method of accounting will be used.
+        fy_start_month: int
+            The month which represents the start of a new fiscal year. 1 represents January, 12 represents December.
+        admin: UserModel
+            The administrator of the new EntityModel.
+        parent_entity: EntityModel
+            The parent Entity Model of the newly created Entity. If provided, the admin user must also be admin of the
+            parent company.
+
+        Returns
+        -------
+
+        """
+        entity_model = cls(
+            name=name,
+            accrual_method=use_accrual_method,
+            fy_start_month=fy_start_month,
+            admin=admin
+        )
+        entity_model.clean()
+        entity_model = cls.add_root(instance=entity_model)
+        if parent_entity:
+            if isinstance(parent_entity, str):
+                # get by slug...
+                try:
+                    parent_entity_model = EntityModel.objects.get(slug__exact=parent_entity, admin=admin)
+                except ObjectDoesNotExist:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity with slug {parent_entity} is not administered by {admin.username}')
+                    )
+            elif isinstance(parent_entity, UUID):
+                # get by uuid...
+                try:
+                    parent_entity_model = EntityModel.objects.get(uuid__exact=parent_entity, admin=admin)
+                except ObjectDoesNotExist:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity with UUID {parent_entity} is not administered by {admin.username}')
+                    )
+            elif isinstance(parent_entity, cls):
+                # EntityModel instance provided...
+                if parent_entity.admin != admin:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity {parent_entity} is not administered by {admin.username}')
+                    )
+                parent_entity_model = parent_entity
+            else:
+                raise EntityModelValidationError(
+                    _('Only slug, UUID or EntityModel allowed.')
+                )
+
+            parent_entity.add_child(instance=entity_model)
+        return entity_model
 
     # ### ACCRUAL METHODS ######
     def get_accrual_method(self) -> str:
@@ -919,7 +1045,6 @@ class EntityModelAbstract(MP_Node,
         }
 
     # ##### ACCOUNT MANAGEMENT ######
-
     def get_all_accounts(self, active: bool = True, order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
         """
         Fetches all AccountModelQuerySet associated with the EntityModel.
@@ -1607,7 +1732,6 @@ class EntityModelAbstract(MP_Node,
         return bank_account_model
 
     # #### ITEM MANAGEMENT ###
-
     def validate_item_qs(self, item_qs: ItemModelQuerySet, raise_exception: bool = True) -> bool:
         """
         Validates the given ItemModelQuerySet against the EntityModel instance.
@@ -2285,16 +2409,16 @@ class EntityModelAbstract(MP_Node,
 
     # ### CLOSING DATA ###
 
-    def has_closing_data(self):
-        return self.closing_data is not None
+    def has_closing_entry(self):
+        return self.last_closing_date is not None
 
     # ### RANDOM DATA GENERATION ####
 
-    def populate_random_data(self, start_date: date):
+    def populate_random_data(self, start_date: date, days_forward=180):
         EntityDataGenerator = lazy_loader.get_entity_data_generator()
         data_generator = EntityDataGenerator(
             user_model=self.admin,
-            days_forward=30,
+            days_forward=days_forward,
             start_date=start_date,
             entity_model=self,
             capital_contribution=Decimal.from_float(50000.00)
