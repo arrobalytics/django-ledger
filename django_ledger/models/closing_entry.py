@@ -4,7 +4,6 @@ from django.db import models
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.entity import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 
@@ -30,9 +29,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                                    blank=True,
                                    on_delete=models.RESTRICT,
                                    verbose_name=_('Entity Model'))
-    fiscal_year = models.SmallIntegerField(verbose_name=_('Fiscal Year'))
-    fiscal_month = models.SmallIntegerField(verbose_name=_('Fiscal Month'),
-                                            choices=EntityModel.FY_MONTHS)
+    closing_date = models.DateField(verbose_name=_('Closing Date'))
     activity = models.CharField(max_length=20,
                                 choices=JournalEntryModel.ACTIVITIES,
                                 null=True,
@@ -54,44 +51,11 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
                 fields=[
                     'entity_model',
                     'account_model',
-                    'fiscal_year',
-                    'fiscal_month',
+                    'closing_date',
                     'unit_model',
                     'activity'
                 ],
-                name='unique_ce_all'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'fiscal_month'
-                ],
-                condition=Q(unit_model=None) & Q(activity=None),
-                name='unique_ce_opt_1'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'fiscal_month',
-                    'unit_model'
-                ],
-                condition=Q(activity=None),
-                name='unique_ce_opt_2'
-            ),
-            models.UniqueConstraint(
-                fields=[
-                    'entity_model',
-                    'account_model',
-                    'fiscal_year',
-                    'fiscal_month',
-                    'activity'
-                ],
-                condition=Q(unit_model=None),
-                name='unique_ce_opt_3'
+                name='unique_closing_entry'
             )
         ]
         indexes = [
@@ -99,16 +63,15 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['account_model']),
             models.Index(fields=[
                 'entity_model',
+                'closing_date',
                 'account_model',
                 'unit_model',
-                'activity',
-                'fiscal_year',
-                'fiscal_month'
+                'activity'
             ])
         ]
 
     def __str__(self):
-        return f'{self.__class__.__name__}: {self.fiscal_year}/{self.fiscal_month} | {self.balance}'
+        return f'{self.__class__.__name__}: {self.closing_date.strftime("%D")} | {self.balance}'
 
 
 class ClosingEntryModel(ClosingEntryModelAbstract):

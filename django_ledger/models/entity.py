@@ -442,8 +442,7 @@ class ClosingEntryMixIn:
                 entity_model=self,
                 account_model_id=ce['account_uuid'],
                 unit_model_id=ce['unit_uuid'],
-                fiscal_year=to_date.year,
-                fiscal_month=to_date.month,
+                closing_date=to_date,
                 activity=ce['activity'],
                 balance=ce['balance']
             ) for ce in ce_data
@@ -461,10 +460,9 @@ class ClosingEntryMixIn:
         return self.get_closing_entry_digest(to_date=end_dt, **kwargs)
 
     def get_closing_entry_queryset_for_month(self, year: int, month: int):
-        return self.closingentrymodel_set.filter(
-            fiscal_year=year,
-            fiscal_month=month
-        )
+        _, end_day = monthrange(year, month)
+        clo_date = date(year, month, end_day)
+        return self.closingentrymodel_set.filter(closing_date__exact=clo_date)
 
     def save_closing_entry_for_month(self, year: int, month: int):
         closing_entry_qs = self.get_closing_entry_queryset_for_month(year=year, month=month)
@@ -483,10 +481,7 @@ class ClosingEntryMixIn:
 
     def get_closing_entry_queryset_for_fiscal_year(self, fiscal_year: int):
         end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.closingentrymodel_set.filter(
-            fiscal_year=end_dt.year,
-            fiscal_month=end_dt.month
-        )
+        return self.closingentrymodel_set.filter(closing_date__exact=end_dt)
 
     def save_closing_entry_for_fiscal_year(self, fiscal_year: int):
         closing_entry_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=fiscal_year)
@@ -500,20 +495,25 @@ class ClosingEntryMixIn:
 
     # ---> Closing Entry Cache Keys <----
     def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
-        month_str = str(month).zfill(2)
-        return f'closing_entry_{year}{month_str}_{self.uuid}'
+        _, day_end = monthrange(year, month)
+        end_dt = date(year=year, month=month, day=day_end)
+        end_dt_str = end_dt.strftime('%Y%m%d')
+        return f'closing_entry_{end_dt_str}_{self.uuid}'
 
     def get_closing_entry_cache_key_for_fiscal_year(self, fiscal_year: int) -> str:
         end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        month_str = str(end_dt.month).zfill(2)
-        return f'closing_entry_{end_dt.year}{month_str}_{self.uuid}'
+        end_dt_str = end_dt.strftime('%Y%m%d')
+        return f'closing_entry_{end_dt_str}_{self.uuid}'
 
     # ----> Closing Entry Caching < -----
 
-    def get_closing_entry_cache_fiscal_year(self, fiscal_year: int, cache_name: str = 'default', **kwargs):
+    def get_closing_entry_cache_fiscal_year(self,
+                                            fiscal_year: int,
+                                            cache_name: str = 'default',
+
+                                            **kwargs):
         cache_system = caches[cache_name]
-        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=end_dt.year)
+        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=fiscal_year)
         ce_ser = cache_system.get(ce_cache_key)
         if ce_ser:
             ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
@@ -526,9 +526,8 @@ class ClosingEntryMixIn:
                                              cache_name: str = 'default',
                                              timeout: Optional[int] = None):
         cache_system = caches[cache_name]
-        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        ce_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=end_dt.year)
-        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=end_dt.year)
+        ce_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=fiscal_year)
+        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=fiscal_year)
         ce_ser = serializers.serialize(format='json', queryset=ce_qs)
 
         if not timeout:
