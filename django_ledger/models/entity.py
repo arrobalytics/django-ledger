@@ -140,7 +140,7 @@ class EntityModelManager(MP_NodeManager):
         )
 
 
-class FiscalPeriodMixIn:
+class EntityModelFiscalPeriodMixIn:
     """
     This class encapsulates the functionality needed to determine the start and end of all financial periods of an
     EntityModel. At the moment of creation, an EntityModel must be assigned a calendar month which is going to
@@ -416,7 +416,7 @@ class FiscalPeriodMixIn:
         return y
 
 
-class ClosingEntryMixIn:
+class EntityModelClosingEntryMixIn:
 
     # ---> Closing Entry IO Digest <---
     def get_closing_entry_digest(self,
@@ -454,54 +454,61 @@ class ClosingEntryMixIn:
 
         return ce_model_list
 
+    def get_closing_entry_digest_for_date(self, closing_date: date, **kwargs: Dict) -> List:
+        return self.get_closing_entry_digest(to_date=closing_date, **kwargs)
+
     def get_closing_entry_digest_for_month(self, year: int, month: int, **kwargs: Dict) -> List:
         _, day_end = monthrange(year, month)
-        end_dt = date(year=year, month=month, day=day_end)
-        return self.get_closing_entry_digest(to_date=end_dt, **kwargs)
+        closing_date = date(year=year, month=month, day=day_end)
+        return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
 
     def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> List:
-        end_dt = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.get_closing_entry_digest(to_date=end_dt, **kwargs)
+        closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
 
-    # ---> Closing Entry QuerySet For Month <---
+    # ---> Closing Entry QuerySet <---
+    def get_closing_entry_queryset_for_date(self, closing_date: date):
+        return self.closingentrymodel_set.filter(closing_date__exact=closing_date)
 
     def get_closing_entry_queryset_for_month(self, year: int, month: int):
         _, end_day = monthrange(year, month)
-        closing_dt = date(year, month, end_day)
-        return self.closingentrymodel_set.filter(closing_date__exact=closing_dt)
-
-    def create_closing_entry_for_month(self, year: int, month: int):
-        closing_entry_qs = self.get_closing_entry_queryset_for_month(year=year, month=month)
-        closing_entry_qs.delete()
-        ce_data = self.get_closing_entry_digest_for_month(year=year, month=month)
-        ClosingEntryModel = lazy_loader.get_closing_entry_model()
-        return ClosingEntryModel.objects.bulk_create(
-            objs=ce_data,
-            batch_size=100
-        )
-
-    # ---> Closing Entry QuerySet For Fiscal Year <---
+        closing_date = date(year, month, end_day)
+        return self.get_closing_entry_queryset_for_date(closing_date=closing_date)
 
     def get_closing_entry_queryset_for_fiscal_year(self, fiscal_year: int):
-        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
-        return self.closingentrymodel_set.filter(closing_date__exact=end_dt)
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_queryset_for_date(closing_date=closing_date)
 
-    def create_closing_entry_for_fiscal_year(self, fiscal_year: int):
-        closing_entry_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=fiscal_year)
+    # ----> Create Closing Entries <----
+
+    def create_closing_entry_for_date(self, closing_date: date):
+        closing_entry_qs = self.get_closing_entry_queryset_for_date(closing_date=closing_date)
         closing_entry_qs.delete()
-        ce_data = self.get_closing_entry_digest_for_fiscal_year(fiscal_year=fiscal_year)
+        ce_data = self.get_closing_entry_digest_for_date(closing_date=closing_date)
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
         return ClosingEntryModel.objects.bulk_create(
             objs=ce_data,
             batch_size=100
         )
 
+    def create_closing_entry_for_month(self, year: int, month: int):
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.create_closing_entry_for_date(closing_date=closing_date)
+
+    def create_closing_entry_for_fiscal_year(self, fiscal_year: int):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.create_closing_entry_for_date(closing_date=closing_date)
+
     # ---> Closing Entry Cache Keys <----
+    def get_closing_entry_cache_key_for_date(self, closing_date: date) -> str:
+        closing_date = closing_date.strftime('%Y%m%d')
+        return f'closing_entry_{closing_date}_{self.uuid}'
+
     def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
-        _, day_end = monthrange(year, month)
-        end_dt = date(year=year, month=month, day=day_end)
-        end_dt_str = end_dt.strftime('%Y%m%d')
-        return f'closing_entry_{end_dt_str}_{self.uuid}'
+        _, day = monthrange(year, month)
+        end_dt = date(year=year, month=month, day=day)
+        return self.get_closing_entry_cache_key_for_date(closing_date=end_dt)
 
     def get_closing_entry_cache_key_for_fiscal_year(self, fiscal_year: int) -> str:
         end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
@@ -510,6 +517,28 @@ class ClosingEntryMixIn:
 
     # ----> Closing Entry Caching Month < -----
 
+    def get_closing_entry_cache_for_date(self,
+                                         closing_date: date,
+                                         cache_name: str = 'default',
+                                         force_cache_update: bool = False,
+                                         cache_timeout: Optional[int] = None,
+                                         **kwargs):
+
+        if not force_cache_update:
+            cache_system = caches[cache_name]
+            ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
+            ce_ser = cache_system.get(ce_cache_key)
+            if ce_ser:
+                ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
+                return list(ce.object for ce in ce_qs_serde_gen)
+            return
+
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs)
+
     def get_closing_entry_cache_for_month(self,
                                           year: int,
                                           month: int,
@@ -517,39 +546,16 @@ class ClosingEntryMixIn:
                                           force_cache_update: bool = False,
                                           cache_timeout: Optional[int] = None,
                                           **kwargs):
-        if not force_cache_update:
-            cache_system = caches[cache_name]
-            ce_cache_key = self.get_closing_entry_cache_key_for_month(year=year, month=month)
-            ce_ser = cache_system.get(ce_cache_key)
-            if ce_ser:
-                ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
-                return list(ce.object for ce in ce_qs_serde_gen)
 
-        return self.save_closing_entry_cache_for_month(
-            year=year,
-            month=month,
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.get_closing_entry_cache_for_date(
+            closing_date=closing_date,
             cache_name=cache_name,
+            force_cache_update=force_cache_update,
             cache_timeout=cache_timeout,
-            **kwargs)
-
-    def save_closing_entry_cache_for_month(self,
-                                           year: int,
-                                           month: int,
-                                           cache_name: str = 'default',
-                                           cache_timeout: Optional[int] = None,
-                                           **kwargs):
-        cache_system = caches[cache_name]
-        ce_qs = self.get_closing_entry_queryset_for_month(year=year, month=month)
-        ce_cache_key = self.get_closing_entry_cache_key_for_month(year=year, month=month)
-        ce_ser = serializers.serialize(format='json', queryset=ce_qs)
-
-        if not cache_timeout:
-            cache_timeout = DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
-
-        cache_system.set(ce_cache_key, ce_ser, cache_timeout, **kwargs)
-        return list(ce_qs)
-
-    # ----> Closing Entry Caching Fiscal Year < -----
+            **kwargs
+        )
 
     def get_closing_entry_cache_for_fiscal_year(self,
                                                 fiscal_year: int,
@@ -557,28 +563,24 @@ class ClosingEntryMixIn:
                                                 force_cache_update: bool = False,
                                                 cache_timeout: Optional[int] = None,
                                                 **kwargs):
-        if not force_cache_update:
-            cache_system = caches[cache_name]
-            ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=fiscal_year)
-            ce_ser = cache_system.get(ce_cache_key)
-            if ce_ser:
-                ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
-                return list(ce.object for ce in ce_qs_serde_gen)
-
-        return self.save_closing_entry_cache_for_fiscal_year(
-            fiscal_year=fiscal_year,
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_cache_for_date(
+            closing_date=closing_date,
             cache_name=cache_name,
+            force_cache_update=force_cache_update,
             cache_timeout=cache_timeout,
-            **kwargs)
+            **kwargs
+        )
 
-    def save_closing_entry_cache_for_fiscal_year(self,
-                                                 fiscal_year: int,
-                                                 cache_name: str = 'default',
-                                                 cache_timeout: Optional[int] = None,
-                                                 **kwargs):
+    # ---> SAVE CLOSING ENTRY <---
+    def save_closing_entry_cache_for_date(self,
+                                          closing_date: date,
+                                          cache_name: str = 'default',
+                                          cache_timeout: Optional[int] = None,
+                                          **kwargs):
         cache_system = caches[cache_name]
-        ce_qs = self.get_closing_entry_queryset_for_fiscal_year(fiscal_year=fiscal_year)
-        ce_cache_key = self.get_closing_entry_cache_key_for_fiscal_year(fiscal_year=fiscal_year)
+        ce_qs = self.get_closing_entry_queryset_for_date(closing_date=closing_date)
+        ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
         ce_ser = serializers.serialize(format='json', queryset=ce_qs)
 
         if not cache_timeout:
@@ -586,6 +588,35 @@ class ClosingEntryMixIn:
 
         cache_system.set(ce_cache_key, ce_ser, cache_timeout, **kwargs)
         return list(ce_qs)
+
+    def save_closing_entry_cache_for_month(self,
+                                           year: int,
+                                           month: int,
+                                           cache_name: str = 'default',
+                                           cache_timeout: Optional[int] = None,
+                                           **kwargs):
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
+    def save_closing_entry_cache_for_fiscal_year(self,
+                                                 fiscal_year: int,
+                                                 cache_name: str = 'default',
+                                                 cache_timeout: Optional[int] = None,
+                                                 **kwargs):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
 
 
 class EntityModelAbstract(MP_Node,
@@ -594,8 +625,8 @@ class EntityModelAbstract(MP_Node,
                           ContactInfoMixIn,
                           IOMixIn,
                           LoggingMixIn,
-                          FiscalPeriodMixIn,
-                          ClosingEntryMixIn):
+                          EntityModelFiscalPeriodMixIn,
+                          EntityModelClosingEntryMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -2461,6 +2492,33 @@ class EntityModelAbstract(MP_Node,
 
     def has_closing_entry(self):
         return self.last_closing_date is not None
+
+    # def get_closing_entry_dates
+
+    def close_books_for_date(self, closing_date: date, force_update: bool = False, commit: bool = True):
+        closing_entry_qs = self.closingentrymodel_set.filter(closing_date__exact=closing_date)
+        if not closing_entry_qs.exists() or force_update:
+            ce_data = self.create_closing_entry_for_month(year=closing_date.year, month=closing_date.month)
+            self.last_closing_date = closing_date
+
+            if commit:
+                self.save(update_fields=[
+                    'last_closing_date',
+                    'updated'
+                ])
+            return ce_data
+        raise EntityModelValidationError(
+            message=f'Closing Entry for Period {date.strftime("%D")} already exists.'
+        )
+
+    def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
+        _, day = monthrange(year, month)
+        closing_dt = date(year, month, day)
+        self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
+
+    def close_books_for_fiscal_year(self, fiscal_year, force_update: bool = False, commit: bool = True):
+        closing_dt = self.get_fy_end(year=fiscal_year)
+        self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
 
     # ### RANDOM DATA GENERATION ####
 

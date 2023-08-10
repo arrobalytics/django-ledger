@@ -20,11 +20,11 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
-from django_ledger.models.entity import FiscalPeriodMixIn
+from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 
-class YearlyReportMixIn(YearMixin, FiscalPeriodMixIn):
+class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -67,7 +67,7 @@ class YearlyReportMixIn(YearMixin, FiscalPeriodMixIn):
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, FiscalPeriodMixIn):
+class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
