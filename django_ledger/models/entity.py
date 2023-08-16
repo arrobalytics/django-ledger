@@ -424,7 +424,7 @@ class EntityModelClosingEntryMixIn:
                                  from_date: Optional[Union[date, datetime]] = None,
                                  user_model: Optional[UserModel] = None,
                                  txs_queryset: Optional[QuerySet] = None,
-                                 **kwargs: Dict) -> List:
+                                 **kwargs: Dict) -> Tuple:
         io_digest: IODigestContextManager = self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -438,37 +438,47 @@ class EntityModelClosingEntryMixIn:
         ce_data = io_digest.get_closing_entry_data()
 
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
-        ce_model_list = [
-            ClosingEntryModel(
-                entity_model=self,
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+
+        ce_model = ClosingEntryModel(
+            entity_model=self,
+            closing_date=to_date
+        )
+        ce_model.clean()
+
+        ce_txs_list = [
+            ClosingEntryTransactionModel(
+                closing_entry_model=ce_model,
                 account_model_id=ce['account_uuid'],
                 unit_model_id=ce['unit_uuid'],
-                closing_date=to_date,
                 activity=ce['activity'],
                 balance=ce['balance']
             ) for ce in ce_data
         ]
 
-        for ce in ce_model_list:
+        for ce in ce_txs_list:
             ce.clean()
 
-        return ce_model_list
+        return ce_model, ce_txs_list
 
-    def get_closing_entry_digest_for_date(self, closing_date: date, **kwargs: Dict) -> List:
+    def get_closing_entry_digest_for_date(self, closing_date: date, **kwargs: Dict) -> Tuple:
         return self.get_closing_entry_digest(to_date=closing_date, **kwargs)
 
-    def get_closing_entry_digest_for_month(self, year: int, month: int, **kwargs: Dict) -> List:
+    def get_closing_entry_digest_for_month(self, year: int, month: int, **kwargs: Dict) -> Tuple:
         _, day_end = monthrange(year, month)
         closing_date = date(year=year, month=month, day=day_end)
         return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
 
-    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> List:
+    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> Tuple:
         closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
         return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
 
     # ---> Closing Entry QuerySet <---
     def get_closing_entry_queryset_for_date(self, closing_date: date):
-        return self.closingentrymodel_set.filter(closing_date__exact=closing_date)
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+        return ClosingEntryTransactionModel.objects.for_entity(
+            entity_slug=self,
+        ).filter(closing_entry_model__closing_date__exact=closing_date)
 
     def get_closing_entry_queryset_for_month(self, year: int, month: int):
         _, end_day = monthrange(year, month)
@@ -482,12 +492,13 @@ class EntityModelClosingEntryMixIn:
     # ----> Create Closing Entries <----
 
     def create_closing_entry_for_date(self, closing_date: date):
-        closing_entry_qs = self.get_closing_entry_queryset_for_date(closing_date=closing_date)
-        closing_entry_qs.delete()
-        ce_data = self.get_closing_entry_digest_for_date(closing_date=closing_date)
-        ClosingEntryModel = lazy_loader.get_closing_entry_model()
-        return ClosingEntryModel.objects.bulk_create(
-            objs=ce_data,
+
+        self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
+        ce_model, ce_txs_list = self.get_closing_entry_digest_for_date(closing_date=closing_date)
+        ce_model.save()
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+        return ce_model, ClosingEntryTransactionModel.objects.bulk_create(
+            objs=ce_txs_list,
             batch_size=100
         )
 
@@ -616,7 +627,6 @@ class EntityModelClosingEntryMixIn:
             cache_timeout=cache_timeout,
             **kwargs
         )
-
 
 
 class EntityModelAbstract(MP_Node,
