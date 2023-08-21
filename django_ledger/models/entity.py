@@ -19,7 +19,6 @@ to operate on such EntityModel.
 EntityModels may also have different financial reporting periods, (also known as fiscal year), which start month is
 specified at the time of creation. All key functionality around the Fiscal Year is encapsulated in the
 EntityReportMixIn.
-
 """
 from calendar import monthrange
 from collections import defaultdict
@@ -40,7 +39,7 @@ from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
@@ -492,6 +491,11 @@ class EntityModelClosingEntryMixIn:
     # ----> Create Closing Entries <----
 
     def create_closing_entry_for_date(self, closing_date: date):
+
+        if closing_date > localdate():
+            raise EntityModelValidationError(
+                message=_(f'Cannot create closing entry with a future date {closing_date}.')
+            )
 
         self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
         ce_model, ce_txs_list = self.get_closing_entry_digest_for_date(closing_date=closing_date)
@@ -1379,7 +1383,6 @@ class EntityModelAbstract(MP_Node,
         return vendor_model
 
     # ### CUSTOMER MANAGEMENT ####
-
     def get_customers(self, active: bool = True) -> CustomerModelQueryset:
         """
         Fetches the CustomerModel associated with the EntityModel instance.
@@ -2503,12 +2506,10 @@ class EntityModelAbstract(MP_Node,
     def has_closing_entry(self):
         return self.last_closing_date is not None
 
-    # def get_closing_entry_dates
-
     def close_books_for_date(self, closing_date: date, force_update: bool = False, commit: bool = True):
         closing_entry_qs = self.closingentrymodel_set.filter(closing_date__exact=closing_date)
         if not closing_entry_qs.exists() or force_update:
-            ce_data = self.create_closing_entry_for_month(year=closing_date.year, month=closing_date.month)
+            ce_data = self.create_closing_entry_for_date(closing_date=closing_date)
             self.last_closing_date = closing_date
 
             if commit:
@@ -2518,7 +2519,7 @@ class EntityModelAbstract(MP_Node,
                 ])
             return ce_data
         raise EntityModelValidationError(
-            message=f'Closing Entry for Period {date.strftime("%D")} already exists.'
+            message=f'Closing Entry for Period {closing_date} already exists.'
         )
 
     def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
@@ -2526,7 +2527,7 @@ class EntityModelAbstract(MP_Node,
         closing_dt = date(year, month, day)
         self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
 
-    def close_books_for_fiscal_year(self, fiscal_year, force_update: bool = False, commit: bool = True):
+    def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False, commit: bool = True):
         closing_dt = self.get_fy_end(year=fiscal_year)
         self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
 
