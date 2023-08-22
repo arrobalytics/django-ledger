@@ -42,6 +42,7 @@ class ClosingEntryModelAbstract(models.Model):
             models.Index(fields=['closing_date']),
             models.Index(fields=['entity_model', 'closing_date'])
         ]
+        ordering = ['closing_date']
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.entity_model.name} {self.closing_date}'

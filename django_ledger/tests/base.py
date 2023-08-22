@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from itertools import cycle
 from logging import getLogger, DEBUG
 from random import randint, choice
 
@@ -19,6 +20,8 @@ class DjangoLedgerBaseTest(TestCase):
     FY_STARTS = None
     CAPITAL_CONTRIBUTION = None
     START_DATE = None
+    DAYS_FORWARD = 9 * 30
+    TX_QUANTITY = 50
     user_model = None
     TEST_DATA = list()
     CLIENT = None
@@ -28,6 +31,7 @@ class DjangoLedgerBaseTest(TestCase):
     PASSWORD = None
     USERNAME = None
     logger = None
+    accrual_cycle = cycle([True, False])
 
     @classmethod
     def setUpTestData(cls):
@@ -103,7 +107,8 @@ class DjangoLedgerBaseTest(TestCase):
             'email': 'mytest@testinginc.com',
             'website': 'http://www.mytestingco.com',
             'fy_start_month': choice(cls.FY_STARTS),
-            'admin': cls.user_model
+            'admin': cls.user_model,
+            'accrual_method': next(cls.accrual_cycle)
         }
 
     def get_random_entity_model(self) -> EntityModel:
@@ -130,8 +135,8 @@ class DjangoLedgerBaseTest(TestCase):
                 entity_model=entity_model,
                 start_date=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
-                days_forward=30 * 9,
-                tx_quantity=25
+                days_forward=cls.DAYS_FORWARD,
+                tx_quantity=cls.TX_QUANTITY
             )
             cls.logger.info(f'Populating Entity {entity_model.name}...')
             data_generator.populate_entity()

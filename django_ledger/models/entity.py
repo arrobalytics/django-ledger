@@ -708,6 +708,8 @@ class EntityModelAbstract(MP_Node,
     ]
     LOGGER_NAME_ATTRIBUTE = 'slug'
 
+    META_KEY_CLOSING_ENTRY_DATES = 'closing_entries'
+
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'))
     default_coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
@@ -729,6 +731,7 @@ class EntityModelAbstract(MP_Node,
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
     last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
     picture = models.ImageField(blank=True, null=True)
+    meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
     node_order_by = ['uuid']
@@ -2506,11 +2509,39 @@ class EntityModelAbstract(MP_Node,
     def has_closing_entry(self):
         return self.last_closing_date is not None
 
+    def compute_closing_entry_dates_list(self, iso_format: bool = True) -> List[Union[str, date]]:
+        closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date')
+        if iso_format:
+            return [ce.closing_date.isoformat() for ce in closing_entry_qs]
+        return [ce.closing_date for ce in closing_entry_qs]
+
+    def save_closing_entry_dates_meta(self, commit: bool = True) -> List[str]:
+        date_list = self.compute_closing_entry_dates_list(iso_format=True)
+        self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = date_list
+        if commit:
+            self.save(update_fields=[
+                'meta',
+                'updated'
+            ])
+        return date_list
+
+    def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> List[date]:
+        date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
+        if as_date:
+            return [date.fromisoformat(dt) for dt in date_list]
+        return date_list
+
     def close_books_for_date(self, closing_date: date, force_update: bool = False, commit: bool = True):
         closing_entry_qs = self.closingentrymodel_set.filter(closing_date__exact=closing_date)
         if not closing_entry_qs.exists() or force_update:
             ce_data = self.create_closing_entry_for_date(closing_date=closing_date)
-            self.last_closing_date = closing_date
+
+            if not self.last_closing_date or self.last_closing_date < closing_date:
+                self.last_closing_date = closing_date
+
+            if not force_update and closing_date not in self.meta[self.META_KEY_CLOSING_ENTRY_DATES]:
+                self.meta[self.META_KEY_CLOSING_ENTRY_DATES].insert(0, closing_date.isoformat())
+                self.meta[self.META_KEY_CLOSING_ENTRY_DATES].sort(reverse=True)
 
             if commit:
                 self.save(update_fields=[
@@ -2525,11 +2556,11 @@ class EntityModelAbstract(MP_Node,
     def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
         _, day = monthrange(year, month)
         closing_dt = date(year, month, day)
-        self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
 
     def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False, commit: bool = True):
         closing_dt = self.get_fy_end(year=fiscal_year)
-        self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
 
     # ### RANDOM DATA GENERATION ####
 
@@ -2858,6 +2889,10 @@ class EntityManagementModel(EntityManagementModelAbstract):
 def entitymodel_presave(instance: EntityModel, **kwargs):
     if not instance.slug:
         instance.generate_slug(commit=False)
+    if not instance.meta:
+        instance.meta = dict()
+    if instance.META_KEY_CLOSING_ENTRY_DATES not in instance.meta:
+        instance.meta[instance.META_KEY_CLOSING_ENTRY_DATES] = list()
 
 
 pre_save.connect(receiver=entitymodel_presave, sender=EntityModel)
