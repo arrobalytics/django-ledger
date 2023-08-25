@@ -23,8 +23,37 @@ class EntityModelTests(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in entity_urls
         }
 
-    # Closing Entry Tests...
-    # def test_
+    # CLOSING ENTRY Tests...
+    def test_closing_entry_dates_meta_key(self):
+        self.logger.info('test_closing_entry_dates_meta_key...')
+        for entity_model in self.ENTITY_MODEL_QUERYSET:
+            self.assertTrue(isinstance(entity_model.meta, dict))
+            self.assertTrue(entity_model.META_KEY_CLOSING_ENTRY_DATES in entity_model.meta)
+            self.assertTrue(isinstance(entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES], list))
+            self.assertEqual(len(entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES]), 0)
+
+    def test_closing_entry_creation(self):
+        self.logger.info('test_closing_entry_creation...')
+        for entity_model in self.ENTITY_MODEL_QUERYSET:
+            start_year = self.START_DATE.year
+            start_momth = self.START_DATE.month
+            while True:
+                self.logger.info(f'Creating closing entry {start_year}/{start_momth} for {entity_model.slug}')
+                ce_list = entity_model.close_books_for_month(year=start_year, month=start_momth)
+                if all([
+                    self.START_DATE.year + 1 == start_year,
+                    self.START_DATE.month == start_momth
+                ]):
+                    break
+                elif start_momth == 12:
+                    start_momth = 1
+                    start_year += 1
+                else:
+                    start_momth += 1
+
+#     def test_closing_entry_meta(self):
+#         self.logger.info('test_closing_entry_creation...')
+#         for entity_model in self.ENTITY_MODEL_QUERYSET:
 
     # UI Tests....
     def test_ui_protected_views(self, test_date: date = None):

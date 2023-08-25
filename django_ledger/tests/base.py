@@ -3,6 +3,7 @@ from decimal import Decimal
 from itertools import cycle
 from logging import getLogger, DEBUG
 from random import randint, choice
+from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -11,7 +12,7 @@ from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel, EntityModelQuerySet
 
 UserModel = get_user_model()
 
@@ -62,7 +63,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.FY_STARTS = list(str(i) for i in range(1, 13))
         cls.TEST_DATA = list()
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
-        cls.ENTITY_MODEL_QUERYSET = None
+        cls.ENTITY_MODEL_QUERYSET: Optional[EntityModelQuerySet] = None
 
         cls.create_entity_models(n=cls.N)
         cls.populate_entity_models()
@@ -77,7 +78,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def login_client(cls):
-        cls.logger.info('Logging in client...')
+        # cls.logger.info('Logging in client...')
         cls.CLIENT.login(
             username=cls.USERNAME,
             password=cls.PASSWORD
@@ -85,7 +86,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def logout_client(cls):
-        cls.logger.info('Logging out client...')
+        # cls.logger.info('Logging out client...')
         cls.CLIENT.logout()
 
     @classmethod
