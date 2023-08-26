@@ -17,7 +17,7 @@ class ClosingEntryModelManager(models.Manager):
     pass
 
 
-class ClosingEntryModelAbstract(models.Model):
+class ClosingEntryModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,

@@ -641,6 +641,7 @@ class EntityModelAbstract(MP_Node,
                           LoggingMixIn,
                           EntityModelFiscalPeriodMixIn,
                           EntityModelClosingEntryMixIn):
+
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -2526,10 +2527,20 @@ class EntityModelAbstract(MP_Node,
         return date_list
 
     def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> List[date]:
+        if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
+            return list()
         date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
         if as_date:
             return [date.fromisoformat(dt) for dt in date_list]
         return date_list
+
+    def select_closing_entry_for_io_date(self, to_date: Union[datetime, date]) -> Optional[date]:
+        ce_date_list = self.fetch_closing_entry_dates_meta()
+        if isinstance(to_date, datetime):
+            to_date = to_date.date()
+        for ce in ce_date_list:
+            if to_date >= ce:
+                return ce
 
     def close_books_for_date(self, closing_date: date, force_update: bool = False, commit: bool = True):
         closing_entry_qs = self.closingentrymodel_set.filter(closing_date__exact=closing_date)
@@ -2539,13 +2550,14 @@ class EntityModelAbstract(MP_Node,
             if not self.last_closing_date or self.last_closing_date < closing_date:
                 self.last_closing_date = closing_date
 
-            if not force_update and closing_date not in self.meta[self.META_KEY_CLOSING_ENTRY_DATES]:
+            if closing_date not in self.meta[self.META_KEY_CLOSING_ENTRY_DATES]:
                 self.meta[self.META_KEY_CLOSING_ENTRY_DATES].insert(0, closing_date.isoformat())
                 self.meta[self.META_KEY_CLOSING_ENTRY_DATES].sort(reverse=True)
 
             if commit:
                 self.save(update_fields=[
                     'last_closing_date',
+                    'meta',
                     'updated'
                 ])
             return ce_data

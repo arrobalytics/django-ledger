@@ -6,7 +6,7 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict, namedtuple
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from itertools import groupby
 from pathlib import Path
 from random import choice
@@ -29,8 +29,6 @@ from django_ledger.io.io_context import (RoleContextManager, GroupContextManager
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
-                                    DJANGO_LEDGER_TRANSACTION_CORRECTION)
 
 UserModel = get_user_model()
 
@@ -52,11 +50,11 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     is_valid = (CREDITS == DEBITS)
     diff = CREDITS - DEBITS
 
-    if not is_valid and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+    if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
         if raise_exception:
             raise TransactionNotInBalanceError(
                 f'Invalid tx data. Credits and debits must match. Currently cr: {CREDITS}, db {DEBITS}.'
-                f'Max Tolerance {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+                f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
             )
 
     return IS_TX_MODEL, is_valid, diff
@@ -67,7 +65,7 @@ def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
 
         IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data, raise_exception=perform_correction)
 
-        if not perform_correction and abs(diff) > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
+        if not perform_correction and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
             return False
 
         while not is_valid:
@@ -80,16 +78,16 @@ def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
                 if any([diff > 0 and tx_type_choice == 'debit',
                         diff < 0 and tx_type_choice == 'credit']):
                     if IS_TX_MODEL:
-                        tx.amount += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx.amount += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
-                        tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
                 elif any([diff < 0 and tx_type_choice == 'debit',
                           diff > 0 and tx_type_choice == 'credit']):
                     if IS_TX_MODEL:
-                        tx.amount -= DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx.amount -= settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
-                        tx['amount'] += DJANGO_LEDGER_TRANSACTION_CORRECTION
+                        tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
                 IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data)
 
@@ -158,6 +156,23 @@ class IODatabaseMixIn:
     Controls how transactions are recorded into the ledger.
     """
 
+    def is_entity_model(self):
+        return isinstance(self, lazy_loader.get_entity_model())
+
+    def is_ledger_model(self):
+        return isinstance(self, lazy_loader.get_ledger_model())
+
+    def is_entity_unit_model(self):
+        return isinstance(self, lazy_loader.get_unit_model())
+
+    def get_entity_model_from_io(self):
+        if self.is_entity_model():
+            return self
+        elif self.is_ledger_model():
+            return self.entity
+        elif self.is_entity_unit_model():
+            return self.entity
+
     def database_digest(self,
                         txs_queryset: QuerySet,
                         entity_slug: str = None,
@@ -175,11 +190,24 @@ class IODatabaseMixIn:
                         by_period: bool = False,
                         by_unit: bool = False):
 
+        if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
+            entity_model = self.get_entity_model_from_io()
+            closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
+
+            ce_list = entity_model.get_closing_entry_cache_for_date(
+                closing_date=closing_entry_date,
+                force_cache_update=True
+            )
+
+            from_date_d = closing_entry_date + timedelta(days=1)
+            print('Orig From:', from_date)
+            print('New from:', from_date_d)
+            print('To Date:', to_date)
+
         if not txs_queryset:
             TransactionModel = lazy_loader.get_txs_model()
 
-            # If IO is on entity model....
-            if isinstance(self, lazy_loader.get_entity_model()):
+            if self.is_entity_model():
                 if entity_slug:
                     if entity_slug != self.slug:
                         raise IOValidationError('Inconsistent entity_slug. '
@@ -195,9 +223,7 @@ class IODatabaseMixIn:
                         user_model=user_model,
                         entity_slug=self
                     )
-
-            # If IO is on ledger model....
-            elif isinstance(self, lazy_loader.get_ledger_model()):
+            elif self.is_ledger_model():
                 if not entity_slug:
                     raise IOValidationError(
                         'Calling digest from Ledger Model requires entity_slug explicitly for safety')
@@ -206,15 +232,14 @@ class IODatabaseMixIn:
                     entity_slug=entity_slug,
                     ledger_model=self
                 )
-            # If IO is on unit model....
-            elif isinstance(self, lazy_loader.get_unit_model()):
+            elif self.is_entity_unit_model():
                 if not entity_slug:
                     raise IOValidationError(
                         'Calling digest from Entity Unit requires entity_slug explicitly for safety')
                 txs_queryset = TransactionModel.objects.for_unit(
                     user_model=user_model,
                     entity_slug=entity_slug,
-                    unit_slug=self
+                    unit_slug=unit_slug or self
                 )
             else:
                 txs_queryset = TransactionModel.objects.none()

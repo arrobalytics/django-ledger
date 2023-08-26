@@ -36,20 +36,20 @@ class EntityModelTests(DjangoLedgerBaseTest):
         self.logger.info('test_closing_entry_creation...')
         for entity_model in self.ENTITY_MODEL_QUERYSET:
             start_year = self.START_DATE.year
-            start_momth = self.START_DATE.month
+            start_month = self.START_DATE.month
             while True:
-                self.logger.info(f'Creating closing entry {start_year}/{start_momth} for {entity_model.slug}')
-                ce_list = entity_model.close_books_for_month(year=start_year, month=start_momth)
+                self.logger.info(f'Creating closing entry {start_year}/{start_month} for {entity_model.slug}')
+                ce_list = entity_model.close_books_for_month(year=start_year, month=start_month)
                 if all([
                     self.START_DATE.year + 1 == start_year,
-                    self.START_DATE.month == start_momth
+                    self.START_DATE.month == start_month
                 ]):
                     break
-                elif start_momth == 12:
-                    start_momth = 1
+                elif start_month == 12:
+                    start_month = 1
                     start_year += 1
                 else:
-                    start_momth += 1
+                    start_month += 1
 
 #     def test_closing_entry_meta(self):
 #         self.logger.info('test_closing_entry_creation...')

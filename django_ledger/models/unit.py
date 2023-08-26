@@ -53,17 +53,6 @@ class EntityUnitModelQuerySet(MP_NodeQuerySet):
 
 class EntityUnitModelManager(MP_NodeManager):
 
-    def get_queryset(self):
-        """
-        Custom defined EntityUnitModel QuerySet.
-        Inherits from the Materialized Path Tree Node QuerySet.
-
-        Returns
-        -------
-        EntityUnitModelQuerySet
-        """
-        return EntityUnitModelQuerySet(self.model).order_by('path')
-
     def for_entity(self, entity_slug: str, user_model):
         """
         Fetches a QuerySet of EntityUnitModels associated with a specific EntityModel & UserModel.
@@ -145,7 +134,7 @@ class EntityUnitModelAbstract(MP_Node,
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 
-    objects = EntityUnitModelManager()
+    objects = EntityUnitModelManager.from_queryset(queryset_class=EntityUnitModelQuerySet)()
     node_order_by = ['uuid']
 
     class Meta:

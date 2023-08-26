@@ -31,10 +31,9 @@ except ImportError:
 
 logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
 
-DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', True)
+DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', False)
 DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT = getattr(settings,
-                                                            'DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT',
-                                                            60 * 15)
+                                                            'DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT', 3600)
 
 DJANGO_LEDGER_BILL_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_BILL_NUMBER_LENGTH', 10)
 DJANGO_LEDGER_INVOICE_NUMBER_LENGTH = getattr(settings, 'DJANGO_LEDGER_INVOICE_NUMBER_LENGTH', 10)
