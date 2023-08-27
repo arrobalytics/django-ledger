@@ -173,6 +173,8 @@ class IODatabaseMixIn:
         elif self.is_entity_unit_model():
             return self.entity
 
+    # def is_time_bounded(self, from_date, to_date):
+
     def database_digest(self,
                         txs_queryset: QuerySet,
                         entity_slug: str = None,
@@ -190,19 +192,25 @@ class IODatabaseMixIn:
                         by_period: bool = False,
                         by_unit: bool = False):
 
+        closing_entry_list = None
         if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
-            entity_model = self.get_entity_model_from_io()
-            closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
+            pass
+            # if not from_date:
+            #     entity_model = self.get_entity_model_from_io()
+            #     closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
+            #
+            #     if closing_entry_date:
+            #         closing_entry_list = entity_model.get_closing_entry_cache_for_date(
+            #             closing_date=closing_entry_date,
+            #             force_cache_update=True
+            #         )
+            #
+            #         from_date_d = closing_entry_date + timedelta(days=1)
+            #         print('Orig From:', from_date)
+            #         print('New from:', from_date_d)
+            #         print('To Date:', to_date)
+                    # print(closing_entry_list)
 
-            ce_list = entity_model.get_closing_entry_cache_for_date(
-                closing_date=closing_entry_date,
-                force_cache_update=True
-            )
-
-            from_date_d = closing_entry_date + timedelta(days=1)
-            print('Orig From:', from_date)
-            print('New from:', from_date_d)
-            print('To Date:', to_date)
 
         if not txs_queryset:
             TransactionModel = lazy_loader.get_txs_model()
@@ -296,7 +304,7 @@ class IODatabaseMixIn:
             ORDER_BY.append('tx_type')
             VALUES.append('tx_type')
 
-        return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        return closing_entry_list, txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
 
     def python_digest(self,
                       txs_queryset: Optional[QuerySet] = None,
@@ -318,7 +326,7 @@ class IODatabaseMixIn:
         if equity_only:
             role = roles_module.GROUP_EARNINGS
 
-        txs_queryset = self.database_digest(
+        closing_entry_list, txs_queryset = self.database_digest(
             user_model=user_model,
             txs_queryset=txs_queryset,
             to_date=to_date,

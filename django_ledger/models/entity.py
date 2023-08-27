@@ -641,7 +641,6 @@ class EntityModelAbstract(MP_Node,
                           LoggingMixIn,
                           EntityModelFiscalPeriodMixIn,
                           EntityModelClosingEntryMixIn):
-
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -2549,6 +2548,9 @@ class EntityModelAbstract(MP_Node,
 
             if not self.last_closing_date or self.last_closing_date < closing_date:
                 self.last_closing_date = closing_date
+
+            if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
+                self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = list()
 
             if closing_date not in self.meta[self.META_KEY_CLOSING_ENTRY_DATES]:
                 self.meta[self.META_KEY_CLOSING_ENTRY_DATES].insert(0, closing_date.isoformat())

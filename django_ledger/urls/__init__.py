@@ -32,6 +32,7 @@ urlpatterns = [
     path('item/', include('django_ledger.urls.item')),
     path('bank-account/', include('django_ledger.urls.bank_account')),
     path('data-import/', include('django_ledger.urls.data_import')),
+    path('closing_entry/', include('django_ledger.urls.closing_entry')),
     path('auth/', include('django_ledger.urls.auth')),
     path('feedback/', include('django_ledger.urls.feedback')),
     path('inventory/', include('django_ledger.urls.inventory')),

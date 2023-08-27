@@ -650,6 +650,11 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Inventory',
                         'url': reverse('django_ledger:inventory-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Closing Entries',
+                        'url': reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': ENTITY_SLUG})
                     }
 
                 ]
