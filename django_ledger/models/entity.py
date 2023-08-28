@@ -2509,6 +2509,9 @@ class EntityModelAbstract(MP_Node,
     def has_closing_entry(self):
         return self.last_closing_date is not None
 
+    def get_closing_entries(self):
+        return self.closingentrymodel_set.all()
+
     def compute_closing_entry_dates_list(self, iso_format: bool = True) -> List[Union[str, date]]:
         closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date')
         if iso_format:

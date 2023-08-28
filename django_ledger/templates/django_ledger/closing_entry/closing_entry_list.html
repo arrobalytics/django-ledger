@@ -4,5 +4,120 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    {{ object_list }}
+    <div class="card">
+        <div class="card-content">
+            <div class="level">
+                <div class="level-left">
+                    <div class="level-item">
+                        {% if month %}
+                            <h1 class="is-size-1 has-text-weight-thin">{{ month | date:'F Y' }}</h1>
+                        {% elif year %}
+                            <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
+                                {% trans 'Closing Entries' %}</h1>
+                        {% else %}
+                            <h1 class="is-size-1 has-text-weight-thin">{% trans 'Latest Closing Entries' %}</h1>
+                        {% endif %}
+                    </div>
+                    <div class="level-item">
+                        <a href="{% url 'django_ledger:closing-entry-create' entity_slug=view.kwargs.entity_slug %}">
+                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                    </div>
+                </div>
+                <div class="level-right">
+
+                    {% if previous_month %}
+                        <div class="level-item">
+                            <a class="button is-small is-dark is-outlined"
+                               href="{% url 'django_ledger:closing-entry-list-month' year=previous_month.year month=previous_month.month entity_slug=view.kwargs.entity_slug %}">
+                                <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 16 %}</span>
+                                <span>{{ previous_month | date:'F Y' }}</span>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if next_month %}
+                        <div class="level-item">
+                            <a class="button is-small is-dark is-outlined"
+                               href="{% url 'django_ledger:closing-entry-list-month' year=next_month.year month=next_month.month entity_slug=view.kwargs.entity_slug %}">
+                                <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 16 %}</span>
+                                <span>{{ next_month | date:'F Y' }}</span>
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {% if previous_year %}
+                        <div class="level-item">
+                            <a class="button is-small is-dark is-outlined"
+                               href="{% url 'django_ledger:closing-entry-list-year' year=previous_year.year entity_slug=view.kwargs.entity_slug %}">
+                                <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 16 %}</span>
+                                <span>{{ previous_year | date:'Y' }}</span>
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if next_year %}
+                        <div class="level-item">
+                            <a class="button is-small is-dark is-outlined"
+                               href="{% url 'django_ledger:closing-entry-list-year' year=next_year.year entity_slug=view.kwargs.entity_slug %}">
+                                <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 16 %}</span>
+                                <span>{{ next_year | date:'Y' }}</span>
+                            </a>
+                        </div>
+                    {% endif %}
+
+
+                </div>
+            </div>
+
+            {% closing_entry_table closing_entry_list %}
+
+            {% if year %}
+                <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>
+                <p>
+                    <a href="{% url 'django_ledger:closing-entry-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'All' %} |
+                    </a>
+                    {% for date in date_list %}
+                        <a href="{% url 'django_ledger:closing-entry-list-month' entity_slug=view.kwargs.entity_slug year=date.year month=date.month %}">
+                            {{ date | date:'F' }} {% if not forloop.last %}>{% endif %}
+                        </a>
+                    {% endfor %}
+                </p>
+            {% else %}
+                <h5 class="is-size-5">{% trans 'Go to year:' %}</h5>
+                <p>
+                    <a href="{% url 'django_ledger:closing-entry-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'All' %} |
+                    </a>
+                    {% for date in date_list %}
+                        <a href="{% url 'django_ledger:closing-entry-list-year' entity_slug=view.kwargs.entity_slug year=date.year %}">
+                            {{ date.year }} {% if not forloop.last %}>{% endif %}
+                        </a>
+                    {% endfor %}
+                </p>
+            {% endif %}
+
+            {% if page_obj %}
+
+                {% if page_obj.has_previous %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.previous_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'ant-design:left-circle-outlined' 24 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+                <div class="level-item">
+                    <p class="is-italic">page {{ page_obj.number }}
+                        of {{ page_obj.paginator.num_pages }}</p>
+                </div>
+                {% if page_obj.has_next %}
+                    <div class="level-item">
+                        <a href="?page={{ page_obj.next_page_number }}"
+                           class="button is-small is-dark is-outlined">
+                            <span class="icon is-small">{% icon 'ant-design:right-circle-outlined' 24 %}</span>
+                        </a>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}

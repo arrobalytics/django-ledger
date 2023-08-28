@@ -217,12 +217,12 @@ class BillModelListView(DjangoLedgerSecurityMixIn, BillModelModelViewQuerySetMix
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):
-    paginate_by = 10
+    paginate_by = 20
     make_object_list = True
 
 
 class BillModelMonthListView(MonthArchiveView, BillModelListView):
-    paginate_by = 10
+    paginate_by = 20
     month_format = '%m'
     date_list_period = 'year'
 

@@ -2,15 +2,21 @@ from uuid import uuid4, UUID
 
 from django.db import models
 from django.db.models import Q
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import lazy_loader
 from django_ledger.models.journal_entry import JournalEntryModel
-from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 
 
 class ClosingEntryModelQuerySet(models.QuerySet):
-    pass
+
+    def posted(self):
+        return self.filter(posted=True)
+
+    def not_posted(self):
+        return self.filter(posted=False)
 
 
 class ClosingEntryModelManager(models.Manager):
@@ -35,12 +41,13 @@ class ClosingEntryModelManager(models.Manager):
         )
 
 
-class ClosingEntryModelAbstract(CreateUpdateMixIn):
+class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Entity Model'))
     closing_date = models.DateField(verbose_name=_('Closing Date'))
+    posted = models.BooleanField(default=False, verbose_name=_('Is Posted'))
     objects = ClosingEntryModelManager.from_queryset(queryset_class=ClosingEntryModelQuerySet)()
 
     class Meta:
@@ -58,12 +65,20 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn):
         indexes = [
             models.Index(fields=['entity_model']),
             models.Index(fields=['closing_date']),
-            models.Index(fields=['entity_model', 'closing_date'])
+            models.Index(fields=['posted']),
+            models.Index(fields=['entity_model', 'posted', 'closing_date'])
         ]
         ordering = ['closing_date']
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.entity_model.name} {self.closing_date}'
+
+    def is_posted(self):
+        return self.posted is True
+
+    # HTML Tags....
+    def get_html_id(self):
+        return f'closing_entry_{self.uuid}'
 
 
 class ClosingEntryModel(ClosingEntryModelAbstract):

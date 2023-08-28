@@ -194,23 +194,20 @@ class IODatabaseMixIn:
 
         closing_entry_list = None
         if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
-            pass
-            # if not from_date:
-            #     entity_model = self.get_entity_model_from_io()
-            #     closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
-            #
-            #     if closing_entry_date:
-            #         closing_entry_list = entity_model.get_closing_entry_cache_for_date(
-            #             closing_date=closing_entry_date,
-            #             force_cache_update=True
-            #         )
-            #
-            #         from_date_d = closing_entry_date + timedelta(days=1)
-            #         print('Orig From:', from_date)
-            #         print('New from:', from_date_d)
-            #         print('To Date:', to_date)
-                    # print(closing_entry_list)
+            if not from_date:
+                entity_model = self.get_entity_model_from_io()
+                closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
 
+                if closing_entry_date:
+                    # closing_entry_list = entity_model.get_closing_entry_cache_for_date(
+                    #     closing_date=closing_entry_date,
+                    #     force_cache_update=True
+                    # )
+                    from_date_d = closing_entry_date + timedelta(days=1)
+                    print('Orig From:', from_date)
+                    print('New from:', from_date_d)
+                    print('To Date:', to_date)
+                    print(closing_entry_list)
 
         if not txs_queryset:
             TransactionModel = lazy_loader.get_txs_model()

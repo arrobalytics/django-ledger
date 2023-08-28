@@ -1,0 +1,31 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Closing Entry' %}</h2>
+        </div>
+        <div class="card-content">
+            <form action="{% url 'django_ledger:closing-entry-create' entity_slug=view.kwargs.entity_slug %}"
+                  method="post">
+                {% csrf_token %}
+                {{ form }}
+                <div class="columns is-centered">
+                    <div class="column is-4">
+                        <button type="submit"
+                                id="djl-closing-entry-create-button"
+                                class="button is-primary is-outlined is-fullwidth my-2">{% trans 'Create Closing Entry' %}
+                        </button>
+                        <a href="{% url 'django_ledger:closing-entry-list' entity_slug=view.kwargs.entity_slug %}"
+                           id="djl-bill-create-back-button"
+                           class="button is-small is-dark is-fullwidth">{% trans 'Back To Closing Entries' %}</a>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}

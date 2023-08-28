@@ -285,10 +285,18 @@ def invoice_table(context, invoice_qs):
     }
 
 
-@register.inclusion_tag('django_ledger/bills/includes/bill_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/bills/tags/bill_table.html', takes_context=True)
 def bill_table(context, bill_qs):
     return {
         'bills': bill_qs,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_table.html', takes_context=True)
+def closing_entry_table(context, closing_entry_list):
+    return {
+        'closing_entry_list': closing_entry_list,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 
