@@ -51,6 +51,6 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         self.login_client()
         entity_model = self.get_random_entity_model()
         url = reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': entity_model.slug})
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(5):
             response = self.CLIENT.get(path=url)
 

@@ -16,7 +16,7 @@ class ClosingEntryModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = ClosingEntryModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
@@ -32,7 +32,7 @@ class ClosingEntryModelListView(DjangoLedgerSecurityMixIn, ClosingEntryModelView
     PAGE_TITLE = _('Closing Entry List')
     paginate_by = 10
     paginate_orphans = 2
-    allow_empty = False
+    allow_empty = True
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE,
@@ -66,12 +66,12 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
             'closing_date': localdate()
         }
 
-    def get_object(self, queryset=None):
-        if not getattr(self, 'object'):
-            entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-            entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
-            self.object = entity_model
-        return self.object
+    # def get_object(self, queryset=None):
+    #     if not getattr(self, 'object'):
+    #         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+    #         entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+    #         self.object = entity_model
+    #     return self.object
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
