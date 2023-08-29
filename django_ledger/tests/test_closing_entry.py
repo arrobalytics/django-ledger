@@ -17,6 +17,7 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in closing_entry_urls
         }
 
+    def test_create_closing_entries_api(self):
         for entity_model in self.ENTITY_MODEL_QUERYSET:
             for y in [self.START_DATE.year, self.START_DATE.year + 1]:
                 for m in range(1, 13):
@@ -53,4 +54,3 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         url = reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': entity_model.slug})
         with self.assertNumQueries(5):
             response = self.CLIENT.get(path=url)
-

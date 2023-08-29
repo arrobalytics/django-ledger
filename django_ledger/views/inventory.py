@@ -40,7 +40,7 @@ class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
         return context
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = ItemTransactionModel.objects.inventory_pipeline_aggregate(
                 entity_slug=self.kwargs['entity_slug'],
             )

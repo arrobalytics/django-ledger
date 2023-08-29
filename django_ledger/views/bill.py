@@ -32,7 +32,7 @@ class BillModelModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = BillModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user

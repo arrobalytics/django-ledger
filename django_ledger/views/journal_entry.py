@@ -25,7 +25,7 @@ class JournalEntryModelModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = JournalEntryModel.objects.for_ledger(
                 ledger_pk=self.kwargs['ledger_pk'],
                 entity_slug=self.kwargs['entity_slug'],
