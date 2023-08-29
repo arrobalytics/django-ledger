@@ -51,7 +51,7 @@ class ClosingEntryModelMonthListView(MonthArchiveView, ClosingEntryModelListView
     date_list_period = 'year'
 
 
-class ClosingEntryModelCreateView(ClosingEntryModelViewQuerySetMixIn, CreateView):
+class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, CreateView):
     template_name = 'django_ledger/closing_entry/closing_entry_create.html'
     form_class = ClosingEntryCreateForm
     PAGE_TITLE = _('Create Closing Entry')

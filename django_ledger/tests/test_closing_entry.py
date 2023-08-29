@@ -12,8 +12,6 @@ UserModel = get_user_model()
 
 class ClosingEntryModelTests(DjangoLedgerBaseTest):
 
-    # N = 25
-
     def setUp(self) -> None:
         self.URL_PATTERNS = {
             p.name: set(p.pattern.converters.keys()) for p in closing_entry_urls
@@ -35,16 +33,10 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         for path, kwargs in self.URL_PATTERNS.items():
             url_kwargs = dict()
             url_kwargs['entity_slug'] = entity_model.slug
-            # if 'bill_pk' in kwargs:
-            #     url_kwargs['bill_pk'] = closing_entry_model.uuid
-            # if 'year' in kwargs:
-            #     url_kwargs['year'] = closing_entry_model.date_draft.year
-            # if 'month' in kwargs:
-            #     url_kwargs['month'] = closing_entry_model.date_draft.month
-            # if 'po_pk' in kwargs:
-            #     url_kwargs['po_pk'] = uuid4()
-            # if 'ce_pk' in kwargs:
-            #     url_kwargs['ce_pk'] = uuid4()
+            if 'year' in kwargs:
+                url_kwargs['year'] = closing_entry_model.closing_date.year
+            if 'month' in kwargs:
+                url_kwargs['month'] = closing_entry_model.closing_date.month
 
             url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
             response = self.CLIENT.get(url, follow=False)
@@ -56,4 +48,9 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
             self.assertEqual(redirect_path, login_path, msg=f'{path} view not redirecting to correct auth URL.')
 
     def test_closing_entry_list(self):
-        pass
+        self.login_client()
+        entity_model = self.get_random_entity_model()
+        url = reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': entity_model.slug})
+        with self.assertNumQueries(2):
+            response = self.CLIENT.get(path=url)
+
