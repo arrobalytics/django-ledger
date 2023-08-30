@@ -1,10 +1,13 @@
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.db.models import Count
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, CreateView, DetailView
+from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, CreateView, DetailView, \
+    RedirectView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.closing_entry import ClosingEntryCreateForm
 from django_ledger.models.closing_entry import ClosingEntryModel
@@ -14,13 +17,17 @@ from django_ledger.views import DjangoLedgerSecurityMixIn
 
 class ClosingEntryModelViewQuerySetMixIn:
     queryset = None
+    queryset_annotate_txs_count = False
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = ClosingEntryModel.objects.for_entity(
+            qs = ClosingEntryModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
             ).select_related('entity_model')
+            if self.queryset_annotate_txs_count:
+                qs = qs.annotate(ce_txs_count=Count('closingentrytransactionmodel'))
+            self.queryset = qs
         return super().get_queryset()
 
 
@@ -40,6 +47,7 @@ class ClosingEntryModelListView(DjangoLedgerSecurityMixIn,
         'header_title': PAGE_TITLE,
         'header_subtitle_icon': 'file-icons:finaldraft'
     }
+    queryset_annotate_txs_count = True
 
 
 class ClosingEntryModelYearListView(YearArchiveView, ClosingEntryModelListView):
@@ -110,3 +118,59 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
 class ClosingEntryModelDetailView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/closing_entry/closing_entry_detail.html'
     pk_url_kwarg = 'closing_entry_pk'
+    context_object_name = 'closing_entry_model'
+    extra_context = {
+        'header_title': 'Closing Entry Detail',
+        'header_subtitle_icon': 'file-icons:finaldraft'
+    }
+    queryset_annotate_txs_count = True
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        closing_entry_model = ctx['object']
+        ctx['page_title'] = f'Closing Entry {closing_entry_model.closing_date}'
+        closing_entry_txs_qs = closing_entry_model.closingentrytransactionmodel_set.all()
+        ctx['closing_entry_txs_qs'] = closing_entry_txs_qs.select_related(
+            'account_model', 'account_model__coa_model', 'unit_model')
+        return ctx
+
+
+# ACTION VIEWS...
+class BaseClosingEntryModelActionView(DjangoLedgerSecurityMixIn,
+                                      RedirectView,
+                                      SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'closing_entry_pk'
+    action_name = None
+    commit = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:closing-entry-detail',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug'],
+                           'closing_entry_pk': kwargs['closing_entry_pk']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(BaseClosingEntryModelActionView, self).get(request, *args, **kwargs)
+        closing_entry_model: ClosingEntryModel = self.get_object()
+
+        try:
+            getattr(closing_entry_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
+
+
+class ClosingEntryModelActionMarkAsPostedView(ClosingEntryModelViewQuerySetMixIn, BaseClosingEntryModelActionView):
+    action_name = 'mark_as_posted'
+
+
+class ClosingEntryModelActionMarkAsUnPostedView(ClosingEntryModelViewQuerySetMixIn, BaseClosingEntryModelActionView):
+    action_name = 'mark_as_unposted'

@@ -1,0 +1,19 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th class="has-text-centered">{% trans 'Account' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ce_tx in ce_txs_list %}
+            <tr id="{{ ce_tx.get_html_id }}">
+                <td>{{ ce_tx.account_model }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

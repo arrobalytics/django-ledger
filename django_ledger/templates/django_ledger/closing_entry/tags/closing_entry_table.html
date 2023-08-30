@@ -8,18 +8,15 @@
         <tr>
             <th>{% trans 'Closing Entry Date' %}</th>
             <th class="has-text-centered">{% trans 'Is Posted' %}</th>
-            <th>{% trans 'Created' %}</th>
-            <th>{% trans 'Actions' %}</th>
-            {#            <th>{% trans 'Amount Due' %}</th>#}
-            {#            <th>{% trans 'Payments' %}</th>#}
-            {#            <th>{% trans 'Past Due' %}</th>#}
-            {#            <th>{% trans 'Actions' %}</th>#}
+            <th class="has-text-centered">{% trans 'Txs Count' %}</th>
+            <th class="has-text-centered">{% trans 'Created' %}</th>
+            <th class="has-text-centered">{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for closing_entry_model in closing_entry_list %}
             <tr id="{{ closing_entry_model.get_html_id }}">
-                <td>{{ closing_entry_model.closing_date }}</td>
+                <td class="has-text-centered">{{ closing_entry_model.closing_date }}</td>
                 <td class="has-text-centered">
                     {% if closing_entry_model.is_posted %}
                         <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
@@ -27,7 +24,8 @@
                         <span class="icon is-small has-text-danger">{% icon 'pajamas:false-positive' 24 %}</span>
                     {% endif %}
                 </td>
-                <td>{{ closing_entry_model.created }}</td>
+                <td class="has-text-centered">{{ closing_entry_model.ce_txs_count }}</td>
+                <td class="has-text-centered">{{ closing_entry_model.created }}</td>
                 <td class="has-text-centered">
                     <div class="dropdown is-right is-hoverable"
                          id="closing-entry-action-{{ closing_entry_model.uuid }}">

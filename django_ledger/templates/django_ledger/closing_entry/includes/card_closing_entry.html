@@ -1,0 +1,52 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div id="djl-bill-card-widget">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-header-title has-text-weight-light is-size-3">
+                <span class="icon is-large">
+                    {% icon 'file-icons:finaldraft' 36 %}</span>
+                {% trans 'Closing Entry' %} - {{ closing_entry_model.closing_date | date }}
+            </h2>
+        </div>
+        <div class="card-content">
+            <h1 class="is-size-3">{% trans 'Created:' %} {{ closing_entry_model.created | date }}</h1>
+            <h2>{% trans 'Transaction Count:' %} {{ closing_entry_model.ce_txs_count }}</h2>
+        </div>
+
+        <footer class="card-footer">
+
+            {# POST CLOSING ENTRY MODAL #}
+            {% if closing_entry_model.can_post %}
+                <a onclick="djLedger.toggleModal('{{ closing_entry_model.get_mark_as_posted_html_id }}')"
+                   id="{{ closing_entry_model.get_mark_as_posted_html_id }}-button"
+                   class="card-footer-item has-text-success has-text-weight-bold has-text-centered">{% trans 'Post' %}
+                </a>
+                {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_posted_url closing_entry_model.get_mark_as_posted_message closing_entry_model.get_mark_as_posted_html_id %}
+            {% endif %}
+
+            {# POST CLOSING ENTRY MODAL #}
+            {% if closing_entry_model.can_post %}
+                <a onclick="djLedger.toggleModal('{{ closing_entry_model.get_mark_as_posted_html_id }}')"
+                   id="{{ closing_entry_model.get_mark_as_posted_html_id }}-button"
+                   class="card-footer-item has-text-warning has-text-weight-bold has-text-centered">{% trans 'Regenerate Transactions' %}
+                </a>
+                {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_posted_url closing_entry_model.get_mark_as_posted_message closing_entry_model.get_mark_as_posted_html_id %}
+            {% endif %}
+
+            {# UNPOST CLOSING ENTRY MODAL #}
+            {% if not closing_entry_model.can_post %}
+                <a onclick="djLedger.toggleModal('{{ closing_entry_model.get_mark_as_unposted_html_id }}')"
+                   id="{{ closing_entry_model.get_mark_as_unposted_html_id }}-button"
+                   class="card-footer-item has-text-danger has-text-weight-bold has-text-centered">{% trans 'UnPost' %}
+                </a>
+                {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_unposted_url closing_entry_model.get_mark_as_unposted_message closing_entry_model.get_mark_as_unposted_html_id %}
+            {% endif %}
+
+
+        </footer>
+    </div>
+
+
+</div>

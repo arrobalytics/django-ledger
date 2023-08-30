@@ -18,7 +18,7 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.io import CREDIT, DEBIT
+from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ASSETS
 from django_ledger.io.io_mixin import validate_activity
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel, ItemTransactionModel
 from django_ledger.settings import (
@@ -294,9 +294,19 @@ def bill_table(context, bill_qs):
 
 
 @register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_table.html', takes_context=True)
-def closing_entry_table(context, closing_entry_list):
+def closing_entry_table(context, closing_entry_qs):
     return {
-        'closing_entry_list': closing_entry_list,
+        'closing_entry_list': closing_entry_qs,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_txs_table.html', takes_context=True)
+def closing_entry_txs_table(context, closing_entry_txs_qs):
+    ce_txs_list = list(closing_entry_txs_qs)
+    # ce_txs_list.sort(key=lambda ce_txs: ROLES_ORDER_ASSETS.index(ce_txs.account_model.role))
+    return {
+        'ce_txs_list': ce_txs_list,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 

@@ -18,4 +18,13 @@ urlpatterns = [
     path('<slug:entity_slug>/detail/<uuid:closing_entry_pk>/',
          views.ClosingEntryModelDetailView.as_view(),
          name='closing-entry-detail'),
+
+    # ACTIONS...
+    path('<slug:entity_slug>/action/<uuid:closing_entry_pk>/post/',
+         views.ClosingEntryModelActionMarkAsPostedView.as_view(),
+         name='closing-entry-action-mark-as-posted'),
+    path('<slug:entity_slug>/action/<uuid:closing_entry_pk>/unpost/',
+         views.ClosingEntryModelActionMarkAsUnPostedView.as_view(),
+         name='closing-entry-action-mark-as-unposted'),
+
 ]

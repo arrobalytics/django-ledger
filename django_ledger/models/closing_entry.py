@@ -1,5 +1,7 @@
+from typing import Optional
 from uuid import uuid4, UUID
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
@@ -8,6 +10,10 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models import lazy_loader
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+
+
+class ClosingEntryValidationError(ValidationError):
+    pass
 
 
 class ClosingEntryModelQuerySet(models.QuerySet):
@@ -73,8 +79,68 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.entity_model.name} {self.closing_date}'
 
-    def is_posted(self):
+    def can_post(self) -> bool:
+        return not self.is_posted()
+
+    def can_unpost(self) -> bool:
+        return self.is_posted()
+
+    def is_posted(self) -> bool:
         return self.posted is True
+
+    def mark_as_posted(self, commit: bool = False, **kwargs):
+        if not self.can_post():
+            raise ClosingEntryValidationError(
+                message=_(f'Closing Entry {self.closing_date} is already posted.')
+            )
+        self.posted = True
+        if commit:
+            self.save(update_fields=[
+                'posted',
+                'updated'
+            ])
+
+    def get_mark_as_posted_html_id(self) -> str:
+        return f'closing_entry_post_{self.uuid}'
+
+    def get_mark_as_posted_message(self):
+        return _(f'Are you sure you want to post Closing Entry dated {self.closing_date}?')
+
+    def get_mark_as_posted_url(self, entity_slug: Optional[str] = None) -> str:
+        if not entity_slug:
+            entity_slug = self.entity_model.slug
+        return reverse(viewname='django_ledger:closing-entry-action-mark-as-posted',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'closing_entry_pk': self.uuid
+                       })
+
+    def mark_as_unposted(self, commit: bool = False, **kwargs):
+        if not self.can_unpost():
+            raise ClosingEntryValidationError(
+                message=_(f'Closing Entry {self.closing_date} is not posted.')
+            )
+        self.posted = False
+        if commit:
+            self.save(update_fields=[
+                'posted',
+                'updated'
+            ])
+
+    def get_mark_as_unposted_html_id(self) -> str:
+        return f'closing_entry_unpost_{self.uuid}'
+
+    def get_mark_as_unposted_message(self):
+        return _(f'Are you sure you want to unpost Closing Entry dated {self.closing_date}?')
+
+    def get_mark_as_unposted_url(self, entity_slug: Optional[str] = None) -> str:
+        if not entity_slug:
+            entity_slug = self.entity_model.slug
+        return reverse(viewname='django_ledger:closing-entry-action-mark-as-unposted',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'closing_entry_pk': self.uuid
+                       })
 
     # HTML Tags....
     def get_html_id(self):
@@ -180,6 +246,9 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.closing_entry_model.closing_date.strftime("%D")} | {self.balance}'
+
+    def get_html_id(self) -> str:
+        return f'closing-entry-txs-{self.uuid}'
 
 
 class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):

@@ -4,5 +4,17 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    {{ object }}
+    <div class="container">
+        <div class="columns">
+            <div class="column">
+                {% include 'django_ledger/closing_entry/includes/card_closing_entry.html' with closing_entry_model=object %}
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                {% closing_entry_txs_table closing_entry_txs_qs %}
+            </div>
+        </div>
+
+    </div>
 {% endblock %}
