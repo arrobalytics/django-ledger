@@ -15,4 +15,7 @@ urlpatterns = [
     path('<slug:entity_slug>/create/',
          views.ClosingEntryModelCreateView.as_view(),
          name='closing-entry-create'),
+    path('<slug:entity_slug>/detail/<uuid:closing_entry_pk>/',
+         views.ClosingEntryModelDetailView.as_view(),
+         name='closing-entry-detail'),
 ]

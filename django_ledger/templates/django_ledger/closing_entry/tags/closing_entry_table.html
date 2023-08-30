@@ -41,7 +41,7 @@
                         </div>
                         <div class="dropdown-menu" id="dropdown-menu-{{ closing_entry_model.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href=""
+                                <a href="{% url 'django_ledger:closing-entry-detail' entity_slug=entity_slug closing_entry_pk=closing_entry_model.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Details' %}</a>
                                 {% if not closing_entry_model.is_posted %}
                                     <a href="" class="dropdown-item has-text-danger-dark">{% trans 'Post' %}</a>

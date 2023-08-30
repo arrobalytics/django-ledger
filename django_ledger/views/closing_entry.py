@@ -3,13 +3,13 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
-from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, CreateView
+from django.utils.translation import gettext_lazy as _
+from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, CreateView, DetailView
 
 from django_ledger.forms.closing_entry import ClosingEntryCreateForm
-from django_ledger.models.entity import EntityModel
 from django_ledger.models.closing_entry import ClosingEntryModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
-from django.utils.translation import gettext_lazy as _
 
 
 class ClosingEntryModelViewQuerySetMixIn:
@@ -24,7 +24,9 @@ class ClosingEntryModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-class ClosingEntryModelListView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, ArchiveIndexView):
+class ClosingEntryModelListView(DjangoLedgerSecurityMixIn,
+                                ClosingEntryModelViewQuerySetMixIn,
+                                ArchiveIndexView):
     template_name = 'django_ledger/closing_entry/closing_entry_list.html'
     date_field = 'closing_date'
     allow_future = False
@@ -66,12 +68,12 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
             'closing_date': localdate()
         }
 
-    # def get_object(self, queryset=None):
-    #     if not getattr(self, 'object'):
-    #         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
-    #         entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
-    #         self.object = entity_model
-    #     return self.object
+    def get_object(self, queryset=None):
+        if not getattr(self, 'object'):
+            entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user)
+            entity_model = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+            self.object = entity_model
+        return self.object
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -103,3 +105,8 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
                 'entity_slug': self.kwargs['entity_slug']
             }
         )
+
+
+class ClosingEntryModelDetailView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, DetailView):
+    template_name = 'django_ledger/closing_entry/closing_entry_detail.html'
+    pk_url_kwarg = 'closing_entry_pk'
