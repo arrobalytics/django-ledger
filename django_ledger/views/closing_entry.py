@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView, \
-    RedirectView, FormView, CreateView
+    RedirectView, FormView, CreateView, DeleteView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.closing_entry import ClosingEntryCreateForm
@@ -93,7 +93,7 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
     def form_valid(self, form):
         closing_date = form.cleaned_data['closing_date']
         entity_model: EntityModel = self.get_object()
-        ce_model, _ = entity_model.close_books_for_date(closing_date=closing_date, force_update=True)
+        ce_model, _ = entity_model.close_entity_books(closing_date=closing_date, force_update=True)
         self.ce_model = ce_model
         return HttpResponseRedirect(self.get_success_url())
 
@@ -127,10 +127,21 @@ class ClosingEntryModelDetailView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
         return ctx
 
 
-# ACTION VIEWS...
-class BaseClosingEntryModelActionView(DjangoLedgerSecurityMixIn,
-                                      RedirectView,
-                                      SingleObjectMixin):
+class ClosingEntryDeleteView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, DeleteView):
+    template_name = 'django_ledger/closing_entry/closing_entry_delete.html'
+    pk_url_kwarg = 'closing_entry_pk'
+
+    def get_success_url(self):
+        return reverse(viewname='django_ledger:closing-entry-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+class ClosingEntryModelActionView(DjangoLedgerSecurityMixIn,
+                                  RedirectView,
+                                  ClosingEntryModelViewQuerySetMixIn,
+                                  SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'closing_entry_pk'
     action_name = None
@@ -147,7 +158,7 @@ class BaseClosingEntryModelActionView(DjangoLedgerSecurityMixIn,
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(BaseClosingEntryModelActionView, self).get(request, *args, **kwargs)
+        response = super(ClosingEntryModelActionView, self).get(request, *args, **kwargs)
         closing_entry_model: ClosingEntryModel = self.get_object()
 
         try:
@@ -158,11 +169,3 @@ class BaseClosingEntryModelActionView(DjangoLedgerSecurityMixIn,
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
         return response
-
-
-class ClosingEntryModelActionMarkAsPostedView(ClosingEntryModelViewQuerySetMixIn, BaseClosingEntryModelActionView):
-    action_name = 'mark_as_posted'
-
-
-class ClosingEntryModelActionMarkAsUnPostedView(ClosingEntryModelViewQuerySetMixIn, BaseClosingEntryModelActionView):
-    action_name = 'mark_as_unposted'

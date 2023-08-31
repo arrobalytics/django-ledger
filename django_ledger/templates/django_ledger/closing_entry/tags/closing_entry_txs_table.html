@@ -16,7 +16,7 @@
             <tr id="{{ ce_tx.get_html_id }}">
                 <td>{{ ce_tx.account_model }}</td>
                 <td>{{ ce_tx.unit_model.name }}</td>
-                <td>{{ ce_tx.get_activity_display }}</td>
+                <td>{% if ce_tx.activity %}{{ ce_tx.get_activity_display }}{% endif %}</td>
                 <td>{% currency_symbol %}{{ ce_tx.balance | currency_format }}</td>
             </tr>
         {% endfor %}

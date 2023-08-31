@@ -74,19 +74,17 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             models.Index(fields=['posted']),
             models.Index(fields=['entity_model', 'posted', 'closing_date'])
         ]
-        ordering = ['closing_date']
+        ordering = ['-closing_date']
 
     def __str__(self):
         return f'{self.__class__.__name__}: {self.entity_model.name} {self.closing_date}'
 
-    def can_post(self) -> bool:
-        return not self.is_posted()
-
-    def can_unpost(self) -> bool:
-        return self.is_posted()
-
     def is_posted(self) -> bool:
         return self.posted is True
+
+    # ACTIONS POST...
+    def can_post(self) -> bool:
+        return not self.is_posted()
 
     def mark_as_posted(self, commit: bool = False, **kwargs):
         if not self.can_post():
@@ -99,6 +97,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'posted',
                 'updated'
             ])
+            self.entity_model.save_closing_entry_dates_meta(commit=True)
 
     def get_mark_as_posted_html_id(self) -> str:
         return f'closing_entry_post_{self.uuid}'
@@ -115,6 +114,10 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                            'closing_entry_pk': self.uuid
                        })
 
+    # ACTION UNPOST...
+    def can_unpost(self) -> bool:
+        return self.is_posted()
+
     def mark_as_unposted(self, commit: bool = False, **kwargs):
         if not self.can_unpost():
             raise ClosingEntryValidationError(
@@ -126,6 +129,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 'posted',
                 'updated'
             ])
+            self.entity_model.save_closing_entry_dates_meta(commit=True)
 
     def get_mark_as_unposted_html_id(self) -> str:
         return f'closing_entry_unpost_{self.uuid}'
@@ -137,6 +141,65 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         if not entity_slug:
             entity_slug = self.entity_model.slug
         return reverse(viewname='django_ledger:closing-entry-action-mark-as-unposted',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'closing_entry_pk': self.uuid
+                       })
+
+    # ACTION CAN UPDATE TXS...
+    def can_update_txs(self) -> bool:
+        return not self.is_posted()
+
+    def update_transactions(self, force_update: bool = False, commit: bool = True, **kwargs):
+        if not self.can_update_txs():
+            raise ClosingEntryValidationError(
+                message=_('Cannot update transactions of a posted Closing Entry.')
+            )
+        entity_model = self.entity_model
+        entity_model.close_entity_books(
+            closing_entry_model=self,
+            force_update=force_update,
+            commit=commit
+        )
+
+    def get_update_transactions_html_id(self) -> str:
+        return f'closing_entry_update_txs_{self.uuid}'
+
+    def get_update_transactions_message(self):
+        return _(f'Are you sure you want to update all Closing Entry {self.closing_date} transactions? '
+                 'This action will delete existing closing entry transactions and create new ones.')
+
+    def get_update_transactions_url(self, entity_slug: Optional[str] = None) -> str:
+        if not entity_slug:
+            entity_slug = self.entity_model.slug
+        return reverse(viewname='django_ledger:closing-entry-action-update-txs',
+                       kwargs={
+                           'entity_slug': entity_slug,
+                           'closing_entry_pk': self.uuid
+                       })
+
+    # DELETE...
+    def can_delete(self):
+        return not self.is_posted()
+
+    def delete(self, **kwargs):
+        if not self.can_delete():
+            raise ClosingEntryValidationError(
+                message=_('Cannot delete a posted Closing Entry')
+            )
+        return super().delete(**kwargs)
+
+    def get_delete_html_id(self) -> str:
+        return f'closing_entry_delete_txs_{self.uuid}'
+
+    def get_delete_message(self):
+        return _(f'Are you sure you want to delete Closing Entry {self.closing_date}? '
+                 'This action cannot be undone.')
+
+    def get_delete_url(self, entity_slug: Optional[str] = None) -> str:
+        if not entity_slug:
+            entity_slug = self.entity_model.slug
+        return reverse(viewname='django_ledger:closing-entry-action-delete',
                        kwargs={
                            'entity_slug': entity_slug,
                            'closing_entry_pk': self.uuid

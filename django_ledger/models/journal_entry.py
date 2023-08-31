@@ -28,6 +28,7 @@ The JournalEntryModel is also responsible for validating the Financial Activity 
 business. Whenever an account with ASSET_CA_CASH role is involved in a Journal Entry (see roles for more details), the
 JE is responsible for programmatically determine the kind of operation for the JE (Operating, Financing, Investing).
 """
+from datetime import date
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
@@ -311,6 +312,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_('Origin'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
+    is_closing_entry = models.BooleanField(default=False)
 
     # todo: rename to ledger_model?
     ledger = models.ForeignKey('django_ledger.LedgerModel',
@@ -332,7 +334,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['entity_unit']),
             models.Index(fields=['locked']),
             models.Index(fields=['posted']),
-            models.Index(fields=['je_number'])
+            models.Index(fields=['je_number']),
+            models.Index(fields=['is_closing_entry']),
         ]
 
     def __str__(self):
@@ -343,6 +346,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._verified = False
+        self._last_closing_date: Optional[date] = None
 
     def is_verified(self) -> bool:
         """
@@ -355,7 +359,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self._verified
 
-    def is_balance_valid(self, txs_qs: Optional[TransactionModelQuerySet] = None, raise_exception: bool = True) -> bool:
+    def is_balance_valid(self, txs_qs: Optional[TransactionModelQuerySet] = None) -> bool:
         """
         Checks if CREDITs and DEBITs are equal.
 
@@ -457,11 +461,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         bool
             True if JournalEntryModel can be posted, otherwise False.
         """
-        return all([
-            not self.locked,
-            not self.posted,
-            self.is_verified() if not ignore_verify else True
-        ])
+
+        if self.locked:
+            return False
+
+        if self.posted:
+            return False
+
+        check_1 = self.is_verified() if not ignore_verify else True
+        if not check_1:
+            return False
+
+        if not self.is_closing_entry:
+            last_closing_date = self.get_last_closing_date()
+            if last_closing_date is not None and last_closing_date >= self.timestamp.date():
+                return False
+
+        return True
 
     def can_unpost(self) -> bool:
         """
@@ -989,7 +1005,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
             # CREDIT/DEBIT Balance validation...
             try:
-                is_balance_valid = self.is_balance_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+                is_balance_valid = self.is_balance_valid(txs_qs=txs_qs)
                 if not is_balance_valid:
                     raise JournalEntryValidationError('Transaction balances are not valid!')
             except JournalEntryValidationError as e:
@@ -1009,6 +1025,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self._verified = True
                 return txs_qs, self.is_verified()
         return TransactionModel.objects.none(), self.is_verified()
+
+    def get_last_closing_date(self):
+        if not self._last_closing_date:
+            self._last_closing_date = self.ledger.entity.last_closing_date
+        return self._last_closing_date
 
     def clean(self,
               verify: bool = False,
@@ -1090,7 +1111,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.is_verified() and verify:
             raise JournalEntryValidationError(message='Cannot save an unverified Journal Entry.')
 
-        super(JournalEntryModelAbstract, self).save(*args, **kwargs)
+        return super(JournalEntryModelAbstract, self).save(*args, **kwargs)
 
 
 class JournalEntryModel(JournalEntryModelAbstract):

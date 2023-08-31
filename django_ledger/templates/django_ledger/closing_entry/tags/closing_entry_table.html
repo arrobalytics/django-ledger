@@ -41,10 +41,9 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:closing-entry-detail' entity_slug=entity_slug closing_entry_pk=closing_entry_model.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Details' %}</a>
-                                {% if not closing_entry_model.is_posted %}
-                                    <a href="" class="dropdown-item has-text-danger-dark">{% trans 'Post' %}</a>
-                                {% else %}
-                                    <a href="" class="dropdown-item has-text-danger-dark">{% trans 'UnPost' %}</a>
+                                {% if closing_entry_model.can_delete %}
+                                    <a href="{% url 'django_ledger:closing-entry-delete' entity_slug=entity_slug closing_entry_pk=closing_entry_model.uuid %}"
+                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>
                                 {% endif %}
                             </div>
                         </div>

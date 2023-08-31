@@ -417,13 +417,38 @@ class EntityModelFiscalPeriodMixIn:
 
 class EntityModelClosingEntryMixIn:
 
+    def validate_closing_entry_model(self, closing_entry_model, closing_date: Optional[date] = None):
+        if isinstance(self, EntityModel):
+            if self.uuid != closing_entry_model.entity_model_id:
+                raise EntityModelValidationError(
+                    message=_(f'The Closing Entry Model {closing_entry_model} does not belong to Entity {self.name}')
+                )
+        if closing_date and closing_entry_model.closing_date != closing_date:
+            raise EntityModelValidationError(
+                message=_(f'The Closing Entry Model date {closing_entry_model.closing_date} '
+                          f'does not match explicitly provided closing_date {closing_date}')
+            )
+
     # ---> Closing Entry IO Digest <---
     def get_closing_entry_digest(self,
-                                 to_date: Union[date, datetime],
-                                 from_date: Optional[Union[date, datetime]] = None,
+                                 to_date: date,
+                                 from_date: Optional[date] = None,
                                  user_model: Optional[UserModel] = None,
                                  txs_queryset: Optional[QuerySet] = None,
+                                 closing_entry_model=None,
                                  **kwargs: Dict) -> Tuple:
+        ClosingEntryModel = lazy_loader.get_closing_entry_model()
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+
+        if not closing_entry_model:
+            closing_entry_model = ClosingEntryModel(
+                entity_model=self,
+                closing_date=to_date
+            )
+            closing_entry_model.clean()
+        else:
+            self.validate_closing_entry_model(closing_entry_model, closing_date=to_date)
+
         io_digest: IODigestContextManager = self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -436,18 +461,9 @@ class EntityModelClosingEntryMixIn:
         )
         ce_data = io_digest.get_closing_entry_data()
 
-        ClosingEntryModel = lazy_loader.get_closing_entry_model()
-        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
-
-        ce_model = ClosingEntryModel(
-            entity_model=self,
-            closing_date=to_date
-        )
-        ce_model.clean()
-
         ce_txs_list = [
             ClosingEntryTransactionModel(
-                closing_entry_model=ce_model,
+                closing_entry_model=closing_entry_model,
                 account_model_id=ce['account_uuid'],
                 unit_model_id=ce['unit_uuid'],
                 activity=ce['activity'],
@@ -458,12 +474,15 @@ class EntityModelClosingEntryMixIn:
         for ce in ce_txs_list:
             ce.clean()
 
-        return ce_model, ce_txs_list
+        return closing_entry_model, ce_txs_list
 
-    def get_closing_entry_digest_for_date(self, closing_date: date, **kwargs: Dict) -> Tuple:
-        return self.get_closing_entry_digest(to_date=closing_date, **kwargs)
+    def get_closing_entry_digest_for_date(self, closing_date: date, closing_entry_model=None, **kwargs: Dict) -> Tuple:
+        return self.get_closing_entry_digest(to_date=closing_date, closing_entry_model=closing_entry_model, **kwargs)
 
-    def get_closing_entry_digest_for_month(self, year: int, month: int, **kwargs: Dict) -> Tuple:
+    def get_closing_entry_digest_for_month(self,
+                                           year: int,
+                                           month: int,
+                                           **kwargs: Dict) -> Tuple:
         _, day_end = monthrange(year, month)
         closing_date = date(year=year, month=month, day=day_end)
         return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
@@ -490,18 +509,34 @@ class EntityModelClosingEntryMixIn:
 
     # ----> Create Closing Entries <----
 
-    def create_closing_entry_for_date(self, closing_date: date):
+    def create_closing_entry_for_date(self,
+                                      closing_date: date,
+                                      closing_entry_model=None,
+                                      closing_entry_exists=True):
+
+        if closing_entry_model:
+            self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
 
         if closing_date > localdate():
             raise EntityModelValidationError(
                 message=_(f'Cannot create closing entry with a future date {closing_date}.')
             )
 
-        self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
-        ce_model, ce_txs_list = self.get_closing_entry_digest_for_date(closing_date=closing_date)
-        ce_model.save()
+        if closing_entry_model is None or closing_entry_exists:
+            self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
+        else:
+            closing_entry_model.closingentrytransactionmodel_set.all().delete()
+
+        closing_entry_model, ce_txs_list = self.get_closing_entry_digest_for_date(
+            closing_date=closing_date,
+            closing_entry_model=closing_entry_model
+        )
+
+        if closing_entry_model is not None:
+            closing_entry_model.save()
+
         ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
-        return ce_model, ClosingEntryTransactionModel.objects.bulk_create(
+        return closing_entry_model, ClosingEntryTransactionModel.objects.bulk_create(
             objs=ce_txs_list,
             batch_size=100
         )
@@ -2512,19 +2547,32 @@ class EntityModelAbstract(MP_Node,
     def get_closing_entries(self):
         return self.closingentrymodel_set.all()
 
-    def compute_closing_entry_dates_list(self, iso_format: bool = True) -> List[Union[str, date]]:
-        closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date')
-        if iso_format:
+    def get_closing_entry_dates_list_meta(self, as_iso: bool = True) -> List[Union[date, str]]:
+        date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
+        if as_iso:
+            return date_list
+        return [date.fromisoformat(d) for d in date_list]
+
+    def compute_closing_entry_dates_list(self, as_iso: bool = True) -> List[Union[date, str]]:
+        closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date').posted()
+        if as_iso:
             return [ce.closing_date.isoformat() for ce in closing_entry_qs]
         return [ce.closing_date for ce in closing_entry_qs]
 
     def save_closing_entry_dates_meta(self, commit: bool = True) -> List[str]:
-        date_list = self.compute_closing_entry_dates_list(iso_format=True)
-        self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = date_list
+        date_list = self.compute_closing_entry_dates_list(as_iso=False)
+
+        try:
+            self.last_closing_date = date_list[0]
+        except IndexError:
+            self.last_closing_date = None
+
+        self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = [d.isoformat() for d in date_list]
         if commit:
             self.save(update_fields=[
-                'meta',
-                'updated'
+                'last_closing_date',
+                'updated',
+                'meta'
             ])
         return date_list
 
@@ -2544,20 +2592,42 @@ class EntityModelAbstract(MP_Node,
             if to_date >= ce:
                 return ce
 
-    def close_books_for_date(self, closing_date: date, force_update: bool = False, commit: bool = True):
-        closing_entry_qs = self.closingentrymodel_set.filter(closing_date__exact=closing_date)
-        if not closing_entry_qs.exists() or force_update:
-            ce_data = self.create_closing_entry_for_date(closing_date=closing_date)
+    def close_entity_books(self,
+                           closing_date: Optional[date] = None,
+                           closing_entry_model=None,
+                           force_update: bool = False,
+                           commit: bool = True):
 
-            if not self.last_closing_date or self.last_closing_date < closing_date:
-                self.last_closing_date = closing_date
+        if closing_entry_model and closing_date:
+            raise EntityModelValidationError(
+                message=_('Closing books must be called by providing closing_date or closing_entry_model, not both.')
+            )
+        elif not closing_date and not closing_entry_model:
+            raise EntityModelValidationError(
+                message=_('Closing books must be called by providing closing_date or closing_entry_model.')
+            )
 
-            if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
-                self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = list()
+        closing_entry_exists = False
+        if closing_entry_model:
+            closing_date = closing_entry_model.closing_date
+            self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
+            closing_entry_exists = True
+        else:
+            try:
+                closing_entry_model = self.closingentrymodel_set.defer('markdown_notes').get(
+                    closing_date__exact=closing_date
+                )
 
-            if closing_date not in self.meta[self.META_KEY_CLOSING_ENTRY_DATES]:
-                self.meta[self.META_KEY_CLOSING_ENTRY_DATES].insert(0, closing_date.isoformat())
-                self.meta[self.META_KEY_CLOSING_ENTRY_DATES].sort(reverse=True)
+                closing_entry_exists = True
+            except ObjectDoesNotExist:
+                pass
+
+        if force_update or not closing_entry_exists or closing_entry_model:
+            ce_data = self.create_closing_entry_for_date(
+                closing_date=closing_date,
+                closing_entry_model=closing_entry_model,
+                closing_entry_exists=closing_entry_exists
+            )
 
             if commit:
                 self.save(update_fields=[
@@ -2566,18 +2636,16 @@ class EntityModelAbstract(MP_Node,
                     'updated'
                 ])
             return ce_data
-        raise EntityModelValidationError(
-            message=f'Closing Entry for Period {closing_date} already exists.'
-        )
+        raise EntityModelValidationError(message=f'Closing Entry for Period {closing_date} already exists.')
 
     def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
         _, day = monthrange(year, month)
         closing_dt = date(year, month, day)
-        return self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
 
     def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False, commit: bool = True):
         closing_dt = self.get_fy_end(year=fiscal_year)
-        return self.close_books_for_date(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
 
     # ### RANDOM DATA GENERATION ####
 

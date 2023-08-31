@@ -22,7 +22,8 @@
 
         </h3>
 
-        <p>Created: {{ entity.created | timesince }} ago</p>
+        <h4>Created: {{ entity.created | timesince }} ago</h4>
+        <p class="is-italic">{% trans 'Last Closing Date' %}: {{ entity.last_closing_date }}</p>
     </div>
     <footer class="card-footer">
         <a href="{{ entity.get_dashboard_url }}" class="card-footer-item">Dashboard</a>

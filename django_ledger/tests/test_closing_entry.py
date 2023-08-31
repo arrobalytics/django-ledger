@@ -37,8 +37,8 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
                 url_kwargs['year'] = closing_entry_model.closing_date.year
             if 'month' in kwargs:
                 url_kwargs['month'] = closing_entry_model.closing_date.month
-            if 'closing_entry' in kwargs:
-                url_kwargs['closing_entry'] = closing_entry_model.uuid
+            if 'closing_entry_pk' in kwargs:
+                url_kwargs['closing_entry_pk'] = closing_entry_model.uuid
 
             url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
             response = self.CLIENT.get(url, follow=False)
@@ -55,3 +55,14 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         url = reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': entity_model.slug})
         with self.assertNumQueries(5):
             response = self.CLIENT.get(path=url)
+
+    def test_closing_entry_create(self):
+        entity_model = self.get_random_entity_model()
+
+        with self.assertNumQueries(1):
+
+            # closing entry does not exist...
+            entity_model.close_books_for_month(
+                year=self.START_DATE.year + 2,
+                month=self.START_DATE.month
+            )

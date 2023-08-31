@@ -26,13 +26,13 @@
                 {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_posted_url closing_entry_model.get_mark_as_posted_message closing_entry_model.get_mark_as_posted_html_id %}
             {% endif %}
 
-            {# POST CLOSING ENTRY MODAL #}
+            {# UPDATE TRANSACTIONS #}
             {% if closing_entry_model.can_post %}
-                <a onclick="djLedger.toggleModal('{{ closing_entry_model.get_mark_as_posted_html_id }}')"
-                   id="{{ closing_entry_model.get_mark_as_posted_html_id }}-button"
-                   class="card-footer-item has-text-warning has-text-weight-bold has-text-centered">{% trans 'Regenerate Transactions' %}
+                <a onclick="djLedger.toggleModal('{{ closing_entry_model.get_update_transactions_html_id }}')"
+                   id="{{ closing_entry_model.get_update_transactions_html_id }}-button"
+                   class="card-footer-item has-text-warning-dark has-text-weight-bold has-text-centered">{% trans 'Update Transactions' %}
                 </a>
-                {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_posted_url closing_entry_model.get_mark_as_posted_message closing_entry_model.get_mark_as_posted_html_id %}
+                {% modal_action_v2 closing_entry_model closing_entry_model.get_update_transactions_url closing_entry_model.get_update_transactions_message closing_entry_model.get_update_transactions_html_id %}
             {% endif %}
 
             {# UNPOST CLOSING ENTRY MODAL #}
@@ -42,6 +42,14 @@
                    class="card-footer-item has-text-danger has-text-weight-bold has-text-centered">{% trans 'UnPost' %}
                 </a>
                 {% modal_action_v2 closing_entry_model closing_entry_model.get_mark_as_unposted_url closing_entry_model.get_mark_as_unposted_message closing_entry_model.get_mark_as_unposted_html_id %}
+            {% endif %}
+
+            {# DELETE #}
+            {% if closing_entry_model.can_delete %}
+                <a id="{{ closing_entry_model.get_delete_html_id }}-button"
+                   href="{% url 'django_ledger:closing-entry-delete' entity_slug=view.kwargs.entity_slug closing_entry_pk=closing_entry_model.uuid %}"
+                   class="card-footer-item has-text-danger has-text-weight-bold has-text-centered">{% trans 'Delete' %}
+                </a>
             {% endif %}
 
 
