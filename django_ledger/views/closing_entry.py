@@ -1,12 +1,13 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db.models import Count
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, CreateView, DetailView, \
-    RedirectView
+from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView, \
+    RedirectView, FormView, CreateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.closing_entry import ClosingEntryCreateForm
@@ -90,27 +91,18 @@ class ClosingEntryModelCreateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
         return ctx
 
     def form_valid(self, form):
-        closing_entry_model: ClosingEntryModel = form.save(commit=False)
-        entity_model = self.get_object()
-        closing_entry_model.entity_model = entity_model
-
-        try:
-            closing_entry_model.validate_constraints()
-        except ValidationError as e:
-            messages.add_message(self.request,
-                                 level=messages.ERROR,
-                                 extra_tags='is-danger',
-                                 message=e.message_dict['__all__'])
-            return self.render_to_response(
-                context=self.get_context_data()
-            )
-        return super().form_valid(form=form)
+        closing_date = form.cleaned_data['closing_date']
+        entity_model: EntityModel = self.get_object()
+        ce_model, _ = entity_model.close_books_for_date(closing_date=closing_date, force_update=True)
+        self.ce_model = ce_model
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse(
-            viewname='django_ledger:closing-entry-list',
+            viewname='django_ledger:closing-entry-detail',
             kwargs={
-                'entity_slug': self.kwargs['entity_slug']
+                'entity_slug': self.kwargs['entity_slug'],
+                'closing_entry_pk': self.ce_model.uuid
             }
         )
 

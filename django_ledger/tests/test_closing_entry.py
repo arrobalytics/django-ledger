@@ -37,6 +37,8 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
                 url_kwargs['year'] = closing_entry_model.closing_date.year
             if 'month' in kwargs:
                 url_kwargs['month'] = closing_entry_model.closing_date.month
+            if 'closing_entry' in kwargs:
+                url_kwargs['closing_entry'] = closing_entry_model.uuid
 
             url = reverse(f'django_ledger:{path}', kwargs=url_kwargs)
             response = self.CLIENT.get(url, follow=False)
