@@ -1,5 +1,6 @@
 from django.forms import ModelForm, Textarea, Select, DateInput, DateTimeInput
 
+from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -11,15 +12,23 @@ class JournalEntryModelCreateForm(ModelForm):
         self.USER_MODEL = user_model
         self.LEDGER_PK = ledger_pk
         self.fields['timestamp'].required = False
+        self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
+            entity_slug=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        )
 
     class Meta:
         model = JournalEntryModel
         fields = [
             'timestamp',
+            'entity_unit',
             'description'
         ]
         widgets = {
             'parent': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'entity_unit': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'timestamp': DateTimeInput(attrs={

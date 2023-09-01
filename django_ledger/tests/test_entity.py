@@ -33,12 +33,10 @@ class EntityModelTests(DjangoLedgerBaseTest):
             self.assertEqual(len(entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES]), 0)
 
     def test_closing_entry_creation(self):
-        self.logger.info('test_closing_entry_creation...')
         for entity_model in self.ENTITY_MODEL_QUERYSET:
             start_year = self.START_DATE.year
             start_month = self.START_DATE.month
             while True:
-                self.logger.info(f'Creating closing entry {start_year}/{start_month} for {entity_model.slug}')
                 ce_list = entity_model.close_books_for_month(year=start_year, month=start_month)
                 if all([
                     self.START_DATE.year + 1 == start_year,
