@@ -1,4 +1,4 @@
-from django.forms import DateInput, ValidationError, ModelForm
+from django.forms import DateInput, ValidationError, ModelForm, Textarea
 from django import forms
 from django.utils.timezone import localdate
 
@@ -32,4 +32,21 @@ class ClosingEntryCreateForm(ModelForm):
         }
         labels = {
             'closing_date': _('Select a Closing Date')
+        }
+
+
+class ClosingEntryUpdateForm(ModelForm):
+    class Meta:
+        model = ClosingEntryModel
+        fields = [
+            'markdown_notes'
+        ]
+
+        widgets = {
+            'markdown_notes': Textarea(attrs={
+                'class': 'textarea'
+            }),
+        }
+        labels = {
+            'markdown_notes': _('Closing Entry Notes')
         }

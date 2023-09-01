@@ -188,6 +188,8 @@ class TransactionModelQuerySet(QuerySet):
 
         return self.filter(journal_entry__timestamp__gte=from_date)
 
+    def not_closing_entry(self):
+        return self.filter(journal_entry__is_closing_entry=False)
 
 class TransactionModelAdmin(models.Manager):
 
@@ -221,7 +223,7 @@ class TransactionModelAdmin(models.Manager):
         )
 
     def for_entity(self,
-                   entity_slug: Union[EntityModel, str],
+                   entity_slug: Union[EntityModel, str, UUID],
                    user_model: Optional[UserModel] = None,
                    ) -> TransactionModelQuerySet:
         """
@@ -250,12 +252,14 @@ class TransactionModelAdmin(models.Manager):
 
         if isinstance(entity_slug, EntityModel):
             return qs.filter(journal_entry__ledger__entity=entity_slug)
+        elif isinstance(entity_slug, UUID):
+            return qs.filter(journal_entry__ledger__entity_id=entity_slug)
         return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 
     def for_ledger(self,
-                   user_model,
                    entity_slug: Union[EntityModel, str],
-                   ledger_model: Union[LedgerModel, UUID]):
+                   ledger_model: Union[LedgerModel, UUID],
+                   user_model: Optional[UserModel] = None):
         """
         Fetches a QuerySet of TransactionModels that the UserModel as access to and are associated with a specific
         LedgerModel instance.

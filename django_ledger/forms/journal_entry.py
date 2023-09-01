@@ -1,7 +1,8 @@
-from django.forms import ModelForm, Textarea, Select, DateInput, DateTimeInput
+from django.forms import ModelForm, Textarea, Select, DateTimeInput
+from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.journal_entry import JournalEntryModel
+from django_ledger.models.unit import EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -37,6 +38,9 @@ class JournalEntryModelCreateForm(ModelForm):
             'description': Textarea(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
+        }
+        labels = {
+            'entity_unit': _('Entity Unit')
         }
 
 

@@ -11,8 +11,14 @@
             </div>
         </div>
         <div class="columns">
-            <div class=" column is-12">
-                {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Closing Entry Notes' notes_html=closing_entry_model.notes_html %}
+            <div class="column is-12">
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {{ form }}
+                    <button type="submit" class="button is-large is-primary mt-3 is-centered">
+                        {% trans 'Save' %}
+                    </button>
+                </form>
             </div>
         </div>
         <div class="columns">

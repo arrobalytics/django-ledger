@@ -7,10 +7,10 @@ from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ArchiveIndexView, YearArchiveView, MonthArchiveView, DetailView, \
-    RedirectView, FormView, CreateView, DeleteView
+    RedirectView, FormView, CreateView, DeleteView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.closing_entry import ClosingEntryCreateForm
+from django_ledger.forms.closing_entry import ClosingEntryCreateForm, ClosingEntryUpdateForm
 from django_ledger.models.closing_entry import ClosingEntryModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
@@ -25,7 +25,7 @@ class ClosingEntryModelViewQuerySetMixIn:
             qs = ClosingEntryModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
-            ).select_related('entity_model')
+            ).select_related('entity_model', 'ledger_model')
             if self.queryset_annotate_txs_count:
                 qs = qs.annotate(ce_txs_count=Count('closingentrytransactionmodel'))
             self.queryset = qs
@@ -126,6 +126,35 @@ class ClosingEntryModelDetailView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
             'account_model', 'account_model__coa_model', 'unit_model')
         return ctx
 
+
+class ClosingEntryModelUpdateView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, UpdateView):
+    template_name = 'django_ledger/closing_entry/closing_entry_update.html'
+    pk_url_kwarg = 'closing_entry_pk'
+    form_class = ClosingEntryUpdateForm
+    context_object_name = 'closing_entry_model'
+    queryset_annotate_txs_count = True
+    extra_context = {
+        'header_title': 'Closing Entry Detail',
+        'header_subtitle_icon': 'file-icons:finaldraft'
+    }
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        closing_entry_model = ctx['object']
+        ctx['page_title'] = f'Closing Entry {closing_entry_model.closing_date} Update'
+        closing_entry_txs_qs = closing_entry_model.closingentrytransactionmodel_set.all()
+        ctx['closing_entry_txs_qs'] = closing_entry_txs_qs.select_related(
+            'account_model', 'account_model__coa_model', 'unit_model')
+        return ctx
+
+    def get_success_url(self):
+        return reverse(
+            viewname='django_ledger:closing-entry-detail',
+            kwargs={
+                'entity_slug': self.kwargs['entity_slug'],
+                'closing_entry_pk': self.object.uuid
+            }
+        )
 
 class ClosingEntryDeleteView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, DeleteView):
     template_name = 'django_ledger/closing_entry/closing_entry_delete.html'

@@ -1,15 +1,23 @@
+from decimal import Decimal
+from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
+from datetime import datetime, time
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save, pre_delete
 from django.urls import reverse
+from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import lazy_loader
 from django_ledger.models.journal_entry import JournalEntryModel
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.models.utils import lazy_loader
 
 
 class ClosingEntryValidationError(ValidationError):
@@ -52,6 +60,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Entity Model'))
+    ledger_model = models.OneToOneField('django_ledger.LedgerModel', on_delete=models.CASCADE)
     closing_date = models.DateField(verbose_name=_('Closing Date'))
     posted = models.BooleanField(default=False, verbose_name=_('Is Posted'))
     objects = ClosingEntryModelManager.from_queryset(queryset_class=ClosingEntryModelQuerySet)()
@@ -82,6 +91,87 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def is_posted(self) -> bool:
         return self.posted is True
 
+    def get_closing_date_as_timestamp(self):
+        return make_aware(datetime.combine(self.closing_date, time.max))
+
+    def migrate(self):
+        ce_txs = self.closingentrytransactionmodel_set.all().order_by(
+            'tx_type',
+            'account_model',
+            'unit_model',
+        )
+        ce_txs_gb = groupby(ce_txs, key=lambda k: k.tx_type)
+        ce_txs_gb = {k: list(l) for k, l in ce_txs_gb}
+        ce_txs_sum = {k: sum(v.balance for v in l) for k, l in ce_txs_gb.items()}
+        if ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
+            raise ClosingEntryValidationError(
+                message=f'Invalid transactions. Credits {ce_txs_sum[TransactionModel.CREDIT]} '
+                        f'do not equal Debits {ce_txs_sum[TransactionModel.DEBIT]}'
+            )
+
+        ce_txs = list(ce_txs)
+        key_func = lambda i: (
+            str(i.unit_model_id) if i.unit_model_id else '',
+            i.activity if i.activity else ''
+        )
+        ce_txs.sort(key=key_func)
+        ce_txs_gb = groupby(ce_txs, key=key_func)
+        ce_txs_gb = {
+            unit_model_id: list(je_txs) for unit_model_id, je_txs in ce_txs_gb
+        }
+
+        ce_txs_journal_entries = {
+            (unit_model_id, activity): JournalEntryModel(
+                ledger=self.ledger_model,
+                timestamp=self.get_closing_date_as_timestamp(),
+                activity=activity if activity else None,
+                entity_unit_id=unit_model_id if unit_model_id else None,
+                origin='closing_entry',
+                description=f'Closing Entry {self.closing_date}',
+                is_closing_entry=True,
+                posted=True,
+                locked=True
+            ) for (unit_model_id, activity), je_txs in ce_txs_gb.items()
+        }
+
+        ce_je_txs = {
+            (unit_model_id, activity): [
+                TransactionModel(
+                    journal_entry=ce_txs_journal_entries[(unit_model_id, activity)],
+                    tx_type=tx.tx_type,
+                    account=tx.account_model,
+                    amount=tx.balance
+                ) for tx in je_txs
+            ] for (unit_model_id, activity), je_txs in ce_txs_gb.items()
+        }
+
+        JournalEntryModel.objects.bulk_create(objs=chain([l for _, l in ce_txs_journal_entries.items()]))
+        TransactionModel.objects.bulk_create(objs=chain.from_iterable([l for _, l in ce_je_txs.items()]))
+
+        for k, je_model in ce_txs_journal_entries.items():
+            je_model.save(verify=True)
+
+        return ce_txs_journal_entries, ce_je_txs
+
+    def create_entry_ledger(self, commit: bool = False):
+        if self.ledger_model_id is None:
+            ledger_model = LedgerModel(
+                name=f'Closing Entry {self.closing_date} Ledger',
+                entity_id=self.entity_model_id,
+                hidden=True,
+                locked=True,
+                posted=True
+            )
+            ledger_model.clean()
+            ledger_model.save()
+            self.ledger_model = ledger_model
+
+            if commit:
+                self.save(update_fields=[
+                    'ledger_model',
+                    'updated'
+                ])
+
     # ACTIONS POST...
     def can_post(self) -> bool:
         return not self.is_posted()
@@ -91,10 +181,13 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ClosingEntryValidationError(
                 message=_(f'Closing Entry {self.closing_date} is already posted.')
             )
+
+        self.migrate()
         self.posted = True
         if commit:
             self.save(update_fields=[
                 'posted',
+                'ledger_model',
                 'updated'
             ])
             self.entity_model.save_closing_entry_dates_meta(commit=True)
@@ -124,9 +217,15 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 message=_(f'Closing Entry {self.closing_date} is not posted.')
             )
         self.posted = False
+        TransactionModel.objects.for_ledger(
+            ledger_model=self.ledger_model,
+            entity_slug=self.entity_model_id
+        ).delete()
+        self.ledger_model.journal_entries.all().delete()
         if commit:
             self.save(update_fields=[
                 'posted',
+                'ledger_model',
                 'updated'
             ])
             self.entity_model.save_closing_entry_dates_meta(commit=True)
@@ -187,7 +286,11 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ClosingEntryValidationError(
                 message=_('Cannot delete a posted Closing Entry')
             )
-        return super().delete(**kwargs)
+        TransactionModel.objects.for_ledger(
+            ledger_model=self.ledger_model,
+            entity_slug=self.entity_model_id
+        ).delete()
+        return self.ledger_model.delete()
 
     def get_delete_html_id(self) -> str:
         return f'closing_entry_delete_txs_{self.uuid}'
@@ -220,11 +323,11 @@ class ClosingEntryTransactionModelQuerySet(models.QuerySet):
 
 class ClosingEntryTransactionModelManager(models.Manager):
 
-    def get_queryset(self):
-        return super().get_queryset().select_related(
-            'closing_entry_model',
-            'closing_entry_model__entity_model'
-        )
+    # def get_queryset(self):
+    #     return super().get_queryset().select_related(
+    #         'closing_entry_model',
+    #         'closing_entry_model__entity_model'
+    #     )
 
     def for_entity(self, entity_slug):
         qs = self.get_queryset()
@@ -253,10 +356,13 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
                                 null=True,
                                 blank=True,
                                 verbose_name=_('Activity'))
-
+    tx_type = models.CharField(choices=TransactionModel.TX_TYPE,
+                               max_length=10,
+                               verbose_name=_('Transaction Type'))
     balance = models.DecimalField(verbose_name=_('Closing Entry Balance'),
                                   max_digits=20,
-                                  decimal_places=6)
+                                  decimal_places=6,
+                                  validators=[MinValueValidator(limit_value=Decimal('0.00'))])
 
     objects = ClosingEntryTransactionModelManager.from_queryset(queryset_class=ClosingEntryTransactionModelQuerySet)()
 
@@ -310,11 +416,44 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.closing_entry_model.closing_date.strftime("%D")} | {self.balance}'
 
+    def is_debit(self) -> Optional[bool]:
+        if self.tx_type is not None:
+            return self.tx_type == TransactionModel.DEBIT
+
+    def is_credit(self) -> Optional[bool]:
+        if self.tx_type is not None:
+            return self.tx_type == TransactionModel.CREDIT
+
+    def adjust_tx_type_for_negative_balance(self):
+        if self.balance < Decimal('0.00'):
+            if self.is_credit():
+                self.tx_type = TransactionModel.DEBIT
+            elif self.is_debit():
+                self.tx_type = TransactionModel.CREDIT
+            self.balance = abs(self.balance)
+
     def get_html_id(self) -> str:
         return f'closing-entry-txs-{self.uuid}'
+
+    def clean(self):
+        self.adjust_tx_type_for_negative_balance()
 
 
 class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
     """
     Base ClosingEntryModel Class
     """
+
+
+def closingentrymodel_presave(instance: ClosingEntryModel, **kwargs):
+    instance.create_entry_ledger(commit=False)
+
+
+pre_save.connect(closingentrymodel_presave, sender=ClosingEntryModel)
+
+
+def closingentrytransactionmodel_presave(instance: ClosingEntryTransactionModel, **kwargs):
+    instance.adjust_tx_type_for_negative_balance()
+
+
+pre_save.connect(closingentrytransactionmodel_presave, sender=ClosingEntryTransactionModel)

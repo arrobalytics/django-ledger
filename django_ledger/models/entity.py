@@ -467,6 +467,7 @@ class EntityModelClosingEntryMixIn:
                 closing_entry_model=closing_entry_model,
                 account_model_id=ce['account_uuid'],
                 unit_model_id=ce['unit_uuid'],
+                tx_type=ce['balance_type'],
                 activity=ce['activity'],
                 balance=ce['balance']
             ) for ce in ce_data

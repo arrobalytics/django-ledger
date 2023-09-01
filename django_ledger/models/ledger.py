@@ -63,6 +63,12 @@ class LedgerModelQuerySet(models.QuerySet):
         """
         return self.filter(posted=True)
 
+    def hidden(self):
+        return self.filter(hidden=True)
+
+    def visible(self):
+        self.filter(hidden=False)
+
 
 class LedgerModelManager(models.Manager):
     """
