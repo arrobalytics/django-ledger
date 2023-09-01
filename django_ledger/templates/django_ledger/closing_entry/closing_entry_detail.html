@@ -11,8 +11,23 @@
             </div>
         </div>
         <div class="columns">
+            <div class=" column is-12">
+                {% include 'django_ledger/includes/card_markdown.html' with style='card_1'  title='Closing Entry Notes' notes_html=closing_entry_model.notes_html %}
+            </div>
+        </div>
+        <div class="columns">
             <div class="column">
-                {% closing_entry_txs_table closing_entry_txs_qs %}
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-title">
+                            <h1 class="is-size-3 has-text-weight-light">{% trans 'Closing Entry Transactions' %}</h1>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        {% closing_entry_txs_table closing_entry_txs_qs %}
+                    </div>
+
+                </div>
             </div>
         </div>
 

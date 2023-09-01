@@ -457,6 +457,7 @@ class EntityModelClosingEntryMixIn:
             by_unit=True,
             by_activity=True,
             as_io_digest=True,
+            signs=False,
             **kwargs
         )
         ce_data = io_digest.get_closing_entry_data()
