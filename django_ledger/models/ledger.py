@@ -67,7 +67,7 @@ class LedgerModelQuerySet(models.QuerySet):
         return self.filter(hidden=True)
 
     def visible(self):
-        self.filter(hidden=False)
+        return self.filter(hidden=False)
 
 
 class LedgerModelManager(models.Manager):

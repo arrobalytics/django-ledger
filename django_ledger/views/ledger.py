@@ -36,10 +36,17 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     context_object_name = 'ledgers'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
+    show_hidden = False
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.show_hidden:
+            return qs.hidden()
+        return qs.visible()
 
 
 class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, CreateView):

@@ -1,13 +1,18 @@
 {% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load static %}
 {% load django_ledger %}
+{% load i18n %}
 
 {% block view_content %}
     <div class="box">
         <a class="button is-primary is-outlined"
-           href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">Add</a>
+           href="{% url 'django_ledger:ledger-create' entity_slug=view.kwargs.entity_slug %}">{% trans 'Add' %}</a>
+        <a class="button is-info"
+           href="{% url 'django_ledger:ledger-list-hidden' entity_slug=view.kwargs.entity_slug %}">{% trans 'Hidden Ledgers' %}</a>
         <a class="button is-dark"
-           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">Back</a>
+           href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Back' %}</a>
+
         {% ledgers_table %}
+
     </div>
 {% endblock %}
