@@ -270,9 +270,9 @@ def invoice_txs_table(context, invoice_model: InvoiceModel):
 
 
 @register.inclusion_tag('django_ledger/ledger/tags/ledgers_table.html', takes_context=True)
-def ledgers_table(context):
+def ledgers_table(context, ledger_model_qs):
     return {
-        'ledgers': context['ledgers'],
+        'ledgers': ledger_model_qs,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 

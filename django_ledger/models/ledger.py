@@ -26,13 +26,15 @@ layer as possible in order to minimize the amount of data being pulled for analy
 The Django Ledger core model follows the following structure: \n
 EntityModel -< LedgerModel -< JournalEntryModel -< TransactionModel
 """
-
+from datetime import date
 from string import ascii_lowercase, digits
+from typing import Optional
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -74,6 +76,10 @@ class LedgerModelManager(models.Manager):
     """
     A custom-defined LedgerModelManager that implements custom QuerySet methods related to the LedgerModel.
     """
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.select_related('entity')
 
     def for_entity(self, entity_slug, user_model):
         """
@@ -234,6 +240,32 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.locked is True
 
+    def can_delete(self) -> bool:
+        if not self.is_locked() and not self.is_posted():
+            return True
+        return False
+
+    def delete(self, **kwargs):
+
+        if not self.can_delete():
+            raise LedgerModelValidationError(
+                message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
+                          f'and locked is {self.is_locked()}')
+            )
+
+        earliest_je_date = self.journal_entries.posted().annotate(
+            je_date=TruncDate('timestamp')).order_by().distinct('je_date').order_by('-je_date').values(
+            'je_date').first()
+
+        if earliest_je_date is not None and earliest_je_date['je_date'] <= self.entity.last_closing_date:
+            earliest_je_date = earliest_je_date['je_date']
+            raise LedgerModelValidationError(
+                message=_(f'Journal Entries with date {earliest_je_date} cannot be deleted because of lastest closing '
+                          f'entry on {self.get_entity_last_closing_date()}')
+            )
+
+        return super().delete(**kwargs)
+
     def post(self, commit: bool = False):
         """
         Posts the LedgerModel.
@@ -305,6 +337,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def get_entity_name(self) -> str:
         return self.entity.name
 
+    def get_entity_last_closing_date(self) -> Optional[date]:
+        return self.entity.last_closing_date
+
     def get_absolute_url(self) -> str:
         """
         Determines the absolute URL of the LedgerModel instance.
@@ -337,6 +372,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
+
+    def get_delete_message(self):
+        return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
 
 
 class LedgerModel(LedgerModelAbstract):

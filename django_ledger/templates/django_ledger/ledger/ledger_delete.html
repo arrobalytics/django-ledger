@@ -6,12 +6,12 @@
 {% block view_content %}
     <div class="columns is-centered">
         <div class="column is-6">
-            <form action="{% url 'django_ledger:closing-entry-delete' entity_slug=view.kwargs.entity_slug closing_entry_pk=closing_entry.uuid %}"
+            <form action="{% url 'django_ledger:ledger-delete' entity_slug=view.kwargs.entity_slug ledger_pk=ledger_model.uuid %}"
                   method="post">
                 {% csrf_token %}
                 <div class="card">
                     <div class="card-content has-text-centered">
-                        <p class="title has-text-weight-light">{{ closing_entry.get_delete_message }}</p>
+                        <p class="title has-text-weight-light">{{ ledger_model.get_delete_message }}</p>
                     </div>
                     <div class="card-content has-text-centered">
                         <a href="{% url 'django_ledger:home' %}"
@@ -22,6 +22,8 @@
             </form>
         </div>
     </div>
+
+
 {% endblock %}
 
 

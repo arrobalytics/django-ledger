@@ -51,8 +51,29 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a class="button is-info is-small"
-                       href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}">Edit</a>
+                    <div class="dropdown is-right is-hoverable"
+                         id="ledger-action-{{ ledger.uuid }}">
+                        <div class="dropdown-trigger">
+
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>{% trans 'Actions' %}</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ ledger.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Edit' %}</a>
+                                {% if ledger.can_delete %}
+                                    <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
                 </td>
             </tr>
         {% endfor %}

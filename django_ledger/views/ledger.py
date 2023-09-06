@@ -5,11 +5,13 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models.entity import EntityModel
@@ -29,11 +31,11 @@ class LedgerModelModelViewQuerySetMixIn:
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
             ).select_related('entity')
-        return super().get_queryset()
+        return self.queryset
 
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ListView):
-    context_object_name = 'ledgers'
+    context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
     show_hidden = False
@@ -102,6 +104,53 @@ class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
+
+
+class LedgerModelDeleteView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, DeleteView):
+    template_name = 'django_ledger/ledger/ledger_delete.html'
+    pk_url_kwarg = 'ledger_pk'
+    context_object_name = 'ledger_model'
+
+    def get_success_url(self):
+        return reverse(viewname='django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+# ACTIONS....
+
+class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
+                                 RedirectView,
+                                 LedgerModelModelViewQuerySetMixIn,
+                                 SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'ledger_pk'
+    action_name = None
+    commit = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:closing-entry-detail',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug'],
+                           'ledger_pk': kwargs['ledger_pk']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(LedgerModelModelActionView, self).get(request, *args, **kwargs)
+        closing_entry_model: LedgerModel = self.get_object()
+
+        try:
+            getattr(closing_entry_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
 
 
 # Ledger Balance Sheet Views...

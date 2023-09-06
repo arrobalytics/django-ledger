@@ -443,7 +443,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                       editable=False,
                                       verbose_name=_('Journal Entry'),
                                       help_text=_('Journal Entry to be associated with this transaction.'),
-                                      on_delete=models.PROTECT)
+                                      on_delete=models.CASCADE)
     account = models.ForeignKey('django_ledger.AccountModel',
                                 verbose_name=_('Account'),
                                 help_text=_('Account from Chart of Accounts to be associated with this transaction.'),

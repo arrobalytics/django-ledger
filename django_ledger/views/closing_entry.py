@@ -156,9 +156,11 @@ class ClosingEntryModelUpdateView(DjangoLedgerSecurityMixIn, ClosingEntryModelVi
             }
         )
 
+
 class ClosingEntryDeleteView(DjangoLedgerSecurityMixIn, ClosingEntryModelViewQuerySetMixIn, DeleteView):
     template_name = 'django_ledger/closing_entry/closing_entry_delete.html'
     pk_url_kwarg = 'closing_entry_pk'
+    context_object_name = 'closing_entry'
 
     def get_success_url(self):
         return reverse(viewname='django_ledger:closing-entry-list',

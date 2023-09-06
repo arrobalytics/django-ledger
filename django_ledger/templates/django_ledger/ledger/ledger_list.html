@@ -12,7 +12,7 @@
         <a class="button is-dark"
            href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Back' %}</a>
 
-        {% ledgers_table %}
+        {% ledgers_table ledger_list %}
 
     </div>
 {% endblock %}
