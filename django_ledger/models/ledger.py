@@ -216,7 +216,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         bool
             True if can be un-posted, else False.
         """
-        return self.posted is True
+        return all([
+            self.is_posted(),
+            not self.is_locked()
+        ])
 
     def can_lock(self) -> bool:
         """

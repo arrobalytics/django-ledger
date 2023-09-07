@@ -7,6 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Count
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
@@ -46,6 +47,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = qs.annotate(Count('journal_entries'))
         if self.show_hidden:
             return qs.hidden()
         return qs.visible()

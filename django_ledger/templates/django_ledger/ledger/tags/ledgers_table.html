@@ -22,7 +22,7 @@
                 <td>{{ ledger.name }}</td>
                 <td><a class="button is-info is-small is-outlined"
                        href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.uuid %}">
-                    {% trans 'Journal Entries' %}
+                    {{ ledger.journal_entries__count }} {% trans 'Journal Entries' %}
                 </a></td>
                 <td><a class="button is-info is-small is-outlined"
                        href="{% url 'django_ledger:ledger-bs-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
@@ -72,6 +72,14 @@
                                 {% if ledger.can_unlock %}
                                     <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
                                        class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</a>
+                                {% endif %}
+                                {% if ledger.can_post %}
+                                    <a href="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-info has-text-weight-bold">{% trans 'Post' %}</a>
+                                {% endif %}
+                                {% if ledger.can_unpost %}
+                                    <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnPost' %}</a>
                                 {% endif %}
                                 {% if ledger.can_delete %}
                                     <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
