@@ -54,7 +54,6 @@
                     <div class="dropdown is-right is-hoverable"
                          id="ledger-action-{{ ledger.uuid }}">
                         <div class="dropdown-trigger">
-
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
                                     aria-controls="dropdown-menu">
@@ -66,6 +65,14 @@
                             <div class="dropdown-content">
                                 <a href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Edit' %}</a>
+                                {% if ledger.can_lock %}
+                                    <a href="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-info has-text-weight-bold">{% trans 'Lock' %}</a>
+                                {% endif %}
+                                {% if ledger.can_unlock %}
+                                    <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</a>
+                                {% endif %}
                                 {% if ledger.can_delete %}
                                     <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
                                        class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>

@@ -130,10 +130,9 @@ class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
     commit = True
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:closing-entry-detail',
+        return reverse('django_ledger:ledger-list',
                        kwargs={
-                           'entity_slug': kwargs['entity_slug'],
-                           'ledger_pk': kwargs['ledger_pk']
+                           'entity_slug': kwargs['entity_slug']
                        })
 
     def get(self, request, *args, **kwargs):
@@ -141,10 +140,10 @@ class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
         response = super(LedgerModelModelActionView, self).get(request, *args, **kwargs)
-        closing_entry_model: LedgerModel = self.get_object()
+        ledger_model: LedgerModel = self.get_object()
 
         try:
-            getattr(closing_entry_model, self.action_name)(commit=self.commit, **kwargs)
+            getattr(ledger_model, self.action_name)(commit=self.commit, **kwargs)
         except ValidationError as e:
             messages.add_message(request,
                                  message=e.message,

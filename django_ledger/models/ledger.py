@@ -227,9 +227,12 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         bool
             True if can be locked, else False.
         """
-        return self.locked is False
+        return all([
+            not self.locked,
+            self.posted
+        ])
 
-    def can_unlock(self) -> bool:
+    def can_unlock(self, **kwargs) -> bool:
         """
         Determines if the LedgerModel can be un-locked.
 
@@ -238,7 +241,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         bool
             True if can be un-locked, else False.
         """
-        return self.locked is True
+        return all([
+            self.locked,
+            self.posted
+        ])
 
     def can_delete(self) -> bool:
         if not self.is_locked() and not self.is_posted():
@@ -252,21 +258,19 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
                           f'and locked is {self.is_locked()}')
             )
-
-        earliest_je_date = self.journal_entries.posted().annotate(
-            je_date=TruncDate('timestamp')).order_by().distinct('je_date').order_by('-je_date').values(
-            'je_date').first()
-
-        if earliest_je_date is not None and earliest_je_date['je_date'] <= self.entity.last_closing_date:
-            earliest_je_date = earliest_je_date['je_date']
-            raise LedgerModelValidationError(
-                message=_(f'Journal Entries with date {earliest_je_date} cannot be deleted because of lastest closing '
-                          f'entry on {self.get_entity_last_closing_date()}')
-            )
+        earliest_je_timestamp = self.journal_entries.posted().order_by('-timestamp').values('timestamp').first()
+        if earliest_je_timestamp is not None:
+            earliest_date = earliest_je_timestamp['timestamp'].date()
+            if earliest_date <= self.entity.last_closing_date:
+                raise LedgerModelValidationError(
+                    message=_(
+                        f'Journal Entries with date {earliest_date} cannot be deleted because of lastest closing '
+                        f'entry on {self.get_entity_last_closing_date()}')
+                )
 
         return super().delete(**kwargs)
 
-    def post(self, commit: bool = False):
+    def post(self, commit: bool = False, **kwargs):
         """
         Posts the LedgerModel.
 
@@ -283,7 +287,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
-    def unpost(self, commit: bool = False):
+    def unpost(self, commit: bool = False, **kwargs):
         """
         Un-posts the LedgerModel.
 
@@ -300,7 +304,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
-    def lock(self, commit: bool = False):
+    def lock(self, commit: bool = False, **kwargs):
         """
         Locks the LedgerModel.
 
@@ -317,7 +321,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
-    def unlock(self, commit: bool = False):
+    def unlock(self, commit: bool = False, **kwargs):
         """
         Un-locks the LedgerModel.
 
