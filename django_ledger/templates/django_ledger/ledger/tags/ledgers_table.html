@@ -19,24 +19,32 @@
         <tbody>
         {% for ledger in ledgers %}
             <tr>
-                <td>{% if ledger.get_wrapped_model_instance %}{{ ledger.ledger.get_wrapped_model_instance }}{% else %}
-                {{ ledger.name }}{% endif %}</td>
+                <td>{% if ledger.has_wrapped_model %}
+                    <a href="{{ ledger.get_wrapped_model_url }}">{{ ledger.get_wrapped_model_instance }}</a>
+                {% else %}{{ ledger.name }}{% endif %}</td>
                 <td><a class="button is-info is-small is-outlined"
                        href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.uuid %}">
                     {{ ledger.journal_entries__count }} {% trans 'Journal Entries' %}
                 </a></td>
-                <td><a class="button is-info is-small is-outlined"
-                       href="{% url 'django_ledger:ledger-bs-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
-                    {% trans 'Balance Sheet' %}
-                </a></td>
-                <td><a class="button is-info is-small is-outlined"
-                       href="{% url 'django_ledger:ledger-ic-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
-                    {% trans 'Income Statement' %}
-                </a></td>
-                <td><a class="button is-info is-small is-outlined"
-                       href="{% url 'django_ledger:ledger-cf-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
-                    {% trans 'Cash Flow Statement' %}
-                </a></td>
+                {% if ledger.is_posted %}
+                    <td><a class="button is-primary is-small is-rounded"
+                           href="{% url 'django_ledger:ledger-bs-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
+                        {% trans 'Balance Sheet' %}
+                    </a></td>
+                    <td><a class="button is-primary is-small is-rounded"
+                           href="{% url 'django_ledger:ledger-ic-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
+                        {% trans 'Income Statement' %}
+                    </a></td>
+                    <td><a class="button is-primary is-small is-rounded"
+                           href="{% url 'django_ledger:ledger-cf-year' entity_slug=entity_slug ledger_pk=ledger.uuid year=current_year %}">
+                        {% trans 'Cash Flow Statement' %}
+                    </a></td>
+                {% else %}
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                {% endif %}
+
                 <td>
                     {% if ledger.posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>

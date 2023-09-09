@@ -153,7 +153,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     objects = LedgerModelManager.from_queryset(queryset_class=LedgerModelQuerySet)()
 
-    __WRAPPED_MODEL_KEY = 'wrapped_model'
+    _WRAPPED_MODEL_KEY = 'wrapped_model'
 
     class Meta:
         abstract = True
@@ -178,11 +178,16 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def get_wrapped_model_instance(self):
         if self.has_wrapped_model_info():
-            return getattr(self, self.additional_info[self.__WRAPPED_MODEL_KEY]['model'])
-        if self.billmodel:
-            return self.billmodel
-        if self.invoicemodel:
-            return self.invoicemodel
+            return getattr(self, self.additional_info[self._WRAPPED_MODEL_KEY]['model'])
+
+        for model_class, attr in self.get_wrapper_info.items():
+            if getattr(self, attr, None):
+                return getattr(self, attr)
+
+    def get_wrapped_model_url(self):
+        if self.has_wrapped_model():
+            wrapped_model = self.get_wrapped_model_instance()
+            return wrapped_model.get_absolute_url()
 
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
 
@@ -190,7 +195,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             self.additional_info = dict()
 
         wrapper_info = self.get_wrapper_info
-        self.additional_info[self.__WRAPPED_MODEL_KEY] = {
+        self.additional_info[self._WRAPPED_MODEL_KEY] = {
             'model': wrapper_info[model_instance.__class__],
             'uuid': model_instance.uuid
         }
@@ -203,16 +208,13 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def has_wrapped_model_info(self):
         if self.additional_info is not None:
-            return self.__WRAPPED_MODEL_KEY in self.additional_info
+            return self._WRAPPED_MODEL_KEY in self.additional_info
         return False
 
     def has_wrapped_model(self):
         if self.has_wrapped_model_info():
             return True
         return self.billmodel is not None or self.invoicemodel is not None
-
-
-
 
     def is_posted(self) -> bool:
         """
@@ -445,3 +447,9 @@ class LedgerModel(LedgerModelAbstract):
     """
     Base LedgerModel from Abstract.
     """
+
+
+def ledgermodel_presave(instance: LedgerModel, **kwargs):
+    if not instance.has_wrapped_model_info():
+        wrapper_instance = instance.get_wrapped_model_instance()
+        instance.configure_for_wrapper_model(model_instance=wrapper_instance)
