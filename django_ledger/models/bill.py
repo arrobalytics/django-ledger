@@ -467,6 +467,7 @@ class BillModelAbstract(AccrualMixIn,
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
             ledger_name = f'Bill {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
+            ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_model.clean()
             ledger_model.clean_fields()
             self.ledger = ledger_model

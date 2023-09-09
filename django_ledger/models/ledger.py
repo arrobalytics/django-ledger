@@ -32,9 +32,9 @@ from typing import Optional
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models import Q
-from django.db.models.functions import TruncDate
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -146,8 +146,14 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked Ledger'))
     hidden = models.BooleanField(default=False, verbose_name=_('Hidden Ledger'))
+    additional_info = models.JSONField(default=dict,
+                                       encoder=DjangoJSONEncoder,
+                                       null=True,
+                                       blank=True)
 
     objects = LedgerModelManager.from_queryset(queryset_class=LedgerModelQuerySet)()
+
+    __WRAPPED_MODEL_KEY = 'wrapped_model'
 
     class Meta:
         abstract = True
@@ -162,6 +168,51 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def __str__(self):
         return self.name
+
+    @property
+    def get_wrapper_info(self):
+        return {
+            lazy_loader.get_bill_model(): 'billmodel',
+            lazy_loader.get_invoice_model(): 'invoicemodel',
+        }
+
+    def get_wrapped_model_instance(self):
+        if self.has_wrapped_model_info():
+            return getattr(self, self.additional_info[self.__WRAPPED_MODEL_KEY]['model'])
+        if self.billmodel:
+            return self.billmodel
+        if self.invoicemodel:
+            return self.invoicemodel
+
+    def configure_for_wrapper_model(self, model_instance, commit: bool = False):
+
+        if self.additional_info is None:
+            self.additional_info = dict()
+
+        wrapper_info = self.get_wrapper_info
+        self.additional_info[self.__WRAPPED_MODEL_KEY] = {
+            'model': wrapper_info[model_instance.__class__],
+            'uuid': model_instance.uuid
+        }
+
+        if commit:
+            self.save(update_fields=[
+                'additional_info',
+                'updated'
+            ])
+
+    def has_wrapped_model_info(self):
+        if self.additional_info is not None:
+            return self.__WRAPPED_MODEL_KEY in self.additional_info
+        return False
+
+    def has_wrapped_model(self):
+        if self.has_wrapped_model_info():
+            return True
+        return self.billmodel is not None or self.invoicemodel is not None
+
+
+
 
     def is_posted(self) -> bool:
         """
@@ -250,7 +301,11 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         ])
 
     def can_delete(self) -> bool:
-        if not self.is_locked() and not self.is_posted():
+        if all([
+            not self.is_locked(),
+            not self.is_posted(),
+            not self.has_wrapped_model()
+        ]):
             return True
         return False
 
@@ -382,6 +437,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def get_delete_message(self):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
+
+    # def
 
 
 class LedgerModel(LedgerModelAbstract):

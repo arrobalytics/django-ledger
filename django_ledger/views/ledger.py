@@ -48,6 +48,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     def get_queryset(self):
         qs = super().get_queryset()
         qs = qs.annotate(Count('journal_entries'))
+        qs = qs.select_related('billmodel', 'invoicemodel')
         if self.show_hidden:
             return qs.hidden()
         return qs.visible()

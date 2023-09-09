@@ -418,6 +418,7 @@ class InvoiceModelAbstract(AccrualMixIn,
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+            ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_name = f'Invoice {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
             ledger_model.clean()
