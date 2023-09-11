@@ -13,10 +13,12 @@ class JournalEntryModelCreateForm(ModelForm):
         self.USER_MODEL = user_model
         self.LEDGER_PK = ledger_pk
         self.fields['timestamp'].required = False
-        self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
+
+        if 'entity_unit' in self.fields:
+            self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
+                entity_slug=self.ENTITY_SLUG,
+                user_model=self.USER_MODEL
+            )
 
     class Meta:
         model = JournalEntryModel
@@ -45,20 +47,8 @@ class JournalEntryModelCreateForm(ModelForm):
 
 
 class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
-    class Meta:
-        model = JournalEntryModel
+    class Meta(JournalEntryModelCreateForm.Meta):
         fields = [
             'timestamp',
             'description'
         ]
-        widgets = {
-            'parent': Select(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'timestamp': DateTimeInput(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            }),
-            'description': Textarea(attrs={
-                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            })
-        }

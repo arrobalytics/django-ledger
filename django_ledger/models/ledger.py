@@ -31,7 +31,7 @@ from string import ascii_lowercase, digits
 from typing import Optional
 from uuid import uuid4
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models import Q
@@ -169,26 +169,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def __str__(self):
         return self.name
 
-    @property
-    def get_wrapper_info(self):
-        return {
-            lazy_loader.get_bill_model(): 'billmodel',
-            lazy_loader.get_invoice_model(): 'invoicemodel',
-        }
-
-    def get_wrapped_model_instance(self):
-        if self.has_wrapped_model_info():
-            return getattr(self, self.additional_info[self._WRAPPED_MODEL_KEY]['model'])
-
-        for model_class, attr in self.get_wrapper_info.items():
-            if getattr(self, attr, None):
-                return getattr(self, attr)
-
-    def get_wrapped_model_url(self):
-        if self.has_wrapped_model():
-            wrapped_model = self.get_wrapped_model_instance()
-            return wrapped_model.get_absolute_url()
-
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
 
         if self.additional_info is None:
@@ -214,7 +194,33 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def has_wrapped_model(self):
         if self.has_wrapped_model_info():
             return True
-        return self.billmodel is not None or self.invoicemodel is not None
+
+        wrapped_model_info = self.get_wrapper_info
+        for model_class, model_id in wrapped_model_info.items():
+            try:
+                return getattr(self, model_id)
+            except ObjectDoesNotExist:
+                pass
+
+    @property
+    def get_wrapper_info(self):
+        return {
+            lazy_loader.get_bill_model(): 'billmodel',
+            lazy_loader.get_invoice_model(): 'invoicemodel',
+        }
+
+    def get_wrapped_model_instance(self):
+        if self.has_wrapped_model_info():
+            return getattr(self, self.additional_info[self._WRAPPED_MODEL_KEY]['model'])
+
+        for model_class, attr in self.get_wrapper_info.items():
+            if getattr(self, attr, None):
+                return getattr(self, attr)
+
+    def get_wrapped_model_url(self):
+        if self.has_wrapped_model():
+            wrapped_model = self.get_wrapped_model_instance()
+            return wrapped_model.get_absolute_url()
 
     def is_posted(self) -> bool:
         """
@@ -258,7 +264,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         bool
             True if can be posted, else False.
         """
-        return self.posted is False
+        return all([
+            self.is_locked(),
+            not self.is_posted()
+        ])
 
     def can_unpost(self) -> bool:
         """
@@ -271,7 +280,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return all([
             self.is_posted(),
-            not self.is_locked()
+            self.is_locked()
         ])
 
     def can_lock(self) -> bool:
@@ -284,8 +293,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be locked, else False.
         """
         return all([
-            not self.locked,
-            self.posted
+            not self.is_locked(),
+            not self.is_posted()
         ])
 
     def can_unlock(self, **kwargs) -> bool:
@@ -298,8 +307,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be un-locked, else False.
         """
         return all([
-            self.locked,
-            self.posted
+            self.is_locked(),
+            not self.is_posted()
         ])
 
     def can_delete(self) -> bool:
@@ -439,8 +448,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def get_delete_message(self):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
-
-    # def
 
 
 class LedgerModel(LedgerModelAbstract):

@@ -348,6 +348,21 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         self._verified = False
         self._last_closing_date: Optional[date] = None
 
+    def is_posted(self):
+        return self.posted is True
+
+    def is_in_locked_period(self) -> bool:
+        last_closing_date = self.get_entity_last_closing_date()
+        if last_closing_date is not None:
+            if last_closing_date >= self.timestamp.date():
+                return True
+        return False
+
+    def is_locked(self):
+        if self.locked is True:
+            return True
+        return self.is_in_locked_period()
+
     def is_verified(self) -> bool:
         """
         Determines if the JournalEntryModel is verified.
@@ -447,6 +462,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return self.entity_unit.name
         return no_unit_name
 
+    def get_entity_last_closing_date(self) -> Optional[date]:
+        return self.ledger.entity.last_closing_date
+
     def can_post(self, ignore_verify: bool = True) -> bool:
         """
         Determines if a JournalEntryModel can be posted.
@@ -462,20 +480,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True if JournalEntryModel can be posted, otherwise False.
         """
 
-        if self.locked:
+        if not self.is_locked():
             return False
 
-        if self.posted:
+        if self.is_posted():
             return False
 
-        check_1 = self.is_verified() if not ignore_verify else True
-        if not check_1:
+        verification_check = self.is_verified() if not ignore_verify else True
+        if not verification_check:
             return False
 
-        if not self.is_closing_entry:
-            last_closing_date = self.get_last_closing_date()
-            if last_closing_date is not None and last_closing_date >= self.timestamp.date():
-                return False
+        # if self.ledger.is_posted():
+        #     return False
 
         return True
 
@@ -489,8 +505,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True if JournalEntryModel can be un-posted, otherwise False.
         """
         return all([
-            not self.locked,
-            self.posted
+            self.is_posted(),
+            not self.ledger.is_posted(),
+            not self.ledger.is_locked()
         ])
 
     def can_lock(self) -> bool:
@@ -504,7 +521,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True if JournalEntryModel can be locked, otherwise False.
         """
         return all([
-            not self.locked
+            not self.is_locked()
         ])
 
     def can_unlock(self) -> bool:
@@ -518,12 +535,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True if JournalEntryModel can be un-locked, otherwise False.
         """
         return all([
-            self.locked
+            self.is_locked(),
+            not self.is_posted(),
+            not self.ledger.is_posted(),
+            not self.ledger.is_locked()
         ])
 
     def mark_as_posted(self,
                        commit: bool = False,
                        verify: bool = True,
+                       force_lock: bool = False,
                        raise_exception: bool = False,
                        **kwargs):
         """
@@ -537,6 +558,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         verify: bool
             Verifies JournalEntryModel before marking as posted. Defaults to False.
 
+        force_lock: bool
+            Forces to lock the JournalEntry before is posted.
+
         raise_exception: bool
             Raises JournalEntryValidationError if cannot post. Defaults to False.
 
@@ -545,6 +569,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if verify:
             txs_qs, verified = self.verify()
+
+        if force_lock and not self.is_locked():
+            self.mark_as_locked(commit=False, raise_exception=True)
 
         if not self.can_post(ignore_verify=False):
             if raise_exception:
@@ -556,6 +583,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.save(verify=False,
                           update_fields=[
                               'posted',
+                              'locked',
                               'activity',
                               'updated'
                           ])
@@ -1026,11 +1054,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 return txs_qs, self.is_verified()
         return TransactionModel.objects.none(), self.is_verified()
 
-    def get_last_closing_date(self):
-        if not self._last_closing_date:
-            self._last_closing_date = self.ledger.entity.last_closing_date
-        return self._last_closing_date
-
     def clean(self,
               verify: bool = False,
               raise_exception: bool = True,
@@ -1094,7 +1117,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 txs_qs, is_verified = self.clean(verify=True)
                 if self.is_verified() and post_on_verify:
                     # commit is False since the super call takes place at the end of save()
-                    self.mark_as_posted(commit=False, verify=False, raise_exception=True)
+                    # self.mark_as_locked(commit=False, raise_exception=True)
+                    self.mark_as_posted(commit=False, verify=False, force_lock=True, raise_exception=True)
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)
