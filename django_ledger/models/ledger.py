@@ -265,7 +265,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be posted, else False.
         """
         return all([
-            self.is_locked(),
             not self.is_posted()
         ])
 
@@ -279,8 +278,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be un-posted, else False.
         """
         return all([
-            self.is_posted(),
-            self.is_locked()
+            not self.is_locked(),
+            self.is_posted()
         ])
 
     def can_lock(self) -> bool:
@@ -294,7 +293,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return all([
             not self.is_locked(),
-            not self.is_posted()
+            self.is_posted()
         ])
 
     def can_unlock(self, **kwargs) -> bool:
@@ -308,7 +307,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return all([
             self.is_locked(),
-            not self.is_posted()
+            self.is_posted()
         ])
 
     def can_delete(self) -> bool:
@@ -321,7 +320,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         return False
 
     def delete(self, **kwargs):
-
         if not self.can_delete():
             raise LedgerModelValidationError(
                 message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
@@ -339,7 +337,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
         return super().delete(**kwargs)
 
-    def post(self, commit: bool = False, **kwargs):
+    def post(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Posts the LedgerModel.
 
@@ -348,13 +346,18 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        if self.can_post():
-            self.posted = True
-            if commit:
-                self.save(update_fields=[
-                    'posted',
-                    'updated'
-                ])
+        if not self.can_post():
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.uuid} cannot be posted.')
+                )
+            return
+        self.posted = True
+        if commit:
+            self.save(update_fields=[
+                'posted',
+                'updated'
+            ])
 
     def unpost(self, commit: bool = False, **kwargs):
         """

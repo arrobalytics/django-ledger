@@ -1107,6 +1107,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                          date_approved: date = None,
                          commit: bool = False,
                          force_migrate: bool = False,
+                         raise_exception: bool = True,
                          **kwargs):
         """
         Marks InvoiceModel as Approved.
@@ -1130,7 +1131,9 @@ class InvoiceModelAbstract(AccrualMixIn,
             Forces migration. True if Accounting Method is Accrual.
         """
         if not self.can_approve():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+            if raise_exception:
+                raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+            return
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
@@ -1150,7 +1153,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                     je_timestamp=date_approved,
                     force_migrate=self.accrue
                 )
-            self.ledger.post(commit=commit)
+            self.ledger.post(commit=commit, raise_exception=raise_exception)
 
     def get_mark_as_approved_html_id(self):
         """

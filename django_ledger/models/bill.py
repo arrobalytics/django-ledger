@@ -1196,6 +1196,7 @@ class BillModelAbstract(AccrualMixIn,
                          date_approved: Optional[date] = None,
                          commit: bool = False,
                          force_migrate: bool = False,
+                         raise_exception: bool = True,
                          **kwargs):
         """
         Marks BillModel as Approved.
@@ -1218,11 +1219,12 @@ class BillModelAbstract(AccrualMixIn,
         force_migrate: bool
             Forces migration. True if Accounting Method is Accrual.
         """
-
         if not self.can_approve():
-            raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as in approved.'
-            )
+            if raise_exception:
+                raise BillModelValidationError(
+                    f'Bill {self.bill_number} cannot be marked as in approved.'
+                )
+            return
         self.bill_status = self.BILL_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
         self.get_state(commit=True)
@@ -1244,7 +1246,7 @@ class BillModelAbstract(AccrualMixIn,
                     je_timestamp=date_approved,
                     force_migrate=self.accrue
                 )
-            self.ledger.post(commit=commit)
+            self.ledger.post(commit=commit, raise_exception=raise_exception)
 
     def get_mark_as_approved_html_id(self) -> str:
         """

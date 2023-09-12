@@ -490,8 +490,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not verification_check:
             return False
 
-        # if self.ledger.is_posted():
-        #     return False
+        if self.ledger.is_locked():
+            return False
 
         return True
 
@@ -521,7 +521,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             True if JournalEntryModel can be locked, otherwise False.
         """
         return all([
-            not self.is_locked()
+            not self.is_locked(),
+            not self.ledger.is_locked()
         ])
 
     def can_unlock(self) -> bool:
