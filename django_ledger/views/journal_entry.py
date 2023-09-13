@@ -14,7 +14,9 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.journal_entry import JournalEntryModelUpdateForm, JournalEntryModelCreateForm
+from django_ledger.forms.journal_entry import (JournalEntryModelUpdateForm,
+                                               JournalEntryModelCannotEditForm,
+                                               JournalEntryModelCreateForm)
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
@@ -156,6 +158,14 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
     }
 
     def get_form(self, form_class=None):
+        je_model: JournalEntryModel = self.object
+        if not je_model.can_edit_timestamp():
+            return JournalEntryModelCannotEditForm(
+                entity_slug=self.kwargs['entity_slug'],
+                ledger_pk=self.kwargs['ledger_pk'],
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
         return JournalEntryModelUpdateForm(
             entity_slug=self.kwargs['entity_slug'],
             ledger_pk=self.kwargs['ledger_pk'],

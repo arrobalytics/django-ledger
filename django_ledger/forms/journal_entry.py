@@ -12,7 +12,8 @@ class JournalEntryModelCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.LEDGER_PK = ledger_pk
-        self.fields['timestamp'].required = False
+        if 'timestamp' in self.fields:
+            self.fields['timestamp'].required = False
 
         if 'entity_unit' in self.fields:
             self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
@@ -50,5 +51,13 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
     class Meta(JournalEntryModelCreateForm.Meta):
         fields = [
             'timestamp',
+            'entity_unit',
+            'description'
+        ]
+
+
+class JournalEntryModelCannotEditForm(JournalEntryModelCreateForm):
+    class Meta(JournalEntryModelCreateForm.Meta):
+        fields = [
             'description'
         ]

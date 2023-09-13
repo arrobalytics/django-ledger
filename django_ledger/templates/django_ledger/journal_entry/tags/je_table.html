@@ -19,7 +19,7 @@
         {% for je in jes %}
             <tr class="has-text-centered">
                 <td>{{ je.timestamp }}</td>
-                <td>{{ je.get_activity_display }}</td>
+                <td>{% if je.activity %}{{ je.get_activity_display }}{% endif %}</td>
                 <td>{{ je.description }}</td>
                 <td>{{ je.je_number }}</td>
                 <td>

@@ -34,7 +34,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Min
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -79,7 +79,10 @@ class LedgerModelManager(models.Manager):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related('entity')
+        return qs.select_related('entity').annotate(
+            earliest_timestamp=Min('journal_entries__timestamp',
+                                   filter=Q(journal_entries__posted=True))
+        )
 
     def for_entity(self, entity_slug, user_model):
         """
@@ -135,6 +138,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     hidden: bool
         Determines if the LedgerModel is hidden. Defaults to False. Mandatory.
     """
+    _WRAPPED_MODEL_KEY = 'wrapped_model'
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
 
@@ -153,8 +157,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     objects = LedgerModelManager.from_queryset(queryset_class=LedgerModelQuerySet)()
 
-    _WRAPPED_MODEL_KEY = 'wrapped_model'
-
     class Meta:
         abstract = True
         ordering = ['-created']
@@ -168,6 +170,22 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def __str__(self):
         return self.name
+
+    def has_wrapped_model_info(self):
+        if self.additional_info is not None:
+            return self._WRAPPED_MODEL_KEY in self.additional_info
+        return False
+
+    def has_wrapped_model(self):
+        if self.has_wrapped_model_info():
+            return True
+
+        wrapped_model_info = self.get_wrapper_info
+        for model_class, model_id in wrapped_model_info.items():
+            try:
+                return getattr(self, model_id)
+            except ObjectDoesNotExist:
+                pass
 
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
 
@@ -185,22 +203,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'additional_info',
                 'updated'
             ])
-
-    def has_wrapped_model_info(self):
-        if self.additional_info is not None:
-            return self._WRAPPED_MODEL_KEY in self.additional_info
-        return False
-
-    def has_wrapped_model(self):
-        if self.has_wrapped_model_info():
-            return True
-
-        wrapped_model_info = self.get_wrapper_info
-        for model_class, model_id in wrapped_model_info.items():
-            try:
-                return getattr(self, model_id)
-            except ObjectDoesNotExist:
-                pass
 
     @property
     def get_wrapper_info(self):
@@ -255,6 +257,20 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.hidden is True
 
+    def has_jes_in_locked_period(self) -> bool:
+        try:
+            earliest_posted_je_timestamp = getattr(self, 'earliest_timestamp')
+        except AttributeError:
+            raise LedgerModelValidationError(message=_(f'earliest_timestamp not present in LedgerModel {self.uuid}'))
+        last_closing_date = self.get_entity_last_closing_date()
+        if last_closing_date is None:
+            return False
+        if earliest_posted_je_timestamp is not None:
+            earliest_posted_je_date = earliest_posted_je_timestamp.date()
+            if earliest_posted_je_date > last_closing_date:
+                return False
+        return True
+
     def can_post(self) -> bool:
         """
         Determines if the LedgerModel can be marked as posted.
@@ -265,7 +281,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be posted, else False.
         """
         return all([
-            not self.is_posted()
+            not self.is_posted(),
+            not self.is_locked(),
+            not self.has_jes_in_locked_period()
         ])
 
     def can_unpost(self) -> bool:
@@ -278,8 +296,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             True if can be un-posted, else False.
         """
         return all([
+            self.is_posted(),
             not self.is_locked(),
-            self.is_posted()
+            not self.has_jes_in_locked_period()
         ])
 
     def can_lock(self) -> bool:
@@ -433,6 +452,21 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'ledger_pk': self.uuid
                        })
 
+    def get_create_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:ledger-create',
+                       kwargs={
+                           'entity_slug': self.entity.slug
+                       })
+
     def get_update_url(self) -> str:
         """
         Determines the update URL of the LedgerModel instance.
@@ -448,6 +482,33 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
+
+    def get_balance_sheet_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-bs',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'ledger_pk': self.uuid
+            }
+        )
+
+    def get_income_statement_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-ic',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'ledger_pk': self.uuid
+            }
+        )
+
+    def get_cash_flow_statement_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-cf',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'ledger_pk': self.uuid
+            }
+        )
 
     def get_delete_message(self):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')

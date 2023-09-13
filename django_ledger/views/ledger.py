@@ -11,7 +11,10 @@ from django.db.models import Count
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
+from django.views.generic import (
+    DetailView, UpdateView, CreateView,
+    RedirectView, DeleteView, ArchiveIndexView, YearArchiveView, MonthArchiveView
+)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
@@ -35,15 +38,17 @@ class LedgerModelModelViewQuerySetMixIn:
         return self.queryset
 
 
-class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ListView):
+class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
     show_hidden = False
+    paginate_by = 15
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    date_field = 'created'
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -51,7 +56,15 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
         qs = qs.select_related('billmodel', 'invoicemodel')
         if self.show_hidden:
             return qs.hidden()
-        return qs.visible()
+        return qs.visible().order_by('-updated')
+
+
+class LedgerModelYearListView(YearArchiveView, LedgerModelListView):
+    make_object_list = True
+
+
+class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
+    make_object_list = True
 
 
 class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, CreateView):

@@ -348,6 +348,79 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         self._verified = False
         self._last_closing_date: Optional[date] = None
 
+    def can_post(self, ignore_verify: bool = True) -> bool:
+        """
+        Determines if a JournalEntryModel can be posted.
+
+        Parameters
+        ----------
+        ignore_verify: bool
+            Skips JournalEntryModel verification if True. Defaults to False.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be posted, otherwise False.
+        """
+
+        return all([
+            self.is_locked(),
+            not self.is_posted(),
+            self.is_verified() if not ignore_verify else True,
+            not self.ledger.is_locked(),
+            not self.is_in_locked_period()
+        ])
+
+    def can_unpost(self) -> bool:
+        """
+        Determines if a JournalEntryModel can be un-posted.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be un-posted, otherwise False.
+        """
+        return all([
+            self.is_posted(),
+            not self.ledger.is_locked(),
+            not self.is_in_locked_period()
+        ])
+
+    def can_lock(self) -> bool:
+        """
+        Determines if a JournalEntryModel can be locked.
+        Locked JournalEntryModels cannot be modified.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be locked, otherwise False.
+        """
+        return all([
+            not self.is_locked(),
+            not self.ledger.is_locked()
+        ])
+
+    def can_unlock(self) -> bool:
+        """
+        Determines if a JournalEntryModel can be un-locked.
+        Locked transactions cannot be modified.
+
+        Returns
+        -------
+        bool
+            True if JournalEntryModel can be un-locked, otherwise False.
+        """
+        return all([
+            self.is_locked(),
+            not self.is_posted(),
+            # not self.ledger.is_posted(),
+            not self.ledger.is_locked()
+        ])
+
+    def can_edit_timestamp(self) -> bool:
+        return not self.is_posted()
+
     def is_posted(self):
         return self.posted is True
 
@@ -359,9 +432,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return False
 
     def is_locked(self):
-        if self.locked is True:
+        if self.is_posted():
             return True
-        return self.is_in_locked_period()
+        return all([
+            self.locked is False,
+            any([
+                not self.is_posted(),
+                self.is_in_locked_period(),
+            ])
+        ])
 
     def is_verified(self) -> bool:
         """
@@ -465,83 +544,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def get_entity_last_closing_date(self) -> Optional[date]:
         return self.ledger.entity.last_closing_date
 
-    def can_post(self, ignore_verify: bool = True) -> bool:
-        """
-        Determines if a JournalEntryModel can be posted.
-
-        Parameters
-        ----------
-        ignore_verify: bool
-            Skips JournalEntryModel verification if True. Defaults to False.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be posted, otherwise False.
-        """
-
-        if not self.is_locked():
-            return False
-
-        if self.is_posted():
-            return False
-
-        verification_check = self.is_verified() if not ignore_verify else True
-        if not verification_check:
-            return False
-
-        if self.ledger.is_locked():
-            return False
-
-        return True
-
-    def can_unpost(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be un-posted.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be un-posted, otherwise False.
-        """
-        return all([
-            self.is_posted(),
-            not self.ledger.is_posted(),
-            not self.ledger.is_locked()
-        ])
-
-    def can_lock(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be locked.
-        Locked JournalEntryModels cannot be modified.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be locked, otherwise False.
-        """
-        return all([
-            not self.is_locked(),
-            not self.ledger.is_locked()
-        ])
-
-    def can_unlock(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be un-locked.
-        Locked transactions cannot be modified.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be un-locked, otherwise False.
-        """
-        return all([
-            self.is_locked(),
-            not self.is_posted(),
-            not self.ledger.is_posted(),
-            not self.ledger.is_locked()
-        ])
-
     def mark_as_posted(self,
                        commit: bool = False,
                        verify: bool = True,
@@ -571,23 +573,29 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if verify:
             txs_qs, verified = self.verify()
 
+        if not len(txs_qs):
+            raise JournalEntryValidationError(
+                message=_('Cannot post an empty Journal Entry.')
+            )
+
         if force_lock and not self.is_locked():
             self.mark_as_locked(commit=False, raise_exception=True)
 
         if not self.can_post(ignore_verify=False):
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot be posted.'
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
                                                   f' Is verified: {self.is_verified()}')
         else:
             self.posted = True
-            if commit:
-                self.save(verify=False,
-                          update_fields=[
-                              'posted',
-                              'locked',
-                              'activity',
-                              'updated'
-                          ])
+            if self.is_posted():
+                if commit:
+                    self.save(verify=False,
+                              update_fields=[
+                                  'posted',
+                                  'locked',
+                                  'activity',
+                                  'updated'
+                              ])
 
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -606,15 +614,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_unpost():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is unposted.')
+                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
         else:
             self.posted = False
-            if commit:
-                self.save(verify=False,
-                          update_fields=[
-                              'posted',
-                              'updated'
-                          ])
+            if not self.is_posted():
+                if commit:
+                    self.save(verify=False,
+                              update_fields=[
+                                  'posted',
+                                  'updated'
+                              ])
 
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -635,7 +644,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         else:
-            self.locked = True
+            self.locked = self.is_locked()
             if commit:
                 self.save(verify=False,
                           update_fields=[
@@ -660,7 +669,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
         else:
-            self.locked = False
+            self.locked = self.is_locked()
             if commit:
                 self.save(verify=False,
                           update_fields=[
@@ -1077,6 +1086,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         tuple: TransactionModelQuerySet, bool
             The TransactionModelQuerySet of the JournalEntryModel instance, verification result as True/False.
         """
+
         if txs_qs:
             self.is_txs_qs_valid(txs_qs=txs_qs)
 

@@ -15,7 +15,6 @@ class LedgerModelCreateForm(ModelForm):
         model = LedgerModel
         fields = [
             'name',
-            # 'unit'
         ]
         widgets = {
             'name': TextInput(
@@ -31,8 +30,6 @@ class LedgerModelUpdateForm(LedgerModelCreateForm):
         model = LedgerModel
         fields = [
             'name',
-            'posted',
-            'locked',
             'hidden'
         ]
         widgets = {
