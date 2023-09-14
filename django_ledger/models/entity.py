@@ -113,7 +113,8 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self):
         """Sets the custom queryset as the default."""
-        return EntityModelQuerySet(self.model).order_by('path').select_related('admin', 'default_coa')
+        qs = super().get_queryset()
+        return qs.order_by('path').select_related('admin', 'default_coa')
 
     def for_user(self, user_model):
         """

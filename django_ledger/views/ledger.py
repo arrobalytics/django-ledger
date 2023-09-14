@@ -39,24 +39,26 @@ class LedgerModelModelViewQuerySetMixIn:
 
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
+    show_hidden = False
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
-    show_hidden = False
     paginate_by = 15
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
     date_field = 'created'
+    ordering = '-created'
 
     def get_queryset(self):
         qs = super().get_queryset()
         qs = qs.annotate(Count('journal_entries'))
         qs = qs.select_related('billmodel', 'invoicemodel')
+        qs = qs.order_by('-created')
         if self.show_hidden:
-            return qs.hidden()
-        return qs.visible().order_by('-updated')
+            return qs
+        return qs.visible()
 
 
 class LedgerModelYearListView(YearArchiveView, LedgerModelListView):

@@ -5,23 +5,24 @@
     <table class="table is-fullwidth is-narrow is-striped django-ledger-table-bottom-margin-150">
         <thead>
         <tr class="has-text-centered">
+            <th>{% trans 'Document Number' %}</th>
             <th>{% trans 'Timestamp' %}</th>
             <th>{% trans 'Activity' %}</th>
             <th>{% trans 'Description' %}</th>
-            <th>{% trans 'Document Number' %}</th>
             <th>{% trans 'Posted' %}</th>
             <th>{% trans 'Locked' %}</th>
             <th>{% trans 'Unit' %}</th>
+            <th>{% trans 'Txs Count' %}</th>
             <th>{% trans 'Actions' %}</th>
         </tr>
         </thead>
         <tbody>
         {% for je in jes %}
             <tr class="has-text-centered">
+                <td>{{ je.je_number }}</td>
                 <td>{{ je.timestamp }}</td>
                 <td>{% if je.activity %}{{ je.get_activity_display }}{% endif %}</td>
-                <td>{{ je.description }}</td>
-                <td>{{ je.je_number }}</td>
+                <td>{% if je.description %}{{ je.description }}{% endif %}</td>
                 <td>
                     {% if je.is_posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
@@ -41,6 +42,7 @@
                     {% endif %}
                 </td>
                 <td>{{ je.get_entity_unit_name }}</td>
+                <td class="has-text-weight-bold">{{ je.txs_count }}</td>
                 <td>
                     <div class="dropdown is-right is-hoverable"
                          id="je-action-{{ je.uuid }}">

@@ -187,6 +187,29 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             except ObjectDoesNotExist:
                 pass
 
+    def has_jes_in_locked_period(self, force_evaluation: bool = True) -> bool:
+        try:
+            earliest_posted_je_timestamp = getattr(self, 'earliest_timestamp')
+        except AttributeError:
+            if force_evaluation:
+                try:
+                    earliest_je = self.journal_entries.posted().order_by('-timestamp').only('timestamp').first()
+                    self.earliest_timestamp = earliest_je.timestamp if earliest_je else None
+                except ObjectDoesNotExist:
+                    self.earliest_timestamp = None
+                earliest_posted_je_timestamp = getattr(self, 'earliest_timestamp')
+            else:
+                raise LedgerModelValidationError(
+                    message=_(f'earliest_timestamp not present in LedgerModel {self.uuid}'))
+
+        last_closing_date = self.get_entity_last_closing_date()
+        if last_closing_date is None:
+            return False
+        if earliest_posted_je_timestamp is not None:
+            earliest_posted_je_date = earliest_posted_je_timestamp.date()
+            return earliest_posted_je_date > last_closing_date
+        return False
+
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
 
         if self.additional_info is None:
@@ -257,20 +280,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         return self.hidden is True
 
-    def has_jes_in_locked_period(self) -> bool:
-        try:
-            earliest_posted_je_timestamp = getattr(self, 'earliest_timestamp')
-        except AttributeError:
-            raise LedgerModelValidationError(message=_(f'earliest_timestamp not present in LedgerModel {self.uuid}'))
-        last_closing_date = self.get_entity_last_closing_date()
-        if last_closing_date is None:
-            return False
-        if earliest_posted_je_timestamp is not None:
-            earliest_posted_je_date = earliest_posted_je_timestamp.date()
-            if earliest_posted_je_date > last_closing_date:
-                return False
-        return True
-
     def can_post(self) -> bool:
         """
         Determines if the LedgerModel can be marked as posted.
@@ -333,28 +342,14 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         if all([
             not self.is_locked(),
             not self.is_posted(),
-            not self.has_wrapped_model()
+            not self.has_wrapped_model(),
+            not self.has_jes_in_locked_period()
         ]):
             return True
         return False
 
-    def delete(self, **kwargs):
-        if not self.can_delete():
-            raise LedgerModelValidationError(
-                message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
-                          f'and locked is {self.is_locked()}')
-            )
-        earliest_je_timestamp = self.journal_entries.posted().order_by('-timestamp').values('timestamp').first()
-        if earliest_je_timestamp is not None:
-            earliest_date = earliest_je_timestamp['timestamp'].date()
-            if earliest_date <= self.entity.last_closing_date:
-                raise LedgerModelValidationError(
-                    message=_(
-                        f'Journal Entries with date {earliest_date} cannot be deleted because of lastest closing '
-                        f'entry on {self.get_entity_last_closing_date()}')
-                )
-
-        return super().delete(**kwargs)
+    def can_edit_journal_entries(self) -> bool:
+        return not self.is_locked()
 
     def post(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
@@ -428,6 +423,24 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'locked',
                     'updated'
                 ])
+
+    def delete(self, **kwargs):
+        if not self.can_delete():
+            raise LedgerModelValidationError(
+                message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
+                          f'and locked is {self.is_locked()}')
+            )
+        earliest_je_timestamp = self.journal_entries.posted().order_by('-timestamp').values('timestamp').first()
+        if earliest_je_timestamp is not None:
+            earliest_date = earliest_je_timestamp['timestamp'].date()
+            if earliest_date <= self.entity.last_closing_date:
+                raise LedgerModelValidationError(
+                    message=_(
+                        f'Journal Entries with date {earliest_date} cannot be deleted because of lastest closing '
+                        f'entry on {self.get_entity_last_closing_date()}')
+                )
+
+        return super().delete(**kwargs)
 
     def get_entity_name(self) -> str:
         return self.entity.name

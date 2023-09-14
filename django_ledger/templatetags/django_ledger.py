@@ -204,7 +204,7 @@ def data_import_job_txs_imported(context):
 
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)
-def jes_table(context, next_url=None):
+def jes_table(context, journal_entry_qs, next_url=None):
     entity_slug = context['view'].kwargs['entity_slug']
     ledger_pk = context['view'].kwargs['ledger_pk']
     if not next_url:
@@ -214,9 +214,9 @@ def jes_table(context, next_url=None):
                                'ledger_pk': ledger_pk
                            })
     return {
-        'jes': context['journal_entries'],
-        'entity_slug': context['view'].kwargs['entity_slug'],
-        'ledger_pk': context['view'].kwargs['ledger_pk'],
+        'jes': journal_entry_qs,
+        'entity_slug': entity_slug,
+        'ledger_pk': ledger_pk,
         'next_url': next_url
     }
 

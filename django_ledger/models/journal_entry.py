@@ -35,8 +35,8 @@ from itertools import chain
 from typing import Set, Union, Optional, Dict, Tuple
 from uuid import uuid4, UUID
 
-from django.core.exceptions import FieldError, ObjectDoesNotExist
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
+from django.db.models.signals import pre_save
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, QuerySet, F
 from django.db.models.functions import Coalesce
@@ -419,7 +419,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         ])
 
     def can_edit_timestamp(self) -> bool:
-        return not self.is_posted()
+        return not self.is_locked()
 
     def is_posted(self):
         return self.posted is True
@@ -434,11 +434,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def is_locked(self):
         if self.is_posted():
             return True
-        return all([
-            self.locked is False,
+        return any([
+            self.locked is True,
             any([
-                not self.is_posted(),
                 self.is_in_locked_period(),
+                self.ledger.is_locked()
             ])
         ])
 
@@ -570,13 +570,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
-        if verify:
+        if verify and not self.is_verified():
             txs_qs, verified = self.verify()
 
-        if not len(txs_qs):
-            raise JournalEntryValidationError(
-                message=_('Cannot post an empty Journal Entry.')
-            )
+            if not len(txs_qs):
+                raise JournalEntryValidationError(
+                    message=_('Cannot post an empty Journal Entry.')
+                )
 
         if force_lock and not self.is_locked():
             self.mark_as_locked(commit=False, raise_exception=True)
@@ -586,16 +586,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
                                                   f' Is verified: {self.is_verified()}')
         else:
-            self.posted = True
-            if self.is_posted():
-                if commit:
-                    self.save(verify=False,
-                              update_fields=[
-                                  'posted',
-                                  'locked',
-                                  'activity',
-                                  'updated'
-                              ])
+            if not self.is_posted():
+                self.posted = True
+                if self.is_posted():
+                    if commit:
+                        self.save(verify=False,
+                                  update_fields=[
+                                      'posted',
+                                      'locked',
+                                      'activity',
+                                      'updated'
+                                  ])
 
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -616,14 +617,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
         else:
-            self.posted = False
-            if not self.is_posted():
-                if commit:
-                    self.save(verify=False,
-                              update_fields=[
-                                  'posted',
-                                  'updated'
-                              ])
+            if self.is_posted():
+                self.posted = False
+                self.activity = None
+                if not self.is_posted():
+                    if commit:
+                        self.save(verify=False,
+                                  update_fields=[
+                                      'posted',
+                                      'activity',
+                                      'updated'
+                                  ])
 
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -644,13 +648,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         else:
-            self.locked = self.is_locked()
-            if commit:
-                self.save(verify=False,
-                          update_fields=[
-                              'locked',
-                              'updated'
-                          ])
+            if not self.is_locked():
+                self.locked = True
+                if self.is_locked():
+                    if commit:
+                        self.save(verify=False,
+                                  update_fields=[
+                                      'locked',
+                                      'updated'
+                                  ])
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -669,13 +675,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
         else:
-            self.locked = self.is_locked()
-            if commit:
-                self.save(verify=False,
-                          update_fields=[
-                              'locked',
-                              'updated'
-                          ])
+            if self.is_locked():
+                self.locked = False
+                if not self.is_locked():
+                    if commit:
+                        self.save(verify=False,
+                                  update_fields=[
+                                      'locked',
+                                      'updated'
+                                  ])
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
@@ -1153,3 +1161,13 @@ class JournalEntryModel(JournalEntryModelAbstract):
     """
     Journal Entry Model Base Class From Abstract
     """
+
+
+def journalentrymodel_presave(instance: JournalEntryModel, **kwargs):
+    if instance._state.adding and not instance.ledger.can_edit_journal_entries():
+        raise JournalEntryValidationError(
+            message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
+        )
+
+
+pre_save.connect(journalentrymodel_presave, sender=JournalEntryModel)

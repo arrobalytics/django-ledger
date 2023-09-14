@@ -27,7 +27,7 @@ from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
+from django_ledger.io import (check_tx_balance, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
                               validate_io_date)
 from django_ledger.models.utils import lazy_loader
 
@@ -770,11 +770,11 @@ class AccrualMixIn(models.Model):
 
                 for uid in unit_uuids:
                     # validates each unit txs independently...
-                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
+                    check_tx_balance(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
 
                 # validates all txs as a whole (for safety)...
                 txs = [tx for ui, tx in txs_list]
-                balance_tx_data(tx_data=txs, perform_correction=True)
+                check_tx_balance(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
                 for _, je in je_list.items():

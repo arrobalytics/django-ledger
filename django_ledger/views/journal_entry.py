@@ -7,11 +7,13 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Count
 from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.views.generic import (YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
+                                  ArchiveIndexView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.journal_entry import (JournalEntryModelUpdateForm,
@@ -37,8 +39,96 @@ class JournalEntryModelModelViewQuerySetMixIn:
 
 
 # JE Views ---
-class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, ListView):
-    context_object_name = 'journal_entries'
+class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObjectMixin):
+    template_name = 'django_ledger/journal_entry/je_create.html'
+    PAGE_TITLE = _('Create Journal Entry')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
+    context_object_name = 'ledger_model'
+    pk_url_kwarg = 'ledger_pk'
+    ledger_model = None
+
+    def get_context_data(self, **kwargs):
+        if self.ledger_model is None:
+            ledger_model = self.get_object()
+            self.ledger_model = ledger_model
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = self.PAGE_TITLE
+        ctx['header_title'] = self.PAGE_TITLE
+        ctx['header_subtitle'] = self.ledger_model
+        return ctx
+
+    def get_queryset(self):
+        return LedgerModel.objects.for_entity(
+            user_model=self.request.user,
+            entity_slug=self.kwargs['entity_slug'],
+        )
+
+    def get_form(self, form_class=None):
+        if self.ledger_model is None:
+            ledger_model = self.get_object()
+            self.ledger_model = ledger_model
+        return JournalEntryModelCreateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_model=self.ledger_model,
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def get_initial(self):
+        return {
+            'timestamp': localtime()
+        }
+
+    def get_success_url(self):
+        return reverse('django_ledger:je-list',
+                       kwargs={
+                           'entity_slug': self.kwargs.get('entity_slug'),
+                           'ledger_pk': self.kwargs.get('ledger_pk')
+                       })
+
+
+class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, UpdateView):
+    context_object_name = 'journal_entry'
+    template_name = 'django_ledger/journal_entry/je_update.html'
+    pk_url_kwarg = 'je_pk'
+    PAGE_TITLE = _('Update Journal Entry')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
+
+    def get_form(self, form_class=None):
+        je_model: JournalEntryModel = self.object
+        if not je_model.can_edit_timestamp():
+            return JournalEntryModelCannotEditForm(
+                entity_slug=self.kwargs['entity_slug'],
+                ledger_model=je_model.ledger,
+                user_model=self.request.user,
+                **self.get_form_kwargs()
+            )
+        return JournalEntryModelUpdateForm(
+            entity_slug=self.kwargs['entity_slug'],
+            ledger_model=je_model.ledger,
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
+
+    def get_success_url(self):
+        return reverse('django_ledger:je-list', kwargs={
+            'entity_slug': self.kwargs['entity_slug'],
+            'ledger_pk': self.kwargs['ledger_pk']
+        })
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
+
+
+class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, ArchiveIndexView):
+    context_object_name = 'journal_entry_list'
     template_name = 'django_ledger/journal_entry/je_list.html'
     PAGE_TITLE = _('Journal Entries')
     extra_context = {
@@ -46,6 +136,23 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelView
         'header_title': PAGE_TITLE
     }
     http_method_names = ['get']
+    date_field = 'timestamp'
+    paginate_by = 10
+    allow_empty = True
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.annotate(txs_count=Count('transactionmodel'))
+        return qs
+
+
+class JournalEntryYearListView(YearArchiveView, JournalEntryListView):
+    make_object_list = True
+
+
+class JournalEntryMonthListView(MonthArchiveView, JournalEntryListView):
+    make_object_list = True
+    month_format = '%m'
 
 
 class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
@@ -83,7 +190,7 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
     def get_context_data(self, txs_formset=None, **kwargs):
         context = super(JournalEntryModelTXSDetailView, self).get_context_data(**kwargs)
         je_model: JournalEntryModel = self.object
-        if je_model.locked:
+        if je_model.is_locked():
             messages.add_message(self.request,
                                  message=_('Locked Journal Entry. Must unlock to Edit.'),
                                  level=messages.WARNING,
@@ -145,85 +252,6 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
                                  extra_tags='is-danger')
             return self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
         return self.render_to_response(context=self.get_context_data())
-
-
-class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, UpdateView):
-    context_object_name = 'journal_entry'
-    template_name = 'django_ledger/journal_entry/je_update.html'
-    pk_url_kwarg = 'je_pk'
-    PAGE_TITLE = _('Update Journal Entry')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-
-    def get_form(self, form_class=None):
-        je_model: JournalEntryModel = self.object
-        if not je_model.can_edit_timestamp():
-            return JournalEntryModelCannotEditForm(
-                entity_slug=self.kwargs['entity_slug'],
-                ledger_pk=self.kwargs['ledger_pk'],
-                user_model=self.request.user,
-                **self.get_form_kwargs()
-            )
-        return JournalEntryModelUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            ledger_pk=self.kwargs['ledger_pk'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
-        )
-
-    def get_success_url(self):
-        return reverse('django_ledger:je-list', kwargs={
-            'entity_slug': self.kwargs['entity_slug'],
-            'ledger_pk': self.kwargs['ledger_pk']
-        })
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
-
-
-class JournalEntryCreateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, CreateView):
-    template_name = 'django_ledger/journal_entry/je_create.html'
-    PAGE_TITLE = _('Create Journal Entry')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-
-    def get_form(self, form_class=None):
-        return JournalEntryModelCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            ledger_pk=self.kwargs['ledger_pk'],
-            user_model=self.request.user,
-            **self.get_form_kwargs()
-        )
-
-    def form_valid(self, form):
-        ledger_model = LedgerModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-        ).get(uuid__exact=self.kwargs['ledger_pk'])
-        je_model: JournalEntryModel = form.save(commit=False)
-        je_model.ledger = ledger_model
-        return super().form_valid(form)
-
-    def get_initial(self):
-        return {
-            'timestamp': localtime(),
-            'ledger': LedgerModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).get(uuid__exact=self.kwargs['ledger_pk'])
-        }
-
-    def get_success_url(self):
-        return reverse('django_ledger:je-list',
-                       kwargs={
-                           'entity_slug': self.kwargs.get('entity_slug'),
-                           'ledger_pk': self.kwargs.get('ledger_pk')
-                       })
 
 
 # ACTION VIEWS...

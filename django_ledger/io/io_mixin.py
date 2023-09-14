@@ -6,7 +6,7 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict, namedtuple
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
 from itertools import groupby
 from pathlib import Path
 from random import choice
@@ -60,21 +60,22 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     return IS_TX_MODEL, is_valid, diff
 
 
-def balance_tx_data(tx_data: list, perform_correction: bool = True) -> bool:
+def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
     if tx_data:
 
         IS_TX_MODEL, is_valid, diff = diff_tx_data(tx_data, raise_exception=perform_correction)
+
+        if not perform_correction and abs(diff):
+            return False
 
         if not perform_correction and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
             return False
 
         while not is_valid:
-
             tx_type_choice = choice(['debit', 'credit'])
-            txs_candidates = list(tx for tx in tx_data if tx.tx_type == tx_type_choice)
+            txs_candidates = list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice)
             if len(txs_candidates) > 0:
-                tx = choice(list(tx for tx in tx_data if tx.tx_type == tx_type_choice))
-
+                tx = choice(list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice))
                 if any([diff > 0 and tx_type_choice == 'debit',
                         diff < 0 and tx_type_choice == 'credit']):
                     if IS_TX_MODEL:
@@ -569,7 +570,7 @@ class IODatabaseMixIn:
         # if isinstance(self, lazy_loader.get_entity_model()):
 
         # Validates that credits/debits balance.
-        balance_tx_data(je_txs)
+        check_tx_balance(je_txs, perform_correction=False)
 
         if all([
             isinstance(self, lazy_loader.get_entity_model()),
@@ -603,7 +604,6 @@ class IODatabaseMixIn:
             ) for txm_kwargs in je_txs
         ]
         txs_models = TransactionModel.objects.bulk_create(txs_models)
-
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
 

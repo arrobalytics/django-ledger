@@ -7,9 +7,10 @@ Miguel Sanda <msanda@arrobalytics.com>
 Michael Noel <noel.michael87@gmail.com>
 """
 
-from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select
+from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, ValidationError
+from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import balance_tx_data
+from django_ledger.io import check_tx_balance
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
@@ -58,7 +59,7 @@ class TransactionModelFormSet(BaseModelFormSet):
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs
-            if self.JE_MODEL.locked:
+            if self.JE_MODEL.is_locked():
                 form.fields['account'].disabled = True
                 form.fields['tx_type'].disabled = True
                 form.fields['amount'].disabled = True
@@ -73,11 +74,13 @@ class TransactionModelFormSet(BaseModelFormSet):
             'tx_type': tx.cleaned_data.get('tx_type'),
             'amount': tx.cleaned_data.get('amount')
         } for tx in self.forms if not self._should_delete_form(tx)]
-        balance_tx_data(txs_balances)
+        balance_ok = check_tx_balance(txs_balances, perform_correction=False)
+        if not balance_ok:
+            raise ValidationError(message=_('Credits and Debits do not balance.'))
 
 
 def get_transactionmodel_formset_class(journal_entry_model: JournalEntryModel):
-    can_delete = not journal_entry_model.locked
+    can_delete = not journal_entry_model.is_locked()
     return modelformset_factory(
         model=TransactionModel,
         form=TransactionModelForm,
