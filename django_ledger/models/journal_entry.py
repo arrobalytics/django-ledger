@@ -28,7 +28,7 @@ The JournalEntryModel is also responsible for validating the Financial Activity 
 business. Whenever an account with ASSET_CA_CASH role is involved in a Journal Entry (see roles for more details), the
 JE is responsible for programmatically determine the kind of operation for the JE (Operating, Financing, Investing).
 """
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
@@ -424,11 +424,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def is_posted(self):
         return self.posted is True
 
-    def is_in_locked_period(self) -> bool:
+    def is_in_locked_period(self, new_timestamp: Optional[Union[date, datetime]] = None) -> bool:
         last_closing_date = self.get_entity_last_closing_date()
         if last_closing_date is not None:
-            if last_closing_date >= self.timestamp.date():
-                return True
+            if not new_timestamp:
+                return last_closing_date >= self.timestamp.date()
+            elif isinstance(new_timestamp, datetime):
+                return last_closing_date >= new_timestamp.date()
+            else:
+                return last_closing_date >= new_timestamp
         return False
 
     def is_locked(self):

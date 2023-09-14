@@ -58,7 +58,19 @@ class JournalEntryModelCreateForm(ModelForm):
 
 
 class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
+
+    def clean_timestamp(self):
+        if 'timestamp' in self.changed_data:
+            new_timestamp = self.cleaned_data['timestamp']
+            je_model: JournalEntryModel = self.instance
+            if je_model.is_in_locked_period(new_timestamp=new_timestamp):
+                raise ValidationError(
+                    message=_(f'Invalid timestamp {self.cleaned_data["timestamp"]} due to Closing Entries.')
+                )
+        return self.cleaned_data['timestamp']
+
     class Meta(JournalEntryModelCreateForm.Meta):
+        model = JournalEntryModel
         fields = [
             'timestamp',
             'entity_unit',
@@ -66,7 +78,7 @@ class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
         ]
 
 
-class JournalEntryModelCannotEditForm(JournalEntryModelCreateForm):
+class JournalEntryModelCannotEditForm(JournalEntryModelUpdateForm):
     class Meta(JournalEntryModelCreateForm.Meta):
         fields = [
             'description'
