@@ -49,7 +49,7 @@
                                 </div>
                                 <div class="level-item has-text-centered">
                                     <div>
-                                        <p class="heading">{% trans 'Deferred Revenue' %}:
+                                        <p class="heading">{% trans 'Accounts Payable' %}:
                                             <a href="{% url 'django_ledger:account-detail' account_pk=bill.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                                class="has-text-danger">{{ bill.unearned_account.code }}</a>
                                         </p>

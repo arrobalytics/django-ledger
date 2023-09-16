@@ -390,7 +390,7 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-update',
+        return reverse('django_ledger:bill-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'bill_pk': bill_pk
@@ -542,6 +542,10 @@ class BillModelActionDeleteView(BaseBillActionView):
 
 class BillModelActionVoidView(BaseBillActionView):
     action_name = 'mark_as_void'
+
+
+class BillModelActionCanceledView(BaseBillActionView):
+    action_name = 'mark_as_canceled'
 
 
 class BillModelActionLockLedgerView(BaseBillActionView):

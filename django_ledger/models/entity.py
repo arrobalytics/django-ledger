@@ -2652,14 +2652,15 @@ class EntityModelAbstract(MP_Node,
 
     # ### RANDOM DATA GENERATION ####
 
-    def populate_random_data(self, start_date: date, days_forward=180):
+    def populate_random_data(self, start_date: date, days_forward=180, tx_quantity: int = 25):
         EntityDataGenerator = lazy_loader.get_entity_data_generator()
         data_generator = EntityDataGenerator(
             user_model=self.admin,
             days_forward=days_forward,
             start_date=start_date,
             entity_model=self,
-            capital_contribution=Decimal.from_float(50000.00)
+            capital_contribution=Decimal.from_float(50000.00),
+            tx_quantity=tx_quantity
         )
         data_generator.populate_entity()
 

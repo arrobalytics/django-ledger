@@ -187,6 +187,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             except ObjectDoesNotExist:
                 pass
 
+    def remove_wrapped_model_info(self):
+        if self.has_wrapped_model_info():
+            del self.additional_info[self._WRAPPED_MODEL_KEY]
+
     def has_jes_in_locked_period(self, force_evaluation: bool = True) -> bool:
         try:
             earliest_posted_je_timestamp = getattr(self, 'earliest_timestamp')
@@ -207,7 +211,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             return False
         if earliest_posted_je_timestamp is not None:
             earliest_posted_je_date = earliest_posted_je_timestamp.date()
-            return earliest_posted_je_date > last_closing_date
+            return earliest_posted_je_date <= last_closing_date
         return False
 
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
@@ -342,7 +346,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         if all([
             not self.is_locked(),
             not self.is_posted(),
-            not self.has_wrapped_model(),
+            not self.has_wrapped_model_info(),
             not self.has_jes_in_locked_period()
         ]):
             return True

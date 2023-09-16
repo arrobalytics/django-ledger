@@ -402,7 +402,7 @@ class AccrualMixIn(models.Model):
         """
         if not self.ledger_id:
             return False
-        return not self.ledger.locked
+        return not self.ledger.is_locked()
 
     def get_tx_type(self,
                     acc_bal_type: dict,
@@ -885,18 +885,13 @@ class AccrualMixIn(models.Model):
                 self.unearned_account_id is not None
             ]):
                 raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
-            # pylint: disable=no-member
-            if self.cash_account.role != ASSET_CA_CASH:
-                raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
-            # pylint: disable=no-member
-            if self.prepaid_account.role != ASSET_CA_PREPAID:
-                raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
-            # pylint: disable=no-member
-            if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
-                raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
-        if self.accrue and self.progress is None:
-            self.progress = Decimal.from_float(0.00)
+
+        if self.accrue:
+            if self.is_approved():
+                self.progress = Decimal.from_float(1.00)
+            else:
+                self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
