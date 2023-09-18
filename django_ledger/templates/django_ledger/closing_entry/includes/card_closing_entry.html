@@ -49,11 +49,9 @@
             {% endif %}
 
             {# UPDATE NOTES #}
-
             <a href="{% url 'django_ledger:closing-entry-update' entity_slug=view.kwargs.entity_slug closing_entry_pk=closing_entry_model.uuid %}"
                class="card-footer-item has-text-info has-text-weight-bold has-text-centered">{% trans 'Update Notes' %}
             </a>
-
 
             {# DELETE #}
             {% if closing_entry_model.can_delete %}
@@ -62,8 +60,6 @@
                    class="card-footer-item has-text-danger has-text-weight-bold has-text-centered">{% trans 'Delete' %}
                 </a>
             {% endif %}
-
-
         </footer>
     </div>
 

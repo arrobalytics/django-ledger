@@ -2626,7 +2626,7 @@ class EntityModelAbstract(MP_Node,
                 pass
 
         if force_update or not closing_entry_exists or closing_entry_model:
-            ce_data = self.create_closing_entry_for_date(
+            ce_model, ce_txs = self.create_closing_entry_for_date(
                 closing_date=closing_date,
                 closing_entry_model=closing_entry_model,
                 closing_entry_exists=closing_entry_exists
@@ -2638,7 +2638,7 @@ class EntityModelAbstract(MP_Node,
                     'meta',
                     'updated'
                 ])
-            return ce_data
+            return ce_model, ce_txs
         raise EntityModelValidationError(message=f'Closing Entry for Period {closing_date} already exists.')
 
     def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):

@@ -138,6 +138,8 @@ class EntityDataGenerator(LoggingMixIn):
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
             self.create_invoice(date_draft=start_dttm)
 
+        self.create_closing_entry()
+
     def get_next_date(self, prev_date: date = None) -> date:
         if not prev_date:
             prev_date = self.start_date
@@ -739,6 +741,14 @@ class EntityDataGenerator(LoggingMixIn):
             ledger_posted=True,
             description='Entity Funding for Sample Data',
         )
+
+    def create_closing_entry(self):
+        closing_date = self.start_date + timedelta(days=int(self.DAYS_FORWARD / 2))
+        ce_model, ce_txs = self.entity_model.close_books_for_month(
+            year=closing_date.year,
+            month=closing_date.month
+        )
+        ce_model.mark_as_posted(commit=True)
 
     def recount_inventory(self):
         self.logger.info(f'Recounting inventory...')

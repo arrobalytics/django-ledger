@@ -12,7 +12,6 @@ from pathlib import Path
 from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models import Sum, QuerySet
@@ -21,6 +20,7 @@ from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import make_aware, is_naive, localtime
 
+from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
