@@ -28,7 +28,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, Count
-from django.db.models.signals import pre_save, pre_delete
+from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate, localtime
@@ -1587,57 +1587,57 @@ class BillModelAbstract(AccrualMixIn,
             )
         return super().delete(using=using, keep_parents=keep_parents)
 
-    def mark_as_delete(self, **kwargs):
-        """
-        Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
-        """
-        return self.delete()
-
-    def get_mark_as_delete_html_id(self) -> str:
-        """
-        BillModel Mark as Delete HTML ID Tag.
-
-        Returns
-        _______
-
-        str
-            HTML ID as a String.
-        """
-        return f'djl-bill-model-{self.uuid}-mark-as-delete'
-
-    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
-        """
-        BillModel Mark-as-Delete action URL.
-
-        Parameters
-        __________
-        entity_slug: str
-            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
-            is not cached on QuerySet.
-
-        Returns
-        _______
-        str
-            BillModel mark-as-delete action URL.
-        """
-        if not entity_slug:
-            entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:bill-action-mark-as-delete',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': self.uuid
-                       })
-
-    def get_mark_as_delete_message(self) -> str:
-        """
-        Internationalized confirmation message with Bill Number.
-
-        Returns
-        _______
-        str
-            Mark-as-Delete BillModel confirmation message as a String.
-        """
-        return _('Do you want to delete Bill %s?') % self.bill_number
+    # def mark_as_delete(self, **kwargs):
+    #     """
+    #     Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
+    #     """
+    #     return self.delete()
+    #
+    # def get_mark_as_delete_html_id(self) -> str:
+    #     """
+    #     BillModel Mark as Delete HTML ID Tag.
+    #
+    #     Returns
+    #     _______
+    #
+    #     str
+    #         HTML ID as a String.
+    #     """
+    #     return f'djl-bill-model-{self.uuid}-mark-as-delete'
+    #
+    # def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
+    #     """
+    #     BillModel Mark-as-Delete action URL.
+    #
+    #     Parameters
+    #     __________
+    #     entity_slug: str
+    #         Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
+    #         is not cached on QuerySet.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         BillModel mark-as-delete action URL.
+    #     """
+    #     if not entity_slug:
+    #         entity_slug = self.ledger.entity.slug
+    #     return reverse('django_ledger:bill-action-mark-as-delete',
+    #                    kwargs={
+    #                        'entity_slug': entity_slug,
+    #                        'bill_pk': self.uuid
+    #                    })
+    #
+    # def get_mark_as_delete_message(self) -> str:
+    #     """
+    #     Internationalized confirmation message with Bill Number.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         Mark-as-Delete BillModel confirmation message as a String.
+    #     """
+    #     return _('Do you want to delete Bill %s?') % self.bill_number
 
     def get_status_action_date(self) -> date:
         """
@@ -1845,13 +1845,12 @@ def billmodel_presave(instance: BillModel, **kwargs):
 
 pre_save.connect(receiver=billmodel_presave, sender=BillModel)
 
-
-def billmodel_predelete(instance: BillModel, **kwargs):
-    ledger_model = instance.ledger
-    ledger_model.unpost(commit=False)
-    ledger_model.remove_wrapped_model_info()
-    ledger_model.itemtransactonmodel_set.all().delete()
-    instance.ledger.delete()
-
-
-pre_delete.connect(receiver=billmodel_predelete, sender=BillModel)
+# def billmodel_predelete(instance: BillModel, **kwargs):
+#     ledger_model = instance.ledger
+#     ledger_model.unpost(commit=False)
+#     ledger_model.remove_wrapped_model_info()
+#     ledger_model.itemtransactonmodel_set.all().delete()
+#     instance.ledger.delete()
+#
+#
+# pre_delete.connect(receiver=billmodel_predelete, sender=BillModel)

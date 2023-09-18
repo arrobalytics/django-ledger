@@ -29,7 +29,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, Count
-from django.db.models.signals import pre_save, pre_delete
+from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate, localtime
@@ -1415,9 +1415,9 @@ class InvoiceModelAbstract(AccrualMixIn,
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:
-            self.save()
-            self.lock_ledger(commit=True, raise_exception=False)
+            self.unlock_ledger(commit=True, raise_exception=False)
             self.unpost_ledger(commit=True, raise_exception=False)
+            self.save()
 
     def get_mark_as_canceled_html_id(self):
         """
@@ -1473,60 +1473,60 @@ class InvoiceModelAbstract(AccrualMixIn,
             )
         return super().delete(using=using, keep_parents=keep_parents)
 
-    def mark_as_delete(self, **kwargs):
-        """
-        Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
-        """
-        if not self.can_delete():
-            raise InvoiceModelValidationError(
-                f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
-        self.delete(**kwargs)
-
-    def get_mark_as_delete_html_id(self) -> str:
-        """
-        InvoiceModel Mark as Delete URL.
-
-        Returns
-        _______
-
-        str
-            URL as a String.
-        """
-        return f'djl-invoice-model-{self.uuid}-mark-as-delete'
-
-    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
-        """
-        InvoiceModel Mark-as-Delete action URL.
-
-        Parameters
-        __________
-        entity_slug: str
-            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
-            is not cached on QuerySet.
-
-        Returns
-        _______
-        str
-            InvoiceModel mark-as-delete action URL.
-        """
-        if not entity_slug:
-            entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:invoice-action-mark-as-delete',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'invoice_pk': self.uuid
-                       })
-
-    def get_mark_as_delete_message(self) -> str:
-        """
-        Internationalized confirmation message with Invoice Number.
-
-        Returns
-        _______
-        str
-            Mark-as-Delete InvoiceModel confirmation message as a String.
-        """
-        return _('Do you want to delete Invoice %s?') % self.invoice_number
+    # def mark_as_delete(self, **kwargs):
+    #     """
+    #     Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
+    #     """
+    #     if not self.can_delete():
+    #         raise InvoiceModelValidationError(
+    #             f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
+    #     self.delete(**kwargs)
+    #
+    # # def get_mark_as_delete_html_id(self) -> str:
+    #     """
+    #     InvoiceModel Mark as Delete URL.
+    #
+    #     Returns
+    #     _______
+    #
+    #     str
+    #         URL as a String.
+    #     """
+    #     return f'djl-invoice-model-{self.uuid}-mark-as-delete'
+    #
+    # def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
+    #     """
+    #     InvoiceModel Mark-as-Delete action URL.
+    #
+    #     Parameters
+    #     __________
+    #     entity_slug: str
+    #         Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
+    #         is not cached on QuerySet.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         InvoiceModel mark-as-delete action URL.
+    #     """
+    #     if not entity_slug:
+    #         entity_slug = self.ledger.entity.slug
+    #     return reverse('django_ledger:invoice-action-mark-as-delete',
+    #                    kwargs={
+    #                        'entity_slug': entity_slug,
+    #                        'invoice_pk': self.uuid
+    #                    })
+    #
+    # def get_mark_as_delete_message(self) -> str:
+    #     """
+    #     Internationalized confirmation message with Invoice Number.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         Mark-as-Delete InvoiceModel confirmation message as a String.
+    #     """
+    #     return _('Do you want to delete Invoice %s?') % self.invoice_number
 
     # ACTIONS END....
     def get_status_action_date(self):
@@ -1740,13 +1740,12 @@ def invoicemodel_presave(instance: InvoiceModel, **kwargs):
 
 pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)
 
-
-def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
-    ledger_model = instance.ledger
-    ledger_model.unpost(commit=False)
-    ledger_model.remove_wrapped_model_info()
-    ledger_model.itemtransactonmodel_set.all().delete()
-    instance.ledger.delete()
-
-
-pre_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
+# def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
+#     ledger_model = instance.ledger
+#     ledger_model.unpost(commit=False)
+#     ledger_model.remove_wrapped_model_info()
+#     ledger_model.itemtransactonmodel_set.all().delete()
+#     instance.ledger.delete()
+#
+#
+# pre_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
