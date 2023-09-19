@@ -23,7 +23,38 @@ class EntityModelTests(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in entity_urls
         }
 
-    def test_protected_views(self, test_date: date = None):
+    # CLOSING ENTRY Tests...
+    def test_closing_entry_dates_meta_key(self):
+        self.logger.info('test_closing_entry_dates_meta_key...')
+        for entity_model in self.ENTITY_MODEL_QUERYSET:
+            self.assertTrue(isinstance(entity_model.meta, dict))
+            self.assertTrue(entity_model.META_KEY_CLOSING_ENTRY_DATES in entity_model.meta)
+            self.assertTrue(isinstance(entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES], list))
+            self.assertEqual(len(entity_model.meta[entity_model.META_KEY_CLOSING_ENTRY_DATES]), 0)
+
+    def test_closing_entry_creation(self):
+        for entity_model in self.ENTITY_MODEL_QUERYSET:
+            start_year = self.START_DATE.year
+            start_month = self.START_DATE.month
+            while True:
+                ce_list = entity_model.close_books_for_month(year=start_year, month=start_month)
+                if all([
+                    self.START_DATE.year + 1 == start_year,
+                    self.START_DATE.month == start_month
+                ]):
+                    break
+                elif start_month == 12:
+                    start_month = 1
+                    start_year += 1
+                else:
+                    start_month += 1
+
+#     def test_closing_entry_meta(self):
+#         self.logger.info('test_closing_entry_creation...')
+#         for entity_model in self.ENTITY_MODEL_QUERYSET:
+
+    # UI Tests....
+    def test_ui_protected_views(self, test_date: date = None):
         """
         All Entity Model views must have user authenticated.
         If not, user must be redirected to login page.
@@ -54,7 +85,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                 self.assertEqual(response.status_code, 302, msg=f'{path} is not protected.')
                 self.assertEqual(redirect_path, settings.LOGIN_URL, msg=f'{path} not redirecting to correct auth URL.')
 
-    def test_entity_create(self):
+    def test_ui_entity_create(self):
         """
         Testing the creation of a number of entities.
         """
@@ -111,7 +142,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
             # self.assertContains(response, status_code=200, text='My Dashboard')
             # self.assertContains(response, status_code=200, text=ent_data['name'])
 
-    def test_entity_list(self):
+    def test_ui_entity_list(self):
         self.login_client()
         # self.refresh_test_data()
 
@@ -151,7 +182,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                                      'entity_slug': entity_model.slug
                                                  }))  # ENTITY-LIST VIEW...
 
-    def test_entity_update(self):
+    def test_ui_entity_update(self):
 
         self.login_client()
         entity_models = self.create_entity_models()
@@ -181,7 +212,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
             # checks if updated entity is in list...
             self.assertContains(response, status_code=200, text=ent_data['name'])
 
-    def test_entity_detail(self):
+    def test_ui_entity_detail(self):
 
         self.login_client()
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
@@ -213,7 +244,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
             self.assertTrue(response.context['bills'].count() >= 0)
             self.assertTrue(response.context['invoices'].count() >= 0)
 
-    def test_delete_entity(self):
+    def test_ui_delete_entity(self):
         self.login_client()
         # entity_models = self.create_entity_models(n=1)
         entity_model = choice(self.ENTITY_MODEL_QUERYSET)

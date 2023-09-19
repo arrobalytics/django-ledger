@@ -230,7 +230,7 @@ class BalanceSheetReport(BaseReportSupport):
 
     def get_pdf_filename(self):
         dt_fmt = '%Y%m%d'
-        f_name = f'{self.get_report_title()}_BalanceSheet_{self.IO_DIGEST.get_to_date(fmt=dt_fmt)}.pdf'
+        f_name = f'{self.get_report_title()}_BalanceSheet_{self.IO_DIGEST.get_to_date(fmt=dt_fmt, as_str=True)}.pdf'
         return f_name
 
     def create_pdf_report(self):

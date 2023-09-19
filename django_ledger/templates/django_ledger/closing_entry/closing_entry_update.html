@@ -1,0 +1,41 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="container">
+        <div class="columns">
+            <div class="column">
+                {% include 'django_ledger/closing_entry/includes/card_closing_entry.html' with closing_entry_model=object entity_slug=view.kwargs.entity_slug %}
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column is-12">
+                <form action="" method="post">
+                    {% csrf_token %}
+                    {{ form }}
+                    <button type="submit" class="button is-large is-primary mt-3 is-centered">
+                        {% trans 'Save' %}
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="columns">
+            <div class="column">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-header-title">
+                            <h1 class="is-size-3 has-text-weight-light">{% trans 'Closing Entry Transactions' %}</h1>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        {% closing_entry_txs_table closing_entry_txs_qs %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}

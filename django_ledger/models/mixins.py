@@ -27,7 +27,7 @@ from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import (balance_tx_data, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
+from django_ledger.io import (check_tx_balance, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
                               validate_io_date)
 from django_ledger.models.utils import lazy_loader
 
@@ -402,7 +402,7 @@ class AccrualMixIn(models.Model):
         """
         if not self.ledger_id:
             return False
-        return not self.ledger.locked
+        return not self.ledger.is_locked()
 
     def get_tx_type(self,
                     acc_bal_type: dict,
@@ -770,19 +770,19 @@ class AccrualMixIn(models.Model):
 
                 for uid in unit_uuids:
                     # validates each unit txs independently...
-                    balance_tx_data(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
+                    check_tx_balance(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
 
                 # validates all txs as a whole (for safety)...
                 txs = [tx for ui, tx in txs_list]
-                balance_tx_data(tx_data=txs, perform_correction=True)
+                check_tx_balance(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
                 for _, je in je_list.items():
                     # will independently verify and populate appropriate activity for JE.
                     je.clean(verify=True)
                     if je.is_verified():
-                        je.mark_as_posted(commit=False, verify=False, raise_exception=True)
                         je.mark_as_locked(commit=False, raise_exception=True)
+                        je.mark_as_posted(commit=False, verify=False, raise_exception=True)
 
                 if all([je.is_verified() for _, je in je_list.items()]):
                     # only if all JEs have been verified will be posted and locked...
@@ -885,18 +885,13 @@ class AccrualMixIn(models.Model):
                 self.unearned_account_id is not None
             ]):
                 raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
-            # pylint: disable=no-member
-            if self.cash_account.role != ASSET_CA_CASH:
-                raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
-            # pylint: disable=no-member
-            if self.prepaid_account.role != ASSET_CA_PREPAID:
-                raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
-            # pylint: disable=no-member
-            if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
-                raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
-        if self.accrue and self.progress is None:
-            self.progress = Decimal.from_float(0.00)
+
+        if self.accrue:
+            if self.is_approved():
+                self.progress = Decimal.from_float(1.00)
+            else:
+                self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')

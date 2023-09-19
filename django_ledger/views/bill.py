@@ -32,7 +32,7 @@ class BillModelModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = BillModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
@@ -217,12 +217,12 @@ class BillModelListView(DjangoLedgerSecurityMixIn, BillModelModelViewQuerySetMix
 
 
 class BillModelYearListView(YearArchiveView, BillModelListView):
-    paginate_by = 10
+    paginate_by = 20
     make_object_list = True
 
 
 class BillModelMonthListView(MonthArchiveView, BillModelListView):
-    paginate_by = 10
+    paginate_by = 20
     month_format = '%m'
     date_list_period = 'year'
 
@@ -390,7 +390,7 @@ class BillModelUpdateView(DjangoLedgerSecurityMixIn, UpdateView):
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
         bill_pk = self.kwargs['bill_pk']
-        return reverse('django_ledger:bill-update',
+        return reverse('django_ledger:bill-detail',
                        kwargs={
                            'entity_slug': entity_slug,
                            'bill_pk': bill_pk
@@ -542,6 +542,10 @@ class BillModelActionDeleteView(BaseBillActionView):
 
 class BillModelActionVoidView(BaseBillActionView):
     action_name = 'mark_as_void'
+
+
+class BillModelActionCanceledView(BaseBillActionView):
+    action_name = 'mark_as_canceled'
 
 
 class BillModelActionLockLedgerView(BaseBillActionView):

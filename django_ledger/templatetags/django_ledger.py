@@ -18,9 +18,9 @@ from django.utils.timezone import localdate
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.io import CREDIT, DEBIT
+from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ALL
 from django_ledger.io.io_mixin import validate_activity
-from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel, ItemTransactionModel
+from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
@@ -204,7 +204,7 @@ def data_import_job_txs_imported(context):
 
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)
-def jes_table(context, next_url=None):
+def jes_table(context, journal_entry_qs, next_url=None):
     entity_slug = context['view'].kwargs['entity_slug']
     ledger_pk = context['view'].kwargs['ledger_pk']
     if not next_url:
@@ -214,9 +214,9 @@ def jes_table(context, next_url=None):
                                'ledger_pk': ledger_pk
                            })
     return {
-        'jes': context['journal_entries'],
-        'entity_slug': context['view'].kwargs['entity_slug'],
-        'ledger_pk': context['view'].kwargs['ledger_pk'],
+        'jes': journal_entry_qs,
+        'entity_slug': entity_slug,
+        'ledger_pk': ledger_pk,
         'next_url': next_url
     }
 
@@ -270,9 +270,9 @@ def invoice_txs_table(context, invoice_model: InvoiceModel):
 
 
 @register.inclusion_tag('django_ledger/ledger/tags/ledgers_table.html', takes_context=True)
-def ledgers_table(context):
+def ledgers_table(context, ledger_model_qs):
     return {
-        'ledgers': context['ledgers'],
+        'ledgers': ledger_model_qs,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 
@@ -285,10 +285,28 @@ def invoice_table(context, invoice_qs):
     }
 
 
-@register.inclusion_tag('django_ledger/bills/includes/bill_table.html', takes_context=True)
+@register.inclusion_tag('django_ledger/bills/tags/bill_table.html', takes_context=True)
 def bill_table(context, bill_qs):
     return {
         'bills': bill_qs,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_table.html', takes_context=True)
+def closing_entry_table(context, closing_entry_qs):
+    return {
+        'closing_entry_list': closing_entry_qs,
+        'entity_slug': context['view'].kwargs['entity_slug']
+    }
+
+
+@register.inclusion_tag('django_ledger/closing_entry/tags/closing_entry_txs_table.html', takes_context=True)
+def closing_entry_txs_table(context, closing_entry_txs_qs):
+    ce_txs_list = list(closing_entry_txs_qs)
+    ce_txs_list.sort(key=lambda ce_txs: ROLES_ORDER_ALL.index(ce_txs.account_model.role))
+    return {
+        'ce_txs_list': ce_txs_list,
         'entity_slug': context['view'].kwargs['entity_slug']
     }
 
@@ -650,6 +668,11 @@ def navigation_menu(context, style):
                         'type': 'link',
                         'title': 'Inventory',
                         'url': reverse('django_ledger:inventory-list', kwargs={'entity_slug': ENTITY_SLUG})
+                    },
+                    {
+                        'type': 'link',
+                        'title': 'Closing Entries',
+                        'url': reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': ENTITY_SLUG})
                     }
 
                 ]

@@ -10,8 +10,8 @@ from calendar import monthrange
 from datetime import timedelta, date
 from typing import Tuple, Optional
 
-from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin, PermissionRequiredMixin
-from django.core.exceptions import ValidationError
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseNotFound
 from django.urls import reverse
@@ -20,11 +20,11 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
-from django_ledger.models.entity import FiscalPeriodMixIn
+from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 
-class YearlyReportMixIn(YearMixin, FiscalPeriodMixIn):
+class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -67,7 +67,7 @@ class YearlyReportMixIn(YearMixin, FiscalPeriodMixIn):
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, FiscalPeriodMixIn):
+class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -289,46 +289,50 @@ class SuccessUrlNextMixIn:
         next = self.request.GET.get('next')
         if next:
             return next
-        # elif self.kwargs.get('entity_slug'):
-        #     return reverse('django_ledger:entity-dashboard',
-        #                    kwargs={
-        #                        'entity_slug': self.kwargs['entity_slug']
-        #                    })
         return reverse('django_ledger:home')
 
 
-class DjangoLedgerAccessMixIn(AccessMixin):
+class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
+    AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
+    permission_required = []
 
     def get_login_url(self):
         return reverse('django_ledger:login')
 
-
-class DjangoLedgerPermissionMixIn(PermissionRequiredMixin):
+    def get_authorized_entity_queryset(self):
+        return EntityModel.objects.for_user(
+            user_model=self.request.user).only(
+            'uuid', 'slug', 'name', 'default_coa', 'admin')
 
     def has_permission(self):
-        return self.request.user.is_authenticated
-
-
-class DjangoLedgerSecurityMixIn(DjangoLedgerPermissionMixIn,
-                                DjangoLedgerAccessMixIn,
-                                LoginRequiredMixin):
-    pass
+        if self.request.user.is_authenticated:
+            has_perm = super().has_permission()
+            if not has_perm:
+                return False
+            if 'entity_slug' in self.kwargs:
+                try:
+                    entity_model_qs = self.get_authorized_entity_queryset()
+                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs['entity_slug'])
+                except ObjectDoesNotExist:
+                    return False
+            return True
+        return False
 
 
 class EntityUnitMixIn:
     UNIT_SLUG_KWARG = 'unit_slug'
     UNIT_SLUG_QUERY_PARAM = 'unit'
 
-    def get_context_data(self, **kwargs):
-        context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
-        context['unit_slug'] = self.get_unit_slug()
-        return context
-
     def get_unit_slug(self):
         unit_slug = self.kwargs.get(self.UNIT_SLUG_KWARG)
         if not unit_slug:
             unit_slug = self.request.GET.get(self.UNIT_SLUG_QUERY_PARAM)
         return unit_slug
+
+    def get_context_data(self, **kwargs):
+        context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
+        context['unit_slug'] = self.get_unit_slug()
+        return context
 
 
 class DigestContextMixIn:

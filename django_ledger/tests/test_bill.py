@@ -24,38 +24,6 @@ class BillModelTests(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in bill_urls
         }
 
-    def create_bill(self, amount: Decimal, draft_date: date = None, is_accrued: bool = False) -> tuple[
-        EntityModel, BillModel]:
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
-        vendor_model: VendorModel = choice(entity_model.get_vendors())
-        account_qs = entity_model.get_default_coa_accounts()
-
-        len(account_qs)  # force evaluation
-
-        cash_account = account_qs.filter(role__in=[ASSET_CA_CASH]).first()
-        prepaid_account = account_qs.filter(role__in=[ASSET_CA_PREPAID]).first()
-        unearned_account = account_qs.filter(role__in=[LIABILITY_CL_DEFERRED_REVENUE]).first()
-        dt = self.get_random_date() if not draft_date else draft_date
-
-        bill_model = BillModel()
-        ledger_model, bill_model = bill_model.configure(
-            entity_slug=entity_model,
-            user_model=self.user_model
-        )
-
-        bill_model.amount_due = amount
-        bill_model.date_draft = dt
-        bill_model.vendor = vendor_model
-        bill_model.accrue = is_accrued
-        bill_model.xref = 'ABC123xref'
-        bill_model.cash_account = cash_account
-        bill_model.prepaid_account = prepaid_account
-        bill_model.unearned_account = unearned_account
-        bill_model.clean()
-        bill_model.save()
-
-        return entity_model, bill_model
-
     def test_protected_views(self):
         """
         All Bill Model views must have user authenticated.
@@ -88,6 +56,40 @@ class BillModelTests(DjangoLedgerBaseTest):
 
             self.assertEqual(response.status_code, 302, msg=f'{path} view is not protected.')
             self.assertEqual(redirect_path, login_path, msg=f'{path} view not redirecting to correct auth URL.')
+
+    def create_bill(self, amount: Decimal, draft_date: date = None, is_accrued: bool = False) -> tuple[
+        EntityModel, BillModel]:
+        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        vendor_model: VendorModel = choice(entity_model.get_vendors())
+        account_qs = entity_model.get_default_coa_accounts()
+
+        len(account_qs)  # force evaluation
+
+        cash_account = account_qs.filter(role__in=[ASSET_CA_CASH]).first()
+        prepaid_account = account_qs.filter(role__in=[ASSET_CA_PREPAID]).first()
+        unearned_account = account_qs.filter(role__in=[LIABILITY_CL_DEFERRED_REVENUE]).first()
+        dt = self.get_random_date() if not draft_date else draft_date
+
+        bill_model = BillModel()
+        ledger_model, bill_model = bill_model.configure(
+            entity_slug=entity_model,
+            user_model=self.user_model
+        )
+
+        bill_model.amount_due = amount
+        bill_model.date_draft = dt
+        bill_model.vendor = vendor_model
+        bill_model.accrue = is_accrued
+        bill_model.xref = 'ABC123xref'
+        bill_model.cash_account = cash_account
+        bill_model.prepaid_account = prepaid_account
+        bill_model.unearned_account = unearned_account
+        bill_model.clean()
+        bill_model.save()
+
+        return entity_model, bill_model
+
+
 
     def test_bill_list(self):
 

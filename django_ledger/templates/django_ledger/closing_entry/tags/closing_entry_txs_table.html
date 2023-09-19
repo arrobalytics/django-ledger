@@ -1,0 +1,27 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th class="has-text-centered">{% trans 'Account' %}</th>
+            <th class="has-text-centered">{% trans 'Unit' %}</th>
+            <th class="has-text-centered">{% trans 'Activity' %}</th>
+            <th class="has-text-centered">{% trans 'TX Type' %}</th>
+            <th class="has-text-centered">{% trans 'Balance' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for ce_tx in ce_txs_list %}
+            <tr id="{{ ce_tx.get_html_id }}">
+                <td>{{ ce_tx.account_model }}</td>
+                <td>{{ ce_tx.unit_model.name }}</td>
+                <td class="has-text-weight-bold {% if ce_tx.is_credit %}has-text-success{% else %}has-text-danger{% endif %}">{{ ce_tx.get_tx_type_display | upper }}</td>
+                <td>{% if ce_tx.activity %}{{ ce_tx.get_activity_display }}{% endif %}</td>
+                <td>{% currency_symbol %}{{ ce_tx.balance | currency_format }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

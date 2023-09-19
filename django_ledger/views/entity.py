@@ -30,7 +30,10 @@ class EntityModelModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        return EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
+        if self.queryset is None:
+            self.queryset = EntityModel.objects.for_user(
+                user_model=self.request.user).select_related('default_coa')
+        return super().get_queryset()
 
 
 # Entity CRUD Views ----

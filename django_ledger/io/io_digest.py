@@ -19,10 +19,13 @@ class IODigestContextManager:
         self.TXS_QS = self.IO_DATA['txs_qs']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 
+    def get_io_data(self) -> defaultdict:
+        return self.IO_DATA
+
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
 
-    def get_from_date(self, as_str: bool = True, fmt=None) -> Optional[date]:
+    def get_from_date(self, as_str: bool = False, fmt=None) -> Optional[date]:
         from_date = self.IO_DATA['from_date']
         if from_date:
             if as_str:
@@ -31,7 +34,7 @@ class IODigestContextManager:
                 return from_date.strftime(fmt)
             return from_date
 
-    def get_to_date(self, as_str: bool = True, fmt=None) -> date:
+    def get_to_date(self, as_str: bool = False, fmt=None) -> date:
         if as_str:
             if not fmt:
                 fmt = self.get_strftime_format()
@@ -55,6 +58,15 @@ class IODigestContextManager:
             self.IO_MODEL,
             lazy_loader.get_unit_model()
         )
+
+    def is_by_unit(self) -> bool:
+        return self.IO_DATA['by_unit']
+
+    def is_by_period(self) -> bool:
+        return self.IO_DATA['by_period']
+
+    def is_by_activity(self) -> bool:
+        return self.IO_DATA['by_activity']
 
     # Balance Sheet Data...
     def has_balance_sheet(self) -> bool:
@@ -94,3 +106,9 @@ class IODigestContextManager:
                 raise IODigestValidationError(
                     'IO Digest does not have cash flow statement information available.'
                 )
+
+    # CLOSING ENTRIES...
+
+    def get_closing_entry_data(self):
+        io_data = self.get_io_data()
+        return io_data['accounts']

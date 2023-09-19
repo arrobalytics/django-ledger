@@ -3,7 +3,11 @@
 {% load static %}
 
 {% block view_content %}
-    <div class="columns is-centered">
+    <div class="columns is-centered is-multiline">
+        <div class="column is-12 has-text-centered">
+            <h1 class="is-size-1">{% trans 'Create Journal Entry' %}</h1>
+            <h2 class="is-size-4">{{ ledger_model.name }}</h2>
+        </div>
         <div class="column is-4">
             <div class="box">
                 <form method="post"

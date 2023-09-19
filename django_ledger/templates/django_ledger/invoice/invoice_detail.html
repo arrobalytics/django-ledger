@@ -27,7 +27,7 @@
                     <nav class="level">
                         <div class="level-item has-text-centered">
                             <div>
-                                <p class="heading">Cash Account:
+                                <p class="heading">{% trans 'Cash Account' %}:
                                     <a href="{% url 'django_ledger:account-detail' account_pk=invoice.cash_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                        class="has-text-danger">{{ invoice.cash_account.code }}</a>
                                 <p class="title">
@@ -38,7 +38,7 @@
                         {% if invoice.accrue %}
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">Prepaid Account:
+                                    <p class="heading">{% trans 'Accounts Receivable' %}:
                                         <a href="{% url 'django_ledger:account-detail' account_pk=invoice.prepaid_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                            class="has-text-danger">{{ invoice.prepaid_account.code }}</a>
                                     </p>
@@ -48,7 +48,7 @@
                             </div>
                             <div class="level-item has-text-centered">
                                 <div>
-                                    <p class="heading">Unearned Account:
+                                    <p class="heading">{% trans 'Deferred Revenue' %}:
                                         <a href="{% url 'django_ledger:account-detail' account_pk=invoice.unearned_account.uuid entity_slug=view.kwargs.entity_slug %}"
                                            class="has-text-danger">{{ invoice.unearned_account.code }}</a>
 

@@ -11,19 +11,25 @@
             <h2 class="is-size-2 has-text-weight-light">{% trans 'Unit' %}: {{ journal_entry.get_entity_unit_name }}</h2>
         {% endif %}
         <h3 class="is-size-4">{% trans 'Posted' %}:
-            {% if journal_entry.posted %}
+            {% if journal_entry.is_posted %}
                 <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
             {% else %}
                 <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
             {% endif %}
         </h3>
         <h3 class="is-size-4">{% trans 'Locked' %}:
-            {% if journal_entry.locked %}
+            {% if journal_entry.is_locked %}
                 <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
             {% else %}
                 <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
             {% endif %}
         </h3>
-        <h4 class="is-size-4 has-text-weight-light">{{ journal_entry.description }}</h4>
+        {% if journal_entry.activity %}
+            <h3 class="is-size-3">{% trans 'Activity' %}: {{ journal_entry.get_activity_display }}</h3>
+        {% endif %}
+        {% if journal_entry.description %}
+            <h4 class="is-size-4 has-text-weight-light">{{ journal_entry.description }}</h4>
+        {% endif %}
+
     </div>
 </div>

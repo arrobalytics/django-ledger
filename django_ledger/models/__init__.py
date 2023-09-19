@@ -14,4 +14,5 @@ from django_ledger.models.estimate import *
 from django_ledger.models.vendor import *
 from django_ledger.models.unit import *
 from django_ledger.models.purchase_order import *
+from django_ledger.models.closing_entry import *
 from django_ledger.models.entity import *

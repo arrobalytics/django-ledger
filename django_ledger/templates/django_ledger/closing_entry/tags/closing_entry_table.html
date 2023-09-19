@@ -1,0 +1,56 @@
+{% load django_ledger %}
+{% load i18n %}
+
+<div class="table-container">
+
+    <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
+        <thead>
+        <tr>
+            <th>{% trans 'Closing Entry Date' %}</th>
+            <th class="has-text-centered">{% trans 'Is Posted' %}</th>
+            <th class="has-text-centered">{% trans 'Txs Count' %}</th>
+            <th class="has-text-centered">{% trans 'Created' %}</th>
+            <th class="has-text-centered">{% trans 'Actions' %}</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for closing_entry_model in closing_entry_list %}
+            <tr id="{{ closing_entry_model.get_html_id }}">
+                <td class="has-text-centered">{{ closing_entry_model.closing_date }}</td>
+                <td class="has-text-centered">
+                    {% if closing_entry_model.is_posted %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'pajamas:false-positive' 24 %}</span>
+                    {% endif %}
+                </td>
+                <td class="has-text-centered">{{ closing_entry_model.ce_txs_count }}</td>
+                <td class="has-text-centered">{{ closing_entry_model.created }}</td>
+                <td class="has-text-centered">
+                    <div class="dropdown is-right is-hoverable"
+                         id="closing-entry-action-{{ closing_entry_model.uuid }}">
+                        <div class="dropdown-trigger">
+                            <button class="button is-small is-rounded is-outlined is-dark"
+                                    aria-haspopup="true"
+                                    aria-controls="dropdown-menu">
+                                <span>{% trans 'Actions' %}</span>
+                                <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
+                            </button>
+                        </div>
+                        <div class="dropdown-menu" id="dropdown-menu-{{ closing_entry_model.uuid }}" role="menu">
+                            <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:closing-entry-detail' entity_slug=entity_slug closing_entry_pk=closing_entry_model.uuid %}"
+                                   class="dropdown-item has-text-success">{% trans 'Details' %}</a>
+                                {% if closing_entry_model.can_delete %}
+                                    <a href="{% url 'django_ledger:closing-entry-delete' entity_slug=entity_slug closing_entry_pk=closing_entry_model.uuid %}"
+                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

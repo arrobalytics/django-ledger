@@ -27,3 +27,4 @@ from django_ledger.views.purchase_order import *
 from django_ledger.views.transactions import *
 from django_ledger.views.unit import *
 from django_ledger.views.vendor import *
+from django_ledger.views.closing_entry import *

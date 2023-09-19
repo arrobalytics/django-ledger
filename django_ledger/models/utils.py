@@ -30,6 +30,8 @@ class LazyLoader:
     ENTITY_UNIT_MODEL = None
     PURCHASE_ORDER_MODEL = None
     ESTIMATE_MODEL = None
+    CLOSING_ENTRY_MODEL = None
+    CLOSING_ENTRY_TRANSACTION_MODEL = None
 
     ENTITY_DATA_GENERATOR = None
 
@@ -156,6 +158,18 @@ class LazyLoader:
             from django_ledger.io.data_generator import EntityDataGenerator
             self.ENTITY_DATA_GENERATOR = EntityDataGenerator
         return self.ENTITY_DATA_GENERATOR
+
+    def get_closing_entry_model(self):
+        if not self.CLOSING_ENTRY_MODEL:
+            from django_ledger.models import ClosingEntryModel
+            self.CLOSING_ENTRY_MODEL = ClosingEntryModel
+        return self.CLOSING_ENTRY_MODEL
+
+    def get_closing_entry_transaction_model(self):
+        if not self.CLOSING_ENTRY_TRANSACTION_MODEL:
+            from django_ledger.models import ClosingEntryTransactionModel
+            self.CLOSING_ENTRY_TRANSACTION_MODEL = ClosingEntryTransactionModel
+        return self.CLOSING_ENTRY_TRANSACTION_MODEL
 
     def get_balance_sheet_report_class(self):
         if not self.BALANCE_SHEET_REPORT_CLASS:

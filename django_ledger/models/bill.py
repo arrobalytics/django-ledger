@@ -28,12 +28,13 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, Count
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
 from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
@@ -467,6 +468,7 @@ class BillModelAbstract(AccrualMixIn,
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
             ledger_name = f'Bill {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
+            ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_model.clean()
             ledger_model.clean_fields()
             self.ledger = ledger_model
@@ -764,6 +766,9 @@ class BillModelAbstract(AccrualMixIn,
         """
         return self.is_approved()
 
+    # todo: check on invoice
+    # todo: check invoice canceled workflow...
+    # todo: check invoice card for canceled
     def can_delete(self) -> bool:
         """
         Checks if the BillModel can be deleted.
@@ -775,7 +780,8 @@ class BillModelAbstract(AccrualMixIn,
         """
         return any([
             self.is_review(),
-            self.is_draft()
+            self.is_draft(),
+            not self.ledger.is_locked()
         ])
 
     def can_void(self) -> bool:
@@ -787,7 +793,10 @@ class BillModelAbstract(AccrualMixIn,
         bool
             True if BillModel can be marked as void, else False.
         """
-        return self.is_approved()
+        return all([
+            self.is_approved(),
+            float(self.amount_paid) == 0.00
+        ])
 
     def can_cancel(self) -> bool:
         """
@@ -823,9 +832,10 @@ class BillModelAbstract(AccrualMixIn,
         bool
             True if BillModel can be migrated, else False.
         """
-        if not self.is_approved():
+        can_migrate = super().can_migrate()
+        if not can_migrate:
             return False
-        return super(BillModelAbstract, self).can_migrate()
+        return self.is_approved()
 
     def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
         """
@@ -1195,6 +1205,7 @@ class BillModelAbstract(AccrualMixIn,
                          date_approved: Optional[date] = None,
                          commit: bool = False,
                          force_migrate: bool = False,
+                         raise_exception: bool = True,
                          **kwargs):
         """
         Marks BillModel as Approved.
@@ -1217,22 +1228,18 @@ class BillModelAbstract(AccrualMixIn,
         force_migrate: bool
             Forces migration. True if Accounting Method is Accrual.
         """
-
         if not self.can_approve():
-            raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as in approved.'
-            )
+            if raise_exception:
+                raise BillModelValidationError(
+                    f'Bill {self.bill_number} cannot be marked as in approved.'
+                )
+            return
         self.bill_status = self.BILL_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
         self.get_state(commit=True)
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'bill_status',
-                'date_approved',
-                'date_due',
-                'updated'
-            ])
+            self.save()
             if force_migrate or self.accrue:
                 if not entity_slug:
                     entity_slug = self.ledger.entity.slug
@@ -1243,7 +1250,7 @@ class BillModelAbstract(AccrualMixIn,
                     je_timestamp=date_approved,
                     force_migrate=self.accrue
                 )
-            self.ledger.post(commit=commit)
+            self.ledger.post(commit=commit, raise_exception=raise_exception)
 
     def get_mark_as_approved_html_id(self) -> str:
         """
@@ -1343,14 +1350,7 @@ class BillModelAbstract(AccrualMixIn,
             self.validate_itemtxs_qs(queryset=itemtxs_qs)
 
         if commit:
-            self.save(update_fields=[
-                'date_paid',
-                'progress',
-                'amount_paid',
-                'bill_status',
-                'updated'
-            ])
-
+            self.save()
             ItemTransactionModel = lazy_loader.get_item_transaction_model()
             itemtxs_qs.filter(
                 po_model_id__isnull=False
@@ -1458,7 +1458,7 @@ class BillModelAbstract(AccrualMixIn,
                 void=True,
                 void_date=self.date_void,
                 raise_exception=False,
-                force_migrate=False)
+                force_migrate=True)
             self.save()
             self.lock_ledger(commit=False, raise_exception=False)
 
@@ -1507,7 +1507,7 @@ class BillModelAbstract(AccrualMixIn,
         return _('Do you want to void Bill %s?') % self.bill_number
 
     # Cancel Actions...
-    def mark_as_canceled(self, date_canceled: Optional[date], commit: bool = False, **kwargs):
+    def mark_as_canceled(self, date_canceled: Optional[date] = None, commit: bool = False, **kwargs):
         """
         Mark BillModel as Canceled.
 
@@ -1527,10 +1527,7 @@ class BillModelAbstract(AccrualMixIn,
         self.bill_status = self.BILL_STATUS_CANCELED
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'bill_status',
-                'date_canceled'
-            ])
+            self.save()
 
     def get_mark_as_canceled_html_id(self) -> str:
         """
@@ -1580,59 +1577,67 @@ class BillModelAbstract(AccrualMixIn,
         return _('Do you want to mark Bill %s as Canceled?') % self.bill_number
 
     # DELETE ACTIONS...
-    def mark_as_delete(self, **kwargs):
-        """
-        Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
-        """
+    def delete(self, force_db_delete: bool = False, using=None, keep_parents=False):
+        if not force_db_delete:
+            self.mark_as_canceled(commit=True)
+            return
         if not self.can_delete():
-            raise BillModelValidationError(f'Bill {self.bill_number} cannot be deleted. Must be void after Approved.')
-        self.delete(**kwargs)
+            raise BillModelValidationError(
+                message=_(f'Bill {self.bill_number} cannot be deleted...')
+            )
+        return super().delete(using=using, keep_parents=keep_parents)
 
-    def get_mark_as_delete_html_id(self) -> str:
-        """
-        BillModel Mark as Delete HTML ID Tag.
-
-        Returns
-        _______
-
-        str
-            HTML ID as a String.
-        """
-        return f'djl-bill-model-{self.uuid}-mark-as-delete'
-
-    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
-        """
-        BillModel Mark-as-Delete action URL.
-
-        Parameters
-        __________
-        entity_slug: str
-            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
-            is not cached on QuerySet.
-
-        Returns
-        _______
-        str
-            BillModel mark-as-delete action URL.
-        """
-        if not entity_slug:
-            entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:bill-action-mark-as-delete',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'bill_pk': self.uuid
-                       })
-
-    def get_mark_as_delete_message(self) -> str:
-        """
-        Internationalized confirmation message with Bill Number.
-
-        Returns
-        _______
-        str
-            Mark-as-Delete BillModel confirmation message as a String.
-        """
-        return _('Do you want to delete Bill %s?') % self.bill_number
+    # def mark_as_delete(self, **kwargs):
+    #     """
+    #     Deletes BillModel from DB if possible. Raises exception if can_delete() is False.
+    #     """
+    #     return self.delete()
+    #
+    # def get_mark_as_delete_html_id(self) -> str:
+    #     """
+    #     BillModel Mark as Delete HTML ID Tag.
+    #
+    #     Returns
+    #     _______
+    #
+    #     str
+    #         HTML ID as a String.
+    #     """
+    #     return f'djl-bill-model-{self.uuid}-mark-as-delete'
+    #
+    # def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
+    #     """
+    #     BillModel Mark-as-Delete action URL.
+    #
+    #     Parameters
+    #     __________
+    #     entity_slug: str
+    #         Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
+    #         is not cached on QuerySet.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         BillModel mark-as-delete action URL.
+    #     """
+    #     if not entity_slug:
+    #         entity_slug = self.ledger.entity.slug
+    #     return reverse('django_ledger:bill-action-mark-as-delete',
+    #                    kwargs={
+    #                        'entity_slug': entity_slug,
+    #                        'bill_pk': self.uuid
+    #                    })
+    #
+    # def get_mark_as_delete_message(self) -> str:
+    #     """
+    #     Internationalized confirmation message with Bill Number.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         Mark-as-Delete BillModel confirmation message as a String.
+    #     """
+    #     return _('Do you want to delete Bill %s?') % self.bill_number
 
     def get_status_action_date(self) -> date:
         """
@@ -1818,19 +1823,13 @@ class BillModelAbstract(AccrualMixIn,
             If True, commits into DB the generated BillModel number if generated.
         """
 
-        super(AccrualMixIn, self).clean()
-        super(PaymentTermsMixIn, self).clean()
-
-        if self.accrue:
-            self.progress = Decimal.from_float(1.00)
-
-        if self.is_draft():
-            self.amount_paid = Decimal.from_float(0.00)
-            self.paid = False
-            self.date_paid = None
-
-        if not self.additional_info:
-            self.additional_info = dict()
+        super(BillModelAbstract, self).clean()
+        if self.cash_account.role != ASSET_CA_CASH:
+            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+        if self.prepaid_account.role != ASSET_CA_PREPAID:
+            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
+        if self.unearned_account.role != LIABILITY_CL_ACC_PAYABLE:
+            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}.')
 
 
 class BillModel(BillModelAbstract):
@@ -1846,9 +1845,12 @@ def billmodel_presave(instance: BillModel, **kwargs):
 
 pre_save.connect(receiver=billmodel_presave, sender=BillModel)
 
-
-def billmodel_predelete(instance: BillModel, **kwargs):
-    instance.ledger.delete()
-
-
-post_delete.connect(receiver=billmodel_predelete, sender=BillModel)
+# def billmodel_predelete(instance: BillModel, **kwargs):
+#     ledger_model = instance.ledger
+#     ledger_model.unpost(commit=False)
+#     ledger_model.remove_wrapped_model_info()
+#     ledger_model.itemtransactonmodel_set.all().delete()
+#     instance.ledger.delete()
+#
+#
+# pre_delete.connect(receiver=billmodel_predelete, sender=BillModel)

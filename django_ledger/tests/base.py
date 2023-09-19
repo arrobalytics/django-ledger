@@ -1,7 +1,9 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from itertools import cycle
 from logging import getLogger, DEBUG
 from random import randint, choice
+from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +12,7 @@ from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel, EntityModelQuerySet
 
 UserModel = get_user_model()
 
@@ -19,6 +21,8 @@ class DjangoLedgerBaseTest(TestCase):
     FY_STARTS = None
     CAPITAL_CONTRIBUTION = None
     START_DATE = None
+    DAYS_FORWARD = 9 * 30
+    TX_QUANTITY = 50
     user_model = None
     TEST_DATA = list()
     CLIENT = None
@@ -28,6 +32,7 @@ class DjangoLedgerBaseTest(TestCase):
     PASSWORD = None
     USERNAME = None
     logger = None
+    accrual_cycle = cycle([True, False])
 
     @classmethod
     def setUpTestData(cls):
@@ -55,23 +60,10 @@ class DjangoLedgerBaseTest(TestCase):
                 email=cls.USER_EMAIL,
             )
 
-        cls.FY_STARTS = [
-            '1',
-            '2',
-            '3',
-            '4',
-            '5',
-            '6',
-            '7',
-            '8',
-            '9',
-            '10',
-            '11',
-            '12'
-        ]
+        cls.FY_STARTS = list(str(i) for i in range(1, 13))
         cls.TEST_DATA = list()
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
-        cls.ENTITY_MODEL_QUERYSET = None
+        cls.ENTITY_MODEL_QUERYSET: Optional[EntityModelQuerySet] = None
 
         cls.create_entity_models(n=cls.N)
         cls.populate_entity_models()
@@ -86,7 +78,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def login_client(cls):
-        cls.logger.info('Logging in client...')
+        # cls.logger.info('Logging in client...')
         cls.CLIENT.login(
             username=cls.USERNAME,
             password=cls.PASSWORD
@@ -94,7 +86,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     @classmethod
     def logout_client(cls):
-        cls.logger.info('Logging out client...')
+        # cls.logger.info('Logging out client...')
         cls.CLIENT.logout()
 
     @classmethod
@@ -116,7 +108,8 @@ class DjangoLedgerBaseTest(TestCase):
             'email': 'mytest@testinginc.com',
             'website': 'http://www.mytestingco.com',
             'fy_start_month': choice(cls.FY_STARTS),
-            'admin': cls.user_model
+            'admin': cls.user_model,
+            'accrual_method': next(cls.accrual_cycle)
         }
 
     def get_random_entity_model(self) -> EntityModel:
@@ -143,8 +136,8 @@ class DjangoLedgerBaseTest(TestCase):
                 entity_model=entity_model,
                 start_date=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
-                days_forward=30 * 9,
-                tx_quantity=25
+                days_forward=cls.DAYS_FORWARD,
+                tx_quantity=cls.TX_QUANTITY
             )
             cls.logger.info(f'Populating Entity {entity_model.name}...')
             data_generator.populate_entity()

@@ -19,7 +19,6 @@ to operate on such EntityModel.
 EntityModels may also have different financial reporting periods, (also known as fiscal year), which start month is
 specified at the time of creation. All key functionality around the Fiscal Year is encapsulated in the
 EntityReportMixIn.
-
 """
 from calendar import monthrange
 from collections import defaultdict
@@ -31,18 +30,20 @@ from typing import Tuple, Union, Optional, List, Dict
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core import serializers
+from django.core.cache import caches
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io import roles as roles_module, validate_roles
+from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
@@ -56,6 +57,7 @@ from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn, Contac
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
+from django_ledger.settings import DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
 
 UserModel = get_user_model()
 
@@ -111,7 +113,8 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self):
         """Sets the custom queryset as the default."""
-        return EntityModelQuerySet(self.model).order_by('path').select_related('admin', 'default_coa')
+        qs = super().get_queryset()
+        return qs.order_by('path').select_related('admin', 'default_coa')
 
     def for_user(self, user_model):
         """
@@ -137,7 +140,7 @@ class EntityModelManager(MP_NodeManager):
         )
 
 
-class FiscalPeriodMixIn:
+class EntityModelFiscalPeriodMixIn:
     """
     This class encapsulates the functionality needed to determine the start and end of all financial periods of an
     EntityModel. At the moment of creation, an EntityModel must be assigned a calendar month which is going to
@@ -162,7 +165,6 @@ class FiscalPeriodMixIn:
             * 4 -> April.
             * 9 -> September.
         """
-        # fy: int = getattr(self, 'fy_start_month')
 
         try:
             fy: int = getattr(self, 'fy_start_month')
@@ -414,13 +416,269 @@ class FiscalPeriodMixIn:
         return y
 
 
+class EntityModelClosingEntryMixIn:
+
+    def validate_closing_entry_model(self, closing_entry_model, closing_date: Optional[date] = None):
+        if isinstance(self, EntityModel):
+            if self.uuid != closing_entry_model.entity_model_id:
+                raise EntityModelValidationError(
+                    message=_(f'The Closing Entry Model {closing_entry_model} does not belong to Entity {self.name}')
+                )
+        if closing_date and closing_entry_model.closing_date != closing_date:
+            raise EntityModelValidationError(
+                message=_(f'The Closing Entry Model date {closing_entry_model.closing_date} '
+                          f'does not match explicitly provided closing_date {closing_date}')
+            )
+
+    # ---> Closing Entry IO Digest <---
+    def get_closing_entry_digest(self,
+                                 to_date: date,
+                                 from_date: Optional[date] = None,
+                                 user_model: Optional[UserModel] = None,
+                                 txs_queryset: Optional[QuerySet] = None,
+                                 closing_entry_model=None,
+                                 **kwargs: Dict) -> Tuple:
+        ClosingEntryModel = lazy_loader.get_closing_entry_model()
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+
+        if not closing_entry_model:
+            closing_entry_model = ClosingEntryModel(
+                entity_model=self,
+                closing_date=to_date
+            )
+            closing_entry_model.clean()
+        else:
+            self.validate_closing_entry_model(closing_entry_model, closing_date=to_date)
+
+        io_digest: IODigestContextManager = self.digest(
+            user_model=user_model,
+            to_date=to_date,
+            from_date=from_date,
+            txs_queryset=txs_queryset,
+            by_unit=True,
+            by_activity=True,
+            as_io_digest=True,
+            signs=False,
+            **kwargs
+        )
+        ce_data = io_digest.get_closing_entry_data()
+
+        ce_txs_list = [
+            ClosingEntryTransactionModel(
+                closing_entry_model=closing_entry_model,
+                account_model_id=ce['account_uuid'],
+                unit_model_id=ce['unit_uuid'],
+                tx_type=ce['balance_type'],
+                activity=ce['activity'],
+                balance=ce['balance']
+            ) for ce in ce_data
+        ]
+
+        for ce in ce_txs_list:
+            ce.clean()
+
+        return closing_entry_model, ce_txs_list
+
+    def get_closing_entry_digest_for_date(self, closing_date: date, closing_entry_model=None, **kwargs: Dict) -> Tuple:
+        return self.get_closing_entry_digest(to_date=closing_date, closing_entry_model=closing_entry_model, **kwargs)
+
+    def get_closing_entry_digest_for_month(self,
+                                           year: int,
+                                           month: int,
+                                           **kwargs: Dict) -> Tuple:
+        _, day_end = monthrange(year, month)
+        closing_date = date(year=year, month=month, day=day_end)
+        return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
+
+    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> Tuple:
+        closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
+
+    # ---> Closing Entry QuerySet <---
+    def get_closing_entry_queryset_for_date(self, closing_date: date):
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+        return ClosingEntryTransactionModel.objects.for_entity(
+            entity_slug=self,
+        ).filter(closing_entry_model__closing_date__exact=closing_date)
+
+    def get_closing_entry_queryset_for_month(self, year: int, month: int):
+        _, end_day = monthrange(year, month)
+        closing_date = date(year, month, end_day)
+        return self.get_closing_entry_queryset_for_date(closing_date=closing_date)
+
+    def get_closing_entry_queryset_for_fiscal_year(self, fiscal_year: int):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_queryset_for_date(closing_date=closing_date)
+
+    # ----> Create Closing Entries <----
+
+    def create_closing_entry_for_date(self,
+                                      closing_date: date,
+                                      closing_entry_model=None,
+                                      closing_entry_exists=True):
+
+        if closing_entry_model:
+            self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
+
+        if closing_date > localdate():
+            raise EntityModelValidationError(
+                message=_(f'Cannot create closing entry with a future date {closing_date}.')
+            )
+
+        if closing_entry_model is None or closing_entry_exists:
+            self.closingentrymodel_set.filter(closing_date__exact=closing_date).delete()
+        else:
+            closing_entry_model.closingentrytransactionmodel_set.all().delete()
+
+        closing_entry_model, ce_txs_list = self.get_closing_entry_digest_for_date(
+            closing_date=closing_date,
+            closing_entry_model=closing_entry_model
+        )
+
+        if closing_entry_model is not None:
+            closing_entry_model.save()
+
+        ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
+        return closing_entry_model, ClosingEntryTransactionModel.objects.bulk_create(
+            objs=ce_txs_list,
+            batch_size=100
+        )
+
+    def create_closing_entry_for_month(self, year: int, month: int):
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.create_closing_entry_for_date(closing_date=closing_date)
+
+    def create_closing_entry_for_fiscal_year(self, fiscal_year: int):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.create_closing_entry_for_date(closing_date=closing_date)
+
+    # ---> Closing Entry Cache Keys <----
+    def get_closing_entry_cache_key_for_date(self, closing_date: date) -> str:
+        closing_date = closing_date.strftime('%Y%m%d')
+        return f'closing_entry_{closing_date}_{self.uuid}'
+
+    def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
+        _, day = monthrange(year, month)
+        end_dt = date(year=year, month=month, day=day)
+        return self.get_closing_entry_cache_key_for_date(closing_date=end_dt)
+
+    def get_closing_entry_cache_key_for_fiscal_year(self, fiscal_year: int) -> str:
+        end_dt: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        end_dt_str = end_dt.strftime('%Y%m%d')
+        return f'closing_entry_{end_dt_str}_{self.uuid}'
+
+    # ----> Closing Entry Caching Month < -----
+
+    def get_closing_entry_cache_for_date(self,
+                                         closing_date: date,
+                                         cache_name: str = 'default',
+                                         force_cache_update: bool = False,
+                                         cache_timeout: Optional[int] = None,
+                                         **kwargs):
+
+        if not force_cache_update:
+            cache_system = caches[cache_name]
+            ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
+            ce_ser = cache_system.get(ce_cache_key)
+            if ce_ser:
+                ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
+                return list(ce.object for ce in ce_qs_serde_gen)
+            return
+
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs)
+
+    def get_closing_entry_cache_for_month(self,
+                                          year: int,
+                                          month: int,
+                                          cache_name: str = 'default',
+                                          force_cache_update: bool = False,
+                                          cache_timeout: Optional[int] = None,
+                                          **kwargs):
+
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.get_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            force_cache_update=force_cache_update,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
+    def get_closing_entry_cache_for_fiscal_year(self,
+                                                fiscal_year: int,
+                                                cache_name: str = 'default',
+                                                force_cache_update: bool = False,
+                                                cache_timeout: Optional[int] = None,
+                                                **kwargs):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.get_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            force_cache_update=force_cache_update,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
+    # ---> SAVE CLOSING ENTRY <---
+    def save_closing_entry_cache_for_date(self,
+                                          closing_date: date,
+                                          cache_name: str = 'default',
+                                          cache_timeout: Optional[int] = None,
+                                          **kwargs):
+        cache_system = caches[cache_name]
+        ce_qs = self.get_closing_entry_queryset_for_date(closing_date=closing_date)
+        ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
+        ce_ser = serializers.serialize(format='json', queryset=ce_qs)
+
+        if not cache_timeout:
+            cache_timeout = DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
+
+        cache_system.set(ce_cache_key, ce_ser, cache_timeout, **kwargs)
+        return list(ce_qs)
+
+    def save_closing_entry_cache_for_month(self,
+                                           year: int,
+                                           month: int,
+                                           cache_name: str = 'default',
+                                           cache_timeout: Optional[int] = None,
+                                           **kwargs):
+        _, day = monthrange(year, month)
+        closing_date = date(year, month, day)
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
+    def save_closing_entry_cache_for_fiscal_year(self,
+                                                 fiscal_year: int,
+                                                 cache_name: str = 'default',
+                                                 cache_timeout: Optional[int] = None,
+                                                 **kwargs):
+        closing_date: date = getattr(self, 'get_fy_end')(year=fiscal_year)
+        return self.save_closing_entry_cache_for_date(
+            closing_date=closing_date,
+            cache_name=cache_name,
+            cache_timeout=cache_timeout,
+            **kwargs
+        )
+
+
 class EntityModelAbstract(MP_Node,
                           SlugNameMixIn,
                           CreateUpdateMixIn,
                           ContactInfoMixIn,
                           IOMixIn,
                           LoggingMixIn,
-                          FiscalPeriodMixIn):
+                          EntityModelFiscalPeriodMixIn,
+                          EntityModelClosingEntryMixIn):
     """
     The base implementation of the EntityModel. The EntityModel represents the Company, Corporation, Legal Entity,
     Enterprise or Person that engage and operate as a business. The base model inherit from the Materialized Path Node
@@ -488,6 +746,8 @@ class EntityModelAbstract(MP_Node,
     ]
     LOGGER_NAME_ATTRIBUTE = 'slug'
 
+    META_KEY_CLOSING_ENTRY_DATES = 'closing_entries'
+
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=150, verbose_name=_('Entity Name'))
     default_coa = models.OneToOneField('django_ledger.ChartOfAccountModel',
@@ -507,7 +767,9 @@ class EntityModelAbstract(MP_Node,
     hidden = models.BooleanField(default=False)
     accrual_method = models.BooleanField(default=False, verbose_name=_('Use Accrual Method'))
     fy_start_month = models.IntegerField(choices=FY_MONTHS, default=1, verbose_name=_('Fiscal Year Start'))
+    last_closing_date = models.DateField(null=True, blank=True, verbose_name=_('Last Closing Entry Date'))
     picture = models.ImageField(blank=True, null=True)
+    meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
     node_order_by = ['uuid']
@@ -527,6 +789,82 @@ class EntityModelAbstract(MP_Node,
     # ## Logging ###
     def get_logger_name(self):
         return f'EntityModel {self.uuid}'
+
+    # ## ENTITY CREATION ###
+    @classmethod
+    def create_entity(cls,
+                      name: str,
+                      use_accrual_method: bool,
+                      admin: UserModel,
+                      fy_start_month: int,
+                      parent_entity=None):
+        """
+        Convenience Method to Create a new Entity Model. This is the preferred method to create new Entities in order
+        to properly handle potential parent/child relationships between EntityModels.
+
+        Parameters
+        ----------
+        name: str
+            The name of the new Entity.
+        use_accrual_method: bool
+            If True, accrual method of accounting will be used, otherwise Cash Method of accounting will be used.
+        fy_start_month: int
+            The month which represents the start of a new fiscal year. 1 represents January, 12 represents December.
+        admin: UserModel
+            The administrator of the new EntityModel.
+        parent_entity: EntityModel
+            The parent Entity Model of the newly created Entity. If provided, the admin user must also be admin of the
+            parent company.
+
+        Returns
+        -------
+
+        """
+        entity_model = cls(
+            name=name,
+            accrual_method=use_accrual_method,
+            fy_start_month=fy_start_month,
+            admin=admin
+        )
+        entity_model.clean()
+        entity_model = cls.add_root(instance=entity_model)
+        if parent_entity:
+            if isinstance(parent_entity, str):
+                # get by slug...
+                try:
+                    parent_entity_model = EntityModel.objects.get(slug__exact=parent_entity, admin=admin)
+                except ObjectDoesNotExist:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity with slug {parent_entity} is not administered by {admin.username}')
+                    )
+            elif isinstance(parent_entity, UUID):
+                # get by uuid...
+                try:
+                    parent_entity_model = EntityModel.objects.get(uuid__exact=parent_entity, admin=admin)
+                except ObjectDoesNotExist:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity with UUID {parent_entity} is not administered by {admin.username}')
+                    )
+            elif isinstance(parent_entity, cls):
+                # EntityModel instance provided...
+                if parent_entity.admin != admin:
+                    raise EntityModelValidationError(
+                        message=_(
+                            f'Invalid Parent Entity. '
+                            f'Entity {parent_entity} is not administered by {admin.username}')
+                    )
+                parent_entity_model = parent_entity
+            else:
+                raise EntityModelValidationError(
+                    _('Only slug, UUID or EntityModel allowed.')
+                )
+
+            parent_entity.add_child(instance=entity_model)
+        return entity_model
 
     # ### ACCRUAL METHODS ######
     def get_accrual_method(self) -> str:
@@ -843,7 +1181,6 @@ class EntityModelAbstract(MP_Node,
         }
 
     # ##### ACCOUNT MANAGEMENT ######
-
     def get_all_accounts(self, active: bool = True, order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
         """
         Fetches all AccountModelQuerySet associated with the EntityModel.
@@ -1087,7 +1424,6 @@ class EntityModelAbstract(MP_Node,
         return vendor_model
 
     # ### CUSTOMER MANAGEMENT ####
-
     def get_customers(self, active: bool = True) -> CustomerModelQueryset:
         """
         Fetches the CustomerModel associated with the EntityModel instance.
@@ -1531,7 +1867,6 @@ class EntityModelAbstract(MP_Node,
         return bank_account_model
 
     # #### ITEM MANAGEMENT ###
-
     def validate_item_qs(self, item_qs: ItemModelQuerySet, raise_exception: bool = True) -> bool:
         """
         Validates the given ItemModelQuerySet against the EntityModel instance.
@@ -2207,16 +2542,125 @@ class EntityModelAbstract(MP_Node,
 
         return ledger_model
 
+    # ### CLOSING DATA ###
+
+    def has_closing_entry(self):
+        return self.last_closing_date is not None
+
+    def get_closing_entries(self):
+        return self.closingentrymodel_set.all()
+
+    def get_closing_entry_dates_list_meta(self, as_iso: bool = True) -> List[Union[date, str]]:
+        date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
+        if as_iso:
+            return date_list
+        return [date.fromisoformat(d) for d in date_list]
+
+    def compute_closing_entry_dates_list(self, as_iso: bool = True) -> List[Union[date, str]]:
+        closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date').posted()
+        if as_iso:
+            return [ce.closing_date.isoformat() for ce in closing_entry_qs]
+        return [ce.closing_date for ce in closing_entry_qs]
+
+    def save_closing_entry_dates_meta(self, commit: bool = True) -> List[str]:
+        date_list = self.compute_closing_entry_dates_list(as_iso=False)
+
+        try:
+            self.last_closing_date = date_list[0]
+        except IndexError:
+            self.last_closing_date = None
+
+        self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = [d.isoformat() for d in date_list]
+        if commit:
+            self.save(update_fields=[
+                'last_closing_date',
+                'updated',
+                'meta'
+            ])
+        return date_list
+
+    def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> List[date]:
+        if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
+            return list()
+        date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
+        if as_date:
+            return [date.fromisoformat(dt) for dt in date_list]
+        return date_list
+
+    def select_closing_entry_for_io_date(self, to_date: Union[datetime, date]) -> Optional[date]:
+        ce_date_list = self.fetch_closing_entry_dates_meta()
+        if isinstance(to_date, datetime):
+            to_date = to_date.date()
+        for ce in ce_date_list:
+            if to_date >= ce:
+                return ce
+
+    def close_entity_books(self,
+                           closing_date: Optional[date] = None,
+                           closing_entry_model=None,
+                           force_update: bool = False,
+                           commit: bool = True):
+
+        if closing_entry_model and closing_date:
+            raise EntityModelValidationError(
+                message=_('Closing books must be called by providing closing_date or closing_entry_model, not both.')
+            )
+        elif not closing_date and not closing_entry_model:
+            raise EntityModelValidationError(
+                message=_('Closing books must be called by providing closing_date or closing_entry_model.')
+            )
+
+        closing_entry_exists = False
+        if closing_entry_model:
+            closing_date = closing_entry_model.closing_date
+            self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
+            closing_entry_exists = True
+        else:
+            try:
+                closing_entry_model = self.closingentrymodel_set.defer('markdown_notes').get(
+                    closing_date__exact=closing_date
+                )
+
+                closing_entry_exists = True
+            except ObjectDoesNotExist:
+                pass
+
+        if force_update or not closing_entry_exists or closing_entry_model:
+            ce_model, ce_txs = self.create_closing_entry_for_date(
+                closing_date=closing_date,
+                closing_entry_model=closing_entry_model,
+                closing_entry_exists=closing_entry_exists
+            )
+
+            if commit:
+                self.save(update_fields=[
+                    'last_closing_date',
+                    'meta',
+                    'updated'
+                ])
+            return ce_model, ce_txs
+        raise EntityModelValidationError(message=f'Closing Entry for Period {closing_date} already exists.')
+
+    def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
+        _, day = monthrange(year, month)
+        closing_dt = date(year, month, day)
+        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
+
+    def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False, commit: bool = True):
+        closing_dt = self.get_fy_end(year=fiscal_year)
+        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
+
     # ### RANDOM DATA GENERATION ####
 
-    def populate_random_data(self, start_date: date):
+    def populate_random_data(self, start_date: date, days_forward=180, tx_quantity: int = 25):
         EntityDataGenerator = lazy_loader.get_entity_data_generator()
         data_generator = EntityDataGenerator(
             user_model=self.admin,
-            days_forward=30,
+            days_forward=days_forward,
             start_date=start_date,
             entity_model=self,
-            capital_contribution=Decimal.from_float(50000.00)
+            capital_contribution=Decimal.from_float(50000.00),
+            tx_quantity=tx_quantity
         )
         data_generator.populate_entity()
 
@@ -2423,38 +2867,13 @@ class EntityModelAbstract(MP_Node,
         super(EntityModelAbstract, self).clean()
 
 
-class EntityManagementModelAbstract(CreateUpdateMixIn):
+class EntityModel(EntityModelAbstract):
     """
-    Entity Management Model responsible for manager permissions to read/write.
+    Entity Model Base Class From Abstract
     """
-    PERMISSIONS = [
-        ('read', _('Read Permissions')),
-        ('write', _('Read/Write Permissions')),
-        ('suspended', _('No Permissions'))
-    ]
-
-    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    entity = models.ForeignKey('django_ledger.EntityModel',
-                               on_delete=models.CASCADE,
-                               verbose_name=_('Entity'),
-                               related_name='entity_permissions')
-    user = models.ForeignKey(UserModel,
-                             on_delete=models.CASCADE,
-                             verbose_name=_('Manager'),
-                             related_name='entity_permissions')
-    permission_level = models.CharField(max_length=10,
-                                        default='read',
-                                        choices=PERMISSIONS,
-                                        verbose_name=_('Permission Level'))
-
-    class Meta:
-        abstract = True
-        indexes = [
-            models.Index(fields=['entity', 'user']),
-            models.Index(fields=['user', 'entity'])
-        ]
 
 
+# ## ENTITY STATE....
 class EntityStateModelAbstract(models.Model):
     KEY_JOURNAL_ENTRY = 'je'
     KEY_PURCHASE_ORDER = 'po'
@@ -2517,10 +2936,37 @@ class EntityStateModel(EntityStateModelAbstract):
     """
 
 
-class EntityModel(EntityModelAbstract):
+# ## ENTITY MANAGEMENT.....
+class EntityManagementModelAbstract(CreateUpdateMixIn):
     """
-    Entity Model Base Class From Abstract
+    Entity Management Model responsible for manager permissions to read/write.
     """
+    PERMISSIONS = [
+        ('read', _('Read Permissions')),
+        ('write', _('Read/Write Permissions')),
+        ('suspended', _('No Permissions'))
+    ]
+
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity = models.ForeignKey('django_ledger.EntityModel',
+                               on_delete=models.CASCADE,
+                               verbose_name=_('Entity'),
+                               related_name='entity_permissions')
+    user = models.ForeignKey(UserModel,
+                             on_delete=models.CASCADE,
+                             verbose_name=_('Manager'),
+                             related_name='entity_permissions')
+    permission_level = models.CharField(max_length=10,
+                                        default='read',
+                                        choices=PERMISSIONS,
+                                        verbose_name=_('Permission Level'))
+
+    class Meta:
+        abstract = True
+        indexes = [
+            models.Index(fields=['entity', 'user']),
+            models.Index(fields=['user', 'entity'])
+        ]
 
 
 class EntityManagementModel(EntityManagementModelAbstract):
@@ -2532,6 +2978,10 @@ class EntityManagementModel(EntityManagementModelAbstract):
 def entitymodel_presave(instance: EntityModel, **kwargs):
     if not instance.slug:
         instance.generate_slug(commit=False)
+    if not instance.meta:
+        instance.meta = dict()
+    if instance.META_KEY_CLOSING_ENTRY_DATES not in instance.meta:
+        instance.meta[instance.META_KEY_CLOSING_ENTRY_DATES] = list()
 
 
 pre_save.connect(receiver=entitymodel_presave, sender=EntityModel)

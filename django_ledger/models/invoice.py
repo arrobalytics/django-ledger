@@ -29,12 +29,13 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, F, Count
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
@@ -418,6 +419,7 @@ class InvoiceModelAbstract(AccrualMixIn,
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
+            ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_name = f'Invoice {self.uuid}' if not ledger_name else ledger_name
             ledger_model.name = ledger_name
             ledger_model.clean()
@@ -734,7 +736,8 @@ class InvoiceModelAbstract(AccrualMixIn,
         """
         return any([
             self.is_review(),
-            self.is_draft()
+            self.is_draft(),
+            not self.ledger.is_locked()
         ])
 
     def can_void(self):
@@ -746,7 +749,10 @@ class InvoiceModelAbstract(AccrualMixIn,
         bool
             True if InvoiceModel can be marked as void, else False.
         """
-        return self.is_approved()
+        return all([
+            self.is_approved(),
+            float(self.amount_paid) == 0.00
+        ])
 
     def can_cancel(self):
         """
@@ -782,9 +788,10 @@ class InvoiceModelAbstract(AccrualMixIn,
         bool
             True if InvoiceModel can be migrated, else False.
         """
-        if not self.is_approved():
+        can_migrate = super().can_migrate()
+        if not can_migrate:
             return False
-        return super(InvoiceModelAbstract, self).can_migrate()
+        return self.is_approved()
 
     def can_bind_estimate(self, estimate_model, raise_exception: bool = False) -> bool:
         """
@@ -1106,6 +1113,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                          date_approved: date = None,
                          commit: bool = False,
                          force_migrate: bool = False,
+                         raise_exception: bool = True,
                          **kwargs):
         """
         Marks InvoiceModel as Approved.
@@ -1129,18 +1137,15 @@ class InvoiceModelAbstract(AccrualMixIn,
             Forces migration. True if Accounting Method is Accrual.
         """
         if not self.can_approve():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+            if raise_exception:
+                raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+            return
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
         self.date_approved = localdate() if not date_approved else date_approved
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'invoice_status',
-                'date_approved',
-                'date_due',
-                'updated'
-            ])
+            self.save()
             if force_migrate or self.accrue:
                 # normally no transactions will be present when marked as approved...
                 self.migrate_state(
@@ -1149,7 +1154,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                     je_timestamp=date_approved,
                     force_migrate=self.accrue
                 )
-            self.ledger.post(commit=commit)
+            self.ledger.post(commit=commit, raise_exception=raise_exception)
 
     def get_mark_as_approved_html_id(self):
         """
@@ -1258,7 +1263,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         """
         return f'djl-{self.uuid}-invoice-mark-as-paid'
 
-    def get_mark_as_paid_url(self):
+    def get_mark_as_paid_url(self, entity_slug: str = None):
         """
         InvoiceModel Mark-as-Paid action URL.
 
@@ -1273,9 +1278,11 @@ class InvoiceModelAbstract(AccrualMixIn,
         str
             InvoiceModel mark-as-paid action URL.
         """
+        if not entity_slug:
+            entity_slug = self.ledger.entity.slug
         return reverse('django_ledger:invoice-action-mark-as-paid',
                        kwargs={
-                           'entity_slug': self.ledger.entity.slug,
+                           'entity_slug': entity_slug,
                            'invoice_pk': self.uuid
                        })
 
@@ -1339,7 +1346,7 @@ class InvoiceModelAbstract(AccrualMixIn,
                 entity_slug=entity_slug,
                 void=True,
                 void_date=self.date_void,
-                force_migrate=False,
+                force_migrate=True,
                 raise_exception=False
             )
             self.save()
@@ -1408,13 +1415,9 @@ class InvoiceModelAbstract(AccrualMixIn,
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:
-            self.save(update_fields=[
-                'invoice_status',
-                'date_canceled',
-                'updated'
-            ])
-            self.lock_ledger(commit=True, raise_exception=False)
+            self.unlock_ledger(commit=True, raise_exception=False)
             self.unpost_ledger(commit=True, raise_exception=False)
+            self.save()
 
     def get_mark_as_canceled_html_id(self):
         """
@@ -1460,60 +1463,70 @@ class InvoiceModelAbstract(AccrualMixIn,
         return _('Do you want to mark Invoice %s as Canceled?') % self.invoice_number
 
     # DELETE ACTIONS...
-    def mark_as_delete(self, **kwargs):
-        """
-        Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
-        """
+    def delete(self, force_db_delete: bool = False, using=None, keep_parents=False):
+        if not force_db_delete:
+            self.mark_as_canceled(commit=True)
+            return
         if not self.can_delete():
             raise InvoiceModelValidationError(
-                f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
-        self.delete(**kwargs)
+                message=_(f'Invoice {self.invoice_number} cannot be deleted...')
+            )
+        return super().delete(using=using, keep_parents=keep_parents)
 
-    def get_mark_as_delete_html_id(self) -> str:
-        """
-        InvoiceModel Mark as Delete URL.
-
-        Returns
-        _______
-
-        str
-            URL as a String.
-        """
-        return f'djl-invoice-model-{self.uuid}-mark-as-delete'
-
-    def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
-        """
-        InvoiceModel Mark-as-Delete action URL.
-
-        Parameters
-        __________
-        entity_slug: str
-            Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
-            is not cached on QuerySet.
-
-        Returns
-        _______
-        str
-            InvoiceModel mark-as-delete action URL.
-        """
-        if not entity_slug:
-            entity_slug = self.ledger.entity.slug
-        return reverse('django_ledger:invoice-action-mark-as-delete',
-                       kwargs={
-                           'entity_slug': entity_slug,
-                           'invoice_pk': self.uuid
-                       })
-
-    def get_mark_as_delete_message(self) -> str:
-        """
-        Internationalized confirmation message with Invoice Number.
-
-        Returns
-        _______
-        str
-            Mark-as-Delete InvoiceModel confirmation message as a String.
-        """
-        return _('Do you want to delete Invoice %s?') % self.invoice_number
+    # def mark_as_delete(self, **kwargs):
+    #     """
+    #     Deletes InvoiceModel from DB if possible. Raises exception if can_delete() is False.
+    #     """
+    #     if not self.can_delete():
+    #         raise InvoiceModelValidationError(
+    #             f'Invoice {self.invoice_number} cannot be deleted. Must be void after Approved.')
+    #     self.delete(**kwargs)
+    #
+    # # def get_mark_as_delete_html_id(self) -> str:
+    #     """
+    #     InvoiceModel Mark as Delete URL.
+    #
+    #     Returns
+    #     _______
+    #
+    #     str
+    #         URL as a String.
+    #     """
+    #     return f'djl-invoice-model-{self.uuid}-mark-as-delete'
+    #
+    # def get_mark_as_delete_url(self, entity_slug: Optional[str] = None) -> str:
+    #     """
+    #     InvoiceModel Mark-as-Delete action URL.
+    #
+    #     Parameters
+    #     __________
+    #     entity_slug: str
+    #         Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
+    #         is not cached on QuerySet.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         InvoiceModel mark-as-delete action URL.
+    #     """
+    #     if not entity_slug:
+    #         entity_slug = self.ledger.entity.slug
+    #     return reverse('django_ledger:invoice-action-mark-as-delete',
+    #                    kwargs={
+    #                        'entity_slug': entity_slug,
+    #                        'invoice_pk': self.uuid
+    #                    })
+    #
+    # def get_mark_as_delete_message(self) -> str:
+    #     """
+    #     Internationalized confirmation message with Invoice Number.
+    #
+    #     Returns
+    #     _______
+    #     str
+    #         Mark-as-Delete InvoiceModel confirmation message as a String.
+    #     """
+    #     return _('Do you want to delete Invoice %s?') % self.invoice_number
 
     # ACTIONS END....
     def get_status_action_date(self):
@@ -1696,16 +1709,13 @@ class InvoiceModelAbstract(AccrualMixIn,
             If True, commits into DB the generated InvoiceModel number if generated.
         """
 
-        super(AccrualMixIn, self).clean()
-        super(PaymentTermsMixIn, self).clean()
-
-        if self.accrue:
-            self.progress = Decimal('1.00')
-
-        if self.is_draft():
-            self.amount_paid = Decimal('0.00')
-            self.paid = False
-            self.date_paid = None
+        super(InvoiceModelAbstract, self).clean()
+        if self.cash_account.role != ASSET_CA_CASH:
+            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+        if self.prepaid_account.role != ASSET_CA_RECEIVABLES:
+            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}.')
+        if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
+            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
 
     def save(self, **kwargs):
         """
@@ -1730,9 +1740,12 @@ def invoicemodel_presave(instance: InvoiceModel, **kwargs):
 
 pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)
 
-
-def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
-    instance.ledger.delete()
-
-
-post_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)
+# def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
+#     ledger_model = instance.ledger
+#     ledger_model.unpost(commit=False)
+#     ledger_model.remove_wrapped_model_info()
+#     ledger_model.itemtransactonmodel_set.all().delete()
+#     instance.ledger.delete()
+#
+#
+# pre_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)

@@ -5,11 +5,17 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.db.models import Count
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView
+from django.views.generic import (
+    DetailView, UpdateView, CreateView,
+    RedirectView, DeleteView, ArchiveIndexView, YearArchiveView, MonthArchiveView
+)
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.models.entity import EntityModel
@@ -24,22 +30,43 @@ class LedgerModelModelViewQuerySetMixIn:
     queryset = None
 
     def get_queryset(self):
-        if not self.queryset:
+        if self.queryset is None:
             self.queryset = LedgerModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
             ).select_related('entity')
-        return super().get_queryset()
+        return self.queryset
 
 
-class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ListView):
-    context_object_name = 'ledgers'
+class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
+    show_hidden = False
+    context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
+    paginate_by = 15
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    date_field = 'created'
+    ordering = '-created'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.annotate(Count('journal_entries'))
+        qs = qs.select_related('billmodel', 'invoicemodel')
+        qs = qs.order_by('-created')
+        if self.show_hidden:
+            return qs
+        return qs.visible()
+
+
+class LedgerModelYearListView(YearArchiveView, LedgerModelListView):
+    make_object_list = True
+
+
+class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
+    make_object_list = True
 
 
 class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, CreateView):
@@ -95,6 +122,52 @@ class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
+
+
+class LedgerModelDeleteView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, DeleteView):
+    template_name = 'django_ledger/ledger/ledger_delete.html'
+    pk_url_kwarg = 'ledger_pk'
+    context_object_name = 'ledger_model'
+
+    def get_success_url(self):
+        return reverse(viewname='django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+# ACTIONS....
+
+class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
+                                 RedirectView,
+                                 LedgerModelModelViewQuerySetMixIn,
+                                 SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'ledger_pk'
+    action_name = None
+    commit = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(LedgerModelModelActionView, self).get(request, *args, **kwargs)
+        ledger_model: LedgerModel = self.get_object()
+
+        try:
+            getattr(ledger_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response
 
 
 # Ledger Balance Sheet Views...
