@@ -160,6 +160,9 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
             ])
         return self, entity_model
 
+    def is_active(self):
+        return self.active is True
+
     class Meta:
         abstract = True
         verbose_name = _('Bank Account')

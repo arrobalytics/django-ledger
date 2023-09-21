@@ -67,8 +67,7 @@ class StagedTransactionModelManager(models.Manager):
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    import_job = models.ForeignKey('django_ledger.ImportJobModel',
-                                   on_delete=models.CASCADE)
+    import_job = models.ForeignKey('django_ledger.ImportJobModel', on_delete=models.CASCADE)
     earnings_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.CASCADE,
                                          null=True,

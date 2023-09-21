@@ -9,7 +9,9 @@ Miguel Sanda <msanda@arrobalytics.com>
 from itertools import chain
 
 from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -19,9 +21,7 @@ from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
 from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
-from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
@@ -82,73 +82,78 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
 
         # Pulls accounts from OFX file...
         accs = ofx.get_accounts()
-        acc_numbers = [
-            a['account_number'] for a in accs
-        ]
+        ofx_account_number = [a['account_number'] for a in accs]
 
-        # Gets bank account models if in DB...
-        bank_accounts = BankAccountModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        ).filter(account_number__in=acc_numbers).select_related('ledger')
-
-        ba_values = bank_accounts.values()
-        existing_accounts_list = [
-            a['account_number'] for a in ba_values
-        ]
-
-        # determines if Bank Account models need to be created...
-        to_create = [
-            a for a in accs if a['account_number'] not in existing_accounts_list
-        ]
-
-        if len(to_create) > 0:
-
-            entity_model = EntityModel.objects.for_user(
-                user_model=self.request.user
-            ).get(slug__exact=self.kwargs['entity_slug'])
-
-            new_bank_accs = [
-                BankAccountModel(
-                    name=f'{ba["bank"]} - *{ba["account_number"][-4:]}',
-                    account_type=ba['account_type'].lower(),
-                    account_number=ba['account_number'],
-                    routing_number=ba['routing_number'],
-                ) for ba in to_create]
-
-            for ba in new_bank_accs:
-                ba.clean()
-                ba.configure(
-                    entity_slug=entity_model,
-                    user_model=self.request.user
-                )
-            BankAccountModel.objects.bulk_create(new_bank_accs)
-
-            # fetching all bank account models again
-            bank_accounts = BankAccountModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
-            ).filter(account_number__in=acc_numbers).select_related('ledger')
-
-        for ba in bank_accounts:
-            import_job = ba.ledger.importjobmodel_set.create(
-                description='OFX Import for Account *' + ba.account_number[-4:]
+        if len(ofx_account_number) > 1:
+            messages.add_message(
+                self.request,
+                level=messages.ERROR,
+                message=_('Multiple statements detected. Multiple account import is not supported.'),
+                extra_tags='is-danger'
             )
-            txs = ofx.get_account_txs(account=ba.account_number)
-            txs_models = [
-                StagedTransactionModel(
-                    date_posted=tx.dtposted,
-                    fitid=tx.fitid,
-                    amount=tx.trnamt,
-                    import_job=import_job,
-                    name=tx.name,
-                    memo=tx.memo
-                ) for tx in txs
-            ]
-            for tx in txs_models:
-                tx.clean()
-            StagedTransactionModel.objects.bulk_create(txs_models)
+            return self.form_invalid(form=form)
 
+        ofx_account_number = ofx_account_number[0]
+
+        try:
+            ba_model = self.AUTHORIZED_ENTITY_MODEL.bankaccountmodel_set.filter(
+                account_number__exact=ofx_account_number
+            ).select_related('cash_account', 'entity_model').get()
+        except ObjectDoesNotExist:
+            create_url = reverse(
+                viewname='django_ledger:bank-account-create',
+                kwargs={
+                    'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug
+                }
+            )
+            create_link = format_html('<a href={}>create</a>', create_url)
+            messages.add_message(
+                self.request,
+                level=messages.ERROR,
+                message=_(f'Account Number ***{ofx_account_number[-4:]} not recognized. Please {create_link} Bank '
+                          'Account model before importing transactions'),
+                extra_tags='is-danger'
+            )
+            return self.form_invalid(form=form)
+
+        if not ba_model.is_active():
+            create_url = reverse(
+                viewname='django_ledger:bank-account-update',
+                kwargs={
+                    'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug,
+                    'bank_account_pk': ba_model.uuid
+                }
+            )
+            activate_link = format_html('<a href={}>mark account active</a>', create_url)
+            messages.add_message(
+                self.request,
+                level=messages.ERROR,
+                message=_(f'Account Number ***{ofx_account_number[-4:]} not active. Please {activate_link} '
+                          ' before importing new transactions'),
+                extra_tags='is-danger'
+            )
+            return self.form_invalid(form=form)
+
+        ledger_model = self.AUTHORIZED_ENTITY_MODEL.create_ledger(
+            name='OFX Import for Account ***' + ba_model.account_number[-4:]
+        )
+        import_job = ledger_model.importjobmodel_set.create(
+            description='OFX Import for Account ***' + ba_model.account_number[-4:]
+        )
+        txs = ofx.get_account_txs(account=ba_model.account_number)
+        txs_models = [
+            StagedTransactionModel(
+                date_posted=tx.dtposted,
+                fitid=tx.fitid,
+                amount=tx.trnamt,
+                import_job=import_job,
+                name=tx.name,
+                memo=tx.memo
+            ) for tx in txs
+        ]
+        for tx in txs_models:
+            tx.clean()
+        StagedTransactionModel.objects.bulk_create(txs_models)
         return super().form_valid(form=form)
 
 
@@ -166,7 +171,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
         return ImportJobModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
-        ).select_related('ledger__bankaccountmodel__cash_account')
+        ).select_related('ledger')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

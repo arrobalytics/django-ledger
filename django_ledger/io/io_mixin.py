@@ -191,7 +191,8 @@ class IODatabaseMixIn:
                         by_activity: bool = False,
                         by_tx_type: bool = False,
                         by_period: bool = False,
-                        by_unit: bool = False):
+                        by_unit: bool = False,
+                        **kwargs):
 
         if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
             if not from_date:
@@ -321,7 +322,8 @@ class IODatabaseMixIn:
                       by_unit: bool = False,
                       by_activity: bool = False,
                       by_tx_type: bool = False,
-                      by_period: bool = False) -> list or tuple:
+                      by_period: bool = False,
+                      **kwargs) -> list or tuple:
 
         if equity_only:
             role = roles_module.GROUP_EARNINGS
@@ -339,7 +341,8 @@ class IODatabaseMixIn:
             by_unit=by_unit,
             by_activity=by_activity,
             by_tx_type=by_tx_type,
-            by_period=by_period)
+            by_period=by_period,
+            **kwargs)
 
         for tx_model in txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
@@ -430,7 +433,7 @@ class IODatabaseMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               ) -> Union[Tuple, IODigestContextManager]:
+               **kwargs) -> Union[Tuple, IODigestContextManager]:
 
         if balance_sheet_statement:
             from_date = None
@@ -469,7 +472,8 @@ class IODatabaseMixIn:
             by_period=by_period,
             by_unit=by_unit,
             by_activity=by_activity,
-            by_tx_type=by_tx_type
+            by_tx_type=by_tx_type,
+            **kwargs
         )
 
         io_data['txs_qs'] = txs_qs

@@ -839,6 +839,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           raise_exception: bool = True,
                           force_update: bool = False) -> Optional[str]:
 
+        if raise_exception and self.is_closing_entry:
+            raise_exception = False
+
         if not self.has_activity() or force_update:
 
             txs_is_valid = True
