@@ -194,13 +194,21 @@ def data_import_job_list_table(context):
 
 
 @register.inclusion_tag('django_ledger/data_import/tags/data_import_job_txs_table.html', takes_context=True)
-def data_import_job_txs_pending(context):
-    return context
+def data_import_job_txs_pending(context, staged_txs_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'job_pk': context['view'].kwargs['job_pk'],
+        'staged_txs_formset': staged_txs_formset
+    }
 
 
 @register.inclusion_tag('django_ledger/data_import/tags/data_import_job_txs_imported.html', takes_context=True)
-def data_import_job_txs_imported(context):
-    return context
+def data_import_job_txs_imported(context, staged_txs_formset):
+    return {
+        'entity_slug': context['view'].kwargs['entity_slug'],
+        'job_pk': context['view'].kwargs['job_pk'],
+        'staged_txs_formset': staged_txs_formset
+    }
 
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_table.html', takes_context=True)

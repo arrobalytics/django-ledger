@@ -1,6 +1,7 @@
 {% load i18n %}
+{% load django_ledger %}
 
-<form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
+<form action="{% url 'django_ledger:data-import-job-txs' entity_slug=entity_slug job_pk=job_pk %}"
       method="post">
 
     {{ staged_txs_formset.non_form_errors }}
@@ -19,7 +20,6 @@
                 <th>Amount</th>
                 <th>Map To</th>
                 <th>Commit TX</th>
-                {#                <th>TX</th>#}
             </tr>
             </thead>
 
@@ -28,16 +28,13 @@
 
             {% for txf in staged_txs_formset %}
                 <tr>
-
                     {% for hidden_field in txf.hidden_fields %}
                         {{ hidden_field }}
                     {% endfor %}
-
-                    <td>{{ txf.date_posted.value }}</td>
-                    <td>{{ txf.name.value }}</td>
-                    <td class="{% if txf.amount.value < 0 %}has-text-danger{% endif %}">
-                        ${{ txf.amount.value }}</td>
-                    <td>{{ txf.earnings_account }}</td>
+                    <td>{{ txf.instance.date_posted }}</td>
+                    <td>{{ txf.instance.name }}</td>
+                    <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                    <td>{{ txf.account_model }}</td>
                     <td>{{ txf.tx_import }}</td>
                 </tr>
             {% endfor %}
@@ -54,11 +51,11 @@
         <div class="column is-4 has-text-centered">
             <button class="button is-primary is-small is-fullwidth">{% trans 'Save/Import' %}</button>
         </div>
-        <div class="column is-4 has-text-centered">
-            <a class="button is-info is-small is-fullwidth"
-               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">
-                {% trans 'Bank Account' %}</a>
-        </div>
+        {#        <div class="column is-4 has-text-centered">#}
+        {#            <a class="button is-info is-small is-fullwidth"#}
+        {#               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">#}
+        {#                {% trans 'Bank Account' %}</a>#}
+        {#        </div>#}
     </div>
 
 

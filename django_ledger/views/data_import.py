@@ -25,6 +25,21 @@ from django_ledger.models.data_import import ImportJobModel, StagedTransactionMo
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
+class ImportJobModelViewQuerySetMixIn:
+    queryset = None
+
+    def get_queryset(self):
+        if self.queryset is None:
+            self.queryset = ImportJobModel.objects.for_entity(
+                entity_slug=self.kwargs['entity_slug'],
+                user_model=self.request.user
+            ).select_related('bank_account_model',
+                             'bank_account_model__entity_model',
+                             'bank_account_model__cash_account',
+                             'bank_account_model__cash_account__coa_model')
+        return super().get_queryset()
+
+
 def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
     tx_amt = cleaned_staged_tx['amount']
     reverse_tx = tx_amt < 0
@@ -46,7 +61,7 @@ def digest_staged_txs(cleaned_staged_tx: dict, cash_account: AccountModel):
     ]
 
 
-class DataImportJobsListView(DjangoLedgerSecurityMixIn, ListView):
+class DataImportJobsListView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, ListView):
     PAGE_TITLE = _('Data Import Jobs')
     extra_context = {
         'page_title': PAGE_TITLE,
@@ -54,12 +69,6 @@ class DataImportJobsListView(DjangoLedgerSecurityMixIn, ListView):
     }
     context_object_name = 'import_jobs'
     template_name = 'django_ledger/data_import/data_import_job_list.html'
-
-    def get_queryset(self):
-        return ImportJobModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
-        )
 
 
 class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
@@ -81,9 +90,11 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
         ofx = OFXFileManager(ofx_file_or_path=form.files['ofx_file'])
 
         # Pulls accounts from OFX file...
-        accs = ofx.get_accounts()
-        ofx_account_number = [a['account_number'] for a in accs]
+        account_models = ofx.get_accounts()
+        ofx_account_number = [a['account_number'] for a in account_models]
 
+        # OFX file has multiple statements in it... Not supported...
+        # All transactions must come from a single account...
         if len(ofx_account_number) > 1:
             messages.add_message(
                 self.request,
@@ -95,6 +106,7 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
 
         ofx_account_number = ofx_account_number[0]
 
+        # account has not been created yet...
         try:
             ba_model = self.AUTHORIZED_ENTITY_MODEL.bankaccountmodel_set.filter(
                 account_number__exact=ofx_account_number
@@ -116,6 +128,7 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
             )
             return self.form_invalid(form=form)
 
+        # account is not active...
         if not ba_model.is_active():
             create_url = reverse(
                 viewname='django_ledger:bank-account-update',
@@ -134,30 +147,27 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
             )
             return self.form_invalid(form=form)
 
-        ledger_model = self.AUTHORIZED_ENTITY_MODEL.create_ledger(
-            name='OFX Import for Account ***' + ba_model.account_number[-4:]
-        )
-        import_job = ledger_model.importjobmodel_set.create(
+        import_job = ba_model.importjobmodel_set.create(
             description='OFX Import for Account ***' + ba_model.account_number[-4:]
         )
-        txs = ofx.get_account_txs(account=ba_model.account_number)
-        txs_models = [
+        txs_to_stage = ofx.get_account_txs(account=ba_model.account_number)
+        staged_txs_model_list = [
             StagedTransactionModel(
                 date_posted=tx.dtposted,
-                fitid=tx.fitid,
+                fit_id=tx.fitid,
                 amount=tx.trnamt,
                 import_job=import_job,
                 name=tx.name,
                 memo=tx.memo
-            ) for tx in txs
+            ) for tx in txs_to_stage
         ]
-        for tx in txs_models:
+        for tx in staged_txs_model_list:
             tx.clean()
-        StagedTransactionModel.objects.bulk_create(txs_models)
+        StagedTransactionModel.objects.bulk_create(staged_txs_model_list)
         return super().form_valid(form=form)
 
 
-class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
+class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/data_import/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'import_job'
@@ -167,20 +177,12 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
         'header_title': PAGE_TITLE
     }
 
-    def get_queryset(self):
-        return ImportJobModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
-        ).select_related('ledger')
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         job_model: ImportJobModel = self.object
-        context['header_title'] = job_model.ledger.bankaccountmodel
-
-        job_model = self.object
-        bank_account_model = job_model.ledger.bankaccountmodel
-        cash_account_model = job_model.ledger.bankaccountmodel.cash_account
+        context['header_title'] = job_model.bank_account_model
+        bank_account_model = job_model.bank_account_model
+        cash_account_model = job_model.bank_account_model.cash_account
         if not cash_account_model:
             bank_acct_url = reverse('django_ledger:bank-account-update',
                                     kwargs={
@@ -196,21 +198,18 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
                 extra_tags='is-danger'
             )
 
-        stx_qs = job_model.stagedtransactionmodel_set.all()
-        stx_qs = stx_qs.select_related('tx__account').order_by('-date_posted', '-amount')
-
-        # forcing queryset evaluation
-        len(stx_qs)
+        staged_txs_qs = job_model.stagedtransactionmodel_set.all()
+        staged_txs_qs = staged_txs_qs.select_related('txs_model__account').order_by('-date_posted', '-amount')
+        context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
             exclude_account=cash_account_model,
-            queryset=stx_qs.filter(tx__isnull=True),
+            queryset=staged_txs_qs.is_imported(),
         )
 
         context['staged_txs_formset'] = txs_formset
-        context['imported_txs'] = stx_qs.filter(tx__isnull=False)
         context['cash_account_model'] = cash_account_model
         context['bank_account_model'] = bank_account_model
         return context
@@ -256,7 +255,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, DetailView):
                 )
 
                 staged_tx_models = [stx['uuid'] for stx in staged_to_import]
-                StagedTransactionModel.objects.bulk_update(staged_tx_models, fields=['tx'])
+                StagedTransactionModel.objects.bulk_update(staged_tx_models, fields=['txs_model'])
 
             # txs_formset.save()
             messages.add_message(request,
