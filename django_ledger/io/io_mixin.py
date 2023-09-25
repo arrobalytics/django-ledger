@@ -594,20 +594,30 @@ class IODatabaseMixIn:
             description=je_desc,
             timestamp=je_timestamp,
             origin=je_origin,
+            posted=False,
         )
+        je_model.mark_as_locked(commit=False)
 
         # verify is False, no transactions are present yet....
         je_model.save(verify=False)
 
         TransactionModel = lazy_loader.get_txs_model()
         txs_models = [
-            TransactionModel(
-                **txm_kwargs,
-                journal_entry=je_model,
-                stagedtransactionmodel=txm_kwargs.get('staged_tx_model')
-            ) for txm_kwargs in je_txs
+            (
+                TransactionModel(
+                    account_id=txm_kwargs['account_id'],
+                    amount=txm_kwargs['amount'],
+                    tx_type=txm_kwargs['tx_type'],
+                    description=txm_kwargs['description'],
+                    journal_entry=je_model,
+                ), txm_kwargs) for txm_kwargs in je_txs
         ]
-        txs_models = TransactionModel.objects.bulk_create(txs_models)
+        for tx, txm_kwargs in txs_models:
+            staged_tx_model = txm_kwargs.get('staged_tx_model')
+            if staged_tx_model:
+                staged_tx_model.txs_model = tx
+
+        txs_models = TransactionModel.objects.bulk_create(i[0] for i in txs_models)
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
 

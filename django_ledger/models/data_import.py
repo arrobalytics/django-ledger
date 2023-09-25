@@ -8,11 +8,17 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
+
+
+class ImportJobModelValidationError(ValidationError):
+    pass
 
 
 class ImportJobModelQuerySet(models.QuerySet):
@@ -25,7 +31,8 @@ class ImportJobModelManager(models.Manager):
         qs = super().get_queryset()
         return qs.select_related(
             'bank_account_model',
-            'bank_account_model__entity_model'
+            'bank_account_model__cash_account',
+            'ledger_model'
         )
 
     def for_entity(self, entity_slug: str, user_model):
@@ -46,6 +53,12 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
                                            editable=False,
                                            on_delete=models.CASCADE,
                                            verbose_name=_('Associated Bank Account Model'))
+    ledger_model = models.OneToOneField('django_ledger.LedgerModel',
+                                        editable=False,
+                                        on_delete=models.CASCADE,
+                                        verbose_name=_('Ledger Model'),
+                                        null=True,
+                                        blank=True)
     completed = models.BooleanField(default=False, verbose_name=_('Import Job Completed'))
     objects = ImportJobModelManager.from_queryset(queryset_class=ImportJobModelQuerySet)()
 
@@ -54,8 +67,26 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         verbose_name = _('Import Job Model')
         indexes = [
             models.Index(fields=['bank_account_model']),
+            models.Index(fields=['ledger_model']),
             models.Index(fields=['completed']),
         ]
+
+    def is_configured(self):
+        return all([
+            self.ledger_model_id is not None,
+            self.bank_account_model_id is not None
+        ])
+
+    def configure(self, commit: bool = True):
+        if not self.is_configured():
+            if self.ledger_model_id is None:
+                self.ledger_model = self.bank_account_model.entity_model.create_ledger(
+                    name=self.description
+                )
+            if commit:
+                self.save(update_fields=[
+                    'ledger_model'
+                ])
 
 
 class StagedTransactionModelQuerySet(models.QuerySet):
@@ -119,6 +150,17 @@ class ImportJobModel(ImportJobModelAbstract):
     """
     Transaction Import Job Model Base Class.
     """
+
+
+def importjobmodel_presave(instance: ImportJobModel, **kwargs):
+    if instance.is_configured():
+        if instance.bank_account_model.entity_model_id != instance.ledger_model.entity_id:
+            raise ImportJobModelValidationError(
+                message=_('Invalid Bank Account for LedgerModel. No matching Entity Model found.')
+            )
+
+
+pre_save.connect(importjobmodel_presave, sender=ImportJobModel)
 
 
 class StagedTransactionModel(StagedTransactionModelAbstract):

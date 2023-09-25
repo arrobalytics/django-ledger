@@ -1,7 +1,7 @@
 from django import forms
-from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, HiddenInput, ValidationError
+from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select
 
-from django_ledger.models import StagedTransactionModel, AccountModel, ImportJobModel
+from django_ledger.models import StagedTransactionModel, AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -22,12 +22,12 @@ class StagedTransactionModelForm(ModelForm):
         if instance:
             if instance.account_model and instance.txs_model:
                 self.fields['account_model'].widget.attrs['disabled'] = True
-                self.fields['account_model'].widget.attrs['value'] = instance.earnings_account
+                self.fields['account_model'].widget.attrs['value'] = instance.account_model
                 self.fields['tx_import'].widget.attrs['disabled'] = True
                 self.fields['tx_import'].widget.attrs['value'] = True
             elif not instance.account_model:
                 self.fields['tx_import'].widget.attrs['disabled'] = True
-            elif instance.account_model and not instance.tx:
+            elif instance.account_model and not instance.txs_model:
                 self.fields['tx_import'].widget.attrs['disabled'] = False
 
     class Meta:
@@ -42,12 +42,12 @@ class StagedTransactionModelForm(ModelForm):
             })
         }
 
-    def clean(self):
-        account_model = self.cleaned_data['account_model']
-        tx = self.cleaned_data['tx']
-
-        if tx and not account_model:
-            raise ValidationError('If tx, ea must be present.')
+    # def clean(self):
+    #     account_model = self.cleaned_data['account_model']
+    #     txs_model = self.cleaned_data['txs_model']
+    #
+    #     if txs_model and not account_model:
+    #         raise ValidationError('If tx, ea must be present.')
 
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
