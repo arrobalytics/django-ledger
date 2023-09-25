@@ -13,12 +13,13 @@ from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Sum, QuerySet
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
 from django.utils.timezone import make_aware, is_naive, localtime
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
@@ -548,7 +549,8 @@ class IODatabaseMixIn:
                    je_posted: bool = False,
                    je_ledger_model=None,
                    je_desc=None,
-                   je_origin=None):
+                   je_origin=None,
+                   force_je_retrieval: bool = False):
         """
         Creates JE from TXS list using provided account_id.
 
@@ -571,53 +573,73 @@ class IODatabaseMixIn:
         :return:
         """
 
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
+        TransactionModel = lazy_loader.get_txs_model()
+
         # if isinstance(self, lazy_loader.get_entity_model()):
 
         # Validates that credits/debits balance.
         check_tx_balance(je_txs, perform_correction=False)
+        je_timestamp = validate_io_date(dt=je_timestamp)
 
+        # if calling from EntityModel must pass an instance of LedgerModel...
         if all([
             isinstance(self, lazy_loader.get_entity_model()),
-            not je_ledger_model
+            je_ledger_model is None
         ]):
-            raise ValidationError('Must pass an instance of LedgerModel')
+            raise IOValidationError('Committing from EntityModel requires an instance of LedgerModel')
+
+        # Validates that the provided LedgerModel id valid...
+        if all([
+            isinstance(self, lazy_loader.get_entity_model()),
+            je_ledger_model is not None,
+        ]):
+            if je_ledger_model.entity_id != self.uuid:
+                raise IOValidationError(f'LedgerModel {je_ledger_model} does not belong to {self}')
 
         if not je_ledger_model:
             je_ledger_model = self
 
-        JournalEntryModel = lazy_loader.get_journal_entry_model()
+        if force_je_retrieval:
+            try:
+                if isinstance(je_timestamp, (datetime, str)):
+                    je_model = je_ledger_model.journal_entries.get(timestamp__exact=je_timestamp)
+                elif isinstance(je_timestamp, date):
+                    je_model = je_ledger_model.journal_entries.get(timestamp__date__exact=je_timestamp)
+                else:
+                    raise IOValidationError(message=_(f'Invalid timestamp type {type(je_timestamp)}'))
+            except ObjectDoesNotExist:
+                raise IOValidationError(
+                    message=_(f'Unable to retrieve Journal Entry model with Timestamp {je_timestamp}')
+                )
+        else:
+            je_model = JournalEntryModel(
+                ledger=je_ledger_model,
+                description=je_desc,
+                timestamp=je_timestamp,
+                origin=je_origin,
+                posted=False,
+                locked=False
+            )
+            je_model.save(verify=False)
 
-        je_timestamp = validate_io_date(dt=je_timestamp)
-
-        je_model = JournalEntryModel(
-            ledger=je_ledger_model,
-            description=je_desc,
-            timestamp=je_timestamp,
-            origin=je_origin,
-            posted=False,
-        )
-        je_model.mark_as_locked(commit=False)
-
-        # verify is False, no transactions are present yet....
-        je_model.save(verify=False)
-
-        TransactionModel = lazy_loader.get_txs_model()
         txs_models = [
             (
                 TransactionModel(
-                    account_id=txm_kwargs['account_id'],
+                    account=txm_kwargs['account'],
                     amount=txm_kwargs['amount'],
                     tx_type=txm_kwargs['tx_type'],
                     description=txm_kwargs['description'],
                     journal_entry=je_model,
                 ), txm_kwargs) for txm_kwargs in je_txs
         ]
+
         for tx, txm_kwargs in txs_models:
             staged_tx_model = txm_kwargs.get('staged_tx_model')
             if staged_tx_model:
-                staged_tx_model.txs_model = tx
+                staged_tx_model.transaction_model = tx
 
-        txs_models = TransactionModel.objects.bulk_create(i[0] for i in txs_models)
+        txs_models = je_model.transactionmodel_set.bulk_create(i[0] for i in txs_models)
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
 

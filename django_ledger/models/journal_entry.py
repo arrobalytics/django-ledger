@@ -414,7 +414,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return all([
             self.is_locked(),
             not self.is_posted(),
-            # not self.ledger.is_posted(),
+            not self.is_in_locked_period(),
             not self.ledger.is_locked()
         ])
 

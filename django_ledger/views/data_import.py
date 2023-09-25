@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from datetime import datetime, time
 from itertools import chain, groupby
 
 from django.contrib import messages
@@ -47,14 +47,14 @@ def digest_staged_txs(staged_txs_model: StagedTransactionModel, cash_account: Ac
     reverse_tx = tx_amt < 0
     return [
         {
-            'account_id': cash_account.uuid,
+            'account': cash_account,
             'amount': abs(tx_amt),
             'tx_type': DEBIT if not reverse_tx else CREDIT,
             'description': staged_txs_model.name,
             'staged_tx_model': staged_txs_model
         },
         {
-            'account_id': staged_txs_model.account_model_id,
+            'account': staged_txs_model.account_model,
             'amount': abs(tx_amt),
             'tx_type': CREDIT if not reverse_tx else DEBIT,
             'description': staged_txs_model.name,
@@ -157,7 +157,8 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
         txs_to_stage = ofx.get_account_txs(account=ba_model.account_number)
         staged_txs_model_list = [
             StagedTransactionModel(
-                date_posted=tx.dtposted,
+                date_posted=make_aware(value=datetime.combine(date=tx.dtposted.date(),
+                                                              time=time.min)),
                 fit_id=tx.fitid,
                 amount=tx.trnamt,
                 import_job=import_job,
@@ -176,6 +177,8 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
                 timestamp=jed,
                 description=import_job.description,
                 ledger=import_job.ledger_model,
+                locked=False,
+                posted=False
             ) for jed in je_dates_set
         ]
 
@@ -219,8 +222,8 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
 
         staged_txs_qs = job_model.stagedtransactionmodel_set.all()
         staged_txs_qs = staged_txs_qs.select_related(
-            'txs_model',
-            'txs_model__account').order_by('-date_posted', '-amount')
+            'transaction_model',
+            'transaction_model__account').order_by('-date_posted', '-amount')
         context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
@@ -237,8 +240,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
 
     def post(self, request, **kwargs):
         response = super().get(request, **kwargs)
-        job_model: ImportJobModel = self.get_object()
-        self.object = job_model
+        job_model: ImportJobModel = self.object
         txs_formset = StagedTransactionModelFormSet(request.POST,
                                                     user_model=self.request.user,
                                                     entity_slug=kwargs['entity_slug'])
@@ -248,20 +250,14 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                 tx.instance for tx in txs_formset if all([
                     tx.cleaned_data['account_model'],
                     tx.cleaned_data['tx_import'],
-                    tx.instance.txs_model is None
+                    tx.instance.transaction_model is None
                 ])
             ]
 
             if len(staged_to_import) > 0:
-                if not job_model.ledger_model_id:
-                    ledger_model = self.AUTHORIZED_ENTITY_MODEL.create_ledger(name=job_model.description)
-                    job_model.ledger_model = ledger_model
-                    job_model.save(update_fields=[
-                        'ledger_model',
-                        'updated'
-                    ])
-                else:
-                    ledger_model = job_model.ledger_model
+
+                job_model.configure(commit=True)
+                ledger_model = job_model.ledger_model
                 cash_account = job_model.bank_account_model.cash_account
 
                 txs_digest = list(chain.from_iterable(
@@ -271,24 +267,24 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                 ))
 
                 txs_digest.sort(key=lambda x: x['staged_tx_model'].date_posted)
-
                 txs_digest_gb = groupby(txs_digest, key=lambda x: x['staged_tx_model'].date_posted)
 
                 for dt_posted, to_be_committed in txs_digest_gb:
                     je_model, txs_models = ledger_model.commit_txs(
-                        je_posted=True,
                         je_timestamp=dt_posted,
-                        je_txs=txs_digest,
+                        je_txs=list(to_be_committed),
                         je_desc='OFX Import JE',
+                        je_posted=False,
+                        force_je_retrieval=True
                     )
-                StagedTransactionModel.objects.bulk_update(staged_to_import, fields=['txs_model'])
+                StagedTransactionModel.objects.bulk_update(staged_to_import, fields=['transaction_model'])
 
             # txs_formset.save()
             messages.add_message(request,
                                  messages.SUCCESS,
                                  'Successfully saved transactions.',
                                  extra_tags='is-success')
-            return response
+            return self.render_to_response(context=self.get_context_data())
         else:
             context = self.get_context_data(**kwargs)
             context['staged_txs_formset'] = txs_formset

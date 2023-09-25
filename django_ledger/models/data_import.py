@@ -91,7 +91,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
 
 class StagedTransactionModelQuerySet(models.QuerySet):
     def is_imported(self):
-        return self.filter(txs_model__isnull=True)
+        return self.filter(transaction_model__isnull=True)
 
 
 class StagedTransactionModelManager(models.Manager):
@@ -122,10 +122,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                                       null=True,
                                       blank=True)
 
-    txs_model = models.OneToOneField('django_ledger.TransactionModel',
-                                     on_delete=models.SET_NULL,
-                                     null=True,
-                                     blank=True)
+    transaction_model = models.OneToOneField('django_ledger.TransactionModel',
+                                             on_delete=models.SET_NULL,
+                                             null=True,
+                                             blank=True)
 
     objects = StagedTransactionModelManager.from_queryset(queryset_class=StagedTransactionModelQuerySet)()
 
@@ -136,14 +136,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['import_job']),
             models.Index(fields=['date_posted']),
             models.Index(fields=['account_model']),
-            models.Index(fields=['txs_model']),
+            models.Index(fields=['transaction_model']),
         ]
 
     def is_imported(self) -> bool:
-        return self.txs_model_id is not None
+        return self.transaction_model_id is not None
 
     def is_pending(self) -> bool:
-        return self.txs_model_id is None
+        return self.transaction_model_id is None
 
 
 class ImportJobModel(ImportJobModelAbstract):
