@@ -653,14 +653,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         else:
             if not self.is_locked():
+                self.generate_activity(force_update=True)
                 self.locked = True
                 if self.is_locked():
                     if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'locked',
-                                      'updated'
-                                  ])
+                        self.save(verify=False)
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -683,11 +680,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.locked = False
                 if not self.is_locked():
                     if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'locked',
-                                      'updated'
-                                  ])
+                        self.save(verify=False)
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
@@ -842,7 +835,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if raise_exception and self.is_closing_entry:
             raise_exception = False
 
-        if not self.has_activity() or force_update:
+        if any([
+            not self.has_activity(),
+            not self.is_locked(),
+            force_update
+        ]):
 
             txs_is_valid = True
             if not txs_qs:
@@ -863,17 +860,20 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
                     # determining if investing....
                     is_investing_for_ppe = all([
-                        all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),  # all roles must be in group
-                        sum([r in GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE for r in roles_involved]) > 0,
+                        # all roles must be in group
+                        all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),
                         # at least one role
-                        sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,  # at least one role
+                        sum([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]) > 0,
+                        # at least one role
+                        # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,
                     ])
                     is_investing_for_securities = all([
-                        all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),
                         # all roles must be in group
-                        sum([r in GROUP_CFS_INV_PURCHASE_OF_SECURITIES for r in roles_involved]) > 0,
+                        all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),
                         # at least one role
-                        sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
+                        sum([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]) > 0,
+                        # at least one role
+                        # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,
                     ])
 
                     # determining if financing...

@@ -62,7 +62,7 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
         accounts_qs = AccountModel.objects.for_entity_available(
             user_model=self.USER_MODEL,
             entity_slug=self.ENTITY_SLUG
-        )
+        ).order_by('role', 'name')
 
         if exclude_account:
             accounts_qs = accounts_qs.exclude(uuid__exact=exclude_account.uuid)

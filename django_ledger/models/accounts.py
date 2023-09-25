@@ -544,6 +544,47 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     def is_expense(self) -> bool:
         return self.role in GROUP_EXPENSES
 
+    def is_active(self) -> bool:
+        return self.active is True
+
+    def can_activate(self):
+        return all([
+            self.active is False
+        ])
+
+    def can_deactivate(self):
+        return all([
+            self.active is True
+        ])
+
+    def activate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_activate():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot activate account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+        self.active = True
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
+
+    def deactivate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_deactivate():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot deactivate account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+        self.active = False
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
+
     def get_code_prefix(self) -> str:
 
         if self.is_asset():

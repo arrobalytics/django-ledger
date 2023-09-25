@@ -95,6 +95,14 @@
                                                class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
                                             <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=account.uuid %}"
                                                class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
+                                            {% if account.can_activate %}
+                                                <a href="{% url 'django_ledger:account-action-activate' entity_slug=entity_slug account_pk=account.uuid %}"
+                                                   class="dropdown-item has-text-success has-text-weight-bold">{% trans 'Activate' %}</a>
+                                            {% endif %}
+                                            {% if account.can_deactivate %}
+                                                <a href="{% url 'django_ledger:account-action-deactivate' entity_slug=entity_slug account_pk=account.uuid %}"
+                                                   class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Deactivate' %}</a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

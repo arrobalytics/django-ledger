@@ -26,5 +26,14 @@ urlpatterns = [
          name='account-detail-month'),
     path('<slug:entity_slug>/detail/<uuid:account_pk>/date/<int:year>/<int:month>/<int:day>/',
          views.AccountModelDateDetailView.as_view(),
-         name='account-detail-date')
+         name='account-detail-date'),
+
+    # Actions...
+    path('<slug:entity_slug>/action/<uuid:account_pk>/activate/',
+         views.AccountModelModelActionView.as_view(action_name='activate'),
+         name='account-action-activate'),
+    path('<slug:entity_slug>/action/<uuid:account_pk>/deactivate/',
+         views.AccountModelModelActionView.as_view(action_name='deactivate'),
+         name='account-action-deactivate'),
+
 ]
