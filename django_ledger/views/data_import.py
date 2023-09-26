@@ -230,7 +230,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
             user_model=self.request.user,
             entity_slug=self.kwargs['entity_slug'],
             exclude_account=cash_account_model,
-            queryset=staged_txs_qs.is_imported(),
+            queryset=staged_txs_qs.is_pending(),
         )
 
         context['staged_txs_formset'] = txs_formset

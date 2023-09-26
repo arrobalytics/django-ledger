@@ -90,8 +90,14 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
 
 
 class StagedTransactionModelQuerySet(models.QuerySet):
-    def is_imported(self):
+    def is_pending(self):
         return self.filter(transaction_model__isnull=True)
+
+    def is_imported(self):
+        return self.filter(transaction_model__isnull=False)
+
+    def for_import(self):
+        return self.exclude(parent_id__exact=Q('parent_id'))
 
 
 class StagedTransactionModelManager(models.Manager):
@@ -110,10 +116,18 @@ class StagedTransactionModelManager(models.Manager):
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    parent = models.ForeignKey('self',
+                               null=True,
+                               blank=True,
+                               editable=False,
+                               on_delete=models.CASCADE,
+                               related_name='split_transaction_set',
+                               verbose_name=_('Parent Transaction'))
     import_job = models.ForeignKey('django_ledger.ImportJobModel', on_delete=models.CASCADE)
     fit_id = models.CharField(max_length=100)
     date_posted = models.DateField(verbose_name=_('Date Posted'))
     amount = models.DecimalField(decimal_places=2, max_digits=15, editable=False)
+    amount_split = models.DecimalField(decimal_places=2, max_digits=15, editable=False, null=True, blank=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     memo = models.CharField(max_length=200, blank=True, null=True)
 
@@ -144,6 +158,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def is_pending(self) -> bool:
         return self.transaction_model_id is None
+
+    def is_split(self):
+        return self.parent_id is not None
+
+    def clean(self):
+        if self.parent_id is None:
+            self.amount_split = None
 
 
 class ImportJobModel(ImportJobModelAbstract):
