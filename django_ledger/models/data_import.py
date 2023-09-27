@@ -6,6 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from decimal import Decimal
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -111,7 +112,7 @@ class StagedTransactionModelManager(models.Manager):
                     Q(import_job__bank_account_model__entity__managers__in=[user_model])
             ) &
             Q(import_job__uuid__exact=job_pk)
-        )
+        ).prefetch_related('split_transaction_set')
 
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
@@ -127,7 +128,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     fit_id = models.CharField(max_length=100)
     date_posted = models.DateField(verbose_name=_('Date Posted'))
     amount = models.DecimalField(decimal_places=2, max_digits=15, editable=False)
-    amount_split = models.DecimalField(decimal_places=2, max_digits=15, editable=False, null=True, blank=True)
+    amount_split = models.DecimalField(decimal_places=2, max_digits=15, null=True, blank=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     memo = models.CharField(max_length=200, blank=True, null=True)
 
@@ -161,6 +162,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def is_split(self):
         return self.parent_id is not None
+
+    def add_split(self):
+        new_txs = StagedTransactionModel.objects.get(uuid__exact=self.uuid)
+        new_txs.pk = None
+        new_txs.parent = self
+        new_txs.amount_split = Decimal('0.00')
+        new_txs.save()
+        return new_txs
 
     def clean(self):
         if self.parent_id is None:

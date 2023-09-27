@@ -1,8 +1,9 @@
 {% load i18n %}
 {% load django_ledger %}
 
-<form action="{% url 'django_ledger:data-import-job-txs' entity_slug=entity_slug job_pk=job_pk %}"
-      method="post">
+
+<form method="post">
+
 
     {{ staged_txs_formset.non_form_errors }}
     {% if staged_txs_formset.errors %}
@@ -15,49 +16,52 @@
         <table class="table is-narrow is-fullwidth is-bordered is-striped django-ledger-table-bottom-margin-75">
             <thead>
             <tr class="has-text-centered is-error">
+                <th>Is Split</th>
                 <th>Dated Posted</th>
                 <th>Description</th>
                 <th>Amount</th>
+                <th>Split Amount</th>
                 <th>Map To</th>
                 <th>Commit TX</th>
+                <th>Split TX</th>
             </tr>
             </thead>
 
 
             <tbody>
-
             {% for txf in staged_txs_formset %}
                 <tr>
                     {% for hidden_field in txf.hidden_fields %}
                         {{ hidden_field }}
                     {% endfor %}
+                    <td>{{ txf.instance.is_split }}</td>
                     <td>{{ txf.instance.date_posted }}</td>
                     <td>{{ txf.instance.name }}</td>
                     <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                    {% if txf.instance.is_split %}
+                        <td>{{ txf.amount_split }}</td>
+                    {% else %}
+                        <td></td>
+                    {% endif %}
                     <td>{{ txf.account_model }}</td>
                     <td>{{ txf.tx_import }}</td>
+                    <td>{{ txf.tx_split }}</td>
                 </tr>
             {% endfor %}
-
             </tbody>
-
-
         </table>
-
-
     </div>
 
     <div class="columns is-centered">
         <div class="column is-4 has-text-centered">
             <button class="button is-primary is-small is-fullwidth">{% trans 'Save/Import' %}</button>
         </div>
-        {#        <div class="column is-4 has-text-centered">#}
-        {#            <a class="button is-info is-small is-fullwidth"#}
-        {#               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">#}
-        {#                {% trans 'Bank Account' %}</a>#}
-        {#        </div>#}
+        <div class="column is-4 has-text-centered">
+            <a class="button is-info is-small is-fullwidth"
+               href="{% url 'django_ledger:data-import-jobs-list' entity_slug=entity_slug %}">
+                {% trans 'Import Job List' %}</a>
+        </div>
     </div>
-
 
 </form>
 

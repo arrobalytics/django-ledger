@@ -15,6 +15,7 @@ class OFXFileImportForm(forms.Form):
 
 class StagedTransactionModelForm(ModelForm):
     tx_import = forms.BooleanField(initial=False, required=False)
+    tx_split = forms.BooleanField(initial=False, required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,10 +31,14 @@ class StagedTransactionModelForm(ModelForm):
             elif instance.account_model and not instance.transaction_model:
                 self.fields['tx_import'].widget.attrs['disabled'] = False
 
+            if instance.parent_id is not None:
+                self.fields['tx_split'].disabled = True
+
     class Meta:
         model = StagedTransactionModel
         fields = [
             'tx_import',
+            'amount_split',
             'account_model'
         ]
         widgets = {
@@ -41,14 +46,6 @@ class StagedTransactionModelForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
             })
         }
-
-    # def clean(self):
-    #     account_model = self.cleaned_data['account_model']
-    #     txs_model = self.cleaned_data['txs_model']
-    #
-    #     if txs_model and not account_model:
-    #         raise ValidationError('If tx, ea must be present.')
-
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 

@@ -10,6 +10,7 @@ from itertools import chain, groupby
 
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Count
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -223,7 +224,9 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
         staged_txs_qs = job_model.stagedtransactionmodel_set.all()
         staged_txs_qs = staged_txs_qs.select_related(
             'transaction_model',
-            'transaction_model__account').order_by('-date_posted', '-amount')
+            'transaction_model__account').order_by('date_posted', '-amount').annotate(
+            txs_count=Count('split_transaction_set')
+        )
         context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
@@ -246,6 +249,12 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                                                     entity_slug=kwargs['entity_slug'])
         if txs_formset.is_valid():
             txs_formset.save()
+
+            for tx_form in txs_formset:
+                is_split = tx_form.cleaned_data['tx_split'] is True
+                if is_split:
+                    tx_form.instance.add_split()
+
             staged_to_import = [
                 tx.instance for tx in txs_formset if all([
                     tx.cleaned_data['account_model'],
