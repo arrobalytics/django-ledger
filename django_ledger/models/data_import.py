@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
@@ -103,6 +103,10 @@ class StagedTransactionModelQuerySet(models.QuerySet):
 
 class StagedTransactionModelManager(models.Manager):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.annotate(txs_count=Count('split_transaction_set'))
+
     def for_job(self, entity_slug: str, user_model, job_pk):
         qs = self.get_queryset()
         return qs.filter(
@@ -127,7 +131,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     import_job = models.ForeignKey('django_ledger.ImportJobModel', on_delete=models.CASCADE)
     fit_id = models.CharField(max_length=100)
     date_posted = models.DateField(verbose_name=_('Date Posted'))
-    amount = models.DecimalField(decimal_places=2, max_digits=15, editable=False)
+    amount = models.DecimalField(decimal_places=2,
+                                 max_digits=15,
+                                 editable=False,
+                                 null=True,
+                                 blank=True)
     amount_split = models.DecimalField(decimal_places=2, max_digits=15, null=True, blank=True)
     name = models.CharField(max_length=200, blank=True, null=True)
     memo = models.CharField(max_length=200, blank=True, null=True)
@@ -154,25 +162,79 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['transaction_model']),
         ]
 
+    def __str__(self):
+        return f'{self.__class__.__name__}: {self.get_amount()}'
+
+    def get_amount(self) -> Decimal:
+        if self.is_children():
+            return self.amount_split
+        return self.amount
+
+    def can_import(self) -> bool:
+        return all([
+            self.account_model_id is not None,
+            self.transaction_model_id is None,
+
+        ])
+
     def is_imported(self) -> bool:
-        return self.transaction_model_id is not None
+        return all([
+            self.account_model_id is not None,
+            self.transaction_model_id is not None,
+        ])
 
     def is_pending(self) -> bool:
         return self.transaction_model_id is None
 
-    def is_split(self):
-        return self.parent_id is not None
+    def is_children(self) -> bool:
+        return all([
+            self.parent_id is not None,
+        ])
 
-    def add_split(self):
-        new_txs = StagedTransactionModel.objects.get(uuid__exact=self.uuid)
-        new_txs.pk = None
-        new_txs.parent = self
-        new_txs.amount_split = Decimal('0.00')
-        new_txs.save()
+    def has_children(self) -> bool:
+        try:
+            has_splits = getattr(self, 'txs_count') > 0
+        except AttributeError:
+            has_splits = self.split_transaction_set.only('uuid').count() > 0
+        return has_splits
+
+    def can_split(self) -> bool:
+        return not self.is_children()
+
+    def add_split(self, raise_exception: bool = True, commit: bool = True, n: int = 1):
+
+        if not self.can_split():
+            if raise_exception:
+                raise ImportJobModelValidationError(
+                    message=_(f'Staged Transaction {self.uuid} already split.')
+                )
+            return
+
+        if not self.has_children():
+            n += 1
+
+        new_txs = [
+            StagedTransactionModel(
+                parent=self,
+                import_job=self.import_job,
+                fit_id=self.fit_id,
+                date_posted=self.date_posted,
+                amount=None,
+                amount_split=Decimal('0.00'),
+                name=f'SPLIT: {self.name}'
+            ) for _ in range(n)
+        ]
+
+        for txs in new_txs:
+            txs.clean()
+
+        if commit:
+            new_txs = StagedTransactionModel.objects.bulk_create(objs=new_txs)
+
         return new_txs
 
     def clean(self):
-        if self.parent_id is None:
+        if self.has_children():
             self.amount_split = None
 
 

@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select
+from django.forms import ModelForm, BaseModelFormSet, modelformset_factory, Select, NumberInput, HiddenInput
 
 from django_ledger.models import StagedTransactionModel, AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -19,20 +19,28 @@ class StagedTransactionModelForm(ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        instance = getattr(self, 'instance', None)
+        instance: StagedTransactionModel = getattr(self, 'instance', None)
         if instance:
-            if instance.account_model and instance.transaction_model:
-                self.fields['account_model'].widget.attrs['disabled'] = True
-                self.fields['account_model'].widget.attrs['value'] = instance.account_model
-                self.fields['tx_import'].widget.attrs['disabled'] = True
-                self.fields['tx_import'].widget.attrs['value'] = True
-            elif not instance.account_model:
-                self.fields['tx_import'].widget.attrs['disabled'] = True
-            elif instance.account_model and not instance.transaction_model:
-                self.fields['tx_import'].widget.attrs['disabled'] = False
 
-            if instance.parent_id is not None:
+            if not instance.is_children():
+                self.fields['amount_split'].widget = HiddenInput()
+
+            if instance.has_children():
+                self.fields['account_model'].widget = HiddenInput()
+
+            if not instance.can_import():
+                self.fields['tx_import'].disabled = True
+                self.fields['tx_import'].widget = HiddenInput()
+            if not instance.can_split():
                 self.fields['tx_split'].disabled = True
+                self.fields['tx_split'].widget = HiddenInput()
+
+
+    def clean_account_model(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if staged_txs_model.has_children():
+            return None
+        return self.cleaned_data['account_model']
 
     class Meta:
         model = StagedTransactionModel
@@ -44,8 +52,12 @@ class StagedTransactionModelForm(ModelForm):
         widgets = {
             'account_model': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small',
+            }),
+            'amount_split': NumberInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-small'
             })
         }
+
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 

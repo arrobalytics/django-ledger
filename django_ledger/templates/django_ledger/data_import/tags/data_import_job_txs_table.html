@@ -16,7 +16,6 @@
         <table class="table is-narrow is-fullwidth is-bordered is-striped django-ledger-table-bottom-margin-75">
             <thead>
             <tr class="has-text-centered is-error">
-                <th>Is Split</th>
                 <th>Dated Posted</th>
                 <th>Description</th>
                 <th>Amount</th>
@@ -29,25 +28,28 @@
 
 
             <tbody>
+
             {% for txf in staged_txs_formset %}
-                <tr>
-                    {% for hidden_field in txf.hidden_fields %}
-                        {{ hidden_field }}
-                    {% endfor %}
-                    <td>{{ txf.instance.is_split }}</td>
-                    <td>{{ txf.instance.date_posted }}</td>
-                    <td>{{ txf.instance.name }}</td>
-                    <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
-                    {% if txf.instance.is_split %}
+                <tr class="{% if txf.instance.is_children %}has-background-primary{% elif txf.instance.has_children %}has-background-primary-light{% endif %}">
+                    {% for hidden_field in txf.hidden_fields %}{{ hidden_field }}{% endfor %}
+                    {% if txf.instance.is_children %}
+                        <td class="has-background-primary-light" style="border: 0px"></td>
+                        <td class="has-background-primary-light" style="border: 0px"></td>
+                        <td class="has-background-primary-light" style="border: 0px"></td>
                         <td>{{ txf.amount_split }}</td>
                     {% else %}
-                        <td></td>
+                        <td>{{ txf.instance.date_posted }}</td>
+                        <td>{{ txf.instance.name }}</td>
+                        <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                        <td>{{ txf.amount_split }}{% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
                     {% endif %}
+
                     <td>{{ txf.account_model }}</td>
-                    <td>{{ txf.tx_import }}</td>
-                    <td>{{ txf.tx_split }}</td>
+                    <td class="has-text-centered">{{ txf.tx_import }}</td>
+                    <td class="has-text-centered">{{ txf.tx_split }}</td>
                 </tr>
             {% endfor %}
+
             </tbody>
         </table>
     </div>

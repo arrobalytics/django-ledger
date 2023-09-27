@@ -10,13 +10,13 @@ from itertools import chain, groupby
 
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count
+from django.db.models import Count, When, Case, F, Sum
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import now, make_aware
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, FormView, DetailView
+from django.views.generic import ListView, FormView, DetailView, RedirectView
 
 from django_ledger.forms.data_import import OFXFileImportForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
@@ -223,9 +223,19 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
 
         staged_txs_qs = job_model.stagedtransactionmodel_set.all()
         staged_txs_qs = staged_txs_qs.select_related(
+            'parent',
+            'account_model',
             'transaction_model',
-            'transaction_model__account').order_by('date_posted', '-amount').annotate(
-            txs_count=Count('split_transaction_set')
+            'transaction_model__account').annotate(
+            group_uuid=Case(
+                When(parent_id__isnull=True, then=F('uuid')),
+                When(parent_id__isnull=False, then=F('parent_id'))
+            ),
+            total_amount_split=Sum('split_transaction_set__amount_split')
+        ).order_by(
+            'date_posted',
+            'group_uuid',
+            '-txs_count'
         )
         context['staged_txs_qs'] = staged_txs_qs
 
