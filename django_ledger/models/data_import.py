@@ -7,15 +7,17 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from decimal import Decimal
+from typing import Optional, Set
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum, Case, When, F
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.utils import lazy_loader
 
 
 class ImportJobModelValidationError(ValidationError):
@@ -105,7 +107,23 @@ class StagedTransactionModelManager(models.Manager):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.annotate(txs_count=Count('split_transaction_set'))
+        return qs.select_related(
+            'parent',
+            'account_model',
+            'transaction_model',
+            'transaction_model__account').annotate(
+            children_count=Count('split_transaction_set'),
+            children_mapped_count=Count('split_transaction_set__account_model_id'),
+            total_amount_split=Sum('split_transaction_set__amount_split'),
+            group_uuid=Case(
+                When(parent_id__isnull=True, then=F('uuid')),
+                When(parent_id__isnull=False, then=F('parent_id'))
+            ),
+        ).order_by(
+            'date_posted',
+            'group_uuid',
+            '-children_count'
+        )
 
     def for_job(self, entity_slug: str, user_model, job_pk):
         qs = self.get_queryset()
@@ -170,13 +188,6 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             return self.amount_split
         return self.amount
 
-    def can_import(self) -> bool:
-        return all([
-            self.account_model_id is not None,
-            self.transaction_model_id is None,
-
-        ])
-
     def is_imported(self) -> bool:
         return all([
             self.account_model_id is not None,
@@ -186,6 +197,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def is_pending(self) -> bool:
         return self.transaction_model_id is None
 
+    def is_mapped(self) -> bool:
+        return self.account_model_id is not None
+
+    def is_single(self) -> bool:
+        return all([
+            not self.is_children(),
+            not self.has_children()
+        ])
+
     def is_children(self) -> bool:
         return all([
             self.parent_id is not None,
@@ -193,7 +213,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def has_children(self) -> bool:
         try:
-            has_splits = getattr(self, 'txs_count') > 0
+            has_splits = getattr(self, 'children_count') > 0
         except AttributeError:
             has_splits = self.split_transaction_set.only('uuid').count() > 0
         return has_splits
@@ -233,9 +253,60 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
         return new_txs
 
-    def clean(self):
+    def is_total_amount_split(self) -> bool:
+        return self.amount == getattr(self, 'total_amount_split')
+
+    def are_all_children_mapped(self) -> bool:
+        return getattr(self, 'children_count') == getattr(self, 'children_mapped_count')
+
+    def can_import(self) -> bool:
+        if self.is_children():
+            return False
+        elif self.has_children():
+            return all([
+                self.is_total_amount_split(),
+                self.are_all_children_mapped(),
+                self.is_role_mapping_valid(raise_exception=False)
+            ])
+        return all([
+            self.account_model_id is not None,
+            self.transaction_model_id is None,
+        ])
+
+    def get_import_role_set(self) -> Optional[Set[str]]:
+        if self.is_single() and self.is_mapped():
+            return set(self.account_model.role)
+        if self.has_children():
+            return set(txs.account_model.role for txs in self.split_transaction_set.all() if txs.is_mapped())
+
+    def get_prospect_je_activity(self, raise_exception: bool = True) -> Optional[str]:
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
+        role_set = self.get_import_role_set()
+        if role_set:
+            try:
+                return JournalEntryModel.get_activity_from_roles(role_set=role_set)
+            except ValidationError as e:
+                if raise_exception:
+                    raise e
+
+    def is_role_mapping_valid(self, raise_exception: bool = True) -> bool:
+        try:
+            self.get_prospect_je_activity()
+            return True
+        except ValidationError as e:
+            if raise_exception:
+                raise e
+            return False
+
+    def clean(self, verify: bool = False):
         if self.has_children():
             self.amount_split = None
+            self.account_model = None
+        elif self.is_children():
+            self.amount = None
+
+        if verify:
+            self.is_role_mapping_valid(raise_exception=True)
 
 
 class ImportJobModel(ImportJobModelAbstract):

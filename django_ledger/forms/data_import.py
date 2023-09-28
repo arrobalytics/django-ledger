@@ -35,7 +35,6 @@ class StagedTransactionModelForm(ModelForm):
                 self.fields['tx_split'].disabled = True
                 self.fields['tx_split'].widget = HiddenInput()
 
-
     def clean_account_model(self):
         staged_txs_model: StagedTransactionModel = self.instance
         if staged_txs_model.has_children():
@@ -85,5 +84,7 @@ StagedTransactionModelFormSet = modelformset_factory(
     model=StagedTransactionModel,
     form=StagedTransactionModelForm,
     formset=BaseStagedTransactionModelFormSet,
-    can_delete=False,
+    can_delete=True,
+    can_delete_extra=0,
+    can_order=False,
     extra=0)

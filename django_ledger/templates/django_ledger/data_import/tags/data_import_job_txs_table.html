@@ -3,8 +3,6 @@
 
 
 <form method="post">
-
-
     {{ staged_txs_formset.non_form_errors }}
     {% if staged_txs_formset.errors %}
         {{ staged_txs_formset.errors }}
@@ -21,8 +19,9 @@
                 <th>Amount</th>
                 <th>Split Amount</th>
                 <th>Map To</th>
-                <th>Commit TX</th>
-                <th>Split TX</th>
+                <th>Import</th>
+                <th>Split</th>
+                <th>Delete</th>
             </tr>
             </thead>
 
@@ -41,12 +40,14 @@
                         <td>{{ txf.instance.date_posted }}</td>
                         <td>{{ txf.instance.name }}</td>
                         <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
-                        <td>{{ txf.amount_split }}{% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
+                        <td>
+                            {{ txf.amount_split }}{% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
                     {% endif %}
 
                     <td>{{ txf.account_model }}</td>
                     <td class="has-text-centered">{{ txf.tx_import }}</td>
                     <td class="has-text-centered">{{ txf.tx_split }}</td>
+                    <td class="has-text-centered">{{ txf.DELETE }}</td>
                 </tr>
             {% endfor %}
 

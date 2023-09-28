@@ -32,7 +32,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
-from typing import Set, Union, Optional, Dict, Tuple
+from typing import Set, Union, Optional, Dict, Tuple, List
 from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
@@ -49,7 +49,7 @@ from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROU
                                     GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE,
                                     GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
                                     GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
-                                    GROUP_CFS_INVESTING_SECURITIES)
+                                    GROUP_CFS_INVESTING_SECURITIES, validate_roles)
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
@@ -827,6 +827,79 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
 
+    @classmethod
+    def get_activity_from_roles(cls,
+                                role_set: Union[List[str], Set[str]],
+                                validate: bool = False,
+                                raise_exception: bool = True) -> str:
+
+        if validate:
+            role_set = validate_roles(roles=role_set)
+        else:
+            if isinstance(role_set, list):
+                role_set = set(role_set)
+
+        activity = None
+        # determining if investing....
+        is_investing_for_ppe = all([
+            # all roles must be in group
+            all([r in GROUP_CFS_INVESTING_PPE for r in role_set]),
+            # at least one role
+            sum([r in GROUP_CFS_INVESTING_PPE for r in role_set]) > 0,
+            # at least one role
+            # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_list]) > 0,
+        ])
+        is_investing_for_securities = all([
+            # all roles must be in group
+            all([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]),
+            # at least one role
+            sum([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]) > 0,
+            # at least one role
+            # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_list]) > 0,
+        ])
+
+        # determining if financing...
+        is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in role_set])
+        is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in role_set])
+        is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in role_set])
+        is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in role_set])
+
+        is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in role_set])
+
+        if sum([
+            is_investing_for_ppe,
+            is_investing_for_securities,
+            is_financing_lt_debt,
+            is_financing_st_debt,
+            is_financing_issuing_equity,
+            is_financing_dividends,
+            is_operating
+        ]) > 1:
+            if raise_exception:
+                raise JournalEntryValidationError(
+                    f'Multiple activities detected in roles JE {role_set}.')
+        else:
+            if is_investing_for_ppe:
+                activity = cls.INVESTING_PPE
+            elif is_investing_for_securities:
+                activity = cls.INVESTING_SECURITIES
+            elif is_financing_st_debt:
+                activity = cls.FINANCING_STD
+            elif is_financing_lt_debt:
+                activity = cls.FINANCING_LTD
+            elif is_financing_issuing_equity:
+                activity = cls.FINANCING_EQUITY
+            elif is_financing_dividends:
+                activity = cls.FINANCING_DIVIDENDS
+            elif is_operating:
+                activity = cls.OPERATING_ACTIVITY
+            else:
+                if raise_exception:
+                    raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
+                                                      'Split into multiple Journal Entries or check'
+                                                      ' your account selection.')
+        return activity
+
     def generate_activity(self,
                           txs_qs: Optional[TransactionModelQuerySet] = None,
                           raise_exception: bool = True,
@@ -856,67 +929,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 if not cash_is_involved:
                     self.activity = None
                 else:
-                    roles_involved = self.get_txs_roles(txs_qs, exclude_cash_role=True)
-
-                    # determining if investing....
-                    is_investing_for_ppe = all([
-                        # all roles must be in group
-                        all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),
-                        # at least one role
-                        sum([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]) > 0,
-                        # at least one role
-                        # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,
-                    ])
-                    is_investing_for_securities = all([
-                        # all roles must be in group
-                        all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),
-                        # at least one role
-                        sum([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]) > 0,
-                        # at least one role
-                        # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,
-                    ])
-
-                    # determining if financing...
-                    is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in roles_involved])
-                    is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in roles_involved])
-                    is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in roles_involved])
-                    is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in roles_involved])
-
-                    is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
-
-                    if sum([
-                        is_investing_for_ppe,
-                        is_investing_for_securities,
-                        is_financing_lt_debt,
-                        is_financing_st_debt,
-                        is_financing_issuing_equity,
-                        is_financing_dividends,
-                        is_operating
-                    ]) > 1:
-                        if raise_exception:
-                            raise JournalEntryValidationError(
-                                f'Multiple activities detected in roles JE {roles_involved}.')
-                    else:
-                        if is_investing_for_ppe:
-                            self.activity = self.INVESTING_PPE
-                        elif is_investing_for_securities:
-                            self.activity = self.INVESTING_SECURITIES
-
-                        elif is_financing_st_debt:
-                            self.activity = self.FINANCING_STD
-                        elif is_financing_lt_debt:
-                            self.activity = self.FINANCING_LTD
-                        elif is_financing_issuing_equity:
-                            self.activity = self.FINANCING_EQUITY
-                        elif is_financing_dividends:
-                            self.activity = self.FINANCING_DIVIDENDS
-                        elif is_operating:
-                            self.activity = self.OPERATING_ACTIVITY
-                        else:
-                            if raise_exception:
-                                raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
-                                                                  'Split into multiple Journal Entries or check'
-                                                                  ' your account selection.')
+                    role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
+                    self.activity = self.get_activity_from_roles(role_set=role_list)
         return self.activity
 
     # todo: add entity_model as parameter on all functions...

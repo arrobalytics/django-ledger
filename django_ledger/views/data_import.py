@@ -171,20 +171,20 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
             tx.clean()
 
         staged_txs_model_list = StagedTransactionModel.objects.bulk_create(staged_txs_model_list)
-        je_dates_set = set(stx.date_posted for stx in staged_txs_model_list)
+        # je_dates_set = set(stx.date_posted for stx in staged_txs_model_list)
 
-        ofx_je_models = [
-            JournalEntryModel(
-                timestamp=jed,
-                description=import_job.description,
-                ledger=import_job.ledger_model,
-                locked=False,
-                posted=False
-            ) for jed in je_dates_set
-        ]
+        # ofx_je_models = [
+        #     JournalEntryModel(
+        #         timestamp=jed,
+        #         description=import_job.description,
+        #         ledger=import_job.ledger_model,
+        #         locked=False,
+        #         posted=False
+        #     ) for jed in je_dates_set
+        # ]
 
-        for je in ofx_je_models:
-            je.clean(verify=False)
+        # for je in ofx_je_models:
+        #     je.clean(verify=False)
 
         # ofx_je_models = JournalEntryModel.objects.bulk_create(objs=ofx_je_models)
         return super().form_valid(form=form)
@@ -222,21 +222,6 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
             )
 
         staged_txs_qs = job_model.stagedtransactionmodel_set.all()
-        staged_txs_qs = staged_txs_qs.select_related(
-            'parent',
-            'account_model',
-            'transaction_model',
-            'transaction_model__account').annotate(
-            group_uuid=Case(
-                When(parent_id__isnull=True, then=F('uuid')),
-                When(parent_id__isnull=False, then=F('parent_id'))
-            ),
-            total_amount_split=Sum('split_transaction_set__amount_split')
-        ).order_by(
-            'date_posted',
-            'group_uuid',
-            '-txs_count'
-        )
         context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
