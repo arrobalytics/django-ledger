@@ -292,6 +292,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     ]
 
     VALID_ACTIVITIES = list(chain.from_iterable([[a[0] for a in cat[1]] for cat in ACTIVITIES]))
+    MAP_ACTIVITIES = dict(chain.from_iterable([[(a[0], cat[0]) for a in cat[1]] for cat in ACTIVITIES]))
     NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -847,7 +848,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             # at least one role
             sum([r in GROUP_CFS_INVESTING_PPE for r in role_set]) > 0,
             # at least one role
-            # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_list]) > 0,
+            # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_set]) > 0,
         ])
         is_investing_for_securities = all([
             # all roles must be in group
@@ -855,8 +856,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             # at least one role
             sum([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]) > 0,
             # at least one role
-            # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_list]) > 0,
+            # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_set]) > 0,
         ])
+
+        # IS INVESTING OTHERS....?
 
         # determining if financing...
         is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in role_set])

@@ -180,6 +180,10 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['transaction_model']),
         ]
 
+    def __init__(self, *args, **kwargs):
+        self._activity = None
+        super().__init__(*args, **kwargs)
+
     def __str__(self):
         return f'{self.__class__.__name__}: {self.get_amount()}'
 
@@ -210,6 +214,9 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return all([
             self.parent_id is not None,
         ])
+
+    def has_activity(self) -> bool:
+        return self._activity is not None
 
     def has_children(self) -> bool:
         try:
@@ -277,26 +284,42 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if self.is_single() and self.is_mapped():
             return set(self.account_model.role)
         if self.has_children():
-            return set(txs.account_model.role for txs in self.split_transaction_set.all() if txs.is_mapped())
+            split_txs_qs = self.split_transaction_set.all()
+            if all([txs.is_mapped() for txs in split_txs_qs]):
+                return set(txs.account_model.role for txs in split_txs_qs)
 
-    def get_prospect_je_activity(self, raise_exception: bool = True) -> Optional[str]:
-        JournalEntryModel = lazy_loader.get_journal_entry_model()
-        role_set = self.get_import_role_set()
-        if role_set:
+    def get_prospect_je_activity_try(self, raise_exception: bool = True) -> Optional[str]:
+        if not self.has_activity():
+            JournalEntryModel = lazy_loader.get_journal_entry_model()
+            role_set = self.get_import_role_set()
+            if role_set is not None:
+                try:
+                    self._activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
+                    return self._activity
+                except ValidationError as e:
+                    if raise_exception:
+                        raise e
+        return self._activity
+
+    def get_prospect_je_activity(self) -> Optional[str]:
+        return self.get_prospect_je_activity_try(raise_exception=False)
+
+    def get_prospect_je_activity_display(self) -> Optional[str]:
+        activity = self.get_prospect_je_activity_try(raise_exception=False)
+        if activity is not None:
+            JournalEntryModel = lazy_loader.get_journal_entry_model()
+            return JournalEntryModel.MAP_ACTIVITIES[activity]
+
+    def is_role_mapping_valid(self, raise_exception: bool = False) -> bool:
+        if not self.has_activity():
             try:
-                return JournalEntryModel.get_activity_from_roles(role_set=role_set)
+                self._activity = self.get_prospect_je_activity_try(raise_exception=raise_exception)
+                return True
             except ValidationError as e:
                 if raise_exception:
                     raise e
-
-    def is_role_mapping_valid(self, raise_exception: bool = True) -> bool:
-        try:
-            self.get_prospect_je_activity()
-            return True
-        except ValidationError as e:
-            if raise_exception:
-                raise e
-            return False
+                return False
+        return True
 
     def clean(self, verify: bool = False):
         if self.has_children():

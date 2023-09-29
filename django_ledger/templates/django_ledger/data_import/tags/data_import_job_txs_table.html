@@ -39,12 +39,15 @@
                     {% else %}
                         <td>{{ txf.instance.date_posted }}</td>
                         <td>{{ txf.instance.name }}</td>
-                        <td>{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
-                        <td>
-                            {{ txf.amount_split }}{% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
+                        <td class="has-text-right has-text-weight-bold">{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                        <td class="has-text-right">{{ txf.amount_split }}
+                            {% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
                     {% endif %}
 
-                    <td>{{ txf.account_model }}</td>
+                    <td>{{ txf.account_model }}
+                        {% if txf.instance.get_prospect_je_activity_display %}
+                        	{{ txf.instance.get_prospect_je_activity_display }}
+                        {% endif %}</td>
                     <td class="has-text-centered">{{ txf.tx_import }}</td>
                     <td class="has-text-centered">{{ txf.tx_split }}</td>
                     <td class="has-text-centered">{{ txf.DELETE }}</td>
