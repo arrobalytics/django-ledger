@@ -36,19 +36,17 @@ from typing import Set, Union, Optional, Dict, Tuple, List
 from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
-from django.db.models.signals import pre_save
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, QuerySet, F
 from django.db.models.functions import Coalesce
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
                                     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE,
-                                    GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
-                                    GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
+                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
                                     GROUP_CFS_INVESTING_SECURITIES, validate_roles)
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
@@ -803,10 +801,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         # todo: implement distinct for non SQLite Backends...
         if exclude_cash_role:
-            roles_involved = [i.account.role for i in txs_qs if i.account.role != ASSET_CA_CASH]
-        else:
-            roles_involved = [i.account.role for i in txs_qs]
-        return set(roles_involved)
+            return set([i.account.role for i in txs_qs if i.account.role != ASSET_CA_CASH])
+        return set([i.account.role for i in txs_qs])
 
     def has_activity(self) -> bool:
         return self.activity is not None

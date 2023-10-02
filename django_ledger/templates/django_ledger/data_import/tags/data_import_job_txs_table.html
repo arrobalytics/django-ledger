@@ -19,6 +19,7 @@
                 <th>Amount</th>
                 <th>Split Amount</th>
                 <th>Map To</th>
+                <th>Unit</th>
                 <th>Import</th>
                 <th>Split</th>
                 <th>Delete</th>
@@ -39,15 +40,27 @@
                     {% else %}
                         <td>{{ txf.instance.date_posted }}</td>
                         <td>{{ txf.instance.name }}</td>
-                        <td class="has-text-right has-text-weight-bold">{% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                        <td class="has-text-right has-text-weight-bold">
+                            {% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
                         <td class="has-text-right">{{ txf.amount_split }}
-                            {% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}</td>
+                            {% if txf.instance.has_children %}
+                                {% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}
+                            {% endif %} </td>
                     {% endif %}
 
-                    <td>{{ txf.account_model }}
+                    <td>
                         {% if txf.instance.get_prospect_je_activity_display %}
-                        	{{ txf.instance.get_prospect_je_activity_display }}
-                        {% endif %}</td>
+                            <span class="is-italic">{% trans 'Transaction Activity' %}:</span>
+                            <span class="has-text-weight-bold">
+                            {{ txf.instance.get_prospect_je_activity_display }}
+                        </span>
+                        {% endif %}
+                        {{ txf.account_model }}
+                    </td>
+                    <td>{{ txf.unit_model }}{% if txf.instance.is_children %}
+                    	<span class="content is-small">{{ txf.instance.unit_model.name }}</span>
+                    {% endif %}
+                    </td>
                     <td class="has-text-centered">{{ txf.tx_import }}</td>
                     <td class="has-text-centered">{{ txf.tx_split }}</td>
                     <td class="has-text-centered">{{ txf.DELETE }}</td>

@@ -170,23 +170,7 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
         for tx in staged_txs_model_list:
             tx.clean()
 
-        staged_txs_model_list = StagedTransactionModel.objects.bulk_create(staged_txs_model_list)
-        # je_dates_set = set(stx.date_posted for stx in staged_txs_model_list)
-
-        # ofx_je_models = [
-        #     JournalEntryModel(
-        #         timestamp=jed,
-        #         description=import_job.description,
-        #         ledger=import_job.ledger_model,
-        #         locked=False,
-        #         posted=False
-        #     ) for jed in je_dates_set
-        # ]
-
-        # for je in ofx_je_models:
-        #     je.clean(verify=False)
-
-        # ofx_je_models = JournalEntryModel.objects.bulk_create(objs=ofx_je_models)
+        StagedTransactionModel.objects.bulk_create(staged_txs_model_list)
         return super().form_valid(form=form)
 
 
@@ -237,7 +221,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
         return context
 
     def post(self, request, **kwargs):
-        response = super().get(request, **kwargs)
+        _ = super().get(request, **kwargs)
         job_model: ImportJobModel = self.object
         txs_formset = StagedTransactionModelFormSet(request.POST,
                                                     user_model=self.request.user,
@@ -271,17 +255,24 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                 ))
 
                 txs_digest.sort(key=lambda x: x['staged_tx_model'].date_posted)
-                txs_digest_gb = groupby(txs_digest, key=lambda x: x['staged_tx_model'].date_posted)
+                txs_digest_gb = groupby(txs_digest, key=lambda x: (
+                    x['staged_tx_model'].date_posted,
+                    x['staged_tx_model'].unit_model if x['staged_tx_model'].unit_model_id is not None else ''
+                ))
 
-                for dt_posted, to_be_committed in txs_digest_gb:
+                for (dt_posted, unit_model), to_be_committed in txs_digest_gb:
                     je_model, txs_models = ledger_model.commit_txs(
                         je_timestamp=dt_posted,
+                        je_unit_model=unit_model if unit_model else None,
                         je_txs=list(to_be_committed),
                         je_desc='OFX Import JE',
                         je_posted=False,
-                        force_je_retrieval=True
+                        force_je_retrieval=False
                     )
-                StagedTransactionModel.objects.bulk_update(staged_to_import, fields=['transaction_model'])
+                StagedTransactionModel.objects.bulk_update(
+                    staged_to_import,
+                    fields=['transaction_model']
+                )
 
             # txs_formset.save()
             messages.add_message(request,

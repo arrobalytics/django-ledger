@@ -478,11 +478,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(x1=self.role_bs.upper(),
-                                                      x2=self.name,
-                                                      x3=self.role.upper(),
-                                                      x4=self.balance_type,
-                                                      x5=self.code)
+        return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(
+            x1=self.role_bs.upper(),
+            x2=self.name,
+            x3=self.role.upper(),
+            x4=self.balance_type,
+            x5=self.code
+        )
 
     @property
     def role_bs(self) -> str:

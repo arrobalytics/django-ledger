@@ -301,8 +301,10 @@ DEFAULT_CHART_OF_ACCOUNTS = [
      'parent': None},
     {'code': '6075', 'role': roles.EXPENSE_AMORTIZATION, 'balance_type': 'debit', 'name': 'Amortization Expense',
      'parent': None},
-    {'code': '6130', 'role': roles.EXPENSE_INTEREST, 'balance_type': 'debit', 'name': 'Interest Expense',
-     'parent': None},
+    {'code': '6130', 'role': roles.EXPENSE_INTEREST_ST, 'balance_type': 'debit',
+     'name': 'Interest Expense on Short Term Debt', 'parent': None},
+    {'code': '6131', 'role': roles.EXPENSE_INTEREST_LT, 'balance_type': 'debit',
+     'name': 'Interest Expense on Long Term Debt', 'parent': None},
     {'code': '6210', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Payroll Taxes', 'parent': None},
     {'code': '6280', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Taxes', 'parent': None},
     {'code': '6500', 'role': roles.EXPENSE_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense', 'parent': None}

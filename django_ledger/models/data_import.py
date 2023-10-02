@@ -16,6 +16,7 @@ from django.db.models import Q, Count, Sum, Case, When, F
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import ASSET_CA_CASH
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 
@@ -110,6 +111,7 @@ class StagedTransactionModelManager(models.Manager):
         return qs.select_related(
             'parent',
             'account_model',
+            'unit_model',
             'transaction_model',
             'transaction_model__account').annotate(
             children_count=Count('split_transaction_set'),
@@ -159,9 +161,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     memo = models.CharField(max_length=200, blank=True, null=True)
 
     account_model = models.ForeignKey('django_ledger.AccountModel',
-                                      on_delete=models.CASCADE,
+                                      on_delete=models.RESTRICT,
                                       null=True,
                                       blank=True)
+
+    unit_model = models.ForeignKey('django_ledger.EntityUnitModel',
+                                   on_delete=models.RESTRICT,
+                                   null=True,
+                                   blank=True,
+                                   verbose_name=_('Entity Unit Model'))
 
     transaction_model = models.OneToOneField('django_ledger.TransactionModel',
                                              on_delete=models.SET_NULL,
@@ -228,6 +236,15 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def can_split(self) -> bool:
         return not self.is_children()
 
+    def can_have_unit(self) -> bool:
+        return any([
+            not self.is_children(),
+            self.is_single()
+        ])
+
+    def can_have_account(self) -> bool:
+        return not self.has_children()
+
     def add_split(self, raise_exception: bool = True, commit: bool = True, n: int = 1):
 
         if not self.can_split():
@@ -282,11 +299,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def get_import_role_set(self) -> Optional[Set[str]]:
         if self.is_single() and self.is_mapped():
-            return set(self.account_model.role)
+            return {self.account_model.role}
         if self.has_children():
             split_txs_qs = self.split_transaction_set.all()
             if all([txs.is_mapped() for txs in split_txs_qs]):
-                return set(txs.account_model.role for txs in split_txs_qs)
+                return set([txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH])
 
     def get_prospect_je_activity_try(self, raise_exception: bool = True) -> Optional[str]:
         if not self.has_activity():
@@ -327,6 +344,9 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             self.account_model = None
         elif self.is_children():
             self.amount = None
+
+        if not self.can_have_unit():
+            self.unit_model = self.parent.unit_model
 
         if verify:
             self.is_role_mapping_valid(raise_exception=True)

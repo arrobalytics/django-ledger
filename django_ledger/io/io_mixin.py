@@ -548,6 +548,7 @@ class IODatabaseMixIn:
                    je_txs: List[Dict],
                    je_posted: bool = False,
                    je_ledger_model=None,
+                   je_unit_model=None,
                    je_desc=None,
                    je_origin=None,
                    force_je_retrieval: bool = False):
@@ -597,6 +598,14 @@ class IODatabaseMixIn:
             if je_ledger_model.entity_id != self.uuid:
                 raise IOValidationError(f'LedgerModel {je_ledger_model} does not belong to {self}')
 
+        # Validates that the provided EntityUnitModel id valid...
+        if all([
+            isinstance(self, lazy_loader.get_entity_model()),
+            je_unit_model is not None,
+        ]):
+            if je_unit_model.entity_id != self.uuid:
+                raise IOValidationError(f'EntityUnitModel {je_unit_model} does not belong to {self}')
+
         if not je_ledger_model:
             je_ledger_model = self
 
@@ -615,6 +624,7 @@ class IODatabaseMixIn:
         else:
             je_model = JournalEntryModel(
                 ledger=je_ledger_model,
+                entity_unit=je_unit_model,
                 description=je_desc,
                 timestamp=je_timestamp,
                 origin=je_origin,
