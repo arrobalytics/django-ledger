@@ -205,7 +205,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                 extra_tags='is-danger'
             )
 
-        staged_txs_qs = job_model.stagedtransactionmodel_set.annotated()
+        staged_txs_qs = job_model.stagedtransactionmodel_set.all()
         context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
@@ -223,69 +223,71 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
     def post(self, request, **kwargs):
         _ = super().get(request, **kwargs)
         job_model: ImportJobModel = self.object
+        staged_txs_qs = job_model.stagedtransactionmodel_set.all()
         txs_formset = StagedTransactionModelFormSet(request.POST,
                                                     user_model=self.request.user,
+                                                    queryset=staged_txs_qs,
                                                     entity_slug=kwargs['entity_slug'])
-        if txs_formset.is_valid():
-            txs_formset.save()
 
-            for tx_form in txs_formset:
-                is_split = tx_form.cleaned_data['tx_split'] is True
-                if is_split:
-                    tx_form.instance.add_split()
+        if txs_formset.has_changed():
+            if txs_formset.is_valid():
+                for tx_form in txs_formset:
+                    is_split = tx_form.cleaned_data['tx_split'] is True
+                    if is_split:
+                        tx_form.instance.add_split()
 
-            staged_to_import = [
-                tx.instance for tx in txs_formset if all([
-                    tx.cleaned_data['account_model'],
-                    tx.cleaned_data['tx_import'],
-                    tx.instance.transaction_model is None
-                ])
-            ]
+                staged_to_import = [
+                    tx.instance for tx in txs_formset if all([
+                        tx.cleaned_data['account_model'],
+                        tx.cleaned_data['tx_import'],
+                        tx.instance.transaction_model is None
+                    ])
+                ]
 
-            if len(staged_to_import) > 0:
+                if len(staged_to_import) > 0:
 
-                job_model.configure(commit=True)
-                ledger_model = job_model.ledger_model
-                cash_account = job_model.bank_account_model.cash_account
+                    job_model.configure(commit=True)
+                    ledger_model = job_model.ledger_model
+                    cash_account = job_model.bank_account_model.cash_account
 
-                txs_digest = list(chain.from_iterable(
-                    digest_staged_txs(
-                        staged_txs_model=tx,
-                        cash_account=cash_account) for tx in staged_to_import
-                ))
+                    txs_digest = list(chain.from_iterable(
+                        digest_staged_txs(
+                            staged_txs_model=tx,
+                            cash_account=cash_account) for tx in staged_to_import
+                    ))
 
-                txs_digest.sort(key=lambda x: x['staged_tx_model'].date_posted)
-                txs_digest_gb = groupby(txs_digest, key=lambda x: (
-                    x['staged_tx_model'].date_posted,
-                    x['staged_tx_model'].unit_model if x['staged_tx_model'].unit_model_id is not None else ''
-                ))
+                    txs_digest.sort(key=lambda x: x['staged_tx_model'].date_posted)
+                    txs_digest_gb = groupby(
+                        txs_digest,
+                        key=lambda x: (
+                            x['staged_tx_model'].date_posted,
+                            x['staged_tx_model'].unit_model if x['staged_tx_model'].unit_model_id is not None else ''
+                        ))
 
-                for (dt_posted, unit_model), to_be_committed in txs_digest_gb:
-                    je_model, txs_models = ledger_model.commit_txs(
-                        je_timestamp=dt_posted,
-                        je_unit_model=unit_model if unit_model else None,
-                        je_txs=list(to_be_committed),
-                        je_desc='OFX Import JE',
-                        je_posted=False,
-                        force_je_retrieval=False
-                    )
+                    for (dt_posted, unit_model), to_be_committed in txs_digest_gb:
+                        je_model, txs_models = ledger_model.commit_txs(
+                            je_timestamp=dt_posted,
+                            je_unit_model=unit_model if unit_model else None,
+                            je_txs=list(to_be_committed),
+                            je_desc='OFX Import JE',
+                            je_posted=False,
+                            force_je_retrieval=False
+                        )
 
-                StagedTransactionModel.objects.bulk_update(
-                    staged_to_import,
-                    fields=['transaction_model']
-                )
+                txs_formset.save()
 
-            # txs_formset.save()
-            messages.add_message(request,
-                                 messages.SUCCESS,
-                                 'Successfully saved transactions.',
-                                 extra_tags='is-success')
-            return self.render_to_response(context=self.get_context_data())
-        else:
-            context = self.get_context_data(**kwargs)
-            context['staged_txs_formset'] = txs_formset
-            messages.add_message(request,
-                                 messages.ERROR,
-                                 'Hmmm, this doesn\'t add up!. Check your math!',
-                                 extra_tags='is-danger')
-            return self.render_to_response(context)
+            else:
+                context = self.get_context_data(**kwargs)
+                context['staged_txs_formset'] = txs_formset
+                messages.add_message(request,
+                                     messages.ERROR,
+                                     'Hmmm, this doesn\'t add up!. Check your math!',
+                                     extra_tags='is-danger')
+                return self.render_to_response(context)
+
+        messages.add_message(request,
+                             messages.SUCCESS,
+                             'Successfully saved transactions.',
+                             extra_tags='is-success')
+        return self.render_to_response(context=self.get_context_data())
+
