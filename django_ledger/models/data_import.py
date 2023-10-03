@@ -103,12 +103,8 @@ class StagedTransactionModelQuerySet(models.QuerySet):
     def for_import(self):
         return self.exclude(parent_id__exact=Q('parent_id'))
 
-
-class StagedTransactionModelManager(models.Manager):
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.select_related(
+    def annotated(self):
+        return self.select_related(
             'parent',
             'account_model',
             'unit_model',
@@ -126,6 +122,9 @@ class StagedTransactionModelManager(models.Manager):
             'group_uuid',
             '-children_count'
         )
+
+
+class StagedTransactionModelManager(models.Manager):
 
     def for_job(self, entity_slug: str, user_model, job_pk):
         qs = self.get_queryset()

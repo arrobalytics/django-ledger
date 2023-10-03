@@ -205,7 +205,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                 extra_tags='is-danger'
             )
 
-        staged_txs_qs = job_model.stagedtransactionmodel_set.all()
+        staged_txs_qs = job_model.stagedtransactionmodel_set.annotated()
         context['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
@@ -269,6 +269,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                         je_posted=False,
                         force_je_retrieval=False
                     )
+
                 StagedTransactionModel.objects.bulk_update(
                     staged_to_import,
                     fields=['transaction_model']
