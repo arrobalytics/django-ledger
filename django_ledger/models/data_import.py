@@ -227,11 +227,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return self._activity is not None
 
     def has_children(self) -> bool:
-        try:
-            has_splits = getattr(self, 'children_count') > 0
-        except AttributeError:
-            has_splits = self.split_transaction_set.only('uuid').count() > 0
-        return has_splits
+        return getattr(self, 'children_count') > 0
 
     def can_split(self) -> bool:
         return not self.is_children()

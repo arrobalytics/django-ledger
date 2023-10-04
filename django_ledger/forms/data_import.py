@@ -50,8 +50,14 @@ class StagedTransactionModelForm(ModelForm):
             return staged_txs_model.parent.unit_model
         return self.cleaned_data['unit_model']
 
+    def clean_tx_import(self):
+        staged_txs_model: StagedTransactionModel = self.instance
+        if staged_txs_model.is_children():
+            return staged_txs_model.parent.can_import()
+        return self.cleaned_data['tx_import']
+
     class Meta:
-        model = StagedTransactionModel
+        model = StagedTransactionModel.objects.get_queryset().model
         fields = [
             'tx_import',
             'amount_split',
@@ -98,6 +104,7 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
             form.fields['account_model'].widget.attrs['disabled'] = self.IMPORT_DISABLED
             form.fields['unit_model'].queryset = unit_model_qs
 
+    # def get_queryset(self):
 
 StagedTransactionModelFormSet = modelformset_factory(
     model=StagedTransactionModel,

@@ -417,6 +417,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.ledger.is_locked()
         ])
 
+    def can_delete(self) -> bool:
+        return all([
+            not self.is_locked(),
+            not self.is_posted(),
+        ])
+
     def can_edit_timestamp(self) -> bool:
         return not self.is_locked()
 
@@ -1128,6 +1134,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             txs_qs, verified = self.verify()
             return txs_qs, self.is_verified()
         return TransactionModel.objects.none(), self.is_verified()
+
+    def get_delete_message(self) -> str:
+        return _(f'Are you sure you want to delete JournalEntry Model {self.description} on Ledger {self.ledger.name}?')
+
+    def delete(self, **kwargs):
+        if not self.can_delete():
+            raise JournalEntryValidationError(
+                message=_(f'JournalEntryModel {self.uuid} cannot be deleted...')
+            )
+        return super().delete(**kwargs)
 
     def save(self,
              verify: bool = True,

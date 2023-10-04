@@ -83,6 +83,10 @@
                                    href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Edit' %}</a>
                                 <a class="dropdown-item"
                                    href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'View' %}</a>
+                                {% if je.can_delete %}
+                                    <a class="dropdown-item has-text-danger has-text-weight-bold"
+                                       href="{% url 'django_ledger:je-delete' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Delete' %}</a>
+                                {% endif %}
                                 <a class="dropdown-item"
                                    href="{% url 'django_ledger:je-detail-txs' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Transactions' %}</a>
                             </div>
