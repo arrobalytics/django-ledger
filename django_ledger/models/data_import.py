@@ -7,16 +7,17 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from decimal import Decimal
-from typing import Optional, Set
+from typing import Optional, Set, Dict, List
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Count, Sum, Case, When, F
+from django.db.models import Q, Count, Sum, Case, When, F, Value, DecimalField, BooleanField
+from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import ASSET_CA_CASH
+from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 
@@ -92,16 +93,39 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
                     'ledger_model'
                 ])
 
+    def migrate_txs(self):
+        rti_qs = self.stagedtransactionmodel_set.is_ready_to_import().prefetch_related(
+            'split_transaction_set')
+        ledger_model = self.ledger_model
+
+        for rti_model in rti_qs:
+            commit_dict = rti_model.commit_dict()
+            je_model, txs_models = ledger_model.commit_txs(
+                je_timestamp=rti_model.date_posted,
+                je_unit_model=rti_model.unit_model if rti_model.unit_model else None,
+                je_txs=commit_dict,
+                je_desc='OFX Import JE',
+                je_posted=False,
+                force_je_retrieval=False
+            )
+            staged_to_save = [i['staged_tx_model'] for i in commit_dict]
+            for i in staged_to_save:
+                i.save(update_fields=['transaction_model'])
+
 
 class StagedTransactionModelQuerySet(models.QuerySet):
+
     def is_pending(self):
         return self.filter(transaction_model__isnull=True)
 
     def is_imported(self):
         return self.filter(transaction_model__isnull=False)
 
-    def for_import(self):
-        return self.exclude(parent_id__exact=Q('parent_id'))
+    def is_parent(self):
+        return self.filter(parent_id__isnull=True)
+
+    def is_ready_to_import(self):
+        return self.filter(ready_to_import=True)
 
 
 class StagedTransactionModelManager(models.Manager):
@@ -116,27 +140,54 @@ class StagedTransactionModelManager(models.Manager):
             'transaction_model__account').annotate(
             children_count=Count('split_transaction_set'),
             children_mapped_count=Count('split_transaction_set__account_model_id'),
-            total_amount_split=Sum('split_transaction_set__amount_split'),
+            total_amount_split=Coalesce(
+                Sum('split_transaction_set__amount_split'),
+                Value(value=0.00, output_field=DecimalField())
+            ),
             group_uuid=Case(
                 When(parent_id__isnull=True, then=F('uuid')),
                 When(parent_id__isnull=False, then=F('parent_id'))
             ),
+        ).annotate(
+            ready_to_import=Case(
+                When(
+                    condition=(
+                            Q(children_count__exact=0) &
+                            Q(account_model__isnull=False) &
+                            Q(parent__isnull=True) &
+                            Q(transaction_model__isnull=True)
+                    ),
+                    then=True
+                ),
+                When(
+                    condition=(
+                            Q(children_count__gt=0) &
+                            Q(children_count=F('children_mapped_count')) &
+                            Q(total_amount_split__exact=F('amount')) &
+                            Q(parent__isnull=True) &
+                            Q(transaction_model__isnull=True)
+                    ),
+                    then=True
+                ),
+                default=False,
+                output_field=BooleanField()
+            )
         ).order_by(
             'date_posted',
             'group_uuid',
             '-children_count'
         )
 
-    def for_job(self, entity_slug: str, user_model, job_pk):
-        qs = self.get_queryset()
-        return qs.filter(
-            Q(import_job__bank_account_model__entity__slug__exact=entity_slug) &
-            (
-                    Q(import_job__bank_account_model__entity__admin=user_model) |
-                    Q(import_job__bank_account_model__entity__managers__in=[user_model])
-            ) &
-            Q(import_job__uuid__exact=job_pk)
-        ).prefetch_related('split_transaction_set')
+    # def for_job(self, entity_slug: str, user_model, job_pk):
+    #     qs = self.get_queryset()
+    #     return qs.filter(
+    #         Q(import_job__bank_account_model__entity__slug__exact=entity_slug) &
+    #         (
+    #                 Q(import_job__bank_account_model__entity__admin=user_model) |
+    #                 Q(import_job__bank_account_model__entity__managers__in=[user_model])
+    #         ) &
+    #         Q(import_job__uuid__exact=job_pk)
+    #     ).prefetch_related('split_transaction_set')
 
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
@@ -195,6 +246,44 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.get_amount()}'
 
+    def from_commit_dict(self) -> List[Dict]:
+        if not self.can_import():
+            raise ImportJobModelValidationError(
+                message=_('Cannot commit a transaction that is not ready to import.')
+            )
+        return [{
+            'account': self.import_job.bank_account_model.cash_account,
+            'amount': abs(self.amount),
+            'tx_type': DEBIT if not self.amount < 0.00 else CREDIT,
+            'description': self.name,
+            'staged_tx_model': self
+        }]
+
+    def to_commit_dict(self) -> List[Dict]:
+        if not self.can_import():
+            raise ImportJobModelValidationError(
+                message=_('Cannot commit a transaction that is not ready to import.')
+            )
+        if self.has_children():
+            children_qs = self.split_transaction_set.all()
+            return [{
+                'account': child_txs_model.account_model,
+                'amount': abs(child_txs_model.amount_split),
+                'tx_type': CREDIT if not child_txs_model.amount_split < 0.00 else DEBIT,
+                'description': child_txs_model.name,
+                'staged_tx_model': child_txs_model
+            } for child_txs_model in children_qs]
+        return [{
+            'account': self.account_model,
+            'amount': abs(self.amount),
+            'tx_type': CREDIT if not self.amount < 0.00 else DEBIT,
+            'description': self.name,
+            'staged_tx_model': self
+        }]
+
+    def commit_dict(self):
+        return self.from_commit_dict() + self.to_commit_dict()
+
     def get_amount(self) -> Decimal:
         if self.is_children():
             return self.amount_split
@@ -227,6 +316,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return self._activity is not None
 
     def has_children(self) -> bool:
+        if self._state.adding:
+            return False
         return getattr(self, 'children_count') > 0
 
     def can_split(self) -> bool:
@@ -240,6 +331,14 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def can_have_account(self) -> bool:
         return not self.has_children()
+
+    def can_import(self) -> bool:
+        ready_to_import = getattr(self, 'ready_to_import')
+        if not ready_to_import:
+            return False
+        return all([
+            self.is_role_mapping_valid(raise_exception=False)
+        ])
 
     def add_split(self, raise_exception: bool = True, commit: bool = True, n: int = 1):
 
@@ -278,20 +377,6 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def are_all_children_mapped(self) -> bool:
         return getattr(self, 'children_count') == getattr(self, 'children_mapped_count')
-
-    def can_import(self) -> bool:
-        if self.is_children():
-            return False
-        elif self.has_children():
-            return all([
-                self.is_total_amount_split(),
-                self.are_all_children_mapped(),
-                self.is_role_mapping_valid(raise_exception=False)
-            ])
-        return all([
-            self.account_model_id is not None,
-            self.transaction_model_id is None,
-        ])
 
     def get_import_role_set(self) -> Optional[Set[str]]:
         if self.is_single() and self.is_mapped():

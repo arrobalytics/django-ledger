@@ -53,7 +53,7 @@ class StagedTransactionModelForm(ModelForm):
     def clean_tx_import(self):
         staged_txs_model: StagedTransactionModel = self.instance
         if staged_txs_model.is_children():
-            return staged_txs_model.parent.can_import()
+            return False
         return self.cleaned_data['tx_import']
 
     class Meta:
