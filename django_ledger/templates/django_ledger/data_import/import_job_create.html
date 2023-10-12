@@ -15,6 +15,11 @@
                             {% csrf_token %}
                             <div class="field">
                                 <div class="control">
+                                    {{ form.description }}
+                                </div>
+                            </div>
+                            <div class="field">
+                                <div class="control">
                                     <div id="file-js-django-ledger" class="file has-name">
                                         <label class="file-label">
                                             {{ form.ofx_file }}
@@ -22,7 +27,9 @@
                                                         <span class="icon is-medium">{% icon 'bi:cloud-upload-fill' 24 %}</span>
                                                           <span class="file-label">{{ form.ofx_file.label }}</span>
                                                         </span>
-                                            <span class="file-name">No file uploaded</span>
+                                            <span class="file-name">
+                                                {% trans 'No file uploaded' %}
+                                            </span>
                                         </label>
                                     </div>
                                 </div>

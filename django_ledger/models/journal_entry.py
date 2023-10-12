@@ -113,6 +113,9 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=True)
 
+    def unposted(self):
+        return self.filter(posted=False)
+
     def locked(self):
         """
         Filters the QuerySet to only locked Journal Entries.
@@ -124,6 +127,9 @@ class JournalEntryModelQuerySet(QuerySet):
         """
 
         return self.filter(locked=True)
+
+    def unlocked(self):
+        return self.filter(locked=False)
 
 
 class JournalEntryModelManager(models.Manager):
@@ -834,7 +840,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def get_activity_from_roles(cls,
                                 role_set: Union[List[str], Set[str]],
                                 validate: bool = False,
-                                raise_exception: bool = True) -> str:
+                                raise_exception: bool = True) -> Optional[str]:
 
         if validate:
             role_set = validate_roles(roles=role_set)
@@ -843,6 +849,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 role_set = set(role_set)
 
         activity = None
+
+        # no roles involved
+        if not len(role_set):
+            return
+
         # determining if investing....
         is_investing_for_ppe = all([
             # all roles must be in group

@@ -47,6 +47,13 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQueryS
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    active_only = False
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.active_only:
+            qs = qs.active()
+        return qs
 
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, UpdateView):

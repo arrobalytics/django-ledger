@@ -100,7 +100,7 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelView
     }
     http_method_names = ['get']
     date_field = 'timestamp'
-    paginate_by = 10
+    paginate_by = 20
     allow_empty = True
 
     def get_queryset(self):

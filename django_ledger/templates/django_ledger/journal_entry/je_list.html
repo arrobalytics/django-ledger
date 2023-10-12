@@ -119,10 +119,18 @@
                            href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">
                             {% trans 'Back to Ledger List' %}</a>
                     </div>
+                    <div class="column is-3">
+                        <a class="button is-success is-fullwidth"
+                           href="{% url 'django_ledger:ledger-action-lock-journal-entries' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                            {% trans 'Lock All' %}</a>
+                    </div>
+                    <div class="column is-3">
+                        <a class="button is-warning is-fullwidth"
+                           href="{% url 'django_ledger:ledger-action-post-journal-entries' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                            {% trans 'Post All' %}</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-
 {% endblock %}

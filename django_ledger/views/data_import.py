@@ -6,24 +6,19 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 from datetime import datetime, time
-from itertools import chain, groupby
 
 from django.contrib import messages
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Count, When, Case, F, Sum
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.utils.timezone import now, make_aware
+from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, FormView, DetailView, RedirectView
+from django.views.generic import ListView, FormView, DetailView, UpdateView, DeleteView
 
-from django_ledger.forms.data_import import OFXFileImportForm
+from django_ledger.forms.data_import import ImportJobModelCreateForm, ImportJobModelUpdateForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
-from django_ledger.io import DEBIT, CREDIT
 from django_ledger.io.ofx import OFXFileManager
-from django_ledger.models import LedgerModel, JournalEntryModel
-from django_ledger.models.accounts import AccountModel
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
@@ -43,26 +38,14 @@ class ImportJobModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-
-
-class DataImportJobsListView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, ListView):
-    PAGE_TITLE = _('Data Import Jobs')
+class ImportJobModelCreateView(DjangoLedgerSecurityMixIn, FormView):
+    template_name = 'django_ledger/data_import/import_job_create.html'
+    PAGE_TITLE = _('Create Import Job')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
-    context_object_name = 'import_jobs'
-    template_name = 'django_ledger/data_import/data_import_job_list.html'
-
-
-class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
-    template_name = 'django_ledger/data_import/data_import_ofx.html'
-    PAGE_TITLE = _('OFX File Import')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-    form_class = OFXFileImportForm
+    form_class = ImportJobModelCreateForm
 
     def get_success_url(self):
         return reverse('django_ledger:data-import-jobs-list',
@@ -131,16 +114,15 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
             )
             return self.form_invalid(form=form)
 
-        import_job = ImportJobModel(bank_account_model=ba_model,
-                                    description='OFX Import for Account ***' + ba_model.account_number[-4:])
+        import_job: ImportJobModel = form.save(commit=False)
+        import_job.bank_account_model = ba_model
         import_job.configure(commit=False)
         import_job.save()
 
         txs_to_stage = ofx.get_account_txs(account=ba_model.account_number)
         staged_txs_model_list = [
             StagedTransactionModel(
-                date_posted=make_aware(value=datetime.combine(date=tx.dtposted.date(),
-                                                              time=time.min)),
+                date_posted=make_aware(value=datetime.combine(date=tx.dtposted.date(), time=time.min)),
                 fit_id=tx.fitid,
                 amount=tx.trnamt,
                 import_job=import_job,
@@ -155,20 +137,85 @@ class DataImportOFXFileView(DjangoLedgerSecurityMixIn, FormView):
         return super().form_valid(form=form)
 
 
+class ImportJobModelListView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, ListView):
+    PAGE_TITLE = _('Data Import Jobs')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
+    context_object_name = 'import_jobs'
+    template_name = 'django_ledger/data_import/data_import_job_list.html'
+
+
+class ImportJobModelUpdateView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, UpdateView):
+    template_name = 'django_ledger/data_import/import_job_update.html'
+    context_object_name = 'import_job_model'
+    pk_url_kwarg = 'job_pk'
+    form_class = ImportJobModelUpdateForm
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Import Job Update'
+        ctx['header_title'] = 'Import Job Update'
+        ctx['header_subtitle'] = self.object.description
+        ctx['header_subtitle_icon'] = 'solar:import-bold'
+        return ctx
+
+    def get_success_url(self):
+        return reverse(
+            viewname='django_ledger:data-import-jobs-update',
+            kwargs={
+                'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug,
+                'job_pk': self.kwargs['job_pk']
+            }
+        )
+
+    def form_valid(self, form):
+        messages.add_message(
+            self.request,
+            level=messages.SUCCESS,
+            message=_(f'Successfully updated Import Job {self.object.description}'),
+            extra_tags='is-success'
+        )
+        return super().form_valid(form=form)
+
+
+class ImportJobModelDeleteView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, DeleteView):
+    template_name = 'django_ledger/data_import/import_job_delete.html'
+    context_object_name = 'import_job_model'
+    pk_url_kwarg = 'job_pk'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['page_title'] = 'Delete Import Job'
+        ctx['header_title'] = 'Delete Import Job'
+        ctx['header_subtitle'] = self.object.description
+        ctx['header_subtitle_icon'] = 'solar:import-bold'
+        return ctx
+
+    def get_success_url(self):
+        return reverse(
+            viewname='django_ledger:data-import-jobs-list',
+            kwargs={
+                'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug
+            }
+        )
+
+
 class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/data_import/data_import_job_txs.html'
     PAGE_TITLE = _('Import Job Staged Txs')
     context_object_name = 'import_job'
     pk_url_kwarg = 'job_pk'
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
+    import_transactions = False
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        ctx = super().get_context_data(**kwargs)
         job_model: ImportJobModel = self.object
-        context['header_title'] = job_model.bank_account_model
+        ctx['page_title'] = job_model.description
+        ctx['header_title'] = self.PAGE_TITLE
+        ctx['header_subtitle'] = job_model.description
+        ctx['header_subtitle_icon'] = 'tabler:table-import'
         bank_account_model = job_model.bank_account_model
         cash_account_model = job_model.bank_account_model.cash_account
         if not cash_account_model:
@@ -187,7 +234,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
             )
 
         staged_txs_qs = job_model.stagedtransactionmodel_set.all()
-        context['staged_txs_qs'] = staged_txs_qs
+        ctx['staged_txs_qs'] = staged_txs_qs
 
         txs_formset = StagedTransactionModelFormSet(
             user_model=self.request.user,
@@ -196,10 +243,10 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
             queryset=staged_txs_qs.is_pending(),
         )
 
-        context['staged_txs_formset'] = txs_formset
-        context['cash_account_model'] = cash_account_model
-        context['bank_account_model'] = bank_account_model
-        return context
+        ctx['staged_txs_formset'] = txs_formset
+        ctx['cash_account_model'] = cash_account_model
+        ctx['bank_account_model'] = bank_account_model
+        return ctx
 
     def post(self, request, **kwargs):
         _ = super().get(request, **kwargs)
@@ -214,16 +261,21 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
         )
 
         if txs_formset.has_changed():
-
             if txs_formset.is_valid():
-
+                txs_formset.save()
                 for tx_form in txs_formset:
                     is_split = tx_form.cleaned_data['tx_split'] is True
                     if is_split:
                         tx_form.instance.add_split()
-                txs_formset.save()
+                    is_import = tx_form.cleaned_data['tx_import']
+                    if is_import:
+                        is_split_bundled = tx_form.cleaned_data['bundle_split']
+                        if not is_split_bundled:
+                            tx_form.instance.migrate(split_txs=True)
 
-                job_model.migrate_txs()
+                        tx_form.instance.migrate()
+
+
 
             else:
                 context = self.get_context_data(**kwargs)

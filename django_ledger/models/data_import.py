@@ -21,6 +21,8 @@ from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 
+from django_ledger.models import JournalEntryModel
+
 
 class ImportJobModelValidationError(ValidationError):
     pass
@@ -93,24 +95,8 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
                     'ledger_model'
                 ])
 
-    def migrate_txs(self):
-        rti_qs = self.stagedtransactionmodel_set.is_ready_to_import().prefetch_related(
-            'split_transaction_set')
-        ledger_model = self.ledger_model
-
-        for rti_model in rti_qs:
-            commit_dict = rti_model.commit_dict()
-            je_model, txs_models = ledger_model.commit_txs(
-                je_timestamp=rti_model.date_posted,
-                je_unit_model=rti_model.unit_model if rti_model.unit_model else None,
-                je_txs=commit_dict,
-                je_desc='OFX Import JE',
-                je_posted=False,
-                force_je_retrieval=False
-            )
-            staged_to_save = [i['staged_tx_model'] for i in commit_dict]
-            for i in staged_to_save:
-                i.save(update_fields=['transaction_model'])
+    def get_delete_message(self) -> str:
+        return _(f'Are you sure you want to delete Import Job {self.description}?')
 
 
 class StagedTransactionModelQuerySet(models.QuerySet):
@@ -137,6 +123,7 @@ class StagedTransactionModelManager(models.Manager):
             'account_model',
             'unit_model',
             'transaction_model',
+            'transaction_model__journal_entry',
             'transaction_model__account').annotate(
             children_count=Count('split_transaction_set'),
             children_mapped_count=Count('split_transaction_set__account_model_id'),
@@ -150,6 +137,7 @@ class StagedTransactionModelManager(models.Manager):
             ),
         ).annotate(
             ready_to_import=Case(
+                # is mapped singleton...
                 When(
                     condition=(
                             Q(children_count__exact=0) &
@@ -159,6 +147,21 @@ class StagedTransactionModelManager(models.Manager):
                     ),
                     then=True
                 ),
+                # is children, mapped and all parent amount is split...
+                When(
+                    condition=(
+                            Q(children_count__gt=0) &
+                            Q(children_count=F('children_mapped_count')) &
+                            Q(total_amount_split__exact=F('amount')) &
+                            Q(parent__isnull=True) &
+                            Q(transaction_model__isnull=True)
+                    ),
+                    then=True
+                ),
+                default=False,
+                output_field=BooleanField()
+            ),
+            can_split_into_je=Case(
                 When(
                     condition=(
                             Q(children_count__gt=0) &
@@ -178,16 +181,16 @@ class StagedTransactionModelManager(models.Manager):
             '-children_count'
         )
 
-    # def for_job(self, entity_slug: str, user_model, job_pk):
-    #     qs = self.get_queryset()
-    #     return qs.filter(
-    #         Q(import_job__bank_account_model__entity__slug__exact=entity_slug) &
-    #         (
-    #                 Q(import_job__bank_account_model__entity__admin=user_model) |
-    #                 Q(import_job__bank_account_model__entity__managers__in=[user_model])
-    #         ) &
-    #         Q(import_job__uuid__exact=job_pk)
-    #     ).prefetch_related('split_transaction_set')
+    def for_job(self, entity_slug: str, user_model, job_pk):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(import_job__bank_account_model__entity__slug__exact=entity_slug) &
+            (
+                    Q(import_job__bank_account_model__entity__admin=user_model) |
+                    Q(import_job__bank_account_model__entity__managers__in=[user_model])
+            ) &
+            Q(import_job__uuid__exact=job_pk)
+        ).prefetch_related('split_transaction_set')
 
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
@@ -202,6 +205,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     import_job = models.ForeignKey('django_ledger.ImportJobModel', on_delete=models.CASCADE)
     fit_id = models.CharField(max_length=100)
     date_posted = models.DateField(verbose_name=_('Date Posted'))
+    bundle_split = models.BooleanField(default=True, verbose_name=_('Bundle Split Transactions'))
+    activity = models.CharField(choices=JournalEntryModel.ACTIVITIES,
+                                max_length=20,
+                                null=True,
+                                blank=True,
+                                verbose_name=_('Proposed Activity'))
     amount = models.DecimalField(decimal_places=2,
                                  max_digits=15,
                                  editable=False,
@@ -246,29 +255,24 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.get_amount()}'
 
-    def from_commit_dict(self) -> List[Dict]:
-        if not self.can_import():
-            raise ImportJobModelValidationError(
-                message=_('Cannot commit a transaction that is not ready to import.')
-            )
+    def from_commit_dict(self, split_amount: Optional[Decimal] = None) -> List[Dict]:
+        amt = split_amount if split_amount else self.amount
         return [{
             'account': self.import_job.bank_account_model.cash_account,
-            'amount': abs(self.amount),
-            'tx_type': DEBIT if not self.amount < 0.00 else CREDIT,
+            'amount': abs(amt),
+            'tx_type': DEBIT if not amt < 0.00 else CREDIT,
             'description': self.name,
             'staged_tx_model': self
         }]
 
     def to_commit_dict(self) -> List[Dict]:
-        if not self.can_import():
-            raise ImportJobModelValidationError(
-                message=_('Cannot commit a transaction that is not ready to import.')
-            )
         if self.has_children():
             children_qs = self.split_transaction_set.all()
             return [{
                 'account': child_txs_model.account_model,
                 'amount': abs(child_txs_model.amount_split),
+                'amount_staged': child_txs_model.amount_split,
+                'unit_model': child_txs_model.unit_model,
                 'tx_type': CREDIT if not child_txs_model.amount_split < 0.00 else DEBIT,
                 'description': child_txs_model.name,
                 'staged_tx_model': child_txs_model
@@ -276,13 +280,20 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return [{
             'account': self.account_model,
             'amount': abs(self.amount),
+            'amount_staged': self.amount,
+            'unit_model': self.unit_model,
             'tx_type': CREDIT if not self.amount < 0.00 else DEBIT,
             'description': self.name,
             'staged_tx_model': self
         }]
 
-    def commit_dict(self):
-        return self.from_commit_dict() + self.to_commit_dict()
+    def commit_dict(self, split_txs: bool = False):
+        if split_txs:
+            to_commit = self.to_commit_dict()
+            return [
+                [self.from_commit_dict(split_amount=to_split['amount_staged'])[0], to_split] for to_split in to_commit
+            ]
+        return [self.from_commit_dict() + self.to_commit_dict()]
 
     def get_amount(self) -> Decimal:
         if self.is_children():
@@ -313,7 +324,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         ])
 
     def has_activity(self) -> bool:
-        return self._activity is not None
+        return self.activity is not None
 
     def has_children(self) -> bool:
         if self._state.adding:
@@ -324,24 +335,47 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         return not self.is_children()
 
     def can_have_unit(self) -> bool:
-        return any([
-            not self.is_children(),
-            self.is_single()
-        ])
+        if self._state.adding:
+            return False
+
+        # no children...
+        if self.is_single():
+            return True
+
+        if all([
+            self.has_children(),
+            self.has_activity(),
+            self.are_all_children_mapped(),
+            self.bundle_split is True
+        ]):
+            return True
+
+        if all([
+            self.is_children(),
+            self.parent.bundle_split is False if self.parent_id else False
+        ]):
+            return True
+
+        # if getattr(self.parent, 'can_split_into_je'):
+        #     return True
+        return False
 
     def can_have_account(self) -> bool:
         return not self.has_children()
 
-    def can_import(self) -> bool:
+    def can_import(self, as_split: bool = False) -> bool:
         ready_to_import = getattr(self, 'ready_to_import')
         if not ready_to_import:
             return False
+
+        can_split_into_je = getattr(self, 'can_split_into_je')
+        if can_split_into_je and as_split:
+            return True
         return all([
             self.is_role_mapping_valid(raise_exception=False)
         ])
 
     def add_split(self, raise_exception: bool = True, commit: bool = True, n: int = 1):
-
         if not self.can_split():
             if raise_exception:
                 raise ImportJobModelValidationError(
@@ -386,18 +420,20 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             if all([txs.is_mapped() for txs in split_txs_qs]):
                 return set([txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH])
 
-    def get_prospect_je_activity_try(self, raise_exception: bool = True) -> Optional[str]:
-        if not self.has_activity():
+    def get_prospect_je_activity_try(self, raise_exception: bool = True, force_update: bool = False) -> Optional[str]:
+        ready_to_import = getattr(self, 'ready_to_import')
+        if (not self.has_activity() and ready_to_import) or force_update:
             JournalEntryModel = lazy_loader.get_journal_entry_model()
             role_set = self.get_import_role_set()
             if role_set is not None:
                 try:
-                    self._activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
-                    return self._activity
+                    self.activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
+                    self.save(update_fields=['activity'])
+                    return self.activity
                 except ValidationError as e:
                     if raise_exception:
                         raise e
-        return self._activity
+        return self.activity
 
     def get_prospect_je_activity(self) -> Optional[str]:
         return self.get_prospect_je_activity_try(raise_exception=False)
@@ -411,13 +447,37 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def is_role_mapping_valid(self, raise_exception: bool = False) -> bool:
         if not self.has_activity():
             try:
-                self._activity = self.get_prospect_je_activity_try(raise_exception=raise_exception)
+                activity = self.get_prospect_je_activity_try(raise_exception=raise_exception)
+                if activity is None:
+                    return False
+                self.activity = activity
                 return True
             except ValidationError as e:
                 if raise_exception:
                     raise e
                 return False
         return True
+
+    def migrate(self, split_txs: bool = False):
+        if self.can_import(as_split=split_txs):
+            commit_dict = self.commit_dict(split_txs=split_txs)
+            import_job = self.import_job
+            ledger_model = import_job.ledger_model
+
+            if len(commit_dict):
+                for je_data in commit_dict:
+                    unit_model = self.unit_model if not split_txs else commit_dict[0][1]['unit_model']
+                    je_model, txs_models = ledger_model.commit_txs(
+                        je_timestamp=self.date_posted,
+                        je_unit_model=unit_model,
+                        je_txs=je_data,
+                        je_desc=self.memo,
+                        je_posted=False,
+                        force_je_retrieval=False
+                    )
+                    staged_to_save = [i['staged_tx_model'] for i in je_data]
+                    for i in staged_to_save:
+                        i.save(update_fields=['transaction_model'])
 
     def clean(self, verify: bool = False):
         if self.has_children():
@@ -427,7 +487,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             self.amount = None
 
         if not self.can_have_unit():
-            self.unit_model = self.parent.unit_model
+            if self.parent_id:
+                self.unit_model = self.parent.unit_model
 
         if verify:
             self.is_role_mapping_valid(raise_exception=True)

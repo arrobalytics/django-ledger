@@ -238,7 +238,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     # REVENUE ACCOUNTS ------
     {'code': '4010', 'role': roles.INCOME_OPERATIONAL, 'balance_type': 'credit', 'name': 'Sales Income',
      'parent': None},
-    {'code': '4020', 'role': roles.INCOME_INVESTING, 'balance_type': 'credit', 'name': 'Investing Income',
+    {'code': '4020', 'role': roles.INCOME_PASSIVE, 'balance_type': 'credit', 'name': 'Investing Income',
      'parent': None},
     {'code': '4030', 'role': roles.INCOME_INTEREST, 'balance_type': 'credit', 'name': 'Interest Income',
      'parent': None},
