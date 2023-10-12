@@ -272,11 +272,8 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
                         is_split_bundled = tx_form.cleaned_data['bundle_split']
                         if not is_split_bundled:
                             tx_form.instance.migrate(split_txs=True)
-
-                        tx_form.instance.migrate()
-
-
-
+                        else:
+                            tx_form.instance.migrate()
             else:
                 context = self.get_context_data(**kwargs)
                 context['staged_txs_formset'] = txs_formset
