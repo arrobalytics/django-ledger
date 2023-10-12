@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
-                                  ArchiveIndexView)
+                                  ArchiveIndexView, DeleteView)
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.journal_entry import (JournalEntryModelUpdateForm,
@@ -90,6 +90,34 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObject
                        })
 
 
+class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, ArchiveIndexView):
+    context_object_name = 'journal_entry_list'
+    template_name = 'django_ledger/journal_entry/je_list.html'
+    PAGE_TITLE = _('Journal Entries')
+    extra_context = {
+        'page_title': PAGE_TITLE,
+        'header_title': PAGE_TITLE
+    }
+    http_method_names = ['get']
+    date_field = 'timestamp'
+    paginate_by = 20
+    allow_empty = True
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.annotate(txs_count=Count('transactionmodel'))
+        return qs
+
+
+class JournalEntryYearListView(YearArchiveView, JournalEntryListView):
+    make_object_list = True
+
+
+class JournalEntryMonthListView(MonthArchiveView, JournalEntryListView):
+    make_object_list = True
+    month_format = '%m'
+
+
 class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_update.html'
@@ -127,34 +155,6 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
         return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
 
 
-class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, ArchiveIndexView):
-    context_object_name = 'journal_entry_list'
-    template_name = 'django_ledger/journal_entry/je_list.html'
-    PAGE_TITLE = _('Journal Entries')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
-    http_method_names = ['get']
-    date_field = 'timestamp'
-    paginate_by = 10
-    allow_empty = True
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.annotate(txs_count=Count('transactionmodel'))
-        return qs
-
-
-class JournalEntryYearListView(YearArchiveView, JournalEntryListView):
-    make_object_list = True
-
-
-class JournalEntryMonthListView(MonthArchiveView, JournalEntryListView):
-    make_object_list = True
-    month_format = '%m'
-
-
 class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_detail.html'
@@ -171,6 +171,22 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
+
+
+class JournalEntryDeleteView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DeleteView):
+    template_name = 'django_ledger/journal_entry/je_delete.html'
+    context_object_name = 'je_model'
+    pk_url_kwarg = 'je_pk'
+
+    def get_success_url(self) -> str:
+        je_model: JournalEntryModel = self.object
+        return reverse(
+            viewname='django_ledger:je-list',
+            kwargs={
+                'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug,
+                'ledger_pk': je_model.ledger_id
+            }
+        )
 
 
 class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
@@ -291,19 +307,3 @@ class BaseJournalEntryActionView(DjangoLedgerSecurityMixIn, RedirectView, Single
                                  level=messages.ERROR,
                                  extra_tags='is-danger')
         return response
-
-
-class JournalEntryActionMarkAsPostedView(BaseJournalEntryActionView):
-    action_name = 'mark_as_posted'
-
-
-class JournalEntryActionMarkAsUnPostedView(BaseJournalEntryActionView):
-    action_name = 'mark_as_unposted'
-
-
-class JournalEntryActionMarkAsLockedView(BaseJournalEntryActionView):
-    action_name = 'mark_as_locked'
-
-
-class JournalEntryActionMarkAsUnLockedView(BaseJournalEntryActionView):
-    action_name = 'mark_as_unlocked'

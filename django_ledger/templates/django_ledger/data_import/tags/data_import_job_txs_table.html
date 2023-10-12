@@ -1,8 +1,8 @@
 {% load i18n %}
+{% load django_ledger %}
 
-<form action="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=view.kwargs.job_pk %}"
-      method="post">
 
+<form method="post">
     {{ staged_txs_formset.non_form_errors }}
     {% if staged_txs_formset.errors %}
         {{ staged_txs_formset.errors }}
@@ -17,9 +17,13 @@
                 <th>Dated Posted</th>
                 <th>Description</th>
                 <th>Amount</th>
+                <th>Split Amount</th>
                 <th>Map To</th>
-                <th>Commit TX</th>
-                {#                <th>TX</th>#}
+                <th>Unit</th>
+                <th>Import</th>
+                <th>Bundle Split</th>
+                <th>Add Split</th>
+                <th>Delete</th>
             </tr>
             </thead>
 
@@ -27,40 +31,58 @@
             <tbody>
 
             {% for txf in staged_txs_formset %}
-                <tr>
+                <tr class="{% if txf.instance.is_children %}has-background-primary{% elif txf.instance.has_children %}has-background-primary-light{% endif %}">
+                    {% for hidden_field in txf.hidden_fields %}{{ hidden_field }}{% endfor %}
+                    {% if txf.instance.is_children %}
+                        <td class="has-background-primary-light" style="border: 0px"></td>
+                        <td class="has-background-primary-light" style="border: 0px"></td>
+                        <td class="has-background-primary-light" style="border: 0px"></td>
+                        <td>{{ txf.amount_split }}</td>
+                    {% else %}
+                        <td>{{ txf.instance.date_posted }}</td>
+                        <td>{{ txf.instance.name }}</td>
+                        <td class="has-text-right has-text-weight-bold">
+                            {% currency_symbol %}{{ txf.instance.amount | currency_format }}</td>
+                        <td class="has-text-right">{{ txf.amount_split }}
+                            {% if txf.instance.has_children %}
+                                {% currency_symbol %}{{ txf.instance.total_amount_split | currency_format }}
+                            {% endif %} </td>
+                    {% endif %}
 
-                    {% for hidden_field in txf.hidden_fields %}
-                        {{ hidden_field }}
-                    {% endfor %}
-
-                    <td>{{ txf.date_posted.value }}</td>
-                    <td>{{ txf.name.value }}</td>
-                    <td class="{% if txf.amount.value < 0 %}has-text-danger{% endif %}">
-                        ${{ txf.amount.value }}</td>
-                    <td>{{ txf.earnings_account }}</td>
-                    <td>{{ txf.tx_import }}</td>
+                    <td>
+                        {% if txf.instance.get_prospect_je_activity_display %}
+                            <span class="is-italic">{% trans 'Transaction Activity' %}:</span>
+                            <span class="has-text-weight-bold">
+                            {{ txf.instance.get_prospect_je_activity_display }}
+                        </span>
+                        {% endif %}
+                        {{ txf.account_model }}
+                    </td>
+                    <td>{{ txf.unit_model }}{% if txf.instance.is_children %}
+                    	<span class="content is-small">{{ txf.instance.unit_model.name }}</span>
+                    {% endif %}
+                    </td>
+                    <td class="has-text-centered">{{ txf.tx_import }}</td>
+                    <td class="has-text-centered">{{ txf.bundle_split }}</td>
+                    <td class="has-text-centered">{{ txf.tx_split }}</td>
+                    <td class="has-text-centered">{{ txf.DELETE }}</td>
                 </tr>
             {% endfor %}
 
             </tbody>
-
-
         </table>
-
-
     </div>
 
     <div class="columns is-centered">
         <div class="column is-4 has-text-centered">
-            <button class="button is-primary is-small is-fullwidth">{% trans 'Save/Import' %}</button>
+            <button class="button is-primary is-small is-fullwidth">{% trans 'Save' %}</button>
         </div>
         <div class="column is-4 has-text-centered">
             <a class="button is-info is-small is-fullwidth"
-               href="{% url 'django_ledger:bank-account-update' entity_slug=view.kwargs.entity_slug bank_account_pk=bank_account_model.uuid %}">
-                {% trans 'Bank Account' %}</a>
+               href="{% url 'django_ledger:data-import-jobs-list' entity_slug=entity_slug %}">
+                {% trans 'Import Job List' %}</a>
         </div>
     </div>
-
 
 </form>
 

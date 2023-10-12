@@ -478,11 +478,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(x1=self.role_bs.upper(),
-                                                      x2=self.name,
-                                                      x3=self.role.upper(),
-                                                      x4=self.balance_type,
-                                                      x5=self.code)
+        return '{x1} - {x5}: {x2} ({x3}/{x4})'.format(
+            x1=self.role_bs.upper(),
+            x2=self.name,
+            x3=self.role.upper(),
+            x4=self.balance_type,
+            x5=self.code
+        )
 
     @property
     def role_bs(self) -> str:
@@ -543,6 +545,47 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
 
     def is_expense(self) -> bool:
         return self.role in GROUP_EXPENSES
+
+    def is_active(self) -> bool:
+        return self.active is True
+
+    def can_activate(self):
+        return all([
+            self.active is False
+        ])
+
+    def can_deactivate(self):
+        return all([
+            self.active is True
+        ])
+
+    def activate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_activate():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot activate account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+        self.active = True
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
+
+    def deactivate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_deactivate():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot deactivate account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+        self.active = False
+        if commit:
+            self.save(update_fields=[
+                'active',
+                'updated'
+            ])
 
     def get_code_prefix(self) -> str:
 

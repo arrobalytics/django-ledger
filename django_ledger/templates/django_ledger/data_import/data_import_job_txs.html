@@ -7,16 +7,18 @@
     <div class="box">
         <div class="columns is-multiline">
             <div class="column is-12">
-                <h1 class="is-size-2">Pending Transactions</h1>
-                {% data_import_job_txs_pending %}
+                <h1 class="is-size-2">{% trans 'Pending Transactions' %}</h1>
+                {% data_import_job_txs_pending staged_txs_formset %}
             </div>
             <div class="column is-12">
-                <h2 class="is-size-2">Imported Transactions</h2>
-                {% data_import_job_txs_imported %}
+                <h2 class="is-size-2">{% trans 'Imported Transactions' %}</h2>
+                {% data_import_job_txs_imported staged_txs_qs %}
             </div>
             <div class="column is-12 has-text-centered">
                 <a class="button is-dark"
-                   href="{% url "django_ledger:data-import-jobs-list" entity_slug=view.kwargs.entity_slug %}">Back</a>
+                   href="{% url "django_ledger:data-import-jobs-list" entity_slug=view.kwargs.entity_slug %}">
+                    {% trans 'Back' %}
+                </a>
             </div>
         </div>
     </div>

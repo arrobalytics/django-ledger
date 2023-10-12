@@ -32,24 +32,22 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
-from typing import Set, Union, Optional, Dict, Tuple
+from typing import Set, Union, Optional, Dict, Tuple, List
 from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
-from django.db.models.signals import pre_save
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, Sum, QuerySet, F
 from django.db.models.functions import Coalesce
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
                                     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE,
-                                    GROUP_CFS_INV_LTD_OF_PPE, GROUP_CFS_INV_PURCHASE_OF_SECURITIES,
-                                    GROUP_CFS_INV_LTD_OF_SECURITIES, GROUP_CFS_INVESTING_PPE,
-                                    GROUP_CFS_INVESTING_SECURITIES)
+                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
+                                    GROUP_CFS_INVESTING_SECURITIES, validate_roles)
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
@@ -115,6 +113,9 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=True)
 
+    def unposted(self):
+        return self.filter(posted=False)
+
     def locked(self):
         """
         Filters the QuerySet to only locked Journal Entries.
@@ -126,6 +127,9 @@ class JournalEntryModelQuerySet(QuerySet):
         """
 
         return self.filter(locked=True)
+
+    def unlocked(self):
+        return self.filter(locked=False)
 
 
 class JournalEntryModelManager(models.Manager):
@@ -292,6 +296,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     ]
 
     VALID_ACTIVITIES = list(chain.from_iterable([[a[0] for a in cat[1]] for cat in ACTIVITIES]))
+    MAP_ACTIVITIES = dict(chain.from_iterable([[(a[0], cat[0]) for a in cat[1]] for cat in ACTIVITIES]))
     NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -414,8 +419,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return all([
             self.is_locked(),
             not self.is_posted(),
-            # not self.ledger.is_posted(),
+            not self.is_in_locked_period(),
             not self.ledger.is_locked()
+        ])
+
+    def can_delete(self) -> bool:
+        return all([
+            not self.is_locked(),
+            not self.is_posted(),
         ])
 
     def can_edit_timestamp(self) -> bool:
@@ -653,14 +664,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
         else:
             if not self.is_locked():
+                self.generate_activity(force_update=True)
                 self.locked = True
                 if self.is_locked():
                     if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'locked',
-                                      'updated'
-                                  ])
+                        self.save(verify=False)
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -683,11 +691,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.locked = False
                 if not self.is_locked():
                     if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'locked',
-                                      'updated'
-                                  ])
+                        self.save(verify=False)
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
@@ -809,10 +813,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         # todo: implement distinct for non SQLite Backends...
         if exclude_cash_role:
-            roles_involved = [i.account.role for i in txs_qs if i.account.role != ASSET_CA_CASH]
-        else:
-            roles_involved = [i.account.role for i in txs_qs]
-        return set(roles_involved)
+            return set([i.account.role for i in txs_qs if i.account.role != ASSET_CA_CASH])
+        return set([i.account.role for i in txs_qs])
 
     def has_activity(self) -> bool:
         return self.activity is not None
@@ -834,12 +836,99 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
 
+    @classmethod
+    def get_activity_from_roles(cls,
+                                role_set: Union[List[str], Set[str]],
+                                validate: bool = False,
+                                raise_exception: bool = True) -> Optional[str]:
+
+        if validate:
+            role_set = validate_roles(roles=role_set)
+        else:
+            if isinstance(role_set, list):
+                role_set = set(role_set)
+
+        activity = None
+
+        # no roles involved
+        if not len(role_set):
+            return
+
+        # determining if investing....
+        is_investing_for_ppe = all([
+            # all roles must be in group
+            all([r in GROUP_CFS_INVESTING_PPE for r in role_set]),
+            # at least one role
+            sum([r in GROUP_CFS_INVESTING_PPE for r in role_set]) > 0,
+            # at least one role
+            # sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in role_set]) > 0,
+        ])
+        is_investing_for_securities = all([
+            # all roles must be in group
+            all([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]),
+            # at least one role
+            sum([r in GROUP_CFS_INVESTING_SECURITIES for r in role_set]) > 0,
+            # at least one role
+            # sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in role_set]) > 0,
+        ])
+
+        # IS INVESTING OTHERS....?
+
+        # determining if financing...
+        is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in role_set])
+        is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in role_set])
+        is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in role_set])
+        is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in role_set])
+
+        is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in role_set])
+
+        if sum([
+            is_investing_for_ppe,
+            is_investing_for_securities,
+            is_financing_lt_debt,
+            is_financing_st_debt,
+            is_financing_issuing_equity,
+            is_financing_dividends,
+            is_operating
+        ]) > 1:
+            if raise_exception:
+                raise JournalEntryValidationError(
+                    f'Multiple activities detected in roles JE {role_set}.')
+        else:
+            if is_investing_for_ppe:
+                activity = cls.INVESTING_PPE
+            elif is_investing_for_securities:
+                activity = cls.INVESTING_SECURITIES
+            elif is_financing_st_debt:
+                activity = cls.FINANCING_STD
+            elif is_financing_lt_debt:
+                activity = cls.FINANCING_LTD
+            elif is_financing_issuing_equity:
+                activity = cls.FINANCING_EQUITY
+            elif is_financing_dividends:
+                activity = cls.FINANCING_DIVIDENDS
+            elif is_operating:
+                activity = cls.OPERATING_ACTIVITY
+            else:
+                if raise_exception:
+                    raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
+                                                      'Split into multiple Journal Entries or check'
+                                                      ' your account selection.')
+        return activity
+
     def generate_activity(self,
                           txs_qs: Optional[TransactionModelQuerySet] = None,
                           raise_exception: bool = True,
                           force_update: bool = False) -> Optional[str]:
 
-        if not self.has_activity() or force_update:
+        if raise_exception and self.is_closing_entry:
+            raise_exception = False
+
+        if any([
+            not self.has_activity(),
+            not self.is_locked(),
+            force_update
+        ]):
 
             txs_is_valid = True
             if not txs_qs:
@@ -856,64 +945,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 if not cash_is_involved:
                     self.activity = None
                 else:
-                    roles_involved = self.get_txs_roles(txs_qs, exclude_cash_role=True)
-
-                    # determining if investing....
-                    is_investing_for_ppe = all([
-                        all([r in GROUP_CFS_INVESTING_PPE for r in roles_involved]),  # all roles must be in group
-                        sum([r in GROUP_CFS_INV_PURCHASE_OR_SALE_OF_PPE for r in roles_involved]) > 0,
-                        # at least one role
-                        sum([r in GROUP_CFS_INV_LTD_OF_PPE for r in roles_involved]) > 0,  # at least one role
-                    ])
-                    is_investing_for_securities = all([
-                        all([r in GROUP_CFS_INVESTING_SECURITIES for r in roles_involved]),
-                        # all roles must be in group
-                        sum([r in GROUP_CFS_INV_PURCHASE_OF_SECURITIES for r in roles_involved]) > 0,
-                        # at least one role
-                        sum([r in GROUP_CFS_INV_LTD_OF_SECURITIES for r in roles_involved]) > 0,  # at least one role
-                    ])
-
-                    # determining if financing...
-                    is_financing_dividends = all([r in GROUP_CFS_FIN_DIVIDENDS for r in roles_involved])
-                    is_financing_issuing_equity = all([r in GROUP_CFS_FIN_ISSUING_EQUITY for r in roles_involved])
-                    is_financing_st_debt = all([r in GROUP_CFS_FIN_ST_DEBT_PAYMENTS for r in roles_involved])
-                    is_financing_lt_debt = all([r in GROUP_CFS_FIN_LT_DEBT_PAYMENTS for r in roles_involved])
-
-                    is_operating = all([r not in GROUP_CFS_INVESTING_AND_FINANCING for r in roles_involved])
-
-                    if sum([
-                        is_investing_for_ppe,
-                        is_investing_for_securities,
-                        is_financing_lt_debt,
-                        is_financing_st_debt,
-                        is_financing_issuing_equity,
-                        is_financing_dividends,
-                        is_operating
-                    ]) > 1:
-                        if raise_exception:
-                            raise JournalEntryValidationError(
-                                f'Multiple activities detected in roles JE {roles_involved}.')
-                    else:
-                        if is_investing_for_ppe:
-                            self.activity = self.INVESTING_PPE
-                        elif is_investing_for_securities:
-                            self.activity = self.INVESTING_SECURITIES
-
-                        elif is_financing_st_debt:
-                            self.activity = self.FINANCING_STD
-                        elif is_financing_lt_debt:
-                            self.activity = self.FINANCING_LTD
-                        elif is_financing_issuing_equity:
-                            self.activity = self.FINANCING_EQUITY
-                        elif is_financing_dividends:
-                            self.activity = self.FINANCING_DIVIDENDS
-                        elif is_operating:
-                            self.activity = self.OPERATING_ACTIVITY
-                        else:
-                            if raise_exception:
-                                raise JournalEntryValidationError(f'No activity match for roles {roles_involved}.'
-                                                                  'Split into multiple Journal Entries or check'
-                                                                  ' your account selection.')
+                    role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
+                    self.activity = self.get_activity_from_roles(role_set=role_list)
         return self.activity
 
     # todo: add entity_model as parameter on all functions...
@@ -1112,6 +1145,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             txs_qs, verified = self.verify()
             return txs_qs, self.is_verified()
         return TransactionModel.objects.none(), self.is_verified()
+
+    def get_delete_message(self) -> str:
+        return _(f'Are you sure you want to delete JournalEntry Model {self.description} on Ledger {self.ledger.name}?')
+
+    def delete(self, **kwargs):
+        if not self.can_delete():
+            raise JournalEntryValidationError(
+                message=_(f'JournalEntryModel {self.uuid} cannot be deleted...')
+            )
+        return super().delete(**kwargs)
 
     def save(self,
              verify: bool = True,

@@ -279,7 +279,7 @@ class IncomeStatementContextManager:
                 'other': {
                     'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
                                  acc['role'] in roles_module.GROUP_IC_OTHER_REVENUES],
-                    'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                    'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
                                  acc['role'] in roles_module.GROUP_IC_OTHER_EXPENSES],
                 }
             }

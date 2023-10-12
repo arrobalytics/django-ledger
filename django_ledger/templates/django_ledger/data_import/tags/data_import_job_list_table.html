@@ -2,14 +2,13 @@
 {% load i18n %}
 
 <div class="table-container">
-    <table class="table is-fullwidth is-narrow is-striped mb-3 django-ledger-table-bottom-margin-75">
+    <table style="margin-bottom: 100px;"
+           class="table is-fullwidth is-narrow is-striped">
         <thead>
         <tr>
-            <th>Status</th>
             <th>Description</th>
-            <th>Ledger</th>
+            <th>Bank Account</th>
             <th>Created</th>
-            <th>Completed</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -17,15 +16,9 @@
 
         {% for job in import_jobs %}
             <tr>
-                <td>{{ job.status }}</td>
                 <td>{{ job.description }}</td>
-                <td>{{ job.ledger }}</td>
+                <td>{{ job.bank_account_model }}</td>
                 <td>{{ job.created }}</td>
-                <td>{% if job.completed %}
-                    <span class="icon is-small has-text-success"><i class="icon mdi mdi-check-bold"></i></span>
-                {% else %}
-                    <span class="icon is-small has-text-danger"><i class="icon mdi mdi-minus-circle"></i></span>
-                {% endif %}</td>
                 <td>
                     <div class="dropdown is-right" id="customer-action-{{ job.uuid }}">
 
@@ -34,7 +27,7 @@
                                     aria-haspopup="true"
                                     onclick="djLedger.toggleDropdown('customer-action-{{ job.uuid }}')"
                                     aria-controls="dropdown-menu">
-                                <span>Actions</span>
+                                <span>{% trans 'Actions' %}</span>
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
@@ -43,6 +36,10 @@
                              id="dropdown-menu-{{ customer.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
+                                <a href="{% url 'django_ledger:data-import-jobs-update' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-warning">{% trans 'Update' %}</a>
+                                <a href="{% url 'django_ledger:data-import-jobs-delete' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
+                                   class="dropdown-item has-text-weight-bold has-text-danger">{% trans 'Delete' %}</a>
                                 <a href="{% url 'django_ledger:data-import-job-txs' entity_slug=view.kwargs.entity_slug job_pk=job.uuid %}"
                                    class="dropdown-item has-text-weight-bold has-text-info">{% trans 'Manage' %}</a>
                             </div>
@@ -55,5 +52,4 @@
 
         </tbody>
     </table>
-
 </div>

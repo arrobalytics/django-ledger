@@ -238,7 +238,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     # REVENUE ACCOUNTS ------
     {'code': '4010', 'role': roles.INCOME_OPERATIONAL, 'balance_type': 'credit', 'name': 'Sales Income',
      'parent': None},
-    {'code': '4020', 'role': roles.INCOME_INVESTING, 'balance_type': 'credit', 'name': 'Investing Income',
+    {'code': '4020', 'role': roles.INCOME_PASSIVE, 'balance_type': 'credit', 'name': 'Investing Income',
      'parent': None},
     {'code': '4030', 'role': roles.INCOME_INTEREST, 'balance_type': 'credit', 'name': 'Interest Income',
      'parent': None},
@@ -301,8 +301,10 @@ DEFAULT_CHART_OF_ACCOUNTS = [
      'parent': None},
     {'code': '6075', 'role': roles.EXPENSE_AMORTIZATION, 'balance_type': 'debit', 'name': 'Amortization Expense',
      'parent': None},
-    {'code': '6130', 'role': roles.EXPENSE_INTEREST, 'balance_type': 'debit', 'name': 'Interest Expense',
-     'parent': None},
+    {'code': '6130', 'role': roles.EXPENSE_INTEREST_ST, 'balance_type': 'debit',
+     'name': 'Interest Expense on Short Term Debt', 'parent': None},
+    {'code': '6131', 'role': roles.EXPENSE_INTEREST_LT, 'balance_type': 'debit',
+     'name': 'Interest Expense on Long Term Debt', 'parent': None},
     {'code': '6210', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Payroll Taxes', 'parent': None},
     {'code': '6280', 'role': roles.EXPENSE_TAXES, 'balance_type': 'debit', 'name': 'Taxes', 'parent': None},
     {'code': '6500', 'role': roles.EXPENSE_OTHER, 'balance_type': 'debit', 'name': 'Misc. Expense', 'parent': None}

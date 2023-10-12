@@ -1,3 +1,5 @@
+{% load i18n %}
+
 <div class="table-container">
     <table class="table is-narrow is-fullwidth is-bordered django-ledger-table-bottom-margin-75">
         <thead>
@@ -15,12 +17,12 @@
             <tr>
                 <td>{{ imported_tx.date_posted }}</td>
                 <td>{{ imported_tx.name }}</td>
-                <td class="{% if imported_tx.amount < 0 %}has-text-danger{% endif %} has-text-centered">
-                    ${{ imported_tx.amount }}</td>
-                <td>{{ imported_tx.earnings_account }}</td>
-                <td>{{ imported_tx.tx }}</td>
+                <td class="{% if imported_tx.get_amount < 0.00 %}has-text-danger{% endif %} has-text-centered">
+                    ${{ imported_tx.get_amount }}</td>
+                <td>{{ imported_tx.account_model }}</td>
+                <td>{{ imported_tx.transaction_model }}</td>
                 <td class="has-text-centered">
-                    <a href="" class="button is-small is-primary">View</a>
+                    <a href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=imported_tx.transaction_model.journal_entry.ledger_id je_pk=imported_tx.transaction_model.journal_entry_id %}" class="button is-small is-primary">{% trans 'View JE' %}</a>
                 </td>
             </tr>
         {% endfor %}

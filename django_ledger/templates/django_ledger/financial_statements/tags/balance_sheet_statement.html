@@ -43,7 +43,7 @@
                     {% for acc in acc_data.accounts %}
                         <tr>
                             <td>{{ acc.code }}</td>
-                            <td class="has-text-center">{{ acc.name }}</td>
+                            <td class="has-text-left">{{ acc.name }}</td>
                             {% if by_unit %}
                                 <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                             {% endif %}

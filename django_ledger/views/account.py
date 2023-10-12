@@ -5,6 +5,8 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
+from django.contrib import messages
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -12,6 +14,7 @@ from django.utils.timezone import localdate
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
+from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.models import lazy_loader
@@ -44,6 +47,13 @@ class AccountModelListView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQueryS
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
+    active_only = False
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.active_only:
+            qs = qs.active()
+        return qs
 
 
 class AccountModelUpdateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, UpdateView):
@@ -178,3 +188,37 @@ class AccountModelDateDetailView(DateReportMixIn, AccountModelYearDetailView):
     """
     Account Model Date Detail View
     """
+
+
+# ACTIONS...
+class AccountModelModelActionView(DjangoLedgerSecurityMixIn,
+                                  RedirectView,
+                                  BaseAccountModelViewQuerySetMixIn,
+                                  SingleObjectMixin):
+    http_method_names = ['get']
+    pk_url_kwarg = 'account_pk'
+    action_name = None
+    commit = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:account-list',
+                       kwargs={
+                           'entity_slug': kwargs['entity_slug'],
+                           # 'account_pk': kwargs['account_pk']
+                       })
+
+    def get(self, request, *args, **kwargs):
+        kwargs['user_model'] = self.request.user
+        if not self.action_name:
+            raise ImproperlyConfigured('View attribute action_name is required.')
+        response = super(AccountModelModelActionView, self).get(request, *args, **kwargs)
+        account_model: AccountModel = self.get_object()
+
+        try:
+            getattr(account_model, self.action_name)(commit=self.commit, **kwargs)
+        except ValidationError as e:
+            messages.add_message(request,
+                                 message=e.message,
+                                 level=messages.ERROR,
+                                 extra_tags='is-danger')
+        return response

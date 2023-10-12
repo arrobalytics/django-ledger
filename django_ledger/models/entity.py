@@ -881,6 +881,10 @@ class EntityModelAbstract(MP_Node,
     def is_admin_user(self, user_model):
         return user_model.id == self.admin_id
 
+    # #### LEDGER MANAGEMENT....
+    def create_ledger(self, name):
+        return self.ledgermodel_set.create(name=name)
+
     # #### SLUG GENERATION ###
     @staticmethod
     def generate_slug_from_name(name: str) -> str:
@@ -2543,7 +2547,6 @@ class EntityModelAbstract(MP_Node,
         return ledger_model
 
     # ### CLOSING DATA ###
-
     def has_closing_entry(self):
         return self.last_closing_date is not None
 

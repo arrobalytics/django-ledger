@@ -328,7 +328,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             self.is_posted()
         ])
 
-    def can_unlock(self, **kwargs) -> bool:
+    def can_unlock(self) -> bool:
         """
         Determines if the LedgerModel can be un-locked.
 
@@ -363,6 +363,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         ----------
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
+        raise_exception:bool
+            Raises LedgerModelValidationError if posting not allowed.
         """
         if not self.can_post():
             if raise_exception:
@@ -377,7 +379,15 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'updated'
             ])
 
-    def unpost(self, commit: bool = False, **kwargs):
+    def post_journal_entries(self, commit: bool = True, **kwargs):
+        je_model_qs = self.journal_entries.unposted()
+        for je_model in je_model_qs:
+            je_model.mark_as_posted(raise_exception=False, commit=False)
+        if commit:
+            je_model_qs.bulk_update(objs=je_model_qs, fields=['posted', 'updated'])
+        return je_model_qs
+
+    def unpost(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Un-posts the LedgerModel.
 
@@ -385,14 +395,21 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         ----------
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
+        raise_exception:bool
+            Raises LedgerModelValidationError if un-posting not allowed.
         """
         if self.can_unpost():
-            self.posted = False
-            if commit:
-                self.save(update_fields=[
-                    'posted',
-                    'updated'
-                ])
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.uuid} cannot be unposted.')
+                )
+            return
+        self.posted = False
+        if commit:
+            self.save(update_fields=[
+                'posted',
+                'updated'
+            ])
 
     def lock(self, commit: bool = False, **kwargs):
         """
@@ -410,6 +427,14 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'locked',
                     'updated'
                 ])
+
+    def lock_journal_entries(self, commit: bool = True, **kwargs):
+        je_model_qs = self.journal_entries.unlocked()
+        for je_model in je_model_qs:
+            je_model.mark_as_locked(raise_exception=False, commit=False)
+        if commit:
+            je_model_qs.bulk_update(objs=je_model_qs, fields=['locked', 'updated'])
+        return je_model_qs
 
     def unlock(self, commit: bool = False, **kwargs):
         """

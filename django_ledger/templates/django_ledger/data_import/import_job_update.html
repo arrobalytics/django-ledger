@@ -1,0 +1,24 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+{% load django_ledger %}
+
+{% block view_content %}
+    <div class="columns is-centered">
+        <div class="column is-4">
+            <div class="box">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit"
+                            class="button is-primary is-fullwidth is-outlined djetler_my_1">{% trans 'Update' %}
+                    </button>
+                    <a class="button is-dark is-small is-fullwidth"
+                       href="{% url 'django_ledger:data-import-jobs-list' entity_slug=view.kwargs.entity_slug %}">
+                        {% trans 'Import Job List' %}
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

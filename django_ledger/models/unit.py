@@ -152,7 +152,7 @@ class EntityUnitModelAbstract(MP_Node,
         ]
 
     def __str__(self):
-        return f'Entity Unit Model: {self.name}'
+        return f'Unit: {self.name}'
 
     def clean(self):
         self.create_entity_unit_slug()
