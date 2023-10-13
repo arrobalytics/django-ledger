@@ -1,5 +1,5 @@
 -i https://pypi.org/simple
-asgiref==3.5.2 ; python_version >= '3.7'
+asgiref==3.7.2 ; python_version >= '3.7'
 django==4.2.6
 django-treebeard==4.5.1
 faker==8.16.0
