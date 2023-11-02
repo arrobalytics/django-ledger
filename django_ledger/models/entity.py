@@ -1572,9 +1572,11 @@ class EntityModelAbstract(MP_Node,
             additional_info=additional_info,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
-                role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
+                role=roles_module.ASSET_CA_PREPAID
+            ) if not prepaid_account else prepaid_account,
             unearned_account=account_model_qs.get(
-                role=roles_module.LIABILITY_CL_ACC_PAYABLE) if not payable_account else payable_account
+                role=roles_module.LIABILITY_CL_ACC_PAYABLE
+            ) if not payable_account else payable_account
         )
 
         _, bill_model = bill_model.configure(entity_slug=self,
@@ -1665,8 +1667,8 @@ class EntityModelAbstract(MP_Node,
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(roles=[
             roles_module.ASSET_CA_CASH,
-            roles_module.ASSET_CA_PREPAID,
-            roles_module.LIABILITY_CL_ACC_PAYABLE
+            roles_module.ASSET_CA_RECEIVABLES,
+            roles_module.LIABILITY_CL_DEFERRED_REVENUE
         ]).is_role_default()
 
         # evaluates the queryset...
@@ -1678,9 +1680,11 @@ class EntityModelAbstract(MP_Node,
             terms=terms,
             cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
             prepaid_account=account_model_qs.get(
-                role=roles_module.ASSET_CA_PREPAID) if not prepaid_account else prepaid_account,
+                role=roles_module.ASSET_CA_RECEIVABLES
+            ) if not prepaid_account else prepaid_account,
             unearned_account=account_model_qs.get(
-                role=roles_module.LIABILITY_CL_ACC_PAYABLE) if not payable_account else payable_account
+                role=roles_module.LIABILITY_CL_DEFERRED_REVENUE
+            ) if not payable_account else payable_account
         )
 
         _, invoice_model = invoice_model.configure(entity_slug=self,

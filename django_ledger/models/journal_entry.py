@@ -376,6 +376,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_in_locked_period()
         ])
 
+    def get_post_url(self):
+        return reverse('django_ledger:je-mark-as-posted',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
     def can_unpost(self) -> bool:
         """
         Determines if a JournalEntryModel can be un-posted.
@@ -391,6 +399,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_in_locked_period()
         ])
 
+    def get_unpost_url(self):
+        return reverse('django_ledger:je-mark-as-unposted',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
     def can_lock(self) -> bool:
         """
         Determines if a JournalEntryModel can be locked.
@@ -405,6 +421,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_locked(),
             not self.ledger.is_locked()
         ])
+
+    def get_lock_url(self):
+        return reverse('django_ledger:je-mark-as-locked',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
 
     def can_unlock(self) -> bool:
         """
@@ -422,6 +446,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_in_locked_period(),
             not self.ledger.is_locked()
         ])
+
+    def get_unlock_url(self):
+        return reverse('django_ledger:je-mark-as-unlocked',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
 
     def can_delete(self) -> bool:
         return all([

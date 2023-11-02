@@ -39,7 +39,6 @@ class LedgerModelModelViewQuerySetMixIn:
 
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
-    show_hidden = False
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
@@ -51,14 +50,36 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     date_field = 'created'
     ordering = '-created'
 
+    show_all = False
+    show_current = False
+    show_visible = False
+
     def get_queryset(self):
         qs = super().get_queryset()
-        qs = qs.annotate(Count('journal_entries'))
         qs = qs.select_related('billmodel', 'invoicemodel')
         qs = qs.order_by('-created')
-        if self.show_hidden:
+        if self.show_all:
             return qs
-        return qs.visible()
+        if self.show_current:
+            qs = qs.current()
+        if self.show_visible:
+            qs = qs.visible()
+        return qs
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        ctx = super().get_context_data(object_list=object_list, **kwargs)
+        ctx['page_title'] = self.PAGE_TITLE
+        ctx['header_title'] = self.PAGE_TITLE
+        if self.show_all:
+            ctx['header_subtitle'] = 'All Ledger Models'
+            ctx['header_subtitle_icon'] = 'emojione-monotone:ledger'
+        if self.show_visible:
+            ctx['header_subtitle'] = 'Visible Ledger Models'
+            ctx['header_subtitle_icon'] = 'mingcute:user-visible-line'
+        if self.show_current:
+            ctx['header_subtitle'] = 'Current Ledger Models'
+            ctx['header_subtitle_icon'] = 'basil:current-location-outline'
+        return ctx
 
 
 class LedgerModelYearListView(YearArchiveView, LedgerModelListView):

@@ -51,9 +51,37 @@
                             </table>
                         </div>
                         <div class="column is-12 has-text-centered">
-                            <button class="button is-primary is-outlined">Save</button>
+                            <button class="button is-primary is-outlined">
+                                {% trans 'Save' %}
+                            </button>
                             <a class="button is-dark"
-                               href="{% url "django_ledger:je-list" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Done</a>
+                               href="{% url "django_ledger:je-list" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                                {% trans 'Done' %}
+                            </a>
+                            {% if journal_entry.can_lock %}
+                                <a class="button is-dark is-danger"
+                                   href="{% url "django_ledger:je-mark-as-locked" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                    {% trans 'Lock' %}
+                                </a>
+                            {% endif %}
+                            {% if journal_entry.can_unlock %}
+                                <a class="button is-dark is-warning"
+                                   href="{% url "django_ledger:je-mark-as-unlocked" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                    {% trans 'Lock' %}
+                                </a>
+                            {% endif %}
+                            {% if journal_entry.can_post %}
+                                <a class="button is-dark is-danger"
+                                   href="{% url "django_ledger:je-mark-as-posted" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                    {% trans 'Lock' %}
+                                </a>
+                            {% endif %}
+                            {% if journal_entry.can_unpost %}
+                                <a class="button is-warning"
+                                   href="{% url "django_ledger:je-mark-as-unposted" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                    {% trans 'Lock' %}
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </form>
