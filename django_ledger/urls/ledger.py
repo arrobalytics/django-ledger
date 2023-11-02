@@ -2,11 +2,14 @@ from django.urls import path
 from django_ledger import views
 
 urlpatterns = [
-    path('<slug:entity_slug>/list/',
-         views.LedgerModelListView.as_view(),
+    path('<slug:entity_slug>/list/current/',
+         views.LedgerModelListView.as_view(show_current=True),
          name='ledger-list'),
+    path('<slug:entity_slug>/list/visible/',
+         views.LedgerModelListView.as_view(show_visible=True),
+         name='ledger-list-visible'),
     path('<slug:entity_slug>/list/all/',
-         views.LedgerModelListView.as_view(show_hidden=True),
+         views.LedgerModelListView.as_view(show_all=True),
          name='ledger-list-all'),
     path('<slug:entity_slug>/list/year/<int:year>/',
          views.LedgerModelYearListView.as_view(),

@@ -817,6 +817,7 @@ class IOReportMixIn:
     def get_financial_statements(self,
                                  from_date: Union[date, datetime],
                                  to_date: Union[date, datetime],
+                                 dt_strfmt: str = '%Y%m%d',
                                  user_model: Optional[UserModel] = None,
                                  txs_queryset: Optional[QuerySet] = None,
                                  save_pdf: bool = False,
@@ -860,13 +861,13 @@ class IOReportMixIn:
         if save_pdf:
             base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
             bs_report.create_pdf_report()
-            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename()))
+            bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename(dt_strfmt=dt_strfmt)))
 
             is_report.create_pdf_report()
-            is_report.output(base_dir.joinpath(is_report.get_pdf_filename()))
+            is_report.output(base_dir.joinpath(is_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)))
 
             cfs_report.create_pdf_report()
-            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename()))
+            cfs_report.output(base_dir.joinpath(cfs_report.get_pdf_filename(from_dt=from_date, dt_strfmt=dt_strfmt)))
 
         return self.ReportTuple(
             balance_sheet_statement=bs_report,

@@ -161,7 +161,7 @@ class AccountModelYearDetailView(DjangoLedgerSecurityMixIn,
         context['header_title'] = f'Account {account.code} - {account.name}'
         context['page_title'] = f'Account {account.code} - {account.name}'
         account_model: AccountModel = self.object
-        txs_qs = account_model.transactionmodel_set.order_by('journal_entry__timestamp')
+        txs_qs = account_model.transactionmodel_set.posted().order_by('journal_entry__timestamp')
         txs_qs = txs_qs.from_date(self.get_from_date())
         txs_qs = txs_qs.to_date(self.get_to_date())
         context['transactions'] = txs_qs

@@ -1,4 +1,5 @@
-from typing import Optional, Dict
+from datetime import datetime, date
+from typing import Optional, Dict, Union
 
 from django_ledger.io import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
@@ -208,10 +209,20 @@ class CashFlowStatementReport(BaseReportSupport):
         )
         self.ln(5)
 
-    def get_pdf_filename(self):
-        dt_fmt = '%Y%m%d'
-        f_name = f'{self.get_report_title()}_CashFlowStatement_{self.IO_DIGEST.get_from_date(fmt=dt_fmt, as_str=True)}-'
-        f_name += f'{self.IO_DIGEST.get_to_date(fmt=dt_fmt, as_str=True)}.pdf'
+    def get_pdf_filename(self,
+                         from_dt: Optional[Union[datetime, date]] = None,
+                         to_dt: Optional[Union[datetime, date]] = None,
+                         dt_strfmt: str = '%Y%m%d'):
+        if from_dt:
+            from_dt = from_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
+        else:
+            from_dt = self.IO_DIGEST.get_from_date(fmt=dt_strfmt, as_str=True)
+
+        if to_dt:
+            to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
+        else:
+            to_dt = self.IO_DIGEST.get_to_date(fmt=dt_strfmt, as_str=True)
+        f_name = f'{self.get_report_title()}_CashFlowStatement_{from_dt}_{to_dt}.pdf'
         return f_name
 
     def create_pdf_report(self):

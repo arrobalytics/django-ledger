@@ -34,7 +34,7 @@ from uuid import uuid4
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.db.models import Q, Min
+from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -71,6 +71,11 @@ class LedgerModelQuerySet(models.QuerySet):
     def visible(self):
         return self.filter(hidden=False)
 
+    def current(self):
+        return self.filter(
+            earliest_timestamp__gt=F('entity__last_closing_date')
+        )
+
 
 class LedgerModelManager(models.Manager):
     """
@@ -80,8 +85,9 @@ class LedgerModelManager(models.Manager):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.select_related('entity').annotate(
+            Count('journal_entries'),
             earliest_timestamp=Min('journal_entries__timestamp',
-                                   filter=Q(journal_entries__posted=True))
+                                   filter=Q(journal_entries__posted=True)),
         )
 
     def for_entity(self, entity_slug, user_model):

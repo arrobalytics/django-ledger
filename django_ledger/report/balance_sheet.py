@@ -1,6 +1,5 @@
-from typing import Optional, Dict
-
-from django.urls import reverse
+from datetime import datetime, date
+from typing import Optional, Dict, Union
 
 from django_ledger.io import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
@@ -228,9 +227,14 @@ class BalanceSheetReport(BaseReportSupport):
         )
         self.ln(h=5)
 
-    def get_pdf_filename(self):
-        dt_fmt = '%Y%m%d'
-        f_name = f'{self.get_report_title()}_BalanceSheet_{self.IO_DIGEST.get_to_date(fmt=dt_fmt, as_str=True)}.pdf'
+    def get_pdf_filename(self,
+                         to_dt: Optional[Union[datetime, date]] = None,
+                         dt_strfmt: str = '%Y%m%d'):
+        if to_dt:
+            to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
+        else:
+            to_dt = self.IO_DIGEST.get_to_date(fmt=dt_strfmt, as_str=True)
+        f_name = f'{self.get_report_title()}_BalanceSheetStatement_{to_dt}.pdf'
         return f_name
 
     def create_pdf_report(self):

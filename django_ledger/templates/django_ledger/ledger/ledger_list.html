@@ -17,7 +17,7 @@
                                     <h1 class="is-size-1 has-text-weight-thin">Year {{ year | date:'Y' }}
                                         Ledgers</h1>
                                 {% else %}
-                                    <h1 class="is-size-1 has-text-weight-thin">{% trans 'Ledger Models' %}</h1>
+                                    <h1 class="is-size-1 has-text-weight-thin">{{ header_subtitle }}</h1>
                                 {% endif %}
                             </div>
                             <div class="level-item">
@@ -122,12 +122,17 @@
                     <div class="container">
                         <div class="columns is-centered">
                             <div class="column is-3">
-                                {% if not view.show_hidden %}
-                                    <a class="button is-primary is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-list-all' entity_slug=view.kwargs.entity_slug %}">{% trans 'Show Hidden Ledgers' %}</a>
-                                {% else %}
-                                    <a class="button is-info is-fullwidth"
-                                       href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Hide Hidden Ledgers' %}</a>
+                                {% if not view.show_all %}
+                                    <a class="button is-info is-fullwidth my-1"
+                                       href="{% url 'django_ledger:ledger-list-all' entity_slug=view.kwargs.entity_slug %}">{% trans 'Show All Ledgers' %}</a>
+                                {% endif %}
+                                {% if not view.show_visible %}
+                                    <a class="button is-info is-fullwidth my-1"
+                                       href="{% url 'django_ledger:ledger-list-visible' entity_slug=view.kwargs.entity_slug %}">{% trans 'Show Only Visible Ledgers' %}</a>
+                                {% endif %}
+                                {% if not view.show_current %}
+                                    <a class="button is-info is-fullwidth my-1"
+                                       href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Show Current Ledgers' %}</a>
                                 {% endif %}
                                 <a class="button is-dark is-fullwidth mt-2"
                                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Back to Dashboard' %}</a>

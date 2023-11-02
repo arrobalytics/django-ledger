@@ -32,4 +32,19 @@
         {% endif %}
 
     </div>
+    <div class="card-footer">
+        {% if journal_entry.can_lock %}
+            <a href="{{ journal_entry.get_lock_url }}" class="card-footer-item has-text-success has-text-weight-bold">{% trans 'Lock' %}</a>
+        {% endif %}t
+        {% if journal_entry.can_unlock %}
+            <a href="{{ journal_entry.get_unlock_url }}" class="card-footer-item has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</a>
+        {% endif %}
+        {% if journal_entry.can_post %}
+            <a href="{{ journal_entry.get_post_url }}" class="card-footer-item has-text-success has-text-weight-bold">{% trans 'Post' %}</a>
+        {% endif %}
+        {% if journal_entry.can_unpost %}
+            <a href="{{ journal_entry.get_unpost_url }}" class="card-footer-item has-text-danger has-text-weight-bold">{% trans 'UnPost' %}</a>
+        {% endif %}
+
+    </div>
 </div>
