@@ -57,6 +57,9 @@ class SlugNameMixIn(models.Model):
     class Meta:
         abstract = True
 
+    def clean(self):
+        super().clean()
+
 
 class CreateUpdateMixIn(models.Model):
     """
@@ -74,6 +77,9 @@ class CreateUpdateMixIn(models.Model):
 
     class Meta:
         abstract = True
+
+    def clean(self):
+        super().clean()
 
 
 class ContactInfoMixIn(models.Model):
@@ -122,6 +128,9 @@ class ContactInfoMixIn(models.Model):
             self.country,
         ]):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
+
+    def clean(self):
+        super().clean()
 
 
 class AccrualMixIn(models.Model):
@@ -581,7 +590,7 @@ class AccrualMixIn(models.Model):
 
             # getting current ledger state
             # todo: validate itemtxs_qs...?
-            txs_qs, txs_digest = self.ledger.digest(
+            io_digest = self.ledger.digest(
                 user_model=user_model,
                 entity_slug=entity_slug,
                 process_groups=True,
@@ -591,7 +600,9 @@ class AccrualMixIn(models.Model):
                 by_unit=True
             )
 
-            accounts_data = txs_digest['tx_digest']['accounts']
+            io_data = io_digest.get_io_data()
+
+            accounts_data = io_data['accounts']
 
             # Index (account_uuid, unit_uuid, balance_type, role)
             current_ledger_state = {
@@ -791,7 +802,7 @@ class AccrualMixIn(models.Model):
                         fields=['posted', 'locked', 'activity']
                     )
 
-            return item_data, txs_digest
+            return item_data, io_data
         else:
             if raise_exception:
                 raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
@@ -862,6 +873,8 @@ class AccrualMixIn(models.Model):
 
     def clean(self):
 
+        super().clean()
+
         if not self.amount_due:
             self.amount_due = 0
 
@@ -885,7 +898,6 @@ class AccrualMixIn(models.Model):
                 self.unearned_account_id is not None
             ]):
                 raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
-
 
         if self.accrue:
             if self.is_approved():
@@ -1051,6 +1063,7 @@ class PaymentTermsMixIn(models.Model):
         return self.TERMS_NET_90_PLUS
 
     def clean(self):
+        super().clean()
         terms_start_date = self.get_terms_start_date()
         if terms_start_date:
             if self.terms != self.TERMS_ON_RECEIPT:
@@ -1085,6 +1098,9 @@ class MarkdownNotesMixIn(models.Model):
         if not self.markdown_notes:
             return ''
         return markdown(force_str(self.markdown_notes))
+
+    def clean(self):
+        super().clean()
 
 
 class BankAccountInfoMixIn(models.Model):
@@ -1141,6 +1157,9 @@ class TaxInfoMixIn(models.Model):
     class Meta:
         abstract = True
 
+    def clean(self):
+        super().clean()
+
 
 class TaxCollectionMixIn(models.Model):
     """
@@ -1163,6 +1182,9 @@ class TaxCollectionMixIn(models.Model):
 
     class Meta:
         abstract = True
+
+    def clean(self):
+        super().clean()
 
 
 class LoggingMixIn:
@@ -1189,18 +1211,17 @@ class LoggingMixIn:
             logger.log(msg=msg, level=level)
 
 
-class ItemTransactionQuerySet:
-    pass
-
-
 class ItemizeError(ValidationError):
     pass
 
 
-class ItemizeMixIn:
+class ItemizeMixIn(models.Model):
     ITEMIZE_APPEND = 'append'
     ITEMIZE_REPLACE = 'replace'
     ITEMIZE_UPDATE = 'update'
+
+    class Meta:
+        abstract = True
 
     def get_item_model_qs(self):
         """
@@ -1358,3 +1379,6 @@ class ItemizeMixIn:
         Validates that the provided item transaction list is valid.
         """
         raise NotImplementedError()
+
+    def clean(self):
+        super().clean()

@@ -1,9 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from itertools import cycle
 from logging import getLogger, DEBUG
 from random import randint, choice
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -69,12 +70,18 @@ class DjangoLedgerBaseTest(TestCase):
         cls.populate_entity_models()
 
     @classmethod
-    def get_random_date(cls) -> date:
-        return date(
+    def get_random_date(cls, as_datetime: bool = True) -> date:
+        dt = date(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),
             day=choice(range(1, 28))
         )
+        if as_datetime:
+            return datetime.combine(
+                dt, datetime.min.time(),
+                tzinfo=ZoneInfo('UTC')
+            )
+        return dt
 
     @classmethod
     def login_client(cls):

@@ -5,12 +5,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
-from collections import defaultdict, namedtuple
-from datetime import datetime, date
+from collections import namedtuple
+from dataclasses import dataclass
+from datetime import datetime, date, timedelta
 from itertools import groupby
 from pathlib import Path
 from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -24,9 +26,11 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
-from django_ledger.io.io_context import (RoleContextManager, GroupContextManager, ActivityContextManager,
-                                         BalanceSheetStatementContextManager, IncomeStatementContextManager,
-                                         CashFlowStatementContextManager)
+from django_ledger.io.io_context import (
+    RoleContextManager, GroupContextManager, ActivityContextManager,
+    BalanceSheetStatementContextManager, IncomeStatementContextManager,
+    CashFlowStatementContextManager
+)
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
@@ -96,21 +100,30 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
     return True
 
 
-def validate_io_date(dt: Union[str, date, datetime], no_parse_localdate: bool = True) -> Optional[datetime]:
+def validate_io_date(
+        dt: Union[str, date, datetime],
+        no_parse_localdate: bool = True) -> Optional[datetime, date]:
     if not dt:
         return
 
     if isinstance(dt, date):
-        dt = make_aware(
-            value=datetime.combine(
-                dt,
-                datetime.min.time()
-            ))
+        # dt = make_aware(
+        #     value=datetime.combine(
+        #         dt,
+        #         datetime.min.time()
+        #     ),
+        #     timezone=ZoneInfo('UTC')
+        # )
         return dt
+
     elif isinstance(dt, datetime):
         if is_naive(dt):
-            return make_aware(dt)
+            return make_aware(
+                value=dt,
+                timezone=ZoneInfo('UTC')
+            )
         return dt
+
     elif isinstance(dt, str):
         # try to parse a date object from string...
         fdt = parse_date(dt)
@@ -153,6 +166,18 @@ class IOValidationError(ValidationError):
     pass
 
 
+@dataclass
+class IOResult:
+    """
+    A carrier class to store information during the Digest call.
+    """
+    ce_match: bool = False
+    ce_from_date: Optional[date] = None
+    ce_to_date: Optional[date] = None
+    txs_queryset = None
+    accounts_digest: Optional[List[Dict]] = None
+
+
 class IODatabaseMixIn:
     """
     Controls how transactions are recorded into the ledger.
@@ -175,8 +200,6 @@ class IODatabaseMixIn:
         elif self.is_entity_unit_model():
             return self.entity
 
-    # def is_time_bounded(self, from_date, to_date):
-
     def database_digest(self,
                         txs_queryset: QuerySet,
                         entity_slug: str = None,
@@ -193,28 +216,15 @@ class IODatabaseMixIn:
                         by_tx_type: bool = False,
                         by_period: bool = False,
                         by_unit: bool = False,
-                        **kwargs):
+                        **kwargs) -> IOResult:
 
-        if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
-            if not from_date:
-                entity_model = self.get_entity_model_from_io()
-                closing_entry_date = entity_model.select_closing_entry_for_io_date(to_date=to_date)
-                # print(closing_entry_date)
-            #
-            #     if closing_entry_date:
-            #     closing_entry_list = entity_model.get_closing_entry_cache_for_date(
-            #         closing_date=closing_entry_date,
-            #         force_cache_update=True
-            #     )
-            #     from_date_d = closing_entry_date + timedelta(days=1)
-            #     print('Orig From:', from_date)
-            #     print('New from:', from_date_d)
-            #     print('To Date:', to_date)
-            #     print(closing_entry_list)
+        TransactionModel = lazy_loader.get_txs_model()
+        io_result = IOResult()
+        txs_queryset_ce = None
 
         if not txs_queryset:
-            TransactionModel = lazy_loader.get_txs_model()
 
+            # where the IO model is operating from...
             if self.is_entity_model():
                 if entity_slug:
                     if entity_slug != self.slug:
@@ -252,32 +262,76 @@ class IODatabaseMixIn:
             else:
                 txs_queryset = TransactionModel.objects.none()
 
-        txs_queryset = txs_queryset.not_closing_entry()
+            # use closing entries to minimize DB aggregation...
+            if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
+                entity_model = self.get_entity_model_from_io()
 
-        if exclude_zero_bal:
-            txs_queryset = txs_queryset.filter(amount__gt=0)
+                # looking up available dates...
+                ce_from_date = entity_model.get_closing_entry_for_date(io_date=from_date, inclusive=False)
+                ce_to_date = entity_model.get_closing_entry_for_date(io_date=to_date)
 
-        if posted:
-            txs_queryset = txs_queryset.posted()
+                ce_alt_from_date = None
 
-        if from_date:
-            txs_queryset = txs_queryset.from_date(from_date=from_date)
+                # unbounded lookup, finding the closest closing entry to aggregate from...
+                if not from_date and not ce_to_date:
+                    ce_alt_from_date = entity_model.get_nearest_next_closing_entry(io_date=to_date)
+                # unbounded exact to_date match...
+                elif ce_from_date is None and ce_to_date:
+                    txs_queryset = txs_queryset.is_closing_entry().filter(journal_entry__timestamp__date=ce_to_date)
+                    io_result.ce_match = True
+                    io_result.ce_to_date = ce_to_date
+                # bounded exact from_date and to_date match...
+                elif ce_from_date and ce_to_date:
+                    txs_queryset = txs_queryset.is_closing_entry().filter(
+                        journal_entry__timestamp__date__in=[
+                            ce_from_date,
+                            ce_to_date
+                        ])
+                    io_result.ce_match = True
+                    io_result.ce_from_date = ce_from_date
+                    io_result.ce_to_date = ce_to_date
 
-        if to_date:
-            txs_queryset = txs_queryset.to_date(to_date=to_date)
+                # use closed to_date as starting point...
+                elif ce_alt_from_date is not None:
+                    txs_queryset_ce = txs_queryset.is_closing_entry().filter(
+                        journal_entry__timestamp__date=ce_alt_from_date)
+                    io_result.ce_match = True
+                    io_result.ce_from_date = ce_from_date
+                    io_result.ce_to_date = ce_to_date
+                    from_date = ce_alt_from_date + timedelta(days=1)
+                    txs_queryset = txs_queryset.from_date(from_date=from_date)
+                else:
+                    # no suitable closing entries to use...
+                    txs_queryset = txs_queryset.not_closing_entry()
+            else:
+                # not using closing entries...
+                txs_queryset = txs_queryset.not_closing_entry()
 
-        if accounts:
-            if not isinstance(accounts, str):
-                accounts = [accounts]
-            txs_queryset = txs_queryset.for_accounts(account_list=accounts)
+            if not io_result.ce_match:
+                if from_date:
+                    txs_queryset = txs_queryset.from_date(from_date=from_date)
 
-        if activity:
-            if isinstance(activity, str):
-                activity = [activity]
-            txs_queryset = txs_queryset.for_activity(activity_list=activity)
+                if to_date:
+                    txs_queryset = txs_queryset.to_date(to_date=to_date)
 
-        if role:
-            txs_queryset = txs_queryset.for_roles(role_list=role)
+            if exclude_zero_bal:
+                txs_queryset = txs_queryset.filter(amount__gt=0.00)
+
+            if posted:
+                txs_queryset = txs_queryset.posted()
+
+            if accounts:
+                if not isinstance(accounts, str):
+                    accounts = [accounts]
+                txs_queryset = txs_queryset.for_accounts(account_list=accounts)
+
+            if activity:
+                if isinstance(activity, str):
+                    activity = [activity]
+                txs_queryset = txs_queryset.for_activity(activity_list=activity)
+
+            if role:
+                txs_queryset = txs_queryset.for_roles(role_list=role)
 
         VALUES = [
             'account__uuid',
@@ -306,7 +360,11 @@ class IODatabaseMixIn:
             ORDER_BY.append('tx_type')
             VALUES.append('tx_type')
 
-        return txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        if txs_queryset_ce:
+            txs_queryset = txs_queryset | txs_queryset_ce
+
+        io_result.txs_queryset = txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
+        return io_result
 
     def python_digest(self,
                       txs_queryset: Optional[QuerySet] = None,
@@ -324,12 +382,12 @@ class IODatabaseMixIn:
                       by_activity: bool = False,
                       by_tx_type: bool = False,
                       by_period: bool = False,
-                      **kwargs) -> list or tuple:
+                      **kwargs) -> IOResult:
 
         if equity_only:
             role = roles_module.GROUP_EARNINGS
 
-        txs_queryset = self.database_digest(
+        io_result = self.database_digest(
             user_model=user_model,
             txs_queryset=txs_queryset,
             to_date=to_date,
@@ -345,7 +403,7 @@ class IODatabaseMixIn:
             by_period=by_period,
             **kwargs)
 
-        for tx_model in txs_queryset:
+        for tx_model in io_result.txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
                 tx_model['balance'] = -tx_model['balance']
 
@@ -359,7 +417,7 @@ class IODatabaseMixIn:
         #     a['tx_type'] if by_tx_type else '',
         # ))
 
-        accounts_gb_code = groupby(txs_queryset,
+        accounts_gb_code = groupby(io_result.txs_queryset,
                                    key=lambda a: (
                                        a['account__uuid'],
                                        a.get('journal_entry__entity_unit__uuid') if by_unit else None,
@@ -369,14 +427,14 @@ class IODatabaseMixIn:
                                        a.get('tx_type') if by_tx_type else None,
                                    ))
 
-        gb_digest = [self.aggregate_balances(k, g) for k, g in accounts_gb_code]
+        accounts_digest = [self.aggregate_balances(k, g) for k, g in accounts_gb_code]
 
-        for acc in gb_digest:
+        for acc in accounts_digest:
             acc['balance_abs'] = abs(acc['balance'])
 
         if signs:
             TransactionModel = lazy_loader.get_txs_model()
-            for acc in gb_digest:
+            for acc in accounts_digest:
                 if any([
                     all([acc['role_bs'] == roles_module.BS_ASSET_ROLE,
                          acc['balance_type'] == TransactionModel.CREDIT]),
@@ -388,7 +446,8 @@ class IODatabaseMixIn:
                 ]):
                     acc['balance'] = -acc['balance']
 
-        return txs_queryset, gb_digest
+        io_result.accounts_digest = accounts_digest
+        return io_result
 
     @staticmethod
     def aggregate_balances(k, g):
@@ -414,7 +473,6 @@ class IODatabaseMixIn:
                unit_slug: str = None,
                user_model: UserModel = None,
                txs_queryset: QuerySet = None,
-               as_io_digest: bool = False,
                accounts: Optional[Union[Set[str], List[str]]] = None,
                role: Optional[Union[Set[str], List[str]]] = None,
                activity: str = None,
@@ -430,11 +488,10 @@ class IODatabaseMixIn:
                by_unit: bool = False,
                by_activity: bool = False,
                by_tx_type: bool = False,
-               digest_name: str = None,
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               **kwargs) -> Union[Tuple, IODigestContextManager]:
+               **kwargs) -> IODigestContextManager:
 
         if balance_sheet_statement:
             from_date = None
@@ -449,16 +506,18 @@ class IODatabaseMixIn:
 
         from_date, to_date = validate_dates(from_date, to_date)
 
-        io_data = defaultdict(lambda: dict())
-        io_data['io_model'] = self
-        io_data['from_date'] = from_date
-        io_data['to_date'] = to_date
-        io_data['by_unit'] = by_unit
-        io_data['by_period'] = by_period
-        io_data['by_activity'] = by_activity
-        io_data['by_tx_type'] = by_tx_type
+        io_state = dict()
+        io_state['io_model'] = self
+        io_state['from_date'] = from_date
+        io_state['to_date'] = to_date
+        io_state['by_unit'] = by_unit
+        io_state['unit_slug'] = unit_slug
+        io_state['entity_slug'] = entity_slug
+        io_state['by_period'] = by_period
+        io_state['by_activity'] = by_activity
+        io_state['by_tx_type'] = by_tx_type
 
-        txs_qs, accounts_digest = self.python_digest(
+        io_result = self.python_digest(
             txs_queryset=txs_queryset,
             user_model=user_model,
             accounts=accounts,
@@ -477,18 +536,18 @@ class IODatabaseMixIn:
             **kwargs
         )
 
-        io_data['txs_qs'] = txs_qs
-        io_data['accounts'] = accounts_digest
+        io_state['io_result'] = io_result
+        io_state['accounts'] = io_result.accounts_digest
 
         if process_roles:
             roles_mgr = RoleContextManager(
-                io_data=io_data,
+                io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
             )
 
             # idea: change digest() name to something else? maybe aggregate, calculate?...
-            io_data = roles_mgr.digest()
+            io_state = roles_mgr.digest()
 
         if any([
             process_groups,
@@ -497,51 +556,41 @@ class IODatabaseMixIn:
             cash_flow_statement
         ]):
             group_mgr = GroupContextManager(
-                io_data=io_data,
+                io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
             )
-            io_data = group_mgr.digest()
+            io_state = group_mgr.digest()
 
             # todo: migrate this to group manager...
-            io_data['group_account']['GROUP_ASSETS'].sort(
+            io_state['group_account']['GROUP_ASSETS'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
-            io_data['group_account']['GROUP_LIABILITIES'].sort(
+            io_state['group_account']['GROUP_LIABILITIES'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_LIABILITIES.index(acc['role']))
-            io_data['group_account']['GROUP_CAPITAL'].sort(
+            io_state['group_account']['GROUP_CAPITAL'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_CAPITAL.index(acc['role']))
 
         if process_ratios:
-            ratio_gen = FinancialRatioManager(io_data=io_data)
-            io_data = ratio_gen.digest()
+            ratio_gen = FinancialRatioManager(io_data=io_state)
+            io_state = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(io_data=io_data, by_unit=by_unit, by_period=by_period)
+            activity_manager = ActivityContextManager(io_data=io_state, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_data)
-            io_data = balance_sheet_mgr.digest()
+            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_state)
+            io_state = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(io_data=io_data)
-            io_data = income_statement_mgr.digest()
+            income_statement_mgr = IncomeStatementContextManager(io_data=io_state)
+            io_state = income_statement_mgr.digest()
 
         if cash_flow_statement:
-            cfs = CashFlowStatementContextManager(io_data=io_data)
-            io_data = cfs.digest()
+            cfs = CashFlowStatementContextManager(io_data=io_state)
+            io_state = cfs.digest()
 
-        if as_io_digest:
-            return IODigestContextManager(io_data=io_data)
-
-        if not digest_name:
-            digest_name = 'tx_digest'
-
-        digest_results = {
-            digest_name: io_data
-        }
-
-        return txs_qs, digest_results
+        return IODigestContextManager(io_data=io_state)
 
     def commit_txs(self,
                    je_timestamp: Union[str, datetime, date],

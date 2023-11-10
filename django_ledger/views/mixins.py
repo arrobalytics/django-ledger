@@ -331,7 +331,9 @@ class EntityUnitMixIn:
 
     def get_context_data(self, **kwargs):
         context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
-        context['unit_slug'] = self.get_unit_slug()
+        unit_slug = self.get_unit_slug()
+        context['unit_slug'] = unit_slug
+        context['by_unit'] = True if unit_slug else False
         return context
 
 
@@ -363,29 +365,28 @@ class DigestContextMixIn:
             txs_queryset = None
 
             if self.IO_DIGEST:
-                txs_queryset, digest = entity_model.digest(user_model=self.request.user,
-                                                           to_date=to_date,
-                                                           unit_slug=unit_slug,
-                                                           by_period=True if by_period else False,
-                                                           process_ratios=True,
-                                                           process_roles=True,
-                                                           process_groups=True)
+                io_digest = entity_model.digest(user_model=self.request.user,
+                                                to_date=to_date,
+                                                unit_slug=unit_slug,
+                                                by_period=True if by_period else False,
+                                                process_ratios=True,
+                                                process_roles=True,
+                                                process_groups=True)
 
-                context.update(digest)
+                context['tx_digest'] = io_digest.get_io_data()
 
             if self.IO_DIGEST_EQUITY:
-                qs_equity, equity_digest = entity_model.digest(user_model=self.request.user,
-                                                               digest_name='equity_digest',
-                                                               to_date=to_date,
-                                                               from_date=from_date,
-                                                               unit_slug=unit_slug,
-                                                               by_period=True if by_period else False,
-                                                               process_ratios=False,
-                                                               process_roles=False,
-                                                               process_groups=True,
-                                                               txs_queryset=txs_queryset)
+                io_digest_equity = entity_model.digest(user_model=self.request.user,
+                                                       to_date=to_date,
+                                                       from_date=from_date,
+                                                       unit_slug=unit_slug,
+                                                       by_period=True if by_period else False,
+                                                       process_ratios=False,
+                                                       process_roles=False,
+                                                       process_groups=True,
+                                                       txs_queryset=txs_queryset)
 
-                context.update(equity_digest)
+                context['equity_digest'] = io_digest_equity.get_io_data()
 
             # how is this used??....
             context['date_filter'] = to_date

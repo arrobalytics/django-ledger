@@ -172,6 +172,13 @@ class InvoiceModelManager(models.Manager):
     The default "get_queryset" has been overridden to refer the custom defined "InvoiceModelQuerySet"
     """
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.select_related(
+            'ledger',
+            'ledger__entity'
+        )
+
     def for_entity(self, entity_slug, user_model) -> InvoiceModelQuerySet:
         """
         Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.
@@ -203,11 +210,13 @@ class InvoiceModelManager(models.Manager):
         return qs.approved()
 
 
-class InvoiceModelAbstract(AccrualMixIn,
-                           ItemizeMixIn,
-                           PaymentTermsMixIn,
-                           MarkdownNotesMixIn,
-                           CreateUpdateMixIn):
+class InvoiceModelAbstract(
+    AccrualMixIn,
+    ItemizeMixIn,
+    PaymentTermsMixIn,
+    MarkdownNotesMixIn,
+    CreateUpdateMixIn
+):
     """
     This is the main abstract class which the InvoiceModel database will inherit from.
     The InvoiceModel inherits functionality from the following MixIns:
@@ -355,7 +364,7 @@ class InvoiceModelAbstract(AccrualMixIn,
         ]
 
     def __str__(self):
-        return f'Invoice: {self.invoice_number}'
+        return f'Invoice: {self.invoice_number} | {self.get_invoice_status_display()}'
 
     def is_configured(self) -> bool:
         return all([
@@ -954,7 +963,7 @@ class InvoiceModelAbstract(AccrualMixIn,
             ])
 
     # DRAFT...
-    def mark_as_draft(self, commit: bool = False, **kwargs):
+    def mark_as_draft(self, draft_date: Union[date, datetime], commit: bool = False, **kwargs):
         """
         Marks InvoiceModel as Draft.
 
@@ -969,6 +978,15 @@ class InvoiceModelAbstract(AccrualMixIn,
         """
         if not self.can_draft():
             raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as draft...')
+
+        if draft_date:
+            if isinstance(draft_date, datetime):
+                self.draft_date = draft_date.date()
+            elif isinstance(draft_date, date):
+                self.draft_date = draft_date
+        else:
+            self.draft_date = localdate()
+
         self.invoice_status = self.INVOICE_STATUS_DRAFT
         self.clean()
         if commit:
@@ -1142,7 +1160,15 @@ class InvoiceModelAbstract(AccrualMixIn,
             return
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
-        self.date_approved = localdate() if not date_approved else date_approved
+
+        if date_approved:
+            if isinstance(date_approved, datetime):
+                self.date_approved = date_approved.date()
+            elif isinstance(date_approved, date):
+                self.draft_date = date_approved
+        else:
+            self.date_approved = localdate()
+
         self.clean()
         if commit:
             self.save()
@@ -1233,7 +1259,14 @@ class InvoiceModelAbstract(AccrualMixIn,
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.date_paid = localdate() if not date_paid else date_paid
+
+        if date_paid:
+            if isinstance(date_paid, datetime):
+                self.date_paid = date_paid.date()
+            elif isinstance(date_paid, date):
+                self.date_paid = date_paid
+        else:
+            self.date_paid = localdate()
 
         if self.date_paid > localdate():
             raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
@@ -1301,7 +1334,7 @@ class InvoiceModelAbstract(AccrualMixIn,
     def mark_as_void(self,
                      entity_slug: str,
                      user_model,
-                     date_void: date = None,
+                     date_void: Optional[Union[date, datetime]] = None,
                      commit: bool = False,
                      **kwargs):
         """
@@ -1326,7 +1359,13 @@ class InvoiceModelAbstract(AccrualMixIn,
         if not self.can_void():
             raise InvoiceModelValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
 
-        self.date_void = localdate() if not date_void else date_void
+        if date_void:
+            if isinstance(date_void, datetime):
+                self.date_void = date_void.date()
+            elif isinstance(date_void, date):
+                self.date_void = date_void
+        else:
+            self.date_void = localdate()
 
         if self.date_void > localdate():
             raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
@@ -1709,7 +1748,8 @@ class InvoiceModelAbstract(AccrualMixIn,
             If True, commits into DB the generated InvoiceModel number if generated.
         """
 
-        super(InvoiceModelAbstract, self).clean()
+        super().clean()
+
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
         if self.prepaid_account.role != ASSET_CA_RECEIVABLES:

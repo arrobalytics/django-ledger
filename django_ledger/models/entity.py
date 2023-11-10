@@ -22,8 +22,9 @@ EntityReportMixIn.
 """
 from calendar import monthrange
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional, List, Dict
@@ -1497,7 +1498,7 @@ class EntityModelAbstract(MP_Node,
     def create_bill(self,
                     vendor_model: Union[VendorModel, UUID, str],
                     terms: str,
-                    date_draft: Optional[date] = None,
+                    date_draft: Optional[Union[date, datetime]] = None,
                     xref: Optional[str] = None,
                     cash_account: Optional[AccountModel] = None,
                     prepaid_account: Optional[AccountModel] = None,
@@ -1516,7 +1517,7 @@ class EntityModelAbstract(MP_Node,
             The VendorModel, VendorModel UUID or VendorModel Number
         terms: str
             Payment terms of the new BillModel. A choice of BillModel.TERM_CHOICES_VALID
-        date_draft: date
+        date_draft: date or datetime
             Date to use as draft date for the new BillModel.
         xref: str
             Optional External Reference for the Bill (i.e. Vendor invoice number.)
@@ -2594,13 +2595,28 @@ class EntityModelAbstract(MP_Node,
             return [date.fromisoformat(dt) for dt in date_list]
         return date_list
 
-    def select_closing_entry_for_io_date(self, to_date: Union[datetime, date]) -> Optional[date]:
+    def get_closing_entry_for_date(self, io_date: date, inclusive: bool = True) -> Optional[date]:
+        if io_date is None:
+            return
         ce_date_list = self.fetch_closing_entry_dates_meta()
-        if isinstance(to_date, datetime):
-            to_date = to_date.date()
-        for ce in ce_date_list:
-            if to_date >= ce:
-                return ce
+        ce_lookup = io_date - timedelta(days=1) if not inclusive else io_date
+        if ce_lookup in ce_date_list:
+            return ce_lookup
+
+    def get_nearest_next_closing_entry(self, io_date: date) -> Optional[date]:
+        if io_date is None:
+            return
+        ce_date_list = self.fetch_closing_entry_dates_meta()
+        if not len(ce_date_list):
+            return
+        if io_date > ce_date_list[0]:
+            return ce_date_list[0]
+        for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
+            if p <= io_date < f:
+                return p
+
+
+
 
     def close_entity_books(self,
                            closing_date: Optional[date] = None,

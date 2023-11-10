@@ -191,6 +191,10 @@ class TransactionModelQuerySet(QuerySet):
     def not_closing_entry(self):
         return self.filter(journal_entry__is_closing_entry=False)
 
+    def is_closing_entry(self):
+        return self.filter(journal_entry__is_closing_entry=True)
+
+
 class TransactionModelAdmin(models.Manager):
 
     def for_user(self, user_model) -> TransactionModelQuerySet:
@@ -309,8 +313,7 @@ class TransactionModelAdmin(models.Manager):
         qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
         if isinstance(unit_slug, EntityUnitModel):
             return qs.filter(journal_entry__entity_unit=unit_slug)
-        elif isinstance(unit_slug, str):
-            return qs.filter(journal_entry__entity_unit__slug__exact=unit_slug)
+        return qs.filter(journal_entry__entity_unit__slug__exact=unit_slug)
 
     def for_journal_entry(self,
                           user_model,

@@ -61,9 +61,9 @@
                                     </div>
                                     <div class="dropdown-menu" id="dropdown-menu-{{ acc.uuid }}" role="menu">
                                         <div class="dropdown-content">
-                                            <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                            <a href="{% url 'django_ledger:account-detail' entity_slug=tx_digest.entity_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                            <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                            <a href="{% url 'django_ledger:account-update' entity_slug=tx_digest.entity_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
                                         </div>
                                     </div>

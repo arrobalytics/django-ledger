@@ -30,7 +30,7 @@ class PnLAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
 
             unit_slug = self.get_unit_slug()
 
-            txs_qs, entity_digest = entity.digest(
+            io_digest = entity.digest(
                 user_model=self.request.user,
                 unit_slug=unit_slug,
                 equity_only=True,
@@ -41,7 +41,8 @@ class PnLAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
                 to_date=self.request.GET.get('toDate')
             )
 
-            group_balance_by_period = entity_digest['tx_digest']['group_balance_by_period']
+            io_data = io_digest.get_io_data()
+            group_balance_by_period = io_data['group_balance_by_period']
             group_balance_by_period = dict(sorted((k, v) for k, v in group_balance_by_period.items()))
 
             entity_data = {
@@ -71,7 +72,7 @@ class PayableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
             bill_qs = BillModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
-            ).unpaid().select_related('ledger__entity')
+            ).unpaid()
 
             # todo: implement this...
             # unit_slug = self.get_unit_slug()
@@ -100,10 +101,10 @@ class ReceivableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
 
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            invoice_qs = InvoiceModel.objects.for_entity_unpaid(
+            invoice_qs = InvoiceModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=request.user,
-            ).select_related('ledger__entity')
+            ).unpaid()
 
             # todo: implement this...
             # unit_slug = self.get_unit_slug()

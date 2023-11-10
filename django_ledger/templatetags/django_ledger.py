@@ -24,7 +24,7 @@ from django_ledger.models import TransactionModel, BillModel, InvoiceModel, Enti
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
-from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session, prepare_context_by_unit
+from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session
 
 register = template.Library()
 
@@ -93,10 +93,7 @@ def balance_sheet_statement(context, io_model, to_date=None):
     if not to_date:
         to_date = context['to_date']
 
-    # todo: clean this up!...
-    prepare_context_by_unit(context)
-
-    txs_qs, digest = io_model.digest(
+    io_digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         equity_only=False,
@@ -108,13 +105,9 @@ def balance_sheet_statement(context, io_model, to_date=None):
         process_groups=True,
         balance_sheet_statement=True)
 
-    # todo: this can be moved to the digest function...
-    digest['by_unit'] = context['by_unit']
-    digest['unit_model'] = context['unit_model']
-    digest['unit_slug'] = context['unit_slug']
-    digest['entity_slug'] = entity_slug
-
-    return digest
+    return {
+        'tx_digest': io_digest.get_io_data()
+    }
 
 
 @register.inclusion_tag('django_ledger/financial_statements/tags/cash_flow_statement.html', takes_context=True)
@@ -124,9 +117,7 @@ def cash_flow_statement(context, io_model):
     from_date = context['from_date']
     to_date = context['to_date']
 
-    prepare_context_by_unit(context)
-
-    txs_qs, io_digest = io_model.digest(
+    io_digest = io_model.digest(
         cash_flow_statement=True,
         by_activity=True,
         user_model=user_model,
@@ -139,10 +130,9 @@ def cash_flow_statement(context, io_model):
         to_date=to_date,
         process_groups=True)
 
-    io_digest['by_unit'] = context['by_unit']
-    io_digest['unit_model'] = context['unit_model']
-    io_digest['unit_slug'] = context['unit_slug']
-    return io_digest
+    return {
+        'tx_digest': io_digest.get_io_data()
+    }
 
 
 @register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
@@ -157,9 +147,7 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
     if not to_date:
         to_date = context['to_date']
 
-    prepare_context_by_unit(context)
-
-    txs_qs, digest = io_model.digest(
+    io_digest = io_model.digest(
         activity=activity,
         user_model=user_model,
         entity_slug=entity_slug,
@@ -173,10 +161,9 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
         signs=True
     )
 
-    digest['by_unit'] = context['by_unit']
-    digest['unit_model'] = context['unit_model']
-    digest['unit_slug'] = context['unit_slug']
-    return digest
+    return {
+        'tx_digest': io_digest.get_io_data()
+    }
 
 
 @register.inclusion_tag('django_ledger/bank_account/tags/bank_accounts_table.html', takes_context=True)

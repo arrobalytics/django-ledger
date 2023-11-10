@@ -173,6 +173,13 @@ class BillModelManager(models.Manager):
     "BillModelQuerySet".
     """
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.select_related(
+            'ledger',
+            'ledger__entity'
+        )
+
     def for_user(self, user_model) -> BillModelQuerySet:
         """
         Fetches a QuerySet of BillModels that the UserModel as access to.
@@ -243,11 +250,13 @@ class BillModelManager(models.Manager):
             )
 
 
-class BillModelAbstract(AccrualMixIn,
-                        ItemizeMixIn,
-                        PaymentTermsMixIn,
-                        MarkdownNotesMixIn,
-                        CreateUpdateMixIn):
+class BillModelAbstract(
+    AccrualMixIn,
+    ItemizeMixIn,
+    PaymentTermsMixIn,
+    MarkdownNotesMixIn,
+    CreateUpdateMixIn
+):
     """
     This is the main abstract class which the BillModel database will inherit from.
     The BillModel inherits functionality from the following MixIns:
@@ -398,7 +407,7 @@ class BillModelAbstract(AccrualMixIn,
         ]
 
     def __str__(self):
-        return f'Bill: {self.bill_number}'
+        return f'Bill: {self.bill_number} | {self.get_bill_status_display()}'
 
     def is_configured(self) -> bool:
         return all([
@@ -410,7 +419,7 @@ class BillModelAbstract(AccrualMixIn,
     def configure(self,
                   entity_slug: Union[str, EntityModel],
                   user_model: Optional[UserModel] = None,
-                  date_draft: Optional[date] = None,
+                  date_draft: Optional[Union[date, datetime]] = None,
                   ledger_posted: bool = False,
                   ledger_name: str = None,
                   commit: bool = False,
@@ -462,6 +471,9 @@ class BillModelAbstract(AccrualMixIn,
                 self.accrue = False
 
             self.bill_status = self.BILL_STATUS_DRAFT
+
+            if date_draft and isinstance(date_draft, datetime):
+                date_draft = date_draft.date()
             self.date_draft = localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
@@ -1044,7 +1056,15 @@ class BillModelAbstract(AccrualMixIn,
                 f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
             )
         self.bill_status = self.BILL_STATUS_DRAFT
-        self.date_draft = localdate() if not date_draft else date_draft
+
+        if date_draft:
+            if isinstance(date_draft, datetime):
+                self.date_draft = date_draft.date()
+            elif isinstance(date_draft, date):
+                self.date_draft = date_draft
+        else:
+            self.date_draft = localdate()
+
         self.clean()
         if commit:
             self.save(
@@ -1141,8 +1161,15 @@ class BillModelAbstract(AccrualMixIn,
             )
 
         self.bill_status = self.BILL_STATUS_REVIEW
-        self.date_in_review = localdate() if not date_in_review else date_in_review
-        self.date_in_review = date_in_review
+
+        if date_in_review:
+            if isinstance(date_in_review, datetime):
+                self.date_in_review = date_in_review.date()
+            elif isinstance(date_in_review, date):
+                self.date_in_review = date_in_review
+        else:
+            self.date_in_review = localdate()
+
         self.clean()
         if commit:
             self.save(
@@ -1202,7 +1229,7 @@ class BillModelAbstract(AccrualMixIn,
     def mark_as_approved(self,
                          user_model,
                          entity_slug: Optional[str] = None,
-                         date_approved: Optional[date] = None,
+                         date_approved: Optional[Union[date, datetime]] = None,
                          commit: bool = False,
                          force_migrate: bool = False,
                          raise_exception: bool = True,
@@ -1235,7 +1262,15 @@ class BillModelAbstract(AccrualMixIn,
                 )
             return
         self.bill_status = self.BILL_STATUS_APPROVED
-        self.date_approved = localdate() if not date_approved else date_approved
+
+        if date_approved:
+            if isinstance(date_approved, datetime):
+                self.date_approved = date_approved.date()
+            elif isinstance(date_approved, date):
+                self.date_approved = date_approved
+        else:
+            self.date_approved = localdate()
+
         self.get_state(commit=True)
         self.clean()
         if commit:
@@ -1301,7 +1336,7 @@ class BillModelAbstract(AccrualMixIn,
     def mark_as_paid(self,
                      user_model,
                      entity_slug: Optional[str] = None,
-                     date_paid: Optional[date] = None,
+                     date_paid: Optional[Union[date, datetime]] = None,
                      itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
                      commit: bool = False,
                      **kwargs):
@@ -1330,9 +1365,16 @@ class BillModelAbstract(AccrualMixIn,
         if not self.can_pay():
             raise BillModelValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
 
+        if date_paid:
+            if isinstance(date_paid, datetime):
+                self.date_paid = date_paid.date()
+            elif isinstance(date_paid, date):
+                self.date_paid = date_paid
+        else:
+            self.date_paid = localdate()
+
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
-        self.date_paid = localdate() if not date_paid else date_paid
 
         if self.date_paid > localdate():
             raise BillModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
@@ -1442,7 +1484,14 @@ class BillModelAbstract(AccrualMixIn,
         if not self.can_void():
             raise BillModelValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
 
-        self.date_void = date_void if date_void else localdate()
+        if date_void:
+            if isinstance(date_void, datetime):
+                self.date_void = date_void.date()
+            elif isinstance(date_void, date):
+                self.date_void = date_void
+        else:
+            self.date_void = localdate()
+
         self.bill_status = self.BILL_STATUS_VOID
         self.void_state(commit=True)
         self.clean()
@@ -1823,7 +1872,7 @@ class BillModelAbstract(AccrualMixIn,
             If True, commits into DB the generated BillModel number if generated.
         """
 
-        super(BillModelAbstract, self).clean()
+        super().clean()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
         if self.prepaid_account.role != ASSET_CA_PREPAID:
