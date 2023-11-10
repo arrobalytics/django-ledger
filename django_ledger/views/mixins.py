@@ -333,7 +333,13 @@ class EntityUnitMixIn:
         context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
         unit_slug = self.get_unit_slug()
         context['unit_slug'] = unit_slug
-        context['by_unit'] = True if unit_slug else False
+
+        by_unit = any([
+            True if unit_slug else False,
+            self.request.GET.get('by_unit') is not None
+        ])
+
+        context['by_unit'] = by_unit
         return context
 
 

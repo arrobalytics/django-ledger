@@ -22,7 +22,7 @@
                 {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_NET_INCOME.balance | currency_format }}</td>
         </tr>
 
-        {# Noncash Charges to Non-current Accounts #}
+        {# Non-cash Charges to Non-current Accounts #}
         <tr>
             <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Non-current Accounts' %}</td>
             <td></td>
@@ -43,7 +43,7 @@
                 {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.balance }}</td>
         </tr>
 
-        {# Noncash Charges to Current Accounts #}
+        {# Non-cash Charges to Current Accounts #}
         <tr>
             <td class="is-size-5 has-text-weight-light has-text-centered">{% trans 'Noncash Charges to Current Accounts' %}</td>
             <td></td>

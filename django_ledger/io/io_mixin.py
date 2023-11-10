@@ -102,7 +102,7 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
 
 def validate_io_date(
         dt: Union[str, date, datetime],
-        no_parse_localdate: bool = True) -> Optional[datetime, date]:
+        no_parse_localdate: bool = True) -> Optional[Union[datetime, date]]:
     if not dt:
         return
 
@@ -171,9 +171,15 @@ class IOResult:
     """
     A carrier class to store information during the Digest call.
     """
+    # DB Aggregation...
+    db_from_date: Optional[date] = None
+    db_to_date: Optional[date] = None
+
+    # Closing Entry lookup...
     ce_match: bool = False
     ce_from_date: Optional[date] = None
     ce_to_date: Optional[date] = None
+
     txs_queryset = None
     accounts_digest: Optional[List[Dict]] = None
 
@@ -219,12 +225,12 @@ class IODatabaseMixIn:
                         **kwargs) -> IOResult:
 
         TransactionModel = lazy_loader.get_txs_model()
-        io_result = IOResult()
-        txs_queryset_ce = None
+        io_result = IOResult(db_to_date=to_date, db_from_date=from_date)
+        txs_queryset_closing_entry = TransactionModel.objects.none()
 
         if not txs_queryset:
 
-            # where the IO model is operating from...
+            # where the IO model is operating from??...
             if self.is_entity_model():
                 if entity_slug:
                     if entity_slug != self.slug:
@@ -262,7 +268,7 @@ class IODatabaseMixIn:
             else:
                 txs_queryset = TransactionModel.objects.none()
 
-            # use closing entries to minimize DB aggregation...
+            # use closing entries to minimize DB aggregation if activated...
             if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
                 entity_model = self.get_entity_model_from_io()
 
@@ -270,19 +276,39 @@ class IODatabaseMixIn:
                 ce_from_date = entity_model.get_closing_entry_for_date(io_date=from_date, inclusive=False)
                 ce_to_date = entity_model.get_closing_entry_for_date(io_date=to_date)
 
-                ce_alt_from_date = None
-
-                # unbounded lookup, finding the closest closing entry to aggregate from...
+                # unbounded lookup, no date match
+                # finding the closest closing entry to aggregate from if present...
                 if not from_date and not ce_to_date:
                     ce_alt_from_date = entity_model.get_nearest_next_closing_entry(io_date=to_date)
-                # unbounded exact to_date match...
-                elif ce_from_date is None and ce_to_date:
-                    txs_queryset = txs_queryset.is_closing_entry().filter(journal_entry__timestamp__date=ce_to_date)
+
+                    # if there's a suitable closing entry...
+                    if ce_alt_from_date:
+                        txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
+                            journal_entry__timestamp__date=ce_alt_from_date
+                        )
+                        io_result.ce_match = True
+                        io_result.ce_from_date = ce_from_date
+                        io_result.ce_to_date = ce_to_date
+
+                        # limit db aggregation to unclosed entries...
+                        io_result.db_from_date = ce_alt_from_date + timedelta(days=1)
+                        io_result.db_to_date = to_date
+                        print(f'Unbounded lookup no date match. Closest from_dt: {ce_alt_from_date}...')
+
+                # unbounded lookup, exact to_date match...
+                elif not ce_from_date and ce_to_date:
+                    txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(journal_entry__timestamp__date=ce_to_date)
                     io_result.ce_match = True
                     io_result.ce_to_date = ce_to_date
+
+                    # no need to DB aggregate...
+                    io_result.db_from_date = None
+                    io_result.db_to_date = None
+                    print(f'Unbounded lookup EXACT date match. Closest to_dt: {ce_to_date}...')
+
                 # bounded exact from_date and to_date match...
                 elif ce_from_date and ce_to_date:
-                    txs_queryset = txs_queryset.is_closing_entry().filter(
+                    txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
                         journal_entry__timestamp__date__in=[
                             ce_from_date,
                             ce_to_date
@@ -291,28 +317,23 @@ class IODatabaseMixIn:
                     io_result.ce_from_date = ce_from_date
                     io_result.ce_to_date = ce_to_date
 
-                # use closed to_date as starting point...
-                elif ce_alt_from_date is not None:
-                    txs_queryset_ce = txs_queryset.is_closing_entry().filter(
-                        journal_entry__timestamp__date=ce_alt_from_date)
-                    io_result.ce_match = True
-                    io_result.ce_from_date = ce_from_date
-                    io_result.ce_to_date = ce_to_date
-                    from_date = ce_alt_from_date + timedelta(days=1)
-                    txs_queryset = txs_queryset.from_date(from_date=from_date)
+                    # no need to aggregate...
+                    io_result.db_from_date = None
+                    io_result.db_to_date = None
+                    print(f'Bounded lookup EXACT date match. Closest from_dt: {ce_from_date} | to_dt: {ce_to_date}...')
+
+                # no suitable closing entries to use...
                 else:
-                    # no suitable closing entries to use...
                     txs_queryset = txs_queryset.not_closing_entry()
             else:
                 # not using closing entries...
                 txs_queryset = txs_queryset.not_closing_entry()
 
-            if not io_result.ce_match:
-                if from_date:
-                    txs_queryset = txs_queryset.from_date(from_date=from_date)
+            if io_result.db_from_date:
+                txs_queryset = txs_queryset.from_date(from_date=io_result.db_from_date)
 
-                if to_date:
-                    txs_queryset = txs_queryset.to_date(to_date=to_date)
+            if io_result.db_to_date:
+                txs_queryset = txs_queryset.to_date(to_date=io_result.db_to_date)
 
             if exclude_zero_bal:
                 txs_queryset = txs_queryset.filter(amount__gt=0.00)
@@ -360,8 +381,7 @@ class IODatabaseMixIn:
             ORDER_BY.append('tx_type')
             VALUES.append('tx_type')
 
-        if txs_queryset_ce:
-            txs_queryset = txs_queryset | txs_queryset_ce
+        txs_queryset = txs_queryset | txs_queryset_closing_entry
 
         io_result.txs_queryset = txs_queryset.values(*VALUES).annotate(**ANNOTATE).order_by(*ORDER_BY)
         return io_result

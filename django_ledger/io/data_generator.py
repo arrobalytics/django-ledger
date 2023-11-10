@@ -39,7 +39,7 @@ class EntityDataGenerator(LoggingMixIn):
     def __init__(self,
                  user_model,
                  entity_model: Union[EntityModel, str],
-                 start_date: date,
+                 start_dttm: datetime,
                  capital_contribution: Decimal,
                  days_forward: int,
                  tx_quantity: int = 25):
@@ -56,7 +56,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.fk.add_provider(phone_number)
         self.fk.add_provider(bank)
 
-        self.start_date: date = start_date
+        self.start_date: datetime = start_dttm
         self.local_date = localdate()
         self.tx_quantity = tx_quantity
         self.localtime = localtime()

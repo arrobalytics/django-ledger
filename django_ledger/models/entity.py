@@ -2612,11 +2612,8 @@ class EntityModelAbstract(MP_Node,
         if io_date > ce_date_list[0]:
             return ce_date_list[0]
         for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
-            if p <= io_date < f:
+            if p and p <= io_date < f:
                 return p
-
-
-
 
     def close_entity_books(self,
                            closing_date: Optional[date] = None,

@@ -141,7 +141,7 @@ class DjangoLedgerBaseTest(TestCase):
             data_generator = EntityDataGenerator(
                 user_model=cls.user_model,
                 entity_model=entity_model,
-                start_date=cls.START_DATE,
+                start_dttm=cls.START_DATE,
                 capital_contribution=cls.CAPITAL_CONTRIBUTION,
                 days_forward=cls.DAYS_FORWARD,
                 tx_quantity=cls.TX_QUANTITY
