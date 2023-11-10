@@ -2,6 +2,9 @@
 
 ### An Accounting, Bookkeeping & Financial Analysis Engine for the Django Framework.
 
+
+## Introduction
+
 __Django Ledger__ is a double entry accounting system based on
 the [Django Web Framework](https://www.djangoproject.com),
 which aims to power financially driven applications by removing the complexity of the accounting domain into a simple,
@@ -52,7 +55,7 @@ Django Ledger supports:
 
 # Roadmap to Version 1.0.
 
-### ~~Version 0.4~~ *completed*
+
 
 * __0.4.0__: Items, resources and & lists for bills & invoices itemization:
 * __0.4.0__: Enhance and optimize Django Ledger the random data generation functionality to properly populate relevant
