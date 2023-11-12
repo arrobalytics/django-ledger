@@ -31,7 +31,7 @@ except ImportError:
 
 logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
 
-DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', False)
+DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', True)
 DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT = getattr(settings,
                                                             'DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT', 3600)
 DJANGO_LEDGER_LOGIN_URL = getattr(settings, 'DJANGO_LEDGER_LOGIN_URL', settings.LOGIN_URL)
