@@ -28,7 +28,6 @@ if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
         'graphene_django',
         'oauth2_provider'
     ]
-DJANGO_LEDGER_USE_CLOSING_ENTRIES = True
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
