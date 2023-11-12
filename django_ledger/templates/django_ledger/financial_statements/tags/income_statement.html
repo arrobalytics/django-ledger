@@ -7,7 +7,7 @@
         <tr>
             <th>{% trans 'Account Number' %}</th>
             <th>{% trans 'Description' %}</th>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <th>{% trans 'Unit' %}</th>
             {% endif %}
             <th>{% trans 'Balance Type' %}</th>
@@ -18,7 +18,7 @@
         <tr>
             <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Revenues' %}</h2></td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -28,7 +28,7 @@
             <tr>
                 <td class="has-text-right">{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
-                {% if by_unit %}
+                {% if tx_digest.by_unit %}
                     <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                 {% endif %}
                 <td class="has-text-centered">
@@ -43,7 +43,7 @@
         {% endfor %}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -56,7 +56,7 @@
         <tr>
             <td><h2 class="is-size-3 has-text-left">{% trans 'Less: Cost of Goods Sold' %}</h2></td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -66,7 +66,7 @@
             <tr>
                 <td class="has-text-right">{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
-                {% if by_unit %}
+                {% if tx_digest.by_unit %}
                     <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                 {% endif %}
                 <td class="has-text-centered">
@@ -81,7 +81,7 @@
         {% endfor %}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -93,7 +93,7 @@
         {# GROSS PROFIT #}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -106,7 +106,7 @@
         <tr>
             <td><h2 class="is-size-3 has-text-left">{% trans 'Operating Expenses' %}</h2></td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -116,7 +116,7 @@
             <tr>
                 <td class="has-text-right">{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
-                {% if by_unit %}
+                {% if tx_digest.by_unit %}
                     <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                 {% endif %}
                 <td class="has-text-centered">
@@ -131,7 +131,7 @@
         {% endfor %}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -144,7 +144,7 @@
         {# NET OPERATING INCOME #}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -157,7 +157,7 @@
         <tr>
             <td><h2 class="is-size-3 has-text-left">{% trans 'Other Revenues' %}</h2></td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -167,7 +167,7 @@
             <tr>
                 <td class="has-text-right">{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
-                {% if by_unit %}
+                {% if tx_digest.by_unit %}
                     <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                 {% endif %}
                 <td class="has-text-centered">
@@ -182,7 +182,7 @@
         {% endfor %}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -196,7 +196,7 @@
         <tr>
             <td><h2 class="is-size-3 has-text-left">{% trans 'Other Expenses' %}</h2></td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -206,7 +206,7 @@
             <tr>
                 <td class="has-text-right">{{ acc.code }}</td>
                 <td>{{ acc.name }}</td>
-                {% if by_unit %}
+                {% if tx_digest.by_unit %}
                     <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                 {% endif %}
                 <td class="has-text-centered">
@@ -221,7 +221,7 @@
         {% endfor %}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -233,7 +233,7 @@
         {# NET OTHER INCOME/LOSS #}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -246,7 +246,7 @@
         {# NET INCOME #}
         <tr>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td>

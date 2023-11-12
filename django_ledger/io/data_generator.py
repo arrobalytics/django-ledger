@@ -6,7 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 from itertools import groupby
 from random import randint, random, choice, choices
@@ -39,7 +39,7 @@ class EntityDataGenerator(LoggingMixIn):
     def __init__(self,
                  user_model,
                  entity_model: Union[EntityModel, str],
-                 start_date: date,
+                 start_dttm: datetime,
                  capital_contribution: Decimal,
                  days_forward: int,
                  tx_quantity: int = 25):
@@ -56,7 +56,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.fk.add_provider(phone_number)
         self.fk.add_provider(bank)
 
-        self.start_date: date = start_date
+        self.start_date: datetime = start_dttm
         self.local_date = localdate()
         self.tx_quantity = tx_quantity
         self.localtime = localtime()
@@ -140,16 +140,19 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.create_closing_entry()
 
-    def get_next_date(self, prev_date: date = None) -> date:
-        if not prev_date:
-            prev_date = self.start_date
-        next_date = prev_date + timedelta(days=randint(
-            self.MIN_DAYS_FORWARD,
-            self.MAX_DAYS_FORWARD
-        ))
-        if next_date > self.local_date:
-            next_date = self.local_date
-        return next_date
+    def get_next_timestamp(self, prev_timestamp: Union[date, datetime] = None) -> date:
+        if not prev_timestamp:
+            prev_timestamp = self.start_date
+
+        next_timestamp = prev_timestamp + timedelta(
+            days=randint(
+                self.MIN_DAYS_FORWARD,
+                self.MAX_DAYS_FORWARD
+            ))
+
+        if next_timestamp > self.localtime:
+            next_timestamp = self.localtime
+        return next_timestamp
 
     def create_coa(self):
         entity_model = self.entity_model
@@ -442,19 +445,19 @@ class EntityDataGenerator(LoggingMixIn):
         estimate_items = estimate_model.itemtransactionmodel_set.bulk_create(objs=estimate_items)
 
         if random() > 0.25:
-            date_in_review = self.get_next_date(date_draft)
+            date_in_review = self.get_next_timestamp(date_draft)
             estimate_model.mark_as_review(commit=True, date_in_review=date_in_review)
             if random() > 0.50:
-                date_approved = self.get_next_date(date_in_review)
+                date_approved = self.get_next_timestamp(date_in_review)
                 estimate_model.mark_as_approved(commit=True, date_approved=date_approved)
                 if random() > 0.25:
-                    date_completed = self.get_next_date(date_approved)
+                    date_completed = self.get_next_timestamp(date_approved)
                     estimate_model.mark_as_completed(commit=True, date_completed=date_completed)
                 elif random() > 0.8:
-                    date_void = self.get_next_date(date_approved)
+                    date_void = self.get_next_timestamp(date_approved)
                     estimate_model.mark_as_void(commit=True, date_void=date_void)
             elif random() > 0.8:
-                date_canceled = self.get_next_date(date_in_review)
+                date_canceled = self.get_next_timestamp(date_in_review)
                 estimate_model.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
     def create_bill(self, date_draft: date):
@@ -490,18 +493,18 @@ class EntityDataGenerator(LoggingMixIn):
         bill_model.save()
 
         if random() > 0.25 and bill_model.amount_due:
-            date_in_review = self.get_next_date(date_draft)
+            date_in_review = self.get_next_timestamp(date_draft)
             bill_model.mark_as_review(commit=True, date_in_review=date_in_review)
 
             if random() > 0.50:
-                date_approved = self.get_next_date(date_in_review)
+                date_approved = self.get_next_timestamp(date_in_review)
                 bill_model.mark_as_approved(commit=True,
                                             entity_slug=self.entity_model.slug,
                                             user_model=self.user_model,
                                             date_approved=date_approved)
 
                 if random() > 0.25:
-                    paid_date = self.get_next_date(date_approved)
+                    paid_date = self.get_next_timestamp(date_approved)
                     bill_model.mark_as_paid(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
@@ -509,7 +512,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
                 elif random() > 0.8:
-                    void_date = self.get_next_date(date_approved)
+                    void_date = self.get_next_timestamp(date_approved)
                     bill_model.mark_as_void(
                         user_model=self.user_model,
                         entity_slug=self.entity_model.slug,
@@ -517,7 +520,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
             elif random() > 0.8:
-                canceled_date = self.get_next_date(date_in_review)
+                canceled_date = self.get_next_timestamp(date_in_review)
                 bill_model.mark_as_canceled(date_canceled=canceled_date)
 
     def create_po(self, date_draft: date):
@@ -545,14 +548,14 @@ class EntityDataGenerator(LoggingMixIn):
 
         # mark as approved...
         if random() > 0.25 and po_model.po_amount:
-            date_review = self.get_next_date(date_draft)
+            date_review = self.get_next_timestamp(date_draft)
             po_model.mark_as_review(commit=True, date_in_review=date_review)
             if random() > 0.5:
-                date_approved = self.get_next_date(date_review)
+                date_approved = self.get_next_timestamp(date_review)
                 po_model.mark_as_approved(commit=True, date_approved=date_approved)
                 if random() > 0.25:
                     # add a PO bill...
-                    date_fulfilled = self.get_next_date(date_approved)
+                    date_fulfilled = self.get_next_timestamp(date_approved)
                     date_bill_draft = date_fulfilled - timedelta(days=randint(1, 3))
 
                     bill_model = self.entity_model.create_bill(
@@ -593,16 +596,16 @@ class EntityDataGenerator(LoggingMixIn):
                         ])
 
                     if random() > 0.25:
-                        date_bill_review = self.get_next_date(date_bill_draft)
+                        date_bill_review = self.get_next_timestamp(date_bill_draft)
                         bill_model.mark_as_review(commit=True, date_in_review=date_bill_review)
                         if random() > 0.50:
-                            bill_approve_date = self.get_next_date(date_bill_review)
+                            bill_approve_date = self.get_next_timestamp(date_bill_review)
                             bill_model.mark_as_approved(commit=True,
                                                         entity_slug=self.entity_model.slug,
                                                         user_model=self.user_model,
                                                         date_approved=bill_approve_date)
                             if random() > 0.25:
-                                bill_paid_date = self.get_next_date(bill_approve_date)
+                                bill_paid_date = self.get_next_timestamp(bill_approve_date)
                                 bill_model.mark_as_paid(
                                     user_model=self.user_model,
                                     entity_slug=self.entity_model.slug,
@@ -686,7 +689,7 @@ class EntityDataGenerator(LoggingMixIn):
         invoice_model.save()
 
         if random() > 0.25 and invoice_model.amount_due:
-            date_review = self.get_next_date(date_draft)
+            date_review = self.get_next_timestamp(date_draft)
 
             try:
                 invoice_model.mark_as_review(commit=True, date_in_review=date_review)
@@ -695,13 +698,13 @@ class EntityDataGenerator(LoggingMixIn):
                 return
 
             if random() > 0.50:
-                date_approved = self.get_next_date(date_review)
+                date_approved = self.get_next_timestamp(date_review)
                 invoice_model.mark_as_approved(entity_slug=self.entity_model.slug,
                                                user_model=self.user_model,
                                                commit=True,
                                                date_approved=date_approved)
                 if random() > 0.25:
-                    date_paid = self.get_next_date(date_approved)
+                    date_paid = self.get_next_timestamp(date_approved)
                     invoice_model.mark_as_paid(
                         entity_slug=self.entity_model.slug,
                         user_model=self.user_model,
@@ -715,7 +718,7 @@ class EntityDataGenerator(LoggingMixIn):
                     self.update_inventory()
                     self.update_products()
                 elif random() > 0.8:
-                    date_void = self.get_next_date(date_approved)
+                    date_void = self.get_next_timestamp(date_approved)
                     invoice_model.mark_as_void(
                         entity_slug=self.entity_model.slug,
                         user_model=self.user_model,
@@ -723,7 +726,7 @@ class EntityDataGenerator(LoggingMixIn):
                         commit=True
                     )
             elif random() > 0.8:
-                date_canceled = self.get_next_date(date_review)
+                date_canceled = self.get_next_timestamp(date_review)
                 invoice_model.mark_as_canceled(commit=True, date_canceled=date_canceled)
 
     def fund_entity(self):

@@ -35,22 +35,26 @@ from django_ledger.io import roles
 
 ```python
 # change this to your preferred django username...
-MY_USERNAME = 'elarroba'
+MY_USERNAME = 'ceo_user'
+MY_PASSWORD = 'NeverUseMe|VeryInsecure!'
 UserModel = get_user_model()
-user_model = UserModel.objects.get(username__exact=MY_USERNAME)
+
+try:
+    user_model = UserModel.objects.get(username__exact=MY_USERNAME)
+except:
+    user_model = UserModel.objects.create(username=MY_USERNAME, password=MY_PASSWORD)
 ```
 
 # Create an Entity Model
 
 
 ```python
-entity_model = EntityModel(
+entity_model = EntityModel.create_entity(
     name='One Big Company, LLC',
     admin=user_model,
-    accrual_method=True
+    use_accrual_method=True,
+    fy_start_month=1
 )
-entity_model.clean()
-entity_model = EntityModel.add_root(instance=entity_model)
 ```
 
 
@@ -70,9 +74,10 @@ entity_model.has_default_coa()
 
 ```python
 default_coa_model = entity_model.create_chart_of_accounts(
-    assign_as_default=True, 
-    commit=True, 
-    coa_name='My QuickStart CoA')
+    assign_as_default=True,
+    commit=True,
+    coa_name='My QuickStart CoA'
+)
 ```
 
 
@@ -113,9 +118,10 @@ default_coa_model = entity_model.get_default_coa()
 
 ```python
 another_coa_model = entity_model.create_chart_of_accounts(
-    assign_as_default=False, 
-    commit=True, 
-    coa_name='My Legacy Chart of Accounts')
+    assign_as_default=False,
+    commit=True,
+    coa_name='My Legacy Chart of Accounts'
+)
 ```
 
 # Accounts
@@ -128,9 +134,10 @@ coa_qs, coa_map = entity_model.get_all_coa_accounts()
 pd.DataFrame(coa_map[default_coa_model].values())
 ```
 
+### New CoA does not have any accounts yet...
+
 
 ```python
-# new CoA does not have any accounts yet...
 pd.DataFrame(coa_map[another_coa_model].values())
 ```
 
@@ -166,13 +173,6 @@ coa_accounts_by_coa_slug_qs = entity_model.get_coa_accounts(coa_model=default_co
 pd.DataFrame(coa_accounts_by_coa_slug_qs.values())
 ```
 
-
-```python
-# coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(code_list=['ABC'], 
-#                                                                 coa_model=another_coa_model)
-# pd.DataFrame(coa_accounts_by_codes_qs.values())
-```
-
 ## Get Accounts With Codes and CoA Model
 
 
@@ -188,7 +188,7 @@ pd.DataFrame(coa_accounts_by_codes_qs.values())
 coa_model, account_model = entity_model.create_account(
     coa_model=another_coa_model,
     account_model_kwargs={
-        'code': f'1{str(randint(10000,99999))}ABC',
+        'code': f'1{str(randint(10000, 99999))}ABC',
         'role': roles.ASSET_CA_INVENTORY,
         'name': 'A cool account created from the EntityModel API!',
         'balance_type': roles.DEBIT,
@@ -203,8 +203,8 @@ account_model
 
 
 ```python
-given_coa_accounts_qs = entity_model.get_coa_accounts(coa_model=another_coa_model)
-pd.DataFrame(given_coa_accounts_qs.values())
+another_coa_accounts_qs = entity_model.get_coa_accounts(coa_model=another_coa_model)
+pd.DataFrame(another_coa_accounts_qs.values())
 ```
 
 # Customers
@@ -269,7 +269,7 @@ invoice_model = entity_model.create_invoice(
 
 
 ```python
-# invoice_model.
+invoice_model
 ```
 
 ## Add Items to Invoices
@@ -278,6 +278,7 @@ invoice_model = entity_model.create_invoice(
 ```python
 invoices_item_models = invoice_model.get_item_model_qs()
 
+# K= number of items...
 K = 6
 
 invoice_itemtxs = {
@@ -318,6 +319,11 @@ bill_model = entity_model.create_bill(
     vendor_model='V-0000000002',
     terms=BillModel.TERMS_NET_60
 )
+```
+
+
+```python
+bill_model
 ```
 
 ## Add Items to Bills
@@ -410,7 +416,7 @@ pd.DataFrame(estimates_qs.values())
 
 ```python
 estimate_model = entity_model.create_estimate(
-    estimate_title='A quote for new potential customer!', 
+    estimate_title='A quote for new potential customer!',
     customer_model='C-0000000009',
     contract_terms=EstimateModel.CONTRACT_TERMS_FIXED
 )
@@ -619,11 +625,13 @@ inventory_model.is_inventory()
 
 ```python
 bs_report = entity_model.get_balance_sheet_statement(
-    to_date=date(2022,12,31),
+    to_date=date(2022, 12, 31),
     save_pdf=True,
+    filepath='./'
 )
 # save_pdf=True saves the PDF report in the project's BASE_DIR.
 # filename and filepath may also be specified...
+# will raise not implemented error if PDF support is not enabled...
 ```
 
 ### Balance Sheet Statement Raw Data
@@ -638,12 +646,14 @@ bs_report.get_report_data()
 
 ```python
 ic_report = entity_model.get_income_statement(
-    from_date=date(2022,1,1),
-    to_date=date(2022,12,31),
-    save_pdf=True
+    from_date=date(2022, 1, 1),
+    to_date=date(2022, 12, 31),
+    save_pdf=True,
+    filepath='./'
 )
 # save_pdf=True saves the PDF report in the project's BASE_DIR.
 # filename and filepath may also be specified...
+# will raise not implemented error if PDF support is not enabled...
 ```
 
 ### Income Statement Raw Data
@@ -658,9 +668,10 @@ ic_report.get_report_data()
 
 ```python
 cf_report = entity_model.get_cash_flow_statement(
-    from_date=date(2022,1,1),
-    to_date=date(2022,12,31),
-    save_pdf=True
+    from_date=date(2022, 1, 1),
+    to_date=date(2022, 12, 31),
+    save_pdf=True,
+    filepath='./'
 )
 # save_pdf=True saves the PDF report in the project's BASE_DIR.
 # filename and filepath may also be specified...
@@ -679,9 +690,10 @@ cf_report.get_report_data()
 ```python
 reports = entity_model.get_financial_statements(
     user_model=user_model,
-    from_date=date(2022,1,1),
-    to_date=date(2022,12,31),
-    save_pdf=True
+    from_date=date(2022, 1, 1),
+    to_date=date(2022, 12, 31),
+    save_pdf=True,
+    filepath='./'
 )
 # save_pdf=True saves the PDF report in the project's BASE_DIR.
 # filename and filepath may also be specified...

@@ -5,9 +5,15 @@
 
 {% block view_content %}
     <div class="container">
-        <div class="columns">
-            <div class="column">
+        <div class="columns is-multiline">
+            <div class="column is-12">
                 {% include 'django_ledger/closing_entry/includes/card_closing_entry.html' with closing_entry_model=object entity_slug=view.kwargs.entity_slug %}
+            </div>
+            <div class="column is-12 has-text-centered">
+                <a href="{{ closing_entry_model.get_list_url }}"
+                   class="button is-info mt-2">
+                    {% trans 'Back to Closing Entry List' %}
+                </a>
             </div>
         </div>
         <div class="columns">

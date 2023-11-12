@@ -10,7 +10,7 @@
                 <tr>
                     <td><h2 class="is-size-3">{{ bs_role | upper }}</h2></td>
                     <td></td>
-                    {% if by_unit %}
+                    {% if tx_digest.by_unit %}
                         <td></td>
                     {% endif %}
                     <td></td>
@@ -20,7 +20,7 @@
                 <tr>
                     <th class="has-text-centered">{% trans 'Account Code' %}</th>
                     <th class="has-text-centered">{% trans 'Account Name' %}</th>
-                    {% if by_unit %}
+                    {% if tx_digest.by_unit %}
                         <th class="has-text-centered">{% trans 'Unit' %}</th>
                     {% endif %}
                     <th class="has-text-centered">{% trans 'Balance Type' %}</th>
@@ -32,7 +32,7 @@
                     <tr class="has-background-grey-light">
                         <td class="p-3 has-text-weight-bold">{{ acc_data.role_name | upper }}</td>
                         <td></td>
-                        {% if by_unit %}
+                        {% if tx_digest.by_unit %}
                             <td></td>
                         {% endif %}
                         <td></td>
@@ -44,7 +44,7 @@
                         <tr>
                             <td>{{ acc.code }}</td>
                             <td class="has-text-left">{{ acc.name }}</td>
-                            {% if by_unit %}
+                            {% if tx_digest.by_unit %}
                                 <td>{% if acc.unit_name %}{{ acc.unit_name }}{% endif %}</td>
                             {% endif %}
                             <td class="has-text-centered">{{ acc.balance_type.0 | upper }}</td>
@@ -61,9 +61,9 @@
                                     </div>
                                     <div class="dropdown-menu" id="dropdown-menu-{{ acc.uuid }}" role="menu">
                                         <div class="dropdown-content">
-                                            <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                            <a href="{% url 'django_ledger:account-detail' entity_slug=tx_digest.entity_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                            <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug account_pk=acc.account_uuid %}"
+                                            <a href="{% url 'django_ledger:account-update' entity_slug=tx_digest.entity_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
                                         </div>
                                     </div>
@@ -76,7 +76,7 @@
                         <td></td>
                         <td>{{ acc_data.role_name | upper }} {% trans 'Total:' %}</td>
                         <td></td>
-                        {% if by_unit %}
+                        {% if tx_digest.by_unit %}
                             <td></td>
                         {% endif %}
                         <td class="has-text-right">
@@ -91,7 +91,7 @@
                     <tr class="has-text-weight-bold is-size-5">
                     <td>{% trans 'Total' %} {{ bs_role | upper }}</td>
                     <td></td>
-                    {% if by_unit %}
+                    {% if tx_digest.by_unit %}
                         <td></td>
                     {% endif %}
                     <td></td>
@@ -107,7 +107,7 @@
         <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Retained Earnings' %}</td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -118,7 +118,7 @@
         <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Total EQUITY' %}</td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>
@@ -128,7 +128,7 @@
         <tr class="has-text-weight-bold is-size-5">
             <td>{% trans 'Total Equity + Liabilities' %}</td>
             <td></td>
-            {% if by_unit %}
+            {% if tx_digest.by_unit %}
                 <td></td>
             {% endif %}
             <td></td>

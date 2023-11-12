@@ -12,7 +12,7 @@ from random import randint
 
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.timezone import localdate
+from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
@@ -94,7 +94,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
             entity_generator = EntityDataGenerator(
                 entity_model=entity_model,
                 user_model=self.request.user,
-                start_date=localdate() - timedelta(days=30 * 8),
+                start_dttm=localtime() - timedelta(days=30 * 8),
                 capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
                 tx_quantity=cleaned_data['tx_quantity']

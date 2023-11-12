@@ -22,8 +22,9 @@ EntityReportMixIn.
 """
 from calendar import monthrange
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Tuple, Union, Optional, List, Dict
@@ -435,7 +436,6 @@ class EntityModelClosingEntryMixIn:
                                  to_date: date,
                                  from_date: Optional[date] = None,
                                  user_model: Optional[UserModel] = None,
-                                 txs_queryset: Optional[QuerySet] = None,
                                  closing_entry_model=None,
                                  **kwargs: Dict) -> Tuple:
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
@@ -454,10 +454,8 @@ class EntityModelClosingEntryMixIn:
             user_model=user_model,
             to_date=to_date,
             from_date=from_date,
-            txs_queryset=txs_queryset,
             by_unit=True,
             by_activity=True,
-            as_io_digest=True,
             signs=False,
             **kwargs
         )
@@ -479,8 +477,15 @@ class EntityModelClosingEntryMixIn:
 
         return closing_entry_model, ce_txs_list
 
-    def get_closing_entry_digest_for_date(self, closing_date: date, closing_entry_model=None, **kwargs: Dict) -> Tuple:
-        return self.get_closing_entry_digest(to_date=closing_date, closing_entry_model=closing_entry_model, **kwargs)
+    def get_closing_entry_digest_for_date(self,
+                                          closing_date: date,
+                                          closing_entry_model=None,
+                                          **kwargs) -> Tuple:
+        return self.get_closing_entry_digest(
+            to_date=closing_date,
+            closing_entry_model=closing_entry_model,
+            **kwargs
+        )
 
     def get_closing_entry_digest_for_month(self,
                                            year: int,
@@ -556,7 +561,8 @@ class EntityModelClosingEntryMixIn:
     # ---> Closing Entry Cache Keys <----
     def get_closing_entry_cache_key_for_date(self, closing_date: date) -> str:
         closing_date = closing_date.strftime('%Y%m%d')
-        return f'closing_entry_{closing_date}_{self.uuid}'
+        entity_uuid = getattr(self, 'uuid')
+        return f'closing_entry_{closing_date}_{entity_uuid}'
 
     def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
         _, day = monthrange(year, month)
@@ -581,6 +587,8 @@ class EntityModelClosingEntryMixIn:
             cache_system = caches[cache_name]
             ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
             ce_ser = cache_system.get(ce_cache_key)
+
+            # if closing entry is in cache...
             if ce_ser:
                 ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
                 return list(ce.object for ce in ce_qs_serde_gen)
@@ -1497,7 +1505,7 @@ class EntityModelAbstract(MP_Node,
     def create_bill(self,
                     vendor_model: Union[VendorModel, UUID, str],
                     terms: str,
-                    date_draft: Optional[date] = None,
+                    date_draft: Optional[Union[date, datetime]] = None,
                     xref: Optional[str] = None,
                     cash_account: Optional[AccountModel] = None,
                     prepaid_account: Optional[AccountModel] = None,
@@ -1516,7 +1524,7 @@ class EntityModelAbstract(MP_Node,
             The VendorModel, VendorModel UUID or VendorModel Number
         terms: str
             Payment terms of the new BillModel. A choice of BillModel.TERM_CHOICES_VALID
-        date_draft: date
+        date_draft: date or datetime
             Date to use as draft date for the new BillModel.
         xref: str
             Optional External Reference for the Bill (i.e. Vendor invoice number.)
@@ -2594,13 +2602,25 @@ class EntityModelAbstract(MP_Node,
             return [date.fromisoformat(dt) for dt in date_list]
         return date_list
 
-    def select_closing_entry_for_io_date(self, to_date: Union[datetime, date]) -> Optional[date]:
+    def get_closing_entry_for_date(self, io_date: date, inclusive: bool = True) -> Optional[date]:
+        if io_date is None:
+            return
         ce_date_list = self.fetch_closing_entry_dates_meta()
-        if isinstance(to_date, datetime):
-            to_date = to_date.date()
-        for ce in ce_date_list:
-            if to_date >= ce:
-                return ce
+        ce_lookup = io_date - timedelta(days=1) if not inclusive else io_date
+        if ce_lookup in ce_date_list:
+            return ce_lookup
+
+    def get_nearest_next_closing_entry(self, io_date: date) -> Optional[date]:
+        if io_date is None:
+            return
+        ce_date_list = self.fetch_closing_entry_dates_meta()
+        if not len(ce_date_list):
+            return
+        if io_date > ce_date_list[0]:
+            return ce_date_list[0]
+        for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
+            if p and p <= io_date < f:
+                return p
 
     def close_entity_books(self,
                            closing_date: Optional[date] = None,

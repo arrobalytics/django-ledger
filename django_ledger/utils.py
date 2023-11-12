@@ -105,30 +105,6 @@ def get_end_date_from_session(entity_slug: str, request) -> date:
     return end_date
 
 
-def prepare_context_by_unit(context: dict):
-    unit_model = context.get('unit_model')
-    if unit_model:
-        unit_slug = unit_model.slug
-        by_unit = True
-    else:
-        unit_slug = context['view'].kwargs.get('unit_slug')
-        if not unit_slug:
-            unit_slug = context['request'].GET.get('unit_slug')
-            try:
-                by_unit = context['request'].GET.get('by_unit')
-                by_unit = bool(int(by_unit))
-            except ValueError:
-                by_unit = False
-            except TypeError:
-                by_unit = False
-            context['by_unit'] = by_unit
-        else:
-            by_unit = False
-    context['unit_slug'] = unit_slug
-    context['unit_model'] = unit_model
-    context['by_unit'] = by_unit
-
-
 def load_model_class(model_path: str):
     """
     Loads a Python Model Class by using a string.

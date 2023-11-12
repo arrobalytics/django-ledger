@@ -91,15 +91,14 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
 * ~~__0.5.3__~~: High Level EntityModel API.
 * ~~__0.5.4__~~: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
 * __0.5.5__: Closing Entries.
-  * 0.5.5.1: Open Financial Exchange Imports (OFX) Bugfixes and Optimizations.
-  * 0.5.5.2: BugFixes and Optimizations..
-  * 0.5.5.3: Closing Entries will be used if requested date is present. Documentation Update.
+    * 0.5.5.1: Open Financial Exchange Imports (OFX) Bugfixes and Optimizations.
+    * 0.5.5.2: BugFixes and Optimizations..
+    * 0.5.5.3: Closing Entries will be used if requested date is present. Documentation Update.
 * __0.5.6__: Chart of Accounts Import.
 * __0.5.7__: Trial Balance Import.
 * __0.5.8__: GraphQL API.
 
 ### Version 0.6
-
 
 * Credit Line Models.
 * Time tracking.
@@ -139,19 +138,19 @@ __This project is actively looking for contributors. Any financial and/or accoun
 If you have prior accounting experience and want to contribute, don't hesitate to contact me.
 See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
 
-# Contrib Packages
-
-* GraphQL API - See
-  details [here.](https://github.com/arrobalytics/django-ledger/tree/develop/django_ledger/contrib/django_ledger_graphql)
-
 # Installation
-
-Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need a working knowledge of
-Django and a working Django
-Project before you can use Django Ledger. A good place to start
+Django Ledger is a [Django](https://www.djangoproject.com/) application. If you haven't, you need working knowledge of
+Django and a working Django project before you can use Django Ledger.  A good place to start
 is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-project).
-Make sure you refer to the django version you are using. A quick way to start a new django project is to run the
-following command:
+Make sure you refer to the django version you are using. 
+
+The easiest way to start is to use the zero-config Django Ledger starter template. See
+details [here](https://github.com/arrobalytics/django-ledger-starter). Otherwise, you may create your
+project from scratch.
+
+To create a new Django Ledger project:
+
+* Make sure you have the latest version of python [here](https://www.python.org/) (recommended).
 
 * Install Django:
 
@@ -159,7 +158,7 @@ following command:
 pip install django
 ```
 
-* Install Python Pipenv:
+* Install Python [Pipenv](https://pipenv.pypa.io/en/latest/) (python package manager):
 
 ```shell script
 pip install pipenv
@@ -229,8 +228,9 @@ urlpatterns = [
 python manage.py runserver
 ```
 
-* Navigate to Django Ledger root view assigned in your project urlpatterns setting (typically http://127.0.0.1:8000/ledger
-if you followed this installation guide).
+* Navigate to Django Ledger root view assigned in your project urlpatterns setting (
+  typically http://127.0.0.1:8000/ledger
+  if you followed this installation guide).
 * Use your superuser credentials to login.
 
 # How To Set Up Django Ledger for Development

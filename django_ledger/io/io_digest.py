@@ -13,14 +13,21 @@ class IODigestValidationError(ValidationError):
 
 class IODigestContextManager:
 
-    def __init__(self, io_data: defaultdict):
-        self.IO_DATA: defaultdict = io_data
-        self.IO_MODEL = self.IO_DATA['io_model']
-        self.TXS_QS = self.IO_DATA['txs_qs']
+    def __init__(self, io_state: defaultdict):
+        self.IO_DATA: Dict = io_state
+        self.IO_RESULT = io_state['io_result']
+        self.IO_MODEL = self.IO_RESULT.txs_queryset
+        self.TXS_QS = io_state['io_result']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 
-    def get_io_data(self) -> defaultdict:
+    def get_io_data(self) -> Dict:
         return self.IO_DATA
+
+    def get_io_result(self):
+        return self.IO_RESULT
+
+    def get_io_txs_queryset(self):
+        return self.TXS_QS
 
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
