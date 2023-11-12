@@ -169,7 +169,7 @@ class IOValidationError(ValidationError):
 @dataclass
 class IOResult:
     """
-    A carrier class to store information during the Digest call.
+    A carrier class to store IO digest information during the digest call.
     """
     # DB Aggregation...
     db_from_date: Optional[date] = None
@@ -180,13 +180,27 @@ class IOResult:
     ce_from_date: Optional[date] = None
     ce_to_date: Optional[date] = None
 
+    # the final queryset to evaluate...
     txs_queryset = None
+
+    # the aggregated account balance...
     accounts_digest: Optional[List[Dict]] = None
 
 
 class IODatabaseMixIn:
     """
-    Controls how transactions are recorded into the ledger.
+    The main entry point to query DB for transactions. The database_digest method pushes as much load as possible
+    to the Database so transactions are aggregated at the database layer and are not pulled into memory.
+    This is important por performance purposes since Entities may have a large amount of transactions to be
+    aggregated.
+
+    The python_digest method aggregates and processes the raw data stored in the database and applies accounting
+    rules to stored transactions.
+
+    This method also makes use of Closing Entries whenever possible to minimize the amount of data to aggregate
+    during a specific call. Closing Entries can be considered "checkpoints", which create materialized aggregation
+    of transactions for commonly used dates. (i.e. Fiscal Year End, Month End, Quarter End, etc.). This approach
+    helps minimize the number of transactions to aggregate for a given request.
     """
 
     def is_entity_model(self):
@@ -207,152 +221,193 @@ class IODatabaseMixIn:
             return self.entity
 
     def database_digest(self,
-                        txs_queryset: QuerySet,
-                        entity_slug: str = None,
-                        unit_slug: str = None,
-                        user_model: UserModel = None,
-                        from_date: date = None,
-                        to_date: date = None,
-                        activity: str = None,
-                        role: str = None,
-                        accounts: str or List[str] or Set[str] = None,
-                        posted: bool = True,
-                        exclude_zero_bal: bool = True,
+                        entity_slug: Optional[str] = None,
+                        unit_slug: Optional[str] = None,
+                        user_model: Optional[UserModel] = None,
+                        from_date: Optional[Union[date, datetime]] = None,
+                        to_date: Optional[Union[date, datetime]] = None,
                         by_activity: bool = False,
                         by_tx_type: bool = False,
                         by_period: bool = False,
                         by_unit: bool = False,
-                        **kwargs) -> IOResult:
+                        activity: Optional[str] = None,
+                        role: str = Optional[str],
+                        accounts: Optional[Union[str, List[str], Set[str]]] = None,
+                        posted: bool = True,
+                        exclude_zero_bal: bool = True,
+                        force_closing_entry_use: bool = False
+                        ) -> IOResult:
+        """
+        Performs the appropriate database aggregation query for a given request.
+
+
+        Parameters
+        ----------
+        entity_slug: str
+            EntityModel slug to use. If not provided it will be derived from the EntityModel instance.
+            Will be validated against current EntityModel instance for safety. Defaults to None.
+        unit_slug: str
+            EntityUnitModel used to query transactions. If provided will be validated against current EntityModelUnit
+            instance. Defaults to None.
+        user_model: UserModel
+            The django UserModel to validate against transaction ownership and permissions (i.e. Admin and Manager).
+            Defaults to None.
+        from_date: date or datetime
+            Stating date or datetime to query from (inclusive).
+        to_date: date or datetime
+            End date or datetime to query to (inclusive).
+        activity: str
+            Filters transactions to match specific activity. Defaults to None.
+        role: str
+            Filters transactions to match specific role. Defaults to None.
+        accounts: str or List[str] ot Set[str]
+            Optional list of accounts to query. Defaults to None (all).
+        posted: bool
+            Consider only posted transactions. Defaults to True.
+        exclude_zero_bal: bool
+            Excludes transactions with zero balance, if any.
+        by_activity: bool
+            Returns results aggregated by activity if needed. Defaults to False.
+        by_tx_type: bool
+            Returns results aggregated by DEBIT/CREDIT if needed. Defaults to False.
+        by_period: bool
+            Returns results aggregated by accounting if needed. Defaults to False.
+        by_unit: bool
+            Returns results aggregated by unit if needed. Defaults to False.
+        force_closing_entry_use: bool
+            Forces the use of closing entries if DJANGO_LEDGER_USE_CLOSING_ENTRIES setting is set to False.
+        Returns
+        -------
+        IOResult
+        """
 
         TransactionModel = lazy_loader.get_txs_model()
         io_result = IOResult(db_to_date=to_date, db_from_date=from_date)
         txs_queryset_closing_entry = TransactionModel.objects.none()
 
-        if not txs_queryset:
-
-            # where the IO model is operating from??...
-            if self.is_entity_model():
-                if entity_slug:
-                    if entity_slug != self.slug:
-                        raise IOValidationError('Inconsistent entity_slug. '
-                                                f'Provided {entity_slug} does not match actual {self.slug}')
-                if unit_slug:
-                    txs_queryset = TransactionModel.objects.for_unit(
-                        user_model=user_model,
-                        entity_slug=entity_slug or self.slug,
-                        unit_slug=unit_slug
-                    )
-                else:
-                    txs_queryset = TransactionModel.objects.for_entity(
-                        user_model=user_model,
-                        entity_slug=self
-                    )
-            elif self.is_ledger_model():
-                if not entity_slug:
-                    raise IOValidationError(
-                        'Calling digest from Ledger Model requires entity_slug explicitly for safety')
-                txs_queryset = TransactionModel.objects.for_ledger(
-                    user_model=user_model,
-                    entity_slug=entity_slug,
-                    ledger_model=self
-                )
-            elif self.is_entity_unit_model():
-                if not entity_slug:
-                    raise IOValidationError(
-                        'Calling digest from Entity Unit requires entity_slug explicitly for safety')
+        # where the IO model is operating from??...
+        if self.is_entity_model():
+            if entity_slug:
+                if entity_slug != self.slug:
+                    raise IOValidationError('Inconsistent entity_slug. '
+                                            f'Provided {entity_slug} does not match actual {self.slug}')
+            if unit_slug:
                 txs_queryset = TransactionModel.objects.for_unit(
                     user_model=user_model,
-                    entity_slug=entity_slug,
-                    unit_slug=unit_slug or self
+                    entity_slug=entity_slug or self.slug,
+                    unit_slug=unit_slug
                 )
             else:
-                txs_queryset = TransactionModel.objects.none()
+                txs_queryset = TransactionModel.objects.for_entity(
+                    user_model=user_model,
+                    entity_slug=self
+                )
+        elif self.is_ledger_model():
+            if not entity_slug:
+                raise IOValidationError(
+                    'Calling digest from Ledger Model requires entity_slug explicitly for safety')
+            txs_queryset = TransactionModel.objects.for_ledger(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                ledger_model=self
+            )
+        elif self.is_entity_unit_model():
+            if not entity_slug:
+                raise IOValidationError(
+                    'Calling digest from Entity Unit requires entity_slug explicitly for safety')
+            txs_queryset = TransactionModel.objects.for_unit(
+                user_model=user_model,
+                entity_slug=entity_slug,
+                unit_slug=unit_slug or self
+            )
+        else:
+            txs_queryset = TransactionModel.objects.none()
 
-            # use closing entries to minimize DB aggregation if activated...
-            if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES:
-                entity_model = self.get_entity_model_from_io()
+        # use closing entries to minimize DB aggregation if activated...
+        if settings.DJANGO_LEDGER_USE_CLOSING_ENTRIES or force_closing_entry_use:
+            entity_model = self.get_entity_model_from_io()
 
-                # looking up available dates...
-                ce_from_date = entity_model.get_closing_entry_for_date(io_date=from_date, inclusive=False)
-                ce_to_date = entity_model.get_closing_entry_for_date(io_date=to_date)
+            # looking up available dates...
+            ce_from_date = entity_model.get_closing_entry_for_date(io_date=from_date, inclusive=False)
+            ce_to_date = entity_model.get_closing_entry_for_date(io_date=to_date)
 
-                # unbounded lookup, no date match
-                # finding the closest closing entry to aggregate from if present...
-                if not from_date and not ce_to_date:
-                    ce_alt_from_date = entity_model.get_nearest_next_closing_entry(io_date=to_date)
+            # unbounded lookup, no date match
+            # finding the closest closing entry to aggregate from if present...
+            if not from_date and not ce_to_date:
+                ce_alt_from_date = entity_model.get_nearest_next_closing_entry(io_date=to_date)
 
-                    # if there's a suitable closing entry...
-                    if ce_alt_from_date:
-                        txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
-                            journal_entry__timestamp__date=ce_alt_from_date
-                        )
-                        io_result.ce_match = True
-                        io_result.ce_from_date = ce_from_date
-                        io_result.ce_to_date = ce_to_date
-
-                        # limit db aggregation to unclosed entries...
-                        io_result.db_from_date = ce_alt_from_date + timedelta(days=1)
-                        io_result.db_to_date = to_date
-                        print(f'Unbounded lookup no date match. Closest from_dt: {ce_alt_from_date}...')
-
-                # unbounded lookup, exact to_date match...
-                elif not ce_from_date and ce_to_date:
-                    txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(journal_entry__timestamp__date=ce_to_date)
-                    io_result.ce_match = True
-                    io_result.ce_to_date = ce_to_date
-
-                    # no need to DB aggregate...
-                    io_result.db_from_date = None
-                    io_result.db_to_date = None
-                    print(f'Unbounded lookup EXACT date match. Closest to_dt: {ce_to_date}...')
-
-                # bounded exact from_date and to_date match...
-                elif ce_from_date and ce_to_date:
+                # if there's a suitable closing entry...
+                if ce_alt_from_date:
                     txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
-                        journal_entry__timestamp__date__in=[
-                            ce_from_date,
-                            ce_to_date
-                        ])
+                        journal_entry__timestamp__date=ce_alt_from_date
+                    )
                     io_result.ce_match = True
-                    io_result.ce_from_date = ce_from_date
-                    io_result.ce_to_date = ce_to_date
+                    io_result.ce_from_date = ce_alt_from_date
+                    # limit db aggregation to unclosed entries...
+                    io_result.db_from_date = ce_alt_from_date + timedelta(days=1)
+                    io_result.db_to_date = to_date
+                    # print(f'Unbounded lookup no date match. Closest from_dt: {ce_alt_from_date}...')
 
-                    # no need to aggregate...
-                    io_result.db_from_date = None
-                    io_result.db_to_date = None
-                    print(f'Bounded lookup EXACT date match. Closest from_dt: {ce_from_date} | to_dt: {ce_to_date}...')
+            # unbounded lookup, exact to_date match...
+            elif not ce_from_date and ce_to_date:
+                txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
+                    journal_entry__timestamp__date=ce_to_date)
+                io_result.ce_match = True
+                io_result.ce_to_date = ce_to_date
 
-                # no suitable closing entries to use...
-                else:
-                    txs_queryset = txs_queryset.not_closing_entry()
+                # no need to DB aggregate...
+                io_result.db_from_date = None
+                io_result.db_to_date = None
+                # print(f'Unbounded lookup EXACT date match. Closest to_dt: {ce_to_date}...')
+
+            # bounded exact from_date and to_date match...
+            elif ce_from_date and ce_to_date:
+                txs_queryset_closing_entry = txs_queryset.is_closing_entry().filter(
+                    journal_entry__timestamp__date__in=[
+                        ce_from_date,
+                        ce_to_date
+                    ])
+                io_result.ce_match = True
+                io_result.ce_from_date = ce_from_date
+                io_result.ce_to_date = ce_to_date
+
+                # no need to aggregate...
+                io_result.db_from_date = None
+                io_result.db_to_date = None
+                # print(f'Bounded lookup EXACT date match. Closest from_dt: {ce_from_date} '
+                #       f'| to_dt: {ce_to_date}...')
+
+            # no suitable closing entries to use...
             else:
-                # not using closing entries...
                 txs_queryset = txs_queryset.not_closing_entry()
+        else:
+            # not using closing entries...
+            txs_queryset = txs_queryset.not_closing_entry()
 
-            if io_result.db_from_date:
-                txs_queryset = txs_queryset.from_date(from_date=io_result.db_from_date)
+        if io_result.db_from_date:
+            txs_queryset = txs_queryset.from_date(from_date=io_result.db_from_date)
 
-            if io_result.db_to_date:
-                txs_queryset = txs_queryset.to_date(to_date=io_result.db_to_date)
+        if io_result.db_to_date:
+            txs_queryset = txs_queryset.to_date(to_date=io_result.db_to_date)
 
-            if exclude_zero_bal:
-                txs_queryset = txs_queryset.filter(amount__gt=0.00)
+        if exclude_zero_bal:
+            txs_queryset = txs_queryset.filter(amount__gt=0.00)
 
-            if posted:
-                txs_queryset = txs_queryset.posted()
+        if posted:
+            txs_queryset = txs_queryset.posted()
 
-            if accounts:
-                if not isinstance(accounts, str):
-                    accounts = [accounts]
-                txs_queryset = txs_queryset.for_accounts(account_list=accounts)
+        if accounts:
+            if not isinstance(accounts, str):
+                accounts = [accounts]
+            txs_queryset = txs_queryset.for_accounts(account_list=accounts)
 
-            if activity:
-                if isinstance(activity, str):
-                    activity = [activity]
-                txs_queryset = txs_queryset.for_activity(activity_list=activity)
+        if activity:
+            if isinstance(activity, str):
+                activity = [activity]
+            txs_queryset = txs_queryset.for_activity(activity_list=activity)
 
-            if role:
-                txs_queryset = txs_queryset.for_roles(role_list=role)
+        if role:
+            txs_queryset = txs_queryset.for_roles(role_list=role)
 
         VALUES = [
             'account__uuid',
@@ -387,66 +442,110 @@ class IODatabaseMixIn:
         return io_result
 
     def python_digest(self,
-                      txs_queryset: Optional[QuerySet] = None,
                       user_model: Optional[UserModel] = None,
-                      to_date: date = None,
-                      from_date: date = None,
+                      entity_slug: Optional[str] = None,
+                      unit_slug: Optional[str] = None,
+                      to_date: Optional[Union[date, datetime, str]] = None,
+                      from_date: Optional[Union[date, datetime, str]] = None,
                       equity_only: bool = False,
                       activity: str = None,
-                      entity_slug: str = None,
-                      unit_slug: str = None,
                       role: Optional[Union[Set[str], List[str]]] = None,
                       accounts: Optional[Union[Set[str], List[str]]] = None,
-                      signs: bool = False,
+                      signs: bool = True,
                       by_unit: bool = False,
                       by_activity: bool = False,
                       by_tx_type: bool = False,
                       by_period: bool = False,
+                      force_closing_entry_use: bool = False,
+                      force_queryset_sorting: bool = False,
                       **kwargs) -> IOResult:
+        """
+        Performs the appropriate transaction post-processing after DB aggregation..
+
+
+        Parameters
+        ----------
+        entity_slug: str
+            EntityModel slug to use. If not provided it will be derived from the EntityModel instance.
+            Will be validated against current EntityModel instance for safety. Defaults to None.
+        unit_slug: str
+            EntityUnitModel used to query transactions. If provided will be validated against current EntityModelUnit
+            instance. Defaults to None.
+        user_model: UserModel
+            The django UserModel to validate against transaction ownership and permissions (i.e. Admin and Manager).
+            Defaults to None.
+        from_date: date or datetime
+            Stating date or datetime to query from (inclusive).
+        to_date: date or datetime
+            End date or datetime to query to (inclusive).
+        activity: str
+            Filters transactions to match specific activity. Defaults to None.
+        role: str
+            Filters transactions to match specific role. Defaults to None.
+        accounts: str or List[str] ot Set[str]
+            Optional list of accounts to query. Defaults to None (all).
+        by_activity: bool
+            Returns results aggregated by activity if needed. Defaults to False.
+        by_tx_type: bool
+            Returns results aggregated by DEBIT/CREDIT if needed. Defaults to False.
+        by_period: bool
+            Returns results aggregated by accounting if needed. Defaults to False.
+        by_unit: bool
+            Returns results aggregated by unit if needed. Defaults to False.
+        equity_only: bool
+            Performs aggregation only on accounts that impact equity only (i.e. Income Statement Generation).
+            Avoids unnecessary inclusion of accounts not relevant to what's needed.
+        signs: bool
+            Changes the balance of an account to negative if it represents a "negative" for display purposes.
+            (i.e. Expense accounts will show balance as negative and Income accounts as positive.)
+        force_closing_entry_use: bool
+            Forces the use of closing entries if DJANGO_LEDGER_USE_CLOSING_ENTRIES setting is set to False.
+        force_queryset_sorting: bool
+            Forces sorting of the TransactionModelQuerySet before aggregation balances.
+            Defaults to false.
+
+        Returns
+        -------
+        IOResult
+        """
 
         if equity_only:
             role = roles_module.GROUP_EARNINGS
 
         io_result = self.database_digest(
             user_model=user_model,
-            txs_queryset=txs_queryset,
-            to_date=to_date,
-            from_date=from_date,
             entity_slug=entity_slug,
             unit_slug=unit_slug,
-            activity=activity,
-            role=role,
-            accounts=accounts,
+            to_date=to_date,
+            from_date=from_date,
             by_unit=by_unit,
             by_activity=by_activity,
             by_tx_type=by_tx_type,
             by_period=by_period,
+            activity=activity,
+            role=role,
+            accounts=accounts,
+            force_closing_entry_use=force_closing_entry_use,
             **kwargs)
 
         for tx_model in io_result.txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
                 tx_model['balance'] = -tx_model['balance']
 
-        # txs_list = list(txs_queryset)
-        # txs_list.sort(key=lambda a: (
-        #     a['account__uuid'],
-        #     str(a.get('journal_entry__entity_unit__uuid', '')) if by_unit else '',
-        #     a['dt_idx'].year if by_period else 0,
-        #     a['dt_idx'].month if by_period else 0,
-        #     str(a['journal_entry__activity']) if by_activity else None,
-        #     a['tx_type'] if by_tx_type else '',
-        # ))
+        gb_key = lambda a: (
+            a['account__uuid'],
+            a.get('journal_entry__entity_unit__uuid') if by_unit else None,
+            a.get('dt_idx').year if by_period else None,
+            a.get('dt_idx').month if by_period else None,
+            a.get('journal_entry__activity') if by_activity else None,
+            a.get('tx_type') if by_tx_type else None,
+        )
 
-        accounts_gb_code = groupby(io_result.txs_queryset,
-                                   key=lambda a: (
-                                       a['account__uuid'],
-                                       a.get('journal_entry__entity_unit__uuid') if by_unit else None,
-                                       a.get('dt_idx').year if by_period else None,
-                                       a.get('dt_idx').month if by_period else None,
-                                       a.get('journal_entry__activity') if by_activity else None,
-                                       a.get('tx_type') if by_tx_type else None,
-                                   ))
+        if force_queryset_sorting:
+            io_result.txs_queryset = list(io_result.txs_queryset)
+            io_result.txs_queryset.sort(key=gb_key)
 
+        accounts_gb_code = groupby(io_result.txs_queryset, key=gb_key)
         accounts_digest = [self.aggregate_balances(k, g) for k, g in accounts_gb_code]
 
         for acc in accounts_digest:
@@ -489,16 +588,15 @@ class IODatabaseMixIn:
         }
 
     def digest(self,
-               entity_slug: str = None,
-               unit_slug: str = None,
-               user_model: UserModel = None,
-               txs_queryset: QuerySet = None,
+               entity_slug: Optional[str] = None,
+               unit_slug: Optional[str] = None,
+               to_date: Optional[Union[date, datetime, str]] = None,
+               from_date: Optional[Union[date, datetime, str]] = None,
+               user_model: Optional[UserModel] = None,
                accounts: Optional[Union[Set[str], List[str]]] = None,
                role: Optional[Union[Set[str], List[str]]] = None,
-               activity: str = None,
+               activity: Optional[str] = None,
                signs: bool = True,
-               to_date: Union[str, datetime, date] = None,
-               from_date: Union[str, datetime, date] = None,
                process_roles: bool = False,
                process_groups: bool = False,
                process_ratios: bool = False,
@@ -538,7 +636,6 @@ class IODatabaseMixIn:
         io_state['by_tx_type'] = by_tx_type
 
         io_result = self.python_digest(
-            txs_queryset=txs_queryset,
             user_model=user_model,
             accounts=accounts,
             role=role,
@@ -610,7 +707,7 @@ class IODatabaseMixIn:
             cfs = CashFlowStatementContextManager(io_data=io_state)
             io_state = cfs.digest()
 
-        return IODigestContextManager(io_data=io_state)
+        return IODigestContextManager(io_state=io_state)
 
     def commit_txs(self,
                    je_timestamp: Union[str, datetime, date],

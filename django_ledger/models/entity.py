@@ -436,7 +436,6 @@ class EntityModelClosingEntryMixIn:
                                  to_date: date,
                                  from_date: Optional[date] = None,
                                  user_model: Optional[UserModel] = None,
-                                 txs_queryset: Optional[QuerySet] = None,
                                  closing_entry_model=None,
                                  **kwargs: Dict) -> Tuple:
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
@@ -455,10 +454,8 @@ class EntityModelClosingEntryMixIn:
             user_model=user_model,
             to_date=to_date,
             from_date=from_date,
-            txs_queryset=txs_queryset,
             by_unit=True,
             by_activity=True,
-            as_io_digest=True,
             signs=False,
             **kwargs
         )
@@ -480,8 +477,15 @@ class EntityModelClosingEntryMixIn:
 
         return closing_entry_model, ce_txs_list
 
-    def get_closing_entry_digest_for_date(self, closing_date: date, closing_entry_model=None, **kwargs: Dict) -> Tuple:
-        return self.get_closing_entry_digest(to_date=closing_date, closing_entry_model=closing_entry_model, **kwargs)
+    def get_closing_entry_digest_for_date(self,
+                                          closing_date: date,
+                                          closing_entry_model=None,
+                                          **kwargs) -> Tuple:
+        return self.get_closing_entry_digest(
+            to_date=closing_date,
+            closing_entry_model=closing_entry_model,
+            **kwargs
+        )
 
     def get_closing_entry_digest_for_month(self,
                                            year: int,
@@ -557,7 +561,8 @@ class EntityModelClosingEntryMixIn:
     # ---> Closing Entry Cache Keys <----
     def get_closing_entry_cache_key_for_date(self, closing_date: date) -> str:
         closing_date = closing_date.strftime('%Y%m%d')
-        return f'closing_entry_{closing_date}_{self.uuid}'
+        entity_uuid = getattr(self, 'uuid')
+        return f'closing_entry_{closing_date}_{entity_uuid}'
 
     def get_closing_entry_cache_key_for_month(self, year: int, month: int) -> str:
         _, day = monthrange(year, month)
@@ -582,6 +587,8 @@ class EntityModelClosingEntryMixIn:
             cache_system = caches[cache_name]
             ce_cache_key = self.get_closing_entry_cache_key_for_date(closing_date=closing_date)
             ce_ser = cache_system.get(ce_cache_key)
+
+            # if closing entry is in cache...
             if ce_ser:
                 ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
                 return list(ce.object for ce in ce_qs_serde_gen)

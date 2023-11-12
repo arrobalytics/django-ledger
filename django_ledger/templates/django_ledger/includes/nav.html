@@ -21,6 +21,12 @@
         <div id="djl-navbar-menu" class="navbar-menu">
             {% navigation_menu 'mobile' %}
             <div class="navbar-end">
+                {% if tx_digest_context.IO_RESULT.ce_from_date %}
+                    <div class="navbar-item">CE FROM: {{ tx_digest_context.IO_RESULT.ce_from_date | date }}</div>
+                {% endif %}
+                {% if tx_digest_context.IO_RESULT.ce_to_date %}
+                    <div class="navbar-item">CE TO: {{ tx_digest_context.IO_RESULT.ce_to_date | date }}</div>
+                {% endif %}
                 <div class="navbar-item">
                     <a href="{% url 'django_ledger:logout' %}"
                        id="djl-el=logout-button-nav"

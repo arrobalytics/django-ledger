@@ -160,7 +160,6 @@ class TransactionModelQuerySet(QuerySet):
 
         if isinstance(to_date, date):
             return self.filter(journal_entry__timestamp__date__lte=to_date)
-
         return self.filter(journal_entry__timestamp__lte=to_date)
 
     def from_date(self, from_date: Union[str, date, datetime]):
@@ -271,7 +270,7 @@ class TransactionModelAdmin(models.Manager):
         Parameters
         ----------
         user_model
-            Logged in and authenticated django UserModel instance.
+            Optional logged in and authenticated django UserModel instance to validate against managers and admin.
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
         ledger_model: LedgerModel or UUID
@@ -289,9 +288,9 @@ class TransactionModelAdmin(models.Manager):
             return qs.filter(journal_entry__ledger__uuid__exact=ledger_model)
 
     def for_unit(self,
-                 user_model,
                  entity_slug: Union[EntityModel, str],
-                 unit_slug: str = Union[EntityUnitModel, str]):
+                 unit_slug: str = Union[EntityUnitModel, str],
+                 user_model: Optional[UserModel] = None):
         """
         Fetches a QuerySet of TransactionModels that the UserModel as access to and are associated with a specific
         EntityUnitModel instance.
@@ -299,7 +298,7 @@ class TransactionModelAdmin(models.Manager):
         Parameters
         ----------
         user_model
-            Logged in and authenticated django UserModel instance.
+            Optional logged in and authenticated django UserModel instance to validate against managers and admin.
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
         unit_slug: EntityUnitModel or EntityUnitModel UUID.
@@ -316,18 +315,18 @@ class TransactionModelAdmin(models.Manager):
         return qs.filter(journal_entry__entity_unit__slug__exact=unit_slug)
 
     def for_journal_entry(self,
-                          user_model,
                           entity_slug: Union[EntityModel, str],
                           ledger_model: Union[LedgerModel, str, UUID],
-                          je_model):
+                          je_model,
+                          user_model: Optional[UserModel] = None):
         """
         Fetches a QuerySet of TransactionModels that the UserModel as access to and are associated with a specific
         LedgerModel AND JournalEntryModel instance.
 
         Parameters
         ----------
-        user_model
-            Logged in and authenticated django UserModel instance.
+        user_model: UserModel
+            Optional logged in and authenticated django UserModel instance to validate against managers and admin.
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
         ledger_model: LedgerModel or str or UUID
