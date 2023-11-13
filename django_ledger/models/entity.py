@@ -2684,7 +2684,7 @@ class EntityModelAbstract(MP_Node,
         data_generator = EntityDataGenerator(
             user_model=self.admin,
             days_forward=days_forward,
-            start_date=start_date,
+            start_dttm=start_date,
             entity_model=self,
             capital_contribution=Decimal.from_float(50000.00),
             tx_quantity=tx_quantity

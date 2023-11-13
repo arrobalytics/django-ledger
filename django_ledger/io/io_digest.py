@@ -16,7 +16,7 @@ class IODigestContextManager:
     def __init__(self, io_state: defaultdict):
         self.IO_DATA: Dict = io_state
         self.IO_RESULT = io_state['io_result']
-        self.IO_MODEL = self.IO_RESULT.txs_queryset
+        self.IO_MODEL = io_state['io_model']
         self.TXS_QS = io_state['io_result']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 

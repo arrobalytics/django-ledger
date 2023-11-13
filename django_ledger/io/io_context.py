@@ -355,6 +355,8 @@ class CashFlowStatementContextManager:
             raise ValidationError(
                 'IO Digest must have groups for Cash Flow Statement'
             )
+        if self.CFS_DIGEST_KEY not in self.IO_DIGEST:
+            self.IO_DIGEST[self.CFS_DIGEST_KEY] = dict()
 
     def operating(self):
         group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
