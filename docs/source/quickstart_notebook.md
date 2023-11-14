@@ -2,9 +2,9 @@
 import os
 from datetime import date, datetime
 from random import randint, choices, random
+from zoneinfo import ZoneInfo
 
 import django
-
 # for easier visualization it is recommended to use pandas to render data...
 # if pandas is not installed, you may install it with this command: pip install -U pandas
 # pandas is not a dependecy of django_ledger...
@@ -28,6 +28,7 @@ from django_ledger.models.bill import BillModel
 from django_ledger.models.estimate import EstimateModel
 from django.contrib.auth import get_user_model
 from django_ledger.io import roles
+
 ```
 
 # Get Your Entity Administrator UserModel
@@ -42,7 +43,14 @@ UserModel = get_user_model()
 try:
     user_model = UserModel.objects.get(username__exact=MY_USERNAME)
 except:
-    user_model = UserModel.objects.create(username=MY_USERNAME, password=MY_PASSWORD)
+    user_model = UserModel(username=MY_USERNAME)
+    user_model.set_password(MY_PASSWORD)
+    user_model.save()
+```
+
+
+```python
+entity_model = EntityModel.objects.get(name__exact='My Good Looking LLC')
 ```
 
 # Create an Entity Model
@@ -91,12 +99,12 @@ default_coa_model
 
 
 ```python
-START_DATE = date(year=2022, month=10, day=1)
+START_DTTM = datetime(year=2022, month=10, day=1, tzinfo=ZoneInfo('UTC'))
 ```
 
 
 ```python
-entity_model.populate_random_data(start_date=START_DATE)
+entity_model.populate_random_data(start_date=START_DTTM)
 ```
 
 ### EntityModel has now a Default Chart of Accounts
