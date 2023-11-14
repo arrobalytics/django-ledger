@@ -211,18 +211,20 @@ class ActivityContextManager:
 
 
 class BalanceSheetStatementContextManager:
+    BS_DIGEST_KEY = 'balance_sheet'
+
     def __init__(self, io_data: dict):
-        self.DIGEST = io_data
+        self.IO_DATA = io_data
 
     def digest(self):
-        if 'group_account' in self.DIGEST:
+        if 'group_account' in self.IO_DATA:
             gb_bs = {
                 bsr: list(l) for bsr, l in groupby(
                     chain.from_iterable(
                         [
-                            self.DIGEST['group_account']['GROUP_ASSETS'],
-                            self.DIGEST['group_account']['GROUP_LIABILITIES'],
-                            self.DIGEST['group_account']['GROUP_CAPITAL'],
+                            self.IO_DATA['group_account']['GROUP_ASSETS'],
+                            self.IO_DATA['group_account']['GROUP_LIABILITIES'],
+                            self.IO_DATA['group_account']['GROUP_CAPITAL'],
                         ]
                     ),
                     key=lambda acc: acc['role_bs'])
@@ -245,119 +247,116 @@ class BalanceSheetStatementContextManager:
                     role_data['total_balance'] = sum(a['balance'] for a in role_data['accounts'])
                     role_data['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc_role]
 
-            bs_context['equity_balance'] = self.DIGEST['group_balance']['GROUP_EQUITY']
-            bs_context['retained_earnings_balance'] = self.DIGEST['group_balance']['GROUP_EARNINGS']
-            bs_context['liabilities_equity_balance'] = self.DIGEST['group_balance']['GROUP_LIABILITIES_EQUITY']
+            bs_context['equity_balance'] = self.IO_DATA['group_balance']['GROUP_EQUITY']
+            bs_context['retained_earnings_balance'] = self.IO_DATA['group_balance']['GROUP_EARNINGS']
+            bs_context['liabilities_equity_balance'] = self.IO_DATA['group_balance']['GROUP_LIABILITIES_EQUITY']
 
-            self.DIGEST['balance_sheet'] = bs_context
+            self.IO_DATA[self.BS_DIGEST_KEY] = bs_context
 
-        return self.DIGEST
+        return self.IO_DATA
 
 
 class IncomeStatementContextManager:
+    IC_DIGEST_KEY = 'income_statement'
 
     def __init__(self, io_data: dict):
-        self.DIGEST = io_data
+        self.IO_DATA = io_data
 
     def digest(self):
-        if 'group_account' in self.DIGEST:
-            self.DIGEST['income_statement'] = {
+        if 'group_account' in self.IO_DATA:
+            self.IO_DATA[self.IC_DIGEST_KEY] = {
                 'operating': {
                     'revenues': [
-                        acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                        acc for acc in self.IO_DATA['group_account']['GROUP_INCOME'] if
                         acc['role'] in roles_module.GROUP_IC_OPERATING_REVENUES
                     ],
                     'cogs': [
-                        acc for acc in self.DIGEST['group_account']['GROUP_COGS'] if
+                        acc for acc in self.IO_DATA['group_account']['GROUP_COGS'] if
                         acc['role'] in roles_module.GROUP_IC_OPERATING_COGS
                     ],
                     'expenses': [
-                        acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
+                        acc for acc in self.IO_DATA['group_account']['GROUP_EXPENSES'] if
                         acc['role'] in roles_module.GROUP_IC_OPERATING_EXPENSES
                     ]
                 },
                 'other': {
-                    'revenues': [acc for acc in self.DIGEST['group_account']['GROUP_INCOME'] if
+                    'revenues': [acc for acc in self.IO_DATA['group_account']['GROUP_INCOME'] if
                                  acc['role'] in roles_module.GROUP_IC_OTHER_REVENUES],
-                    'expenses': [acc for acc in self.DIGEST['group_account']['GROUP_EXPENSES'] if
+                    'expenses': [acc for acc in self.IO_DATA['group_account']['GROUP_EXPENSES'] if
                                  acc['role'] in roles_module.GROUP_IC_OTHER_EXPENSES],
                 }
             }
 
-            for activity, ic_section in self.DIGEST['income_statement'].items():
+            for activity, ic_section in self.IO_DATA[self.IC_DIGEST_KEY].items():
                 for section, acc_list in ic_section.items():
                     for acc in acc_list:
                         acc['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc['role']]
 
             # OPERATING INCOME...
-            self.DIGEST['income_statement']['operating']['gross_profit'] = sum(
+            self.IO_DATA[self.IC_DIGEST_KEY]['operating']['gross_profit'] = sum(
                 acc['balance'] for acc in chain.from_iterable(
                     [
-                        self.DIGEST['income_statement']['operating']['revenues'],
-                        self.DIGEST['income_statement']['operating']['cogs']
+                        self.IO_DATA[self.IC_DIGEST_KEY]['operating']['revenues'],
+                        self.IO_DATA[self.IC_DIGEST_KEY]['operating']['cogs']
                     ]
                 ))
-            self.DIGEST['income_statement']['operating']['net_operating_income'] = sum(
+            self.IO_DATA[self.IC_DIGEST_KEY]['operating']['net_operating_income'] = sum(
                 acc['balance'] for acc in chain.from_iterable(
                     [
-                        self.DIGEST['income_statement']['operating']['revenues'],
-                        self.DIGEST['income_statement']['operating']['cogs'],
-                        self.DIGEST['income_statement']['operating']['expenses'],
+                        self.IO_DATA[self.IC_DIGEST_KEY]['operating']['revenues'],
+                        self.IO_DATA[self.IC_DIGEST_KEY]['operating']['cogs'],
+                        self.IO_DATA[self.IC_DIGEST_KEY]['operating']['expenses'],
                     ]
                 ))
-            self.DIGEST['income_statement']['operating']['net_operating_revenue'] = sum(
-                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['revenues']
+            self.IO_DATA[self.IC_DIGEST_KEY]['operating']['net_operating_revenue'] = sum(
+                acc['balance'] for acc in self.IO_DATA[self.IC_DIGEST_KEY]['operating']['revenues']
             )
-            self.DIGEST['income_statement']['operating']['net_cogs'] = sum(
-                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['cogs']
+            self.IO_DATA[self.IC_DIGEST_KEY]['operating']['net_cogs'] = sum(
+                acc['balance'] for acc in self.IO_DATA[self.IC_DIGEST_KEY]['operating']['cogs']
             )
-            self.DIGEST['income_statement']['operating']['net_operating_expenses'] = sum(
-                acc['balance'] for acc in self.DIGEST['income_statement']['operating']['expenses']
+            self.IO_DATA[self.IC_DIGEST_KEY]['operating']['net_operating_expenses'] = sum(
+                acc['balance'] for acc in self.IO_DATA[self.IC_DIGEST_KEY]['operating']['expenses']
             )
 
             # OTHER INCOME....
-            self.DIGEST['income_statement']['other']['net_other_revenues'] = sum(
-                acc['balance'] for acc in self.DIGEST['income_statement']['other']['revenues']
+            self.IO_DATA[self.IC_DIGEST_KEY]['other']['net_other_revenues'] = sum(
+                acc['balance'] for acc in self.IO_DATA[self.IC_DIGEST_KEY]['other']['revenues']
             )
-            self.DIGEST['income_statement']['other']['net_other_expenses'] = sum(
-                acc['balance'] for acc in self.DIGEST['income_statement']['other']['expenses']
+            self.IO_DATA[self.IC_DIGEST_KEY]['other']['net_other_expenses'] = sum(
+                acc['balance'] for acc in self.IO_DATA[self.IC_DIGEST_KEY]['other']['expenses']
             )
-            self.DIGEST['income_statement']['other']['net_other_income'] = sum(
+            self.IO_DATA[self.IC_DIGEST_KEY]['other']['net_other_income'] = sum(
                 acc['balance'] for acc in chain.from_iterable(
                     [
-                        self.DIGEST['income_statement']['other']['revenues'],
-                        self.DIGEST['income_statement']['other']['expenses']
+                        self.IO_DATA[self.IC_DIGEST_KEY]['other']['revenues'],
+                        self.IO_DATA[self.IC_DIGEST_KEY]['other']['expenses']
                     ]
                 ))
 
             # NET INCOME...
-            self.DIGEST['income_statement']['net_income'] = self.DIGEST['income_statement']['operating'][
+            self.IO_DATA[self.IC_DIGEST_KEY]['net_income'] = self.IO_DATA[self.IC_DIGEST_KEY]['operating'][
                 'net_operating_income']
-            self.DIGEST['income_statement']['net_income'] += self.DIGEST['income_statement']['other'][
+            self.IO_DATA[self.IC_DIGEST_KEY]['net_income'] += self.IO_DATA[self.IC_DIGEST_KEY]['other'][
                 'net_other_income']
-        return self.DIGEST
+        return self.IO_DATA
 
 
 class CashFlowStatementContextManager:
     CFS_DIGEST_KEY = 'cash_flow_statement'
 
-    # todo: implement by period and by unit...
-    def __init__(self,
-                 io_data: dict,
-                 by_period: bool = False,
-                 by_unit: bool = False):
-        self.IO_DIGEST = io_data
-        self.CASH_ACCOUNTS = [a for a in self.IO_DIGEST['accounts'] if a['role'] == roles_module.ASSET_CA_CASH]
+    def __init__(self, io_data: dict):
+        self.IO_DATA = io_data
+        self.CASH_ACCOUNTS = [a for a in self.IO_DATA['accounts'] if a['role'] == roles_module.ASSET_CA_CASH]
         self.JE_MODEL = lazy_loader.get_journal_entry_model()
 
     def check_io_digest(self):
-        if GroupContextManager.GROUP_BALANCE_KEY not in self.IO_DIGEST:
+        if GroupContextManager.GROUP_BALANCE_KEY not in self.IO_DATA:
             raise ValidationError(
                 'IO Digest must have groups for Cash Flow Statement'
             )
 
     def operating(self):
-        group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
+        group_balances = self.IO_DATA[GroupContextManager.GROUP_BALANCE_KEY]
         operating_activities = dict()
         operating_activities['GROUP_CFS_NET_INCOME'] = {
             'description': 'Net Income',
@@ -394,13 +393,13 @@ class CashFlowStatementContextManager:
         }
 
         net_cash_by_op_activities = sum(i['balance'] for g, i in operating_activities.items())
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['operating'] = operating_activities
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity'] = dict(
+        self.IO_DATA[self.CFS_DIGEST_KEY]['operating'] = operating_activities
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity'] = dict(
             OPERATING=net_cash_by_op_activities
         )
 
     def financing(self):
-        group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
+        # group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
         financing_activities = dict()
         financing_activities['GROUP_CFS_FIN_ISSUING_EQUITY'] = {
             'description': 'Common Stock, Preferred Stock and Capital Raised',
@@ -421,11 +420,11 @@ class CashFlowStatementContextManager:
         }
 
         net_cash = sum(i['balance'] for g, i in financing_activities.items())
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['financing'] = financing_activities
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity']['FINANCING'] = net_cash
+        self.IO_DATA[self.CFS_DIGEST_KEY]['financing'] = financing_activities
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity']['FINANCING'] = net_cash
 
     def investing(self):
-        group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
+        group_balances = self.IO_DATA[GroupContextManager.GROUP_BALANCE_KEY]
         investing_activities = dict()
         investing_activities['GROUP_CFS_INVESTING_SECURITIES'] = {
             'description': 'Purchase, Maturity and Sales of Investments & Securities',
@@ -439,18 +438,19 @@ class CashFlowStatementContextManager:
         }
 
         net_cash = sum(i['balance'] for g, i in investing_activities.items())
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['investing'] = investing_activities
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity']['INVESTING'] = net_cash
+        self.IO_DATA[self.CFS_DIGEST_KEY]['investing'] = investing_activities
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity']['INVESTING'] = net_cash
 
     def net_cash(self):
-        self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash'] = sum([
-            bal for act, bal in self.IO_DIGEST[self.CFS_DIGEST_KEY]['net_cash_by_activity'].items()
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash'] = sum([
+            bal for act, bal in self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity'].items()
         ])
 
     def digest(self):
+        self.IO_DATA[self.CFS_DIGEST_KEY] = dict()
         self.check_io_digest()
         self.operating()
         self.financing()
         self.investing()
         self.net_cash()
-        return self.IO_DIGEST
+        return self.IO_DATA

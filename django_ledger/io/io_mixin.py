@@ -235,8 +235,8 @@ class IODatabaseMixIn:
                         accounts: Optional[Union[str, List[str], Set[str]]] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
-                        force_closing_entry_use: bool = False
-                        ) -> IOResult:
+                        force_closing_entry_use: bool = False,
+                        **kwargs) -> IOResult:
         """
         Performs the appropriate database aggregation query for a given request.
 
@@ -852,14 +852,12 @@ class IOReportMixIn:
                                     filepath: Optional[Path] = None,
                                     filename: Optional[str] = None,
                                     user_model: Optional[UserModel] = None,
-                                    txs_queryset: Optional[QuerySet] = None,
                                     save_pdf: bool = False,
                                     **kwargs
                                     ):
         io_digest = self.digest_balance_sheet(
             to_date=to_date,
             user_model=user_model,
-            txs_queryset=txs_queryset,
             **kwargs
         )
 
@@ -952,7 +950,6 @@ class IOReportMixIn:
                                 filepath: Optional[Path] = None,
                                 filename: Optional[str] = None,
                                 user_model: Optional[UserModel] = None,
-                                txs_queryset: Optional[QuerySet] = None,
                                 save_pdf: bool = False,
                                 **kwargs):
 
@@ -960,7 +957,6 @@ class IOReportMixIn:
             from_date=from_date,
             to_date=to_date,
             user_model=user_model,
-            txs_queryset=txs_queryset,
             **kwargs
         )
 
@@ -985,7 +981,6 @@ class IOReportMixIn:
                                  to_date: Union[date, datetime],
                                  dt_strfmt: str = '%Y%m%d',
                                  user_model: Optional[UserModel] = None,
-                                 txs_queryset: Optional[QuerySet] = None,
                                  save_pdf: bool = False,
                                  filepath: Optional[Path] = None,
                                  **kwargs) -> ReportTuple:
@@ -994,7 +989,6 @@ class IOReportMixIn:
             from_date=from_date,
             to_date=to_date,
             user_model=user_model,
-            txs_queryset=txs_queryset,
             balance_sheet_statement=True,
             income_statement=True,
             cash_flow_statement=True,
