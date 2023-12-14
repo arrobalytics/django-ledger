@@ -38,7 +38,7 @@ from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import IOMixIn
+from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 
@@ -88,6 +88,13 @@ class LedgerModelManager(models.Manager):
             Count('journal_entries'),
             earliest_timestamp=Min('journal_entries__timestamp',
                                    filter=Q(journal_entries__posted=True)),
+        )
+
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
         )
 
     def for_entity(self, entity_slug, user_model):
@@ -192,6 +199,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 return getattr(self, model_id)
             except ObjectDoesNotExist:
                 pass
+        return False
 
     def remove_wrapped_model_info(self):
         if self.has_wrapped_model_info():
@@ -375,7 +383,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         if not self.can_post():
             if raise_exception:
                 raise LedgerModelValidationError(
-                    message=_(f'Ledger {self.uuid} cannot be posted.')
+                    message=_(f'Ledger {self.name} cannot be posted. UUID: {self.uuid}')
                 )
             return
         self.posted = True
@@ -417,7 +425,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'updated'
             ])
 
-    def lock(self, commit: bool = False, **kwargs):
+    def lock(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Locks the LedgerModel.
 
@@ -425,14 +433,22 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         ----------
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
+        raise_exception: bool
+            Raises LedgerModelValidationError if locking not allowed.
         """
-        if self.can_lock():
-            self.locked = True
-            if commit:
-                self.save(update_fields=[
-                    'locked',
-                    'updated'
-                ])
+
+        if not self.can_lock():
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.name} cannot be locked. UUID: {self.uuid}')
+                )
+            return
+        self.locked = True
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
 
     def lock_journal_entries(self, commit: bool = True, **kwargs):
         je_model_qs = self.journal_entries.unlocked()
@@ -493,7 +509,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         str
             URL as a string.
         """
-        return reverse('django_ledger:ledger-detail',
+        return reverse('django_ledger:ledger-update',
                        kwargs={
                            # pylint: disable=no-member
                            'entity_slug': self.entity.slug,

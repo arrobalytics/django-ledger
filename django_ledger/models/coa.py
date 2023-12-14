@@ -22,6 +22,8 @@ when no explicit CoA is specified, the default behavior is to use the EntityMode
 Accounts can be used when creating Journal Entries**. No commingling between CoAs is allowed in order to preserve the
 integrity of the Journal Entry.
 """
+from random import choices
+from string import ascii_lowercase, digits
 from typing import Optional, Union
 from uuid import uuid4
 
@@ -29,6 +31,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_save, post_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
@@ -40,6 +43,8 @@ from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.settings import logger
 
 UserModel = get_user_model()
+
+SLUG_SUFFIX = ascii_lowercase + digits
 
 
 class ChartOfAccountsModelValidationError(ValidationError):
@@ -84,7 +89,7 @@ class ChartOfAccountModelManager(models.Manager):
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
-        )
+        ).select_related('entity')
 
     def for_entity(self, entity_slug, user_model) -> ChartOfAccountModelQuerySet:
         """
@@ -127,7 +132,7 @@ class ChartOfAccountModelManager(models.Manager):
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
-        )
+        ).select_related('entity')
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
@@ -173,10 +178,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        return f'{self.slug}: {self.name}'
-
-    # def is_configured(self, account_model_qs: Optional[AccountModelQuerySet]):
-    #     pass
+        if self.name is not None:
+            return f'{self.name} ({self.slug})'
+        return self.slug
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
         return self.accountmodel_set.all().is_coa_root()
@@ -222,28 +226,43 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         root_account = self.get_coa_root_account()
         return AccountModel.dump_bulk(parent=root_account)
 
+    def generate_slug(self, raise_exception: bool = False) -> str:
+        if self.slug:
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_(f'CoA {self.uuid} already has a slug')
+                )
+            return
+        self.slug = ''.join(choices(SLUG_SUFFIX, k=5))
+
     def configure(self, raise_exception: bool = True):
+
+        self.generate_slug()
+
         root_accounts_qs = self.get_coa_root_accounts_qs()
         existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
 
         if len(existing_root_roles) > 0:
-            raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+            return
 
         if ROOT_COA not in existing_root_roles:
             # add coa root...
             role_meta = ROOT_GROUP_META[ROOT_COA]
             account_pk = uuid4()
-            coa_root_account_model = AccountModel.add_root(
-                instance=AccountModel(
-                    uuid=account_pk,
-                    code=role_meta['code'],
-                    name=role_meta['title'],
-                    coa_model=self,
-                    role=ROOT_COA,
-                    active=False,
-                    locked=True,
-                    balance_type=role_meta['balance_type']
-                ))
+            root_account = AccountModel(
+                uuid=account_pk,
+                code=role_meta['code'],
+                name=role_meta['title'],
+                coa_model=self,
+                role=ROOT_COA,
+                role_default=True,
+                active=False,
+                locked=True,
+                balance_type=role_meta['balance_type']
+            )
+            coa_root_account_model = AccountModel.add_root(instance=root_account)
 
             coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
 
@@ -258,10 +277,16 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                             name=role_meta['title'],
                             coa_model=self,
                             role=root_role,
+                            role_default=True,
                             active=False,
                             locked=True,
                             balance_type=role_meta['balance_type']
                         ))
+
+    def is_default(self) -> bool:
+        if self.entity_id is None:
+            return False
+        return self.entity.default_coa_id == self.uuid
 
     def validate_account_model_qs(self, account_model_qs: AccountModelQuerySet):
         if not isinstance(account_model_qs, AccountModelQuerySet):
@@ -301,8 +326,25 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         non_root_accounts_qs.update(locked=False)
         return non_root_accounts_qs
 
+    def clean(self):
+        self.generate_slug()
+
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
+
+
+# def chartofaccountmodel_presave(instance: ChartOfAccountModel, **kwargs):
+#     if instance._state.adding:
+#         instance.configure(raise_exception=True)
+
+
+def chartofaccountmodel_postsave(instance: ChartOfAccountModel, **kwargs):
+    if instance._state.adding:
+        instance.configure(raise_exception=True)
+
+
+# pre_save.connect(receiver=chartofaccountmodel_presave, sender=ChartOfAccountModel)
+post_save.connect(receiver=chartofaccountmodel_postsave, sender=ChartOfAccountModel)

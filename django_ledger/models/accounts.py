@@ -34,6 +34,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save
+from django.urls import reverse
+from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
@@ -486,6 +488,54 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             x5=self.code
         )
 
+    @classmethod
+    def create_account(cls,
+                       name: str,
+                       role: bool,
+                       balance_type: str,
+                       is_role_default: bool = False,
+                       locked: bool = False,
+                       active: bool = False,
+                       **kwargs):
+        """
+        Convenience Method to Create a new Account Model. This is the preferred method to create new Accounts in order
+        to properly handle parent/child relationships between models.
+
+        Parameters
+        ----------
+        name: str
+            The name of the new Entity.
+        role: str
+            Account role.
+        balance_type: str
+            Account Balance Type. Must be 'debit' or 'credit'.
+        is_role_default: bool
+            If True, assigns account as default for role. Only once default account per role is permitted.
+        locked: bool
+            Marks account as Locked. Defaults to False.
+        active: bool
+            Marks account as Active. Defaults to True.
+
+
+        Returns
+        -------
+        AccountModel
+            The newly created AccountModel instance.
+
+        """
+        account_model = cls(
+            name=name,
+            role=role,
+            balance_type=balance_type,
+            role_default=is_role_default,
+            locked=locked,
+            active=active,
+            **kwargs
+        )
+        account_model.clean()
+        account_model = cls.add_root(instance=account_model)
+        return account_model
+
     @property
     def role_bs(self) -> str:
         """
@@ -648,6 +698,16 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         prefix = self.get_code_prefix()
         ri = randint(10000, 99999)
         return f'{prefix}{ri}'
+
+    def get_absolute_url(self):
+        return reverse(
+            viewname='django_ledger:account-detail-year',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.coa_model.entity.slug,
+                'year': localdate().year
+            }
+        )
 
     def clean(self):
 
