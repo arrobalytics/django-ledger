@@ -21,7 +21,7 @@ Finance and Accounting is a complicated subject. Django Ledger is different from
 as it aims to provide a developer-friendly accounting engine while providing a reliable and extensible API to
 power financially driven applications. This project in particular, not only requires Python AND Django programming
 experience, but also finance and accounting experience. So, that's the long way of saying, we need your help!
-Join our Discord Channel [here](https://discord.gg/c7PZcbYgrc) to learn more.
+Join our Discord Channel [here](https://discord.gg/J7KDFgCCsw) to learn more.
 
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
 __This is the best way to get started twith this project if you are not familiar with the models.__

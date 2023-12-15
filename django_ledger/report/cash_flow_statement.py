@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import Optional, Dict, Union
 
-from django_ledger.io import IODigestContextManager
+from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
 from django_ledger.templatetags.django_ledger import currency_format

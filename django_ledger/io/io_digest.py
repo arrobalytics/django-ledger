@@ -114,6 +114,14 @@ class IODigestContextManager:
                     'IO Digest does not have cash flow statement information available.'
                 )
 
+    # All Available Statements
+    def get_financial_statements_data(self) -> Dict:
+        return {
+            'balance_sheet': self.get_balance_sheet_data() if self.has_balance_sheet() else None,
+            'income_statement': self.get_income_statement_data() if self.has_income_statement() else None,
+            'cash_flow_statement': self.get_cash_flow_statement_data() if self.has_cash_flow_statement() else None,
+        }
+
     # CLOSING ENTRIES...
 
     def get_closing_entry_data(self):

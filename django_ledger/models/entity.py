@@ -36,7 +36,7 @@ from django.core.cache import caches
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -1007,10 +1007,10 @@ class EntityModelAbstract(MP_Node,
             coa_name = 'Default CoA'
 
         chart_of_accounts = ChartOfAccountModel(
-            slug=self.slug + ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=6)) + '-coa',
             name=coa_name,
             entity=self
         )
+
         chart_of_accounts.clean()
         chart_of_accounts.save()
         chart_of_accounts.configure()

@@ -138,6 +138,13 @@ class JournalEntryModelManager(models.Manager):
     EntityModel and authenticated UserModel.
     """
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        return qs.filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
+
     def for_entity(self, entity_slug, user_model):
         """
         Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel.
@@ -345,8 +352,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def __str__(self):
         if self.je_number:
-            return 'JE: {x1} - Desc: {x2}'.format(x1=self.je_number, x2=self.description)
-        return 'JE ID: {x1} - Desc: {x2}'.format(x1=self.pk, x2=self.description)
+            return 'JE: {x1} (posted={p}, locked={l}) - Desc: {x2}'.format(
+                x1=self.je_number,
+                x2=self.description,
+                p=self.posted,
+                l=self.locked
+            )
+        return 'JE ID: {x1} (posted={p}, locked={l}) - Desc: {x2}'.format(
+            x1=self.pk,
+            x2=self.description,
+            p=self.posted,
+            l=self.locked
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1011,7 +1028,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if self.can_generate_je_number():
 
-            with transaction.atomic(durable=True):
+            with transaction.atomic():
 
                 state_model = None
                 while not state_model:
@@ -1198,10 +1215,43 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         return reverse('django_ledger:je-detail',
                        kwargs={
-                           'je_pk': self.id,
+                           'je_pk': self.uuid,
                            'ledger_pk': self.ledger_id,
-                           # pylint: disable=no-member
                            'entity_slug': self.ledger.entity.slug
+                       })
+
+    def get_detail_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:je-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
+    def get_detail_txs_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:je-detail-txs',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
                        })
 
     def get_unlock_url(self):

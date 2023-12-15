@@ -1,6 +1,7 @@
 ```python
 import os
 from datetime import date, datetime
+from decimal import Decimal
 from random import randint, choices, random
 from zoneinfo import ZoneInfo
 
@@ -9,6 +10,7 @@ import django
 # if pandas is not installed, you may install it with this command: pip install -U pandas
 # pandas is not a dependecy of django_ledger...
 import pandas as pd
+from django.core.exceptions import ObjectDoesNotExist
 
 # Set your django settings module if needed...
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dev_env.settings'
@@ -27,8 +29,7 @@ from django_ledger.models.invoice import InvoiceModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.estimate import EstimateModel
 from django.contrib.auth import get_user_model
-from django_ledger.io import roles
-
+from django_ledger.io import roles, DEBIT, CREDIT
 ```
 
 # Get Your Entity Administrator UserModel
@@ -48,31 +49,26 @@ except:
     user_model.save()
 ```
 
-
-```python
-entity_model = EntityModel.objects.get(name__exact='My Good Looking LLC')
-```
-
-# Create an Entity Model
+# Get or Create an Entity Model
 
 
 ```python
+ENTITY_NAME = 'One Big Company, LLC'
+
 entity_model = EntityModel.create_entity(
-    name='One Big Company, LLC',
+    name=ENTITY_NAME,
     admin=user_model,
     use_accrual_method=True,
     fy_start_month=1
 )
-```
 
-
-```python
-entity_model.slug
+entity_model
 ```
 
 # Chart of Accounts
 
 ## Create a Default Chart of Accounts
+- Newly created EntityModel do not have a default Code of Accounts yet.
 
 
 ```python
@@ -93,7 +89,12 @@ default_coa_model = entity_model.create_chart_of_accounts(
 default_coa_model
 ```
 
-# Populate Entity with Random Data
+
+```python
+entity_model.default_coa == default_coa_model
+```
+
+# Populate Entity with Random Data (Optional)
 
 ### Define a Start Date for Transactions
 
@@ -101,6 +102,10 @@ default_coa_model
 ```python
 START_DTTM = datetime(year=2022, month=10, day=1, tzinfo=ZoneInfo('UTC'))
 ```
+
+- This action will populate the EntityModel with random data.
+- It will populate a Code of Accounts using a default pre-defined list.
+- This approach is for illustration, educational and testing purposes, not encouraged for new production entities.
 
 
 ```python
@@ -117,9 +122,12 @@ entity_model.has_default_coa()
 
 ```python
 default_coa_model = entity_model.get_default_coa()
+default_coa_model
 ```
 
 # Chart of Accounts (CoA)
+- A Chart of Accounts is a user-defined list of accounts. 
+- Each Entity Model must have at least one default Chart of Accounts.
 
 ## Django Ledger support multiple chart of accounts.
 
@@ -128,33 +136,23 @@ default_coa_model = entity_model.get_default_coa()
 another_coa_model = entity_model.create_chart_of_accounts(
     assign_as_default=False,
     commit=True,
-    coa_name='My Legacy Chart of Accounts'
+    coa_name='My Empty Chart of Accounts'
 )
+```
+
+
+```python
+another_coa_model
 ```
 
 # Accounts
 
-## Get All Accounts
-
-
-```python
-coa_qs, coa_map = entity_model.get_all_coa_accounts()
-pd.DataFrame(coa_map[default_coa_model].values())
-```
-
-### New CoA does not have any accounts yet...
-
-
-```python
-pd.DataFrame(coa_map[another_coa_model].values())
-```
-
-## Get Default CoA Accounts
+## Default CoA Accounts
 
 
 ```python
 default_coa_accounts_qs = entity_model.get_default_coa_accounts()
-pd.DataFrame(default_coa_accounts_qs.values())
+pd.DataFrame(default_coa_accounts_qs)
 ```
 
 ## Get CoA Accounts by CoA Model
@@ -162,34 +160,81 @@ pd.DataFrame(default_coa_accounts_qs.values())
 
 ```python
 coa_accounts_by_coa_model_qs = entity_model.get_coa_accounts(coa_model=default_coa_model)
-pd.DataFrame(coa_accounts_by_coa_model_qs.values())
+pd.DataFrame(coa_accounts_by_coa_model_qs)
+```
+
+No Accounts yet on this CoA...
+
+
+```python
+coa_accounts_by_coa_model_qs = entity_model.get_coa_accounts(coa_model=another_coa_model)
+pd.DataFrame(coa_accounts_by_coa_model_qs)
 ```
 
 ## Get CoA Accounts by CoA Model UUID
+- May pass UUID instance instead of ChartOF AccountsModel...
 
 
 ```python
 coa_accounts_by_coa_uuid_qs = entity_model.get_coa_accounts(coa_model=default_coa_model.uuid)
-pd.DataFrame(coa_accounts_by_coa_uuid_qs.values())
+pd.DataFrame(coa_accounts_by_coa_uuid_qs)
 ```
 
 ## Get CoA Accounts by CoA Model Slug
+- If string is passed, will lookup by slug...
 
 
 ```python
 coa_accounts_by_coa_slug_qs = entity_model.get_coa_accounts(coa_model=default_coa_model.slug)
-pd.DataFrame(coa_accounts_by_coa_slug_qs.values())
+pd.DataFrame(coa_accounts_by_coa_slug_qs)
 ```
 
 ## Get Accounts With Codes and CoA Model
+- Assumes default CoA if no coa_model is passed...
 
 
 ```python
 coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(code_list=['1010', '1050'])
-pd.DataFrame(coa_accounts_by_codes_qs.values())
+pd.DataFrame(coa_accounts_by_codes_qs)
+```
+
+Empty ChartOfAccountModel...
+
+
+```python
+coa_accounts_by_codes_qs = entity_model.get_accounts_with_codes(
+    code_list=['1010', '1050'], 
+    coa_model=another_coa_model
+)
+pd.DataFrame(coa_accounts_by_codes_qs)
+```
+
+### Get All Accounts at Once
+
+
+```python
+coa_qs, coa_map = entity_model.get_all_coa_accounts()
+```
+
+A dictionary, CoA Model -> Account List.
+
+
+```python
+coa_map
+```
+
+
+```python
+pd.DataFrame(coa_map[default_coa_model])
+```
+
+
+```python
+pd.DataFrame(coa_map[another_coa_model])
 ```
 
 ## Create Account Model
+- Creating AccountModel into empty "another_coa_model"...
 
 
 ```python
@@ -212,7 +257,176 @@ account_model
 
 ```python
 another_coa_accounts_qs = entity_model.get_coa_accounts(coa_model=another_coa_model)
-pd.DataFrame(another_coa_accounts_qs.values())
+pd.DataFrame(another_coa_accounts_qs)
+```
+
+# Basic Django Ledger Usage
+- The LedgerModel name is whatever your heart desires.
+- Examples:
+    - A month.
+    - A customer.
+    - A vendor.
+    - A project.
+- The more ledgers are created, the more segregation and control over transactions is possible.
+
+
+```python
+ledger_model = entity_model.create_ledger(name='My October 2023 Ledger')
+```
+
+### Let's create our first transaction.
+
+
+```python
+account_qs = entity_model.get_accounts_with_codes(
+    code_list=[
+        '1010',  # cash
+        '1200',  # inventory
+        '4010',  # income
+        '5010',  # COGS
+    ]
+)
+pd.DataFrame(account_qs)
+```
+
+
+```python
+TXS = [
+    {
+        'account': account_qs.get(code='1010'), # cash account...
+        'amount': Decimal('1500'),
+        'tx_type': DEBIT,
+        'description': 'A credit card sale cash.',
+    },
+    {
+        'account': account_qs.get(code='4010'), # sales income account...
+        'amount': Decimal('1500'),
+        'tx_type': CREDIT,
+        'description': 'A credit card sale income.',
+    },
+    {
+        'account': account_qs.get(code='1200'), # inventory reduction...
+        'amount': Decimal('1000'),
+        'tx_type': CREDIT,
+        'description': 'A credit card sale inventory.',
+    },
+    {
+        'account': account_qs.get(code='5010'), # COGS recognition...
+        'amount': Decimal('1000'),
+        'tx_type': DEBIT,
+        'description': 'A credit card sale COGS.',
+    },
+]
+```
+
+
+```python
+timestamp = datetime(2023, 10, 3, 12, 30, tzinfo=ZoneInfo('US/Eastern'))
+je_model, txs_models = ledger_model.commit_txs(
+    je_timestamp=timestamp,
+    je_posted=True, # Un-posted Journal Entries will not hit the books...
+    je_origin='notebook', # optional, user-defined origin for tracking and querying...
+    je_desc='My first transaction',
+    je_txs=TXS
+)
+```
+
+Journal Entry is Posted...
+
+
+```python
+je_model.is_posted()
+```
+
+Transaction Models...
+
+
+```python
+txs_models
+```
+
+Ledger Model is not posted yet...
+
+
+```python
+ledger_model.is_posted()
+```
+
+
+```python
+ledger_model.post(commit=True)
+```
+
+
+```python
+ledger_model.is_posted()
+```
+
+### Get Financial Statement Report Data
+
+Balance Sheet
+
+
+```python
+bs_data = ledger_model.digest_balance_sheet(
+    to_date=date(2023, 12, 31),
+    entity_slug=entity_model
+)
+
+bs_data.get_balance_sheet_data()
+```
+
+Income Statement
+
+
+```python
+is_data = ledger_model.digest_income_statement(
+    from_date=date(2023, 1, 1),
+    to_date=date(2023, 12, 31),
+    entity_slug=entity_model
+)
+is_data.get_income_statement_data()
+```
+
+Cash Flow Statement
+
+
+```python
+cfs_data = ledger_model.digest_cash_flow_statement(
+    from_date=date(2023, 1, 1),
+    to_date=date(2023, 12, 31),
+    entity_slug=entity_model
+)
+
+cfs_data.get_cash_flow_statement_data()
+```
+
+All Statements in a Single Call
+
+
+```python
+fin_digest = ledger_model.digest_financial_statements(
+    from_date=date(2023, 1, 1),
+    to_date=date(2023, 12, 31),
+    entity_slug=entity_model
+)
+
+statement_data = fin_digest.get_financial_statements_data()
+```
+
+
+```python
+statement_data['balance_sheet']
+```
+
+
+```python
+statement_data['income_statement']
+```
+
+
+```python
+statement_data['cash_flow_statement']
 ```
 
 # Customers
@@ -626,7 +840,11 @@ inventory_model = entity_model.create_item_inventory(
 inventory_model.is_inventory()
 ```
 
-# Financial Statements
+# Financial Statement PDF Reports
+
+## Set Up
+- Must enable PDF support by installing dependencies via *pipenv*.
+    - pipenv install --categories pdf
 
 ## Balance Sheet
 

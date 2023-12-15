@@ -34,6 +34,7 @@ from django_ledger.io.io_context import (
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
+from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 UserModel = get_user_model()
 
@@ -722,7 +723,7 @@ class IODatabaseMixIn:
         Creates JE from TXS list using provided account_id.
 
         TXS = List[{
-            'account_id': Account Database UUID
+            'account': Account Database UUID
             'tx_type': credit/debit,
             'amount': Decimal/Float/Integer,
             'description': string,
@@ -836,7 +837,7 @@ class IOReportMixIn:
                              to_date: Union[date, datetime],
                              user_model: Optional[UserModel] = None,
                              txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+                             **kwargs: Dict) -> IODigestContextManager:
         return self.digest(
             user_model=user_model,
             to_date=to_date,
@@ -854,7 +855,13 @@ class IOReportMixIn:
                                     user_model: Optional[UserModel] = None,
                                     save_pdf: bool = False,
                                     **kwargs
-                                    ):
+                                    ) -> IODigestContextManager:
+
+        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+            raise IOValidationError(
+                message=_('PDF support not enabled. Install PDF support from Pipfile.')
+            )
+
         io_digest = self.digest_balance_sheet(
             to_date=to_date,
             user_model=user_model,
@@ -882,7 +889,7 @@ class IOReportMixIn:
                                 to_date: Union[date, datetime],
                                 user_model: Optional[UserModel] = None,
                                 txs_queryset: Optional[QuerySet] = None,
-                                **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+                                **kwargs) -> IODigestContextManager:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -904,6 +911,11 @@ class IOReportMixIn:
                              save_pdf: bool = False,
                              **kwargs
                              ):
+        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+            raise IOValidationError(
+                message=_('PDF support not enabled. Install PDF support from Pipfile.')
+            )
+
         io_digest = self.digest_income_statement(
             from_date=from_date,
             to_date=to_date,
@@ -930,9 +942,9 @@ class IOReportMixIn:
     def digest_cash_flow_statement(self,
                                    from_date: Union[date, datetime],
                                    to_date: Union[date, datetime],
-                                   user_model: UserModel,
+                                   user_model: Optional[UserModel] = None,
                                    txs_queryset: Optional[QuerySet] = None,
-                                   **kwargs) -> Union[IODigestContextManager, Tuple[QuerySet, Dict]]:
+                                   **kwargs) -> IODigestContextManager:
         return self.digest(
             user_model=user_model,
             from_date=from_date,
@@ -952,6 +964,11 @@ class IOReportMixIn:
                                 user_model: Optional[UserModel] = None,
                                 save_pdf: bool = False,
                                 **kwargs):
+
+        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+            raise IOValidationError(
+                message=_('PDF support not enabled. Install PDF support from Pipfile.')
+            )
 
         io_digest = self.digest_cash_flow_statement(
             from_date=from_date,
@@ -976,6 +993,23 @@ class IOReportMixIn:
             report.output(filepath)
         return report
 
+    def digest_financial_statements(self,
+                                    from_date: Union[date, datetime],
+                                    to_date: Union[date, datetime],
+                                    user_model: Optional[UserModel] = None,
+                                    **kwargs) -> IODigestContextManager:
+
+        return self.digest(
+            from_date=from_date,
+            to_date=to_date,
+            user_model=user_model,
+            balance_sheet_statement=True,
+            income_statement=True,
+            cash_flow_statement=True,
+            as_io_digest=True,
+            **kwargs
+        )
+
     def get_financial_statements(self,
                                  from_date: Union[date, datetime],
                                  to_date: Union[date, datetime],
@@ -985,7 +1019,12 @@ class IOReportMixIn:
                                  filepath: Optional[Path] = None,
                                  **kwargs) -> ReportTuple:
 
-        io_digest = self.digest(
+        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
+            raise IOValidationError(
+                message=_('PDF support not enabled. Install PDF support from Pipfile.')
+            )
+
+        io_digest = self.digest_financial_statements(
             from_date=from_date,
             to_date=to_date,
             user_model=user_model,

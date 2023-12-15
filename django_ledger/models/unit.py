@@ -212,6 +212,16 @@ class EntityUnitModelAbstract(MP_Node,
             self.slug = unit_slug
         return self.slug
 
+    def get_absolute_url(self):
+        return reverse(
+            viewname='django_ledger:unit-detail',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'unit_slug': self.slug
+            }
+        )
+
+
 
 class EntityUnitModel(EntityUnitModelAbstract):
     """
