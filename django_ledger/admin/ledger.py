@@ -1,9 +1,26 @@
+from django.contrib import messages
 from django.contrib.admin import ModelAdmin, TabularInline
 from django.db.models import Count
+from django.forms import BaseInlineFormSet
 from django.shortcuts import get_object_or_404
-from django.contrib import messages
+from django.utils.html import format_html
 
-from django_ledger.models import LedgerModel, JournalEntryModel, EntityModel, LedgerModelValidationError
+from django_ledger.models import (
+    LedgerModel, JournalEntryModel, EntityModel,
+    LedgerModelValidationError
+)
+
+
+class JournalEntryModelInLineFormSet(BaseInlineFormSet):
+
+    def __init__(self, *args, **kwargs):
+        self.ledger_model: LedgerModel = kwargs['instance']
+        self.entity_model = self.ledger_model.entity
+        super().__init__(*args, **kwargs)
+
+    def add_fields(self, form, index):
+        super().add_fields(form=form, index=index)
+        form.fields['entity_unit'].queryset = self.entity_model.entityunitmodel_set.all()
 
 
 class JournalEntryModelInLine(TabularInline):
@@ -14,20 +31,23 @@ class JournalEntryModelInLine(TabularInline):
         'entity_unit',
         'posted',
         'locked',
-        'is_closing_entry',
         'activity',
         'origin',
-        'txs_count'
+        'txs_count',
+        'view_txs_link',
+        'edit_txs_link'
     ]
     readonly_fields = [
         'posted',
         'locked',
-        'is_closing_entry',
         'origin',
         'activity',
-        'txs_count'
+        'txs_count',
+        'view_txs_link',
+        'edit_txs_link'
     ]
     model = JournalEntryModel
+    formset = JournalEntryModelInLineFormSet
 
     def get_queryset(self, request):
         qs = self.model.objects.for_user(request.user)
@@ -36,6 +56,9 @@ class JournalEntryModelInLine(TabularInline):
             qs = qs.order_by(*ordering)
         return qs.annotate(
             txs_count=Count('transactionmodel')
+        ).select_related(
+            'ledger',
+            'ledger__entity'
         )
 
     def txs_count(self, obj):
@@ -59,6 +82,21 @@ class JournalEntryModelInLine(TabularInline):
             ])
         return super().has_delete_permission(request, obj)
 
+    def view_txs_link(self, obj: JournalEntryModel):
+        detail_url = obj.get_detail_url()
+        return format_html(
+            format_string='<a class="viewlink" target="_blank" href="{url}">View Txs</a>',
+            url=detail_url
+        )
+
+    def edit_txs_link(self, obj: JournalEntryModel):
+        detail_url = obj.get_detail_txs_url()
+        next_url = None
+        return format_html(
+            format_string='<a class="changelink" target="_blank" href="{url}">Edit Txs</a>',
+            url=detail_url
+        )
+
 
 class LedgerModelAdmin(ModelAdmin):
     readonly_fields = [
@@ -80,7 +118,9 @@ class LedgerModelAdmin(ModelAdmin):
     ]
     actions = [
         'post',
-        'lock'
+        'unpost',
+        'lock',
+        'unlock'
     ]
     inlines = [
         JournalEntryModelInLine
@@ -91,7 +131,7 @@ class LedgerModelAdmin(ModelAdmin):
         ordering = self.get_ordering(request)
         if ordering:
             qs = qs.order_by(*ordering)
-        return qs
+        return qs.select_related('entity')
 
     def get_inlines(self, request, obj):
         if obj is None:
@@ -126,6 +166,11 @@ class LedgerModelAdmin(ModelAdmin):
         entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
         return entity_model
 
+    def has_add_permission(self, request):
+        if request.GET.get('entity_slug') is not None:
+            return True
+        return False
+
     def add_view(self, request, form_url="", extra_context=None):
         entity_model = self.get_entity_model(request)
         extra_context = {
@@ -133,6 +178,11 @@ class LedgerModelAdmin(ModelAdmin):
             'title': f'Add Ledger: {entity_model.name}'
         }
         return super().add_view(request, form_url="", extra_context=extra_context)
+
+    def is_locked(self, obj):
+        return obj.is_locked()
+
+    is_locked.boolean = True
 
     def is_posted(self, obj):
         return obj.is_posted()
@@ -144,6 +194,7 @@ class LedgerModelAdmin(ModelAdmin):
 
     is_extended.boolean = True
 
+    # ACTIONS....
     def post(self, request, queryset):
         for obj in queryset:
             try:
@@ -177,10 +228,38 @@ class LedgerModelAdmin(ModelAdmin):
                 'updated'
             ])
 
-    def is_locked(self, obj):
-        return obj.is_locked()
+    def unpost(self, request, queryset):
+        for obj in queryset:
+            try:
+                obj.unpost(raise_exception=True, commit=False)
+            except LedgerModelValidationError as e:
+                messages.error(
+                    request=request,
+                    message=e.message
+                )
+        queryset.bulk_update(
+            objs=queryset,
+            fields=[
+                'posted',
+                'updated'
+            ])
 
-    is_locked.boolean = True
+    def unlock(self, request, queryset):
+        for obj in queryset:
+            try:
+                obj.unlock(raise_exception=True, commit=False)
+            except LedgerModelValidationError as e:
+                messages.error(
+                    request=request,
+                    message=e.message
+                )
+
+        queryset.bulk_update(
+            objs=queryset,
+            fields=[
+                'locked',
+                'updated'
+            ])
 
     def journal_entry_count(self, obj):
         return obj.journal_entries__count

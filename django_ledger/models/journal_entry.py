@@ -1028,7 +1028,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if self.can_generate_je_number():
 
-            with transaction.atomic(durable=True):
+            with transaction.atomic():
 
                 state_model = None
                 while not state_model:
@@ -1218,6 +1218,40 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                            'je_pk': self.uuid,
                            'ledger_pk': self.ledger_id,
                            'entity_slug': self.ledger.entity.slug
+                       })
+
+    def get_detail_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:je-detail',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
+    def get_detail_txs_url(self) -> str:
+        """
+        Determines the update URL of the LedgerModel instance.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:je-detail-txs',
+                       kwargs={
+                           'entity_slug': self.ledger.entity.slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
                        })
 
     def get_unlock_url(self):
