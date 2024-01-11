@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import uuid4
 
 from django.contrib.admin import TabularInline, ModelAdmin
@@ -8,7 +9,7 @@ from django.utils.html import format_html
 from django.utils.timezone import localtime
 
 from django_ledger.admin.coa import ChartOfAccountsInLine
-from django_ledger.models import EntityUnitModel
+from django_ledger.models import EntityUnitModel, ItemTransactionModel, TransactionModel
 from django_ledger.models.entity import EntityModel, EntityManagementModel
 
 
@@ -50,6 +51,7 @@ class EntityUnitModelInLine(TabularInline):
 
 class EntityModelAdmin(ModelAdmin):
     list_display = [
+        'slug',
         'name',
         'accrual_method',
         'last_closing_date',
@@ -108,7 +110,8 @@ class EntityModelAdmin(ModelAdmin):
         EntityManagementInLine
     ]
     actions = [
-        'add_code_of_accounts'
+        'add_code_of_accounts',
+        'populate_random_data'
     ]
 
     class Meta:
@@ -171,6 +174,14 @@ class EntityModelAdmin(ModelAdmin):
                 assign_as_default=False
             )
 
+    def populate_random_data(self, request, queryset):
+        for entity_model in queryset:
+            start_date = localtime() - timedelta(days=180)
+            entity_model.populate_random_data(
+                start_date=start_date,
+                days_forward=180,
+                tx_quantity=25)
+
     def get_coa_count(self, obj):
         return obj.chartofaccountmodel__count
 
@@ -183,3 +194,6 @@ class EntityModelAdmin(ModelAdmin):
             EntityModel.add_root(instance=obj)
             return
         super().save_model(request, obj, form, change)
+
+    def has_delete_permission(self, request, obj=None):
+        return False

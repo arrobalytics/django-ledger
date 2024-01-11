@@ -101,6 +101,15 @@ class PurchaseOrderModelManager(models.Manager):
     A custom defined PurchaseOrderModel Manager.
     """
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+        return qs.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
+
     def for_entity(self, entity_slug, user_model) -> PurchaseOrderModelQuerySet:
         """
         Fetches a QuerySet of PurchaseOrderModel associated with a specific EntityModel & UserModel.
@@ -111,15 +120,10 @@ class PurchaseOrderModelManager(models.Manager):
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, EntityModel):
             qs = qs.filter(entity=entity_slug)
-        elif isinstance(entity_slug, str):
-            qs = qs.filter(entity__slug__exact=entity_slug)
-        return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
+        return qs.filter(entity__slug__exact=entity_slug)
 
 
 class PurchaseOrderModelAbstract(CreateUpdateMixIn,

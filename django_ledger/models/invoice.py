@@ -179,6 +179,15 @@ class InvoiceModelManager(models.Manager):
             'ledger__entity'
         )
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+        return qs.filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
+
     def for_entity(self, entity_slug, user_model) -> InvoiceModelQuerySet:
         """
         Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.
@@ -196,10 +205,7 @@ class InvoiceModelManager(models.Manager):
         InvoiceModelQuerySet
             A Filtered InvoiceModelQuerySet.
         """
-        qs = self.get_queryset().filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__in=[user_model])
-        )
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, EntityModel):
             return qs.filter(ledger__entity=entity_slug)
         elif isinstance(entity_slug, str):

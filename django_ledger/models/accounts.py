@@ -160,6 +160,11 @@ class AccountModelManager(MP_NodeManager):
         """
         return AccountModelQuerySet(self.model).order_by('path')
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+
     # todo: search for uses and pass EntityModel whenever possible.
     def for_entity(self,
                    user_model,
@@ -188,7 +193,7 @@ class AccountModelManager(MP_NodeManager):
         AccountModelQuerySet
             A QuerySet of all requested EntityModel Chart of Accounts.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if select_coa_model:
             qs = qs.select_related('coa_model')
 
@@ -203,11 +208,7 @@ class AccountModelManager(MP_NodeManager):
 
         if coa_slug:
             qs = qs.filter(coa_model__slug__exact=coa_slug)
-
-        return qs.filter(
-            Q(coa_model__entity__admin=user_model) |
-            Q(coa_model__entity__managers__in=[user_model])
-        ).order_by('coa_model')
+        return qs.order_by('coa_model')
 
     def for_entity_available(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
         """

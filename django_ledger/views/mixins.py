@@ -305,6 +305,8 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
             'uuid', 'slug', 'name', 'default_coa', 'admin')
 
     def has_permission(self):
+        if self.request.user.is_superuser:
+            return True
         if self.request.user.is_authenticated:
             has_perm = super().has_permission()
             if not has_perm:

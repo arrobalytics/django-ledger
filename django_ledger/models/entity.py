@@ -114,7 +114,7 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self):
         """Sets the custom queryset as the default."""
-        qs = super().get_queryset()
+        qs = EntityModelQuerySet(self.model).order_by('path')
         return qs.order_by('path').select_related('admin', 'default_coa')
 
     def for_user(self, user_model):
@@ -135,6 +135,8 @@ class EntityModelManager(MP_NodeManager):
                 2. Is a manager.
         """
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(admin=user_model) |
             Q(managers__in=[user_model])
@@ -1351,11 +1353,71 @@ class EntityModelAbstract(MP_Node,
         return account_model_qs.get(role__exact=role)
 
     def create_account(self,
-                       account_model_kwargs: Dict,
+                       code: str,
+                       role: str,
+                       name: str,
+                       balance_type: str,
+                       active: bool,
                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                       raise_exception: bool = True) -> Tuple[ChartOfAccountModel, AccountModel]:
+                       raise_exception: bool = True) -> AccountModel:
         """
         Creates a new AccountModel for the EntityModel.
+
+        Parameters
+        ----------
+        code: str
+            The AccountModel code of the new Account.
+        role: str
+            The choice of role that the new Account belongs to.
+        name: str
+            The name of the new Account.
+        balance_type: str
+            The balance type of the new account. Possible values are 'debit' or 'credit'.
+        active: bool
+            Active status of the new account.
+        coa_model: ChartOfAccountModel, UUID, str
+            The ChartOfAccountsModel UUID, model instance or slug to pull accounts from. Uses default Coa if not
+            provided.
+        raise_exception: bool
+            Raises EntityModelValidationError if ChartOfAccountsModel is not valid for the EntityModel instance.
+
+        Returns
+        -------
+        A tuple of ChartOfAccountModel, AccountModel
+            The ChartOfAccountModel and AccountModel instance just created.
+        """
+        if coa_model:
+            if isinstance(coa_model, UUID):
+                coa_model = self.chartofaccountsmodel_set.get(uuid__exact=coa_model)
+            elif isinstance(coa_model, str):
+                coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
+            elif isinstance(coa_model, ChartOfAccountModel):
+                self.validate_chart_of_accounts_for_entity(
+                    coa_model=coa_model,
+                    raise_exception=raise_exception
+                )
+        else:
+            coa_model = self.default_coa
+
+        account_model = AccountModel(
+            code=code,
+            name=name,
+            role=role,
+            active=active,
+            balance_type=balance_type
+        )
+
+        account_model.clean()
+        return coa_model.create_account(account_model=account_model)
+
+    def create_account_by_kwargs(self,
+                                 account_model_kwargs: Dict,
+                                 coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
+                                 raise_exception: bool = True) -> Tuple[ChartOfAccountModel, AccountModel]:
+        """
+        Creates a new AccountModel for the EntityModel by passing AccountModel KWARGS.
+        This is a legacy method for creating a new AccountModel for the EntityModel.
+        Will be deprecated in favor of create_account().
 
         Parameters
         ----------
@@ -1378,7 +1440,10 @@ class EntityModelAbstract(MP_Node,
             elif isinstance(coa_model, str):
                 coa_model = self.chartofaccountsmodel_set.get(slug__exact=coa_model)
             elif isinstance(coa_model, ChartOfAccountModel):
-                self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=raise_exception)
+                self.validate_chart_of_accounts_for_entity(
+                    coa_model=coa_model,
+                    raise_exception=raise_exception
+                )
         else:
             coa_model = self.default_coa
 
@@ -2692,6 +2757,12 @@ class EntityModelAbstract(MP_Node,
         data_generator.populate_entity()
 
     # URLS ----
+    def get_absolute_url(self):
+        return reverse(viewname='django_ledger:entity-dashboard',
+                       kwargs={
+                           'entity_slug': self.slug
+                       })
+
     def get_dashboard_url(self) -> str:
         """
         The EntityModel Dashboard URL.
@@ -2954,7 +3025,7 @@ class EntityStateModelAbstract(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.__class__.__name__} {self.entity_id}: FY: {self.fiscal_year}, KEY: {self.get_key_display()}'
+        return f'{self.__class__.__name__} {self.entity_model_id}: FY: {self.fiscal_year}, KEY: {self.get_key_display()}'
 
 
 class EntityStateModel(EntityStateModelAbstract):

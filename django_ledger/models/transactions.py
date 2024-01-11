@@ -220,6 +220,8 @@ class TransactionModelAdmin(models.Manager):
             Returns a TransactionModelQuerySet with applied filters.
         """
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
             Q(journal_entry__ledger__entity__managers__in=[user_model])

@@ -236,17 +236,16 @@ pd.DataFrame(coa_map[another_coa_model])
 ## Create Account Model
 - Creating AccountModel into empty "another_coa_model"...
 
-
 ```python
-coa_model, account_model = entity_model.create_account(
-    coa_model=another_coa_model,
-    account_model_kwargs={
-        'code': f'1{str(randint(10000, 99999))}ABC',
-        'role': roles.ASSET_CA_INVENTORY,
-        'name': 'A cool account created from the EntityModel API!',
-        'balance_type': roles.DEBIT,
-        'active': True
-    })
+coa_model, account_model = entity_model.create_account_by_kwargs(
+  coa_model=another_coa_model,
+  account_model_kwargs={
+    'code': f'1{str(randint(10000, 99999))}ABC',
+    'role': roles.ASSET_CA_INVENTORY,
+    'name': 'A cool account created from the EntityModel API!',
+    'balance_type': roles.DEBIT,
+    'active': True
+  })
 ```
 
 

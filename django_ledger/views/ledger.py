@@ -7,7 +7,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.db.models import Count
 from django.urls import reverse
 from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
@@ -23,7 +22,8 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
     MonthlyReportMixIn, DjangoLedgerSecurityMixIn, DateReportMixIn, BaseDateNavigationUrlMixIn,
-    EntityUnitMixIn, PDFReportMixIn)
+    EntityUnitMixIn, PDFReportMixIn
+)
 
 
 class LedgerModelModelViewQuerySetMixIn:
@@ -116,6 +116,16 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
     def get_success_url(self):
         return reverse('django_ledger:ledger-list',
                        kwargs={
+                           'entity_slug': self.kwargs['entity_slug']
+                       })
+
+
+class LedgerModelDetailView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, RedirectView):
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse('django_ledger:je-list',
+                       kwargs={
+                           'ledger_pk': self.kwargs['ledger_pk'],
                            'entity_slug': self.kwargs['entity_slug']
                        })
 

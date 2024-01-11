@@ -111,6 +111,15 @@ class EstimateModelManager(models.Manager):
     A custom defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
     """
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+        return qs.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
+
     def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
         """
         Fetches a QuerySet of EstimateModels associated with a specific EntityModel & UserModel.
@@ -134,19 +143,13 @@ class EstimateModelManager(models.Manager):
         EstimateModelQuerySet
             Returns a EstimateModelQuerySet with applied filters.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, EntityModel):
             return qs.filter(
-                Q(entity=entity_slug) & (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
+                Q(entity=entity_slug)
             )
         return qs.filter(
-            Q(entity__slug__exact=entity_slug) & (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
+            Q(entity__slug__exact=entity_slug)
         )
 
 

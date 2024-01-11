@@ -20,15 +20,6 @@ class EntityModelCreateForm(ModelForm):
     default_coa = BooleanField(required=False, initial=False, label=_('Populate Default CoA'))
     activate_all_accounts = BooleanField(required=False, initial=False, label=_('Activate All Accounts'))
     generate_sample_data = BooleanField(required=False, initial=False, label=_('Fill With Sample Data?'))
-    tx_quantity = IntegerField(required=True, initial=50, label=_('Number of Transaction Loops'),
-                               validators=[
-                                   MinValueValidator(limit_value=0),
-                                   MaxValueValidator(limit_value=100)
-                               ],
-                               widget=TextInput(attrs={
-                                   'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-                               }))
-
 
     def clean_name(self):
         name = self.cleaned_data.get('name')
@@ -200,7 +191,8 @@ class EntityModelUpdateForm(ModelForm):
                     'placeholder': _('Website...')
                 }
             ),
-            'fy_start_month': Select(attrs={
-                'class': 'input'
-            })
+            'fy_start_month': Select(
+                attrs={
+                    'class': 'input'
+                })
         }

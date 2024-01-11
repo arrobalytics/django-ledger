@@ -18,7 +18,13 @@ from django.views.generic import ListView, DetailView, UpdateView, CreateView, R
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
 from django_ledger.io.data_generator import EntityDataGenerator
-from django_ledger.models import (EntityModel, ItemTransactionModel, TransactionModel)
+from django_ledger.models import (
+    EntityModel,
+    ItemTransactionModel,
+    TransactionModel,
+    InvoiceModel,
+    BillModel
+)
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
     MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
@@ -97,7 +103,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
                 start_dttm=localtime() - timedelta(days=30 * 8),
                 capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
-                tx_quantity=cleaned_data['tx_quantity']
+                tx_quantity=50
             )
             entity_generator.populate_entity()
 

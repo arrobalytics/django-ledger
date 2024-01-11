@@ -205,6 +205,8 @@ class BillModelManager(models.Manager):
             Returns a BillModelQuerySet with applied filters.
         """
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(ledger__entity__admin=user_model) |
             Q(ledger__entity__managers__in=[user_model])
@@ -233,20 +235,14 @@ class BillModelManager(models.Manager):
         BillModelQuerySet
             Returns a BillModelQuerySet with applied filters.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, EntityModel):
             return qs.filter(
-                Q(ledger__entity=entity_slug) & (
-                        Q(ledger__entity__admin=user_model) |
-                        Q(ledger__entity__managers__in=[user_model])
-                )
+                Q(ledger__entity=entity_slug)
             )
         elif isinstance(entity_slug, str):
             return qs.filter(
-                Q(ledger__entity__slug__exact=entity_slug) & (
-                        Q(ledger__entity__admin=user_model) |
-                        Q(ledger__entity__managers__in=[user_model])
-                )
+                Q(ledger__entity__slug__exact=entity_slug)
             )
 
 

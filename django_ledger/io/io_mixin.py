@@ -14,6 +14,7 @@ from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
 from zoneinfo import ZoneInfo
 
+from django.conf import settings as global_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Sum, QuerySet
@@ -877,7 +878,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -932,7 +933,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -986,7 +987,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -1058,7 +1059,7 @@ class IOReportMixIn:
         )
 
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             bs_report.create_pdf_report()
             bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename(dt_strfmt=dt_strfmt)))
 

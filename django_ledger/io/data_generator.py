@@ -42,6 +42,7 @@ class EntityDataGenerator(LoggingMixIn):
                  start_dttm: datetime,
                  capital_contribution: Decimal,
                  days_forward: int,
+                 force_new_default_coa: bool = False,
                  tx_quantity: int = 25):
 
         assert isinstance(entity_model, (EntityModel, str)), 'Must pass an instance of EntityModel or str'
@@ -67,6 +68,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.default_coa: Optional[ChartOfAccountModel] = None
         self.capital_contribution = capital_contribution
         self.user_model = user_model
+        self.force_new_default_coa = force_new_default_coa
 
         self.is_accruable_probability = 0.2
         self.is_paid_probability = 0.90
@@ -97,7 +99,7 @@ class EntityDataGenerator(LoggingMixIn):
     def get_logger_name(self):
         return self.entity_model.slug
 
-    def populate_entity(self):
+    def populate_entity(self, force_populate: bool = False):
 
         self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
@@ -105,9 +107,10 @@ class EntityDataGenerator(LoggingMixIn):
             user_model=self.user_model
         )
 
-        if txs_qs.count() > 0:
+        if txs_qs.count() > 0 and not force_populate:
             raise ValidationError(
-                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
+                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions'
+            )
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
@@ -156,9 +159,14 @@ class EntityDataGenerator(LoggingMixIn):
 
     def create_coa(self):
         entity_model = self.entity_model
-        coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+
+        if not self.entity_model.has_default_coa() or self.force_new_default_coa:
+            coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+        else:
+            coa_model = entity_model.get_default_coa()
+
         entity_model.populate_default_coa(coa_model=coa_model, activate_accounts=True)
-        self.default_coa = entity_model.default_coa
+        self.default_coa = coa_model
 
     def create_entity_units(self, nb_units: int = None):
         self.logger.info(f'Creating entity units...')

@@ -92,6 +92,8 @@ class LedgerModelManager(models.Manager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(entity__admin=user_model) |
             Q(entity__managers__in=[user_model])
@@ -114,21 +116,13 @@ class LedgerModelManager(models.Manager):
         LedgerModelQuerySet
             A Filtered LedgerModelQuerySet.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity=entity_slug) &
-                (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
+                Q(entity=entity_slug)
             )
         return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
+            Q(entity__slug__exact=entity_slug)
         )
 
 
@@ -509,9 +503,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         str
             URL as a string.
         """
-        return reverse('django_ledger:ledger-update',
+        return reverse(viewname='django_ledger:je-list',
                        kwargs={
-                           # pylint: disable=no-member
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
@@ -545,6 +538,21 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                        kwargs={
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
+                       })
+
+    def get_list_url(self) -> str:
+        """
+        Determines the list URL of the LedgerModel instances.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': self.entity.slug
                        })
 
     def get_balance_sheet_url(self):
