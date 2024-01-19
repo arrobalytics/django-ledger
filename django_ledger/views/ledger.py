@@ -17,7 +17,6 @@ from django.views.generic import (
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
-from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
@@ -42,7 +41,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
-    paginate_by = 15
+    paginate_by = 30
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
@@ -106,10 +105,8 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
         )
 
     def form_valid(self, form):
-        entity = EntityModel.objects.for_user(
-            user_model=self.request.user).get(slug__exact=self.kwargs['entity_slug'])
         instance = form.save(commit=False)
-        instance.entity = entity
+        instance.entity = self.AUTHORIZED_ENTITY_MODEL
         self.object = form.save()
         return super().form_valid(form)
 

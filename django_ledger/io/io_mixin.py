@@ -109,13 +109,6 @@ def validate_io_date(
         return
 
     if isinstance(dt, date):
-        # dt = make_aware(
-        #     value=datetime.combine(
-        #         dt,
-        #         datetime.min.time()
-        #     ),
-        #     timezone=ZoneInfo('UTC')
-        # )
         return dt
 
     elif isinstance(dt, datetime):
@@ -745,11 +738,28 @@ class IODatabaseMixIn:
         JournalEntryModel = lazy_loader.get_journal_entry_model()
         TransactionModel = lazy_loader.get_txs_model()
 
-        # if isinstance(self, lazy_loader.get_entity_model()):
-
         # Validates that credits/debits balance.
         check_tx_balance(je_txs, perform_correction=False)
         je_timestamp = validate_io_date(dt=je_timestamp)
+
+        entity_model = self.get_entity_model_from_io()
+
+        if isinstance(je_timestamp, datetime):
+            if entity_model.last_closing_date >= je_timestamp.date():
+                raise IOValidationError(
+                    message=_(f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                )
+        elif isinstance(je_timestamp, date):
+            if entity_model.last_closing_date >= je_timestamp:
+                raise IOValidationError(
+                    message=_(f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                )
+
+        if self.is_ledger_model():
+            if self.is_locked():
+                raise IOValidationError(
+                    message=_('Cannot commit on locked ledger')
+                )
 
         # if calling from EntityModel must pass an instance of LedgerModel...
         if all([

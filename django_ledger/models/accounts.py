@@ -44,8 +44,8 @@ from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOIC
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
                                     ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
                                     ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA)
-from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
 
 DEBIT = 'debit'

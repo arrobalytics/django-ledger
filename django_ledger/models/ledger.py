@@ -54,9 +54,42 @@ class LedgerModelQuerySet(models.QuerySet):
     Custom defined LedgerModel QuerySet.
     """
 
+    def locked(self):
+        """
+        Filters the QuerySet to only locked LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(locked=True)
+
+    def unlocked(self):
+        """
+        Filters the QuerySet to only un-locked LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(locked=False)
+
     def posted(self):
         """
         Filters the QuerySet to only posted LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(posted=True)
+
+    def unposted(self):
+        """
+        Filters the QuerySet to only un-posted LedgerModel.
 
         Returns
         -------
@@ -73,7 +106,8 @@ class LedgerModelQuerySet(models.QuerySet):
 
     def current(self):
         return self.filter(
-            earliest_timestamp__gt=F('entity__last_closing_date')
+            Q(earliest_timestamp__gt=F('entity__last_closing_date'))
+            | Q(earliest_timestamp__isnull=True)
         )
 
 
@@ -136,6 +170,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         This is a unique primary key generated for the table. The default value of this field is uuid4().
     name: str
         Human-readable name of the LedgerModel. Maximum 150 characters.
+    ledger_xid: str
+        A unique user-defined identifier for the LedgerModel. Unique for the Entity Model.
     entity: EntityModel
         The EntityModel associated with the LedgerModel instance.
     posted: bool
@@ -147,6 +183,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     """
     _WRAPPED_MODEL_KEY = 'wrapped_model'
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    ledger_xid = models.SlugField(allow_unicode=True, max_length=150, null=True, blank=True,
+                                  verbose_name=_('Ledger Slug'),
+                                  help_text=_('User Defined Ledger ID'))
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
 
     # todo: rename to entity_model...
@@ -173,6 +212,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             models.Index(fields=['entity']),
             models.Index(fields=['entity', 'posted']),
             models.Index(fields=['entity', 'locked']),
+        ]
+        unique_together = [
+            ('entity', 'ledger_xid')
         ]
 
     def __str__(self):

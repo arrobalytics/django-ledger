@@ -6,6 +6,8 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
+from django_ledger.io.io_digest import *
 from django_ledger.io.io_mixin import *
 from django_ledger.io.ratios import *
 from django_ledger.io.roles import *
+# from django_ledger.io.io_library import IOLibrary

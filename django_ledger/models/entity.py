@@ -27,7 +27,7 @@ from decimal import Decimal
 from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple, Union, Optional, List, Dict
+from typing import Tuple, Union, Optional, List, Dict, Set
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
@@ -42,8 +42,6 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
-from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
-
 from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
 from django_ledger.io.io_mixin import IOMixIn
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
@@ -59,6 +57,7 @@ from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
+from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 UserModel = get_user_model()
 
@@ -892,8 +891,15 @@ class EntityModelAbstract(MP_Node,
         return user_model.id == self.admin_id
 
     # #### LEDGER MANAGEMENT....
-    def create_ledger(self, name):
-        return self.ledgermodel_set.create(name=name)
+    def create_ledger(self, name: str, ledger_xid: Optional[str] = None, posted: bool = False, commit: bool = True):
+        if commit:
+            return self.ledgermodel_set.create(name=name, ledger_xid=ledger_xid)
+        return LedgerModel(
+            entity=self,
+            posted=posted,
+            name=name,
+            ledger_xid=ledger_xid
+        )
 
     # #### SLUG GENERATION ###
     @staticmethod
@@ -1295,7 +1301,7 @@ class EntityModelAbstract(MP_Node,
         return self.get_coa_accounts(active=active, order_by=order_by)
 
     def get_accounts_with_codes(self,
-                                code_list: Union[str, List[str]],
+                                code_list: Union[str, List[str], Set[str]],
                                 coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
                                 ) -> AccountModelQuerySet:
         """

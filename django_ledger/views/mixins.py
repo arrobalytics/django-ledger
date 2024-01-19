@@ -306,8 +306,14 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
 
     def has_permission(self):
         if self.request.user.is_superuser:
+            if 'entity_slug' in self.kwargs:
+                try:
+                    entity_model_qs = self.get_authorized_entity_queryset()
+                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs['entity_slug'])
+                except ObjectDoesNotExist:
+                    return False
             return True
-        if self.request.user.is_authenticated:
+        elif self.request.user.is_authenticated:
             has_perm = super().has_permission()
             if not has_perm:
                 return False
