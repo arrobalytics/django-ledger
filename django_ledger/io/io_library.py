@@ -18,10 +18,26 @@ from django_ledger.models.ledger import LedgerModel, LedgerModelQuerySet
 
 @dataclass
 class TransactionInstructionItem:
+    """
+    A class to represent a transaction instruction used during the development of transaction blueprints.
+
+    Attributes
+    ----------
     account_code: str
+        The account code of the AccountModel as a String.
     amount: Decimal
+        The transaction amount as a Decimal value. Will be rounded to the nearest decimal place.
     tx_type: str
+        A choice of 'debit' or 'credit' transaction.
     description: str
+        Description of the transaction.
+    account_model: AccountModel
+        The resolved account model for the transaction. Not to be modified. Defaults to None.
+    """
+    account_code: str
+    amount: Union[Decimal, float]
+    tx_type: str
+    description: Optional[str]
     account_model: Optional[AccountModel] = None
 
     def to_dict(self) -> Dict:
