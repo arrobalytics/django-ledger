@@ -4,6 +4,15 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+This module provides the building block interface for Django Ledger. The classes and functions contained in this module
+provide an interface to Django Ledger to create and manage Transactions into the Database. It also provides an
+optimized interface to push as much work as possible to the database without having to pull transactions from the
+database into the Python memory.
+
+The database records the individual transactions associated with each Journal Entry. However, this interface aggregates
+transactions during the digest method based on a specific request. The Python interpreter is responsible for applying
+accounting rules to the transactions associated with each Journal Entry so the appropriate account balances are computed.
 """
 from collections import namedtuple
 from dataclasses import dataclass
@@ -744,16 +753,19 @@ class IODatabaseMixIn:
 
         entity_model = self.get_entity_model_from_io()
 
-        if isinstance(je_timestamp, datetime):
-            if entity_model.last_closing_date >= je_timestamp.date():
-                raise IOValidationError(
-                    message=_(f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
-                )
-        elif isinstance(je_timestamp, date):
-            if entity_model.last_closing_date >= je_timestamp:
-                raise IOValidationError(
-                    message=_(f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
-                )
+        if entity_model.last_closing_date:
+            if isinstance(je_timestamp, datetime):
+                if entity_model.last_closing_date >= je_timestamp.date():
+                    raise IOValidationError(
+                        message=_(
+                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                    )
+            elif isinstance(je_timestamp, date):
+                if entity_model.last_closing_date >= je_timestamp:
+                    raise IOValidationError(
+                        message=_(
+                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                    )
 
         if self.is_ledger_model():
             if self.is_locked():
@@ -1039,10 +1051,6 @@ class IOReportMixIn:
             from_date=from_date,
             to_date=to_date,
             user_model=user_model,
-            balance_sheet_statement=True,
-            income_statement=True,
-            cash_flow_statement=True,
-            as_io_digest=True,
             **kwargs
         )
 

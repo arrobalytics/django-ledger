@@ -4,6 +4,7 @@ from decimal import Decimal
 from itertools import chain
 from typing import Union, Dict, Callable, Optional
 from uuid import UUID
+from datetime import date, datetime
 
 from django.core.exceptions import ValidationError
 from django.db.models import Q
@@ -144,7 +145,10 @@ class IOCursor:
     def is_committed(self) -> bool:
         return self.__COMMITTED
 
-    def commit(self, post_new_ledgers: bool = False, post_journal_entries: bool = False):
+    def commit(self,
+               je_timestamp: Optional[Union[datetime, date, str]] = None,
+               post_new_ledgers: bool = False,
+               post_journal_entries: bool = False):
         if self.is_committed():
             raise IOCursorValidationError(
                 message=_('Transactions already committed')
@@ -206,7 +210,7 @@ class IOCursor:
 
             # where the magic happens...
             je, txs_models = ledger_model.commit_txs(
-                je_timestamp=localtime(),
+                je_timestamp=je_timestamp if je_timestamp else localtime(),
                 je_txs=je_txs,
                 je_posted=post_journal_entries
             )
@@ -284,7 +288,7 @@ class IOLibrary:
     def _check_func_name(self, name) -> bool:
         return name in self.registry
 
-    def register_blueprint(self, func: Callable):
+    def register(self, func: Callable):
         self.registry[func.__name__] = func
 
     def get_blueprint(self, name: str) -> Callable:

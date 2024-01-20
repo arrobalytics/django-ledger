@@ -893,7 +893,7 @@ class EntityModelAbstract(MP_Node,
     # #### LEDGER MANAGEMENT....
     def create_ledger(self, name: str, ledger_xid: Optional[str] = None, posted: bool = False, commit: bool = True):
         if commit:
-            return self.ledgermodel_set.create(name=name, ledger_xid=ledger_xid)
+            return self.ledgermodel_set.create(name=name, ledger_xid=ledger_xid, posted=posted)
         return LedgerModel(
             entity=self,
             posted=posted,
