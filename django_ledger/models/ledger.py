@@ -38,7 +38,7 @@ from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.io_mixin import IOMixIn
+from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 
@@ -54,9 +54,42 @@ class LedgerModelQuerySet(models.QuerySet):
     Custom defined LedgerModel QuerySet.
     """
 
+    def locked(self):
+        """
+        Filters the QuerySet to only locked LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(locked=True)
+
+    def unlocked(self):
+        """
+        Filters the QuerySet to only un-locked LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(locked=False)
+
     def posted(self):
         """
         Filters the QuerySet to only posted LedgerModel.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A QuerySet with applied filters.
+        """
+        return self.filter(posted=True)
+
+    def unposted(self):
+        """
+        Filters the QuerySet to only un-posted LedgerModel.
 
         Returns
         -------
@@ -73,7 +106,8 @@ class LedgerModelQuerySet(models.QuerySet):
 
     def current(self):
         return self.filter(
-            earliest_timestamp__gt=F('entity__last_closing_date')
+            Q(earliest_timestamp__gt=F('entity__last_closing_date'))
+            | Q(earliest_timestamp__isnull=True)
         )
 
 
@@ -92,6 +126,8 @@ class LedgerModelManager(models.Manager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(entity__admin=user_model) |
             Q(entity__managers__in=[user_model])
@@ -114,21 +150,13 @@ class LedgerModelManager(models.Manager):
         LedgerModelQuerySet
             A Filtered LedgerModelQuerySet.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity=entity_slug) &
-                (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
+                Q(entity=entity_slug)
             )
         return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
+            Q(entity__slug__exact=entity_slug)
         )
 
 
@@ -142,6 +170,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         This is a unique primary key generated for the table. The default value of this field is uuid4().
     name: str
         Human-readable name of the LedgerModel. Maximum 150 characters.
+    ledger_xid: str
+        A unique user-defined identifier for the LedgerModel. Unique for the Entity Model.
     entity: EntityModel
         The EntityModel associated with the LedgerModel instance.
     posted: bool
@@ -153,6 +183,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     """
     _WRAPPED_MODEL_KEY = 'wrapped_model'
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    ledger_xid = models.SlugField(allow_unicode=True, max_length=150, null=True, blank=True,
+                                  verbose_name=_('Ledger Slug'),
+                                  help_text=_('User Defined Ledger ID'))
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
 
     # todo: rename to entity_model...
@@ -179,6 +212,9 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             models.Index(fields=['entity']),
             models.Index(fields=['entity', 'posted']),
             models.Index(fields=['entity', 'locked']),
+        ]
+        unique_together = [
+            ('entity', 'ledger_xid')
         ]
 
     def __str__(self):
@@ -509,9 +545,8 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         str
             URL as a string.
         """
-        return reverse('django_ledger:ledger-update',
+        return reverse(viewname='django_ledger:je-list',
                        kwargs={
-                           # pylint: disable=no-member
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
                        })
@@ -545,6 +580,21 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                        kwargs={
                            'entity_slug': self.entity.slug,
                            'ledger_pk': self.uuid
+                       })
+
+    def get_list_url(self) -> str:
+        """
+        Determines the list URL of the LedgerModel instances.
+        Results in additional Database query if entity field is not selected in QuerySet.
+
+        Returns
+        -------
+        str
+            URL as a string.
+        """
+        return reverse('django_ledger:ledger-list',
+                       kwargs={
+                           'entity_slug': self.entity.slug
                        })
 
     def get_balance_sheet_url(self):

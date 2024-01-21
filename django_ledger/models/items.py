@@ -879,14 +879,19 @@ class ItemTransactionModelQuerySet(models.QuerySet):
 
 class ItemTransactionModelManager(models.Manager):
 
-    def for_entity(self, user_model, entity_slug):
+    def for_user(self, user_model):
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
-            Q(item_model__entity__slug__exact=entity_slug) &
-            (
-                    Q(item_model__entity__admin=user_model) |
-                    Q(item_model__entity__managers__in=[user_model])
-            )
+            Q(item_model__entity__admin=user_model) |
+            Q(item_model__entity__managers__in=[user_model])
+        )
+
+    def for_entity(self, user_model, entity_slug):
+        qs = self.for_user(user_model)
+        return qs.filter(
+            Q(item_model__entity__slug__exact=entity_slug)
         )
 
     def for_bill(self, user_model, entity_slug, bill_pk):

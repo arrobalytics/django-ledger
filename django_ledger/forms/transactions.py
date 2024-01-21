@@ -10,7 +10,7 @@ Michael Noel <noel.michael87@gmail.com>
 from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import check_tx_balance
+from django_ledger.io.io_core import check_tx_balance
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel

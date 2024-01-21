@@ -107,6 +107,8 @@ class CustomerModelManager(models.Manager):
             >>> customer_model_qs = CustomerModel.objects.for_user(user_model=request_user)
         """
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(entity__admin=user_model) |
             Q(entity__managers__in=[user_model])
@@ -135,22 +137,14 @@ class CustomerModelManager(models.Manager):
         CustomerModelQueryset
             A filtered CustomerModel QuerySet.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
 
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity_model=entity_slug) &
-                (
-                        Q(entity_model__admin=user_model) |
-                        Q(entity_model__managers__in=[user_model])
-                )
+                Q(entity_model=entity_slug)
             )
         return qs.filter(
-            Q(entity_model__slug__exact=entity_slug) &
-            (
-                    Q(entity_model__admin=user_model) |
-                    Q(entity_model__managers__in=[user_model])
-            )
+            Q(entity_model__slug__exact=entity_slug)
         )
 
 

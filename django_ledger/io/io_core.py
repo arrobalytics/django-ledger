@@ -4,6 +4,15 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+This module provides the building block interface for Django Ledger. The classes and functions contained in this module
+provide an interface to Django Ledger to create and manage Transactions into the Database. It also provides an
+optimized interface to push as much work as possible to the database without having to pull transactions from the
+database into the Python memory.
+
+The database records the individual transactions associated with each Journal Entry. However, this interface aggregates
+transactions during the digest method based on a specific request. The Python interpreter is responsible for applying
+accounting rules to the transactions associated with each Journal Entry so the appropriate account balances are computed.
 """
 from collections import namedtuple
 from dataclasses import dataclass
@@ -14,6 +23,7 @@ from random import choice
 from typing import List, Set, Union, Tuple, Optional, Dict
 from zoneinfo import ZoneInfo
 
+from django.conf import settings as global_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db.models import Sum, QuerySet
@@ -26,10 +36,10 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
-from django_ledger.io.io_context import (
-    RoleContextManager, GroupContextManager, ActivityContextManager,
-    BalanceSheetStatementContextManager, IncomeStatementContextManager,
-    CashFlowStatementContextManager
+from django_ledger.io.io_middleware import (
+    AccountRoleIOMiddleware, AccountGroupIOMiddleware, JEActivityIOMiddleware,
+    BalanceSheetIOMiddleware, IncomeStatementIOMiddleware,
+    CashFlowStatementIOMiddleware
 )
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
@@ -108,13 +118,6 @@ def validate_io_date(
         return
 
     if isinstance(dt, date):
-        # dt = make_aware(
-        #     value=datetime.combine(
-        #         dt,
-        #         datetime.min.time()
-        #     ),
-        #     timezone=ZoneInfo('UTC')
-        # )
         return dt
 
     elif isinstance(dt, datetime):
@@ -636,7 +639,7 @@ class IODatabaseMixIn:
         io_state['by_activity'] = by_activity
         io_state['by_tx_type'] = by_tx_type
 
-        io_result = self.python_digest(
+        io_result: IOResult = self.python_digest(
             user_model=user_model,
             accounts=accounts,
             role=role,
@@ -657,8 +660,10 @@ class IODatabaseMixIn:
         io_state['io_result'] = io_result
         io_state['accounts'] = io_result.accounts_digest
 
+        # IO Middleware...
+
         if process_roles:
-            roles_mgr = RoleContextManager(
+            roles_mgr = AccountRoleIOMiddleware(
                 io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
@@ -673,7 +678,7 @@ class IODatabaseMixIn:
             income_statement,
             cash_flow_statement
         ]):
-            group_mgr = GroupContextManager(
+            group_mgr = AccountGroupIOMiddleware(
                 io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
@@ -693,19 +698,19 @@ class IODatabaseMixIn:
             io_state = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(io_data=io_state, by_unit=by_unit, by_period=by_period)
+            activity_manager = JEActivityIOMiddleware(io_data=io_state, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_state)
+            balance_sheet_mgr = BalanceSheetIOMiddleware(io_data=io_state)
             io_state = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(io_data=io_state)
+            income_statement_mgr = IncomeStatementIOMiddleware(io_data=io_state)
             io_state = income_statement_mgr.digest()
 
         if cash_flow_statement:
-            cfs = CashFlowStatementContextManager(io_data=io_state)
+            cfs = CashFlowStatementIOMiddleware(io_data=io_state)
             io_state = cfs.digest()
 
         return IODigestContextManager(io_state=io_state)
@@ -744,11 +749,31 @@ class IODatabaseMixIn:
         JournalEntryModel = lazy_loader.get_journal_entry_model()
         TransactionModel = lazy_loader.get_txs_model()
 
-        # if isinstance(self, lazy_loader.get_entity_model()):
-
         # Validates that credits/debits balance.
         check_tx_balance(je_txs, perform_correction=False)
         je_timestamp = validate_io_date(dt=je_timestamp)
+
+        entity_model = self.get_entity_model_from_io()
+
+        if entity_model.last_closing_date:
+            if isinstance(je_timestamp, datetime):
+                if entity_model.last_closing_date >= je_timestamp.date():
+                    raise IOValidationError(
+                        message=_(
+                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                    )
+            elif isinstance(je_timestamp, date):
+                if entity_model.last_closing_date >= je_timestamp:
+                    raise IOValidationError(
+                        message=_(
+                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
+                    )
+
+        if self.is_ledger_model():
+            if self.is_locked():
+                raise IOValidationError(
+                    message=_('Cannot commit on locked ledger')
+                )
 
         # if calling from EntityModel must pass an instance of LedgerModel...
         if all([
@@ -877,7 +902,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -932,7 +957,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -986,7 +1011,7 @@ class IOReportMixIn:
             report_subtitle=subtitle
         )
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             filename = report.get_pdf_filename() if not filename else filename
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
@@ -1028,10 +1053,6 @@ class IOReportMixIn:
             from_date=from_date,
             to_date=to_date,
             user_model=user_model,
-            balance_sheet_statement=True,
-            income_statement=True,
-            cash_flow_statement=True,
-            as_io_digest=True,
             **kwargs
         )
 
@@ -1058,7 +1079,7 @@ class IOReportMixIn:
         )
 
         if save_pdf:
-            base_dir = Path(settings.BASE_DIR) if not filepath else Path(filepath)
+            base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
             bs_report.create_pdf_report()
             bs_report.output(base_dir.joinpath(bs_report.get_pdf_filename(dt_strfmt=dt_strfmt)))
 

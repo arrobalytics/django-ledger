@@ -44,8 +44,8 @@ from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOIC
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
                                     ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
                                     ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA)
-from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
 
 DEBIT = 'debit'
@@ -160,6 +160,11 @@ class AccountModelManager(MP_NodeManager):
         """
         return AccountModelQuerySet(self.model).order_by('path')
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+
     # todo: search for uses and pass EntityModel whenever possible.
     def for_entity(self,
                    user_model,
@@ -188,7 +193,7 @@ class AccountModelManager(MP_NodeManager):
         AccountModelQuerySet
             A QuerySet of all requested EntityModel Chart of Accounts.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if select_coa_model:
             qs = qs.select_related('coa_model')
 
@@ -203,11 +208,7 @@ class AccountModelManager(MP_NodeManager):
 
         if coa_slug:
             qs = qs.filter(coa_model__slug__exact=coa_slug)
-
-        return qs.filter(
-            Q(coa_model__entity__admin=user_model) |
-            Q(coa_model__entity__managers__in=[user_model])
-        ).order_by('coa_model')
+        return qs.order_by('coa_model')
 
     def for_entity_available(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
         """

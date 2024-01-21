@@ -4,8 +4,18 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
-"""
 
+This is a random data generator module used during the testing of the API and for Educational purposes.
+
+The class EntityDataGenerator will only work on new entities that contain no Transactions. This is with the intention
+of avoiding unintentional commingling with an actual EntityModel with production data and the data generated randomly.
+
+This class will conveniently create a Chart of Accounts and populate the database will Bills, Invoices and various
+other Transactions. The user will be able to immediately browse the Entity data by clicking on the newly created entity's
+details page.
+
+All data generated is random and fake, not related to any other entity data.
+"""
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 from itertools import groupby
@@ -15,12 +25,13 @@ from typing import Union, Optional
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.timezone import localtime, localdate
+from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
                                     LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
 from django_ledger.models import (EntityModel, TransactionModel, VendorModel, CustomerModel,
-                                  EntityUnitModel, BankAccountModel, LedgerModel, UnitOfMeasureModel, ItemModel,
+                                  EntityUnitModel, BankAccountModel, UnitOfMeasureModel, ItemModel,
                                   BillModel, ItemTransactionModel, InvoiceModel,
                                   EstimateModel, LoggingMixIn, InvoiceModelValidationError, ChartOfAccountModel)
 from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
@@ -34,7 +45,28 @@ except ImportError:
     FAKER_IMPORTED = False
 
 
+class EntityModelValidationError(ValidationError):
+    pass
+
+
 class EntityDataGenerator(LoggingMixIn):
+    """
+    A random data generator for Entity Models. Requires a user to me the entity model administrator.
+
+    Attributes
+    ----------
+    user_model : UserModel
+        The Django user model that administers the entity.
+    entity_model : EntityModel
+        The Entity model to populate.
+    start_dttm: datetime
+        The start datetime for new transactions. All transactions will be posted no earlier than this date.
+    capital_contribution: Decimal
+        The initial capital contribution amount for the Entity Model. This will help fund the entity.
+    days_forward: int
+        The number of days to span from the start_dttm for new transactions.
+
+    """
 
     def __init__(self,
                  user_model,
@@ -49,6 +81,11 @@ class EntityDataGenerator(LoggingMixIn):
 
         if not FAKER_IMPORTED:
             raise ImproperlyConfigured('Must install Faker library to generate random data.')
+
+        if entity_model.admin != user_model:
+            raise EntityModelValidationError(
+                message=_(f'User {user_model} must have admin privileges for entity model {entity_model}.')
+            )
 
         self.fk = Faker(['en_US'])
         self.fk.add_provider(company)
@@ -97,7 +134,7 @@ class EntityDataGenerator(LoggingMixIn):
     def get_logger_name(self):
         return self.entity_model.slug
 
-    def populate_entity(self):
+    def populate_entity(self, force_populate: bool = False):
 
         self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
@@ -105,9 +142,10 @@ class EntityDataGenerator(LoggingMixIn):
             user_model=self.user_model
         )
 
-        if txs_qs.count() > 0:
-            raise ValidationError(
-                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions')
+        if txs_qs.count() > 0 and not force_populate:
+            raise EntityModelValidationError(
+                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions'
+            )
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')
@@ -156,9 +194,14 @@ class EntityDataGenerator(LoggingMixIn):
 
     def create_coa(self):
         entity_model = self.entity_model
-        coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+
+        if not self.entity_model.has_default_coa():
+            coa_model = entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
+        else:
+            coa_model = entity_model.get_default_coa()
+
         entity_model.populate_default_coa(coa_model=coa_model, activate_accounts=True)
-        self.default_coa = entity_model.default_coa
+        self.default_coa = coa_model
 
     def create_entity_units(self, nb_units: int = None):
         self.logger.info(f'Creating entity units...')

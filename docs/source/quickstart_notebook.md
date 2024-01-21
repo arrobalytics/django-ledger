@@ -30,6 +30,7 @@ from django_ledger.models.bill import BillModel
 from django_ledger.models.estimate import EstimateModel
 from django.contrib.auth import get_user_model
 from django_ledger.io import roles, DEBIT, CREDIT
+from django_ledger.io.io_library import IOBluePrint, IOLibrary
 ```
 
 # Get Your Entity Administrator UserModel
@@ -238,15 +239,13 @@ pd.DataFrame(coa_map[another_coa_model])
 
 
 ```python
-coa_model, account_model = entity_model.create_account(
+account_model = entity_model.create_account(
     coa_model=another_coa_model,
-    account_model_kwargs={
-        'code': f'1{str(randint(10000, 99999))}ABC',
-        'role': roles.ASSET_CA_INVENTORY,
-        'name': 'A cool account created from the EntityModel API!',
-        'balance_type': roles.DEBIT,
-        'active': True
-    })
+    code=f'1{str(randint(10000, 99999))}',
+    role=roles.ASSET_CA_INVENTORY,
+    name='A cool account created from the EntityModel API!',
+    balance_type=roles.DEBIT,
+    active=True)
 ```
 
 
@@ -271,98 +270,88 @@ pd.DataFrame(another_coa_accounts_qs)
 
 
 ```python
-ledger_model = entity_model.create_ledger(name='My October 2023 Ledger')
+ledger_model = entity_model.create_ledger(name='My October 2023 Ledger', posted=True)
 ```
 
-### Let's create our first transaction.
+## Create a Library
 
 
 ```python
-account_qs = entity_model.get_accounts_with_codes(
-    code_list=[
-        '1010',  # cash
-        '1200',  # inventory
-        '4010',  # income
-        '5010',  # COGS
-    ]
+library = IOLibrary(name='quickstart-library')
+```
+
+## Create and Register a BluePrint
+
+
+```python
+@library.register
+def sale_blueprint(
+        sale_amount,
+        contribution_margin_percent: float,
+        description: str = None
+) -> IOBluePrint:
+    blueprint = IOBluePrint()
+    cogs_amount = (1 - contribution_margin_percent) * sale_amount
+    blueprint.debit(account_code='1010', amount=sale_amount, description=description)
+    blueprint.credit(account_code='4010', amount=sale_amount, description=description)
+    blueprint.credit(account_code='1200', amount=cogs_amount, description=description)
+    blueprint.debit(account_code='5010', amount=cogs_amount, description=description)
+    return blueprint
+```
+
+## Get a Cursor
+
+
+```python
+cursor = library.get_cursor(entity_model=entity_model, user_model=user_model)
+```
+
+## Dispatch Some Instructions
+
+
+```python
+cursor.dispatch('sale_blueprint',
+                ledger_model='ledger-test-1',
+                sale_amount=120.345,
+                contribution_margin_percent=0.25,
+                description='so cool')
+cursor.dispatch('sale_blueprint',
+                ledger_model='ledger-test-1',
+                sale_amount=12.345,
+                contribution_margin_percent=0.2,
+                description='so cool')
+cursor.dispatch('sale_blueprint',
+                ledger_model=ledger_model,
+                sale_amount=34.455,
+                contribution_margin_percent=0.13,
+                description='so cool')
+cursor.dispatch('sale_blueprint',
+                ledger_model='ledger-test-12',
+                sale_amount=90.43,
+                contribution_margin_percent=0.17,
+                description='so cool')
+```
+
+## Commit Your Instructions
+
+Not recommended to post both ledger and journal entries. Posted transactions will immediately hit the books.
+**result** contains resulting ledger models, journal entries and transactions fro the committed 
+
+
+```python
+result = cursor.commit(
+    post_new_ledgers=True,
+    post_journal_entries=True,
+    je_timestamp='2023-12-02 12:00'
 )
-pd.DataFrame(account_qs)
 ```
 
 
 ```python
-TXS = [
-    {
-        'account': account_qs.get(code='1010'), # cash account...
-        'amount': Decimal('1500'),
-        'tx_type': DEBIT,
-        'description': 'A credit card sale cash.',
-    },
-    {
-        'account': account_qs.get(code='4010'), # sales income account...
-        'amount': Decimal('1500'),
-        'tx_type': CREDIT,
-        'description': 'A credit card sale income.',
-    },
-    {
-        'account': account_qs.get(code='1200'), # inventory reduction...
-        'amount': Decimal('1000'),
-        'tx_type': CREDIT,
-        'description': 'A credit card sale inventory.',
-    },
-    {
-        'account': account_qs.get(code='5010'), # COGS recognition...
-        'amount': Decimal('1000'),
-        'tx_type': DEBIT,
-        'description': 'A credit card sale COGS.',
-    },
-]
+# result
 ```
 
-
-```python
-timestamp = datetime(2023, 10, 3, 12, 30, tzinfo=ZoneInfo('US/Eastern'))
-je_model, txs_models = ledger_model.commit_txs(
-    je_timestamp=timestamp,
-    je_posted=True, # Un-posted Journal Entries will not hit the books...
-    je_origin='notebook', # optional, user-defined origin for tracking and querying...
-    je_desc='My first transaction',
-    je_txs=TXS
-)
-```
-
-Journal Entry is Posted...
-
-
-```python
-je_model.is_posted()
-```
-
-Transaction Models...
-
-
-```python
-txs_models
-```
-
-Ledger Model is not posted yet...
-
-
-```python
-ledger_model.is_posted()
-```
-
-
-```python
-ledger_model.post(commit=True)
-```
-
-
-```python
-ledger_model.is_posted()
-```
-
-### Get Financial Statement Report Data
+### Get Financial Statement Report Data fro Ledger Model
 
 Balance Sheet
 

@@ -42,14 +42,20 @@ class ImportJobModelManager(models.Manager):
             'ledger_model'
         )
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_user(self, user_model):
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
-            Q(bank_account_model__entity_model__slug__exact=entity_slug) &
-            (
-                    Q(bank_account_model__entity_model__admin=user_model) |
-                    Q(bank_account_model__entity_model__managers__in=[user_model])
-            )
+            Q(bank_account_model__entity_model__admin=user_model) |
+            Q(bank_account_model__entity_model__managers__in=[user_model])
+
+        )
+
+    def for_entity(self, entity_slug: str, user_model):
+        qs = self.for_user(user_model)
+        return qs.filter(
+            Q(bank_account_model__entity_model__slug__exact=entity_slug)
         )
 
 

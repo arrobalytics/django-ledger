@@ -12,7 +12,7 @@ from django.test import TestCase
 from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
-from django_ledger.io.data_generator import EntityDataGenerator
+from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet
 
 UserModel = get_user_model()

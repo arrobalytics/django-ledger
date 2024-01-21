@@ -26,7 +26,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import validate_io_date
+from django_ledger.io.io_core import validate_io_date
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
@@ -220,6 +220,8 @@ class TransactionModelAdmin(models.Manager):
             Returns a TransactionModelQuerySet with applied filters.
         """
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
             Q(journal_entry__ledger__entity__managers__in=[user_model])

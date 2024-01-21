@@ -1,3 +1,10 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+    * Miguel Sanda <msanda@arrobalytics.com>
+"""
 from collections import defaultdict
 from itertools import groupby, chain
 
@@ -9,7 +16,7 @@ from django_ledger.models.utils import LazyLoader, lazy_loader
 lazy_importer = LazyLoader()
 
 
-class RoleContextManager:
+class AccountRoleIOMiddleware:
 
     def __init__(self,
                  io_data: dict,
@@ -75,7 +82,7 @@ class RoleContextManager:
                                 acc['balance'] for acc in acc_list if acc['unit_uuid'] == key[0])
 
 
-class GroupContextManager:
+class AccountGroupIOMiddleware:
     GROUP_ACCOUNTS_KEY = 'group_account'
     GROUP_BALANCE_KEY = 'group_balance'
     GROUP_BALANCE_BY_UNIT_KEY = 'group_balance_by_unit'
@@ -148,7 +155,7 @@ class GroupContextManager:
                         )
 
 
-class ActivityContextManager:
+class JEActivityIOMiddleware:
 
     def __init__(self,
                  io_data: dict,
@@ -210,7 +217,7 @@ class ActivityContextManager:
                             acc['balance'] for acc in acc_list if acc['unit_uuid'] == key[0])
 
 
-class BalanceSheetStatementContextManager:
+class BalanceSheetIOMiddleware:
     BS_DIGEST_KEY = 'balance_sheet'
 
     def __init__(self, io_data: dict):
@@ -256,7 +263,7 @@ class BalanceSheetStatementContextManager:
         return self.IO_DATA
 
 
-class IncomeStatementContextManager:
+class IncomeStatementIOMiddleware:
     IC_DIGEST_KEY = 'income_statement'
 
     def __init__(self, io_data: dict):
@@ -341,7 +348,7 @@ class IncomeStatementContextManager:
         return self.IO_DATA
 
 
-class CashFlowStatementContextManager:
+class CashFlowStatementIOMiddleware:
     CFS_DIGEST_KEY = 'cash_flow_statement'
 
     def __init__(self, io_data: dict):
@@ -350,13 +357,13 @@ class CashFlowStatementContextManager:
         self.JE_MODEL = lazy_loader.get_journal_entry_model()
 
     def check_io_digest(self):
-        if GroupContextManager.GROUP_BALANCE_KEY not in self.IO_DATA:
+        if AccountGroupIOMiddleware.GROUP_BALANCE_KEY not in self.IO_DATA:
             raise ValidationError(
                 'IO Digest must have groups for Cash Flow Statement'
             )
 
     def operating(self):
-        group_balances = self.IO_DATA[GroupContextManager.GROUP_BALANCE_KEY]
+        group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]
         operating_activities = dict()
         operating_activities['GROUP_CFS_NET_INCOME'] = {
             'description': 'Net Income',
@@ -424,7 +431,7 @@ class CashFlowStatementContextManager:
         self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity']['FINANCING'] = net_cash
 
     def investing(self):
-        group_balances = self.IO_DATA[GroupContextManager.GROUP_BALANCE_KEY]
+        group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]
         investing_activities = dict()
         investing_activities['GROUP_CFS_INVESTING_SECURITIES'] = {
             'description': 'Purchase, Maturity and Sales of Investments & Securities',

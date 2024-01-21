@@ -90,13 +90,13 @@ More details available in the [Django Ledger v0.5 Page](https://www.arrobalytics
     * Generate all Django Ledger Model documentation.
 * ~~__0.5.3__~~: High Level EntityModel API.
 * ~~__0.5.4__~~: Balance Sheet Statement, Income Statement & Cash Flow Statement API & PDF report export.
-* __0.5.5__: Closing Entries.
-    * 0.5.5.1: Open Financial Exchange Imports (OFX) Bugfixes and Optimizations.
-    * 0.5.5.2: BugFixes and Optimizations..
-    * 0.5.5.3: Closing Entries will be used if requested date is present. Documentation Update.
-* __0.5.6__: Chart of Accounts Import.
-* __0.5.7__: Trial Balance Import.
-* __0.5.8__: GraphQL API.
+* ~~__0.5.5__~~: Closing Entries.
+    * ~~0.5.5.1~~: Open Financial Exchange Imports (OFX) Bugfixes and Optimizations.
+    * ~~0.5.5.2~~: BugFixes and Optimizations..
+    * ~~0.5.5.3~~: Closing Entries will be used if requested date is present. Documentation Update.
+* __0.5.6__: Transaction Library & Blueprints.
+* __0.5.7__: Chart of Accounts Import.
+* __0.5.8__: Trial Balance Import.
 
 ### Version 0.6
 

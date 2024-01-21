@@ -140,6 +140,8 @@ class JournalEntryModelManager(models.Manager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
         return qs.filter(
             Q(ledger__entity__admin=user_model) |
             Q(ledger__entity__managers__in=[user_model])
@@ -168,22 +170,13 @@ class JournalEntryModelManager(models.Manager):
         JournalEntryModelQuerySet
             Returns a JournalEntryModelQuerySet with applied filters.
         """
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return self.get_queryset().filter(
-                Q(ledger__entity=entity_slug) &
-                (
-                        Q(ledger__entity__admin=user_model) |
-                        Q(ledger__entity__managers__in=[user_model])
-                )
-
+            return qs.filter(
+                Q(ledger__entity=entity_slug)
             )
         return self.get_queryset().filter(
-            Q(ledger__entity__slug__iexact=entity_slug) &
-            (
-                    Q(ledger__entity__admin=user_model) |
-                    Q(ledger__entity__managers__in=[user_model])
-            )
-
+            Q(ledger__entity__slug__iexact=entity_slug)
         )
 
     def for_ledger(self, ledger_pk: Union[str, UUID], entity_slug, user_model):

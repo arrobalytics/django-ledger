@@ -233,7 +233,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=_(f'CoA {self.uuid} already has a slug')
                 )
             return
-        self.slug = ''.join(choices(SLUG_SUFFIX, k=5))
+        self.slug = f'coa-{self.entity.slug[-5:]}-' + ''.join(choices(SLUG_SUFFIX, k=15))
 
     def configure(self, raise_exception: bool = True):
 

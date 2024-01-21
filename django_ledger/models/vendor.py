@@ -91,6 +91,15 @@ class VendorModelManager(models.Manager):
     Custom defined VendorModel Manager, which defines many methods for initial query of the Database.
     """
 
+    def for_user(self, user_model):
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+        return qs.filter(
+            Q(entity_model__admin=user_model) |
+            Q(entity_model__managers__in=[user_model])
+        )
+
     def for_entity(self, entity_slug, user_model) -> VendorModelQuerySet:
         """
         Fetches a QuerySet of VendorModel associated with a specific EntityModel & UserModel.
@@ -114,21 +123,13 @@ class VendorModelManager(models.Manager):
         VendorModelQuerySet
             A filtered VendorModel QuerySet.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(
-                Q(entity_model=entity_slug) &
-                (
-                        Q(entity_model__admin=user_model) |
-                        Q(entity_model__managers__in=[user_model])
-                )
+                Q(entity_model=entity_slug)
             )
         return qs.filter(
-            Q(entity_model__slug__exact=entity_slug) &
-            (
-                    Q(entity_model__admin=user_model) |
-                    Q(entity_model__managers__in=[user_model])
-            )
+            Q(entity_model__slug__exact=entity_slug)
         )
 
 

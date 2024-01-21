@@ -106,7 +106,8 @@ class LedgerModelAdmin(ModelAdmin):
     ]
     list_filter = [
         'posted',
-        'locked'
+        'locked',
+        'entity__name'
     ]
     list_display = [
         'name',
