@@ -26,7 +26,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import validate_io_date
+from django_ledger.io.io_core import validate_io_date
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel

@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
-from django_ledger.io.data_generator import EntityDataGenerator
+from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import (
     EntityModel,
     ItemTransactionModel,

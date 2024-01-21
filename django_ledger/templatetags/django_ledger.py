@@ -19,7 +19,7 @@ from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ALL
-from django_ledger.io.io_mixin import validate_activity
+from django_ledger.io.io_core import validate_activity
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,

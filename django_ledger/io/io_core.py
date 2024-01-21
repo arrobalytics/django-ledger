@@ -36,10 +36,10 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
-from django_ledger.io.io_context import (
-    RoleContextManager, GroupContextManager, ActivityContextManager,
-    BalanceSheetStatementContextManager, IncomeStatementContextManager,
-    CashFlowStatementContextManager
+from django_ledger.io.io_middleware import (
+    AccountRoleIOMiddleware, AccountGroupIOMiddleware, JEActivityIOMiddleware,
+    BalanceSheetIOMiddleware, IncomeStatementIOMiddleware,
+    CashFlowStatementIOMiddleware
 )
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
@@ -639,7 +639,7 @@ class IODatabaseMixIn:
         io_state['by_activity'] = by_activity
         io_state['by_tx_type'] = by_tx_type
 
-        io_result = self.python_digest(
+        io_result: IOResult = self.python_digest(
             user_model=user_model,
             accounts=accounts,
             role=role,
@@ -660,8 +660,10 @@ class IODatabaseMixIn:
         io_state['io_result'] = io_result
         io_state['accounts'] = io_result.accounts_digest
 
+        # IO Middleware...
+
         if process_roles:
-            roles_mgr = RoleContextManager(
+            roles_mgr = AccountRoleIOMiddleware(
                 io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
@@ -676,7 +678,7 @@ class IODatabaseMixIn:
             income_statement,
             cash_flow_statement
         ]):
-            group_mgr = GroupContextManager(
+            group_mgr = AccountGroupIOMiddleware(
                 io_data=io_state,
                 by_period=by_period,
                 by_unit=by_unit
@@ -696,19 +698,19 @@ class IODatabaseMixIn:
             io_state = ratio_gen.digest()
 
         if process_activity:
-            activity_manager = ActivityContextManager(io_data=io_state, by_unit=by_unit, by_period=by_period)
+            activity_manager = JEActivityIOMiddleware(io_data=io_state, by_unit=by_unit, by_period=by_period)
             activity_manager.digest()
 
         if balance_sheet_statement:
-            balance_sheet_mgr = BalanceSheetStatementContextManager(io_data=io_state)
+            balance_sheet_mgr = BalanceSheetIOMiddleware(io_data=io_state)
             io_state = balance_sheet_mgr.digest()
 
         if income_statement:
-            income_statement_mgr = IncomeStatementContextManager(io_data=io_state)
+            income_statement_mgr = IncomeStatementIOMiddleware(io_data=io_state)
             io_state = income_statement_mgr.digest()
 
         if cash_flow_statement:
-            cfs = CashFlowStatementContextManager(io_data=io_state)
+            cfs = CashFlowStatementIOMiddleware(io_data=io_state)
             io_state = cfs.digest()
 
         return IODigestContextManager(io_state=io_state)

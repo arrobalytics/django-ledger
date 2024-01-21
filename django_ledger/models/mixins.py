@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import timedelta, date, datetime
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Union, Dict, List
+from typing import Optional, Union, Dict
 from uuid import UUID
 
 from django.conf import settings
@@ -27,8 +27,7 @@ from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import (check_tx_balance, ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE,
-                              validate_io_date)
+from django_ledger.io.io_core import validate_io_date, check_tx_balance
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
