@@ -4,8 +4,6 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
-
-This module contains functionality that is responsible for adding and computing additional information into the
 """
 from collections import defaultdict
 from itertools import groupby, chain
