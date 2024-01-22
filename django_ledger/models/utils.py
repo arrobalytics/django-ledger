@@ -155,7 +155,7 @@ class LazyLoader:
 
     def get_entity_data_generator(self):
         if not self.ENTITY_DATA_GENERATOR:
-            from django_ledger.io.data_generator import EntityDataGenerator
+            from django_ledger.io.io_generator import EntityDataGenerator
             self.ENTITY_DATA_GENERATOR = EntityDataGenerator
         return self.ENTITY_DATA_GENERATOR
 
