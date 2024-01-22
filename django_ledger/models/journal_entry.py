@@ -44,6 +44,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io.io_core import get_localtime
 from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
                                     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
                                     GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
@@ -1136,8 +1137,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.is_txs_qs_valid(txs_qs=txs_qs)
 
         if not self.timestamp:
-            self.timestamp = localtime()
-        elif self.timestamp and self.timestamp > localtime():
+            self.timestamp = get_localtime()
+        elif self.timestamp and self.timestamp > get_localtime():
             raise JournalEntryValidationError(message='Cannot create JE Models with timestamp in the future.')
 
         self.generate_je_number(commit=True)

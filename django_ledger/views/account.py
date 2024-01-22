@@ -10,13 +10,13 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext as _
 from django.views.generic import ListView, UpdateView, CreateView, DetailView
 from django.views.generic import RedirectView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel
 from django_ledger.views.mixins import (
@@ -129,7 +129,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
 class AccountModelDetailView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuerySetMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        loc_date = localdate()
+        loc_date = get_localdate()
         return reverse('django_ledger:account-detail-month',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],

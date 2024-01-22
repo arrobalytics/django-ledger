@@ -30,18 +30,18 @@ from django.db.models import Sum, QuerySet
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import make_aware, is_naive, localtime
+from django.utils.timezone import make_aware, is_naive, localtime, localdate
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
+from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.io_middleware import (
     AccountRoleIOMiddleware, AccountGroupIOMiddleware, JEActivityIOMiddleware,
     BalanceSheetIOMiddleware, IncomeStatementIOMiddleware,
     CashFlowStatementIOMiddleware
 )
-from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
@@ -111,6 +111,37 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
     return True
 
 
+def get_localtime(tz=None) -> datetime:
+    """
+    Convenience function to retrieve the localtime of the current system based on the USE_TZ django setting.
+
+    Parameters
+    ----------
+    tz: ZoneInfo
+        Optional timezone to use, otherwise the system timezone is used.
+
+    Returns
+    -------
+    datetime
+    """
+    if global_settings.USE_TZ:
+        return localtime(timezone=tz)
+    return datetime.now(tz=tz)
+
+
+def get_localdate() -> date:
+    """
+    Convenience function to retrieve the local date of the current system based on the USE_TZ django setting.
+
+    Returns
+    -------
+    date
+    """
+    if global_settings.USE_TZ:
+        return localdate()
+    return datetime.today()
+
+
 def validate_io_date(
         dt: Union[str, date, datetime],
         no_parse_localdate: bool = True) -> Optional[Union[datetime, date]]:
@@ -140,7 +171,12 @@ def validate_io_date(
                 )
             elif is_naive(fdt):
                 fdt = make_aware(fdt)
-        return fdt
+        if global_settings.USE_TZ:
+            return make_aware(
+                datetime.combine(
+                    fdt, datetime.min.time(),
+                ))
+        return datetime.combine(fdt, datetime.min.time())
 
     if no_parse_localdate:
         return localtime()

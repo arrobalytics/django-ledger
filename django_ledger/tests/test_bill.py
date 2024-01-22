@@ -6,8 +6,8 @@ from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils.timezone import localdate
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_DEFERRED_REVENUE, \
     LIABILITY_CL_ACC_PAYABLE
 from django_ledger.models import EntityModel, BillModel, VendorModel
@@ -269,7 +269,7 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         bill_data = {
             'vendor': a_vendor_model.uuid,
-            'date_draft': localdate(),
+            'date_draft': get_localdate(),
             'terms': BillModel.TERMS_NET_30,
             'cash_account_id': account_qs.filter(role__exact=ASSET_CA_CASH),
             'prepaid_account_id': account_qs.filter(role__exact=ASSET_CA_PREPAID),
@@ -305,7 +305,7 @@ class BillModelTests(DjangoLedgerBaseTest):
 
     def test_bill_detail(self):
         self.login_client()
-        today = localdate()
+        # today = get_localdate()
 
         for i in range(5):
             entity_model: EntityModel = self.get_random_entity_model()

@@ -5,8 +5,8 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.utils.timezone import localdate
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.entity import urlpatterns as entity_urls
@@ -227,7 +227,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
             response = self.CLIENT.get(entity_detail_url)
 
         with self.assertNumQueries(7):  # previously 10
-            local_dt = localdate()
+            local_dt = get_localdate()
             entity_month_detail_url = reverse('django_ledger:entity-dashboard-month',
                                               kwargs={
                                                   'entity_slug': entity_model.slug,

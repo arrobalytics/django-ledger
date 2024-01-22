@@ -31,10 +31,10 @@ from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
+from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
 from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
@@ -151,7 +151,7 @@ class BillModelQuerySet(models.QuerySet):
         BillModelQuerySet
             Returns a QuerySet of overdue bills only.
         """
-        return self.filter(date_due__lt=localdate())
+        return self.filter(date_due__lt=get_localdate())
 
     def unpaid(self):
         """
@@ -470,7 +470,7 @@ class BillModelAbstract(
 
             if date_draft and isinstance(date_draft, datetime):
                 date_draft = date_draft.date()
-            self.date_draft = localdate() if not date_draft else date_draft
+            self.date_draft = get_localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
@@ -723,7 +723,7 @@ class BillModelAbstract(
             True if BillModel is past due, else False.
         """
         if self.date_due and self.is_approved():
-            return self.date_due < localdate()
+            return self.date_due < get_localdate()
         return False
 
     # Permissions....
@@ -987,7 +987,7 @@ class BillModelAbstract(
         self.clean()
 
         if not payment_date:
-            payment_date = localtime()
+            payment_date = get_localtime()
 
         if commit:
             self.migrate_state(
@@ -1059,7 +1059,7 @@ class BillModelAbstract(
             elif isinstance(date_draft, date):
                 self.date_draft = date_draft
         else:
-            self.date_draft = localdate()
+            self.date_draft = get_localdate()
 
         self.clean()
         if commit:
@@ -1164,7 +1164,7 @@ class BillModelAbstract(
             elif isinstance(date_in_review, date):
                 self.date_in_review = date_in_review
         else:
-            self.date_in_review = localdate()
+            self.date_in_review = get_localdate()
 
         self.clean()
         if commit:
@@ -1265,7 +1265,7 @@ class BillModelAbstract(
             elif isinstance(date_approved, date):
                 self.date_approved = date_approved
         else:
-            self.date_approved = localdate()
+            self.date_approved = get_localdate()
 
         self.get_state(commit=True)
         self.clean()
@@ -1367,12 +1367,12 @@ class BillModelAbstract(
             elif isinstance(date_paid, date):
                 self.date_paid = date_paid
         else:
-            self.date_paid = localdate()
+            self.date_paid = get_localdate()
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
 
-        if self.date_paid > localdate():
+        if self.date_paid > get_localdate():
             raise BillModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
         if self.date_paid < self.date_approved:
             raise BillModelValidationError(
@@ -1486,7 +1486,7 @@ class BillModelAbstract(
             elif isinstance(date_void, date):
                 self.date_void = date_void
         else:
-            self.date_void = localdate()
+            self.date_void = get_localdate()
 
         self.bill_status = self.BILL_STATUS_VOID
         self.void_state(commit=True)
@@ -1568,7 +1568,7 @@ class BillModelAbstract(
         if not self.can_cancel():
             raise BillModelValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
 
-        self.date_canceled = localdate() if not date_canceled else date_canceled
+        self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.bill_status = self.BILL_STATUS_CANCELED
         self.clean()
         if commit:

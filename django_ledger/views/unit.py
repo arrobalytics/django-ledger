@@ -1,11 +1,11 @@
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, RedirectView
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityUnitModel, EntityModel
 from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
 from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn,
@@ -117,7 +117,7 @@ class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQu
 class BaseEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:unit-bs-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -170,7 +170,7 @@ class DateEntityUnitModelBalanceSheetView(MonthlyEntityUnitModelBalanceSheetView
 class BaseEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:unit-ic-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -219,7 +219,7 @@ class DateIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
 class BaseEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:unit-cf-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],

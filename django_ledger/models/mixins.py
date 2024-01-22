@@ -23,11 +23,10 @@ from django.core.validators import int_list_validator
 from django.db import models
 from django.db.models import QuerySet
 from django.utils.encoding import force_str
-from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io.io_core import validate_io_date, check_tx_balance
+from django_ledger.io.io_core import validate_io_date, check_tx_balance, get_localtime, get_localdate
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -751,7 +750,7 @@ class AccrualMixIn(models.Model):
                 if je_timestamp:
                     je_timestamp = validate_io_date(dt=je_timestamp)
 
-                now_timestamp = localtime() if not je_timestamp else je_timestamp
+                now_timestamp = get_localtime() if not je_timestamp else je_timestamp
                 je_list = {
                     u: JournalEntryModel(
                         entity_unit_id=u,
@@ -910,7 +909,7 @@ class AccrualMixIn(models.Model):
         if self.is_paid():
             self.progress = Decimal.from_float(1.0)
             self.amount_paid = self.amount_due
-            today = localdate()
+            today = get_localdate()
 
             if not self.date_paid:
                 self.date_paid = today
@@ -1035,7 +1034,7 @@ class PaymentTermsMixIn(models.Model):
             Days as integer.
         """
         if self.date_due:
-            td = self.date_due - localdate()
+            td = self.date_due - get_localdate()
             if td.days < 0:
                 return 0
             return td.days

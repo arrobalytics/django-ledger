@@ -24,9 +24,9 @@ from string import ascii_uppercase
 from typing import Union, Optional
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
                                     LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
                                     ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
@@ -94,9 +94,9 @@ class EntityDataGenerator(LoggingMixIn):
         self.fk.add_provider(bank)
 
         self.start_date: datetime = start_dttm
-        self.local_date = localdate()
+        self.local_date = get_localdate()
         self.tx_quantity = tx_quantity
-        self.localtime = localtime()
+        self.localtime = get_localtime()
         self.COUNT_INVENTORY = True
         self.DAYS_FORWARD = days_forward
 
