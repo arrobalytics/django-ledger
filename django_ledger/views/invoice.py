@@ -11,7 +11,6 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
                                   ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
@@ -22,6 +21,7 @@ from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceMode
                                          DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
                                          ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
                                          AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, LedgerModel, EstimateModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
@@ -111,7 +111,7 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
 
     def get_initial(self):
         return {
-            'date_draft': localdate()
+            'date_draft': get_localdate()
         }
 
     def get_form(self, form_class=None):

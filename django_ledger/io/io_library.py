@@ -7,17 +7,17 @@ Contributions to this module:
 """
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
 from typing import Union, Dict, Callable, Optional
 from uuid import UUID
-from datetime import date, datetime
 
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io.io_core import get_localtime
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, CREDIT, DEBIT
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.models.entity import EntityModel
@@ -196,6 +196,15 @@ class IOCursor:
                             posted=post_new_ledgers
                         )
                     ] = txs
+
+            elif isinstance(k, UUID):
+                try:
+                    self.commit_plan[self.ledger_map[k]] = txs
+                except KeyError:
+                    raise IOLibraryError(
+                        message=_(f'Ledger UUID {k} not found.')
+                    )
+
             elif isinstance(k, LedgerModel):
                 self.commit_plan[k] = txs
 
@@ -217,7 +226,7 @@ class IOCursor:
 
             # where the magic happens...
             je, txs_models = ledger_model.commit_txs(
-                je_timestamp=je_timestamp if je_timestamp else localtime(),
+                je_timestamp=je_timestamp if je_timestamp else get_localtime(),
                 je_txs=je_txs,
                 je_posted=post_journal_entries
             )

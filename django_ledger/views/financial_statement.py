@@ -8,10 +8,10 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, RedirectView
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, EntityUnitModel
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
@@ -34,7 +34,7 @@ class EntityModelModelViewQuerySetMixIn:
 class BaseBalanceSheetRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:entity-bs-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -87,7 +87,7 @@ class DateBalanceSheetView(FiscalYearBalanceSheetView, DateReportMixIn):
 # INCOME STATEMENT ------------
 class BaseIncomeStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:entity-ic-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -143,7 +143,7 @@ class DateModelIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixI
 class BaseCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:entity-cf-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],

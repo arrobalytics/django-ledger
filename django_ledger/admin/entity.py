@@ -6,10 +6,10 @@ from django.db.models import Count
 from django.forms import BaseInlineFormSet
 from django.urls import reverse
 from django.utils.html import format_html
-from django.utils.timezone import localtime
 
 from django_ledger.admin.coa import ChartOfAccountsInLine
-from django_ledger.models import EntityUnitModel, ItemTransactionModel, TransactionModel
+from django_ledger.io.io_core import get_localtime
+from django_ledger.models import EntityUnitModel
 from django_ledger.models.entity import EntityModel, EntityManagementModel
 
 
@@ -167,16 +167,17 @@ class EntityModelAdmin(ModelAdmin):
     cash_flow_statement_link.short_description = 'Cash Flow'
 
     def add_code_of_accounts(self, request, queryset):
+        lt = get_localtime().isoformat()
         for entity_model in queryset:
             entity_model.create_chart_of_accounts(
-                coa_name=f'{entity_model.name} CoA {localtime().isoformat()}',
+                coa_name=f'{entity_model.name} CoA {lt}',
                 commit=True,
                 assign_as_default=False
             )
 
     def populate_random_data(self, request, queryset):
         for entity_model in queryset:
-            start_date = localtime() - timedelta(days=180)
+            start_date = get_localtime() - timedelta(days=180)
             entity_model.populate_random_data(
                 start_date=start_date,
                 days_forward=180,

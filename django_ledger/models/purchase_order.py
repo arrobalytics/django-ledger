@@ -30,9 +30,9 @@ from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
@@ -304,7 +304,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             else:
                 raise PurchaseOrderModelValidationError('entity_slug must be an instance of str or EntityModel')
 
-            self.date_draft = localdate() if not draft_date else draft_date
+            self.date_draft = get_localdate() if not draft_date else draft_date
             self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
 
             if estimate_model:
@@ -689,7 +689,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as draft.')
         self.po_status = self.PO_STATUS_DRAFT
-        self.date_draft = localdate() if not date_draft else date_draft
+        self.date_draft = get_localdate() if not date_draft else date_draft
         self.clean()
         if commit:
             self.save(update_fields=[
@@ -756,7 +756,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not self.po_amount:
             raise PurchaseOrderModelValidationError(message='PO amount is zero.')
 
-        self.date_in_review = localdate() if not date_in_review else date_in_review
+        self.date_in_review = get_localdate() if not date_in_review else date_in_review
         self.po_status = self.PO_STATUS_REVIEW
         self.clean()
         if commit:
@@ -818,7 +818,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not self.can_approve():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as approved.')
-        self.date_approved = localdate() if not date_approved else date_approved
+        self.date_approved = get_localdate() if not date_approved else date_approved
         self.po_status = self.PO_STATUS_APPROVED
         self.clean()
         if commit:
@@ -881,7 +881,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not self.can_cancel():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as canceled.')
-        self.date_canceled = localdate() if not date_canceled else date_canceled
+        self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.po_status = self.PO_STATUS_CANCELED
         self.clean()
         if commit:
@@ -955,7 +955,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not po_items:
             po_items, po_items_agg = self.get_itemtxs_data(queryset=po_items)
 
-        self.date_fulfilled = localdate() if not date_fulfilled else date_fulfilled
+        self.date_fulfilled = get_localdate() if not date_fulfilled else date_fulfilled
         self.po_amount_received = self.po_amount
 
         bill_models = [i.bill_model for i in po_items]
@@ -1047,7 +1047,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         if not all(b.is_void() for b in bill_model_qs):
             raise PurchaseOrderModelValidationError('Must void all PO bills before PO can be voided.')
 
-        self.date_void = localdate() if not void_date else void_date
+        self.date_void = get_localdate() if not void_date else void_date
         self.po_status = self.PO_STATUS_VOID
         self.clean()
 

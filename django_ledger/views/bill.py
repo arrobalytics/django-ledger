@@ -12,7 +12,6 @@ from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpRespon
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (UpdateView, CreateView, ArchiveIndexView, MonthArchiveView, YearArchiveView,
                                   DetailView, RedirectView)
@@ -23,6 +22,7 @@ from django_ledger.forms.bill import (BillModelCreateForm, BaseBillModelUpdateFo
                                       InReviewBillModelUpdateForm,
                                       ApprovedBillModelUpdateForm, AccruedAndApprovedBillModelUpdateForm,
                                       PaidBillModelUpdateForm)
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel
 from django_ledger.models.bill import BillModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
@@ -117,7 +117,7 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
 
     def get_initial(self):
         return {
-            'date_draft': localdate()
+            'date_draft': get_localdate()
         }
 
     def get_form(self, form_class=None):

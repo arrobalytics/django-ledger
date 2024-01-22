@@ -27,9 +27,9 @@ from django.db.models import Q, Sum, ExpressionWrapper, FloatField, F
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
@@ -395,7 +395,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
             self.customer = customer_model
             if not date_draft:
-                self.date_draft = localdate()
+                self.date_draft = get_localdate()
 
             self.clean()
             self.clean_fields()
@@ -700,7 +700,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             raise EstimateModelValidationError(message='Revenue amount is zero!.')
 
         if not date_in_review:
-            date_in_review = localdate()
+            date_in_review = get_localdate()
         self.date_in_review = date_in_review
         self.status = self.CONTRACT_STATUS_REVIEW
         self.clean()
@@ -765,7 +765,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 f'Estimate {self.estimate_number} cannot be marked as approved.'
             )
         if not date_approved:
-            date_approved = localdate()
+            date_approved = get_localdate()
         self.date_approved = date_approved
         self.status = self.CONTRACT_STATUS_APPROVED
         self.clean()
@@ -828,7 +828,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         if not self.can_complete():
             raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as completed.')
         if not date_completed:
-            date_completed = localdate()
+            date_completed = get_localdate()
         self.date_completed = date_completed
         self.status = self.CONTRACT_STATUS_COMPLETED
         self.clean()
@@ -892,7 +892,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         if not self.can_cancel():
             raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be canceled...')
         if not date_canceled:
-            date_canceled = localdate()
+            date_canceled = get_localdate()
         self.date_canceled = date_canceled
         self.status = self.CONTRACT_STATUS_CANCELED
         self.clean()
@@ -955,7 +955,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         if not self.can_void():
             raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be void...')
         if not date_void:
-            date_void = localdate()
+            date_void = get_localdate()
         self.date_void = date_void
         self.status = self.CONTRACT_STATUS_VOID
         self.clean()
@@ -1523,16 +1523,16 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     def clean(self):
 
         if not self.date_draft:
-            self.date_draft = localdate()
+            self.date_draft = get_localdate()
 
         if self.can_generate_estimate_number():
             self.generate_estimate_number(commit=False)
 
         if self.is_approved() and not self.date_approved:
-            self.date_approved = localdate()
+            self.date_approved = get_localdate()
 
         if self.is_completed() and not self.date_completed:
-            self.date_completed = localdate()
+            self.date_completed = get_localdate()
 
         if self.is_canceled():
             self.date_approved = None

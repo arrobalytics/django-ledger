@@ -32,10 +32,10 @@ from django.db.models import Q, Sum, F, Count
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
+from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
@@ -151,7 +151,7 @@ class InvoiceModelQuerySet(models.QuerySet):
         InvoiceModelQuerySet
             Returns a QuerySet of overdue invoices only.
         """
-        return self.filter(date_due__lt=localdate())
+        return self.filter(date_due__lt=get_localdate())
 
     def unpaid(self):
         """
@@ -430,7 +430,7 @@ class InvoiceModelAbstract(
                 self.accrue = False
 
             self.invoice_status = self.INVOICE_STATUS_DRAFT
-            self.date_draft = localdate() if not date_draft else date_draft
+            self.date_draft = get_localdate() if not date_draft else date_draft
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
@@ -689,7 +689,7 @@ class InvoiceModelAbstract(
             True if InvoiceModel is past due, else False.
         """
         if self.date_due and self.is_approved():
-            return self.date_due < localdate()
+            return self.date_due < get_localdate()
         return False
 
     # PERMISSIONS....
@@ -919,7 +919,7 @@ class InvoiceModelAbstract(
         self.clean()
 
         if not payment_date:
-            payment_date = localtime()
+            payment_date = get_localtime()
 
         if commit:
             self.migrate_state(
@@ -991,7 +991,7 @@ class InvoiceModelAbstract(
             elif isinstance(draft_date, date):
                 self.draft_date = draft_date
         else:
-            self.draft_date = localdate()
+            self.draft_date = get_localdate()
 
         self.invoice_status = self.INVOICE_STATUS_DRAFT
         self.clean()
@@ -1067,7 +1067,7 @@ class InvoiceModelAbstract(
         if not self.can_review():
             raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as In Review...')
 
-        self.date_in_review = localdate() if not date_in_review else date_in_review
+        self.date_in_review = get_localdate() if not date_in_review else date_in_review
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
@@ -1173,7 +1173,7 @@ class InvoiceModelAbstract(
             elif isinstance(date_approved, date):
                 self.draft_date = date_approved
         else:
-            self.date_approved = localdate()
+            self.date_approved = get_localdate()
 
         self.clean()
         if commit:
@@ -1272,9 +1272,9 @@ class InvoiceModelAbstract(
             elif isinstance(date_paid, date):
                 self.date_paid = date_paid
         else:
-            self.date_paid = localdate()
+            self.date_paid = get_localdate()
 
-        if self.date_paid > localdate():
+        if self.date_paid > get_localdate():
             raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
 
         self.get_state(commit=True)
@@ -1371,9 +1371,9 @@ class InvoiceModelAbstract(
             elif isinstance(date_void, date):
                 self.date_void = date_void
         else:
-            self.date_void = localdate()
+            self.date_void = get_localdate()
 
-        if self.date_void > localdate():
+        if self.date_void > get_localdate():
             raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
         if self.date_void < self.date_approved:
             raise InvoiceModelValidationError(
@@ -1456,7 +1456,7 @@ class InvoiceModelAbstract(
         if not self.can_cancel():
             raise InvoiceModelValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
 
-        self.date_canceled = localdate() if not date_canceled else date_canceled
+        self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:

@@ -10,7 +10,6 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Count
 from django.http import HttpResponseForbidden
 from django.urls import reverse
-from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
                                   ArchiveIndexView, DeleteView)
@@ -20,6 +19,7 @@ from django_ledger.forms.journal_entry import (JournalEntryModelUpdateForm,
                                                JournalEntryModelCannotEditForm,
                                                JournalEntryModelCreateForm)
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
+from django_ledger.io.io_core import get_localtime
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
@@ -79,7 +79,7 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObject
 
     def get_initial(self):
         return {
-            'timestamp': localtime()
+            'timestamp': get_localtime()
         }
 
     def get_success_url(self):

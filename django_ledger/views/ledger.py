@@ -8,7 +8,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
     DetailView, UpdateView, CreateView,
@@ -17,6 +16,7 @@ from django.views.generic import (
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
@@ -202,7 +202,7 @@ class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
 class BaseLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:ledger-bs-year', kwargs={
             'entity_slug': self.kwargs['entity_slug'],
             'ledger_pk': self.kwargs['ledger_pk'],
@@ -251,7 +251,7 @@ class DateLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, Dat
 class BaseLedgerIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:ledger-ic-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],
@@ -300,7 +300,7 @@ class DateLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, DateRep
 class BaseLedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        year = localdate().year
+        year = get_localdate().year
         return reverse('django_ledger:ledger-cf-year',
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug'],

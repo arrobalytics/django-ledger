@@ -13,13 +13,12 @@ from django import template
 from django.db.models import Sum
 from django.urls import reverse
 from django.utils.formats import number_format
-from django.utils.timezone import localdate
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ALL
-from django_ledger.io.io_core import validate_activity
+from django_ledger.io.io_core import validate_activity, get_localdate
 from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
@@ -560,7 +559,8 @@ def period_navigation(context, base_url: str):
     kwargs['year'] = context['year']
     ctx['current_year_url'] = reverse(f'django_ledger:{base_url}-year', kwargs=kwargs)
 
-    dt = localdate()
+    dt = get_localdate()
+
     KWARGS_CURRENT_MONTH = {
         'entity_slug': context['view'].kwargs['entity_slug'],
         'year': dt.year,

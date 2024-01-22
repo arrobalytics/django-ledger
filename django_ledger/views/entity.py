@@ -12,18 +12,16 @@ from random import randint
 
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.timezone import localdate, localtime
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
 
 from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import (
     EntityModel,
     ItemTransactionModel,
-    TransactionModel,
-    InvoiceModel,
-    BillModel
+    TransactionModel
 )
 from django_ledger.views.mixins import (
     QuarterlyReportMixIn, YearlyReportMixIn,
@@ -100,7 +98,7 @@ class EntityModelCreateView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuery
             entity_generator = EntityDataGenerator(
                 entity_model=entity_model,
                 user_model=self.request.user,
-                start_dttm=localtime() - timedelta(days=30 * 8),
+                start_dttm=get_localtime() - timedelta(days=30 * 8),
                 capital_contribution=Decimal.from_float(50000),
                 days_forward=30 * 7,
                 tx_quantity=50
@@ -166,7 +164,7 @@ class EntityModelDetailView(DjangoLedgerSecurityMixIn,
                             RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        loc_date = localdate()
+        loc_date = get_localdate()
         unit_slug = self.get_unit_slug()
         if unit_slug:
             return reverse('django_ledger:unit-dashboard-month',

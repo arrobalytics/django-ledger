@@ -35,10 +35,10 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.urls import reverse
-from django.utils.timezone import localdate
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
                                     GROUP_ASSETS,
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
@@ -706,7 +706,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             kwargs={
                 'account_pk': self.uuid,
                 'entity_slug': self.coa_model.entity.slug,
-                'year': localdate().year
+                'year': get_localdate().year
             }
         )
 

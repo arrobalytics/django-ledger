@@ -8,8 +8,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import QuerySet
 from django.utils.dateparse import parse_date
-from django.utils.timezone import localdate
 
+from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
 
 UserModel = get_user_model()
@@ -101,7 +101,7 @@ def accruable_net_summary(queryset: QuerySet) -> dict:
 def get_end_date_from_session(entity_slug: str, request) -> date:
     session_end_date_filter = get_end_date_session_key(entity_slug)
     end_date = request.session.get(session_end_date_filter)
-    end_date = parse_date(end_date) if end_date else localdate()
+    end_date = parse_date(end_date) if end_date else get_localdate()
     return end_date
 
 

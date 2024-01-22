@@ -40,12 +40,11 @@ from django.db.models import Q
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
-from django.utils.timezone import localtime, localdate
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
-from django_ledger.io.io_core import IOMixIn
+from django_ledger.io.io_core import IOMixIn, get_localtime, get_localdate
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
 from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
@@ -527,7 +526,7 @@ class EntityModelClosingEntryMixIn:
         if closing_entry_model:
             self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
 
-        if closing_date > localdate():
+        if closing_date > get_localdate():
             raise EntityModelValidationError(
                 message=_(f'Cannot create closing entry with a future date {closing_date}.')
             )
@@ -2590,7 +2589,7 @@ class EntityModelAbstract(MP_Node,
             capital_account = account_model_qs.filter(role__exact=roles_module.EQUITY_CAPITAL).get()
 
         if not je_timestamp:
-            je_timestamp = localtime()
+            je_timestamp = get_localtime()
 
         if not description:
             description = f'Capital Deposit on {je_timestamp.isoformat()}...'
