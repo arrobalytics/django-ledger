@@ -333,7 +333,6 @@ cursor.dispatch('sale_blueprint',
 ```
 
 ## Commit Your Instructions
-
 Not recommended to post both ledger and journal entries. Posted transactions will immediately hit the books.
 **result** contains resulting ledger models, journal entries and transactions fro the committed 
 
@@ -927,9 +926,4 @@ reports.income_statement.get_report_data()
 
 ```python
 reports.cash_flow_statement.get_report_data()
-```
-
-
-```python
-
 ```
