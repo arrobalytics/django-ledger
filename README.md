@@ -24,7 +24,7 @@ experience, but also finance and accounting experience. So, that's the long way 
 Join our Discord Channel [here](https://discord.gg/J7KDFgCCsw) to learn more.
 
 __This project can greatly benefit from contributions towards Documentation and Unit Tests.__
-__This is the best way to get started twith this project if you are not familiar with the models.__
+__This is the best way to get started with this project if you are not familiar with the models.__
 
 ### Documentation
 
