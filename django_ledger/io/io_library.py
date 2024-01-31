@@ -122,9 +122,9 @@ class IOCursor:
         if isinstance(ledger_model, LedgerModel):
             self.ENTITY_MODEL.validate_ledger_model_for_entity(ledger_model)
 
-        blueprint_gen = self.IO_LIBRARY.get_blueprint(name)
-        blueprint = blueprint_gen(**kwargs)
-        self.blueprints[ledger_model].append(blueprint)
+        blueprint_func = self.IO_LIBRARY.get_blueprint(name)
+        blueprint_txs = blueprint_func(**kwargs)
+        self.blueprints[ledger_model].append(blueprint_txs)
 
     def compile_instructions(self):
 
@@ -143,7 +143,8 @@ class IOCursor:
 
                 if total_credits != total_debits:
                     raise IOCursorValidationError(
-                        message=_('Total transactions Credits and Debits must equal: ')
+                        message=_('Total transactions Credits and Debits must be equal. '
+                                  'Got CREDITs: {} and DEBITs: {}.'.format(total_credits, total_debits))
                     )
 
             self.instructions = instructions
@@ -213,7 +214,9 @@ class IOCursor:
 
         instructions = self.compile_instructions()
         account_codes = set(tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items()))
-        account_models = {acc.code: acc for acc in self.resolve_account_model_qs(codes=account_codes)}
+        account_models = {
+            acc.code: acc for acc in self.resolve_account_model_qs(codes=account_codes)
+        }
 
         for tx in chain.from_iterable(tr for _, tr in instructions.items()):
             tx.account_model = account_models[tx.account_code]
@@ -258,7 +261,7 @@ class IOBluePrint:
     def _round_amount(self, amount: Decimal) -> Decimal:
         return round(amount, self.precision_decimals)
 
-    def _amount(self, amount: Union[float, Decimal]) -> Decimal:
+    def _amount(self, amount: Union[float, Decimal, int]) -> Decimal:
         if amount <= 0:
             raise IOBluePrintValidationError(
                 message='Amounts must be greater than 0'
@@ -269,6 +272,9 @@ class IOBluePrint:
 
         elif isinstance(amount, Decimal):
             return self._round_amount(amount)
+
+        elif isinstance(amount, int):
+            return Decimal(str(amount))
 
         raise IOBluePrintValidationError(
             message='Amounts must be float or Decimal'
@@ -293,6 +299,24 @@ class IOBluePrint:
                 tx_type=DEBIT,
                 description=description
             ))
+
+    def commit(self,
+               entity_model: EntityModel,
+               user_model,
+               ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
+               je_timestamp: Optional[Union[datetime, date, str]] = None,
+               post_new_ledgers: bool = False,
+               post_journal_entries: bool = False):
+
+        blueprint_lib = IOLibrary(name='blueprint')
+        cursor = blueprint_lib.get_cursor(entity_model=entity_model, user_model=user_model)
+        cursor.blueprints[ledger_model].append(self)
+
+        return cursor.commit(
+            je_timestamp=je_timestamp,
+            post_new_ledgers=post_new_ledgers,
+            post_journal_entries=post_journal_entries
+        )
 
 
 class IOLibrary:

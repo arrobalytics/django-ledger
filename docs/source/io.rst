@@ -25,3 +25,8 @@ IO Digest
 ---------
 .. automodule:: django_ledger.io.io_digest
     :members:
+
+Account Roles
+-------------
+.. automodule:: django_ledger.io.roles
+    :members:
