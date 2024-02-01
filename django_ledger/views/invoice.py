@@ -131,8 +131,8 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
     def form_valid(self, form):
         invoice_model: InvoiceModel = form.save(commit=False)
         ledger_model, invoice_model = invoice_model.configure(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user,
+            entity_slug=self.AUTHORIZED_ENTITY_MODEL,
+            commit_ledger=True
         )
 
         if self.for_estimate:

@@ -6,17 +6,26 @@
 {% block view_content %}
     <div class="columns is-centered">
         <div class="column is-6-desktop">
-            <div class="box">
-                <form action="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}"
-                      method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit"
-                            class="button is-primary is-outlined is-fullwidth djetler_my_1">{% trans 'Create' %}
-                    </button>
-                    <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}"
-                       class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
-                </form>
+            <div class="card">
+
+                <div class="card-header">
+                    <div class="card-header-title has-text-weight-light is-size-4 is-centered">{% trans 'Create Bank Account' %}</div>
+                </div>
+
+
+                <div class="card-content">
+                    <form action="{% url 'django_ledger:bank-account-create' entity_slug=view.kwargs.entity_slug %}"
+                          method="post">
+                        {% csrf_token %}
+                        {{ form }}
+                        <button type="submit"
+                                class="button is-primary is-outlined is-fullwidth djetler_my_1">{% trans 'Create' %}
+                        </button>
+                        <a href="{% url 'django_ledger:bank-account-list' entity_slug=view.kwargs.entity_slug %}"
+                           class="button is-small is-dark is-fullwidth">{% trans 'Back' %}</a>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>

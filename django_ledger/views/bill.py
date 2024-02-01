@@ -129,10 +129,9 @@ class BillModelCreateView(DjangoLedgerSecurityMixIn, CreateView):
     def form_valid(self, form):
         bill_model: BillModel = form.save(commit=False)
         ledger_model, bill_model = bill_model.configure(
-            entity_slug=self.kwargs['entity_slug'],
-            commit_ledger=True,
-            ledger_posted=False,
-            user_model=self.request.user)
+            entity_slug=self.AUTHORIZED_ENTITY_MODEL,
+            commit_ledger=True
+        )
 
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
