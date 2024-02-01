@@ -481,14 +481,13 @@ class BillModelAbstract(
             ledger_model.clean_fields()
             self.ledger = ledger_model
 
-            if commit_ledger:
-                self.ledger.save()
-
             if self.can_generate_bill_number():
                 self.generate_bill_number(commit=commit)
 
             self.clean()
-            self.clean_fields()
+
+            if commit_ledger or commit:
+                self.ledger.save()
 
             if commit:
                 self.save()

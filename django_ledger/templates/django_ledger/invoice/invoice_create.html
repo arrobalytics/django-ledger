@@ -5,6 +5,7 @@
 
 {% block view_content %}
     <div class="columns is-multiline is-centered">
+
         {% if estimate_model %}
             <div class="column is-12 has-text-centered">
                 <h2 class="is-size-2">{% trans 'Invoice for Estimate' %}: {{ estimate_model.title }}</h2>
@@ -15,29 +16,35 @@
                     {% trans 'Back to Estimate' %}</a>
             </div>
         {% endif %}
-        <div class="column is-6-desktop">
+
+        <div class="column is-10-tablet is-6-desktop">
             <div class="card">
+
                 <div class="card-header">
-                    <h2 class="card-header-title has-text-weight-light is-size-3">{% trans 'Create Invoice' %}</h2>
+                    <h2 class="card-header-title has-text-weight-light is-size-4 is-centered">{% trans 'Create Invoice' %}</h2>
                 </div>
-                <div class="card-content">
-                    <form action="{{ form_action_url }}"
-                          method="post" id="djl-bill-create-form-id">
-                        <div class="columns is-multiline is-centered">
-                            {% csrf_token %}
-                            {{ form }}
-                            <div class="column is-4">
-                                <button type="submit"
-                                        id="djl-invoice-create-button"
-                                        class="button is-primary is-outlined is-fullwidth my-2">{% trans 'Create' %}
-                                </button>
-                                <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
-                                   id="djl-invoice-create-back-button"
-                                   class="button is-small is-dark is-fullwidth">{% trans 'Cancel' %}</a>
-                            </div>
+
+                <form action="{{ form_action_url }}" method="post" id="djl-bill-create-form-id">
+
+                    <div class="card-content">
+                        {% csrf_token %}
+                        {{ form }}
+                    </div>
+
+                    <div class="card-content">
+                        <div class="buttons">
+                            <button type="submit"
+                                    id="djl-invoice-create-button"
+                                    class="button is-primary is-fullwidth mb-4">{% trans 'Create' %}
+                            </button>
+                            <a href="{% url 'django_ledger:invoice-list' entity_slug=view.kwargs.entity_slug %}"
+                               id="djl-invoice-create-back-button"
+                               class="button is-fullwidth mt-4">{% trans 'Cancel' %}</a>
                         </div>
-                    </form>
-                </div>
+
+                    </div>
+                </form>
+
             </div>
         </div>
     </div>
