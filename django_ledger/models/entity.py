@@ -2681,14 +2681,19 @@ class EntityModelAbstract(MP_Node,
         if ce_lookup in ce_date_list:
             return ce_lookup
 
-    def get_nearest_next_closing_entry(self, io_date: date) -> Optional[date]:
+    def get_nearest_next_closing_entry(self, io_date: Union[date, datetime]) -> Optional[date]:
         if io_date is None:
             return
         ce_date_list = self.fetch_closing_entry_dates_meta()
         if not len(ce_date_list):
             return
-        if io_date > ce_date_list[0]:
+
+        if not isinstance(io_date, datetime) and io_date > ce_date_list[0]:
             return ce_date_list[0]
+
+        if isinstance(io_date, datetime) and io_date.date() > ce_date_list[0]:
+            return ce_date_list[0]
+
         for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
             if p and p <= io_date < f:
                 return p

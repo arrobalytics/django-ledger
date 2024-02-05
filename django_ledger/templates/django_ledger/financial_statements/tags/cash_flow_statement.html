@@ -40,7 +40,7 @@
                 {{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.description }}
             </td>
             <td class="has-text-right">
-                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.balance }}</td>
+                {% currency_symbol %}{{ tx_digest.cash_flow_statement.operating.GROUP_CFS_OP_INVESTMENT_GAINS.balance | currency_format }}</td>
         </tr>
 
         {# Non-cash Charges to Current Accounts #}

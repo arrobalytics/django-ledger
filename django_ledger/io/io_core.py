@@ -142,16 +142,14 @@ def get_localdate() -> date:
     return datetime.today()
 
 
-def validate_io_date(
+def validate_io_timestamp(
         dt: Union[str, date, datetime],
         no_parse_localdate: bool = True) -> Optional[Union[datetime, date]]:
+
     if not dt:
         return
 
-    if isinstance(dt, date):
-        return dt
-
-    elif isinstance(dt, datetime):
+    if isinstance(dt, datetime):
         if is_naive(dt):
             return make_aware(
                 value=dt,
@@ -178,6 +176,13 @@ def validate_io_date(
                 ))
         return datetime.combine(fdt, datetime.min.time())
 
+    elif isinstance(dt, date):
+        if global_settings.USE_TZ:
+            return make_aware(
+                value=datetime.combine(dt, datetime.min.time())
+            )
+        return datetime.combine(dt, datetime.min.time())
+
     if no_parse_localdate:
         return localtime()
 
@@ -185,8 +190,8 @@ def validate_io_date(
 def validate_dates(
         from_date: Union[str, datetime, date] = None,
         to_date: Union[str, datetime, date] = None) -> Tuple[date, date]:
-    from_date = validate_io_date(from_date, no_parse_localdate=False)
-    to_date = validate_io_date(to_date)
+    from_date = validate_io_timestamp(from_date, no_parse_localdate=False)
+    to_date = validate_io_timestamp(to_date)
     return from_date, to_date
 
 
@@ -787,7 +792,7 @@ class IODatabaseMixIn:
 
         # Validates that credits/debits balance.
         check_tx_balance(je_txs, perform_correction=False)
-        je_timestamp = validate_io_date(dt=je_timestamp)
+        je_timestamp = validate_io_timestamp(dt=je_timestamp)
 
         entity_model = self.get_entity_model_from_io()
 

@@ -26,7 +26,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.io_core import validate_io_date
+from django_ledger.io.io_core import validate_io_timestamp
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
@@ -156,7 +156,7 @@ class TransactionModelQuerySet(QuerySet):
         """
 
         if isinstance(to_date, str):
-            to_date = validate_io_date(to_date)
+            to_date = validate_io_timestamp(to_date)
 
         if isinstance(to_date, date):
             return self.filter(journal_entry__timestamp__date__lte=to_date)
@@ -180,7 +180,7 @@ class TransactionModelQuerySet(QuerySet):
             Returns a TransactionModelQuerySet with applied filters.
         """
         if isinstance(from_date, str):
-            from_date = validate_io_date(from_date)
+            from_date = validate_io_timestamp(from_date)
 
         if isinstance(from_date, date):
             return self.filter(journal_entry__timestamp__date__gte=from_date)

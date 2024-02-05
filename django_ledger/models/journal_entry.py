@@ -440,7 +440,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_posted(),
         ])
 
-    def can_edit_timestamp(self) -> bool:
+    def can_edit(self) -> bool:
         return not self.is_locked()
 
     def is_posted(self):

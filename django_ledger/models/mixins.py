@@ -26,7 +26,7 @@ from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io.io_core import validate_io_date, check_tx_balance, get_localtime, get_localdate
+from django_ledger.io.io_core import validate_io_timestamp, check_tx_balance, get_localtime, get_localdate
 from django_ledger.models.utils import lazy_loader
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
@@ -748,7 +748,7 @@ class AccrualMixIn(models.Model):
                 unit_uuids = list(set(k[1] for k in idx_keys))
 
                 if je_timestamp:
-                    je_timestamp = validate_io_date(dt=je_timestamp)
+                    je_timestamp = validate_io_timestamp(dt=je_timestamp)
 
                 now_timestamp = get_localtime() if not je_timestamp else je_timestamp
                 je_list = {
