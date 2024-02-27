@@ -410,8 +410,8 @@ class TransactionModelAdmin(models.Manager):
 
 class TransactionModelAbstract(CreateUpdateMixIn):
     """
-    This is the main abstract class which the BillModel database will inherit from.
-    The BillModel inherits functionality from the following MixIns:
+    This is the main abstract class which the TransactionModel database will inherit from.
+    The TransactionModel inherits functionality from the following MixIns:
 
         1. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
