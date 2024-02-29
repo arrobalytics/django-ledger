@@ -11,10 +11,6 @@ class JournalEntryModelTest(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in journal_entry_urls
         }
 
-        # superuser is needed to use AccountModel's for_entity_available()
-        self.user_model.is_superuser = True
-        self.user_model.save()
-
     def get_absolute_url(self, path):
         """
         Generates a specified Journal Entry View URL path.
