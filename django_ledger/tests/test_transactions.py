@@ -15,10 +15,7 @@ from django_ledger.tests.base import DjangoLedgerBaseTest
 UserModel = get_user_model()
 
 class TransactionModelFormTest(DjangoLedgerBaseTest):
-    def setUp(self) -> None:
-        self.user_model.is_superuser = True
-        self.user_model.save()
-
+    
     def test_valid_data(self):
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
         
@@ -57,11 +54,7 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
             form.is_valid()
     
 class TransactionModelFormSetTest(DjangoLedgerBaseTest):
-    def setUp(self) -> None:
-        # superuser is needed to use AccountModel's for_entity_available()
-        self.user_model.is_superuser = True
-        self.user_model.save()
-
+   
     def get_random_txs_formsets(self, 
                            entity_model: EntityModel,
                            credit_account: AccountModel = None,
@@ -141,7 +134,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         for txs in txs_instances:
             if txs.tx_type == 'credit':
                 self.assertEqual(txs.account, credit_account,
-                                 msg=f'Saved Transaction record has missmatched Credit Account from the submitted formset. Saved:{txs.account} | form:{debit_account}')
+                                 msg=f'Saved Transaction record has missmatched Credit Account from the submitted formset. Saved:{txs.account} | form:{credit_account}')
 
             elif txs.tx_type == 'debit':
                 self.assertEqual(txs.account, debit_account, 
@@ -204,11 +197,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
             txs_formset.is_valid()
 
 class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
-    def setUp(self) -> None:
-        # superuser is needed to use AccountModel's for_entity_available()
-        self.user_model.is_superuser = True
-        self.user_model.save()
-
+   
     def test_unlocked_journal_entry_formset(self):
         """
         The Formset will contain 6 extra forms & delete fields if Journal Entry is unlocked.
