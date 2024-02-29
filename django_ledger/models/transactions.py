@@ -284,10 +284,9 @@ class TransactionModelAdmin(models.Manager):
             Returns a TransactionModelQuerySet with applied filters.
         """
         qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
-        if isinstance(ledger_model, LedgerModel):
-            return qs.filter(journal_entry__ledger=ledger_model)
-        elif isinstance(ledger_model, str) or isinstance(ledger_model, UUID):
+        if isinstance(ledger_model, UUID):
             return qs.filter(journal_entry__ledger__uuid__exact=ledger_model)
+        return qs.filter(journal_entry__ledger=ledger_model)
 
     def for_unit(self,
                  entity_slug: Union[EntityModel, str],
@@ -479,7 +478,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        # pylint: disable=no-member
         return '{x1}-{x2}/{x5}: {x3}/{x4}'.format(x1=self.account.code,
                                                   x2=self.account.name,
                                                   x3=self.amount,

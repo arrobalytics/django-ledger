@@ -7,7 +7,7 @@
         {% currency_symbol %}{{ tx_digest.group_balance.GROUP_INCOME | currency_format }}</h1>
     <h2 class="has-text-centered has-text-weight-light">{% trans 'Expenses' %}</h2>
     <h1 class="has-text-centered">
-        {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sing | currency_format }}</h1>
+        {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EXPENSES | reverse_sign | currency_format }}</h1>
     <h2 class="has-text-centered has-text-weight-light">{% trans 'Earnings (Loss)' %}</h2>
     <h1 class="has-text-centered">
         {% currency_symbol %}{{ tx_digest.group_balance.GROUP_EARNINGS | currency_format }}</h1>

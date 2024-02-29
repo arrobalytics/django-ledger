@@ -52,6 +52,8 @@ class AccountModelCreateForm(ModelForm):
             'role',
             'role_default',
             'balance_type',
+            'active',
+            'locked'
         ]
         widgets = {
             'code': TextInput(attrs={

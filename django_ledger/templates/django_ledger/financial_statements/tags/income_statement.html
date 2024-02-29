@@ -76,7 +76,7 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                <td>{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
+                <td>{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr>
@@ -126,7 +126,7 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                <td>{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
+                <td>{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr>
@@ -137,7 +137,7 @@
             <td></td>
             <td><h2 class="is-size-5 has-text-right">{% trans 'Net Operating Expenses' %}</h2></td>
             <td class="is-size-5 has-text-weight-bold">
-                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_expenses | absolute | currency_format }}</td>
+                {% currency_symbol %}{{ tx_digest.income_statement.operating.net_operating_expenses | reverse_sign | currency_format }}</td>
         </tr>
 
 
@@ -177,7 +177,7 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                <td class="is-size-5">{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
+                <td class="is-size-5">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr>
@@ -216,7 +216,7 @@
                         <span class="icon">{% icon 'bi:arrow-bar-up' 24 %}</span>
                     {% endif %}
                 </td>
-                <td class="is-size-5">{% currency_symbol %}{{ acc.balance_abs | currency_format }}</td>
+                <td class="is-size-5">{% currency_symbol %}{{ acc.balance | reverse_sign | currency_format }}</td>
             </tr>
         {% endfor %}
         <tr>
@@ -239,7 +239,7 @@
             <td></td>
             <td><h2 class="is-size-4 has-text-right">{% trans 'Net Other Income (Loss)' %}</h2></td>
             <td class="is-size-3">
-                {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_income| currency_format }}</td>
+                {% currency_symbol %}{{ tx_digest.income_statement.other.net_other_income | currency_format }}</td>
         </tr>
 
 

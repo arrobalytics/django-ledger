@@ -50,4 +50,11 @@ urlpatterns = [
          views.LedgerModelModelActionView.as_view(action_name='unlock'),
          name='ledger-action-unlock'),
 
+    path('<slug:entity_slug>/action/<uuid:ledger_pk>/hide/',
+         views.LedgerModelModelActionView.as_view(action_name='hide'),
+         name='ledger-action-hide'),
+    path('<slug:entity_slug>/action/<uuid:ledger_pk>/unhide/',
+         views.LedgerModelModelActionView.as_view(action_name='unhide'),
+         name='ledger-action-unhide'),
+
 ]

@@ -48,6 +48,14 @@ def absolute(value):
         return abs(value)
 
 
+@register.filter(name='reverse_sign')
+def reverse_sign(value):
+    if value:
+        if isinstance(value, str):
+            value = float(value)
+        return -value
+
+
 @register.filter(name='currency_format')
 def currency_format(value):
     if not value:
@@ -59,13 +67,6 @@ def currency_format(value):
 def percentage(value):
     if value is not None:
         return '{0:,.2f}%'.format(value * 100)
-
-
-@register.filter(name='reverse_sing')
-def reverse_sign(value: float):
-    if value:
-        return -value
-    return 0
 
 
 @register.filter(name='last_four')

@@ -21,7 +21,7 @@
                     </a>
                     <a class="button is-dark"
                        href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                        {% trans 'Back' %}
+                        {% trans 'Ledger List' %}
                     </a>
                     {% if journal_entry.can_unlock %}
                         <a class="button is-warning"

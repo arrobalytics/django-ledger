@@ -4,18 +4,22 @@
 <div class="table-container">
     <table class="table is-fullwidth is-narrow is-striped is-bordered django-ledger-table-bottom-margin-75">
         <tr>
+            <th class="has-text-centered">JE Number</th>
             <th class="has-text-centered">Date</th>
             <th class="has-text-centered">Credit</th>
             <th class="has-text-centered">Debit</th>
             <th class="has-text-centered">Description</th>
+            <th class="has-text-centered">Unit</th>
             <th class="has-text-centered">Actions</th>
         </tr>
         {% for tx in transactions %}
             <tr class="has-text-centered">
+                <td>{{ tx.journal_entry.je_number }}</td>
                 <td>{{ tx.journal_entry.timestamp }}</td>
                 <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{{ tx.description }}</td>
+                <td>{{ tx.journal_entry.entity_unit.name }}</td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="tx-action-{{ tx.uuid }}">
                         <div class="dropdown-trigger">
@@ -37,7 +41,6 @@
                                     <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=tx.journal_entry.ledger.invoicemodel.uuid %}"
                                        class="dropdown-item has-text-info">View Invoice</a>
                                 {% endif %}
-
                             </div>
                         </div>
                     </div>
@@ -45,9 +48,11 @@
             </tr>
         {% endfor %}
         <tr class="has-text-weight-bold">
+            <td></td>
             <td class="has-text-right">Total</td>
             <td class="has-text-centered">${{ total_credits | currency_format }}</td>
             <td class="has-text-centered">${{ total_debits | currency_format }}</td>
+            <td></td>
             <td></td>
             <td></td>
         </tr>
