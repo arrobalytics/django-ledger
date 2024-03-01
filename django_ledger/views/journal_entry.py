@@ -130,7 +130,7 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
 
     def get_form(self, form_class=None):
         je_model: JournalEntryModel = self.object
-        if not je_model.can_edit_timestamp():
+        if not je_model.can_edit():
             return JournalEntryModelCannotEditForm(
                 entity_slug=self.kwargs['entity_slug'],
                 ledger_model=je_model.ledger,

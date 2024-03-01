@@ -26,7 +26,7 @@ from django.db import models
 from django.db.models import Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.io_core import validate_io_date
+from django_ledger.io.io_core import validate_io_timestamp
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
 from django_ledger.models.entity import EntityModel
@@ -156,7 +156,7 @@ class TransactionModelQuerySet(QuerySet):
         """
 
         if isinstance(to_date, str):
-            to_date = validate_io_date(to_date)
+            to_date = validate_io_timestamp(to_date)
 
         if isinstance(to_date, date):
             return self.filter(journal_entry__timestamp__date__lte=to_date)
@@ -180,7 +180,7 @@ class TransactionModelQuerySet(QuerySet):
             Returns a TransactionModelQuerySet with applied filters.
         """
         if isinstance(from_date, str):
-            from_date = validate_io_date(from_date)
+            from_date = validate_io_timestamp(from_date)
 
         if isinstance(from_date, date):
             return self.filter(journal_entry__timestamp__date__gte=from_date)
@@ -284,10 +284,9 @@ class TransactionModelAdmin(models.Manager):
             Returns a TransactionModelQuerySet with applied filters.
         """
         qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
-        if isinstance(ledger_model, LedgerModel):
-            return qs.filter(journal_entry__ledger=ledger_model)
-        elif isinstance(ledger_model, str) or isinstance(ledger_model, UUID):
+        if isinstance(ledger_model, UUID):
             return qs.filter(journal_entry__ledger__uuid__exact=ledger_model)
+        return qs.filter(journal_entry__ledger=ledger_model)
 
     def for_unit(self,
                  entity_slug: Union[EntityModel, str],
@@ -479,7 +478,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        # pylint: disable=no-member
         return '{x1}-{x2}/{x5}: {x3}/{x4}'.format(x1=self.account.code,
                                                   x2=self.account.name,
                                                   x3=self.amount,

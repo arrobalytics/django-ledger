@@ -38,7 +38,10 @@ class PnLAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
                 by_period=True,
                 process_groups=True,
                 from_date=self.request.GET.get('fromDate'),
-                to_date=self.request.GET.get('toDate')
+                to_date=self.request.GET.get('toDate'),
+
+                # todo: For PnL to display proper period values must not use closing entries.
+                use_closing_entries=False
             )
 
             io_data = io_digest.get_io_data()

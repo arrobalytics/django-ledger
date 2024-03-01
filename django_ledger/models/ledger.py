@@ -106,7 +106,7 @@ class LedgerModelQuerySet(models.QuerySet):
 
     def current(self):
         return self.filter(
-            Q(earliest_timestamp__gt=F('entity__last_closing_date'))
+            Q(earliest_timestamp__date__gt=F('entity__last_closing_date'))
             | Q(earliest_timestamp__isnull=True)
         )
 
@@ -392,6 +392,28 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             self.is_posted()
         ])
 
+    def can_hide(self) -> bool:
+        """
+        Determines if the LedgerModel can be hidden.
+
+        Returns
+        -------
+        bool
+            True if can be hidden, else False.
+        """
+        return self.hidden is False
+
+    def can_unhide(self) -> bool:
+        """
+        Determines if the LedgerModel can be un-hidden.
+
+        Returns
+        -------
+        bool
+            True if can be un-hidden, else False.
+        """
+        return self.hidden is True
+
     def can_delete(self) -> bool:
         if all([
             not self.is_locked(),
@@ -448,7 +470,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         raise_exception:bool
             Raises LedgerModelValidationError if un-posting not allowed.
         """
-        if self.can_unpost():
+        if not self.can_unpost():
             if raise_exception:
                 raise LedgerModelValidationError(
                     message=_(f'Ledger {self.uuid} cannot be unposted.')
@@ -511,22 +533,52 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                     'updated'
                 ])
 
+    def hide(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        if not self.can_hide():
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.name} cannot be hidden. UUID: {self.uuid}')
+                )
+            return
+        self.hidden = True
+        if commit:
+            self.save(update_fields=[
+                'hidden',
+                'updated'
+            ])
+
+    def unhide(self, commit: bool = False, raise_exception: bool = True, **kwargs):
+        if not self.can_unhide():
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.name} cannot be un-hidden. UUID: {self.uuid}')
+                )
+            return
+        self.hidden = False
+        if commit:
+            self.save(update_fields=[
+                'hidden',
+                'updated'
+            ])
+
     def delete(self, **kwargs):
         if not self.can_delete():
             raise LedgerModelValidationError(
                 message=_(f'LedgerModel {self.name} cannot be deleted because posted is {self.is_posted()} '
                           f'and locked is {self.is_locked()}')
             )
-        earliest_je_timestamp = self.journal_entries.posted().order_by('-timestamp').values('timestamp').first()
-        if earliest_je_timestamp is not None:
-            earliest_date = earliest_je_timestamp['timestamp'].date()
-            if earliest_date <= self.entity.last_closing_date:
-                raise LedgerModelValidationError(
-                    message=_(
-                        f'Journal Entries with date {earliest_date} cannot be deleted because of lastest closing '
-                        f'entry on {self.get_entity_last_closing_date()}')
-                )
 
+        # checks if ledger model has journal entries in a closed period...
+        if self.entity.has_closing_entry():
+            earliest_je_timestamp = self.journal_entries.posted().order_by('-timestamp').values('timestamp').first()
+            if earliest_je_timestamp is not None:
+                earliest_date = earliest_je_timestamp['timestamp'].date()
+                if earliest_date <= self.entity.last_closing_date:
+                    raise LedgerModelValidationError(
+                        message=_(
+                            f'Journal Entries with date {earliest_date} cannot be deleted because of latest closing '
+                            f'entry on {self.get_entity_last_closing_date()}')
+                    )
         return super().delete(**kwargs)
 
     def get_entity_name(self) -> str:

@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=2.2"
+django = ">=4.2"
 django-treebeard = ">=4.5.1"
 ofxtools = ">=0.9.5"
 markdown = ">=3.4.1"
@@ -24,14 +24,14 @@ fpdf2 = ">=2.7.4"
 sphinx = "*"
 behave = "*"
 twine = "*"
-#jupyterlab = "*"
+jupyterlab = "*"
+pandas = "*"
 #pipenv-setup = "*"
 #pylint = "*"
 #furo = "*"
 #python-dotenv = "*"
 #tabulate = "*"
 #myst_parser = "*"
-#pandas = "*"
 
 [requires]
 python_version = "3.11"

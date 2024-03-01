@@ -115,6 +115,16 @@
                                     <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
                                        class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnPost' %}</a>
                                 {% endif %}
+
+                                {% if ledger.can_hide %}
+                                    <a href="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'Hide' %}</a>
+                                {% endif %}
+                                {% if ledger.can_unhide %}
+                                    <a href="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'UnHide' %}</a>
+                                {% endif %}
+
                                 {% if ledger.can_delete %}
                                     <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
                                        class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>

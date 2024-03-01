@@ -795,6 +795,10 @@ class EntityModelAbstract(MP_Node,
     def __str__(self):
         return f'EntityModel {self.slug}: {self.name}'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._CLOSING_ENTRY_DATES: Optional[List[date]] = None
+
     # ## Logging ###
     def get_logger_name(self):
         return f'EntityModel {self.uuid}'
@@ -2670,25 +2674,43 @@ class EntityModelAbstract(MP_Node,
             return list()
         date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
         if as_date:
-            return [date.fromisoformat(dt) for dt in date_list]
+            if self._CLOSING_ENTRY_DATES is None:
+                self._CLOSING_ENTRY_DATES = [date.fromisoformat(dt) for dt in date_list]
+            return self._CLOSING_ENTRY_DATES
         return date_list
 
-    def get_closing_entry_for_date(self, io_date: date, inclusive: bool = True) -> Optional[date]:
+    def get_closing_entry_for_date(self, io_date: Union[date, datetime], inclusive: bool = True) -> Optional[date]:
         if io_date is None:
             return
         ce_date_list = self.fetch_closing_entry_dates_meta()
+
+        if not ce_date_list:
+            return
+
+        if isinstance(io_date, datetime):
+            io_date = io_date.date()
+
         ce_lookup = io_date - timedelta(days=1) if not inclusive else io_date
         if ce_lookup in ce_date_list:
             return ce_lookup
 
-    def get_nearest_next_closing_entry(self, io_date: date) -> Optional[date]:
+    def get_nearest_next_closing_entry(self, io_date: Union[date, datetime]) -> Optional[date]:
         if io_date is None:
             return
+
         ce_date_list = self.fetch_closing_entry_dates_meta()
         if not len(ce_date_list):
             return
+
+        if all([
+            isinstance(io_date, date),
+            isinstance(io_date, datetime),
+        ]):
+            io_date = io_date.date()
+
         if io_date > ce_date_list[0]:
             return ce_date_list[0]
+
         for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
             if p and p <= io_date < f:
                 return p

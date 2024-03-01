@@ -440,7 +440,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             not self.is_posted(),
         ])
 
-    def can_edit_timestamp(self) -> bool:
+    def can_edit(self) -> bool:
         return not self.is_locked()
 
     def is_posted(self):
@@ -1138,8 +1138,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         if not self.timestamp:
             self.timestamp = get_localtime()
-        elif self.timestamp and self.timestamp > get_localtime():
-            raise JournalEntryValidationError(message='Cannot create JE Models with timestamp in the future.')
+        elif all([
+            self.timestamp,
+            self.timestamp > get_localtime(),
+            self.is_posted()
+        ]):
+            raise JournalEntryValidationError(message='Cannot Post JE Models with timestamp in the future.')
 
         self.generate_je_number(commit=True)
         if verify:
@@ -1148,7 +1152,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return TransactionModel.objects.none(), self.is_verified()
 
     def get_delete_message(self) -> str:
-        return _(f'Are you sure you want to delete JournalEntry Model {self.description} on Ledger {self.ledger.name}?')
+        return _(f'Are you sure you want to delete JournalEntry Model {self.je_number} on Ledger {self.ledger.name}?')
 
     def delete(self, **kwargs):
         if not self.can_delete():

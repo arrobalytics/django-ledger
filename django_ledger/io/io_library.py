@@ -156,7 +156,8 @@ class IOCursor:
     def commit(self,
                je_timestamp: Optional[Union[datetime, date, str]] = None,
                post_new_ledgers: bool = False,
-               post_journal_entries: bool = False):
+               post_journal_entries: bool = False,
+               **kwargs):
         if self.is_committed():
             raise IOCursorValidationError(
                 message=_('Transactions already committed')
@@ -231,7 +232,8 @@ class IOCursor:
             je, txs_models = ledger_model.commit_txs(
                 je_timestamp=je_timestamp if je_timestamp else get_localtime(),
                 je_txs=je_txs,
-                je_posted=post_journal_entries
+                je_posted=post_journal_entries,
+                **kwargs
             )
 
             results[ledger_model] = {
@@ -306,7 +308,8 @@ class IOBluePrint:
                ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
                je_timestamp: Optional[Union[datetime, date, str]] = None,
                post_new_ledgers: bool = False,
-               post_journal_entries: bool = False):
+               post_journal_entries: bool = False,
+               **kwargs):
 
         blueprint_lib = IOLibrary(name='blueprint')
         cursor = blueprint_lib.get_cursor(entity_model=entity_model, user_model=user_model)
@@ -315,7 +318,8 @@ class IOBluePrint:
         return cursor.commit(
             je_timestamp=je_timestamp,
             post_new_ledgers=post_new_ledgers,
-            post_journal_entries=post_journal_entries
+            post_journal_entries=post_journal_entries,
+            **kwargs
         )
 
 
