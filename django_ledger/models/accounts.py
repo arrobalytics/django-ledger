@@ -164,6 +164,10 @@ class AccountModelManager(MP_NodeManager):
         qs = self.get_queryset()
         if user_model.is_superuser:
             return qs
+        return qs.filter(
+            Q(coa_model__entity__admin=user_model) |
+            Q(coa_model__entity__managers__in=[user_model])
+        )
 
     # todo: search for uses and pass EntityModel whenever possible.
     def for_entity(self,
