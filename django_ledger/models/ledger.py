@@ -106,7 +106,7 @@ class LedgerModelQuerySet(models.QuerySet):
 
     def current(self):
         return self.filter(
-            Q(earliest_timestamp__gt=F('entity__last_closing_date'))
+            Q(earliest_timestamp__date__gt=F('entity__last_closing_date'))
             | Q(earliest_timestamp__isnull=True)
         )
 
