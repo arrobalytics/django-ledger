@@ -31,9 +31,8 @@ class AuthTest(DjangoLedgerBaseTest):
             'password': self.PASSWORD + '1',
         }, follow=False)
         self.assertContains(response, text='Login', status_code=200)
-        self.assertFormError(response,
-                             field=None,
-                             form='form',
+        self.assertFormError(field=None,
+                             form=response.context_data['form'],
                              errors=[
                                  'Please enter a correct username and password. Note that both fields may be case-sensitive.'
                              ])
@@ -43,9 +42,8 @@ class AuthTest(DjangoLedgerBaseTest):
             'password': self.PASSWORD,
         }, follow=False)
         self.assertContains(response, text='Login', status_code=200)
-        self.assertFormError(response,
-                             field=None,
-                             form='form',
+        self.assertFormError(field=None,
+                             form=response.context_data['form'],
                              errors=[
                                  'Please enter a correct username and password. Note that both fields may be case-sensitive.'
                              ])
@@ -71,5 +69,5 @@ class AuthTest(DjangoLedgerBaseTest):
         # logout button is present...
         self.assertContains(response, text='id="djl-el=logout-button-nav"')
 
-        response = self.client.get(logout_url)
+        response = self.client.post(logout_url)
         self.assertRedirects(response, expected_url=login_url)
