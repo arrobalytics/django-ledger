@@ -441,13 +441,14 @@ class InvoiceModelAbstract(
             ledger_model.clean_fields()
             self.ledger = ledger_model
 
+            if commit_ledger or commit:
+                self.ledger.save()
+
             if self.can_generate_invoice_number():
                 self.generate_invoice_number(commit=commit)
 
             self.clean()
 
-            if commit_ledger or commit:
-                self.ledger.save()
 
             if commit:
                 self.save()

@@ -71,5 +71,5 @@ class AuthTest(DjangoLedgerBaseTest):
         # logout button is present...
         self.assertContains(response, text='id="djl-el=logout-button-nav"')
 
-        response = self.client.get(logout_url)
+        response = self.client.post(logout_url)
         self.assertRedirects(response, expected_url=login_url)

@@ -1,26 +1,40 @@
 from decimal import Decimal
 from random import choice, randint
-from typing import Type
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.utils import IntegrityError
-from django.forms import modelformset_factory, BaseModelFormSet
+from django.forms import modelformset_factory
 
 from django_ledger.forms.transactions import (
     get_transactionmodel_formset_class, TransactionModelForm,
     TransactionModelFormSet
 )
-from django_ledger.models import TransactionModel, EntityModel, AccountModel, LedgerModel, JournalEntryModel
+from django_ledger.io.io_core import get_localdate
+from django_ledger.models import TransactionModel, EntityModel, AccountModel, LedgerModel, JournalEntryModel, \
+    TransactionModelValidationError, JournalEntryValidationError
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 UserModel = get_user_model()
 
 
+class TransactionModelTest(DjangoLedgerBaseTest):
+
+    def test_invalid_balance(self):
+        entity_model = self.get_random_entity_model()
+        txs_model = self.get_random_transaction(entity_model=entity_model)
+
+        # transaction model does not allow for negative balances
+        txs_model.amount = Decimal('-100.00')
+
+        with self.assertRaises(ValidationError):
+            txs_model.full_clean()
+
+
 class TransactionModelFormTest(DjangoLedgerBaseTest):
 
     def test_valid_data(self):
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        entity_model: EntityModel = self.get_random_entity_model()
 
         account_model = str(self.get_random_account(entity_model=entity_model, balance_type='credit').uuid),
         random_tx_type = choice([tx_type[0] for tx_type in TransactionModel.TX_TYPE])
@@ -29,11 +43,12 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
             'account': account_model[0],
             'tx_type': random_tx_type,
             'amount': Decimal(randint(10000, 99999)),
-            'description': "Bought Something ..."
+            'description': 'Bought Something ...'
         }
+
         form = TransactionModelForm(form_data)
 
-        self.assertTrue(form.is_valid(), msg=f"Form is invalid with error: {form.errors}")
+        self.assertTrue(form.is_valid(), msg=f'Form is invalid with error: {form.errors}')
         with self.assertRaises(IntegrityError):
             form.save()
 
@@ -43,16 +58,16 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
             'account': account_model,
             'tx_type': 'crebit patty',
         })
-        self.assertFalse(form.is_valid(), msg="tx_type other than credit / debit shouldn't be valid")
+        self.assertFalse(form.is_valid(), msg='tx_type other than credit / debit shouldn\'t be valid')
 
     def test_blank_data(self):
         form = TransactionModelForm()
-        self.assertFalse(form.is_valid(), msg="Form without data is supposed to be invalid")
+        self.assertFalse(form.is_valid(), msg='Form without data is supposed to be invalid')
 
     def test_invalid_account(self):
         with self.assertRaises(ObjectDoesNotExist):
             form = TransactionModelForm({
-                'account': "Asset",
+                'account': 'Asset',
             })
             form.is_valid()
 
@@ -66,20 +81,29 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
                                 ledger_model: LedgerModel = None,
                                 je_model: JournalEntryModel = None,
                                 credit_amount=0,
-                                debit_amount=0
-                                ) -> TransactionModelFormSet[Type[TransactionModelForm]]:
+                                debit_amount=0) -> TransactionModelFormSet:
         """
         Returns a TransactionModelFormSet with prefilled form data.
         """
 
         ledger_model: LedgerModel = self.get_random_ledger(
-            entity_model=entity_model) if not ledger_model else ledger_model
-        je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model,
-                                                         ledger_model=ledger_model) if not je_model else je_model
-        credit_account: AccountModel = self.get_random_account(entity_model=entity_model,
-                                                               balance_type='credit') if not credit_account else credit_account
-        debit_account: AccountModel = self.get_random_account(entity_model=entity_model,
-                                                              balance_type='debit') if not debit_account else debit_account
+            entity_model=entity_model
+        ) if not ledger_model else ledger_model
+
+        je_model: JournalEntryModel = self.get_random_je(
+            entity_model=entity_model,
+            ledger_model=ledger_model
+        ) if not je_model else je_model
+
+        credit_account: AccountModel = self.get_random_account(
+            entity_model=entity_model,
+            balance_type='credit'
+        ) if not credit_account else credit_account
+
+        debit_account: AccountModel = self.get_random_account(
+            entity_model=entity_model,
+            balance_type='debit'
+        ) if not debit_account else debit_account
 
         if credit_amount + debit_amount == 0:
             credit_amount = debit_amount = Decimal(randint(10000, 99999))
@@ -96,6 +120,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
             'form-1-amount': debit_amount,
             'form-1-description': str(randint(1, 99)),
         }
+
         transaction_model_form_set = modelformset_factory(
             model=TransactionModel,
             form=TransactionModelForm,
@@ -115,23 +140,26 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         """
         Saved Transaction instances should have identical detail with initial formset.
         """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        entity_model: EntityModel = self.get_random_entity_model()
         ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
         je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
         credit_account: AccountModel = self.get_random_account(entity_model=entity_model, balance_type='credit')
         debit_account: AccountModel = self.get_random_account(entity_model=entity_model, balance_type='debit')
-        transaction_amount = str(Decimal(randint(10000, 99999)))
+        transaction_amount = Decimal.from_float(randint(10000, 99999))
 
-        txs_formset = self.get_random_txs_formsets(entity_model=entity_model,
-                                                   je_model=je_model,
-                                                   ledger_model=ledger_model,
-                                                   credit_account=credit_account,
-                                                   credit_amount=transaction_amount,
-                                                   debit_account=debit_account,
-                                                   debit_amount=transaction_amount
-                                                   )
+        txs_formset = self.get_random_txs_formsets(
+            entity_model=entity_model,
+            je_model=je_model,
+            ledger_model=ledger_model,
+            credit_account=credit_account,
+            credit_amount=transaction_amount,
+            debit_account=debit_account,
+            debit_amount=transaction_amount
+        )
 
-        self.assertTrue(txs_formset.is_valid(), msg=f"Formset is not valid, error: {txs_formset.errors}")
+        self.assertTrue(
+            txs_formset.is_valid(),
+            msg=f"Formset is not valid, error: {txs_formset.errors}")
 
         txs_instances = txs_formset.save(commit=False)
         for txs in txs_instances:
@@ -141,67 +169,92 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         txs_instances = txs_formset.save()
         for txs in txs_instances:
             if txs.tx_type == 'credit':
-                self.assertEqual(txs.account, credit_account,
-                                 msg=f'Saved Transaction record has missmatched Credit Account from the submitted formset. Saved:{txs.account} | form:{credit_account}')
+                self.assertEqual(
+                    txs.account, credit_account,
+                    msg=f'Saved Transaction record has mismatched Credit Account from the submitted formset. Saved:{txs.account} | form:{credit_account}')
 
             elif txs.tx_type == 'debit':
-                self.assertEqual(txs.account, debit_account,
-                                 msg=f'Saved Transaction record has missmatched Debit Account from the submitted formset. Saved:{txs.account} | form:{debit_account}')
+                self.assertEqual(
+                    txs.account, debit_account,
+                    msg=f'Saved Transaction record has mismatched Debit Account from the submitted formset. Saved:{txs.account} | form:{debit_account}')
 
-            self.assertEqual(txs.amount, Decimal(transaction_amount),
-                             msg=f'Saved Transaction record has missmatched total amount from the submitted formset. Saved:{txs.amount} | form:{transaction_amount}')
+            self.assertEqual(
+                txs.amount, Decimal(transaction_amount),
+                msg=f'Saved Transaction record has mismatched total amount from the submitted formset. Saved:{txs.amount} | form:{transaction_amount}')
 
     def test_imbalance_transactions(self):
         """
         Imbalanced Transactions should be invalid.
         """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        entity_model: EntityModel = self.get_random_entity_model()
 
         txs_formset = self.get_random_txs_formsets(entity_model=entity_model,
                                                    credit_amount=1000,
-                                                   debit_amount=2000
-                                                   )
+                                                   debit_amount=2000)
 
-        self.assertFalse(txs_formset.is_valid(),
-                         msg=f"Formset is supposed to be invalid because of imbalance transaction")
-
-    def test_ledger_lock(self):
-        """
-        Transaction on locked a locked Ledger should fail.
-        """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
-        ledger_model = self.get_random_ledger(entity_model=entity_model)
-        je_model = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
-        ledger_model.post(commit=True)
-        ledger_model.lock(commit=True)
-
-        self.assertTrue(ledger_model.is_locked())
-
-        txs_formset = self.get_random_txs_formsets(entity_model=entity_model,
-                                                   je_model=je_model,
-                                                   ledger_model=ledger_model,
-                                                   )
-        with self.assertRaises(ObjectDoesNotExist,
-                               msg="Shouldn't be able to add new transaction to a locked Ledger"):
-            txs_formset.is_valid()
+        self.assertFalse(
+            txs_formset.is_valid(),
+            msg=f"Formset is supposed to be invalid because of imbalance transaction"
+        )
 
     def test_je_locked(self):
         """
         Transaction on locked a locked Journal Entry should fail.
         """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
-        ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
-        je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
-        je_model.mark_as_locked(commit=True)
-        self.assertTrue(je_model.is_locked())
+        entity_model: EntityModel = self.get_random_entity_model()
+        ledger_model: LedgerModel = self.get_random_ledger(
+            entity_model=entity_model
+        )
 
-        txs_formset = self.get_random_txs_formsets(entity_model=entity_model,
-                                                   je_model=je_model,
-                                                   ledger_model=ledger_model,
-                                                   )
-        with self.assertRaises(ObjectDoesNotExist,
-                               msg="Shouldn't be able to add new transaction to a locked Journal Entry"):
-            txs_formset.is_valid()
+        je_model: JournalEntryModel = self.get_random_je(
+            entity_model=entity_model,
+            ledger_model=ledger_model
+        )
+        je_model.mark_as_locked(commit=True, raise_exception=False)
+
+        self.assertTrue(je_model.is_locked())
+        txs_model = je_model.transactionmodel_set.all().first()
+        txs_model.amount += Decimal.from_float(1.00)
+
+        with self.assertRaises(TransactionModelValidationError):
+            txs_model.save()
+
+        with self.assertRaises(
+                TransactionModelValidationError,
+                msg=f'Cannot create transaction on locked Journal Entry'
+        ):
+            je_model.transactionmodel_set.create(
+                amount=Decimal.from_float(100.00),
+                account=self.get_random_account(entity_model=entity_model, balance_type='debit')
+            )
+
+    def test_ledger_lock(self):
+        """
+        Transaction on locked a locked Ledger should fail.
+        """
+        entity_model: EntityModel = self.get_random_entity_model()
+        ledger_model = self.get_random_ledger(entity_model=entity_model)
+        ledger_model.post(commit=True, raise_exception=False)
+        self.assertTrue(ledger_model.is_posted())
+        ledger_model.lock(commit=True, raise_exception=False)
+        self.assertTrue(ledger_model.is_locked())
+
+        with self.assertRaises(
+                JournalEntryValidationError,
+                msg='Cannot create Journal Entries on locked ledgers.'
+        ):
+            ledger_model.journal_entries.create(
+                timestamp=get_localdate(),
+                description='Test Journal Entry'
+            )
+
+        je_model = ledger_model.journal_entries.first()
+
+        with self.assertRaises(
+                JournalEntryValidationError,
+                msg='Cannot unpost journal entry on locked ledgers'
+        ):
+            je_model.mark_as_unposted(commit=True, raise_exception=True)
 
 
 class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
@@ -241,12 +294,11 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
         je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
         transaction_pairs = randint(1, 12)
-        self.get_random_transactions(entity_model=entity_model, je_model=je_model,
-                                     pairs=transaction_pairs)  # Fill Journal Entry with Transactions
+        # self.get_random_transactions(entity_model=entity_model, je_model=je_model,
+        #                              pairs=transaction_pairs)  # Fill Journal Entry with Transactions
 
         je_model.mark_as_locked(commit=True)
-        self.assertTrue(je_model.is_locked(),
-                        msg="Journal Entry should be locked in this test case")
+        self.assertTrue(je_model.is_locked(), msg="Journal Entry should be locked in this test case")
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
 

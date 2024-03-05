@@ -1457,6 +1457,26 @@ class EntityModelAbstract(MP_Node,
         account_model.clean()
         return coa_model, coa_model.create_account(account_model=account_model)
 
+    # ### LEDGER MANAGEMENT ####
+    def get_ledgers(self, posted: bool = True):
+        return self.ledgermodel_set.filter(posted=posted)
+
+    # ### JOURNAL ENTRY MANAGEMENT ####
+    def get_journal_entries(self, ledger_model: LedgerModel,  posted: bool = True):
+
+        if ledger_model:
+            self.validate_ledger_model_for_entity(ledger_model)
+            qs = ledger_model.journal_entries.all()
+            if posted:
+                return qs.posted()
+            return qs
+
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
+        qs = JournalEntryModel.objects.for_entity(entity_slug=self)
+        if posted:
+            return qs.posted()
+        return qs
+
     # ### VENDOR MANAGEMENT ####
     def get_vendors(self, active: bool = True) -> VendorModelQuerySet:
         """

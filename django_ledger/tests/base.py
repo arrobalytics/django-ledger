@@ -12,10 +12,10 @@ from django.test import TestCase
 from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
-from django_ledger.io.roles import ROOT_GROUP
 from django_ledger.io.io_generator import EntityDataGenerator
+from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel, AccountModelQuerySet
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
-from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel
+
 UserModel = get_user_model()
 
 
@@ -154,96 +154,92 @@ class DjangoLedgerBaseTest(TestCase):
     def get_random_draft_date(self):
         return self.START_DATE + timedelta(days=randint(0, 365))
 
-    def get_random_account(self, 
-                          entity_model:EntityModel,
-                          balance_type: Literal['credit', 'debit', None] = None
-                          )-> AccountModel:
+    def get_random_account(self,
+                           entity_model: EntityModel,
+                           balance_type: Literal['credit', 'debit', None] = None) -> AccountModel:
         """
         Returns 1 random AccountModel with the specified balance_type.
         """
-        account_qs = AccountModel.objects.for_entity_available(
-                        user_model=self.user_model,
-                        entity_slug=entity_model.slug
-                     )
-        return choice(account_qs.filter(balance_type=balance_type) if balance_type else account_qs)
-        
+        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=True)
+        account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
+        # limits the queryset in case of large querysets...
+        return choice(account_qs[:50])
 
     def get_random_ledger(self,
                           entity_model: EntityModel,
-                         )-> LedgerModel:
+                          qs_limit: int = 100,
+                          posted: bool = True) -> LedgerModel:
         """
-        If none exist, generates 3 randomly populated Ledger.
         Returns 1 random LedgerModel object.
         """
-        ledger_model = LedgerModel.objects.filter(entity=entity_model, posted=False, locked=False, hidden=False)
-        if not ledger_model.exists():
-            for i in range(3):
-                LedgerModel.objects.create(
-                    name=f"{i}Example Ledger {randint(10000, 99999)}",
-                    ledger_xid=f"{i}example-ledger-xid-{randint(10000, 99999)}",
-                    entity=entity_model,
-                )
-        return choice(LedgerModel.objects.filter(entity=entity_model, posted=False, locked=False, hidden=False))
-    
-    def get_random_je(self, 
-                      entity_model: EntityModel, 
-                      ledger_model: LedgerModel=None
-                        )-> JournalEntryModel:
-        """
-        If none exist, generates 3 randomly populated JournalEntry.
+        ledger_model_qs = entity_model.get_ledgers(
+            posted=posted).filter(
+            journal_entries__count__gt=0
+        )
+
+        # no need to check because data generator will always populate an entity with sample data.
+        # if not ledger_model.exists():
+        #     for i in range(3):
+        #         LedgerModel.objects.create(
+        #             name=f"{i}Example Ledger {randint(10000, 99999)}",
+        #             ledger_xid=f"{i}example-ledger-xid-{randint(10000, 99999)}",
+        #             entity=entity_model,
+        #         )
+
+        # limits the queryset in case of large querysets...
+        return choice(ledger_model_qs[:qs_limit])
+
+    def get_random_je(self,
+                      entity_model: EntityModel,
+                      ledger_model: Optional[LedgerModel] = None,
+                      posted: bool = True,
+                      qs_limit: int = 100
+                      ) -> JournalEntryModel:
+        """.
         Returns 1 random JournalEntryModel object.
         """
         if not ledger_model:
-            ledger_model: LedgerModel = self.get_random_ledger(entity_model)
-        
-        je_model = JournalEntryModel.objects.filter(ledger=ledger_model, locked=False, posted=False)
+            ledger_model: LedgerModel = self.get_random_ledger(
+                entity_model=entity_model,
+                qs_limit=qs_limit,
+            )
+        else:
+            entity_model.validate_ledger_model_for_entity(ledger_model)
+        journal_entry_qs = ledger_model.journal_entries.all()
 
-        if not je_model.exists():
-            for i in range(3):
-                random_je_activity = choice([category[0] for category in JournalEntryModel.ACTIVITIES])
-                JournalEntryModel.objects.create(
-                    je_number=f"{i}example-je-num-{randint(10000, 99999)}",
-                    description=f"{i}Random Journal Entry Desc {randint(10000, 99999)}",
-                    is_closing_entry=False,
-                    activity=random_je_activity,
-                    posted=False,
-                    locked=False,
-                    ledger=ledger_model,
-                )
-        
-        return choice(JournalEntryModel.objects.filter(ledger=ledger_model, locked=False, posted=False))
-    
-    def get_random_transactions(self,
+        # no need to check because data generator will always populate an entity with sample data.
+        # if not je_model.exists():
+        #     for i in range(3):
+        #         random_je_activity = choice([category[0] for category in JournalEntryModel.ACTIVITIES])
+        #         JournalEntryModel.objects.create(
+        #             je_number=f"{i}example-je-num-{randint(10000, 99999)}",
+        #             description=f"{i}Random Journal Entry Desc {randint(10000, 99999)}",
+        #             is_closing_entry=False,
+        #             activity=random_je_activity,
+        #             posted=False,
+        #             locked=False,
+        #             ledger=ledger_model,
+        #         )
+
+        if posted:
+            journal_entry_qs = journal_entry_qs.posted()
+
+        journal_entry_qs = journal_entry_qs.select_related('ledger', 'ledger__entity')
+        # limits the queryset in case of large querysets...
+        return choice(journal_entry_qs[:qs_limit])
+
+    def get_random_transaction(self,
                                entity_model: EntityModel,
-                               pairs=3,
-                               je_model: JournalEntryModel = None
-                                ) -> TransactionModel:
+                               je_model: Optional[JournalEntryModel] = None,
+                               posted: bool = True,
+                               qs_limit: int = 100) -> TransactionModel:
         """
-        If none exist, generates n amount of TransactionModel pairs into a JournalEntryModel.
-        Returns all TransactionModel related to the JournalEntryModel.
+        Returns all TransactionModel related to a random or specified JournalEntryModel.
         """
         if not je_model:
-            je_model = self.get_random_je(entity_model=entity_model)
-
-        transaction_model = TransactionModel.objects.filter(journal_entry=je_model)
-
-        if not transaction_model.exists():
-            for i in range(pairs):
-                random_tx_type = choice([tx_type[0] for tx_type in TransactionModel.TX_TYPE])
-                transaction_amount = Decimal(randint(10000, 99999))
-                TransactionModel.objects.create(
-                    tx_type=random_tx_type,
-                    journal_entry=je_model,
-                    account= self.get_random_account(entity_model=entity_model,balance_type='credit'), 
-                    amount=transaction_amount,
-                    description=f"{i}Random credit Transaction {randint(10000, 99999)}",
-                )
-                TransactionModel.objects.create(
-                    tx_type=random_tx_type,
-                    journal_entry=je_model,
-                    account= self.get_random_account(entity_model=entity_model,balance_type='debit'), 
-                    amount=transaction_amount,
-                    description=f"{i}Random debit Transaction {randint(10000, 99999)}",
-                )
-        
-        return TransactionModel.objects.filter(journal_entry=je_model)
+            je_model = self.get_random_je(entity_model=entity_model, posted=posted)
+        else:
+            ledger_model = je_model.ledger
+            entity_model.validate_ledger_model_for_entity(ledger_model)
+        txs_model_qs = je_model.transactionmodel_set.all()
+        return choice(txs_model_qs[:qs_limit])
