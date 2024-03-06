@@ -3,6 +3,7 @@ from random import choice, randint
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db.models import Count
 from django.db.utils import IntegrityError
 from django.forms import modelformset_factory
 
@@ -11,8 +12,11 @@ from django_ledger.forms.transactions import (
     TransactionModelFormSet
 )
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import TransactionModel, EntityModel, AccountModel, LedgerModel, JournalEntryModel, \
+from django_ledger.models import (
+    TransactionModel, EntityModel, AccountModel, LedgerModel, JournalEntryModel,
     TransactionModelValidationError, JournalEntryValidationError
+)
+
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 UserModel = get_user_model()
@@ -76,65 +80,38 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
     def get_random_txs_formsets(self,
                                 entity_model: EntityModel,
-                                credit_account: AccountModel = None,
-                                debit_account: AccountModel = None,
                                 ledger_model: LedgerModel = None,
-                                je_model: JournalEntryModel = None,
-                                credit_amount=0,
-                                debit_amount=0) -> TransactionModelFormSet:
+                                je_model: JournalEntryModel = None) -> TransactionModelFormSet:
         """
         Returns a TransactionModelFormSet with prefilled form data.
         """
 
-        ledger_model: LedgerModel = self.get_random_ledger(
-            entity_model=entity_model
-        ) if not ledger_model else ledger_model
+        if ledger_model:
+            # if ledger model provided, get a je_model from provided ledger model...
+            je_model: JournalEntryModel = self.get_random_je(
+                entity_model=entity_model,
+                ledger_model=ledger_model
+            ) if not je_model else je_model
 
-        je_model: JournalEntryModel = self.get_random_je(
-            entity_model=entity_model,
-            ledger_model=ledger_model
-        ) if not je_model else je_model
+        else:
 
-        credit_account: AccountModel = self.get_random_account(
-            entity_model=entity_model,
-            balance_type='credit'
-        ) if not credit_account else credit_account
+            # get a journal entry that has transactions...
+            je_model = JournalEntryModel.objects.for_entity(
+                entity_slug=entity_model,
+                user_model=self.user_model
+            ).annotate(
+                txs_count=Count('transactionmodel')).filter(
+                txs_count__gt=0).order_by('-timestamp').first()
 
-        debit_account: AccountModel = self.get_random_account(
-            entity_model=entity_model,
-            balance_type='debit'
-        ) if not debit_account else debit_account
+        TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
-        if credit_amount + debit_amount == 0:
-            credit_amount = debit_amount = Decimal(randint(10000, 99999))
-
-        form_data = {
-            'form-TOTAL_FORMS': '2',
-            'form-INITIAL_FORMS': '0',
-            'form-0-account': str(credit_account.uuid),
-            'form-0-tx_type': 'credit',
-            'form-0-amount': credit_amount,
-            'form-0-description': str(randint(1, 99)),
-            'form-1-account': str(debit_account.uuid),
-            'form-1-tx_type': 'debit',
-            'form-1-amount': debit_amount,
-            'form-1-description': str(randint(1, 99)),
-        }
-
-        transaction_model_form_set = modelformset_factory(
-            model=TransactionModel,
-            form=TransactionModelForm,
-            formset=TransactionModelFormSet,
-            can_delete=True
-        )
-
-        return transaction_model_form_set(
-            form_data,
+        txs_formset = TransactionModelFormSet(
             entity_slug=entity_model.slug,
             user_model=self.user_model,
-            ledger_pk=ledger_model,
-            je_model=je_model
+            je_model=je_model,
+            ledger_pk=je_model.ledger_id,
         )
+        return txs_formset
 
     def test_valid_formset(self):
         """
@@ -150,11 +127,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         txs_formset = self.get_random_txs_formsets(
             entity_model=entity_model,
             je_model=je_model,
-            ledger_model=ledger_model,
-            credit_account=credit_account,
-            credit_amount=transaction_amount,
-            debit_account=debit_account,
-            debit_amount=transaction_amount
+            ledger_model=ledger_model
         )
 
         self.assertTrue(
@@ -188,9 +161,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         """
         entity_model: EntityModel = self.get_random_entity_model()
 
-        txs_formset = self.get_random_txs_formsets(entity_model=entity_model,
-                                                   credit_amount=1000,
-                                                   debit_amount=2000)
+        txs_formset = self.get_random_txs_formsets(entity_model=entity_model)
 
         self.assertFalse(
             txs_formset.is_valid(),
@@ -263,9 +234,10 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         """
         The Formset will contain 6 extra forms & delete fields if Journal Entry is unlocked.
         """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        entity_model: EntityModel = self.get_random_entity_model()
         ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
         je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
+        je_model.mark_as_unlocked(commit=True)
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
         txs_formset = transaction_model_form_set(
@@ -273,32 +245,36 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
             je_model=je_model,
             ledger_pk=ledger_model,
             entity_slug=entity_model.slug,
-            queryset=je_model.transactionmodel_set.all().order_by('account__code')
         )
 
         self.assertTrue(not je_model.is_locked(),
                         msg="At this point in this test case, Journal Entry should be unlocked.")
 
         delete_field = '<input type="checkbox" name="form-0-DELETE" id="id_form-0-DELETE">'
-        self.assertInHTML(delete_field, txs_formset.as_table(),
-                          msg_prefix="Transactions Formset with unlocked Journal Entry should have `can_delete` enabled")
+        self.assertInHTML(
+            delete_field,
+            txs_formset.as_table(),
+            msg_prefix='Transactions Formset with unlocked Journal Entry should have `can_delete` enabled'
+        )
 
         self.assertEqual(len(txs_formset), 6,
-                         msg="Transactions Formset with unlocked Journal Entry should have 6 extras")
+                         msg='Transactions Formset with unlocked Journal Entry should have 6 extras')
 
     def test_locked_journal_entry_formset(self):
         """
         The Formset will contain no extra forms & only forms with Transaction if Journal Entry is locked.
         """
-        entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
+        entity_model: EntityModel = self.get_random_entity_model()
         ledger_model: LedgerModel = self.get_random_ledger(entity_model=entity_model)
         je_model: JournalEntryModel = self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
-        transaction_pairs = randint(1, 12)
+        # transaction_pairs = randint(1, 12)
         # self.get_random_transactions(entity_model=entity_model, je_model=je_model,
         #                              pairs=transaction_pairs)  # Fill Journal Entry with Transactions
 
         je_model.mark_as_locked(commit=True)
-        self.assertTrue(je_model.is_locked(), msg="Journal Entry should be locked in this test case")
+        self.assertTrue(
+            je_model.is_locked(),
+            msg="Journal Entry should be locked in this test case")
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
@@ -310,5 +286,6 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
             queryset=je_model.transactionmodel_set.all().order_by('account__code')
         )
 
-        self.assertEqual(len(txs_formset), (transaction_pairs * 2),  # Convert pairs to total count
-                         msg="Transactions Formset with unlocked Journal Entry did not match the expected count")
+        self.assertEqual(
+            len(txs_formset), (je_model.transactionmodel_set.count()),  # Convert pairs to total count
+            msg="Transactions Formset with unlocked Journal Entry did not match the expected count")

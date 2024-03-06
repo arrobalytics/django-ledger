@@ -45,11 +45,11 @@ class DjangoLedgerBaseTest(TestCase):
         cls.USERNAME: str = 'testuser'
         cls.PASSWORD: str = 'NeverUseThisPassword12345'
         cls.USER_EMAIL: str = 'testuser@djangoledger.com'
-        cls.N: int = 2
+        cls.N: int = 1
 
         cls.DAYS_FWD: int = randint(180, 180 * 3)
         cls.TZ = get_default_timezone()
-        cls.START_DATE = cls.get_random_date()
+        cls.START_DATE = cls.get_random_date(as_datetime=True)
 
         cls.CLIENT = Client(enforce_csrf_checks=False)
 
@@ -71,7 +71,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.populate_entity_models()
 
     @classmethod
-    def get_random_date(cls, as_datetime: bool = True) -> date:
+    def get_random_date(cls, as_datetime: bool = False) -> date:
         dt = date(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),

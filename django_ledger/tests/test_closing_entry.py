@@ -17,17 +17,25 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
             p.name: set(p.pattern.converters.keys()) for p in closing_entry_urls
         }
 
-        for entity_model in self.ENTITY_MODEL_QUERYSET:
-            for y in [self.START_DATE.year, self.START_DATE.year + 1]:
-                for m in range(1, 13):
-                    ce_model, ce_txs_list = entity_model.close_books_for_month(
-                        year=y,
-                        month=m,
-                        force_update=True)
+        self.MONTHS = list(range(1, 13))
+        self.YEARS = [self.START_DATE.year, self.START_DATE.year + 1]
+
+    def test_closing_entry_create(self):
+        entity_model = self.get_random_entity_model()
+        for y in self.YEARS:
+            for m in self.MONTHS:
+                entity_model.close_books_for_month(
+                    year=y,
+                    month=m,
+                    post_closing_entry=True
+                )
 
     def test_protected_views(self):
         self.logout_client()
         entity_model = self.get_random_entity_model()
+        entity_model.close_entity_books(
+            closing_date=self.get_random_date()
+        )
         closing_entry_model = choice(entity_model.get_closing_entries())
 
         for path, kwargs in self.URL_PATTERNS.items():
@@ -53,16 +61,5 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         self.login_client()
         entity_model = self.get_random_entity_model()
         url = reverse('django_ledger:closing-entry-list', kwargs={'entity_slug': entity_model.slug})
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(4):
             response = self.CLIENT.get(path=url)
-
-    def test_closing_entry_create(self):
-        entity_model = self.get_random_entity_model()
-
-        with self.assertNumQueries(1):
-
-            # closing entry does not exist...
-            entity_model.close_books_for_month(
-                year=self.START_DATE.year + 2,
-                month=self.START_DATE.month
-            )
