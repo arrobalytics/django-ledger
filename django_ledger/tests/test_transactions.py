@@ -5,10 +5,10 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Count
 from django.db.utils import IntegrityError
-from django.forms import modelformset_factory
 
 from django_ledger.forms.transactions import (
-    get_transactionmodel_formset_class, TransactionModelForm,
+    get_transactionmodel_formset_class,
+    TransactionModelForm,
     TransactionModelFormSet
 )
 from django_ledger.io.io_core import get_localdate
@@ -16,7 +16,6 @@ from django_ledger.models import (
     TransactionModel, EntityModel, AccountModel, LedgerModel, JournalEntryModel,
     TransactionModelValidationError, JournalEntryValidationError
 )
-
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 UserModel = get_user_model()
