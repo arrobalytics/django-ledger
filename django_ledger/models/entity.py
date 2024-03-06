@@ -1461,6 +1461,26 @@ class EntityModelAbstract(MP_Node,
         account_model.clean()
         return coa_model, coa_model.create_account(account_model=account_model)
 
+    # ### LEDGER MANAGEMENT ####
+    def get_ledgers(self, posted: bool = True):
+        return self.ledgermodel_set.filter(posted=posted)
+
+    # ### JOURNAL ENTRY MANAGEMENT ####
+    def get_journal_entries(self, ledger_model: LedgerModel, posted: bool = True):
+
+        if ledger_model:
+            self.validate_ledger_model_for_entity(ledger_model)
+            qs = ledger_model.journal_entries.all()
+            if posted:
+                return qs.posted()
+            return qs
+
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
+        qs = JournalEntryModel.objects.for_entity(entity_slug=self)
+        if posted:
+            return qs.posted()
+        return qs
+
     # ### VENDOR MANAGEMENT ####
     def get_vendors(self, active: bool = True) -> VendorModelQuerySet:
         """
@@ -2662,11 +2682,12 @@ class EntityModelAbstract(MP_Node,
 
         self.meta[self.META_KEY_CLOSING_ENTRY_DATES] = [d.isoformat() for d in date_list]
         if commit:
-            self.save(update_fields=[
-                'last_closing_date',
-                'updated',
-                'meta'
-            ])
+            self.save(
+                update_fields=[
+                    'last_closing_date',
+                    'updated',
+                    'meta'
+                ])
         return date_list
 
     def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> List[date]:
@@ -2719,7 +2740,7 @@ class EntityModelAbstract(MP_Node,
                            closing_date: Optional[date] = None,
                            closing_entry_model=None,
                            force_update: bool = False,
-                           commit: bool = True):
+                           post_closing_entry: bool = True):
 
         if closing_entry_model and closing_date:
             raise EntityModelValidationError(
@@ -2731,13 +2752,18 @@ class EntityModelAbstract(MP_Node,
             )
 
         closing_entry_exists = False
+
         if closing_entry_model:
             closing_date = closing_entry_model.closing_date
             self.validate_closing_entry_model(closing_entry_model, closing_date=closing_date)
             closing_entry_exists = True
         else:
             try:
-                closing_entry_model = self.closingentrymodel_set.defer('markdown_notes').get(
+                closing_entry_model = self.closingentrymodel_set.select_related(
+                    'ledger_model',
+                    'ledger_model__entity'
+                ).defer(
+                    'markdown_notes').get(
                     closing_date__exact=closing_date
                 )
 
@@ -2746,29 +2772,34 @@ class EntityModelAbstract(MP_Node,
                 pass
 
         if force_update or not closing_entry_exists or closing_entry_model:
-            ce_model, ce_txs = self.create_closing_entry_for_date(
+            closing_entry_model, ce_txs = self.create_closing_entry_for_date(
                 closing_date=closing_date,
                 closing_entry_model=closing_entry_model,
-                closing_entry_exists=closing_entry_exists
+                closing_entry_exists=closing_entry_exists,
             )
 
-            if commit:
-                self.save(update_fields=[
-                    'last_closing_date',
-                    'meta',
-                    'updated'
-                ])
-            return ce_model, ce_txs
+            if post_closing_entry:
+                closing_entry_model.mark_as_posted(commit=True)
+                self.save_closing_entry_dates_meta(commit=True)
+
+            return closing_entry_model, ce_txs
         raise EntityModelValidationError(message=f'Closing Entry for Period {closing_date} already exists.')
 
-    def close_books_for_month(self, year: int, month: int, force_update: bool = False, commit: bool = True):
+    def close_books_for_month(self, year: int, month: int, force_update: bool = False, post_closing_entry: bool = True):
         _, day = monthrange(year, month)
         closing_dt = date(year, month, day)
-        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_entity_books(
+            closing_date=closing_dt,
+            force_update=force_update,
+            post_closing_entry=post_closing_entry,
+            closing_entry_model=None
+        )
 
-    def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False, commit: bool = True):
+    def close_books_for_fiscal_year(self, fiscal_year: int, force_update: bool = False,
+                                    post_closing_entry: bool = True):
         closing_dt = self.get_fy_end(year=fiscal_year)
-        return self.close_entity_books(closing_date=closing_dt, force_update=force_update, commit=commit)
+        return self.close_entity_books(closing_date=closing_dt, force_update=force_update,
+                                       post_closing_entry=post_closing_entry)
 
     # ### RANDOM DATA GENERATION ####
 

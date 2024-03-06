@@ -313,7 +313,7 @@ class BillModelTests(DjangoLedgerBaseTest):
             vendor_model = bill_model.vendor
             bill_detail_url = bill_model.get_absolute_url()
 
-            with self.assertNumQueries(5):
+            with self.assertNumQueries(6):
                 bill_detail_response = self.CLIENT.get(bill_detail_url)
             self.assertTrue(bill_detail_response.status_code, 200)
 

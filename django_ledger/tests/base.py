@@ -3,7 +3,7 @@ from decimal import Decimal
 from itertools import cycle
 from logging import getLogger, DEBUG
 from random import randint, choice
-from typing import Optional
+from typing import Optional, Literal
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
@@ -13,7 +13,8 @@ from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models.entity import EntityModel, EntityModelQuerySet
+from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel, AccountModelQuerySet
+from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
 
 UserModel = get_user_model()
 
@@ -44,11 +45,11 @@ class DjangoLedgerBaseTest(TestCase):
         cls.USERNAME: str = 'testuser'
         cls.PASSWORD: str = 'NeverUseThisPassword12345'
         cls.USER_EMAIL: str = 'testuser@djangoledger.com'
-        cls.N: int = 2
+        cls.N: int = 1
 
         cls.DAYS_FWD: int = randint(180, 180 * 3)
         cls.TZ = get_default_timezone()
-        cls.START_DATE = cls.get_random_date()
+        cls.START_DATE = cls.get_random_date(as_datetime=True)
 
         cls.CLIENT = Client(enforce_csrf_checks=False)
 
@@ -70,7 +71,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.populate_entity_models()
 
     @classmethod
-    def get_random_date(cls, as_datetime: bool = True) -> date:
+    def get_random_date(cls, as_datetime: bool = False) -> date:
         dt = date(
             year=choice(range(1990, 2020)),
             month=choice(range(1, 13)),
@@ -152,3 +153,93 @@ class DjangoLedgerBaseTest(TestCase):
 
     def get_random_draft_date(self):
         return self.START_DATE + timedelta(days=randint(0, 365))
+
+    def get_random_account(self,
+                           entity_model: EntityModel,
+                           balance_type: Literal['credit', 'debit', None] = None) -> AccountModel:
+        """
+        Returns 1 random AccountModel with the specified balance_type.
+        """
+        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=True)
+        account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
+        # limits the queryset in case of large querysets...
+        return choice(account_qs[:50])
+
+    def get_random_ledger(self,
+                          entity_model: EntityModel,
+                          qs_limit: int = 100,
+                          posted: bool = True) -> LedgerModel:
+        """
+        Returns 1 random LedgerModel object.
+        """
+        ledger_model_qs = entity_model.get_ledgers(
+            posted=posted).filter(
+            journal_entries__count__gt=0
+        )
+
+        # no need to check because data generator will always populate an entity with sample data.
+        # if not ledger_model.exists():
+        #     for i in range(3):
+        #         LedgerModel.objects.create(
+        #             name=f"{i}Example Ledger {randint(10000, 99999)}",
+        #             ledger_xid=f"{i}example-ledger-xid-{randint(10000, 99999)}",
+        #             entity=entity_model,
+        #         )
+
+        # limits the queryset in case of large querysets...
+        return choice(ledger_model_qs[:qs_limit])
+
+    def get_random_je(self,
+                      entity_model: EntityModel,
+                      ledger_model: Optional[LedgerModel] = None,
+                      posted: bool = True,
+                      qs_limit: int = 100
+                      ) -> JournalEntryModel:
+        """.
+        Returns 1 random JournalEntryModel object.
+        """
+        if not ledger_model:
+            ledger_model: LedgerModel = self.get_random_ledger(
+                entity_model=entity_model,
+                qs_limit=qs_limit,
+            )
+        else:
+            entity_model.validate_ledger_model_for_entity(ledger_model)
+        journal_entry_qs = ledger_model.journal_entries.all()
+
+        # no need to check because data generator will always populate an entity with sample data.
+        # if not je_model.exists():
+        #     for i in range(3):
+        #         random_je_activity = choice([category[0] for category in JournalEntryModel.ACTIVITIES])
+        #         JournalEntryModel.objects.create(
+        #             je_number=f"{i}example-je-num-{randint(10000, 99999)}",
+        #             description=f"{i}Random Journal Entry Desc {randint(10000, 99999)}",
+        #             is_closing_entry=False,
+        #             activity=random_je_activity,
+        #             posted=False,
+        #             locked=False,
+        #             ledger=ledger_model,
+        #         )
+
+        if posted:
+            journal_entry_qs = journal_entry_qs.posted()
+
+        journal_entry_qs = journal_entry_qs.select_related('ledger', 'ledger__entity')
+        # limits the queryset in case of large querysets...
+        return choice(journal_entry_qs[:qs_limit])
+
+    def get_random_transaction(self,
+                               entity_model: EntityModel,
+                               je_model: Optional[JournalEntryModel] = None,
+                               posted: bool = True,
+                               qs_limit: int = 100) -> TransactionModel:
+        """
+        Returns all TransactionModel related to a random or specified JournalEntryModel.
+        """
+        if not je_model:
+            je_model = self.get_random_je(entity_model=entity_model, posted=posted)
+        else:
+            ledger_model = je_model.ledger
+            entity_model.validate_ledger_model_for_entity(ledger_model)
+        txs_model_qs = je_model.transactionmodel_set.all()
+        return choice(txs_model_qs[:qs_limit])

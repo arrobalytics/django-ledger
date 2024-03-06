@@ -134,7 +134,7 @@ class EntityDataGenerator(LoggingMixIn):
     def get_logger_name(self):
         return self.entity_model.slug
 
-    def populate_entity(self, force_populate: bool = False):
+    def populate_entity(self, create_closing_entry: bool = False, force_populate: bool = False):
 
         self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
@@ -176,7 +176,8 @@ class EntityDataGenerator(LoggingMixIn):
             start_dttm = self.start_date + timedelta(days=randint(0, self.DAYS_FORWARD))
             self.create_invoice(date_draft=start_dttm)
 
-        self.create_closing_entry()
+        if create_closing_entry:
+            self.create_closing_entry()
 
     def get_next_timestamp(self, prev_timestamp: Union[date, datetime] = None) -> date:
         if not prev_timestamp:
@@ -792,9 +793,9 @@ class EntityDataGenerator(LoggingMixIn):
         closing_date = self.start_date + timedelta(days=int(self.DAYS_FORWARD / 2))
         ce_model, ce_txs = self.entity_model.close_books_for_month(
             year=closing_date.year,
-            month=closing_date.month
+            month=closing_date.month,
+            post_closing_entry=True
         )
-        ce_model.mark_as_posted(commit=True)
 
     def recount_inventory(self):
         self.logger.info(f'Recounting inventory...')

@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, QuerySet
+from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import validate_io_timestamp
@@ -219,7 +220,7 @@ class TransactionModelAdmin(models.Manager):
         TransactionModelQuerySet
             Returns a TransactionModelQuerySet with applied filters.
         """
-        qs = self.get_queryset()
+        qs = self.get_queryset().select_related('journal_entry')
         if user_model.is_superuser:
             return qs
         return qs.filter(
@@ -409,8 +410,8 @@ class TransactionModelAdmin(models.Manager):
 
 class TransactionModelAbstract(CreateUpdateMixIn):
     """
-    This is the main abstract class which the BillModel database will inherit from.
-    The BillModel inherits functionality from the following MixIns:
+    This is the main abstract class which the TransactionModel database will inherit from.
+    The TransactionModel inherits functionality from the following MixIns:
 
         1. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
@@ -485,7 +486,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                                   x5=self.account.balance_type)
 
     def clean(self):
-        if self.account.is_root_account():
+        if self.account_id and self.account.is_root_account():
             raise TransactionModelValidationError(
                 message=_('Cannot transact on root accounts')
             )
@@ -495,3 +496,13 @@ class TransactionModel(TransactionModelAbstract):
     """
     Base Transaction Model From Abstract.
     """
+
+
+def transactionmodel_presave(instance: TransactionModel, **kwargs):
+    if instance.journal_entry_id and instance.journal_entry.is_locked():
+        raise TransactionModelValidationError(
+            message=_('Cannot modify transactions on locked journal entries')
+        )
+
+
+pre_save.connect(transactionmodel_presave, sender=TransactionModel)
