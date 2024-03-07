@@ -489,7 +489,6 @@ class BillModelAbstract(
 
             self.clean()
 
-
             if commit:
                 self.save()
 

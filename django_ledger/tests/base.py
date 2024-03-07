@@ -83,15 +83,15 @@ class DjangoLedgerBaseTest(TestCase):
                 return datetime.combine(
                     dt,
                     time(
-                        hour=randint(1, 24),
-                        minute=randint(1, 60)
+                        hour=randint(1, 23),
+                        minute=randint(1, 59)
                     ),
                 )
             return datetime.combine(
                 dt,
                 time(
-                    hour=randint(1, 24),
-                    minute=randint(1, 60)
+                    hour=randint(1, 23),
+                    minute=randint(1, 59)
                 ),
                 tzinfo=ZoneInfo(settings.TIME_ZONE)
             )

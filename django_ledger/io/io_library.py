@@ -139,8 +139,6 @@ class IOCursor:
                 total_credits = sum(t.amount for t in txs if t.tx_type == CREDIT)
                 total_debits = sum(t.amount for t in txs if t.tx_type == DEBIT)
 
-                # print("{} credits, {} debits".format(total_credits, total_debits))
-
                 if total_credits != total_debits:
                     raise IOCursorValidationError(
                         message=_('Total transactions Credits and Debits must be equal. '
@@ -256,9 +254,16 @@ class IOBluePrintValidationError(ValidationError):
 
 class IOBluePrint:
 
-    def __init__(self, precision_decimals: int = 2):
+    def __init__(self, name: Optional[str] = None, precision_decimals: int = 2):
+        self.name = name
         self.precision_decimals = precision_decimals
         self.registry = list()
+
+    def get_name(self, entity_model: EntityModel):
+        if self.name is None:
+            l_dt = get_localtime()
+            return f'blueprint-{entity_model.slug}-{l_dt.strftime("%m%d%Y-%H%M%S")}'
+        return self.name
 
     def _round_amount(self, amount: Decimal) -> Decimal:
         return round(amount, self.precision_decimals)
@@ -311,8 +316,16 @@ class IOBluePrint:
                post_journal_entries: bool = False,
                **kwargs):
 
-        blueprint_lib = IOLibrary(name='blueprint')
-        cursor = blueprint_lib.get_cursor(entity_model=entity_model, user_model=user_model)
+        blueprint_lib = IOLibrary(
+            name=self.get_name(
+                entity_model=entity_model
+            ))
+
+        cursor = blueprint_lib.get_cursor(
+            entity_model=entity_model,
+            user_model=user_model
+        )
+
         cursor.blueprints[ledger_model].append(self)
 
         return cursor.commit(
