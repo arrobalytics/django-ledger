@@ -4,13 +4,15 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+This module contains classes and functions used to document, dispatch and commit new transaction into the database.
 """
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
-from typing import Union, Dict, Callable, Optional
+from typing import Union, Dict, Callable, Optional, List
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
@@ -62,6 +64,23 @@ class IOCursorValidationError(ValidationError):
 
 
 class IOCursor:
+    """
+    Represents a Django Ledger cursor capable of dispatching transactions to the database.
+    The Cursor class is responsible for coordinating the creation of new ledgers, journal entries and transactions
+    It is a low level interface to the IOBlueprint and IOLibrary classes.
+
+    Parameters
+    ----------
+    io_library: IOLibrary
+        The IOLibrary class that contains all the necessary instructions to dispatch the transactions.
+    entity_model: EntityModel
+        The EntityModel instance that will be used for the new transactions.
+    user_model: UserModel
+        The UserModel instance that will be used for the new transactions. Used for read permissions of QuerySets.
+    coa_model: ChartOfAccountModel or UUID or str.
+        The ChartOfAccountModel instance that contains the accounts to be used for transactions.
+        Instance, UUID or slug can be sued to retrieve the model.
+    """
 
     def __init__(self,
                  io_library,
@@ -81,25 +100,61 @@ class IOCursor:
         self.instructions = None
 
     def get_ledger_model_qs(self) -> LedgerModelQuerySet:
+        """
+        Determines the ledger model queryset associated with the entity model and user model provided.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+        """
         return LedgerModel.objects.for_entity(
             self.ENTITY_MODEL,
             self.USER_MODEL
         )
 
     def get_account_model_qs(self) -> AccountModelQuerySet:
+        """
+        Determines the AccountModelQuerySet associated with the Chart of Accounts specified.
+
+        Returns
+        -------
+        AccountModelQuerySet
+        """
         return self.ENTITY_MODEL.get_coa_accounts(
             coa_model=self.COA_MODEL
         )
 
-    def resolve_account_model_qs(self, codes):
+    def resolve_account_model_qs(self, codes: List[str]) -> AccountModelQuerySet:
+        """
+        Resolves the final AccountModelQuerySet associated with the given account codes used by the blueprint.
+
+        Parameters
+        ----------
+        codes: List[str]
+            List of codes used during the execution of the blueprint.
+
+
+        Returns
+        -------
+        AccountModelQuerySet
+            The resolved AccountModelQuerySet associated with the given codes.
+        """
         if self.account_model_qs is None:
-            # codes = self.get_account_codes()
             qs = self.get_account_model_qs()
             qs = qs.filter(code__in=codes)
             self.account_model_qs = qs
         return self.account_model_qs
 
-    def resolve_ledger_model_qs(self):
+    def resolve_ledger_model_qs(self) -> LedgerModelQuerySet:
+        """
+        Resolves the final LedgerModelQuerySet associated with the provided ledger model identifiers used by the
+        blueprints.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            The resolved LedgerModelQuerySet associated with the given ledger model identifiers.
+        """
         if self.ledger_model_qs is None:
             qs = self.get_ledger_model_qs()
             by_uuid = [k for k in self.blueprints.keys() if isinstance(k, UUID)]
@@ -113,6 +168,20 @@ class IOCursor:
                  name,
                  ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
                  **kwargs):
+        """
+        Stages the instructions to be processed by the IOCursor class. This method does not commit the transactions
+        into the database.
+
+        Parameters
+        ----------
+        name: str
+            The registered blueprint name to be staged.
+        ledger_model: Optional[Union[str, LedgerModel, UUID]]
+            Optional ledger model identifier to house the transactions associated with the blueprint. If none is
+            provided, a new ledger model will be created.
+        kwargs
+            The keyword arguments to be passed to the blueprint function.
+        """
 
         if not isinstance(ledger_model, (str, UUID, LedgerModel)):
             raise IOCursorValidationError(
@@ -126,8 +195,15 @@ class IOCursor:
         blueprint_txs = blueprint_func(**kwargs)
         self.blueprints[ledger_model].append(blueprint_txs)
 
-    def compile_instructions(self):
+    def compile_instructions(self) -> Dict:
+        """
+        Compiles the blueprint instructions into Journal Entries and Transactions to be committed to the ledger.
 
+        Returns
+        -------
+        Dict
+            A dictionary containing the compiled instructions.
+        """
         if self.instructions is None:
             instructions = {
                 ledger_model: list(chain.from_iterable(
@@ -149,6 +225,15 @@ class IOCursor:
         return self.instructions
 
     def is_committed(self) -> bool:
+        """
+        Determines if the IOCursor instance has committed the transactions into the database.
+        A cursor can only commit transactions once.
+
+        Returns
+        -------
+        bool
+            True if committed, False otherwise.
+        """
         return self.__COMMITTED
 
     def commit(self,
@@ -156,6 +241,23 @@ class IOCursor:
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
                **kwargs):
+
+        """
+        Commits the compiled blueprint transactions into the database. This action is irreversible and if journal
+        entries are posted, the books will be immediately impacted by the new transactions. It is encouraged NOT to
+        post anything until the transaction is reviews for accuracy.
+
+        Parameters
+        ----------
+        je_timestamp: Optional[Union[datetime, date, str]]
+            The date or timestamp used for the committed journal entries. If none, localtime will be used.
+        post_new_ledgers: bool
+            If a new ledger is created, the ledger model will be posted to the database.
+        post_journal_entries: bool
+            If new journal entries are created, the journal entry models will be posted to the database.
+        kwargs
+            Additional keyword arguments passed to the IO commit_txs function.
+        """
         if self.is_committed():
             raise IOCursorValidationError(
                 message=_('Transactions already committed')
@@ -253,13 +355,36 @@ class IOBluePrintValidationError(ValidationError):
 
 
 class IOBluePrint:
+    """
+    This class documents instructions required to assemble and dispatch transactions into the ledger.
+
+    Parameters
+    ----------
+    name: str, optional
+        The human-readable name of the IOBluePrint instance.
+    precision_decimals: int
+        The number of decimals to use when balancing transactions. Defaults to 2.
+    """
 
     def __init__(self, name: Optional[str] = None, precision_decimals: int = 2):
         self.name = name
         self.precision_decimals = precision_decimals
         self.registry = list()
 
-    def get_name(self, entity_model: EntityModel):
+    def get_name(self, entity_model: EntityModel) -> str:
+        """
+        Determines the name of the blueprint if none provided.
+
+        Parameters
+        ----------
+        entity_model: EntityModel
+            The EntityModel instance where the resulting blueprint transactions will be stored.
+
+        Returns
+        -------
+        str
+            The name of the blueprint.
+        """
         if self.name is None:
             l_dt = get_localtime()
             return f'blueprint-{entity_model.slug}-{l_dt.strftime("%m%d%Y-%H%M%S")}'
@@ -288,7 +413,18 @@ class IOBluePrint:
         )
 
     def credit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+        """
+        Registers a CREDIT to the specified account..
 
+        Parameters
+        ----------
+        account_code: str
+            The account code to use for the transaction.
+        amount: float or Decimal
+            The amount of the transaction.
+        description: str
+            Description of the transaction.
+        """
         self.registry.append(
             TransactionInstructionItem(
                 account_code=account_code,
@@ -298,7 +434,18 @@ class IOBluePrint:
             ))
 
     def debit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+        """
+        Registers a DEBIT to the specified account.
 
+        Parameters
+        ----------
+        account_code: str
+            The account code to use for the transaction.
+        amount: float or Decimal
+            The amount of the transaction.
+        description: str
+            Description of the transaction.
+        """
         self.registry.append(
             TransactionInstructionItem(
                 account_code=account_code,
@@ -314,8 +461,32 @@ class IOBluePrint:
                je_timestamp: Optional[Union[datetime, date, str]] = None,
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
-               **kwargs):
+               **kwargs) -> Dict:
+        """
+        Commits the blueprint transactions to the database.
 
+        Parameters
+        ----------
+        entity_model: EntityModel
+            The entity model instance where transactions will be committed.
+        user_model: UserModel
+            The user model instance executing transactions to check for permissions.
+        ledger_model: Optional[Union[str, LedgerModel, UUID]]
+            The ledger model instance identifier to be used for the transactions. If none, a new ledger will be created.
+        je_timestamp: date or datetime or str, optional
+            The date and/or time to be used for the transactions. If none, localtime will be used.
+        post_new_ledgers: bool
+            If True, newly created ledgers will be posted. Defaults to False.
+        post_journal_entries: bool
+            If True, newly created journal entries will be posted. Defaults to False.
+        kwargs
+            Keyword arguments passed to the IO Library.
+
+        Returns
+        -------
+        Dict
+            A dictionary containing the resulting models of the transactions.
+        """
         blueprint_lib = IOLibrary(
             name=self.get_name(
                 entity_model=entity_model
@@ -337,6 +508,15 @@ class IOBluePrint:
 
 
 class IOLibrary:
+    """
+    The IO Library is a centralized interface for documenting commonly used operations. The library will register and
+    document the blueprints and their instructions so that they can be dispatched from anywhere in the application.
+
+    Parameters
+    ----------
+    name: str
+        The human-readable name of the library (i.e. PayRoll, Expenses, Rentals, etc...)
+    """
 
     def __init__(self, name: str):
         self.name = name
@@ -349,6 +529,18 @@ class IOLibrary:
         self.registry[func.__name__] = func
 
     def get_blueprint(self, name: str) -> Callable:
+        """
+        Retrieves a blueprint by name.
+
+        Parameters
+        ----------
+        name: str
+            The name of the blueprint to retrieve.
+
+        Returns
+        -------
+        Callable
+        """
         if not self._check_func_name(name):
             raise IOLibraryError(message=f'Function "{name}" is not registered in IO library {self.name}')
         return self.registry[name]
@@ -359,6 +551,22 @@ class IOLibrary:
             user_model,
             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
     ) -> IOCursor:
+        """
+        Creates a cursor instance for associated with the library, entity and user model.
+
+        Parameters
+        ----------
+        entity_model: EntityModel
+            The entity model instance where transactions will be committed.
+        user_model: UserModel
+            The user model instance executing the transactions.
+        coa_model: ChartOfAccountModel or UUID or str, optional
+            The ChartOfAccountsModel instance or identifier used to determine the AccountModelQuerySet used for the transactions.
+
+        Returns
+        -------
+        IOCursor
+        """
         return IOCursor(
             io_library=self,
             entity_model=entity_model,
