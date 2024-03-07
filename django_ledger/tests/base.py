@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, time
 from decimal import Decimal
 from itertools import cycle
 from logging import getLogger, DEBUG
@@ -15,6 +15,7 @@ from django.utils.timezone import get_default_timezone
 from django_ledger.io.io_generator import EntityDataGenerator
 from django_ledger.models import JournalEntryModel, LedgerModel, TransactionModel, AccountModel, AccountModelQuerySet
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
+from django.conf import settings
 
 UserModel = get_user_model()
 
@@ -78,9 +79,21 @@ class DjangoLedgerBaseTest(TestCase):
             day=choice(range(1, 28))
         )
         if as_datetime:
+            if not settings.USE_TZ:
+                return datetime.combine(
+                    dt,
+                    time(
+                        hour=randint(1, 24),
+                        minute=randint(1, 60)
+                    ),
+                )
             return datetime.combine(
-                dt, datetime.min.time(),
-                tzinfo=ZoneInfo('UTC')
+                dt,
+                time(
+                    hour=randint(1, 24),
+                    minute=randint(1, 60)
+                ),
+                tzinfo=ZoneInfo(settings.TIME_ZONE)
             )
         return dt
 

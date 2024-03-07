@@ -144,7 +144,8 @@ def get_localdate() -> date:
 
 def validate_io_timestamp(
         dt: Union[str, date, datetime],
-        no_parse_localdate: bool = True) -> Optional[Union[datetime, date]]:
+        no_parse_localdate: bool = True
+) -> Optional[Union[datetime, date]]:
     if not dt:
         return
 
@@ -188,7 +189,8 @@ def validate_io_timestamp(
 
 def validate_dates(
         from_date: Union[str, datetime, date] = None,
-        to_date: Union[str, datetime, date] = None) -> Tuple[date, date]:
+        to_date: Union[str, datetime, date] = None
+) -> Tuple[date, date]:
     from_date = validate_io_timestamp(from_date, no_parse_localdate=False)
     to_date = validate_io_timestamp(to_date)
     return from_date, to_date

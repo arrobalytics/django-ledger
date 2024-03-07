@@ -54,7 +54,7 @@ class CashFlowStatementReport(BaseReportSupport):
     def print_starting_net_income(self):
         net_income = self.IO_DIGEST.IO_DATA['cash_flow_statement']['operating']['GROUP_CFS_NET_INCOME']['balance']
         self.print_section_title(
-            title=f'Net Income as of {self.IO_DIGEST.get_from_date(as_str=True)}',
+            title=f'Net Income as of {self.IO_DIGEST.get_from_datetime(as_str=True)}',
             style='B',
             w=170)
         self.print_amount(amt=net_income, zoom=2)
@@ -197,8 +197,8 @@ class CashFlowStatementReport(BaseReportSupport):
 
         self.set_x(50)
         self.print_section_title(
-            title=f'Net Cash Flow from {self.IO_DIGEST.get_from_date(as_str=True)} '
-                  f'through {self.IO_DIGEST.get_to_date(as_str=True)}',
+            title=f'Net Cash Flow from {self.IO_DIGEST.get_from_datetime(as_str=True)} '
+                  f'through {self.IO_DIGEST.get_to_datetime(as_str=True)}',
             style='',
             zoom=0,
             align='R',
@@ -216,12 +216,12 @@ class CashFlowStatementReport(BaseReportSupport):
         if from_dt:
             from_dt = from_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
-            from_dt = self.IO_DIGEST.get_from_date(fmt=dt_strfmt, as_str=True)
+            from_dt = self.IO_DIGEST.get_from_datetime(fmt=dt_strfmt, as_str=True)
 
         if to_dt:
             to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
-            to_dt = self.IO_DIGEST.get_to_date(fmt=dt_strfmt, as_str=True)
+            to_dt = self.IO_DIGEST.get_to_datetime(fmt=dt_strfmt, as_str=True)
         f_name = f'{self.get_report_title()}_CashFlowStatement_{from_dt}_{to_dt}.pdf'
         return f_name
 

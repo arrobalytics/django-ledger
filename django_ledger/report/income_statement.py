@@ -297,12 +297,12 @@ class IncomeStatementReport(BaseReportSupport):
         if from_dt:
             from_dt = from_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
-            from_dt = self.IO_DIGEST.get_from_date(fmt=dt_strfmt, as_str=True)
+            from_dt = self.IO_DIGEST.get_from_datetime(fmt=dt_strfmt, as_str=True)
 
         if to_dt:
             to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
-            to_dt = self.IO_DIGEST.get_to_date(fmt=dt_strfmt, as_str=True)
+            to_dt = self.IO_DIGEST.get_to_datetime(fmt=dt_strfmt, as_str=True)
 
         f_name = f'{self.get_report_title()}_IncomeStatement_{from_dt}_{to_dt}.pdf'
         return f_name

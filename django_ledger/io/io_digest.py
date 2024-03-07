@@ -6,7 +6,7 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict
-from datetime import date
+from datetime import datetime
 from typing import Dict, Optional
 
 from django.core.exceptions import ValidationError
@@ -24,7 +24,6 @@ class IODigestContextManager:
         self.IO_DATA: Dict = io_state
         self.IO_RESULT = io_state['io_result']
         self.IO_MODEL = io_state['io_model']
-        self.TXS_QS = io_state['io_result']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 
     def get_io_data(self) -> Dict:
@@ -34,12 +33,12 @@ class IODigestContextManager:
         return self.IO_RESULT
 
     def get_io_txs_queryset(self):
-        return self.TXS_QS
+        return self.IO_RESULT.txs_queryset
 
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
 
-    def get_from_date(self, as_str: bool = False, fmt=None) -> Optional[date]:
+    def get_from_datetime(self, as_str: bool = False, fmt=None) -> Optional[datetime]:
         from_date = self.IO_DATA['from_date']
         if from_date:
             if as_str:
@@ -48,7 +47,7 @@ class IODigestContextManager:
                 return from_date.strftime(fmt)
             return from_date
 
-    def get_to_date(self, as_str: bool = False, fmt=None) -> date:
+    def get_to_datetime(self, as_str: bool = False, fmt=None) -> datetime:
         if as_str:
             if not fmt:
                 fmt = self.get_strftime_format()

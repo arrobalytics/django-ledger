@@ -105,8 +105,8 @@ class BaseReportSupport(*load_support()):
             style='I'
         )
 
-        from_date = self.IO_DIGEST.get_from_date(as_str=True)
-        to_date = self.IO_DIGEST.get_to_date(as_str=True)
+        from_date = self.IO_DIGEST.get_from_datetime(as_str=True)
+        to_date = self.IO_DIGEST.get_to_datetime(as_str=True)
 
         if from_date and to_date:
             period = f'From {from_date} through {to_date}'
