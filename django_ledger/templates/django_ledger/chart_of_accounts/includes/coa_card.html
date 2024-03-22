@@ -27,6 +27,7 @@
                 <span class="icon has-text-danger">{% icon 'mdi:stop-remove' 24 %}</span>
             {% endif %}
         </h3>
+        <h4>CoA ID: <span class="has-text-danger has-font-weight-light">{{ coa_model.slug }}</span></h4>
         <h4>{% trans 'Total Accounts' %}: {{ coa_model.accountmodel_total__count }}</h4>
         <h4><span class="has-text-info">{% trans 'Active Accounts' %}</span>: {{ coa_model.accountmodel_active__count }}
         </h4>

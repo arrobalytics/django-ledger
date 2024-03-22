@@ -30,7 +30,7 @@ class BaseAccountModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = AccountModel.objects.for_entity(
+            qs = AccountModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
             ).select_related(
@@ -38,6 +38,11 @@ class BaseAccountModelViewQuerySetMixIn:
                 'coa_model__entity'
             ).order_by(
                 'coa_model', 'role', 'code').not_coa_root()
+
+            if self.kwargs.get('coa_slug'):
+                qs = qs.filter(coa_model__slug__exact=self.kwargs.get('coa_slug'))
+
+            self.queryset = qs
         return super().get_queryset()
 
     def get_context_data(self, *args, **kwargs):

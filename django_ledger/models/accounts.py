@@ -242,8 +242,9 @@ class AccountModelManager(MP_NodeManager):
             entity_slug=entity_slug,
             coa_slug=coa_slug)
         return qs.filter(
-            active=True,
-            locked=False
+            Q(active=True) &
+            Q(locked=False) &
+            Q(coa_model__active=True)
         )
 
     def with_roles(self, roles: Union[list, str], entity_slug, user_model) -> AccountModelQuerySet:
@@ -603,6 +604,9 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
 
     def is_active(self) -> bool:
         return self.active is True
+
+    def is_locked(self) -> bool:
+        return self.locked is True
 
     def can_activate(self):
         return all([

@@ -4,6 +4,7 @@
 {% for root_role, role_list in accounts_gb %}
     {% with title=root_role %}
         <div class="box">
+
             <div class="table-container">
                 <table class="table is-fullwidth is-striped is-narrow django-ledger-table-bottom-margin-75">
                     <thead>
@@ -14,16 +15,16 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td></td>
+                            {#                            <td></td>#}
                             <td></td>
                         </tr>
                     {% endif %}
+
                     <tr>
                         <th>{% trans 'Account Name' %}</th>
                         <th>{% trans 'CoA' %}</th>
                         <th>{% trans 'Balance Type' %}</th>
                         <th>{% trans 'Active' %}</th>
-                        <th>{% trans 'Locked' %}</th>
                         <th>{% trans 'CoA Role Default' %}</th>
                         <th>{% trans 'Actions' %}</th>
                     </tr>
@@ -36,7 +37,7 @@
                             <td></td>
                             <td></td>
                             <td></td>
-                            <td></td>
+                            {#                            <td></td>#}
                             <td></td>
                         </tr>
 
@@ -59,17 +60,17 @@
                                     {% endif %}
                                 </td>
 
-                                <td class="has-text-centered">
-                                    {% if account.locked %}
-                                        <span class="icon has-text-success-dark">
-                                        {% icon 'bi:lock-fill' 24 %}
-                                    </span>
-                                    {% elif not account.locked %}
-                                        <span class="icon has-text-danger-dark">
-                                        {% icon 'bx:bx-lock-open-alt' 24 %}
-                                    </span>
-                                    {% endif %}
-                                </td>
+                                {#                                <td class="has-text-centered">#}
+                                {#                                    {% if account.locked %}#}
+                                {#                                        <span class="icon has-text-success-dark">#}
+                                {#                                        {% icon 'bi:lock-fill' 24 %}#}
+                                {#                                    </span>#}
+                                {#                                    {% elif not account.locked %}#}
+                                {#                                        <span class="icon has-text-danger-dark">#}
+                                {#                                        {% icon 'bx:bx-lock-open-alt' 24 %}#}
+                                {#                                    </span>#}
+                                {#                                    {% endif %}#}
+                                {#                                </td>#}
                                 <td class="has-text-centered">
                                     {% if account.role_default %}
                                         <span class="icon has-text-success-dark">
