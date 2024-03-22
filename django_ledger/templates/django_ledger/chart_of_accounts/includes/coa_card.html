@@ -4,12 +4,12 @@
 
 
 <div class="card">
-    <div class="card-header">
+    <div class="card-header" {% if coa_model.is_default %}style="background-color: #04e304"{% endif %}>
         <div class="card-header-icon">
             {% icon "ic:baseline-business" 36 %}
         </div>
         <div class="card-header-title">
-            {{ coa_model.name }}
+            {{ coa_model.name }} {% if coa_model.is_default %} | {% trans 'DEFAULT' %}{% endif %}
         </div>
     </div>
     <div class="card-content">
@@ -50,9 +50,24 @@
            class="card-footer-item has-text-info has-text-weight-bold">
             {% trans 'Add Account' %}
         </a>
-        <a href="{{ coa_model.mark_as_default_url }}"
-           class="card-footer-item has-text-danger has-text-weight-bold">
-            {% trans 'Mark as Default' %}
-        </a>
+
+        {% if not coa_model.is_default %}
+            <a href="{{ coa_model.mark_as_default_url }}"
+               class="card-footer-item has-text-danger has-text-weight-bold">
+                {% trans 'Mark as Default' %}
+            </a>
+        {% endif %}
+
+        {% if coa_model.can_deactivate %}
+            <a href="{{ coa_model.mark_as_inactive_url }}"
+               class="card-footer-item has-text-warning has-text-weight-bold">
+                {% trans 'Mark as Inactive' %}
+            </a>
+        {% elif coa_model.can_activate %}
+            <a href="{{ coa_model.mark_as_active_url }}"
+               class="card-footer-item has-text-success has-text-weight-bold">
+                {% trans 'Mark as Active' %}
+            </a>
+        {% endif %}
     </footer>
 </div>

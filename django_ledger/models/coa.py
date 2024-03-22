@@ -376,7 +376,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         non_root_accounts_qs.update(locked=False)
         return non_root_accounts_qs
 
-    def mark_as_default(self, commit: bool = False, **kwargs):
+    def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Marks the current Chart of Accounts instances as default for the EntityModel.
 
@@ -384,8 +384,17 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         ----------
         commit: bool
             Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already marked as default.
         """
+        if self.is_default():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_(f'The Chart of Accounts {self.slug} is already default')
+                )
+            return
         self.entity.default_coa_id = self.uuid
+        self.clean()
         if commit:
             self.entity.save(
                 update_fields=[
@@ -405,6 +414,103 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         return reverse(
             viewname='django_ledger:coa-action-mark-as-default',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def can_activate(self) -> bool:
+        return self.active is False
+
+    def can_deactivate(self) -> bool:
+        return all([
+            self.is_active(),
+            not self.is_default()
+        ])
+
+    def mark_as_active(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Marks the current Chart of Accounts as Active.
+
+        Parameters
+        ----------
+        commit: bool
+            Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already active. Default is False.
+        """
+        if self.is_active():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_('The Chart of Accounts is currently active.')
+                )
+            return
+
+        self.active = True
+        self.clean()
+        if commit:
+            self.save(
+                update_fields=[
+                    'active',
+                    'updated'
+                ])
+
+    def mark_as_active_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as active.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-active',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def mark_as_inactive(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Marks the current Chart of Accounts as Active.
+
+        Parameters
+        ----------
+        commit: bool
+            Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already active. Default is False.
+        """
+        if not self.is_active():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_('The Chart of Accounts is currently not active.')
+                )
+            return
+
+        self.active = False
+        self.clean()
+        if commit:
+            self.save(
+                update_fields=[
+                    'active',
+                    'updated'
+                ])
+
+    def mark_as_inactive_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as inactive.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-inactive',
             kwargs={
                 'entity_slug': self.entity.slug,
                 'coa_slug': self.slug
@@ -440,6 +546,11 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def clean(self):
         self.generate_slug()
+
+        if self.is_default() and not self.active:
+            raise ChartOfAccountsModelValidationError(
+                _('Default Chart of Accounts cannot be deactivated.')
+            )
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):

@@ -17,5 +17,11 @@ urlpatterns = [
     path('<slug:entity_slug>/action/<slug:coa_slug>/mark-as-default/',
          views.CharOfAccountModelActionView.as_view(action_name='mark_as_default'),
          name='coa-action-mark-as-default'),
+    path('<slug:entity_slug>/action/<slug:coa_slug>/mark-as-active/',
+         views.CharOfAccountModelActionView.as_view(action_name='mark_as_active'),
+         name='coa-action-mark-as-active'),
+    path('<slug:entity_slug>/action/<slug:coa_slug>/mark-as-inactive/',
+         views.CharOfAccountModelActionView.as_view(action_name='mark_as_inactive'),
+         name='coa-action-mark-as-inactive'),
 
 ]

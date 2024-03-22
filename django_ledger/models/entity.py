@@ -2976,6 +2976,14 @@ class EntityModelAbstract(MP_Node,
                            'entity_slug': self.slug
                        })
 
+    def get_coa_list_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-list',
+            kwargs={
+                'entity_slug': self.slug
+            }
+        )
+
     def get_accounts_url(self) -> str:
         """
         The EntityModel Code of Accounts llist import URL.
