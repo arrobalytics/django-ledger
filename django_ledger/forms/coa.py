@@ -9,19 +9,14 @@ class ChartOfAccountsModelForm(ModelForm):
     class Meta:
         model = ChartOfAccountModel
         fields = [
-            # 'slug',
             'name',
             'description'
         ]
         labels = {
-            'slug': _('CoA ID'),
             'name': _('Name'),
             'description': _('Description'),
         }
         widgets = {
-            # 'slug': TextInput(attrs={
-            #     'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
-            # }),
             'name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
@@ -36,7 +31,7 @@ class ChartOfAccountsModelUpdateForm(ModelForm):
         model = ChartOfAccountModel
         fields = [
             'name',
-            'locked'
+            'active'
         ]
         labels = {
             'name': _('Name'),

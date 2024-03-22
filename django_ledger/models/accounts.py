@@ -581,7 +581,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         return self.balance_type == CREDIT
 
     def is_coa_root(self):
-        return self.role in ROOT_GROUP
+        return self.role == ROOT_COA
 
     def is_asset(self) -> bool:
         return self.role in GROUP_ASSETS
@@ -656,10 +656,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             return '5'
         elif self.is_expense():
             return '6'
-        elif self.is_coa_root():
-            return '0'
-        else:
-            raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
+        raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
 
     def get_root_role(self) -> str:
         if self.is_asset():
@@ -676,8 +673,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             return ROOT_EXPENSES
         elif self.is_coa_root():
             return ROOT_COA
-        else:
-            raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
+        raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
 
     def get_account_move_choice_queryset(self):
         return self.coa_model.accountmodel_set.filter(

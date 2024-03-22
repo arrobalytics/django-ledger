@@ -5,17 +5,20 @@
 
 {% block view_content %}
     <div class="box">
-        <div class="columns">
-            <div class="column">
-                <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
-                   class="button is-primary is-outlined">{% trans 'Create Account' %}</a>
-                <a href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
-                   class="button is-dark">{% trans 'Back' %}</a>
+        <div class="columns is-multiline">
+            <div class="column is-12 has-text-centered">
+                <h1 class="is-size-3">{% trans 'Accounts List' %}</h1>
+                <h2 class="is-size-1 has-text-info">{{ coa_model.name }}</h2>
+                <p class="is-italic has-text-danger">({{ coa_model.slug }})</p>
             </div>
-        </div>
-        <div class="columns">
-            <div class="column">
+            <div class="column is-12">
                 {% accounts_table accounts %}
+            </div>
+            <div class="column is-12 has-text-centered">
+                <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-success">{% trans 'Create Account' %}</a>
+                <a href="{% url 'django_ledger:coa-list' entity_slug=view.kwargs.entity_slug %}"
+                   class="button is-dark">{% trans 'Back to CoA List' %}</a>
             </div>
         </div>
     </div>

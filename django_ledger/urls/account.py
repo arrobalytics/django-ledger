@@ -3,15 +3,30 @@ from django.urls import path
 from django_ledger import views
 
 urlpatterns = [
+
+    # NO COA SLUG USES DEFAULT COA....
+    path('<slug:entity_slug>/create/',
+         views.AccountModelCreateView.as_view(),
+         name='account-create'),
     path('<slug:entity_slug>/list/',
          views.AccountModelListView.as_view(),
          name='account-list'),
     path('<slug:entity_slug>/list/active/',
          views.AccountModelListView.as_view(active_only=True),
          name='account-list-active'),
-    path('<slug:entity_slug>/create/',
+
+    # EXPLICIT COA...
+    path('<slug:entity_slug>/<slug:coa_slug>/create/',
          views.AccountModelCreateView.as_view(),
-         name='account-create'),
+         name='account-create-coa'),
+    path('<slug:entity_slug>/<slug:coa_slug>/list/',
+         views.AccountModelListView.as_view(),
+         name='account-list-coa'),
+    path('<slug:entity_slug>/<slug:coa_slug>/list/active/',
+         views.AccountModelListView.as_view(active_only=True),
+         name='account-list-active-coa'),
+
+    # Account Transaction Detail....
     path('<slug:entity_slug>/update/<uuid:account_pk>/',
          views.AccountModelUpdateView.as_view(),
          name='account-update'),
@@ -31,7 +46,7 @@ urlpatterns = [
          views.AccountModelDateDetailView.as_view(),
          name='account-detail-date'),
 
-    # Actions...
+    # Account Actions...
     path('<slug:entity_slug>/action/<uuid:account_pk>/activate/',
          views.AccountModelModelActionView.as_view(action_name='activate'),
          name='account-action-activate'),
