@@ -304,6 +304,9 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
             user_model=self.request.user).only(
             'uuid', 'slug', 'name', 'default_coa', 'admin')
 
+    def get_authorized_entity_instance(self) -> Optional[EntityModel]:
+        return self.AUTHORIZED_ENTITY_MODEL
+
     def has_permission(self):
         if self.request.user.is_superuser:
             if 'entity_slug' in self.kwargs:

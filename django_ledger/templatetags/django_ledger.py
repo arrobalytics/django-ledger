@@ -738,7 +738,7 @@ def navigation_menu(context, style):
                     {
                         'type': 'link',
                         'title': 'Chart of Accounts',
-                        'url': reverse('django_ledger:account-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'url': reverse('django_ledger:coa-list', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',

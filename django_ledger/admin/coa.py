@@ -84,7 +84,7 @@ class ChartOfAccountsInLine(TabularInline):
     show_change_link = True
     fields = [
         'name',
-        'locked',
+        'active',
         'assign_as_default'
     ]
 
@@ -92,13 +92,13 @@ class ChartOfAccountsInLine(TabularInline):
 class ChartOfAccountsModelAdmin(ModelAdmin):
     list_filter = [
         'entity__name',
-        'locked'
+        'active'
     ]
     list_display = [
         'entity_name',
         'name',
         'slug',
-        'locked',
+        'active',
         'account_model_count'
     ]
     search_fields = [

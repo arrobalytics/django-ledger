@@ -31,7 +31,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_save, post_save
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
@@ -40,7 +40,6 @@ from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROO
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
-from django_ledger.settings import logger
 
 UserModel = get_user_model()
 
@@ -150,10 +149,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     entity: EntityModel
         The EntityModel associated with this Chart of Accounts.
 
-    locked: bool
+    active: bool
         This determines whether any changes can be done to the Chart of Accounts.
-        Before making any update to the ChartOf Account, the account needs to be unlocked.
-        Default value is set to False (unlocked).
+        Inactive Chart of Accounts will not be able to be used in new Transactions.
+        Default value is set to False (inactive).
 
     description: str
         A user generated description for this Chart of Accounts.
@@ -164,7 +163,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                                editable=False,
                                verbose_name=_('Entity'),
                                on_delete=models.CASCADE)
-    locked = models.BooleanField(default=False, verbose_name=_('Locked'))
+    active = models.BooleanField(default=True, verbose_name=_('Is Active'))
     description = models.TextField(verbose_name=_('CoA Description'), null=True, blank=True)
     objects = ChartOfAccountModelManager.from_queryset(queryset_class=ChartOfAccountModelQuerySet)()
 
@@ -194,7 +193,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                         root_account_qs: Optional[AccountModelQuerySet] = None,
                         as_queryset: bool = False) -> Union[AccountModelQuerySet, AccountModel]:
 
-        if not account_model.is_coa_root():
+        if not account_model.is_root_account():
 
             if not root_account_qs:
                 root_account_qs = self.get_coa_root_accounts_qs()
@@ -262,8 +261,9 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 locked=True,
                 balance_type=role_meta['balance_type']
             )
-            coa_root_account_model = AccountModel.add_root(instance=root_account)
+            AccountModel.add_root(instance=root_account)
 
+            # must retrieve root model after added pero django-treebeard documentation...
             coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
 
             for root_role in ROOT_GROUP_LEVEL_2:
@@ -284,9 +284,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                         ))
 
     def is_default(self) -> bool:
-        if self.entity_id is None:
-            return False
         return self.entity.default_coa_id == self.uuid
+
+    def is_active(self) -> bool:
+        return self.active is True
 
     def validate_account_model_qs(self, account_model_qs: AccountModelQuerySet):
         if not isinstance(account_model_qs, AccountModelQuerySet):
@@ -299,23 +300,72 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=f'Invalid root queryset for CoA {self.name}'
                 )
 
-    def create_account(self, account_model: AccountModel, root_account_qs: Optional[AccountModelQuerySet] = None):
-        if not account_model.coa_model_id:
+    def allocate_account(self,
+                         account_model: AccountModel,
+                         root_account_qs: Optional[AccountModelQuerySet] = None):
+        """
+        Allocates a given account model to the appropriate root account depending on the Account Model Role.
 
-            if not root_account_qs:
-                root_account_qs = self.get_coa_root_accounts_qs()
-            else:
-                self.validate_account_model_qs(root_account_qs)
+        Parameters
+        ----------
+        account_model: AccountModel
+            The Account Model to Allocate
+        root_account_qs:
+            The Root Account QuerySet of the Chart Of Accounts to use.
+            Will be validated against current CoA Model.
 
-            l2_root_node: AccountModel = self.get_coa_l2_root(account_model, root_account_qs=root_account_qs)
+        Returns
+        -------
+        AccountModel
+            The saved and allocated AccountModel.
+        """
 
-            account_model.coa_model = self
-            account_model = l2_root_node.add_child(instance=account_model)
+        if account_model.coa_model_id:
+            if account_model.coa_model_id != self.uuid:
+                raise ChartOfAccountsModelValidationError(
+                    message=f'Invalid Account Model {account_model} for CoA {self}'
+                )
+
+        if not root_account_qs:
+            root_account_qs = self.get_coa_root_accounts_qs()
+        else:
+            self.validate_account_model_qs(root_account_qs)
+
+        l2_root_node: AccountModel = self.get_coa_l2_root(
+            account_model=account_model,
+            root_account_qs=root_account_qs
+        )
+
+        account_model.coa_model = self
+        l2_root_node.add_child(instance=account_model)
+        coa_accounts_qs = self.get_non_root_coa_accounts_qs()
+        return coa_accounts_qs.get(uuid__exact=account_model.uuid)
+
+    def create_account(self,
+                       code: str,
+                       role: str,
+                       name: str,
+                       balance_type: str,
+                       active: bool,
+                       root_account_qs: Optional[AccountModelQuerySet] = None):
+
+        account_model = AccountModel(
+            code=code,
+            name=name,
+            role=role,
+            active=active,
+            balance_type=balance_type
+        )
+        account_model.clean()
+
+        account_model = self.allocate_account(
+            account_model=account_model,
+            root_account_qs=root_account_qs
+        )
         return account_model
 
     # ACTIONS -----
-
-    # todo: use these methods once multi CoA fetures are enabled...
+    # todo: use these methods once multi CoA features are enabled...
     def lock_all_accounts(self) -> AccountModelQuerySet:
         non_root_accounts_qs = self.get_non_root_coa_accounts_qs()
         non_root_accounts_qs.update(locked=True)
@@ -326,25 +376,184 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         non_root_accounts_qs.update(locked=False)
         return non_root_accounts_qs
 
+    def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Marks the current Chart of Accounts instances as default for the EntityModel.
+
+        Parameters
+        ----------
+        commit: bool
+            Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already marked as default.
+        """
+        if self.is_default():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_(f'The Chart of Accounts {self.slug} is already default')
+                )
+            return
+        self.entity.default_coa_id = self.uuid
+        self.clean()
+        if commit:
+            self.entity.save(
+                update_fields=[
+                    'default_coa_id',
+                    'updated'
+                ]
+            )
+
+    def mark_as_default_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as Default for the EntityModel.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-default',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def can_activate(self) -> bool:
+        return self.active is False
+
+    def can_deactivate(self) -> bool:
+        return all([
+            self.is_active(),
+            not self.is_default()
+        ])
+
+    def mark_as_active(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Marks the current Chart of Accounts as Active.
+
+        Parameters
+        ----------
+        commit: bool
+            Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already active. Default is False.
+        """
+        if self.is_active():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_('The Chart of Accounts is currently active.')
+                )
+            return
+
+        self.active = True
+        self.clean()
+        if commit:
+            self.save(
+                update_fields=[
+                    'active',
+                    'updated'
+                ])
+
+    def mark_as_active_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as active.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-active',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def mark_as_inactive(self, commit: bool = False, raise_exception: bool = False, **kwargs):
+        """
+        Marks the current Chart of Accounts as Active.
+
+        Parameters
+        ----------
+        commit: bool
+            Commit the action into the Database. Default is False.
+        raise_exception: bool
+            Raises exception if Chart of Account model instance is already active. Default is False.
+        """
+        if not self.is_active():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_('The Chart of Accounts is currently not active.')
+                )
+            return
+
+        self.active = False
+        self.clean()
+        if commit:
+            self.save(
+                update_fields=[
+                    'active',
+                    'updated'
+                ])
+
+    def mark_as_inactive_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as inactive.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-inactive',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def get_absolute_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-detail',
+            kwargs={
+                'coa_slug': self.slug,
+                'entity_slug': self.entity.slug
+            }
+        )
+
+    def get_account_list_url(self):
+        return reverse(
+            viewname='django_ledger:account-list-coa',
+            kwargs={
+                'entity_slug': self.entity.slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def get_create_coa_account_url(self):
+        return reverse(
+            viewname='django_ledger:account-create-coa',
+            kwargs={
+                'coa_slug': self.slug,
+                'entity_slug': self.entity.slug
+            }
+        )
+
     def clean(self):
         self.generate_slug()
+
+        if self.is_default() and not self.active:
+            raise ChartOfAccountsModelValidationError(
+                _('Default Chart of Accounts cannot be deactivated.')
+            )
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
-
-
-# def chartofaccountmodel_presave(instance: ChartOfAccountModel, **kwargs):
-#     if instance._state.adding:
-#         instance.configure(raise_exception=True)
-
-
-def chartofaccountmodel_postsave(instance: ChartOfAccountModel, **kwargs):
-    if instance._state.adding:
-        instance.configure(raise_exception=True)
-
-
-# pre_save.connect(receiver=chartofaccountmodel_presave, sender=ChartOfAccountModel)
-post_save.connect(receiver=chartofaccountmodel_postsave, sender=ChartOfAccountModel)

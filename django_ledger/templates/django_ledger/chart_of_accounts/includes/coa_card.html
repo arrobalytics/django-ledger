@@ -1,0 +1,74 @@
+{% load django_ledger %}
+{% load i18n %}
+{% now "Y" as current_year %}
+
+
+<div class="card">
+    <div class="card-header" {% if coa_model.is_default %}style="background-color: #04e304"{% endif %}>
+        <div class="card-header-icon">
+            {% icon "ic:baseline-business" 36 %}
+        </div>
+        <div class="card-header-title">
+            {{ coa_model.name }} {% if coa_model.is_default %} | {% trans 'DEFAULT' %}{% endif %}
+        </div>
+    </div>
+    <div class="card-content">
+        <h3 class="is-size-4">{% trans 'Entity Default' %}:
+            {% if coa_model.is_default %}
+                <span class="icon has-text-success">{% icon 'lets-icons:check-fill' 24 %}</span>
+            {% else %}
+                <span class="icon has-text-danger">{% icon 'mdi:stop-remove' 24 %}</span>
+            {% endif %}
+        </h3>
+        <h3 class="is-size-4">{% trans 'Is Active' %}:
+            {% if coa_model.is_active %}
+                <span class="icon has-text-success">{% icon 'lets-icons:check-fill' 24 %}</span>
+            {% else %}
+                <span class="icon has-text-danger">{% icon 'mdi:stop-remove' 24 %}</span>
+            {% endif %}
+        </h3>
+        <h4>CoA ID: <span class="has-text-danger has-font-weight-light">{{ coa_model.slug }}</span></h4>
+        <h4>{% trans 'Total Accounts' %}: {{ coa_model.accountmodel_total__count }}</h4>
+        <h4><span class="has-text-info">{% trans 'Active Accounts' %}</span>: {{ coa_model.accountmodel_active__count }}
+        </h4>
+        <h4><span
+                class="has-text-danger">{% trans 'Locked Accounts' %}</span>: {{ coa_model.accountmodel_locked__count }}
+        </h4>
+        <p class="mt-2"><span class="has-text-weight-bold">
+            {% trans 'Created' %}</span>: {{ coa_model.created | date }}
+        </p>
+        <p><span class="has-text-weight-bold">
+            {% trans 'Updated' %}</span>: {{ coa_model.created | timesince }} {% trans 'ago' %}
+        </p>
+    </div>
+
+    <footer class="card-footer">
+        <a href="{{ coa_model.get_account_list_url }}"
+           class="card-footer-item has-text-success has-text-weight-bold">
+            {% trans 'Accounts' %}
+        </a>
+        <a href="{{ coa_model.get_create_coa_account_url }}"
+           class="card-footer-item has-text-info has-text-weight-bold">
+            {% trans 'Add Account' %}
+        </a>
+
+        {% if not coa_model.is_default %}
+            <a href="{{ coa_model.mark_as_default_url }}"
+               class="card-footer-item has-text-danger has-text-weight-bold">
+                {% trans 'Mark as Default' %}
+            </a>
+        {% endif %}
+
+        {% if coa_model.can_deactivate %}
+            <a href="{{ coa_model.mark_as_inactive_url }}"
+               class="card-footer-item has-text-warning has-text-weight-bold">
+                {% trans 'Mark as Inactive' %}
+            </a>
+        {% elif coa_model.can_activate %}
+            <a href="{{ coa_model.mark_as_active_url }}"
+               class="card-footer-item has-text-success has-text-weight-bold">
+                {% trans 'Mark as Active' %}
+            </a>
+        {% endif %}
+    </footer>
+</div>

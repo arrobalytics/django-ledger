@@ -990,6 +990,21 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
         return self.default_coa
 
+    def set_default_coa(self, coa_model: Optional[Union[ChartOfAccountModel, str]], commit: bool = False):
+
+        # if str, will look up CoA Model by slug...
+        if isinstance(coa_model, str):
+            coa_model = self.chartofaccountmodel_set.get(slug=coa_model)
+        else:
+            self.validate_chart_of_accounts_for_entity(coa_model)
+
+        self.default_coa = coa_model
+        if commit:
+            self.save(update_fields=[
+                'default_coa',
+                'updated'
+            ])
+
     def create_chart_of_accounts(self,
                                  assign_as_default: bool = False,
                                  coa_name: Optional[str] = None,
@@ -1075,10 +1090,10 @@ class EntityModelAbstract(MP_Node,
         coa_has_accounts = coa_accounts_qs.not_coa_root().exists()
 
         if not coa_has_accounts or force:
-            root_accounts = coa_accounts_qs.is_coa_root()
+            root_account_qs = coa_accounts_qs.is_coa_root()
 
             root_maps = {
-                root_accounts.get(role__exact=k): [
+                root_account_qs.get(role__exact=k): [
                     AccountModel(
                         code=a['code'],
                         name=a['name'],
@@ -1100,12 +1115,14 @@ class EntityModelAbstract(MP_Node,
                         pass
 
                     account_model.clean()
-                    coa_model.create_account(account_model)
+                    coa_model.allocate_account(account_model, root_account_qs=root_account_qs)
 
         else:
             if not ignore_if_default_coa:
-                raise EntityModelValidationError(f'Entity {self.name} already has existing accounts. '
-                                                 'Use force=True to bypass this check')
+                raise EntityModelValidationError(
+                    f'Entity {self.name} already has existing accounts. '
+                    'Use force=True to bypass this check'
+                )
 
     # Model Validators....
     def validate_chart_of_accounts_for_entity(self,
@@ -1254,19 +1271,12 @@ class EntityModelAbstract(MP_Node,
         """
 
         if not coa_model:
-            account_model_qs = self.default_coa.accountmodel_set.all().select_related('coa_model', 'coa_model__entity')
+            account_model_qs = self.default_coa.accountmodel_set.all().select_related(
+                'coa_model', 'coa_model__entity').not_coa_root()
         else:
-            account_model_qs = AccountModel.objects.filter(
-                coa_model__entity__uuid__exact=self.uuid
-            ).select_related('coa_model', 'coa_model__entity')
-
-            if isinstance(coa_model, ChartOfAccountModel):
-                self.validate_chart_of_accounts_for_entity(coa_model=coa_model, raise_exception=True)
-                account_model_qs = coa_model.accountmodel_set.all()
-            if isinstance(coa_model, str):
-                account_model_qs = account_model_qs.filter(coa_model__slug__exact=coa_model)
-            elif isinstance(coa_model, UUID):
-                account_model_qs = account_model_qs.filter(coa_model__uuid__exact=coa_model)
+            self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
+            account_model_qs = coa_model.accountmodel_set.select_related(
+                'coa_model', 'coa_model__entity').not_coa_root()
 
         if active:
             account_model_qs = account_model_qs.active()
@@ -1367,7 +1377,7 @@ class EntityModelAbstract(MP_Node,
                        role: str,
                        name: str,
                        balance_type: str,
-                       active: bool,
+                       active: bool = False,
                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                        raise_exception: bool = True) -> AccountModel:
         """
@@ -1409,16 +1419,13 @@ class EntityModelAbstract(MP_Node,
         else:
             coa_model = self.default_coa
 
-        account_model = AccountModel(
+        return coa_model.create_account(
             code=code,
-            name=name,
             role=role,
-            active=active,
-            balance_type=balance_type
+            name=name,
+            balance_type=balance_type,
+            active=active
         )
-
-        account_model.clean()
-        return coa_model.create_account(account_model=account_model)
 
     def create_account_by_kwargs(self,
                                  account_model_kwargs: Dict,
@@ -1457,9 +1464,9 @@ class EntityModelAbstract(MP_Node,
         else:
             coa_model = self.default_coa
 
-        account_model = AccountModel(**account_model_kwargs)
-        account_model.clean()
-        return coa_model, coa_model.create_account(account_model=account_model)
+        # account_model = AccountModel(**account_model_kwargs)
+        # account_model.clean()
+        return coa_model, coa_model.create_account(**account_model_kwargs)
 
     # ### LEDGER MANAGEMENT ####
     def get_ledgers(self, posted: bool = True):
@@ -2961,6 +2968,14 @@ class EntityModelAbstract(MP_Node,
                        kwargs={
                            'entity_slug': self.slug
                        })
+
+    def get_coa_list_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-list',
+            kwargs={
+                'entity_slug': self.slug
+            }
+        )
 
     def get_accounts_url(self) -> str:
         """

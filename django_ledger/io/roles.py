@@ -119,48 +119,52 @@ ROOT_GROUP_LEVEL_2 = [
 ]
 ROOT_GROUP_META = {
     ROOT_COA: {
-        'code': '00000',
+        'code': '00000000',
         'title': 'CoA Root Node',
         'balance_type': DEBIT
     },
     ROOT_ASSETS: {
-        'code': '01000',
+        'code': '01000000',
         'title': 'Asset Accounts Root Node',
         'balance_type': DEBIT
     },
     ROOT_LIABILITIES: {
-        'code': '02000',
+        'code': '02000000',
         'title': 'Liability Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_CAPITAL: {
-        'code': '03000',
+        'code': '03000000',
         'title': 'Capital Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_INCOME: {
-        'code': '04000',
+        'code': '04000000',
         'title': 'Income Accounts Root Node',
         'balance_type': CREDIT
     },
     ROOT_COGS: {
-        'code': '05000',
+        'code': '05000000',
         'title': 'COGS Accounts Root Node',
         'balance_type': DEBIT
     },
     ROOT_EXPENSES: {
-        'code': '06000',
+        'code': '06000000',
         'title': 'Expense Accounts Root Node',
         'balance_type': DEBIT
     },
 }
 # ------> ROLE GROUPS <-------#
 
+GROUP_ASSETS = list()
+GROUP_ASSETS.append(ROOT_ASSETS)
+
 # ASSET GROUPS...
 GROUP_QUICK_ASSETS = [
     ASSET_CA_CASH,
     ASSET_CA_MKT_SECURITIES
 ]
+GROUP_ASSETS += GROUP_QUICK_ASSETS
 
 GROUP_CURRENT_ASSETS = [
     ASSET_CA_CASH,
@@ -171,6 +175,7 @@ GROUP_CURRENT_ASSETS = [
     ASSET_CA_UNCOLLECTIBLES,
     ASSET_CA_OTHER
 ]
+GROUP_ASSETS += GROUP_CURRENT_ASSETS
 
 GROUP_NON_CURRENT_ASSETS = [
     ASSET_LTI_NOTES_RECEIVABLE,
@@ -187,9 +192,13 @@ GROUP_NON_CURRENT_ASSETS = [
     ASSET_ADJUSTMENTS
 ]
 
-GROUP_ASSETS = GROUP_CURRENT_ASSETS + GROUP_NON_CURRENT_ASSETS
+GROUP_ASSETS += GROUP_NON_CURRENT_ASSETS
+GROUP_ASSETS = list(set(GROUP_ASSETS))
 
 # LIABILITY GROUPS....
+GROUP_LIABILITIES = list()
+GROUP_LIABILITIES.append(ROOT_LIABILITIES)
+
 GROUP_CURRENT_LIABILITIES = [
     LIABILITY_CL_ACC_PAYABLE,
     LIABILITY_CL_DEFERRED_REVENUE,
@@ -200,17 +209,21 @@ GROUP_CURRENT_LIABILITIES = [
     LIABILITY_CL_WAGES_PAYABLE,
     LIABILITY_CL_TAXES_PAYABLE
 ]
+GROUP_LIABILITIES += GROUP_CURRENT_LIABILITIES
 
 GROUP_LT_LIABILITIES = [
     LIABILITY_LTL_NOTES_PAYABLE,
     LIABILITY_LTL_BONDS_PAYABLE,
     LIABILITY_LTL_MORTGAGE_PAYABLE,
 ]
+GROUP_LIABILITIES += GROUP_LT_LIABILITIES
 
-GROUP_LIABILITIES = GROUP_CURRENT_LIABILITIES + GROUP_LT_LIABILITIES
+GROUP_LIABILITIES = list(set(GROUP_LIABILITIES))
 
 # CAPITAL/EQUITY...
+
 GROUP_CAPITAL = [
+    ROOT_CAPITAL,
     EQUITY_CAPITAL,
     EQUITY_COMMON_STOCK,
     EQUITY_PREFERRED_STOCK,
@@ -219,6 +232,7 @@ GROUP_CAPITAL = [
 ]
 
 GROUP_INCOME = [
+    ROOT_INCOME,
     INCOME_OPERATIONAL,
     INCOME_PASSIVE,
     INCOME_INTEREST,
@@ -227,10 +241,12 @@ GROUP_INCOME = [
 ]
 
 GROUP_COGS = [
+    ROOT_COGS,
     COGS
 ]
 
 GROUP_EXPENSES = [
+    ROOT_EXPENSES,
     EXPENSE_OPERATIONAL,
     EXPENSE_INTEREST_ST,
     EXPENSE_INTEREST_LT,

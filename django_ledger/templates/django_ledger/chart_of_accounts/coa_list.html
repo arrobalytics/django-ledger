@@ -1,0 +1,17 @@
+{% extends 'django_ledger/layouts/content_layout_1.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block view_content %}
+    <div class="box">
+        <div class="columns is-centered is-multiline">
+            {% for coa_model in coa_list %}
+                <div class="column is-6">
+                    {% include 'django_ledger/chart_of_accounts/includes/coa_card.html' with coa_model=coa_model %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+
+

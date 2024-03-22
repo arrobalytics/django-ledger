@@ -30,12 +30,30 @@ class BaseAccountModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = AccountModel.objects.for_entity(
+            qs = AccountModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
-            ).select_related('coa_model', 'coa_model__entity').order_by(
+            ).select_related(
+                'coa_model',
+                'coa_model__entity'
+            ).order_by(
                 'coa_model', 'role', 'code').not_coa_root()
+
+            if self.kwargs.get('coa_slug'):
+                qs = qs.filter(coa_model__slug__exact=self.kwargs.get('coa_slug'))
+
+            self.queryset = qs
         return super().get_queryset()
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        entity_model = self.get_authorized_entity_instance()
+        if self.kwargs.get('coa_slug'):
+            coa_model_qs = entity_model.chartofaccountmodel_set.all()
+            context['coa_model'] = get_object_or_404(coa_model_qs, slug__exact=self.kwargs['coa_slug'])
+        else:
+            context['coa_model'] = entity_model.default_coa
+        return context
 
 
 # Account Views ----
@@ -105,6 +123,11 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
             **self.get_form_kwargs()
         )
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['header_subtitle'] = f'CoA: {context["coa_model"].name}'
+        return context
+
     def form_valid(self, form):
         EntityModel = lazy_loader.get_entity_model()
         entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
@@ -115,7 +138,7 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
             entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
 
         coa_model = entity_model.default_coa
-        coa_model.create_account(account_model=account_model)
+        coa_model.allocate_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
