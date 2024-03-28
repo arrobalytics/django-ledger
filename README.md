@@ -287,7 +287,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-# How To Set Up Django Ledger for Development
+# How To Set Up Django Ledger for Development using Docker
 
 1. Navigate to your projects directory.
 
