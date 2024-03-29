@@ -4,22 +4,24 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    <div class="columns is-centered">
-        <div class="column is-8-tablet is-6-desktop">
-            <div class="box">
-                <form action="{{ account.get_update_url }}" method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button class="button is-fullwidth is-primary my-3">{% trans 'Submit' %}</button>
-                    <a class="button is-fullwidth is-dark is-small my-3"
-                       href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">
-                        {% trans 'Back' %}
-                    </a>
-                </form>
+    <div class="box">
+        <div class="columns is-centered is-multiline">
+            <div class="column is-12 has-text-centered">
+                <h2 class="is-size-3 has-text-info">{{ coa_model.name }}</h2>
+                <p class="is-size-4 has-text-danger is-italic">({{ coa_model.slug }})</p>
+                <h1 class="is-size-2">{{ account }}</h1>
+            </div>
+            <div class="column is-8-tablet is-6-desktop">
+                <div class="box">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
+                        <a class="button is-dark is-small is-fullwidth"
+                           href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 {% endblock %}
-
-
-

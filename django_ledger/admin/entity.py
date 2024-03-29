@@ -53,11 +53,13 @@ class EntityModelAdmin(ModelAdmin):
     list_display = [
         'slug',
         'name',
+        'admin',
         'accrual_method',
         'last_closing_date',
         'hidden',
         'get_coa_count',
         'add_ledger_link',
+        'dashboard_link',
         'balance_sheet_link',
         'income_statement_link',
         'cash_flow_statement_link'
@@ -165,6 +167,18 @@ class EntityModelAdmin(ModelAdmin):
                            slug=obj.slug)
 
     cash_flow_statement_link.short_description = 'Cash Flow'
+
+    def dashboard_link(self, obj: EntityModel):
+        add_ledger_url = reverse(
+            viewname='django_ledger:entity-dashboard',
+            kwargs={
+                'entity_slug': obj.slug
+            })
+        return format_html('<a class="viewlink" href="{url}">View</a>',
+                           url=add_ledger_url,
+                           slug=obj.slug)
+
+    dashboard_link.short_description = 'Dashboard'
 
     def add_code_of_accounts(self, request, queryset):
         lt = get_localtime().isoformat()

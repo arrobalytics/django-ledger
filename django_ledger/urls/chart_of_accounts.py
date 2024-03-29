@@ -4,13 +4,13 @@ from django_ledger import views
 
 urlpatterns = [
     path('<slug:entity_slug>/list/',
-         views.ChartOfAccountsListView.as_view(),
+         views.ChartOfAccountModelListView.as_view(),
          name='coa-list'),
     path('<slug:entity_slug>/detail/<slug:coa_slug>/',
-         views.ChartOfAccountsListView.as_view(),
+         views.ChartOfAccountModelListView.as_view(),
          name='coa-detail'),
     path('<slug:entity_slug>/update/<slug:coa_slug>/',
-         views.ChartOfAccountsUpdateView.as_view(),
+         views.ChartOfAccountModelUpdateView.as_view(),
          name='coa-update'),
 
     # ACTIONS....

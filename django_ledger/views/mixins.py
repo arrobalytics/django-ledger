@@ -299,14 +299,6 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
     def get_login_url(self):
         return reverse('django_ledger:login')
 
-    def get_authorized_entity_queryset(self):
-        return EntityModel.objects.for_user(
-            user_model=self.request.user).only(
-            'uuid', 'slug', 'name', 'default_coa', 'admin')
-
-    def get_authorized_entity_instance(self) -> Optional[EntityModel]:
-        return self.AUTHORIZED_ENTITY_MODEL
-
     def has_permission(self):
         if self.request.user.is_superuser:
             if 'entity_slug' in self.kwargs:
@@ -328,6 +320,16 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
                     return False
             return True
         return False
+
+    def get_authorized_entity_queryset(self):
+        return EntityModel.objects.for_user(
+            user_model=self.request.user).only(
+            'uuid', 'slug', 'name', 'default_coa', 'admin')
+
+    def get_authorized_entity_instance(self) -> Optional[EntityModel]:
+        if self.AUTHORIZED_ENTITY_MODEL is None:
+            raise Http404()
+        return self.AUTHORIZED_ENTITY_MODEL
 
 
 class EntityUnitMixIn:
