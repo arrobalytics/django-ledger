@@ -15,9 +15,9 @@
                 {% accounts_table accounts %}
             </div>
             <div class="column is-12 has-text-centered">
-                <a href="{% url 'django_ledger:account-create' entity_slug=view.kwargs.entity_slug %}"
+                <a href="{{ coa_model.get_create_coa_account_url }}"
                    class="button is-success">{% trans 'Create Account' %}</a>
-                <a href="{% url 'django_ledger:coa-list' entity_slug=view.kwargs.entity_slug %}"
+                <a href="{{ coa_model.get_coa_list_url }}"
                    class="button is-dark">{% trans 'Back to CoA List' %}</a>
             </div>
         </div>
