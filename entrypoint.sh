@@ -1,8 +1,5 @@
 #!/bin/sh
 
-echo "Going to install django"
-pipenv install django
-
 echo "Going to install dependencies"
 pipenv install
 

@@ -296,13 +296,14 @@ python manage.py runserver
 ```shell
 sudo chmod +x entrypoint.sh
 ```
+3. Add host '0.0.0.0' into ALLOWED_HOSTS in settings.py.
 
-3. Build the image and run the container.
+4. Build the image and run the container.
 
 ```shell
 docker compose up --build
 ```
-4. Add Django Superuser by running command in seprate terminal
+5. Add Django Superuser by running command in seprate terminal
 
 ```shell
 docker ps
@@ -317,7 +318,7 @@ docker exec -it containerId /bin/sh
 python manage.py createsuperuser
 ```
 
-5. Navigate to http://0.0.0.0:8000/ on browser.
+6. Navigate to http://0.0.0.0:8000/ on browser.
 
 # Run Test Suite
 
