@@ -1,8 +1,5 @@
 #!/bin/sh
 
-echo "Going to install dependencies"
-pipenv install
-
 echo "Going to run migrations"
 pipenv run python manage.py migrate
 

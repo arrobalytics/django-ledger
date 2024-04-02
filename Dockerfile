@@ -7,17 +7,17 @@ WORKDIR /app
 
 RUN apt-get update
 
-RUN pip install --upgrade pip
+RUN pip3 install --upgrade pip
 
-RUN pip install -U pipenv
+RUN pip3 install -U pipenv
 
 COPY Pipfile Pipfile.lock /app/
-
-RUN pipenv install --system
 
 COPY . /app/
 
 COPY entrypoint.sh /app/
+
+RUN pipenv install
 
 EXPOSE 8000
 
