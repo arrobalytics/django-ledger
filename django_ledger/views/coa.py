@@ -18,21 +18,21 @@ from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class ChartOfAccountsModelModelViewQuerySetMixIn:
+class ChartOfAccountModelModelBaseViewMixIn(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = ChartOfAccountModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
-            ).select_related('entity').order_by('-updated')
+            entity_model = self.get_authorized_entity_instance()
+            self.queryset = entity_model.chartofaccountmodel_set.all().select_related(
+                'entity').order_by('-updated')
         return super().get_queryset()
 
 
-class ChartOfAccountsListView(DjangoLedgerSecurityMixIn, ChartOfAccountsModelModelViewQuerySetMixIn, ListView):
+class ChartOfAccountModelListView(ChartOfAccountModelModelBaseViewMixIn, ListView):
     template_name = 'django_ledger/chart_of_accounts/coa_list.html'
     extra_context = {
+        'page_title': _('Chart of Account List'),
         'header_title': _('Chart of Account List'),
     }
     context_object_name = 'coa_list'
@@ -65,7 +65,7 @@ class ChartOfAccountsListView(DjangoLedgerSecurityMixIn, ChartOfAccountsModelMod
         )
 
 
-class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, ChartOfAccountsModelModelViewQuerySetMixIn, UpdateView):
+class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, UpdateView):
     context_object_name = 'coa'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/chart_of_accounts/coa_update.html'
@@ -86,9 +86,8 @@ class ChartOfAccountsUpdateView(DjangoLedgerSecurityMixIn, ChartOfAccountsModelM
 
 
 # todo: centralize this functionality into a separate class for ALL Action views...
-class CharOfAccountModelActionView(DjangoLedgerSecurityMixIn,
+class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
                                    RedirectView,
-                                   ChartOfAccountsModelModelViewQuerySetMixIn,
                                    SingleObjectMixin):
     http_method_names = ['get']
     slug_url_kwarg = 'coa_slug'

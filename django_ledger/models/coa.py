@@ -51,7 +51,9 @@ class ChartOfAccountsModelValidationError(ValidationError):
 
 
 class ChartOfAccountModelQuerySet(models.QuerySet):
-    pass
+
+    def active(self):
+        return self.filter(active=True)
 
 
 class ChartOfAccountModelManager(models.Manager):
@@ -116,22 +118,10 @@ class ChartOfAccountModelManager(models.Manager):
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
-        qs = self.get_queryset()
+        qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity=entity_slug) &
-                (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
-            )
-        return qs.filter(
-            Q(entity__slug__iexact=entity_slug) &
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
-        ).select_related('entity')
+            return qs.filter(entity=entity_slug).select_related('entity')
+        return qs.filter(entity__slug__iexact=entity_slug).select_related('entity')
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
@@ -284,6 +274,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                         ))
 
     def is_default(self) -> bool:
+        if not self.entity_id:
+            return False
+        if not self.entity.default_coa_id:
+            return False
         return self.entity.default_coa_id == self.uuid
 
     def is_active(self) -> bool:
@@ -514,6 +508,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             kwargs={
                 'entity_slug': self.entity.slug,
                 'coa_slug': self.slug
+            }
+        )
+
+    def get_coa_list_url(self):
+        return reverse(
+            viewname='django_ledger:coa-list',
+            kwargs={
+                'entity_slug': self.entity.slug
             }
         )
 

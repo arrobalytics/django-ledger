@@ -1124,6 +1124,25 @@ class EntityModelAbstract(MP_Node,
                     'Use force=True to bypass this check'
                 )
 
+    def get_coa_model_qs(self, active: bool = True):
+        """
+        Fetches the current Entity Model instance Chart of Accounts Model Queryset.
+
+        Parameters
+        ----------
+        active: bool
+            Returns only active Chart of Account Models. Defaults to True.
+
+        Returns
+        -------
+        ChartOfAccountModelQuerySet
+        """
+
+        coa_model_qs = self.chartofaccountmodel_set.all()
+        if active:
+            return coa_model_qs.active()
+        return coa_model_qs
+
     # Model Validators....
     def validate_chart_of_accounts_for_entity(self,
                                               coa_model: ChartOfAccountModel,

@@ -17,7 +17,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.account import AccountModelUpdateForm, AccountModelCreateForm
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import lazy_loader
+from django_ledger.models import ChartOfAccountModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, MonthlyReportMixIn, QuarterlyReportMixIn, DjangoLedgerSecurityMixIn,
@@ -27,6 +27,18 @@ from django_ledger.views.mixins import (
 
 class BaseAccountModelViewQuerySetMixIn:
     queryset = None
+    coa_model = None
+
+    def get_coa_model(self) -> ChartOfAccountModel:
+        if self.coa_model is None:
+            coa_slug = self.kwargs.get('coa_slug')
+            if coa_slug:
+                coa_model_qs = self.AUTHORIZED_ENTITY_MODEL.chartofaccountmodel_set.all().active()
+                coa_model = get_object_or_404(coa_model_qs, slug__exact=coa_slug)
+            else:
+                coa_model = self.AUTHORIZED_ENTITY_MODEL.default_coa
+            self.coa_model = coa_model
+        return self.coa_model
 
     def get_queryset(self):
         if self.queryset is None:
@@ -39,8 +51,15 @@ class BaseAccountModelViewQuerySetMixIn:
             ).order_by(
                 'coa_model', 'role', 'code').not_coa_root()
 
-            if self.kwargs.get('coa_slug'):
-                qs = qs.filter(coa_model__slug__exact=self.kwargs.get('coa_slug'))
+            coa_slug = self.kwargs.get('coa_slug')
+            account_pk = self.kwargs.get('account_pk')
+
+            if coa_slug:
+                qs = qs.filter(coa_model__slug__exact=coa_slug)
+            elif account_pk:
+                qs = qs.filter(uuid__exact=account_pk)
+            else:
+                qs = qs.filter(coa_model__slug__exact=self.AUTHORIZED_ENTITY_MODEL.default_coa.slug)
 
             self.queryset = qs
         return super().get_queryset()
@@ -93,7 +112,8 @@ class AccountModelUpdateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
         # Set here because user_model is needed to instantiate an instance of MoveNodeForm (AccountModelUpdateForm)
         account_model.USER_MODEL = self.request.user
         return AccountModelUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
+            entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            coa_model=self.get_coa_model(),
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
@@ -119,7 +139,8 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
     def get_form(self, form_class=None):
         return AccountModelCreateForm(
             user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
+            entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            coa_model=self.get_coa_model(),
             **self.get_form_kwargs()
         )
 
@@ -129,20 +150,25 @@ class AccountModelCreateView(DjangoLedgerSecurityMixIn, BaseAccountModelViewQuer
         return context
 
     def form_valid(self, form):
-        EntityModel = lazy_loader.get_entity_model()
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).select_related('default_coa')
-        entity_model: EntityModel = get_object_or_404(entity_model_qs, slug__exact=self.kwargs['entity_slug'])
+        entity_model = self.AUTHORIZED_ENTITY_MODEL
         account_model: AccountModel = form.save(commit=False)
 
         if not entity_model.has_default_coa():
             entity_model.create_chart_of_accounts(assign_as_default=True, commit=True)
 
-        coa_model = entity_model.default_coa
+        coa_model = self.get_coa_model()
         coa_model.allocate_account(account_model=account_model)
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
         entity_slug = self.kwargs.get('entity_slug')
+        coa_slug = self.kwargs.get('coa_slug')
+        if coa_slug:
+            return reverse('django_ledger:account-list-coa',
+                           kwargs={
+                               'entity_slug': entity_slug,
+                               'coa_slug': coa_slug
+                           })
         return reverse('django_ledger:account-list',
                        kwargs={
                            'entity_slug': entity_slug,

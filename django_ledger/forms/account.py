@@ -31,8 +31,9 @@ class AccountModelCreateForm(ModelForm):
     balance_type: Need to be selected from drop down as "Debit" or Credit"
     """
 
-    def __init__(self, entity_slug, user_model, *args, **kwargs):
-        self.ENTITY_SLUG = entity_slug
+    def __init__(self, entity_model, coa_model, user_model, *args, **kwargs):
+        self.ENTITY = entity_model
+        self.COA_MODEL = coa_model
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
         self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
@@ -43,6 +44,13 @@ class AccountModelCreateForm(ModelForm):
         if not role_default:
             return None
         return role_default
+
+    def clean_code(self):
+        code = self.cleaned_data['code']
+        is_code_valid = not self.COA_MODEL.accountmodel_set.filter(code=code).exists()
+        if not is_code_valid:
+            raise ValidationError(message=_('Code {} already exists for CoA {}').format(code, self.COA_MODEL.slug))
+        return code
 
     class Meta:
         model = AccountModel
@@ -92,8 +100,9 @@ class AccountModelUpdateForm(MoveNodeForm):
                                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                                }))
 
-    def __init__(self, entity_slug, user_model, *args, **kwargs):
-        self.ENTITY_SLUG = entity_slug
+    def __init__(self, entity_model, coa_model, user_model, *args, **kwargs):
+        self.ENTITY = entity_model
+        self.COA_MODEL = coa_model
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
         # self.fields['_ref_node_id'].choices = self.mk_dropdown_tree_choices()
