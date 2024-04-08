@@ -287,6 +287,39 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+# How To Set Up Django Ledger for Development using Docker
+
+1. Navigate to your projects directory.
+
+2. Give executable permissions to entrypoint.sh
+
+```shell
+sudo chmod +x entrypoint.sh
+```
+3. Add host '0.0.0.0' into ALLOWED_HOSTS in settings.py.
+
+4. Build the image and run the container.
+
+```shell
+docker compose up --build
+```
+5. Add Django Superuser by running command in seprate terminal
+
+```shell
+docker ps
+```
+Select container id of running container and execute following command
+
+```shell
+docker exec -it containerId /bin/sh
+```
+
+```shell
+python manage.py createsuperuser
+```
+
+6. Navigate to http://0.0.0.0:8000/ on browser.
+
 # Run Test Suite
 
 After setting up your development environment you may run tests.
