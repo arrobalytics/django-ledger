@@ -1100,7 +1100,7 @@ class EntityModelAbstract(MP_Node,
                         role=a['role'],
                         balance_type=a['balance_type'],
                         active=activate_accounts,
-                        # coa_model=chart_of_accounts,
+                        coa_model=coa_model,
                     ) for a in v] for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
             }
 
@@ -1115,7 +1115,7 @@ class EntityModelAbstract(MP_Node,
                         pass
 
                     account_model.clean()
-                    coa_model.allocate_account(account_model, root_account_qs=root_account_qs)
+                    coa_model.insert_account(account_model, root_account_qs=root_account_qs)
 
         else:
             if not ignore_if_default_coa:

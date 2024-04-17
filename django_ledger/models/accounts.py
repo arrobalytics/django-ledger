@@ -158,7 +158,10 @@ class AccountModelManager(MP_NodeManager):
         """
         Sets the custom queryset as the default.
         """
-        return AccountModelQuerySet(self.model).order_by('path')
+        return AccountModelQuerySet(
+            self.model,
+            using=self._db
+        ).order_by('path').select_related('coa_model')
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -645,6 +648,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
                 'active',
                 'updated'
             ])
+
+    def can_transact(self) -> bool:
+        return all([
+            self.coa_model.is_active(),
+            not self.is_locked(),
+            self.is_active()
+        ])
 
     def get_code_prefix(self) -> str:
 

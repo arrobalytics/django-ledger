@@ -247,7 +247,8 @@ class TransactionModelAdmin(models.Manager):
         qs = TransactionModelQuerySet(self.model, using=self._db)
         return qs.select_related(
             'journal_entry',
-            'account'
+            'account',
+            'account__coa_model',
         )
 
     def for_user(self, user_model) -> TransactionModelQuerySet:
@@ -570,33 +571,35 @@ def transactionmodel_presave(instance: TransactionModel, **kwargs):
     Parameters
     ----------
     instance : TransactionModel
-        The instance of the TransactionModel class.
-
+        The transaction model instance that is being saved.
     kwargs : dict
         Additional keyword arguments.
+
+    Notes
+    -----
+    This method is called before saving a transaction model instance.
+    It performs some checks before allowing the save operation.
 
     Raises
     ------
     TransactionModelValidationError
-        If the journal entry associated with the instance is locked.
-        If the account associated with the instance is locked.
-        If the account associated with the instance is not active and
-        bypass_active_status is not set to True.
+        If one of the following conditions is met:
+        - `bypass_account_state` is False and the `can_transact` method of the associated account model returns False.
+        - The journal entry associated with the transaction is locked.
+
     """
-    if instance.journal_entry_id and instance.journal_entry.is_locked():
+    bypass_account_state = kwargs.get('bypass_account_state', False)
+    if all([
+        not bypass_account_state,
+        not instance.account.can_transact()
+    ]):
         raise TransactionModelValidationError(
-            message=_('Cannot modify transactions on locked journal entries')
-        )
-    if instance.account.is_locked():
-        raise TransactionModelValidationError(
-            message=_(f'Cannot transact on locked accounts: {instance.account}')
+            message=_(f'Cannot create or modify transactions on account model {instance.account}.')
         )
 
-    bypass_active_status = kwargs.get('bypass_active_status', False)
-    if not instance.account.is_active() and not bypass_active_status:
+    if instance.journal_entry.is_locked():
         raise TransactionModelValidationError(
-            message=_(f'Cannot modify transactions on active accounts: {instance.account}, '
-                      'use bypass_active_status=True to bypass active status')
+            message=_('Cannot modify transactions on locked journal entries.')
         )
 
 
