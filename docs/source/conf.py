@@ -39,7 +39,7 @@ copy(src=BASE_DIR_PATH.joinpath('README.md'), dst=BASE_DIR_PATH.joinpath('docs/s
 # -- Project information -----------------------------------------------------
 
 project = 'Django Ledger'
-copyright = '2023, EDMA Group Inc'
+copyright = '2024, EDMA Group Inc'
 author = 'Miguel Sanda'
 
 # -- General configuration ---------------------------------------------------
