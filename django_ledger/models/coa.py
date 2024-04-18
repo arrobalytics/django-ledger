@@ -9,24 +9,23 @@ Contributions to this module:
 Chart Of Accounts
 _________________
 
-A Chart of Accounts (CoA) is a collection of accounts logically grouped into a distinct set within a
-ChartOfAccountModel. The CoA is the backbone of making of any financial statements and it consist of accounts of many
-roles, such as cash, accounts receivable, expenses, liabilities, income, etc. For instance, we can have a heading as
-"Fixed Assets" in the Balance Sheet, which will consists of Tangible, Intangible Assets. Further, the tangible assets
-will consists of multiple accounts like Building, Plant & Equipments, Machinery. So, aggregation of balances of
-individual accounts based on the Chart of Accounts and AccountModel roles, helps in preparation of the Financial
-Statements.
+A Chart of Accounts (CoA) is a crucial collection of logically grouped accounts within a ChartOfAccountModel,
+forming the backbone of financial statements. The CoA includes various account roles such as cash, accounts receivable,
+expenses, liabilities, and income. For example, the Balance Sheet may have a Fixed Assets heading consisting of
+Tangible and Intangible Assets with multiple accounts like Building, Plant &amp; Equipments, and Machinery under
+tangible assets. Aggregation of individual account balances based on the Chart of Accounts and AccountModel roles is
+essential for preparing Financial Statements.
 
-All EntityModel must have a default CoA to be able to create any type of transaction. Throughout the application,
-when no explicit CoA is specified, the default behavior is to use the EntityModel default CoA. **Only ONE Chart of
-Accounts can be used when creating Journal Entries**. No commingling between CoAs is allowed in order to preserve the
-integrity of the Journal Entry.
+All EntityModel must have a default CoA to create any type of transaction. When no explicit CoA is specified, the
+default behavior is to use the EntityModel default CoA. Only ONE Chart of Accounts can be used when creating
+Journal Entries. No commingling between CoAs is allowed to preserve the integrity of the Journal Entry.
 """
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 from uuid import uuid4
 
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -45,6 +44,8 @@ UserModel = get_user_model()
 
 SLUG_SUFFIX = ascii_lowercase + digits
 
+app_config = apps.get_app_config('django_ledger')
+
 
 class ChartOfAccountsModelValidationError(ValidationError):
     pass
@@ -53,6 +54,9 @@ class ChartOfAccountsModelValidationError(ValidationError):
 class ChartOfAccountModelQuerySet(models.QuerySet):
 
     def active(self):
+        """
+        QuerySet method to retrieve active items.
+        """
         return self.filter(active=True)
 
 
@@ -74,13 +78,8 @@ class ChartOfAccountModelManager(models.Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        ________
-            >>> request_user = self.request.user
-            >>> coa_model_qs = ChartOfAccountModel.objects.for_user(user_model=request_user)
-
         Returns
-        _______
+        -------
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
@@ -106,15 +105,8 @@ class ChartOfAccountModelManager(models.Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        ________
-
-            >>> request_user = self.request.user
-            >>> slug = self.kwargs['entity_slug'] # may come from request kwargs
-            >>> coa_model_qs = ChartOfAccountModelManager.objects.for_entity(user_model=request_user, entity_slug=slug)
-
         Returns
-        _______
+        -------
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
@@ -126,26 +118,20 @@ class ChartOfAccountModelManager(models.Manager):
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     """
-    Base implementation of Chart of Accounts Model as an Abstract.
-    
-    2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.SlugMixIn>`
-    2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
-    
+    Abstract base class for the Chart of Account model.
+
     Attributes
     ----------
-    uuid : UUID
-        This is a unique primary key generated for the table. The default value of this field is uuid4().
-
-    entity: EntityModel
-        The EntityModel associated with this Chart of Accounts.
-
-    active: bool
-        This determines whether any changes can be done to the Chart of Accounts.
-        Inactive Chart of Accounts will not be able to be used in new Transactions.
-        Default value is set to False (inactive).
-
-    description: str
-        A user generated description for this Chart of Accounts.
+    uuid : UUIDField
+        UUID field for the chart of account model (primary key).
+    entity : ForeignKey
+        ForeignKey to the EntityModel.
+    active : BooleanField
+        BooleanField indicating whether the chart of account is active or not.
+    description : TextField
+        TextField storing the description of the chart of account.
+    objects : ChartOfAccountModelManager
+        Manager for the ChartOfAccountModel.
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
@@ -172,16 +158,58 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return self.slug
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
+        """
+        Retrieves the root accounts in the chart of accounts.
+
+        Returns:
+            AccountModelQuerySet: A queryset containing the root accounts in the chart of accounts.
+        """
         return self.accountmodel_set.all().is_coa_root()
 
-    def get_coa_root_account(self) -> AccountModel:
+    def get_coa_root_node(self) -> AccountModel:
+        """
+        Retrieves the root node of the chart of accounts.
+
+        Returns:
+            AccountModel: The root node of the chart of accounts.
+
+        """
         qs = self.get_coa_root_accounts_qs()
         return qs.get(role__exact=ROOT_COA)
 
-    def get_coa_l2_root(self,
-                        account_model: AccountModel,
-                        root_account_qs: Optional[AccountModelQuerySet] = None,
-                        as_queryset: bool = False) -> Union[AccountModelQuerySet, AccountModel]:
+    def get_account_root_node(self,
+                              account_model: AccountModel,
+                              root_account_qs: Optional[AccountModelQuerySet] = None,
+                              as_queryset: bool = False) -> AccountModel:
+        """
+        Fetches the root node of the ChartOfAccountModel instance. The root node is the highest level of the CoA
+        hierarchy. It can be used to traverse the hierarchy of the CoA structure downstream.
+
+
+        Parameters
+        ----------
+        account_model : AccountModel
+            The account model for which to find the root node.
+        root_account_qs : Optional[AccountModelQuerySet], optional
+            The queryset of root accounts. If not provided, it will be retrieved using `get_coa_root_accounts_qs` method.
+        as_queryset : bool, optional
+            If True, return the root account queryset instead of a single root account. Default is False.
+
+        Returns
+        -------
+        Union[AccountModelQuerySet, AccountModel]
+            If `as_queryset` is True, returns the root account queryset. Otherwise, returns a single root account.
+
+        Raises
+        ------
+        ChartOfAccountsModelValidationError
+            If the account model is not part of the chart of accounts.
+        """
+
+        if account_model.coa_model_id != self.uuid:
+            raise ChartOfAccountsModelValidationError(
+                message=_(f'The account model {account_model} is not part of the chart of accounts {self.name}.'),
+            )
 
         if not account_model.is_root_account():
 
@@ -209,13 +237,72 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             return qs.get()
 
     def get_non_root_coa_accounts_qs(self) -> AccountModelQuerySet:
+        """
+        Returns a query set of non-root accounts in the chart of accounts.
+
+        Returns
+        -------
+        AccountModelQuerySet
+            A query set of non-root accounts in the chart of accounts.
+        """
         return self.accountmodel_set.all().not_coa_root()
 
-    def get_coa_account_tree(self):
-        root_account = self.get_coa_root_account()
+    def get_coa_accounts(self, active_only: bool = True) -> AccountModelQuerySet:
+        """
+        Returns the AccountModelQuerySet associated with the ChartOfAccounts model instance.
+
+        Parameters
+        ----------
+        active_only : bool, optional
+            Flag to indicate whether to retrieve only active accounts or all accounts.
+            Default is True.
+
+        Returns
+        -------
+        AccountModelQuerySet
+            A queryset containing accounts from the chart of accounts.
+
+        """
+        qs = self.get_non_root_coa_accounts_qs()
+        if active_only:
+            return qs.active()
+        return qs
+
+    def get_coa_account_tree(self) -> Dict:
+        """
+        Performs a bulk dump of the ChartOfAccounts model instance accounts to a dictionary.
+        The method invokes the`dump_bulk` method on the ChartOfAccount model instance root node.
+        See Django Tree Beard documentation for more information.
+
+        Returns
+        -------
+        Dict
+            A dictionary containing all accounts from the chart of accounts in a nested structure.
+        """
+        root_account = self.get_coa_root_node()
         return AccountModel.dump_bulk(parent=root_account)
 
     def generate_slug(self, raise_exception: bool = False) -> str:
+        """
+        Generates and assigns a slug based on the ChartOfAccounts model instance EntityModel information.
+
+
+        Parameters
+        ----------
+        raise_exception : bool, optional
+                If set to True, it will raise a ChartOfAccountsModelValidationError if the `self.slug` is already set.
+
+        Returns
+        -------
+        str
+                The generated slug for the Chart of Accounts.
+
+        Raises
+        ------
+        ChartOfAccountsModelValidationError
+                If `raise_exception` is set to True and `self.slug` is already set.
+
+        """
         if self.slug:
             if raise_exception:
                 raise ChartOfAccountsModelValidationError(
@@ -225,7 +312,17 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.slug = f'coa-{self.entity.slug[-5:]}-' + ''.join(choices(SLUG_SUFFIX, k=15))
 
     def configure(self, raise_exception: bool = True):
+        """
+        A method that properly configures the ChartOfAccounts model and creates the appropriate hierarchy boilerplate
+        to support the insertion of new accounts into the chart of account model tree.
+        This method must be called every time the ChartOfAccounts model is created.
 
+        Parameters
+        ----------
+        raise_exception : bool, optional
+            Whether to raise an exception if root nodes already exist in the Chart of Accounts (default is True).
+            This indicates that the ChartOfAccountModel instance is already configured.
+        """
         self.generate_slug()
 
         root_accounts_qs = self.get_coa_root_accounts_qs()
@@ -274,6 +371,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                         ))
 
     def is_default(self) -> bool:
+        """
+        Check if the ChartOfAccountModel instance is set as the default for the EntityModel.
+
+        Returns
+        -------
+        bool
+            True if the ChartOfAccountModel instance is set as the default for the EntityModel. Else, False.
+        """
         if not self.entity_id:
             return False
         if not self.entity.default_coa_id:
@@ -281,9 +386,29 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return self.entity.default_coa_id == self.uuid
 
     def is_active(self) -> bool:
+        """
+        Check if the ChartOfAccountModel instance is active.
+
+        Returns:
+            bool: True if the ChartOfAccountModel instance is active, False otherwise.
+        """
         return self.active is True
 
     def validate_account_model_qs(self, account_model_qs: AccountModelQuerySet):
+        """
+        Validates the given AccountModelQuerySet for the ChartOfAccountsModel.
+
+        Parameters
+        ----------
+        account_model_qs : AccountModelQuerySet
+            The AccountModelQuerySet to validate.
+
+        Raises
+        ------
+        ChartOfAccountsModelValidationError
+            If the account_model_qs is not an instance of AccountModelQuerySet or if it contains an account model with a different coa_model_id than the current CoA model.
+
+        """
         if not isinstance(account_model_qs, AccountModelQuerySet):
             raise ChartOfAccountsModelValidationError(
                 message='Must pass an instance of AccountModelQuerySet'
@@ -294,24 +419,40 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=f'Invalid root queryset for CoA {self.name}'
                 )
 
-    def allocate_account(self,
-                         account_model: AccountModel,
-                         root_account_qs: Optional[AccountModelQuerySet] = None):
+    def insert_account(self,
+                       account_model: AccountModel,
+                       root_account_qs: Optional[AccountModelQuerySet] = None):
         """
-        Allocates a given account model to the appropriate root account depending on the Account Model Role.
+        This method inserts the given account model into the chart of accounts (COA) instance.
+        It first verifies if the account model's COA model ID matches the COA's UUID. If not, it
+        raises a `ChartOfAccountsModelValidationError`. If the `root_account_qs` is not provided, it retrieves the
+        root account query set using the `get_coa_root_accounts_qs` method. Providing a pre-fetched `root_account_qs`
+        avoids unnecessary retrieval of the root account query set every an account model is inserted into the CoA.
+
+        Next, it validates the provided `root_account_qs` if it is not None. Then, it obtains the root node for the
+        account model using the `get_account_root_node` method and assigns it to `account_root_node`.
+
+        Finally, it adds the account model as a child to the `account_root_node` and retrieves the updated COA accounts
+        query set using the `get_non_root_coa_accounts_qs` method. It returns the inserted account model found in the
+        COA accounts query set.
 
         Parameters
         ----------
-        account_model: AccountModel
-            The Account Model to Allocate
-        root_account_qs:
-            The Root Account QuerySet of the Chart Of Accounts to use.
-            Will be validated against current CoA Model.
+        account_model : AccountModel
+            The account model to be inserted into the chart of accounts.
+        root_account_qs : Optional[AccountModelQuerySet], default=None
+            The root account query set. If not provided, it will be obtained using the `get_coa_root_accounts_qs`
+            method.
 
         Returns
         -------
         AccountModel
-            The saved and allocated AccountModel.
+            The inserted account model.
+
+        Raises
+        ------
+        ChartOfAccountsModelValidationError
+            If the provided account model has an invalid COA model ID for the current COA.
         """
 
         if account_model.coa_model_id:
@@ -325,13 +466,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         else:
             self.validate_account_model_qs(root_account_qs)
 
-        l2_root_node: AccountModel = self.get_coa_l2_root(
+        account_root_node: AccountModel = self.get_account_root_node(
             account_model=account_model,
             root_account_qs=root_account_qs
         )
 
-        account_model.coa_model = self
-        l2_root_node.add_child(instance=account_model)
+        account_root_node.add_child(instance=account_model)
         coa_accounts_qs = self.get_non_root_coa_accounts_qs()
         return coa_accounts_qs.get(uuid__exact=account_model.uuid)
 
@@ -342,17 +482,41 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                        balance_type: str,
                        active: bool,
                        root_account_qs: Optional[AccountModelQuerySet] = None):
+        """
+        Proper method for inserting a new Account Model into a CoA.
+        Use this in liu of the direct instantiation of the AccountModel of using the django related manager.
 
+        Parameters
+        ----------
+        code : str
+            The code of the account to be created.
+        role : str
+            The role of the account. This can be a user-defined value.
+        name : str
+            The name of the account.
+        balance_type : str
+            The balance type of the account. This can be a user-defined value.
+        active : bool
+            Specifies whether the account is active or not.
+        root_account_qs : Optional[AccountModelQuerySet], optional
+            The query set of root accounts to which the created account should be linked. Defaults to None.
+
+        Returns
+        -------
+        AccountModel
+            The created account model instance.
+        """
         account_model = AccountModel(
             code=code,
             name=name,
             role=role,
             active=active,
-            balance_type=balance_type
+            balance_type=balance_type,
+            coa_model=self
         )
         account_model.clean()
 
-        account_model = self.allocate_account(
+        account_model = self.insert_account(
             account_model=account_model,
             root_account_qs=root_account_qs
         )
@@ -361,14 +525,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     # ACTIONS -----
     # todo: use these methods once multi CoA features are enabled...
     def lock_all_accounts(self) -> AccountModelQuerySet:
-        non_root_accounts_qs = self.get_non_root_coa_accounts_qs()
-        non_root_accounts_qs.update(locked=True)
-        return non_root_accounts_qs
+        account_qs = self.get_coa_accounts()
+        account_qs.update(locked=True)
+        return account_qs
 
     def unlock_all_accounts(self) -> AccountModelQuerySet:
-        non_root_accounts_qs = self.get_non_root_coa_accounts_qs()
-        non_root_accounts_qs.update(locked=False)
-        return non_root_accounts_qs
+        account_qs = self.get_non_root_coa_accounts_qs()
+        account_qs.update(locked=False)
+        return account_qs
 
     def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -415,9 +579,23 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         )
 
     def can_activate(self) -> bool:
+        """
+        Check if the ChartOffAccountModel instance can be activated.
+
+        Returns
+        -------
+            True if the object can be activated, False otherwise.
+        """
         return self.active is False
 
     def can_deactivate(self) -> bool:
+        """
+        Check if the ChartOffAccountModel instance can be deactivated.
+
+        Returns
+        -------
+            True if the object can be deactivated, False otherwise.
+        """
         return all([
             self.is_active(),
             not self.is_default()
@@ -548,7 +726,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def clean(self):
         self.generate_slug()
-
         if self.is_default() and not self.active:
             raise ChartOfAccountsModelValidationError(
                 _('Default Chart of Accounts cannot be deactivated.')

@@ -38,8 +38,11 @@ from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBala
 from django_ledger.io import roles as roles_module
 from django_ledger.io.io_digest import IODigestContextManager
 from django_ledger.io.io_middleware import (
-    AccountRoleIOMiddleware, AccountGroupIOMiddleware, JEActivityIOMiddleware,
-    BalanceSheetIOMiddleware, IncomeStatementIOMiddleware,
+    AccountRoleIOMiddleware,
+    AccountGroupIOMiddleware,
+    JEActivityIOMiddleware,
+    BalanceSheetIOMiddleware,
+    IncomeStatementIOMiddleware,
     CashFlowStatementIOMiddleware
 )
 from django_ledger.io.ratios import FinancialRatioManager
@@ -263,7 +266,7 @@ class IODatabaseMixIn:
         return isinstance(self, lazy_loader.get_ledger_model())
 
     def is_entity_unit_model(self):
-        return isinstance(self, lazy_loader.get_unit_model())
+        return isinstance(self, lazy_loader.get_entity_unit_model())
 
     def get_entity_model_from_io(self):
         if self.is_entity_model():
@@ -601,6 +604,8 @@ class IODatabaseMixIn:
             use_closing_entries=use_closing_entries,
             **kwargs)
 
+        TransactionModel = lazy_loader.get_txs_model()
+
         for tx_model in io_result.txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
                 tx_model['balance'] = -tx_model['balance']
@@ -625,7 +630,6 @@ class IODatabaseMixIn:
             acc['balance_abs'] = abs(acc['balance'])
 
         if signs:
-            TransactionModel = lazy_loader.get_txs_model()
             for acc in accounts_digest:
                 if any([
                     all([acc['role_bs'] == roles_module.BS_ASSET_ROLE,
@@ -945,8 +949,8 @@ class IOReportMixIn:
             **kwargs
         )
 
-        report_klass = lazy_loader.get_balance_sheet_report_class()
-        report = report_klass(
+        BalanceSheetReport = lazy_loader.get_balance_sheet_report_class()
+        report = BalanceSheetReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
@@ -1000,8 +1004,8 @@ class IOReportMixIn:
             txs_queryset=txs_queryset,
             **kwargs
         )
-        report_klass = lazy_loader.get_income_statement_report_class()
-        report = report_klass(
+        IncomeStatementReport = lazy_loader.get_income_statement_report_class()
+        report = IncomeStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
@@ -1054,8 +1058,8 @@ class IOReportMixIn:
             **kwargs
         )
 
-        report_klass = lazy_loader.get_cash_flow_statement_report_class()
-        report = report_klass(
+        CashFlowStatementReport = lazy_loader.get_cash_flow_statement_report_class()
+        report = CashFlowStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
@@ -1108,22 +1112,22 @@ class IOReportMixIn:
             **kwargs
         )
 
-        bs_report_klass = lazy_loader.get_balance_sheet_report_class()
-        bs_report = bs_report_klass(
+        BalanceSheetReport = lazy_loader.get_balance_sheet_report_class()
+        bs_report = BalanceSheetReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
             io_digest=io_digest
         )
-        is_report_klass = lazy_loader.get_income_statement_report_class()
-        is_report = is_report_klass(
+        IncomeStatementReport = lazy_loader.get_income_statement_report_class()
+        is_report = IncomeStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,
             io_digest=io_digest
         )
-        cfs_report_klass = lazy_loader.get_cash_flow_statement_report_class()
-        cfs_report = cfs_report_klass(
+        CashFlowStatementReport = lazy_loader.get_cash_flow_statement_report_class()
+        cfs_report = CashFlowStatementReport(
             self.PDF_REPORT_ORIENTATION,
             self.PDF_REPORT_MEASURE_UNIT,
             self.PDF_REPORT_PAGE_SIZE,

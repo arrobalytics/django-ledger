@@ -743,7 +743,7 @@ class AccrualMixIn(models.Model):
 
             if commit:
                 JournalEntryModel = lazy_loader.get_journal_entry_model()
-                TransactionModel = lazy_loader.get_transaction_model()
+                TransactionModel = lazy_loader.get_txs_model()
 
                 unit_uuids = list(set(k[1] for k in idx_keys))
 
