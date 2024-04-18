@@ -25,6 +25,7 @@ from string import ascii_lowercase, digits
 from typing import Optional, Union, Dict
 from uuid import uuid4
 
+from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -43,6 +44,8 @@ UserModel = get_user_model()
 
 SLUG_SUFFIX = ascii_lowercase + digits
 
+app_config = apps.get_app_config('django_ledger')
+
 
 class ChartOfAccountsModelValidationError(ValidationError):
     pass
@@ -51,6 +54,9 @@ class ChartOfAccountsModelValidationError(ValidationError):
 class ChartOfAccountModelQuerySet(models.QuerySet):
 
     def active(self):
+        """
+        QuerySet method to retrieve active items.
+        """
         return self.filter(active=True)
 
 

@@ -11,9 +11,7 @@ from itertools import groupby, chain
 from django.core.exceptions import ValidationError
 
 from django_ledger.io import roles as roles_module
-from django_ledger.models.utils import LazyLoader, lazy_loader
-
-lazy_importer = LazyLoader()
+from django_ledger.models.utils import lazy_loader
 
 
 class AccountRoleIOMiddleware:
@@ -197,7 +195,7 @@ class JEActivityIOMiddleware:
         return (acc for acc in self.ACCOUNTS if acc['activity'] == activity)
 
     def process_activity(self):
-        JournalEntryModel = lazy_importer.get_journal_entry_model()
+        JournalEntryModel = lazy_loader.get_journal_entry_model()
         for act in JournalEntryModel.VALID_ACTIVITIES:
             acc_list = list(self.get_accounts_generator(act))
             self.ACTIVITY_ACCOUNTS[act] = acc_list

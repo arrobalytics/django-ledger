@@ -69,7 +69,7 @@ class IODigestContextManager:
     def is_unit_model(self) -> bool:
         return isinstance(
             self.IO_MODEL,
-            lazy_loader.get_unit_model()
+            lazy_loader.get_entity_unit_model()
         )
 
     def is_by_unit(self) -> bool:

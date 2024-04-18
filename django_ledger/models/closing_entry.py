@@ -1,14 +1,14 @@
+from datetime import datetime, time
 from decimal import Decimal
 from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
-from datetime import datetime, time
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import pre_save, pre_delete
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
@@ -119,8 +119,6 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 message=f'Invalid transactions. Credits {ce_txs_sum[TransactionModel.CREDIT]} '
                         f'do not equal Debits {ce_txs_sum[TransactionModel.DEBIT]}'
             )
-
-
 
         key_func = lambda i: (str(i.unit_model_id) if i.unit_model_id else '', i.activity if i.activity else '')
 
@@ -337,6 +335,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 class ClosingEntryModel(ClosingEntryModelAbstract):
     pass
 
+
+# todo: Remove this model!
 
 class ClosingEntryTransactionModelQuerySet(models.QuerySet):
     pass
