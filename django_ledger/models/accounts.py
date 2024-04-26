@@ -407,49 +407,41 @@ def account_code_validator(value: str):
 
 
 class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
-    """
-    Django Ledger Base Account Model Abstract. This is the main abstract class which the Account Model database will
-    inherit, and it contains the fields/columns/attributes which the said ledger table will have. In addition to the
-    attributes mentioned below, it also has the fields/columns/attributes mentioned in the ParentChileMixin & the
-    CreateUpdateMixIn. Read about these mixin here.
+    """ AccountModelAbstract
 
-    Below are the fields specific to the accounts model.
+    Abstract class representing an Account Model.
 
     Attributes
     ----------
-    uuid: UUID
-        This is a unique primary key generated for the table. The default value of this field is uuid4().
+    BALANCE_TYPE : list
+        List of choices for the balance type of the account.
 
-    code: str
-        Each account will have its own alphanumeric code.
-        For example:
-        * Cash Account -> Code 1010.
-        * Inventory -> 1200.
-        * Maximum Length allowed is 10.
+    uuid : UUIDField
+        UUID field representing the primary key of the account.
 
-    name: str
-        This is the user defined name  of the Account. the maximum length for Name of the ledger allowed is 100
+    code : CharField
+        CharField representing the account code.
 
-    role: str
-        Each Account needs to be assigned a certain Role. The exhaustive list of ROLES is defined in io.roles.
+    name : CharField
+        CharField representing the account name.
 
-    balance_type: str
-        Each account will have a default Account type i.e. Either Debit or Credit.
-        For example:
-        * Assets like Cash, Inventory, Accounts Receivable or Expenses like Rent, Salary will have balance_type=DEBIT.
-        * Liabilities, Equities and Income like Payables, Loans, Income, Sales, Reserves will have balance_type=CREDIT.
+    role : CharField
+        CharField representing the account role.
 
-    locked: bool
-        This determines whether any transactions can be added in the account. Before making any update to the
-        account, the account needs to be unlocked. Default value is set to False i.e. Unlocked.
+    role_default : BooleanField
+        BooleanField representing whether the account is a default account for the role.
 
-    active: bool
-        Determines whether the concerned account is active. Any Account can be used only when it is unlocked and
-        Active. Default value is set to True.
+    balance_type : CharField
+        CharField representing the balance type of the account. Must be 'debit' or 'credit'.
 
-    coa_model: ChartOfAccountsModel
-        Each Accounts must be assigned a ChartOfAccountsModel. By default, one CoA will be created for each entity.
-        However, the creating of a new AccountModel must have an explicit assignment of a ChartOfAccountModel.
+    locked : BooleanField
+        BooleanField representing whether the account is locked.
+
+    active : BooleanField
+        BooleanField representing whether the account is active.
+
+    coa_model : ForeignKey
+        ForeignKey representing the associated ChartOfAccountModel.
     """
     BALANCE_TYPE = [
         (CREDIT, _('Credit')),
@@ -485,7 +477,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             models.Index(fields=['balance_type']),
             models.Index(fields=['active']),
             models.Index(fields=['locked']),
-            models.Index(fields=['coa_model'])
+            models.Index(fields=['coa_model', 'code']),
+            models.Index(fields=['code'])
         ]
 
     def __str__(self):

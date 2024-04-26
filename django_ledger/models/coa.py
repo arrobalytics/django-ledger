@@ -460,6 +460,8 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 raise ChartOfAccountsModelValidationError(
                     message=f'Invalid Account Model {account_model} for CoA {self}'
                 )
+        else:
+            account_model.coa_model = self
 
         if not root_account_qs:
             root_account_qs = self.get_coa_root_accounts_qs()

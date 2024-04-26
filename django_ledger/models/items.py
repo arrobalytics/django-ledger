@@ -890,6 +890,10 @@ class ItemTransactionModelManager(models.Manager):
 
     def for_entity(self, user_model, entity_slug):
         qs = self.for_user(user_model)
+        if isinstance(entity_slug, lazy_loader.get_entity_model()):
+            qs.filter(
+                Q(item_model__entity=entity_slug)
+            )
         return qs.filter(
             Q(item_model__entity__slug__exact=entity_slug)
         )

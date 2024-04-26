@@ -184,13 +184,11 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     _WRAPPED_MODEL_KEY = 'wrapped_model'
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     ledger_xid = models.SlugField(allow_unicode=True, max_length=150, null=True, blank=True,
-                                  verbose_name=_('Ledger Slug'),
+                                  verbose_name=_('Ledger External ID'),
                                   help_text=_('User Defined Ledger ID'))
     name = models.CharField(max_length=150, null=True, blank=True, verbose_name=_('Ledger Name'))
 
-    # todo: rename to entity_model...
     entity = models.ForeignKey('django_ledger.EntityModel',
-                               editable=False,
                                on_delete=models.CASCADE,
                                verbose_name=_('Ledger Entity'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted Ledger'))
@@ -212,13 +210,22 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             models.Index(fields=['entity']),
             models.Index(fields=['entity', 'posted']),
             models.Index(fields=['entity', 'locked']),
+            models.Index(fields=['entity', 'ledger_xid']),
+            models.Index(fields=['ledger_xid']),
         ]
         unique_together = [
             ('entity', 'ledger_xid')
         ]
 
     def __str__(self):
-        return self.name
+        if self.name is not None:
+            ledger_str = f'LedgerModel: {self.name}'
+        elif self.ledger_xid is not None:
+            ledger_str = f'LedgerModel: {self.ledger_xid}'
+        else:
+            ledger_str = f'LedgerModel: {self.uuid}'
+        return f'{ledger_str} | Posted: {self.posted} | Locked: {self.locked}'
+
 
     def has_wrapped_model_info(self):
         if self.additional_info is not None:

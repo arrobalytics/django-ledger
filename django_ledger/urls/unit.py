@@ -19,7 +19,7 @@ urlpatterns = [
 
     # DASHBOARD Views ...
     path('<slug:entity_slug>/dashboard/<slug:unit_slug>/',
-         views.EntityModelDetailView.as_view(),
+         views.EntityModelDetailHandlerView.as_view(),
          name='unit-dashboard'),
     path('<slug:entity_slug>/dashboard/<slug:unit_slug>/year/<int:year>/',
          views.FiscalYearEntityModelDashboardView.as_view(),
