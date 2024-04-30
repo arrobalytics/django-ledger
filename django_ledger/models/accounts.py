@@ -87,6 +87,26 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         return self.filter(active=False)
 
+    def locked(self):
+        """
+        Filter locked elements.
+
+        This method filters the elements based on the `locked` attribute and returns a filtered queryset.
+
+        Returns:
+            A filtered queryset containing the locked elements.
+        """
+        return self.filter(locked=True)
+
+    def unlocked(self):
+        """
+        Returns a filtered version of an object, excluding any locked items.
+
+        Returns:
+            A filtered version of the object, excluding any locked items.
+        """
+        return self.filter(locked=False)
+
     def with_roles(self, roles: Union[List, str]):
         """
         This method is used to make query of accounts with a certain role. For instance, the fixed assets like
@@ -110,12 +130,25 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         return self.filter(role__in=roles)
 
     def expenses(self):
+        """
+        Return the expenses filtered by the roles specified in GROUP_EXPENSES.
+
+        Returns:
+            QuerySet: A queryset containing the expenses filtered by the GROUP_EXPENSES roles..
+        """
         return self.filter(role__in=GROUP_EXPENSES)
 
     def is_coa_root(self):
+        """
+        Check if the account model instance is the Chart of Account Root.
+
+        Returns:
+            bool: True if the Account is the CoA Root, False otherwise.
+        """
         return self.filter(role__in=ROOT_GROUP)
 
     def not_coa_root(self):
+
         return self.exclude(role__in=ROOT_GROUP)
 
     def for_entity(self, entity_slug, user_model):
@@ -146,12 +179,16 @@ class AccountModelQuerySet(MP_NodeQuerySet):
     def is_role_default(self):
         return self.not_coa_root().filter(role_default=True)
 
+    def can_transact(self):
+        return self.filter(
+            Q(locked=False) & Q(active=True)
+        )
+
 
 class AccountModelManager(MP_NodeManager):
     """
-    This Model Manager will be used as interface through which the database query operations can be provided to the
-    Account Model. It uses the custom defined AccountModelQuerySet and hence overrides the normal get_queryset
-    function which return all rows of a model.
+    AccountModelManager class provides methods to manage and retrieve AccountModel objects.
+    It inherits from MP_NodeManager for tree-like model implementation.
     """
 
     def get_queryset(self) -> AccountModelQuerySet:

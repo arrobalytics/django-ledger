@@ -7,12 +7,13 @@ Contributions to this module:
 
 This module contains classes and functions used to document, dispatch and commit new transaction into the database.
 """
+import enum
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
-from typing import Union, Dict, Callable, Optional, List
+from typing import Union, Dict, Callable, Optional, List, Set
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
@@ -63,6 +64,11 @@ class IOCursorValidationError(ValidationError):
     pass
 
 
+class IOCursorMode(enum.Enum):
+    STRICT = 'strict'
+    PERMISSIVE = 'permissive'
+
+
 class IOCursor:
     """
     Represents a Django Ledger cursor capable of dispatching transactions to the database.
@@ -86,18 +92,20 @@ class IOCursor:
                  io_library,
                  entity_model: EntityModel,
                  user_model,
+                 mode: IOCursorMode = IOCursorMode.PERMISSIVE,
                  coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
         self.IO_LIBRARY = io_library
+        self.MODE = mode
         self.ENTITY_MODEL = entity_model
         self.USER_MODEL = user_model
         self.COA_MODEL = coa_model
-        self.__COMMITTED: bool = False
         self.blueprints = defaultdict(list)
         self.ledger_model_qs: Optional[LedgerModelQuerySet] = None
         self.account_model_qs: Optional[AccountModelQuerySet] = None
         self.ledger_map = dict()
         self.commit_plan = dict()
         self.instructions = None
+        self.__COMMITTED: bool = False
 
     def get_ledger_model_qs(self) -> LedgerModelQuerySet:
         """
@@ -122,9 +130,9 @@ class IOCursor:
         """
         return self.ENTITY_MODEL.get_coa_accounts(
             coa_model=self.COA_MODEL
-        )
+        ).can_transact()
 
-    def resolve_account_model_qs(self, codes: List[str]) -> AccountModelQuerySet:
+    def resolve_account_model_qs(self, codes: Set[str]) -> AccountModelQuerySet:
         """
         Resolves the final AccountModelQuerySet associated with the given account codes used by the blueprint.
 
@@ -164,6 +172,12 @@ class IOCursor:
             )
         return self.ledger_model_qs
 
+    def is_permissive(self) -> bool:
+        return self.MODE == IOCursorMode.PERMISSIVE
+
+    def is_strict(self) -> bool:
+        return self.MODE == IOCursorMode.STRICT
+
     def dispatch(self,
                  name,
                  ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
@@ -183,13 +197,14 @@ class IOCursor:
             The keyword arguments to be passed to the blueprint function.
         """
 
-        if not isinstance(ledger_model, (str, UUID, LedgerModel)):
-            raise IOCursorValidationError(
-                message=_('Ledger Model must be a string or UUID or LedgerModel')
-            )
+        if ledger_model is not None:
+            if not isinstance(ledger_model, (str, UUID, LedgerModel)):
+                raise IOCursorValidationError(
+                    message=_('Ledger Model must be a string or UUID or LedgerModel')
+                )
 
-        if isinstance(ledger_model, LedgerModel):
-            self.ENTITY_MODEL.validate_ledger_model_for_entity(ledger_model)
+            if isinstance(ledger_model, LedgerModel):
+                self.ENTITY_MODEL.validate_ledger_model_for_entity(ledger_model)
 
         blueprint_func = self.IO_LIBRARY.get_blueprint(name)
         blueprint_txs = blueprint_func(**kwargs)
@@ -238,6 +253,7 @@ class IOCursor:
 
     def commit(self,
                je_timestamp: Optional[Union[datetime, date, str]] = None,
+               je_description: Optional[str] = None,
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
                **kwargs):
@@ -251,6 +267,8 @@ class IOCursor:
         ----------
         je_timestamp: Optional[Union[datetime, date, str]]
             The date or timestamp used for the committed journal entries. If none, localtime will be used.
+        je_description: Optional[str]
+            The description of the journal entries. If none, no description will be used.
         post_new_ledgers: bool
             If a new ledger is created, the ledger model will be posted to the database.
         post_journal_entries: bool
@@ -275,29 +293,39 @@ class IOCursor:
         for k, txs in self.blueprints.items():
             if k is None:
 
-                # no specified xid, ledger or UUID... create one...
-                self.commit_plan[
-                    self.ENTITY_MODEL.create_ledger(
-                        name='Blueprint Commitment',
-                        commit=False,
-                        posted=post_new_ledgers
+                if self.is_permissive():
+                    # no specified xid, ledger or UUID... create one...
+                    self.commit_plan[
+                        self.ENTITY_MODEL.create_ledger(
+                            name='Blueprint Commitment',
+                            commit=False,
+                            posted=post_new_ledgers
+                        )
+                    ] = txs
+                else:
+                    raise IOCursorValidationError(
+                        message=_('Cannot commit transactions to a non-existing ledger')
                     )
-                ] = txs
 
             elif isinstance(k, str):
                 try:
                     # ledger with xid already exists...
                     self.commit_plan[self.ledger_map[k]] = txs
                 except KeyError:
-                    # create ledger with xid provided...
-                    self.commit_plan[
-                        self.ENTITY_MODEL.create_ledger(
-                            name=f'Blueprint Commitment {k}',
-                            ledger_xid=k,
-                            commit=False,
-                            posted=post_new_ledgers
+                    if self.is_permissive():
+                        # create ledger with xid provided...
+                        self.commit_plan[
+                            self.ENTITY_MODEL.create_ledger(
+                                name=f'Blueprint Commitment {k}',
+                                ledger_xid=k,
+                                commit=False,
+                                posted=post_new_ledgers
+                            )
+                        ] = txs
+                    else:
+                        raise IOCursorValidationError(
+                            message=_(f'Cannot commit transactions to a non-existing ledger_xid {k}')
                         )
-                    ] = txs
 
             elif isinstance(k, UUID):
                 try:
@@ -315,12 +343,18 @@ class IOCursor:
 
         instructions = self.compile_instructions()
         account_codes = set(tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items()))
+        account_model_qs = self.resolve_account_model_qs(codes=account_codes)
         account_models = {
-            acc.code: acc for acc in self.resolve_account_model_qs(codes=account_codes)
+            acc.code: acc for acc in account_model_qs
         }
 
         for tx in chain.from_iterable(tr for _, tr in instructions.items()):
-            tx.account_model = account_models[tx.account_code]
+            try:
+                tx.account_model = account_models[tx.account_code]
+            except KeyError:
+                raise IOCursorValidationError(
+                    message=_(f'Account code {tx.account_code} not found. Is account available and not locked?')
+                )
 
         results = dict()
         for ledger_model, tr_items in instructions.items():
@@ -333,15 +367,20 @@ class IOCursor:
                 je_timestamp=je_timestamp if je_timestamp else get_localtime(),
                 je_txs=je_txs,
                 je_posted=post_journal_entries,
+                je_desc=je_description,
                 **kwargs
             )
 
+            je.txs_models = txs_models
+
             results[ledger_model] = {
+                'ledger_model': ledger_model,
                 'journal_entry': je,
                 'txs_models': txs_models,
-                'instructions': tr_items
+                'instructions': tr_items,
+                'account_model_qs': self.account_model_qs
             }
-        results['account_model_qs'] = self.account_model_qs
+
         self.__COMMITTED = True
         return results
 
@@ -518,6 +557,8 @@ class IOLibrary:
         The human-readable name of the library (i.e. PayRoll, Expenses, Rentals, etc...)
     """
 
+    IO_CURSOR_CLASS = IOCursor
+
     def __init__(self, name: str):
         self.name = name
         self.registry: Dict[str, Callable] = {}
@@ -545,10 +586,14 @@ class IOLibrary:
             raise IOLibraryError(message=f'Function "{name}" is not registered in IO library {self.name}')
         return self.registry[name]
 
+    def get_io_cursor_class(self):
+        return self.IO_CURSOR_CLASS
+
     def get_cursor(
             self,
             entity_model: EntityModel,
             user_model,
+            mode: IOCursorMode = IOCursorMode.PERMISSIVE,
             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
     ) -> IOCursor:
         """
@@ -562,14 +607,18 @@ class IOLibrary:
             The user model instance executing the transactions.
         coa_model: ChartOfAccountModel or UUID or str, optional
             The ChartOfAccountsModel instance or identifier used to determine the AccountModelQuerySet used for the transactions.
+        mode: IOCursorMode
+            The Mode of the cursor instance. Defaults to IOCursorMode.PERMISSIVE.
 
         Returns
         -------
         IOCursor
         """
-        return IOCursor(
+        io_cursor_class = self.get_io_cursor_class()
+        return io_cursor_class(
             io_library=self,
             entity_model=entity_model,
             user_model=user_model,
             coa_model=coa_model,
+            mode=mode
         )
