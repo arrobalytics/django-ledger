@@ -115,7 +115,9 @@ class LedgerModelAdmin(ModelAdmin):
         'is_locked',
         'is_extended',
         'journal_entry_count',
-        'earliest_journal_entry'
+        'earliest_journal_entry',
+        'created',
+        'updated'
     ]
     actions = [
         'post',

@@ -259,6 +259,9 @@ class IODatabaseMixIn:
     helps minimize the number of transactions to aggregate for a given request.
     """
 
+    TRANSACTION_MODEL_CLASS = None
+    JOURNAL_ENTRY_MODEL_CLASS = None
+
     def is_entity_model(self):
         return isinstance(self, lazy_loader.get_entity_model())
 
@@ -275,6 +278,16 @@ class IODatabaseMixIn:
             return self.entity
         elif self.is_entity_unit_model():
             return self.entity
+
+    def get_transaction_model(self):
+        if self.TRANSACTION_MODEL_CLASS is not None:
+            return self.TRANSACTION_MODEL_CLASS
+        return lazy_loader.get_txs_model()
+
+    def get_journal_entry_model(self):
+        if self.JOURNAL_ENTRY_MODEL_CLASS is not None:
+            return self.JOURNAL_ENTRY_MODEL_CLASS
+        return lazy_loader.get_journal_entry_model()
 
     def database_digest(self,
                         entity_slug: Optional[str] = None,
@@ -337,7 +350,7 @@ class IODatabaseMixIn:
         IOResult
         """
 
-        TransactionModel = lazy_loader.get_txs_model()
+        TransactionModel = self.get_transaction_model()
 
         # get_initial txs_queryset... where the IO model is operating from??...
         if self.is_entity_model():
@@ -604,7 +617,7 @@ class IODatabaseMixIn:
             use_closing_entries=use_closing_entries,
             **kwargs)
 
-        TransactionModel = lazy_loader.get_txs_model()
+        TransactionModel = self.get_transaction_model()
 
         for tx_model in io_result.txs_queryset:
             if tx_model['account__balance_type'] != tx_model['tx_type']:
@@ -801,8 +814,8 @@ class IODatabaseMixIn:
                    force_je_retrieval: bool = False,
                    **kwargs):
 
-        JournalEntryModel = lazy_loader.get_journal_entry_model()
-        TransactionModel = lazy_loader.get_txs_model()
+        TransactionModel = self.get_transaction_model()
+        JournalEntryModel = self.get_journal_entry_model()
 
         # Validates that credits/debits balance.
         check_tx_balance(je_txs, perform_correction=False)
@@ -897,7 +910,7 @@ class IODatabaseMixIn:
             if staged_tx_model:
                 staged_tx_model.transaction_model = tx
 
-        txs_models = je_model.transactionmodel_set.bulk_create(i[0] for i in txs_models)
+        txs_models = TransactionModel.objects.bulk_create(i[0] for i in txs_models)
         je_model.save(verify=True, post_on_verify=je_posted)
         return je_model, txs_models
 

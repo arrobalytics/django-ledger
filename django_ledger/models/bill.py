@@ -486,6 +486,8 @@ class BillModelAbstract(
 
             if self.can_generate_bill_number():
                 self.generate_bill_number(commit=commit)
+                ledger_model.ledger_xid = f'bill-{self.bill_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
+                ledger_model.save(update_fields=['ledger_xid'])
 
             self.clean()
 

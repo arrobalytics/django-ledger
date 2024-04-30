@@ -10,8 +10,8 @@ from calendar import monthrange
 from datetime import timedelta, date
 from typing import Tuple, Optional
 
-from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
+from django.core.exceptions import ValidationError, ObjectDoesNotExist, ImproperlyConfigured
 from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseNotFound
 from django.urls import reverse
@@ -21,7 +21,7 @@ from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel
 from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
-from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
+from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED, DJANGO_LEDGER_AUTHORIZED_SUPERUSER
 
 
 class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
@@ -292,19 +292,34 @@ class SuccessUrlNextMixIn:
         return reverse('django_ledger:home')
 
 
-class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
+class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
+    ENTITY_SLUG_URL_KWARG = 'entity_slug'
     AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
+    AUTHORIZE_SUPERUSER: bool = DJANGO_LEDGER_AUTHORIZED_SUPERUSER
     permission_required = []
 
     def get_login_url(self):
         return reverse('django_ledger:login')
 
+    def get_entity_slug(self):
+        return self.kwargs[self.ENTITY_SLUG_URL_KWARG]
+
+    def get_entity_slug_kwarg(self):
+        if self.ENTITY_SLUG_URL_KWARG is None:
+            raise ImproperlyConfigured(
+                _('ENTITY_SLUG_URL_KWARG must be provided.')
+            )
+        return self.ENTITY_SLUG_URL_KWARG
+
     def has_permission(self):
+        entity_slug_kwarg = self.get_entity_slug_kwarg()
         if self.request.user.is_superuser:
-            if 'entity_slug' in self.kwargs:
+            if not self.AUTHORIZE_SUPERUSER:
+                return False
+            if entity_slug_kwarg in self.kwargs:
                 try:
                     entity_model_qs = self.get_authorized_entity_queryset()
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs['entity_slug'])
+                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
                     return False
             return True
@@ -312,10 +327,10 @@ class DjangoLedgerSecurityMixIn(PermissionRequiredMixin):
             has_perm = super().has_permission()
             if not has_perm:
                 return False
-            if 'entity_slug' in self.kwargs:
+            if entity_slug_kwarg in self.kwargs:
                 try:
                     entity_model_qs = self.get_authorized_entity_queryset()
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs['entity_slug'])
+                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
                     return False
             return True
