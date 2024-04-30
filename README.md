@@ -4,9 +4,10 @@
 
 Introducing __Django Ledger__, a powerful double entry accounting system designed for financially driven applications
 using the [Django Web Framework](https://www.djangoproject.com). Developed by lead developer Miguel Sanda, this system
-offers a simplified, high-level API, making it easier for users to navigate the complexities of accounting. If you have
-prior experience with Django, you'll find this software even more effective. And, for those interested in contributing,
-consider joining our new discord channel for further collaboration and discussions.
+offers a simplified, high-level API, making it easier for users to navigate the complexities of accounting. 
+
+If you have prior experience with Django, you'll find this software even more effective. And, for those interested 
+in contributing, consider joining our new discord channel for further collaboration and discussions.
 
 ### Questions? Join our Discord Channel [Here](https://discord.gg/c7PZcbYgrc)
 
@@ -42,13 +43,14 @@ Feel free to initiate an Issue describing your new feature request.
 Finance and Accounting is a complicated subject. Django Ledger stands out from other Django projects due to its focus
 on providing a developer-friendly accounting engine and a reliable, extensible API for financially driven applications.
 The project requires expertise in Python, Django programming, finance, and accounting. In essence, the project is
-seeking assistance from individuals with the specific skill set needed to contribute effectively. So, it's clear that
-they are in need of support from individuals with the right expertise.
+seeking assistance from individuals with the specific skill set needed to contribute effectively.
 
 The project is actively seeking contributors with financial and/or accounting experience. Prior accounting experience
 is a big plus for potential contributors. If you have the relevant experience and want to contribute, feel free to
-reach out to me. You can find the contribution guidelines at the specified link. The project welcomes anyone interested
-in making a contribution.
+reach out to me or submit your pull request. 
+
+You can find the contribution guidelines at the specified link. 
+The project welcomes anyone interested in making a contribution.
 
 See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
 
