@@ -24,7 +24,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q, QuerySet, F
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
@@ -238,7 +238,7 @@ class TransactionModelQuerySet(QuerySet):
         return self.filter(journal_entry__is_closing_entry=True)
 
 
-class TransactionModelAdmin(models.Manager):
+class TransactionModelManager(models.Manager):
     """
     A manager class for the TransactionModel.
     """
@@ -531,7 +531,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                    verbose_name=_('Tx Description'),
                                    help_text=_('A description to be included with this individual transaction'))
 
-    objects = TransactionModelAdmin()
+    objects = TransactionModelManager()
 
     class Meta:
         abstract = True

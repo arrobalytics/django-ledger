@@ -446,9 +446,10 @@ class InvoiceModelAbstract(
 
             if self.can_generate_invoice_number():
                 self.generate_invoice_number(commit=commit)
+                ledger_model.ledger_xid=f'invoice-{self.invoice_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
+                ledger_model.save(update_fields=['ledger_xid'])
 
             self.clean()
-
 
             if commit:
                 self.save()

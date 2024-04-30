@@ -107,7 +107,6 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
     def form_valid(self, form):
         instance = form.save(commit=False)
         instance.entity = self.AUTHORIZED_ENTITY_MODEL
-        self.object = form.save()
         return super().form_valid(form)
 
     def get_success_url(self):

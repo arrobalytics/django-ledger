@@ -159,9 +159,9 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
 
 
 # DASHBOARD VIEWS START ----
-class EntityModelDetailView(DjangoLedgerSecurityMixIn,
-                            EntityUnitMixIn,
-                            RedirectView):
+class EntityModelDetailHandlerView(DjangoLedgerSecurityMixIn,
+                                   EntityUnitMixIn,
+                                   RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         loc_date = get_localdate()
@@ -182,14 +182,14 @@ class EntityModelDetailView(DjangoLedgerSecurityMixIn,
                        })
 
 
-class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
-                                         EntityModelModelViewQuerySetMixIn,
-                                         BaseDateNavigationUrlMixIn,
-                                         UnpaidElementsMixIn,
-                                         EntityUnitMixIn,
-                                         DigestContextMixIn,
-                                         YearlyReportMixIn,
-                                         DetailView):
+class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
+                                EntityModelModelViewQuerySetMixIn,
+                                BaseDateNavigationUrlMixIn,
+                                UnpaidElementsMixIn,
+                                EntityUnitMixIn,
+                                DigestContextMixIn,
+                                YearlyReportMixIn,
+                                DetailView):
     context_object_name = 'entity'
     slug_url_kwarg = 'entity_slug'
     template_name = 'django_ledger/entity/entity_dashboard.html'
@@ -203,7 +203,7 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
     IO_DIGEST_EQUITY = True
 
     def get_context_data(self, **kwargs):
-        context = super(FiscalYearEntityModelDashboardView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         entity_model: EntityModel = self.object
         context['page_title'] = entity_model.name
         context['header_title'] = entity_model.name
@@ -226,6 +226,12 @@ class FiscalYearEntityModelDashboardView(DjangoLedgerSecurityMixIn,
                                                         kwargs=KWARGS)
 
         return context
+
+
+class FiscalYearEntityModelDashboardView(EntityModelDetailBaseView):
+    """
+    Entity Fiscal Year Dashboard View.
+    """
 
 
 class QuarterlyEntityDashboardView(FiscalYearEntityModelDashboardView, QuarterlyReportMixIn):

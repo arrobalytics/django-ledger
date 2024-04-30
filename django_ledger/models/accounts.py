@@ -87,6 +87,26 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         return self.filter(active=False)
 
+    def locked(self):
+        """
+        Filter locked elements.
+
+        This method filters the elements based on the `locked` attribute and returns a filtered queryset.
+
+        Returns:
+            A filtered queryset containing the locked elements.
+        """
+        return self.filter(locked=True)
+
+    def unlocked(self):
+        """
+        Returns a filtered version of an object, excluding any locked items.
+
+        Returns:
+            A filtered version of the object, excluding any locked items.
+        """
+        return self.filter(locked=False)
+
     def with_roles(self, roles: Union[List, str]):
         """
         This method is used to make query of accounts with a certain role. For instance, the fixed assets like
@@ -110,12 +130,25 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         return self.filter(role__in=roles)
 
     def expenses(self):
+        """
+        Return the expenses filtered by the roles specified in GROUP_EXPENSES.
+
+        Returns:
+            QuerySet: A queryset containing the expenses filtered by the GROUP_EXPENSES roles..
+        """
         return self.filter(role__in=GROUP_EXPENSES)
 
     def is_coa_root(self):
+        """
+        Check if the account model instance is the Chart of Account Root.
+
+        Returns:
+            bool: True if the Account is the CoA Root, False otherwise.
+        """
         return self.filter(role__in=ROOT_GROUP)
 
     def not_coa_root(self):
+
         return self.exclude(role__in=ROOT_GROUP)
 
     def for_entity(self, entity_slug, user_model):
@@ -146,12 +179,16 @@ class AccountModelQuerySet(MP_NodeQuerySet):
     def is_role_default(self):
         return self.not_coa_root().filter(role_default=True)
 
+    def can_transact(self):
+        return self.filter(
+            Q(locked=False) & Q(active=True)
+        )
+
 
 class AccountModelManager(MP_NodeManager):
     """
-    This Model Manager will be used as interface through which the database query operations can be provided to the
-    Account Model. It uses the custom defined AccountModelQuerySet and hence overrides the normal get_queryset
-    function which return all rows of a model.
+    AccountModelManager class provides methods to manage and retrieve AccountModel objects.
+    It inherits from MP_NodeManager for tree-like model implementation.
     """
 
     def get_queryset(self) -> AccountModelQuerySet:
@@ -407,49 +444,41 @@ def account_code_validator(value: str):
 
 
 class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
-    """
-    Django Ledger Base Account Model Abstract. This is the main abstract class which the Account Model database will
-    inherit, and it contains the fields/columns/attributes which the said ledger table will have. In addition to the
-    attributes mentioned below, it also has the fields/columns/attributes mentioned in the ParentChileMixin & the
-    CreateUpdateMixIn. Read about these mixin here.
+    """ AccountModelAbstract
 
-    Below are the fields specific to the accounts model.
+    Abstract class representing an Account Model.
 
     Attributes
     ----------
-    uuid: UUID
-        This is a unique primary key generated for the table. The default value of this field is uuid4().
+    BALANCE_TYPE : list
+        List of choices for the balance type of the account.
 
-    code: str
-        Each account will have its own alphanumeric code.
-        For example:
-        * Cash Account -> Code 1010.
-        * Inventory -> 1200.
-        * Maximum Length allowed is 10.
+    uuid : UUIDField
+        UUID field representing the primary key of the account.
 
-    name: str
-        This is the user defined name  of the Account. the maximum length for Name of the ledger allowed is 100
+    code : CharField
+        CharField representing the account code.
 
-    role: str
-        Each Account needs to be assigned a certain Role. The exhaustive list of ROLES is defined in io.roles.
+    name : CharField
+        CharField representing the account name.
 
-    balance_type: str
-        Each account will have a default Account type i.e. Either Debit or Credit.
-        For example:
-        * Assets like Cash, Inventory, Accounts Receivable or Expenses like Rent, Salary will have balance_type=DEBIT.
-        * Liabilities, Equities and Income like Payables, Loans, Income, Sales, Reserves will have balance_type=CREDIT.
+    role : CharField
+        CharField representing the account role.
 
-    locked: bool
-        This determines whether any transactions can be added in the account. Before making any update to the
-        account, the account needs to be unlocked. Default value is set to False i.e. Unlocked.
+    role_default : BooleanField
+        BooleanField representing whether the account is a default account for the role.
 
-    active: bool
-        Determines whether the concerned account is active. Any Account can be used only when it is unlocked and
-        Active. Default value is set to True.
+    balance_type : CharField
+        CharField representing the balance type of the account. Must be 'debit' or 'credit'.
 
-    coa_model: ChartOfAccountsModel
-        Each Accounts must be assigned a ChartOfAccountsModel. By default, one CoA will be created for each entity.
-        However, the creating of a new AccountModel must have an explicit assignment of a ChartOfAccountModel.
+    locked : BooleanField
+        BooleanField representing whether the account is locked.
+
+    active : BooleanField
+        BooleanField representing whether the account is active.
+
+    coa_model : ForeignKey
+        ForeignKey representing the associated ChartOfAccountModel.
     """
     BALANCE_TYPE = [
         (CREDIT, _('Credit')),
@@ -485,7 +514,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             models.Index(fields=['balance_type']),
             models.Index(fields=['active']),
             models.Index(fields=['locked']),
-            models.Index(fields=['coa_model'])
+            models.Index(fields=['coa_model', 'code']),
+            models.Index(fields=['code'])
         ]
 
     def __str__(self):
