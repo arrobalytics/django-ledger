@@ -44,12 +44,12 @@
         },
         "faker": {
             "hashes": [
-                "sha256:87ef41e24b39a5be66ecd874af86f77eebd26782a2681200e86c5326340a95d3",
-                "sha256:e23a2b74888885c3d23a9237bacb823041291c03d609a39acb9ebe6c123f3986"
+                "sha256:6737cc6d591cd83421fdc5e494f6e2c1a6e32266214f158b745aa9fa15687c98",
+                "sha256:c153505618801f1704807b258a6010ea8cabf91f66f4788939bfdba83b887e76"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==25.0.0"
+            "version": "==25.0.1"
         },
         "markdown": {
             "hashes": [
@@ -267,14 +267,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==2.14.0"
-        },
-        "backports.tarfile": {
-            "hashes": [
-                "sha256:73e0179647803d3726d82e76089d01d8549ceca9bace469953fcb4d97cf2d417",
-                "sha256:9c2ef9696cb73374f7164e17fc761389393ca76777036f5aad42e8b93fcd8009"
-            ],
-            "markers": "python_version < '3.12'",
-            "version": "==1.1.1"
         },
         "beautifulsoup4": {
             "hashes": [
@@ -977,7 +969,7 @@
                 "sha256:f870204a840a60da0b12273ef34f7051e98c3b5961b61b0c2c1be6dfd64fbcd3",
                 "sha256:ffa75af20b44f8dba823498024771d5ac50620e6915abac414251bd971b4529f"
             ],
-            "markers": "python_version == '3.11'",
+            "markers": "python_version >= '3.12'",
             "version": "==1.26.4"
         },
         "overrides": {
@@ -1659,14 +1651,6 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==2.9.0.20240316"
-        },
-        "typing-extensions": {
-            "hashes": [
-                "sha256:83f085bd5ca59c80295fc2a82ab5dac679cbe02b9f33f7d83af68e241bea51b0",
-                "sha256:c1f94d72897edaf4ce775bb7558d5b79d8126906a14ea5ed1635921406c0387a"
-            ],
-            "markers": "python_version < '3.12'",
-            "version": "==4.11.0"
         },
         "tzdata": {
             "hashes": [
