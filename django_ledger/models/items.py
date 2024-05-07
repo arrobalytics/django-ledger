@@ -881,8 +881,6 @@ class ItemTransactionModelManager(models.Manager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
         return qs.filter(
             Q(item_model__entity__admin=user_model) |
             Q(item_model__entity__managers__in=[user_model])
@@ -891,7 +889,7 @@ class ItemTransactionModelManager(models.Manager):
     def for_entity(self, user_model, entity_slug):
         qs = self.for_user(user_model)
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            qs.filter(
+            return qs.filter(
                 Q(item_model__entity=entity_slug)
             )
         return qs.filter(

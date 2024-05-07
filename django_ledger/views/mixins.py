@@ -311,25 +311,20 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             )
         return self.ENTITY_SLUG_URL_KWARG
 
+    def get_superuser_authorization(self):
+        return self.AUTHORIZE_SUPERUSER
+
     def has_permission(self):
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
         entity_slug_kwarg = self.get_entity_slug_kwarg()
-        if self.request.user.is_superuser:
-            if not self.AUTHORIZE_SUPERUSER:
-                return False
+        entity_model_qs = self.get_authorized_entity_queryset()
+
+        if self.request.user.is_authenticated:
             if entity_slug_kwarg in self.kwargs:
                 try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
-                except ObjectDoesNotExist:
-                    return False
-            return True
-        elif self.request.user.is_authenticated:
-            has_perm = super().has_permission()
-            if not has_perm:
-                return False
-            if entity_slug_kwarg in self.kwargs:
-                try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
                     self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
                     return False
@@ -338,7 +333,9 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
 
     def get_authorized_entity_queryset(self):
         return EntityModel.objects.for_user(
-            user_model=self.request.user).only(
+            user_model=self.request.user,
+            authorized_superuser=self.get_superuser_authorization(),
+        ).only(
             'uuid', 'slug', 'name', 'default_coa', 'admin')
 
     def get_authorized_entity_instance(self) -> Optional[EntityModel]:

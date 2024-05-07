@@ -116,7 +116,7 @@ class EntityModelManager(MP_NodeManager):
         qs = EntityModelQuerySet(self.model, using=self._db).order_by('path')
         return qs.order_by('path').select_related('admin', 'default_coa')
 
-    def for_user(self, user_model):
+    def for_user(self, user_model, authorized_superuser: bool = False):
         """
         This QuerySet guarantees that Users do not access or operate on EntityModels that don't have access to.
         This is the recommended initial QuerySet.
@@ -125,6 +125,8 @@ class EntityModelManager(MP_NodeManager):
         ----------
         user_model
             The Django User Model making the request.
+        authorized_superuser
+            Allows any superuser to access the EntityModel. Default is False.
 
         Returns
         -------
@@ -134,7 +136,7 @@ class EntityModelManager(MP_NodeManager):
                 2. Is a manager.
         """
         qs = self.get_queryset()
-        if user_model.is_superuser:
+        if user_model.is_superuser and authorized_superuser:
             return qs
         return qs.filter(
             Q(admin=user_model) |
