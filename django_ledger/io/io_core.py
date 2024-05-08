@@ -36,7 +36,7 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
 from django_ledger.io import roles as roles_module
-from django_ledger.io.io_digest import IODigestContextManager
+from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.io.io_middleware import (
     AccountRoleIOMiddleware,
     AccountGroupIOMiddleware,
