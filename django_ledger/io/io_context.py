@@ -38,6 +38,10 @@ class IODigestContextManager:
     def get_strftime_format(self):
         return self.STRFTIME_FORMAT
 
+    @property
+    def from_datetime(self):
+        return self.get_from_datetime()
+
     def get_from_datetime(self, as_str: bool = False, fmt=None) -> Optional[datetime]:
         from_date = self.IO_DATA['from_date']
         if from_date:
@@ -46,6 +50,10 @@ class IODigestContextManager:
                     fmt = self.get_strftime_format()
                 return from_date.strftime(fmt)
             return from_date
+
+    @property
+    def to_datetime(self):
+        return self.get_to_datetime()
 
     def get_to_datetime(self, as_str: bool = False, fmt=None) -> datetime:
         if as_str:
