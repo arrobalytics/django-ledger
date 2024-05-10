@@ -226,7 +226,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             ledger_str = f'LedgerModel: {self.uuid}'
         return f'{ledger_str} | Posted: {self.posted} | Locked: {self.locked}'
 
-
     def has_wrapped_model_info(self):
         if self.additional_info is not None:
             return self._WRAPPED_MODEL_KEY in self.additional_info
@@ -523,7 +522,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             je_model_qs.bulk_update(objs=je_model_qs, fields=['locked', 'updated'])
         return je_model_qs
 
-    def unlock(self, commit: bool = False, **kwargs):
+    def unlock(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Un-locks the LedgerModel.
 
@@ -532,13 +531,19 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         commit: bool
             If True, saves the LedgerModel instance instantly. Defaults to False.
         """
-        if self.can_unlock():
-            self.locked = False
-            if commit:
-                self.save(update_fields=[
-                    'locked',
-                    'updated'
-                ])
+        if not self.can_unlock():
+            if raise_exception:
+                raise LedgerModelValidationError(
+                    message=_(f'Ledger {self.name} cannot be un-locked. UUID: {self.uuid}')
+                )
+            return
+
+        self.locked = False
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
 
     def hide(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_hide():

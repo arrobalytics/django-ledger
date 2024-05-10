@@ -311,25 +311,20 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             )
         return self.ENTITY_SLUG_URL_KWARG
 
+    def get_superuser_authorization(self):
+        return self.AUTHORIZE_SUPERUSER
+
     def has_permission(self):
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
         entity_slug_kwarg = self.get_entity_slug_kwarg()
-        if self.request.user.is_superuser:
-            if not self.AUTHORIZE_SUPERUSER:
-                return False
+        entity_model_qs = self.get_authorized_entity_queryset()
+
+        if self.request.user.is_authenticated:
             if entity_slug_kwarg in self.kwargs:
                 try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
-                except ObjectDoesNotExist:
-                    return False
-            return True
-        elif self.request.user.is_authenticated:
-            has_perm = super().has_permission()
-            if not has_perm:
-                return False
-            if entity_slug_kwarg in self.kwargs:
-                try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
                     self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
                     return False
@@ -338,7 +333,9 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
 
     def get_authorized_entity_queryset(self):
         return EntityModel.objects.for_user(
-            user_model=self.request.user).only(
+            user_model=self.request.user,
+            authorized_superuser=self.get_superuser_authorization(),
+        ).only(
             'uuid', 'slug', 'name', 'default_coa', 'admin')
 
     def get_authorized_entity_instance(self) -> Optional[EntityModel]:
@@ -372,8 +369,26 @@ class EntityUnitMixIn:
 
 
 class DigestContextMixIn:
-    IO_DIGEST = False
-    IO_DIGEST_EQUITY = False
+    IO_DIGEST_UNBOUNDED = False
+    IO_DIGEST_BOUNDED = False
+
+    IO_DIGEST_UNBOUNDED_CONTEXT_NAME = 'tx_digest'
+    IO_MANAGER_UNBOUNDED_CONTEXT_NAME = 'tx_digest_context'
+
+    IO_DIGEST_BOUNDED_CONTEXT_NAME = 'equity_digest'
+    IO_MANAGER_BOUNDED_CONTEXT_NAME = 'equity_digest_context'
+
+    def get_io_digest_unbounded_context_name(self):
+        return self.IO_DIGEST_UNBOUNDED_CONTEXT_NAME
+
+    def get_io_manager_unbounded_context_name(self):
+        return self.IO_MANAGER_UNBOUNDED_CONTEXT_NAME
+
+    def get_io_digest_bounded_context_name(self):
+        return self.IO_DIGEST_BOUNDED_CONTEXT_NAME
+
+    def get_io_manager_bounded_context_name(self):
+        return self.IO_MANAGER_BOUNDED_CONTEXT_NAME
 
     def get_context_data(self, **kwargs):
         context = super(DigestContextMixIn, self).get_context_data(**kwargs)
@@ -385,8 +400,8 @@ class DigestContextMixIn:
                       to_date=None,
                       **kwargs):
 
-        if any([self.IO_DIGEST,
-                self.IO_DIGEST_EQUITY]):
+        if any([self.IO_DIGEST_UNBOUNDED,
+                self.IO_DIGEST_BOUNDED]):
 
             by_period = self.request.GET.get('by_period')
             entity_model: EntityModel = self.object
@@ -401,7 +416,7 @@ class DigestContextMixIn:
             else:
                 unit_slug = None
 
-            if self.IO_DIGEST:
+            if self.IO_DIGEST_UNBOUNDED:
                 io_digest = entity_model.digest(user_model=self.request.user,
                                                 to_date=to_date,
                                                 unit_slug=unit_slug,
@@ -410,10 +425,10 @@ class DigestContextMixIn:
                                                 process_roles=True,
                                                 process_groups=True)
 
-                context['tx_digest_context'] = io_digest
-                context['tx_digest'] = io_digest.get_io_data()
+                context[self.get_io_manager_unbounded_context_name()] = io_digest
+                context[self.get_io_digest_unbounded_context_name()] = io_digest.get_io_data()
 
-            if self.IO_DIGEST_EQUITY:
+            if self.IO_DIGEST_BOUNDED:
                 io_digest_equity = entity_model.digest(user_model=self.request.user,
                                                        equity_only=True,
                                                        to_date=to_date,
@@ -424,8 +439,8 @@ class DigestContextMixIn:
                                                        process_roles=False,
                                                        process_groups=True)
 
-                context['equity_digest_context'] = io_digest_equity
-                context['equity_digest'] = io_digest_equity.get_io_data()
+                context[self.get_io_manager_bounded_context_name()] = io_digest_equity
+                context[self.get_io_digest_bounded_context_name()] = io_digest_equity.get_io_data()
 
             # todo: how is this used??....
             context['date_filter'] = to_date

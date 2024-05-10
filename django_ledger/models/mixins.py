@@ -487,7 +487,8 @@ class AccrualMixIn(models.Model):
         if ledger_model.locked:
             if raise_exception:
                 raise ValidationError(f'Bill ledger {ledger_model.name} is already locked...')
-        ledger_model.lock(commit)
+            return
+        ledger_model.lock(commit, raise_exception=raise_exception)
 
     def unlock_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
@@ -501,10 +502,11 @@ class AccrualMixIn(models.Model):
             If True, raises ValidationError if LedgerModel already locked.
         """
         ledger_model = self.ledger
-        if not ledger_model.locked:
+        if not ledger_model.is_locked():
             if raise_exception:
                 raise ValidationError(f'Bill ledger {ledger_model.name} is already unlocked...')
-        ledger_model.unlock(commit)
+            return
+        ledger_model.unlock(commit, raise_exception=raise_exception)
 
     # POST/UNPOST Ledger...
     def post_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
@@ -522,7 +524,8 @@ class AccrualMixIn(models.Model):
         if ledger_model.posted:
             if raise_exception:
                 raise ValidationError(f'Bill ledger {ledger_model.name} is already posted...')
-        ledger_model.post(commit)
+            return
+        ledger_model.post(commit, raise_exception=raise_exception)
 
     def unpost_ledger(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
@@ -536,13 +539,14 @@ class AccrualMixIn(models.Model):
             If True, raises ValidationError if LedgerModel already locked.
         """
         ledger_model = self.ledger
-        if not ledger_model.posted:
+        if not ledger_model.is_posted():
             if raise_exception:
                 raise ValidationError(f'Bill ledger {ledger_model.name} is not posted...')
-        ledger_model.post(commit)
+            return
+        ledger_model.post(commit, raise_exception=raise_exception)
 
     def migrate_state(self,
-                      # todo: remove usermodel param...
+                      # todo: remove usermodel param...?
                       user_model,
                       entity_slug: str,
                       itemtxs_qs: Optional[QuerySet] = None,
