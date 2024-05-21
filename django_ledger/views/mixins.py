@@ -24,7 +24,18 @@ from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED, DJANGO_LEDGER_AUTHORIZED_SUPERUSER
 
 
-class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
+class ContextFromToDateMixin:
+    FROM_DATE_CONTEXT_NAME = 'from_date'
+    TO_DATE_CONTEXT_NAME = 'to_date'
+
+    def get_from_date_context_name(self) -> str:
+        return self.FROM_DATE_CONTEXT_NAME
+
+    def get_to_date_context_name(self) -> str:
+        return self.TO_DATE_CONTEXT_NAME
+
+
+class YearlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -58,16 +69,16 @@ class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
         context['year_start'] = year_start
         context['year_end'] = year_end
 
-        if 'from_date' not in context:
-            context['from_date'] = year_start
-        if 'to_date' not in context:
-            context['to_date'] = year_end
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = year_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = year_end
 
         context['has_year'] = True
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
+class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -137,10 +148,10 @@ class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
         context['quarter_start'] = quarter_start
         context['quarter_end'] = quarter_end
 
-        if 'from_date' not in context:
-            context['from_date'] = quarter_start
-        if 'to_date' not in context:
-            context['to_date'] = quarter_end
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = quarter_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = quarter_end
 
         context['has_quarter'] = True
         return context
@@ -154,7 +165,7 @@ class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
             return quarter - 1
 
 
-class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
+class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
 
     def get_from_date(self, month: int = None, year: int = None, **kwargs) -> date:
         return self.get_month_start_date(month=month, year=year)
@@ -206,13 +217,17 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         month_end = self.get_month_end_date(year=year, month=month)
         context['month_start'] = month_start
         context['month_end'] = month_end
-        context['from_date'] = month_start
-        context['to_date'] = month_end
+
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = month_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = month_end
+
         context['has_month'] = True
         return context
 
 
-class DateReportMixIn(MonthlyReportMixIn, DayMixin):
+class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
 
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
@@ -221,8 +236,12 @@ class DateReportMixIn(MonthlyReportMixIn, DayMixin):
         context['next_day'] = view_date + timedelta(days=1)
         context['previous_day'] = view_date - timedelta(days=1)
         context['view_date'] = view_date
-        context['from_date'] = view_date
-        context['to_date'] = view_date
+
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = view_date
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = view_date
+
         return context
 
     def get_date(self) -> date:
@@ -243,7 +262,8 @@ class DateReportMixIn(MonthlyReportMixIn, DayMixin):
         return dt, dt
 
 
-class FromToDatesMixIn:
+# todo: need to incorporate in base view...
+class FromToDatesParseMixIn:
     DJL_FROM_DATE_PARAM: str = 'from_date'
     DJL_TO_DATE_PARAM: str = 'to_date'
     DJL_NO_FROM_DATE_RAISE_404: bool = True
@@ -369,6 +389,7 @@ class EntityUnitMixIn:
 
 
 class DigestContextMixIn:
+
     IO_DIGEST_UNBOUNDED = False
     IO_DIGEST_BOUNDED = False
 
@@ -435,8 +456,8 @@ class DigestContextMixIn:
                                                        from_date=from_date,
                                                        unit_slug=unit_slug,
                                                        by_period=True if by_period else False,
-                                                       process_ratios=False,
-                                                       process_roles=False,
+                                                       process_ratios=True,
+                                                       process_roles=True,
                                                        process_groups=True)
 
                 context[self.get_io_manager_bounded_context_name()] = io_digest_equity

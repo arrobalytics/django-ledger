@@ -343,7 +343,7 @@ class IODatabaseMixIn:
             Returns results aggregated by accounting if needed. Defaults to False.
         by_unit: bool
             Returns results aggregated by unit if needed. Defaults to False.
-        use_closing_entry: bool
+        use_closing_entries: bool
             Overrides the DJANGO_LEDGER_USE_CLOSING_ENTRIES setting.
         Returns
         -------
@@ -587,7 +587,7 @@ class IODatabaseMixIn:
         signs: bool
             Changes the balance of an account to negative if it represents a "negative" for display purposes.
             (i.e. Expense accounts will show balance as negative and Income accounts as positive.)
-        force_closing_entry_use: bool
+        use_closing_entries: bool
             Forces the use of closing entries if DJANGO_LEDGER_USE_CLOSING_ENTRIES setting is set to False.
         force_queryset_sorting: bool
             Forces sorting of the TransactionModelQuerySet before aggregation balances.

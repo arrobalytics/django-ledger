@@ -137,7 +137,7 @@ def cash_flow_statement(context, io_model):
 
 @register.inclusion_tag('django_ledger/financial_statements/tags/income_statement.html', takes_context=True)
 def income_statement_table(context, io_model, from_date=None, to_date=None):
-    user_model: EntityUnitModel = context['user']
+    user_model = context['user']
     activity = context['request'].GET.get('activity')
     activity = validate_activity(activity, raise_404=True)
     entity_slug = context['view'].kwargs.get('entity_slug')
