@@ -14,7 +14,7 @@ class ImportJobModelCreateForm(ModelForm):
         widget=forms.FileInput(
             attrs={
                 'class': 'file-input',
-                'accept': '.ofx'
+                'accept': '.ofx,.qfx'
             })
     )
 
