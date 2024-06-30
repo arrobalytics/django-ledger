@@ -199,8 +199,8 @@ class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
     FETCH_UNPAID_BILLS = True
     FETCH_UNPAID_INVOICES = True
 
-    IO_DIGEST = True
-    IO_DIGEST_EQUITY = True
+    IO_DIGEST_UNBOUNDED = True
+    IO_DIGEST_BOUNDED = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
