@@ -32,25 +32,9 @@ class OFXFileManager:
         self.NUMBER_OF_STATEMENTS = len(self.statements)
 
     def get_accounts(self):
-        """
-        Returns a list of account information in the form of a dictionary with the following keys:
-        - bank
-        - fid
-        - account_type
-        - account_number
-        - routing_number
-
-        the bank and fix       can't be relied upon to
-        be provided by the vendor.
-
-        """
-
-        # # conditionally return the bank and fid if they are provided by the vendor
-        # bank = self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None
-        # fid = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None
-
         return [
             {
+                # conditionally return the bank and fid if they are provided by the vendor
                 'bank': self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None,
                 'fid': self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None,
                 'account_type': acc.accttype,

@@ -1,62 +1,52 @@
-from datetime import timedelta, datetime
-from random import randint
-from zoneinfo import ZoneInfo
+import os
+from decimal import Decimal
 
-from django.conf import settings
-
-from django_ledger.io.io_core import IOValidationError
-from django_ledger.models import EntityModel
-from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.io.ofx import OFXFileManager
-
-import xml.etree.ElementTree as ET
-from xml.dom.minidom import parseString
-
-import pprint
-
-def pretty_print_et(et):
-    rough_string = ET.tostring(et, 'utf-8')
-    reparsed = parseString(rough_string)
-    return reparsed.toprettyxml(indent="\t")
-
-class DumbOFXTest(DjangoLedgerBaseTest):
-
-    def do_ofx_test(self, ofx_file_path: str):
-        entity_model = self.get_random_entity_model()
-
-        ofx = OFXFileManager(ofx_file_or_path=ofx_file_path)
-
-        pprint.pprint(ofx.ofx_tree)
-
-        print("")
-
-        pprint.pprint(ofx.ofx_data)
-
-        accts = ofx.get_accounts()
-
-        self.assertEqual(True, True)
-
-        for acct in accts:
-            print(acct["account_number"])
-
-        return accts
-
-    def test_good1(self):
-        accts = self.do_ofx_test("django_ledger/tests/test_io_ofx/samples/v2_good.ofx")
-
-        self.assertIsNotNone(accts[0]["fid"])
-        self.assertIsNotNone(accts[0]["bank"])
+from django_ledger.tests.base import DjangoLedgerBaseTest
 
 
-    def test_intu_bid(self):
-        accts = self.do_ofx_test("django_ledger/tests/test_io_ofx/samples/v1_with_intu_bid.ofx")
+class SimpleOFXTest(DjangoLedgerBaseTest):
+    BASE_PATH = "django_ledger/tests/test_io_ofx/samples/"
 
-        self.assertIsNone(accts[0]["fid"])
-        self.assertIsNone(accts[0]["bank"])
+    def get_sample_ofx(self, ofx_sample_name: str):
+        ofx = OFXFileManager(ofx_file_or_path=os.path.join(self.BASE_PATH, ofx_sample_name))
 
+        return ofx
 
-    def test_open_tags(self):
-        accts = self.do_ofx_test("django_ledger/tests/test_io_ofx/samples/v1_with_open_tags.ofx")
+    def test_ofx_v1_with_intu_bid_field(self):
+        """
+        OFX v1 with <INTU.BID> field. These are ofx files that are exported for Quickbooks.
+        This field can be used to identify the bank in the absence of the <FI.ORG> fields.
+        """
+        ofx = self.get_sample_ofx("v1_with_intu_bid.ofx")
+        accounts = ofx.get_accounts()
 
-        self.assertIsNone(accts[0]["fid"])
-        self.assertIsNone(accts[0]["bank"])
+        # The bank and fid fields are not provided in this ofx file.
+        self.assertIsNone(accounts[0]["fid"])
+        self.assertIsNone(accounts[0]["bank"])
+        # balance observed from the ofx file
+        self.assertEqual(ofx.ofx_data.statements[0].balance.balamt, Decimal("123456.49"))
+
+    def test_ofx_v1_with_open_tags(self):
+        """
+        OFX v1 with open tags like `<DTSERVER>20211015063225[-5:EST]` instead of `<DTSERVER>20230510120000</DTSERVER>`
+        """
+        ofx = self.get_sample_ofx("v1_with_open_tags.ofx")
+        accounts = ofx.get_accounts()
+        account = accounts[0]
+
+        self.assertIsNone(account["fid"])
+        self.assertIsNone(account["bank"])
+        self.assertEqual(ofx.ofx_data.statements[0].balance.balamt, Decimal("1868.27"))
+
+    def test_ofx_v2_good(self):
+        """
+        ofx v2 uses XML rather than SGML. This is a good ofx v2 file.
+        """
+        ofx = self.get_sample_ofx("v2_good.ofx")
+        accounts = ofx.get_accounts()
+        account = accounts[0]
+
+        self.assertEqual(account["fid"], "123456789")
+        self.assertEqual(account["bank"], "BANK NAME")
+        self.assertEqual(ofx.ofx_data.statements[0].balance.balamt, Decimal("5000.00"))
