@@ -614,6 +614,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                       'updated'
                                   ])
 
+    def post(self, **kwargs):
+        """
+        Proxy function for `mark_as_posted` method.
+        """
+        return self.mark_as_posted(**kwargs)
+
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Un-posted JournalEntryModels do not show on the EntityModel ledger and financial statements.
@@ -645,6 +651,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                                       'updated'
                                   ])
 
+    def unpost(self, **kwargs):
+        """
+        Proxy function for `mark_as_unposted` method.
+        """
+        return self.mark_as_unposted(**kwargs)
+
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Locked JournalEntryModels do not allow transactions to be edited.
@@ -671,6 +683,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                     if commit:
                         self.save(verify=False)
 
+    def lock(self, **kwargs):
+        """
+        Proxy function for `mark_as_locked` method.
+        """
+        return self.mark_as_locked(**kwargs)
+
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Unlocked JournalEntryModels allow transactions to be edited.
@@ -693,6 +711,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 if not self.is_locked():
                     if commit:
                         self.save(verify=False)
+
+    def unlock(self, **kwargs):
+        """
+        Proxy function for `mark_as_unlocked` method.
+        """
+        return self.mark_as_unlocked(**kwargs)
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
