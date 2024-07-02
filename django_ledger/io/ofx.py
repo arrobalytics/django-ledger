@@ -34,8 +34,9 @@ class OFXFileManager:
     def get_accounts(self):
         return [
             {
-                'bank': self.ofx_data.org,
-                'fid': self.ofx_data.fid,
+                # conditionally return the bank and fid if they are provided by the vendor
+                'bank': self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None,
+                'fid': self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None,
                 'account_type': acc.accttype,
                 'account_number': acc.acctid,
                 'routing_number': acc.bankid,
