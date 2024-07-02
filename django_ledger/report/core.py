@@ -3,7 +3,7 @@ from typing import Optional, Dict
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 
-from django_ledger.io.io_digest import IODigestContextManager
+from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED

@@ -13,7 +13,8 @@ class ImportJobModelCreateForm(ModelForm):
         label='Select File...',
         widget=forms.FileInput(
             attrs={
-                'class': 'file-input'
+                'class': 'file-input',
+                'accept': '.ofx,.qfx'
             })
     )
 
