@@ -638,18 +638,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.can_unpost():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
-        else:
-            if self.is_posted():
-                self.posted = False
-                self.activity = None
-                if not self.is_posted():
-                    if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'posted',
-                                      'activity',
-                                      'updated'
-                                  ])
+            return
+        if self.is_posted():
+            self.posted = False
+            self.activity = None
+            if not self.is_posted():
+                if commit:
+                    self.save(verify=False,
+                              update_fields=[
+                                  'posted',
+                                  'activity',
+                                  'updated'
+                              ])
 
     def unpost(self, **kwargs):
         """
