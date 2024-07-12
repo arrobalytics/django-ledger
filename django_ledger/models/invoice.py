@@ -38,8 +38,21 @@ from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_D
 from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.mixins import CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn, PaymentTermsMixIn, \
+from django_ledger.models.mixins import (
+    CreateUpdateMixIn, AccrualMixIn,
+    MarkdownNotesMixIn, PaymentTermsMixIn,
     ItemizeMixIn
+)
+
+from django_ledger.models.signals import (
+    invoice_status_draft,
+    invoice_status_in_review,
+    invoice_status_approved,
+    invoice_status_paid,
+    invoice_status_canceled,
+    invoice_status_void
+)
+
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
@@ -446,7 +459,7 @@ class InvoiceModelAbstract(
 
             if self.can_generate_invoice_number():
                 self.generate_invoice_number(commit=commit)
-                ledger_model.ledger_xid=f'invoice-{self.invoice_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
+                ledger_model.ledger_xid = f'invoice-{self.invoice_number.lower()}-{str(ledger_model.entity_id)[-5:]}'
                 ledger_model.save(update_fields=['ledger_xid'])
 
             self.clean()
@@ -1002,6 +1015,9 @@ class InvoiceModelAbstract(
                 'invoice_status',
                 'updated'
             ])
+        invoice_status_draft.send_robust(sender=self.__class__,
+                                         instance=self,
+                                         commited=commit, **kwargs)
 
     def get_mark_as_draft_html_id(self):
         """
@@ -1050,7 +1066,8 @@ class InvoiceModelAbstract(
     def mark_as_review(self,
                        date_in_review: date = None,
                        itemtxs_qs=None,
-                       commit: bool = False, **kwargs):
+                       commit: bool = False,
+                       **kwargs):
         """
         Marks InvoiceModel as In Review.
 
@@ -1088,6 +1105,10 @@ class InvoiceModelAbstract(
                 'date_in_review',
                 'updated'
             ])
+        invoice_status_in_review.send_robust(sender=self.__class__,
+                                             instance=self,
+                                             commited=commit,
+                                             **kwargs)
 
     def get_mark_as_review_html_id(self):
         """
@@ -1189,6 +1210,10 @@ class InvoiceModelAbstract(
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit, raise_exception=raise_exception)
+        invoice_status_approved.send_robust(sender=self.__class__,
+                                            instance=self,
+                                            commited=commit,
+                                            **kwargs)
 
     def get_mark_as_approved_html_id(self):
         """
@@ -1292,6 +1317,10 @@ class InvoiceModelAbstract(
                 je_timestamp=date_paid
             )
             self.lock_ledger(commit=True)
+        invoice_status_paid.send_robust(sender=self.__class__,
+                                        instance=self,
+                                        commited=commit,
+                                        **kwargs)
 
     def get_mark_as_paid_html_id(self):
         """
@@ -1398,6 +1427,10 @@ class InvoiceModelAbstract(
             )
             self.save()
             self.lock_ledger(commit=True, raise_exception=False)
+        invoice_status_void.send_robust(sender=self.__class__,
+                                        instance=self,
+                                        commited=commit,
+                                        **kwargs)
 
     def get_mark_as_void_html_id(self):
         """
@@ -1442,7 +1475,10 @@ class InvoiceModelAbstract(
         return _('Do you want to mark Invoice %s as Void?') % self.invoice_number
 
     # CANCEL
-    def mark_as_canceled(self, date_canceled: date = None, commit: bool = False, **kwargs):
+    def mark_as_canceled(self,
+                         date_canceled: date = None,
+                         commit: bool = False,
+                         **kwargs):
         """
         Mark InvoiceModel as Canceled.
 
@@ -1465,6 +1501,10 @@ class InvoiceModelAbstract(
             self.unlock_ledger(commit=True, raise_exception=False)
             self.unpost_ledger(commit=True, raise_exception=False)
             self.save()
+        invoice_status_canceled.send_robust(sender=self.__class__,
+                                            instance=self,
+                                            commited=commit,
+                                            **kwargs)
 
     def get_mark_as_canceled_html_id(self):
         """
@@ -1787,13 +1827,3 @@ def invoicemodel_presave(instance: InvoiceModel, **kwargs):
 
 
 pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)
-
-# def invoicemodel_predelete(instance: InvoiceModel, **kwargs):
-#     ledger_model = instance.ledger
-#     ledger_model.unpost(commit=False)
-#     ledger_model.remove_wrapped_model_info()
-#     ledger_model.itemtransactonmodel_set.all().delete()
-#     instance.ledger.delete()
-#
-#
-# pre_delete.connect(receiver=invoicemodel_predelete, sender=InvoiceModel)

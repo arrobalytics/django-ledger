@@ -4,7 +4,6 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
 
 This module implements the BillModel, which represents an Invoice received from a Supplier/Vendor, on which
 the Vendor states the amount owed by the recipient for the purposes of supplying goods and/or services.
@@ -39,6 +38,14 @@ from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
 from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
                                          PaymentTermsMixIn, ItemizeMixIn)
+from django_ledger.models.signals import (
+    bill_status_draft,
+    bill_status_in_review,
+    bill_status_approved,
+    bill_status_paid,
+    bill_status_canceled,
+    bill_status_void,
+)
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
 
@@ -612,9 +619,8 @@ class BillModelAbstract(
             account_unit_total=Sum('total_amount')
         )
 
-    def update_amount_due(self,
-                          itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
-                          ) -> ItemTransactionModelQuerySet:
+    def update_amount_due(self, itemtxs_qs: Optional[
+        Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None) -> ItemTransactionModelQuerySet:
         """
         Updates the BillModel amount due.
 
@@ -1071,6 +1077,9 @@ class BillModelAbstract(
                     'updated'
                 ]
             )
+        bill_status_draft.send_robust(sender=self.__class__,
+                                      instance=self,
+                                      commited=commit, **kwargs)
 
     def get_mark_as_draft_html_id(self) -> str:
         """
@@ -1176,6 +1185,9 @@ class BillModelAbstract(
                     'updated'
                 ]
             )
+        bill_status_in_review.send_robust(sender=self.__class__,
+                                          instance=self,
+                                          commited=commit, **kwargs)
 
     def get_mark_as_review_html_id(self) -> str:
         """
@@ -1283,6 +1295,9 @@ class BillModelAbstract(
                     force_migrate=self.accrue
                 )
             self.ledger.post(commit=commit, raise_exception=raise_exception)
+        bill_status_approved.send_robust(sender=self.__class__,
+                                         instance=self,
+                                         commited=commit, **kwargs)
 
     def get_mark_as_approved_html_id(self) -> str:
         """
@@ -1406,6 +1421,9 @@ class BillModelAbstract(
                 force_migrate=True
             )
             self.lock_ledger(commit=True)
+        bill_status_paid.send_robust(sender=self.__class__,
+                                     instance=self,
+                                     commited=commit, **kwargs)
 
     def get_mark_as_paid_html_id(self) -> str:
         """
@@ -1507,6 +1525,9 @@ class BillModelAbstract(
                 force_migrate=True)
             self.save()
             self.lock_ledger(commit=False, raise_exception=False)
+        bill_status_void.send_robust(sender=self.__class__,
+                                     instance=self,
+                                     commited=commit, **kwargs)
 
     def get_mark_as_void_html_id(self) -> str:
         """
@@ -1574,6 +1595,9 @@ class BillModelAbstract(
         self.clean()
         if commit:
             self.save()
+        bill_status_canceled.send_robust(sender=self.__class__,
+                                         instance=self,
+                                         commited=commit, **kwargs)
 
     def get_mark_as_canceled_html_id(self) -> str:
         """
@@ -1890,13 +1914,3 @@ def billmodel_presave(instance: BillModel, **kwargs):
 
 
 pre_save.connect(receiver=billmodel_presave, sender=BillModel)
-
-# def billmodel_predelete(instance: BillModel, **kwargs):
-#     ledger_model = instance.ledger
-#     ledger_model.unpost(commit=False)
-#     ledger_model.remove_wrapped_model_info()
-#     ledger_model.itemtransactonmodel_set.all().delete()
-#     instance.ledger.delete()
-#
-#
-# pre_delete.connect(receiver=billmodel_predelete, sender=BillModel)
