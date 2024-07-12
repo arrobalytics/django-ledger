@@ -44,10 +44,10 @@
             {% balance_sheet_statement io_model=object %}
             {% if entity %}
                 <a class="button is-fullwidth is-dark mb-1"
-                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
+                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% elif ledger %}
                 <a class="button is-fullwidth is-dark my-2"
-                   href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
+                   href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>
             {% endif %}
             <a class="button is-fullwidth is-light my-2"
                href="?by_unit=1">{% trans 'By Unit' %}</a>
