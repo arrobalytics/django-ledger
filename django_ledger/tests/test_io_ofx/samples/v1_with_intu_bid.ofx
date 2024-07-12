@@ -1,0 +1,59 @@
+OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+SECURITY:NONE
+ENCODING:USASCII
+CHARSET:1252
+COMPRESSION:NONE
+OLDFILEUID:NONE
+NEWFILEUID:NONE
+<OFX>
+    <SIGNONMSGSRSV1>
+        <SONRS>
+            <STATUS>
+                <CODE>0</CODE>
+                <SEVERITY>INFO</SEVERITY>
+            </STATUS>
+            <DTSERVER>20240515095005</DTSERVER>
+            <LANGUAGE>ENG</LANGUAGE>
+            <INTU.BID>00123</INTU.BID>
+        </SONRS>
+    </SIGNONMSGSRSV1>
+    <BANKMSGSRSV1>
+        <STMTTRNRS>
+            <TRNUID>1</TRNUID>
+            <STATUS>
+                <CODE>0</CODE>
+                <SEVERITY>INFO</SEVERITY>
+            </STATUS>
+            <STMTRS>
+                <CURDEF>GBP</CURDEF>
+                <BANKACCTFROM>
+                    <BANKID>112233</BANKID>
+                    <ACCTID>123456789</ACCTID>
+                    <ACCTTYPE>SAVINGS</ACCTTYPE>
+                </BANKACCTFROM>
+                <BANKTRANLIST>
+                    <DTSTART>20231030</DTSTART>
+                    <DTEND>20240430</DTEND>
+                    <STMTTRN>
+                        <TRNTYPE>XFER</TRNTYPE>
+                        <DTPOSTED>20231030</DTPOSTED>
+                        <TRNAMT>100000.00</TRNAMT>
+                        <FITID>202310300001</FITID>
+                        <NAME>From A/C 87654321</NAME>
+                        <MEMO>ACME LTD</MEMO>
+                    </STMTTRN>
+                </BANKTRANLIST>
+                <LEDGERBAL>
+                    <BALAMT>123456.49</BALAMT>
+                    <DTASOF>20240430</DTASOF>
+                </LEDGERBAL>
+                <AVAILBAL>
+                    <BALAMT>0.00</BALAMT>
+                    <DTASOF>20240514</DTASOF>
+                </AVAILBAL>
+            </STMTRS>
+        </STMTTRNRS>
+    </BANKMSGSRSV1>
+</OFX>
