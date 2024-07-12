@@ -34,7 +34,7 @@ pandas = "*"
 #myst_parser = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"
 
 [scripts]
 publish-package-test = "twine upload --repository testpypi -u __token__ -p ${DJL_PYPI_TEST_TOKEN} dist/*"
