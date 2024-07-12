@@ -49,35 +49,6 @@ class TransactionModelQuerySet(QuerySet):
     """
     A custom QuerySet class for TransactionModels implementing methods to effectively and safely read
     TransactionModels from the database.
-
-    Methods
-    -------
-    posted() -> TransactionModelQuerySet:
-        Fetches a QuerySet of posted transactions only.
-
-    for_accounts(account_list: List[str or AccountModel]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels which AccountModel has a specific role.
-
-    for_roles(role_list: Union[str, List[str]]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels which AccountModel has a specific role.
-
-    for_unit(unit_slug: Union[str, EntityUnitModel]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels associated with a specific EntityUnitModel.
-
-    for_activity(activity_list: Union[str, List[str]]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels associated with a specific activity or list of activities.
-
-    to_date(to_date: Union[str, date, datetime]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels associated with a maximum date or timestamp filter.
-
-    from_date(from_date: Union[str, date, datetime]) -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels associated with a minimum date or timestamp filter.
-
-    not_closing_entry() -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels that are not part of a closing entry.
-
-    is_closing_entry() -> TransactionModelQuerySet:
-        Fetches a QuerySet of TransactionModels that are part of a closing entry.
     """
 
     def posted(self) -> QuerySet:
@@ -111,7 +82,7 @@ class TransactionModelQuerySet(QuerySet):
         TransactionModelQuerySet
             Returns a TransactionModelQuerySet with applied filters.
         """
-        if len(account_list) > 0 and isinstance(account_list[0], str):
+        if isinstance(account_list, list) > 0 and isinstance(account_list[0], str):
             return self.filter(account__code__in=account_list)
         return self.filter(account__in=account_list)
 
@@ -276,8 +247,6 @@ class TransactionModelManager(models.Manager):
         ledger or the user is one of the managers of the entity associated with the transaction's ledger.
         """
         qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
         return qs.filter(
             Q(journal_entry__ledger__entity__admin=user_model) |
             Q(journal_entry__ledger__entity__managers__in=[user_model])

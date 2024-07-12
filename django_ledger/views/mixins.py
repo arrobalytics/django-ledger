@@ -24,7 +24,18 @@ from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED, DJANGO_LEDGER_AUTHORIZED_SUPERUSER
 
 
-class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
+class ContextFromToDateMixin:
+    FROM_DATE_CONTEXT_NAME = 'from_date'
+    TO_DATE_CONTEXT_NAME = 'to_date'
+
+    def get_from_date_context_name(self) -> str:
+        return self.FROM_DATE_CONTEXT_NAME
+
+    def get_to_date_context_name(self) -> str:
+        return self.TO_DATE_CONTEXT_NAME
+
+
+class YearlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
 
     def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
@@ -58,16 +69,16 @@ class YearlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
         context['year_start'] = year_start
         context['year_end'] = year_end
 
-        if 'from_date' not in context:
-            context['from_date'] = year_start
-        if 'to_date' not in context:
-            context['to_date'] = year_end
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = year_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = year_end
 
         context['has_year'] = True
         return context
 
 
-class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
+class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
     quarter = None
     quarter_url_kwarg = 'quarter'
 
@@ -137,10 +148,10 @@ class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
         context['quarter_start'] = quarter_start
         context['quarter_end'] = quarter_end
 
-        if 'from_date' not in context:
-            context['from_date'] = quarter_start
-        if 'to_date' not in context:
-            context['to_date'] = quarter_end
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = quarter_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = quarter_end
 
         context['has_quarter'] = True
         return context
@@ -154,7 +165,7 @@ class QuarterlyReportMixIn(YearMixin, EntityModelFiscalPeriodMixIn):
             return quarter - 1
 
 
-class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
+class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
 
     def get_from_date(self, month: int = None, year: int = None, **kwargs) -> date:
         return self.get_month_start_date(month=month, year=year)
@@ -206,13 +217,17 @@ class MonthlyReportMixIn(YearlyReportMixIn, MonthMixin):
         month_end = self.get_month_end_date(year=year, month=month)
         context['month_start'] = month_start
         context['month_end'] = month_end
-        context['from_date'] = month_start
-        context['to_date'] = month_end
+
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = month_start
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = month_end
+
         context['has_month'] = True
         return context
 
 
-class DateReportMixIn(MonthlyReportMixIn, DayMixin):
+class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
 
     def get_context_data(self, **kwargs):
         context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
@@ -221,8 +236,12 @@ class DateReportMixIn(MonthlyReportMixIn, DayMixin):
         context['next_day'] = view_date + timedelta(days=1)
         context['previous_day'] = view_date - timedelta(days=1)
         context['view_date'] = view_date
-        context['from_date'] = view_date
-        context['to_date'] = view_date
+
+        if self.get_from_date_context_name() not in context:
+            context[self.get_from_date_context_name()] = view_date
+        if self.get_to_date_context_name() not in context:
+            context[self.get_to_date_context_name()] = view_date
+
         return context
 
     def get_date(self) -> date:
@@ -243,7 +262,8 @@ class DateReportMixIn(MonthlyReportMixIn, DayMixin):
         return dt, dt
 
 
-class FromToDatesMixIn:
+# todo: need to incorporate in base view...
+class FromToDatesParseMixIn:
     DJL_FROM_DATE_PARAM: str = 'from_date'
     DJL_TO_DATE_PARAM: str = 'to_date'
     DJL_NO_FROM_DATE_RAISE_404: bool = True
@@ -311,25 +331,20 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             )
         return self.ENTITY_SLUG_URL_KWARG
 
+    def get_superuser_authorization(self):
+        return self.AUTHORIZE_SUPERUSER
+
     def has_permission(self):
+        has_perm = super().has_permission()
+        if not has_perm:
+            return False
+
         entity_slug_kwarg = self.get_entity_slug_kwarg()
-        if self.request.user.is_superuser:
-            if not self.AUTHORIZE_SUPERUSER:
-                return False
+        entity_model_qs = self.get_authorized_entity_queryset()
+
+        if self.request.user.is_authenticated:
             if entity_slug_kwarg in self.kwargs:
                 try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
-                    self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
-                except ObjectDoesNotExist:
-                    return False
-            return True
-        elif self.request.user.is_authenticated:
-            has_perm = super().has_permission()
-            if not has_perm:
-                return False
-            if entity_slug_kwarg in self.kwargs:
-                try:
-                    entity_model_qs = self.get_authorized_entity_queryset()
                     self.AUTHORIZED_ENTITY_MODEL = entity_model_qs.get(slug__exact=self.kwargs[entity_slug_kwarg])
                 except ObjectDoesNotExist:
                     return False
@@ -338,7 +353,9 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
 
     def get_authorized_entity_queryset(self):
         return EntityModel.objects.for_user(
-            user_model=self.request.user).only(
+            user_model=self.request.user,
+            authorized_superuser=self.get_superuser_authorization(),
+        ).only(
             'uuid', 'slug', 'name', 'default_coa', 'admin')
 
     def get_authorized_entity_instance(self) -> Optional[EntityModel]:
@@ -372,8 +389,27 @@ class EntityUnitMixIn:
 
 
 class DigestContextMixIn:
-    IO_DIGEST = False
-    IO_DIGEST_EQUITY = False
+
+    IO_DIGEST_UNBOUNDED = False
+    IO_DIGEST_BOUNDED = False
+
+    IO_DIGEST_UNBOUNDED_CONTEXT_NAME = 'tx_digest'
+    IO_MANAGER_UNBOUNDED_CONTEXT_NAME = 'tx_digest_context'
+
+    IO_DIGEST_BOUNDED_CONTEXT_NAME = 'equity_digest'
+    IO_MANAGER_BOUNDED_CONTEXT_NAME = 'equity_digest_context'
+
+    def get_io_digest_unbounded_context_name(self):
+        return self.IO_DIGEST_UNBOUNDED_CONTEXT_NAME
+
+    def get_io_manager_unbounded_context_name(self):
+        return self.IO_MANAGER_UNBOUNDED_CONTEXT_NAME
+
+    def get_io_digest_bounded_context_name(self):
+        return self.IO_DIGEST_BOUNDED_CONTEXT_NAME
+
+    def get_io_manager_bounded_context_name(self):
+        return self.IO_MANAGER_BOUNDED_CONTEXT_NAME
 
     def get_context_data(self, **kwargs):
         context = super(DigestContextMixIn, self).get_context_data(**kwargs)
@@ -385,8 +421,8 @@ class DigestContextMixIn:
                       to_date=None,
                       **kwargs):
 
-        if any([self.IO_DIGEST,
-                self.IO_DIGEST_EQUITY]):
+        if any([self.IO_DIGEST_UNBOUNDED,
+                self.IO_DIGEST_BOUNDED]):
 
             by_period = self.request.GET.get('by_period')
             entity_model: EntityModel = self.object
@@ -401,7 +437,7 @@ class DigestContextMixIn:
             else:
                 unit_slug = None
 
-            if self.IO_DIGEST:
+            if self.IO_DIGEST_UNBOUNDED:
                 io_digest = entity_model.digest(user_model=self.request.user,
                                                 to_date=to_date,
                                                 unit_slug=unit_slug,
@@ -410,22 +446,22 @@ class DigestContextMixIn:
                                                 process_roles=True,
                                                 process_groups=True)
 
-                context['tx_digest_context'] = io_digest
-                context['tx_digest'] = io_digest.get_io_data()
+                context[self.get_io_manager_unbounded_context_name()] = io_digest
+                context[self.get_io_digest_unbounded_context_name()] = io_digest.get_io_data()
 
-            if self.IO_DIGEST_EQUITY:
+            if self.IO_DIGEST_BOUNDED:
                 io_digest_equity = entity_model.digest(user_model=self.request.user,
                                                        equity_only=True,
                                                        to_date=to_date,
                                                        from_date=from_date,
                                                        unit_slug=unit_slug,
                                                        by_period=True if by_period else False,
-                                                       process_ratios=False,
-                                                       process_roles=False,
+                                                       process_ratios=True,
+                                                       process_roles=True,
                                                        process_groups=True)
 
-                context['equity_digest_context'] = io_digest_equity
-                context['equity_digest'] = io_digest_equity.get_io_data()
+                context[self.get_io_manager_bounded_context_name()] = io_digest_equity
+                context[self.get_io_digest_bounded_context_name()] = io_digest_equity.get_io_data()
 
             # todo: how is this used??....
             context['date_filter'] = to_date
