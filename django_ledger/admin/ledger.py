@@ -111,6 +111,7 @@ class LedgerModelAdmin(ModelAdmin):
     ]
     list_display = [
         'name',
+        'ledger_xid',
         'is_posted',
         'is_locked',
         'is_extended',
