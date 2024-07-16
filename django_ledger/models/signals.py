@@ -4,6 +4,9 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
+
+The signals module provide the means to notify listeners about important events or states in the models,
+such as a ledger model being posted or a bill status changing.
 """
 
 from django.dispatch import Signal
@@ -16,7 +19,7 @@ ledger_unlocked = Signal()
 ledger_hidden = Signal()
 ledger_unhidden = Signal()
 
-# Ledger Model Signals...
+# Journal Entry Model Signals...
 journal_entry_posted = Signal()
 journal_entry_unposted = Signal()
 journal_entry_locked = Signal()
