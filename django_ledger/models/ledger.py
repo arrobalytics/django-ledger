@@ -37,6 +37,14 @@ from django.db import models
 from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from django_ledger.models.signals import (
+    ledger_posted,
+    ledger_unposted,
+    ledger_locked,
+    ledger_unlocked,
+    ledger_hidden,
+    ledger_unhidden
+)
 
 from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
@@ -456,6 +464,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'posted',
                 'updated'
             ])
+        ledger_posted.send_robust(sender=self.__class__,
+                                  instance=self,
+                                  commited=commit,
+                                  **kwargs)
 
     def post_journal_entries(self, commit: bool = True, **kwargs):
         je_model_qs = self.journal_entries.unposted()
@@ -488,6 +500,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'posted',
                 'updated'
             ])
+        ledger_unposted.send_robust(sender=self.__class__,
+                                    instance=self,
+                                    commited=commit,
+                                    **kwargs)
 
     def lock(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
@@ -513,6 +529,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'locked',
                 'updated'
             ])
+        ledger_locked.send_robust(sender=self.__class__,
+                                  instance=self,
+                                  commited=commit,
+                                  **kwargs)
 
     def lock_journal_entries(self, commit: bool = True, **kwargs):
         je_model_qs = self.journal_entries.unlocked()
@@ -544,6 +564,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'locked',
                 'updated'
             ])
+        ledger_unlocked.send_robust(sender=self.__class__,
+                                    instance=self,
+                                    commited=commit,
+                                    **kwargs)
 
     def hide(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_hide():
@@ -558,6 +582,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'hidden',
                 'updated'
             ])
+        ledger_hidden.send_robust(sender=self.__class__,
+                                  instance=self,
+                                  commited=commit,
+                                  **kwargs)
 
     def unhide(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_unhide():
@@ -572,6 +600,10 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                 'hidden',
                 'updated'
             ])
+        ledger_unhidden.send_robust(sender=self.__class__,
+                                    instance=self,
+                                    commited=commit,
+                                    **kwargs)
 
     def delete(self, **kwargs):
         if not self.can_delete():

@@ -45,17 +45,28 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime
-from django_ledger.io.roles import (ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
-                                    GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
-                                    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
-                                    GROUP_CFS_INVESTING_SECURITIES, validate_roles)
+from django_ledger.io.roles import (
+    ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
+    GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
+    GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
+    GROUP_CFS_INVESTING_SECURITIES, validate_roles
+)
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
+from django_ledger.models.signals import (
+    journal_entry_unlocked,
+    journal_entry_locked,
+    journal_entry_posted,
+    journal_entry_unposted
+)
 from django_ledger.models.transactions import TransactionModelQuerySet, TransactionModel
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_JE_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-                                    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX)
+from django_ledger.settings import (
+    DJANGO_LEDGER_JE_NUMBER_PREFIX,
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
+)
 
 
 class JournalEntryValidationError(ValidationError):
@@ -588,31 +599,48 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if verify and not self.is_verified():
             txs_qs, verified = self.verify()
-
             if not len(txs_qs):
-                raise JournalEntryValidationError(
-                    message=_('Cannot post an empty Journal Entry.')
-                )
+                if raise_exception:
+                    raise JournalEntryValidationError(
+                        message=_('Cannot post an empty Journal Entry.')
+                    )
+                return
 
         if force_lock and not self.is_locked():
-            self.mark_as_locked(commit=False, raise_exception=True)
+            try:
+                self.mark_as_locked(commit=False, raise_exception=True)
+            except JournalEntryValidationError as e:
+                if raise_exception:
+                    raise e
+                return
 
         if not self.can_post(ignore_verify=False):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
                                                   f' Is verified: {self.is_verified()}')
-        else:
-            if not self.is_posted():
-                self.posted = True
-                if self.is_posted():
-                    if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'posted',
-                                      'locked',
-                                      'activity',
-                                      'updated'
-                                  ])
+            return
+
+        if not self.is_posted():
+            self.posted = True
+            if self.is_posted():
+                if commit:
+                    self.save(verify=False,
+                              update_fields=[
+                                  'posted',
+                                  'locked',
+                                  'activity',
+                                  'updated'
+                              ])
+            journal_entry_posted.send_robust(sender=self.__class__,
+                                             instance=self,
+                                             commited=commit,
+                                             **kwargs)
+
+    def post(self, **kwargs):
+        """
+        Proxy function for `mark_as_posted` method.
+        """
+        return self.mark_as_posted(**kwargs)
 
     def mark_as_unposted(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -632,18 +660,30 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.can_unpost():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
-        else:
-            if self.is_posted():
-                self.posted = False
-                self.activity = None
-                if not self.is_posted():
-                    if commit:
-                        self.save(verify=False,
-                                  update_fields=[
-                                      'posted',
-                                      'activity',
-                                      'updated'
-                                  ])
+            return
+        if self.is_posted():
+            self.posted = False
+            self.activity = None
+            if not self.is_posted():
+                if commit:
+                    self.save(
+                        verify=False,
+                        update_fields=[
+                            'posted',
+                            'activity',
+                            'updated'
+                        ]
+                    )
+            journal_entry_unposted.send_robust(sender=self.__class__,
+                                               instance=self,
+                                               commited=commit,
+                                               **kwargs)
+
+    def unpost(self, **kwargs):
+        """
+        Proxy function for `mark_as_unposted` method.
+        """
+        return self.mark_as_unposted(**kwargs)
 
     def mark_as_locked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -662,14 +702,26 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_lock():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
-        else:
-            if not self.is_locked():
-                self.generate_activity(force_update=True)
-                self.locked = True
-                if self.is_locked():
-                    if commit:
-                        self.save(verify=False)
+                if raise_exception:
+                    raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
+                return
+
+        if not self.is_locked():
+            self.generate_activity(force_update=True)
+            self.locked = True
+            if self.is_locked():
+                if commit:
+                    self.save(verify=False)
+                journal_entry_locked.send_robust(sender=self.__class__,
+                                                 instance=self,
+                                                 commited=commit,
+                                                 **kwargs)
+
+    def lock(self, **kwargs):
+        """
+        Proxy function for `mark_as_locked` method.
+        """
+        return self.mark_as_locked(**kwargs)
 
     def mark_as_unlocked(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
@@ -687,12 +739,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.can_unlock():
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
-        else:
-            if self.is_locked():
-                self.locked = False
-                if not self.is_locked():
-                    if commit:
-                        self.save(verify=False)
+            return
+
+        if self.is_locked():
+            self.locked = False
+            if not self.is_locked():
+                if commit:
+                    self.save(verify=False)
+                journal_entry_unlocked.send_robust(sender=self.__class__,
+                                                   instance=self,
+                                                   commited=commit,
+                                                   **kwargs)
+
+    def unlock(self, **kwargs):
+        """
+        Proxy function for `mark_as_unlocked` method.
+        """
+        return self.mark_as_unlocked(**kwargs)
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
