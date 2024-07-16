@@ -118,6 +118,10 @@ if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
         # ],
     }
 
+    OAUTH2_PROVIDER = {
+        'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
+    }
+
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
