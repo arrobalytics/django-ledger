@@ -2,6 +2,9 @@
 # Django ledger Graphql Api
 
 ## Usage and installation
+Install Required Packages
+
+First, install the necessary packages:
 ``` 
 pip install graphene-django
 ```
