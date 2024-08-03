@@ -366,14 +366,13 @@ class BillModelTests(DjangoLedgerBaseTest):
             # amount paid is shown
             self.assertContains(bill_detail_response, 'id="djl-bill-detail-amount-paid"')
 
-            # amount owed is shown
-            self.assertContains(bill_detail_response, 'id="djl-bill-detail-amount-owed"')
-
             if not bill_model.accrue:
                 # amount prepaid is not shown
                 self.assertNotContains(bill_detail_response, ' id="djl-bill-detail-amount-prepaid"')
                 # amount unearned is not shown
                 self.assertNotContains(bill_detail_response, ' id="djl-bill-detail-amount-unearned"')
+                # amount owed is shown
+                self.assertContains(bill_detail_response, 'id="djl-bill-detail-amount-owed"')
 
             else:
                 # amount prepaid is shown
