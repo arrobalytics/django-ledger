@@ -68,11 +68,13 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
         self.assertFalse(form.is_valid(), msg='Form without data is supposed to be invalid')
 
     def test_invalid_account(self):
-        with self.assertRaises(ObjectDoesNotExist):
-            form = TransactionModelForm({
-                'account': 'Asset',
-            })
-            form.is_valid()
+        form = TransactionModelForm({
+            'account': 'Asset',
+            'tx_type': 'debit',
+            'amount': Decimal(randint(10000, 99999)),
+            'description': 'Bought Something Else ...'
+        })
+        self.assertIn('“Asset” is not a valid UUID.', form.errors.as_text())
 
 
 class TransactionModelFormSetTest(DjangoLedgerBaseTest):
