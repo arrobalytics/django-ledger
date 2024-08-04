@@ -26,12 +26,6 @@ behave = "*"
 twine = "*"
 jupyterlab = "*"
 pandas = "*"
-#pipenv-setup = "*"
-#pylint = "*"
-#furo = "*"
-#python-dotenv = "*"
-#tabulate = "*"
-#myst_parser = "*"
 
 [requires]
 python_version = "3.12"
