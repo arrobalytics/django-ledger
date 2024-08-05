@@ -2,146 +2,59 @@
 # Django ledger Graphql Api
 
 ## Usage and installation
+Install Required Packages
 
-
-
-
-
+First, install the necessary packages:
 ``` 
 pip install graphene-django
 ```
 ``` 
-pip install django-graphql-auth
+pip install django-oauth-toolkit
+```
+Enable Graphql by navigating to ./django_ledger/settings.py
+```
+ DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = True 
 ```
 Makemigrations
 ``` 
 python manage.py makemigrations
 python manage.py migrate
-``` 
-Runserver
+```
+Start the Django development server:
 ``` 
 python manage.py runserver
-``` 
-make sure you are loged in the main application go to the admin 
-site http://127.0.0.1:8000/admin/django_ledger/entitymodel/ choose your 
-entity and get your slug name from the entity choosen or
-
-Open new tab and navigate to
-``` 
-http://127.0.0.1:8000/graphql/
 ```
-paste this to the console and run the query
+on the admin site ensure to add an Application with the fields 
+```
+client type: confidential
+Authorization grant type:  Resource owner password-based 
+```
 
+Use Postman or Thunder Client to make a POST request to obtain an access token. Send a request to the following URL:
+
+```
+
+http://127.0.0.1:8000/api/v1/o/token/
+```
+Include the following JSON body in your request:
 ```
 {
-  allEntityList{
-    slug
-    name
-  }
+    "username": "eric",
+    "password": "eric",
+    "client_id": "cXFFgnvWhWiZDofGkwiwUBdfuxfNnLsmBtAVsVXv",
+    "client_secret": "dave101",
+    "grant_type": "password"
+}
 ```
-this will return the current user logged in slug and name, use the slug for other queries (Slugname:String!)
-## sample graphql Query
-paste this at the graphql console and run the query
+If the request is successful, you will receive a response like this:
 ```
 {
-  allEntityList{
-    edges{
-      node{
-        slug
-        name
-    }
-  }
+    "access_token": "YPMh29n648qpahgtOjrDHMDy5bt81e",
+    "expires_in": 36000,
+    "token_type": "Bearer",
+    "scope": "read write",
+    "refresh_token": "huBiNKw9IhtuYPKVNR9i4WnQesMqEl"
 }
 ```
-this will return the current user logged in slug and name, use the slug for other queries (Slugname:String!)
-## sample graphql Query
-paste this at the graphql console and run the query
-```
-allCustomers(slugName:"jusper-onderi-ondieki-db23x1y8"){
-  edges {
-    node {
-      customerName
-      city
-      state
-      active
-      
-    }
-  }
-}
-```
+Now you can use the access token to authenticate your GraphQL requests.
 
-# Query results
-```
-"allCustomers": {
-      "edges": [
-        {
-          "node": {
-            "customerName": "booka",
-            "city": "kenya",
-            "state": "huj",
-            "active": true
-          }
-        },
-        {
-          "node": {
-            "customerName": "stats",
-            "city": "kenya",
-            "state": "huj",
-            "active": true
-          }
-        },
-        {
-          "node": {
-            "customerName": "Brooke Weaver",
-            "city": "South Michelleborough",
-            "state": "WA",
-            "active": true
-          }
-        },
-        {
-          "node": {
-            "customerName": "Tamara Wilson",
-            "city": "Castilloport",
-            "state": "WV",
-            "active": true
-          }
-        },
-
-        }
-      ]
-    }
-  }
-}
-
-```
-## Using graphql-auth
-Register user
-```
-mutation {
-  register(
-    email: "new_user@email.com",
-    username: "new_user",
-    password1: "dave123456",
-    password2: "dave123456",
-  ) {
-    success,
-    errors,
-    token,
-
-  }
-}
-```
-Returns a token and a succes message
-```
-{
-  "data": {
-    "register": {
-      "success": true,
-      "errors": null,
-      "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6Im5ld191c2VyIiwiZXhwIjoxNjQ5NzY2Nzc4LCJvcmlnSWF0IjoxNjQ5NzY2NDc4fQ.cHaPq8CjQy60ifUawR4Pnyyu_E_SCU2J6CapBK0P8P4"
-    }
-  }
-}
-```
-for more detail usage visit the documentation
-https://django-graphql-auth.readthedocs.io/en/latest/quickstart/
