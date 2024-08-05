@@ -11,11 +11,7 @@ RUN pip3 install --upgrade pip
 
 RUN pip3 install -U pipenv
 
-COPY Pipfile Pipfile.lock /app/
-
 COPY . /app/
-
-COPY entrypoint.sh /app/
 
 RUN pipenv install
 
