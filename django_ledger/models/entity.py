@@ -1292,12 +1292,19 @@ class EntityModelAbstract(MP_Node,
         """
 
         if not coa_model:
-            account_model_qs = self.default_coa.accountmodel_set.all().select_related(
-                'coa_model', 'coa_model__entity').not_coa_root()
-        else:
+            coa_model = self.default_coa
+        elif isinstance(coa_model, UUID):
+            coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
+        elif isinstance(coa_model, str):
+            coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
+        elif isinstance(coa_model, ChartOfAccountModel):
             self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
-            account_model_qs = coa_model.accountmodel_set.select_related(
-                'coa_model', 'coa_model__entity').not_coa_root()
+        else:
+            raise EntityModelValidationError(
+                f'CoA Model {coa_model} must be an instance of ChartOfAccountModel, UUID, str or None.'
+            )
+
+        account_model_qs = coa_model.accountmodel_set.select_related('coa_model', 'coa_model__entity').not_coa_root()
 
         if active:
             account_model_qs = account_model_qs.active()
