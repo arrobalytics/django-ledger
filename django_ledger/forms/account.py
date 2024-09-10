@@ -19,16 +19,20 @@ Update Form
 
 class AccountModelCreateForm(ModelForm):
     """
-    Create Form: 
-    This Form is used for creation of a new account that does not exist in the default Chart of Accounts. It has some external as well as some internal field.
-    The entity slug and the user model are the field which are internal and are predetermined in the lass itself
+    AccountModelCreateForm
+    ======================
 
-    Remaining fields which needs to be defined by user are :
+    A form for creating and managing account models within the system.
 
-    code: The code will be used to uniquely identify the particular account
-    name: The name of the account. The name of the account should be resemblance of the nature of the transactions that will be in the account
-    role: The role needs to be selected rom list of the options available. Choices are given under ACCOUNT ROLES. Refer the account model documentation for more info
-    balance_type: Need to be selected from drop down as "Debit" or Credit"
+    Attributes
+    ----------
+    ENTITY : Model
+        The entity model being used in the form.
+    COA_MODEL : Model
+        The Chart of Account Model being used in the form.
+    USER_MODEL : Model
+        The user model being used in the form.
+
     """
 
     def __init__(self, entity_model, coa_model, user_model, *args, **kwargs):
@@ -84,9 +88,16 @@ class AccountModelCreateForm(ModelForm):
 
 class AccountModelUpdateForm(MoveNodeForm):
     """
-    Update Account Form:
-    This form is for updating the account. This works for both the parent or the child Account .
-    We can update the Parent , or The Code or even the Name of the Account.
+    AccountModelUpdateForm
+
+    A form for updating account model, inheriting from MoveNodeForm.
+
+    Attributes
+    ----------
+    _position : ChoiceField
+        A choice field for selecting the position.
+    _ref_node_id : ChoiceField
+        An optional choice field for selecting the relative node.
     """
 
     _position = ChoiceField(required=True,
