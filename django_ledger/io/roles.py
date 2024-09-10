@@ -660,3 +660,9 @@ def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -
             if raise_exception:
                 raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
     return set(roles)
+
+VALID_PARENTS = {
+    ASSET_PPE_BUILDINGS_ACCUM_DEPRECIATION: [ASSET_PPE_BUILDINGS],
+    ASSET_PPE_EQUIPMENT_ACCUM_DEPRECIATION: [ASSET_PPE_EQUIPMENT],
+    ASSET_PPE_PLANT_ACCUM_DEPRECIATION: [ASSET_PPE_PLANT],
+}
