@@ -43,7 +43,7 @@ from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOIC
                                     GROUP_ASSETS,
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
                                     ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
-                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA)
+                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS)
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
@@ -723,7 +723,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         return self.coa_model.accountmodel_set.filter(
             role__in=[
                 self.role,
-                self.get_root_role()
+                self.get_root_role(),
+                *VALID_PARENTS.get(self.role, [])
             ],
         ).exclude(uuid__exact=self.uuid)
 
