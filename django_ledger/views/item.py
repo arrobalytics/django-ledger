@@ -226,10 +226,10 @@ class ProductUpdateView(DjangoLedgerSecurityMixIn,
     }
 
     def get_queryset(self):
-        return ItemModel.objects.products(
+        return ItemModel.objects.for_entity(
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user
-        )
+        ).products()
 
     def get_form(self, form_class=None):
         return ProductUpdateForm(
