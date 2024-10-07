@@ -451,11 +451,16 @@ class CashFlowStatementIOMiddleware:
             bal for act, bal in self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity'].items()
         ])
 
+    def net_income(self):
+        group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_income'] = group_balances['GROUP_CFS_NET_INCOME']
+
     def digest(self):
         self.IO_DATA[self.CFS_DIGEST_KEY] = dict()
         self.check_io_digest()
         self.operating()
         self.financing()
         self.investing()
+        self.net_income()
         self.net_cash()
         return self.IO_DATA
