@@ -38,6 +38,7 @@ class LedgerModelModelViewQuerySetMixIn:
 
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
+    allow_empty = True
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
@@ -48,6 +49,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     }
     date_field = 'created'
     ordering = '-created'
+
 
     show_all = False
     show_current = False
