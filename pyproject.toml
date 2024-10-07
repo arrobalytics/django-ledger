@@ -1,6 +1,6 @@
 [project]
 name = "django-ledger"
-version = "0.6.5"
+version = "0.6.4"
 readme = "README.md"
 requires-python = ">=3.10"
 description = "Double entry accounting system built on the Django Web Framework."
@@ -28,7 +28,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Office/Business :: Financial :: Accounting",
     "Framework :: Django :: 4.0",
-    "Framework :: Django :: 5.0",
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",

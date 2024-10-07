@@ -549,7 +549,7 @@ class IODatabaseMixIn:
                       force_queryset_sorting: bool = False,
                       **kwargs) -> IOResult:
         """
-        Performs the appropriate transaction post-processing after DB aggregation..
+        Performs the appropriate transaction post-processing after DB aggregation.
 
 
         Parameters
@@ -938,6 +938,7 @@ class IOReportMixIn:
             balance_sheet_statement=True,
             txs_queryset=txs_queryset,
             as_io_digest=True,
+            signs=True,
             **kwargs
         )
 
@@ -991,6 +992,7 @@ class IOReportMixIn:
             income_statement=True,
             txs_queryset=txs_queryset,
             as_io_digest=True,
+            sings=True,
             **kwargs
         )
 
@@ -1046,6 +1048,7 @@ class IOReportMixIn:
             cash_flow_statement=True,
             txs_queryset=txs_queryset,
             as_io_digest=True,
+            signs=True,
             **kwargs
         )
 

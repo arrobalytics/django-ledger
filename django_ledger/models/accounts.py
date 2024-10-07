@@ -2,8 +2,14 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
+Contributions to this module:
+    * Miguel Sanda <msanda@arrobalytics.com>
+    * Pranav P Tulshyan <ptulshyan77@gmail.com>
+
+
 AccountModel
 ------------
+
 The AccountModel is a fundamental component of the Django Ledger system, responsible for categorizing and organizing
 financial transactions related to an entity's assets, liabilities, and equity.
 
@@ -859,46 +865,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         return all([
             self.active is True
         ])
-
-    def can_lock(self):
-        return all([
-            self.locked is False
-        ])
-
-    def can_unlock(self):
-        return all([
-            self.locked is True
-        ])
-
-    def lock(self, commit: bool = True, raise_exception: bool = True, **kwargs):
-        if not self.can_lock():
-            if raise_exception:
-                raise AccountModelValidationError(
-                    message=_(f'Cannot lock account {self.code}: {self.name}. Active: {self.is_active()}')
-                )
-            return
-
-        self.locked = True
-        if commit:
-            self.save(update_fields=[
-                'locked',
-                'updated'
-            ])
-
-    def unlock(self, commit: bool = True, raise_exception: bool = True, **kwargs):
-        if not self.can_unlock():
-            if raise_exception:
-                raise AccountModelValidationError(
-                    message=_(f'Cannot unlock account {self.code}: {self.name}. Active: {self.is_active()}')
-                )
-            return
-
-        self.locked = False
-        if commit:
-            self.save(update_fields=[
-                'locked',
-                'updated'
-            ])
 
     def activate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
         """
