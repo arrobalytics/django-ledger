@@ -2,16 +2,13 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan ptulshyan77@gmail.com<>
-
 The EntityModel represents the Company, Corporation, Legal Entity, Enterprise or Person that engage and operate as a
 business. EntityModels can be created as part of a parent/child model structure to accommodate complex corporate
 structures where certain entities may be owned by other entities and may also generate consolidated financial statements.
+
 Another use case of parent/child model structures is the coordination and authorization of inter-company transactions
-across multiple related entities. The EntityModel encapsulates all LedgerModel, JournalEntryModel and TransactionModel which is the core structure of
-Django Ledger in order to track and produce all financials.
+across multiple related entities. The EntityModel encapsulates all LedgerModel, JournalEntryModel and TransactionModel
+which is the core structure of Django Ledger in order to track and produce all financials.
 
 The EntityModel must be assigned an Administrator at creation, and may have optional Managers that will have the ability
 to operate on such EntityModel.
@@ -421,6 +418,9 @@ class EntityModelFiscalPeriodMixIn:
 
 
 class EntityModelClosingEntryMixIn:
+    """
+    Closing Entries provide
+    """
 
     def validate_closing_entry_model(self, closing_entry_model, closing_date: Optional[date] = None):
         if isinstance(self, EntityModel):
@@ -519,7 +519,6 @@ class EntityModelClosingEntryMixIn:
         return self.get_closing_entry_queryset_for_date(closing_date=closing_date)
 
     # ----> Create Closing Entries <----
-
     def create_closing_entry_for_date(self,
                                       closing_date: date,
                                       closing_entry_model=None,
@@ -578,7 +577,6 @@ class EntityModelClosingEntryMixIn:
         return f'closing_entry_{end_dt_str}_{self.uuid}'
 
     # ----> Closing Entry Caching Month < -----
-
     def get_closing_entry_cache_for_date(self,
                                          closing_date: date,
                                          cache_name: str = 'default',
