@@ -94,3 +94,8 @@ MixIns
 .. automodule:: django_ledger.models.mixins
     :members:
 
+Signals
+-------
+.. automodule:: django_ledger.models.signals
+    :members:
+

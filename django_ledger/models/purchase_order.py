@@ -39,6 +39,14 @@ from django_ledger.models.items import ItemTransactionModel, ItemTransactionMode
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
+from django_ledger.models.signals import (
+    po_status_draft,
+    po_status_void,
+    po_status_fulfilled,
+    po_status_approved,
+    po_status_canceled,
+    po_status_in_review
+)
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -403,9 +411,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         } if not lazy_agg else None
 
     # ### ItemizeMixIn implementation END...
-    def update_state(self,
-                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None
-                     ) -> Tuple:
+    def update_state(self, itemtxs_qs: Optional[
+        Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None) -> Tuple:
 
         """
         Updates the state of the PurchaseOrderModel.
@@ -696,6 +703,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'po_status',
                 'updated'
             ])
+        po_status_draft.send_robust(sender=self.__class__,
+                                    instance=self,
+                                    commited=commit,
+                                    **kwargs)
 
     def get_mark_as_draft_html_id(self):
         """
@@ -765,6 +776,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'date_in_review',
                 'updated'
             ])
+        po_status_in_review.send_robust(sender=self.__class__,
+                                        instance=self,
+                                        commited=commit,
+                                        **kwargs)
 
     def get_mark_as_review_html_id(self):
         """
@@ -828,6 +843,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'po_status',
                 'updated'
             ])
+        po_status_approved.send_robust(sender=self.__class__,
+                                       instance=self,
+                                       commited=commit,
+                                       **kwargs)
 
     def get_mark_as_approved_html_id(self):
         """
@@ -890,6 +909,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'date_canceled',
                 'updated'
             ])
+        po_status_canceled.send_robust(sender=self.__class__,
+                                       instance=self,
+                                       commited=commit,
+                                       **kwargs)
 
     def get_mark_as_canceled_html_id(self):
         """
@@ -983,6 +1006,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'po_status',
                 'updated'
             ])
+        po_status_fulfilled.send_robust(sender=self.__class__,
+                                        instance=self,
+                                        commited=commit,
+                                        **kwargs)
 
     def get_mark_as_fulfilled_html_id(self):
         """
@@ -1057,6 +1084,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'po_status',
                 'updated'
             ])
+        po_status_void.send_robust(sender=self.__class__,
+                                   instance=self,
+                                   commited=commit,
+                                   **kwargs)
 
     def get_mark_as_void_html_id(self):
         """

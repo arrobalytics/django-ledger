@@ -108,7 +108,6 @@ class ChartOfAccountsModelAdmin(ModelAdmin):
     list_display_links = ['name']
     fields = [
         'name',
-        'locked',
         'description',
     ]
     inlines = [

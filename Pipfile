@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=4.2"
+django = ">=2.2"
 django-treebeard = ">=4.5.1"
 ofxtools = ">=0.9.5"
 markdown = ">=3.4.1"
@@ -26,15 +26,9 @@ behave = "*"
 twine = "*"
 jupyterlab = "*"
 pandas = "*"
-#pipenv-setup = "*"
-#pylint = "*"
-#furo = "*"
-#python-dotenv = "*"
-#tabulate = "*"
-#myst_parser = "*"
 
 [requires]
-python_version = "3.11"
+python_version = "3.12"
 
 [scripts]
 publish-package-test = "twine upload --repository testpypi -u __token__ -p ${DJL_PYPI_TEST_TOKEN} dist/*"

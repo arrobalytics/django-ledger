@@ -1,19 +1,15 @@
 IO Engine
 =========
 
-Random Data Generation
-----------------------
-.. automodule:: django_ledger.io.io_generator
-    :members:
 
-IO MixIn
---------
-.. automodule:: django_ledger.io.io_core
+IO Middleware
+-------------
+.. automodule:: django_ledger.io.io_middleware
     :members:
 
 IO Context
 ----------
-.. automodule:: django_ledger.io.io_middleware
+.. automodule:: django_ledger.io.io_context
     :members:
 
 IO Library
@@ -21,12 +17,22 @@ IO Library
 .. automodule:: django_ledger.io.io_library
     :members:
 
-IO Digest
+IO Core
 ---------
-.. automodule:: django_ledger.io.io_digest
+.. automodule:: django_ledger.io.io_core
     :members:
 
 Account Roles
 -------------
 .. automodule:: django_ledger.io.roles
+    :members:
+
+Financial Ratios
+----------------
+.. automodule:: django_ledger.io.ratios
+    :members:
+
+Random Data Generation
+----------------------
+.. automodule:: django_ledger.io.io_generator
     :members:
