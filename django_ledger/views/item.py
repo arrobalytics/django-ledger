@@ -25,10 +25,8 @@ class UnitOfMeasureModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = UnitOfMeasureModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.unitofmeasuremodel_set.all()
         return super().get_queryset()
 
 
@@ -155,12 +153,12 @@ class ProductItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).products().select_related(
-                'earnings_account', 'cogs_account',
-                'inventory_account', 'uom').order_by('-updated')
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.itemmodel_set.products().select_related(
+                'earnings_account',
+                'cogs_account',
+                'inventory_account',
+                'uom').order_by('-updated')
         return super().get_queryset()
 
 
@@ -285,12 +283,12 @@ class ServiceItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).services().select_related(
-                'earnings_account', 'cogs_account',
-                'inventory_account', 'uom').order_by('-updated')
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.itemmodel_set.services().select_related(
+                'earnings_account',
+                'cogs_account',
+                'inventory_account',
+                'uom').order_by('-updated')
         return super().get_queryset()
 
 
@@ -415,10 +413,10 @@ class ExpenseItemItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).expenses().select_related('expense_account', 'uom').order_by('-updated')
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.itemmodel_set.expenses().select_related(
+                'expense_account',
+                'uom').order_by('-updated')
         return super().get_queryset()
 
 
@@ -499,10 +497,12 @@ class InventoryItemItemModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if not self.queryset:
-            self.queryset = ItemModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).inventory_wip().select_related('inventory_account', 'cogs_account', 'uom').order_by('-updated')
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.itemmodel_set.inventory_wip().select_related(
+                'inventory_account',
+                'cogs_account',
+                'uom'
+            ).order_by('-updated')
         return super().get_queryset()
 
 
