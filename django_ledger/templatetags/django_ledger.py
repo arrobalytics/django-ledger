@@ -743,7 +743,7 @@ def navigation_menu(context, style):
                     {
                         'type': 'link',
                         'title': 'Ledgers',
-                        'url': reverse('django_ledger:ledger-list', kwargs={'entity_slug': ENTITY_SLUG})
+                        'url': reverse('django_ledger:ledger-list-visible', kwargs={'entity_slug': ENTITY_SLUG})
                     },
                     {
                         'type': 'link',

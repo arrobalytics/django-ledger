@@ -140,12 +140,6 @@ class EstimateModelManager(models.Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        --------
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> bill_model_qs = EstimateModel.objects.for_entity(user_model=request_user, entity_slug=slug)
-
         Returns
         -------
         EstimateModelQuerySet

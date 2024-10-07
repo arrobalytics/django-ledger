@@ -24,7 +24,7 @@ class BillModelCreateForm(ModelForm):
             vendor_qs = VendorModel.objects.for_entity(
                 user_model=self.USER_MODEL,
                 entity_slug=self.ENTITY_SLUG
-            )
+            ).active()
             self.fields['vendor'].queryset = vendor_qs
 
     def get_accounts_queryset(self):
