@@ -18,7 +18,7 @@ from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class BankAccountModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
+class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
@@ -28,7 +28,7 @@ class BankAccountModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
         return super().get_queryset()
 
 
-class BankAccountModelListView(BankAccountModelModelViewQuerySetMixIn, ListView):
+class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
     template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
@@ -39,7 +39,7 @@ class BankAccountModelListView(BankAccountModelModelViewQuerySetMixIn, ListView)
     }
 
 
-class BankAccountModelCreateView(BankAccountModelModelViewQuerySetMixIn, CreateView):
+class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
     template_name = 'django_ledger/bank_account/bank_account_create.html'
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
@@ -70,7 +70,7 @@ class BankAccountModelCreateView(BankAccountModelModelViewQuerySetMixIn, CreateV
         return super(BankAccountModelCreateView, self).form_valid(form)
 
 
-class BankAccountModelUpdateView(BankAccountModelModelViewQuerySetMixIn, UpdateView):
+class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
     template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
@@ -96,7 +96,7 @@ class BankAccountModelUpdateView(BankAccountModelModelViewQuerySetMixIn, UpdateV
 
 
 # ACTION VIEWS...
-class BaseBankAccountModelActionView(BankAccountModelModelViewQuerySetMixIn,
+class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                                      RedirectView,
                                      SingleObjectMixin):
     http_method_names = ['get']
