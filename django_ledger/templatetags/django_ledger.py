@@ -542,6 +542,9 @@ def period_navigation(context, base_url: str):
     if context['view'].kwargs.get('unit_slug'):
         kwargs['unit_slug'] = context['view'].kwargs.get('unit_slug')
 
+    if context['view'].kwargs.get('coa_slug'):
+        kwargs['coa_slug'] = context['view'].kwargs.get('coa_slug')
+
     ctx = dict()
     ctx['year'] = context['year']
     ctx['has_year'] = context.get('has_year')
@@ -567,12 +570,15 @@ def period_navigation(context, base_url: str):
         'year': dt.year,
         'month': dt.month
     }
+
     if 'unit_slug' in kwargs:
         KWARGS_CURRENT_MONTH['unit_slug'] = kwargs['unit_slug']
     if 'account_pk' in kwargs:
         KWARGS_CURRENT_MONTH['account_pk'] = kwargs['account_pk']
     if 'ledger_pk' in kwargs:
         KWARGS_CURRENT_MONTH['ledger_pk'] = kwargs['ledger_pk']
+    if 'coa_slug' in kwargs:
+        KWARGS_CURRENT_MONTH['coa_slug'] = kwargs['coa_slug']
 
     ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month',
                                        kwargs=KWARGS_CURRENT_MONTH)

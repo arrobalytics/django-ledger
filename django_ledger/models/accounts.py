@@ -54,13 +54,12 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F, UniqueConstraint
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io.io_core import get_localdate
 from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
                                     GROUP_ASSETS,
                                     GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
@@ -289,7 +288,11 @@ class AccountModelManager(MP_NodeManager):
         return AccountModelQuerySet(
             self.model,
             using=self._db
-        ).order_by('path').select_related('coa_model')
+        ).order_by('path').select_related(
+            'coa_model').annotate(
+            _coa_slug=F('coa_model__slug'),
+            _entity_slug=F('coa_model__entity__slug'),
+        )
 
     def for_user(self, user_model) -> AccountModelQuerySet:
         """
@@ -590,7 +593,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     active = models.BooleanField(default=False, verbose_name=_('Active'))
     coa_model = models.ForeignKey('django_ledger.ChartOfAccountModel',
                                   on_delete=models.CASCADE,
-                                  editable=False,
                                   verbose_name=_('Chart of Accounts'))
     objects = AccountModelManager()
     node_order_by = ['uuid']
@@ -600,9 +602,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ordering = ['-created']
         verbose_name = _('Account')
         verbose_name_plural = _('Accounts')
-        unique_together = [
-            ('coa_model', 'code'),
-            ('coa_model', 'role', 'role_default')
+        constraints = [
+            UniqueConstraint(
+                fields=('coa_model', 'code'),
+                name='unique_code_for_coa_model',
+                violation_error_message=_('Account codes must be unique for each Chart of Accounts Model.')
+            ),
+            UniqueConstraint(
+                fields=('coa_model', 'role', 'role_default'),
+                name='only_one_account_assigned_as_default_for_role',
+                violation_error_message=_('Only one default account for role permitted.')
+            )
         ]
         indexes = [
             models.Index(fields=['role']),
@@ -621,6 +631,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             x4=self.balance_type,
             x5=self.code
         )
+
+    @property
+    def coa_slug(self):
+        try:
+            return getattr(self, '_coa_slug')
+        except AttributeError:
+            return self.coa_model.slug
+
+    @property
+    def entity_slug(self):
+        return getattr(self, '_entity_slug')
 
     @classmethod
     def create_account(cls,
@@ -1106,15 +1127,54 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ri = randint(10000, 99999)
         return f'{prefix}{ri}'
 
-    def get_absolute_url(self):
+    # URLS...
+    def get_absolute_url(self) -> str:
         return reverse(
-            viewname='django_ledger:account-detail-year',
+            viewname='django_ledger:account-detail',
             kwargs={
                 'account_pk': self.uuid,
-                'entity_slug': self.coa_model.entity.slug,
-                'year': get_localdate().year
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
             }
         )
+
+    def get_update_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-update',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_deactivate_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-deactivate',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_activate_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-activate',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_coa_account_list_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-list',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            })
 
     def clean(self):
         if not self.code and DJANGO_LEDGER_ACCOUNT_CODE_GENERATE:

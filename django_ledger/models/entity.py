@@ -2,6 +2,9 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
+Contributions to this module:
+    * Miguel Sanda <msanda@arrobalytics.com>
+
 The EntityModel represents the Company, Corporation, Legal Entity, Enterprise or Person that engage and operate as a
 business. EntityModels can be created as part of a parent/child model structure to accommodate complex corporate
 structures where certain entities may be owned by other entities and may also generate consolidated financial statements.
@@ -33,7 +36,7 @@ from django.core.cache import caches
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -110,8 +113,14 @@ class EntityModelManager(MP_NodeManager):
 
     def get_queryset(self):
         """Sets the custom queryset as the default."""
-        qs = EntityModelQuerySet(self.model, using=self._db).order_by('path')
-        return qs.order_by('path').select_related('admin', 'default_coa')
+        qs = EntityModelQuerySet(
+            self.model,
+            using=self._db).order_by('path')
+        return qs.order_by('path').select_related(
+            'admin',
+            'default_coa').annotate(
+            _default_coa_slug=F('default_coa__slug'),
+        )
 
     def for_user(self, user_model, authorized_superuser: bool = False):
         """
@@ -799,6 +808,13 @@ class EntityModelAbstract(MP_Node,
         super().__init__(*args, **kwargs)
         self._CLOSING_ENTRY_DATES: Optional[List[date]] = None
 
+    @property
+    def default_coa_slug(self):
+        try:
+            return getattr(self, '_default_coa_slug')
+        except AttributeError:
+            return self.default_coa.slug
+
     # ## Logging ###
     def get_logger_name(self):
         return f'EntityModel {self.uuid}'
@@ -1270,7 +1286,9 @@ class EntityModelAbstract(MP_Node,
     def get_coa_accounts(self,
                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                          active: bool = True,
-                         order_by: Optional[Tuple] = ('code',)) -> AccountModelQuerySet:
+                         order_by: Optional[Tuple] = ('code',),
+                         return_coa_model: bool = False,
+                         ) -> Union[AccountModelQuerySet, Tuple[ChartOfAccountModel, AccountModelQuerySet]]:
         """
         Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
 
@@ -1292,9 +1310,9 @@ class EntityModelAbstract(MP_Node,
         if not coa_model:
             coa_model = self.default_coa
         elif isinstance(coa_model, UUID):
-            coa_model = self.chartofaccountmodel_set.get(uuid__exact=coa_model)
+            coa_model = self.chartofaccountmodel_set.select_related('entity').get(uuid__exact=coa_model)
         elif isinstance(coa_model, str):
-            coa_model = self.chartofaccountmodel_set.get(slug__exact=coa_model)
+            coa_model = self.chartofaccountmodel_set.select_related('entity').get(slug__exact=coa_model)
         elif isinstance(coa_model, ChartOfAccountModel):
             self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
         else:
@@ -1310,6 +1328,8 @@ class EntityModelAbstract(MP_Node,
         if order_by:
             account_model_qs = account_model_qs.order_by(*order_by)
 
+        if return_coa_model:
+            return coa_model, account_model_qs
         return account_model_qs
 
     def get_default_coa_accounts(self,
