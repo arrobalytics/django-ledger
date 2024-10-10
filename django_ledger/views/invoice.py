@@ -391,7 +391,10 @@ class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
             'customer',
             'cash_account',
             'prepaid_account',
-            'unearned_account'
+            'unearned_account',
+            'cash_account__coa_model',
+            'prepaid_account__coa_model',
+            'unearned_account__coa_model'
         )
 
 
