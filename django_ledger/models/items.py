@@ -389,7 +389,10 @@ class ItemModelManager(models.Manager):
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(
+            entity_slug=entity_slug,
+            user_model=user_model
+        )
         return qs.filter(
             (
                     Q(is_product_or_service=False) &

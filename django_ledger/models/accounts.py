@@ -148,6 +148,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         AccountModelQuerySet
             A QuerySet of accounts filtered by the provided roles.
         """
+        roles = validate_roles(roles)
         if isinstance(roles, str):
             roles = [roles]
         roles = validate_roles(roles)
@@ -395,69 +396,6 @@ class AccountModelManager(MP_NodeManager):
             Q(locked=False) &
             Q(coa_model__active=True)
         )
-
-    def with_roles(self, roles: Union[list, str], entity_slug, user_model) -> AccountModelQuerySet:
-        """
-        Retrieve accounts based on specific roles.
-
-        This method filters accounts associated with a given role or a list of roles. For example, if you need to
-        find all accounts under the "asset_ppe_build" role, which includes all buildings fixed assets, this method
-        can be used.
-
-        Parameters
-        ----------
-        entity_slug: EntityModel or str
-            The EntityModel instance or its slug to fetch accounts from. If only the slug is provided and coa_slug is
-            not specified, an additional database query will be performed to determine the default chart of accounts.
-        user_model: User
-            The Django User model instance making the request to ensure appropriate permissions are checked.
-        roles: list or str
-            Accepts either a single role as a string or a list of roles. Refer to io.roles.py for a comprehensive
-            list of roles.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet of accounts filtered by the specified roles.
-        """
-        roles = validate_roles(roles)
-        if isinstance(roles, str):
-            roles = [roles]
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(role__in=roles)
-
-    def with_roles_available(self, roles: Union[list, str],
-                             entity_slug,
-                             user_model,
-                             coa_slug: Optional[str]) -> AccountModelQuerySet:
-        """
-        Retrieve available and unlocked AccountModels for a specified EntityModel and list of roles.
-
-        Parameters
-        ----------
-        roles : Union[list, str]
-            A single role as a string or a list of roles.
-        entity_slug : Union[str, 'EntityModel']
-            The EntityModel object or its slug. If a slug is provided and `coa_slug` is None, an additional
-            database query will be executed to fetch the default Chart of Accounts.
-        user_model : 'UserModel'
-            The Django UserModel instance making the request, used to check permissions.
-        coa_slug : Optional[str], default None
-            The specific Chart of Accounts slug. If None, the default Chart of Accounts will be used.
-            This parameter assists in identifying the complete Chart of Accounts for the EntityModel.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet containing available and unlocked AccountModel instances for the specified
-            EntityModel and roles.
-        """
-
-        if isinstance(roles, str):
-            roles = [roles]
-        roles = validate_roles(roles)
-        qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(role__in=roles)
 
     def coa_roots(self, user_model, entity_slug, coa_slug) -> AccountModelQuerySet:
         """
