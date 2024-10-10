@@ -31,7 +31,7 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
             customer_qs = CustomerModel.objects.for_entity(
                 user_model=self.USER_MODEL,
                 entity_slug=self.ENTITY_SLUG
-            )
+            ).active()
             self.fields['customer'].queryset = customer_qs
 
     def get_accounts_queryset(self):

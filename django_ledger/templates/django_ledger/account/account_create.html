@@ -18,7 +18,7 @@
                         {{ form.as_p }}
                         <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>
                         <a class="button is-dark is-small is-fullwidth"
-                           href="{% url 'django_ledger:account-list' entity_slug=view.kwargs.entity_slug %}">Back</a>
+                           href="{{ coa_model.get_account_list_url }}">Back</a>
                     </form>
                 </div>
             </div>

@@ -1,47 +1,42 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+    * Miguel Sanda <msanda@arrobalytics.com>
+"""
+
 from typing import Optional
 
-from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError, CheckboxInput
+from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError, CheckboxInput, HiddenInput
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
 from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
+from django_ledger.models import ChartOfAccountModel, EntityModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
-
-"""
-The account Model has the below forms: All these form have Account Model as their base.
-
-CreateForm
-CreateChildForm
-Update Form
-"""
 
 
 class AccountModelCreateForm(ModelForm):
     """
-    AccountModelCreateForm
-    ======================
-
     A form for creating and managing account models within the system.
 
     Attributes
     ----------
-    ENTITY : Model
+    ENTITY_MODEL : Model
         The entity model being used in the form.
     COA_MODEL : Model
         The Chart of Account Model being used in the form.
-    USER_MODEL : Model
-        The user model being used in the form.
-
     """
 
-    def __init__(self, entity_model, coa_model, user_model, *args, **kwargs):
-        self.ENTITY = entity_model
+    def __init__(self, coa_model: ChartOfAccountModel, *args, **kwargs):
         self.COA_MODEL = coa_model
-        self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
         self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
         self.fields['code'].required = False
+        self.fields['coa_model'].disabled = True
+        self.fields['coa_model'].required = False
 
     def clean_role_default(self):
         role_default = self.cleaned_data['role_default']
@@ -49,12 +44,8 @@ class AccountModelCreateForm(ModelForm):
             return None
         return role_default
 
-    def clean_code(self):
-        code = self.cleaned_data['code']
-        is_code_valid = not self.COA_MODEL.accountmodel_set.filter(code=code).exists()
-        if not is_code_valid:
-            raise ValidationError(message=_('Code {} already exists for CoA {}').format(code, self.COA_MODEL.slug))
-        return code
+    def clean_coa_model(self):
+        return self.COA_MODEL
 
     class Meta:
         model = AccountModel
@@ -65,7 +56,8 @@ class AccountModelCreateForm(ModelForm):
             'role_default',
             'balance_type',
             'active',
-            'active'
+            'active',
+            'coa_model'
         ]
         widgets = {
             'code': TextInput(attrs={
@@ -83,6 +75,7 @@ class AccountModelCreateForm(ModelForm):
             'balance_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
+            'coa_model': HiddenInput()
         }
 
 
@@ -101,22 +94,22 @@ class AccountModelUpdateForm(MoveNodeForm):
     """
 
     _position = ChoiceField(required=True,
-                            label=_("Position"),
+                            label=_('Position'),
                             widget=Select(attrs={
                                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                             }))
     _ref_node_id = ChoiceField(required=False,
-                               label=_("Relative to"),
+                               label=_('Relative to'),
                                widget=Select(attrs={
                                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
                                }))
 
-    def __init__(self, entity_model, coa_model, user_model, *args, **kwargs):
-        self.ENTITY = entity_model
-        self.COA_MODEL = coa_model
-        self.USER_MODEL = user_model
+
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.fields['_ref_node_id'].choices = self.mk_dropdown_tree_choices()
+        self.fields['role'].disabled = True
+        self.fields['coa_model'].disabled = True
+
 
     @classmethod
     def mk_dropdown_tree(cls, model, for_node: Optional[AccountModel] = None):
@@ -125,14 +118,17 @@ class AccountModelUpdateForm(MoveNodeForm):
         if not for_node:
             raise ValidationError(message='Must provide for_node argument.')
 
-        options = list()
         qs = for_node.get_account_move_choice_queryset()
 
-        # for node in qs:
-        #     cls.add_subtree(for_node, node, options)
         return [
             (i.uuid, f'{"-" * (i.depth - 1)} {i}') for i in qs
         ]
+
+    def clean_role(self):
+        return self.instance.role
+
+    def coa_model(self):
+        return self.instance.coa_model
 
     def clean_role_default(self):
         role_default = self.cleaned_data['role_default']
@@ -142,8 +138,10 @@ class AccountModelUpdateForm(MoveNodeForm):
 
     class Meta:
         model = AccountModel
-        exclude = ('depth', 'numchild', 'path', 'balance_type', 'role')
+        exclude = ('depth', 'numchild', 'path', 'balance_type')
         widgets = {
+            'role': HiddenInput(),
+            'coa_model': HiddenInput(),
             'parent': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),

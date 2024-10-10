@@ -3,7 +3,7 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -38,6 +38,7 @@ class LedgerModelModelViewQuerySetMixIn:
 
 
 class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
+    allow_empty = True
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
     PAGE_TITLE = _('Entity Ledgers')
@@ -48,6 +49,7 @@ class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySe
     }
     date_field = 'created'
     ordering = '-created'
+
 
     show_all = False
     show_current = False

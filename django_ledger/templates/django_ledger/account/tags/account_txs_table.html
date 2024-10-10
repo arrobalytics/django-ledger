@@ -32,6 +32,7 @@
                         </div>
                         <div class="dropdown-menu" id="dropdown-menu-{{ tx.uuid }}" role="menu">
                             <div class="dropdown-content">
+                                {# TODO: These URLs need to be replaced with the future mode method that generates it. #}
                                 <a href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=tx.journal_entry.ledger.uuid je_pk=tx.journal_entry.uuid %}"
                                    class="dropdown-item has-text-success">View JE</a>
                                 {% if tx.journal_entry.ledger.billmodel %}

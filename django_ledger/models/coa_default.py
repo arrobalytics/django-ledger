@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 This is the base Chart of Accounts that has all the possible accounts that are useful for the preparation of the
 Financial Statements. A user may choose to use the default CoA at the creation of each EntityModel but it is not
 required. The default CoA is intended to provide a QuickStart solution for most use cases.
@@ -14,8 +10,10 @@ The Chart of Accounts is broadly bifurcated into 5 different Sections:
     1. Assets:
     2. Liabilities
     3. Shareholder's Equity
-    4. Expenses
-    5. Revenue
+    4. Income
+    5. COGS
+    6. Expenses
+
 
 The Django Ledger Default Chart of Accounts must include the following fields:
     * Code - String
@@ -75,7 +73,8 @@ Default Chart of Accounts Table
   6040  ex_regular                  debit           Bad Debt                                                       root_expenses
   6050  ex_regular                  debit           Bank Charges                                                   root_expenses
   6060  ex_regular                  debit           Commission Expense                                             root_expenses
-  6080  ex_regular                  debit           Employee Benefits                                               root_expenses
+  6080  ex_regular                  debit           Employee Benefits                                              root_expenses
+  6081  ex_regular                  debit           Employee Wages                                                 root_expenses
   6090  ex_regular                  debit           Freight                                                        root_expenses
   6110  ex_regular                  debit           Gifts                                                          root_expenses
   6120  ex_regular                  debit           Insurance                                                      root_expenses
@@ -83,7 +82,7 @@ Default Chart of Accounts Table
   6150  ex_regular                  debit           License Expense                                                root_expenses
   6170  ex_regular                  debit           Maintenance Expense                                            root_expenses
   6180  ex_regular                  debit           Meals & Entertainment                                          root_expenses
-  6190  ex_regular                  debit           Office Expense                                                  root_expenses
+  6190  ex_regular                  debit           Office Expense                                                 root_expenses
   6220  ex_regular                  debit           Printing                                                       root_expenses
   6230  ex_regular                  debit           Postage                                                        root_expenses
   6240  ex_regular                  debit           Rent                                                           root_expenses
@@ -261,6 +260,8 @@ DEFAULT_CHART_OF_ACCOUNTS = [
     {'code': '6060', 'role': roles.EXPENSE_OPERATIONAL, 'balance_type': 'debit', 'name': 'Commission Expense',
      'parent': None},
     {'code': '6080', 'role': roles.EXPENSE_OPERATIONAL, 'balance_type': 'debit', 'name': 'Employee Benefits',
+     'parent': None},
+    {'code': '6081', 'role': roles.EXPENSE_OPERATIONAL, 'balance_type': 'debit', 'name': 'Employee Wages',
      'parent': None},
     {'code': '6090', 'role': roles.EXPENSE_OPERATIONAL, 'balance_type': 'debit', 'name': 'Freight', 'parent': None},
     {'code': '6110', 'role': roles.EXPENSE_OPERATIONAL, 'balance_type': 'debit', 'name': 'Gifts', 'parent': None},

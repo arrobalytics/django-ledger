@@ -3,8 +3,9 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
+
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Count, Q
