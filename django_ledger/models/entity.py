@@ -1712,11 +1712,12 @@ class EntityModelAbstract(MP_Node,
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
 
-        account_model_qs = account_model_qs.with_roles(roles=[
-            roles_module.ASSET_CA_CASH,
-            roles_module.ASSET_CA_PREPAID,
-            roles_module.LIABILITY_CL_ACC_PAYABLE
-        ]).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=[
+                roles_module.ASSET_CA_CASH,
+                roles_module.ASSET_CA_PREPAID,
+                roles_module.LIABILITY_CL_ACC_PAYABLE
+            ]).is_role_default()
 
         # evaluates the queryset...
         len(account_model_qs)
@@ -1821,11 +1822,12 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=[
-            roles_module.ASSET_CA_CASH,
-            roles_module.ASSET_CA_RECEIVABLES,
-            roles_module.LIABILITY_CL_DEFERRED_REVENUE
-        ]).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=[
+                roles_module.ASSET_CA_CASH,
+                roles_module.ASSET_CA_RECEIVABLES,
+                roles_module.LIABILITY_CL_DEFERRED_REVENUE
+            ]).is_role_default()
 
         # evaluates the queryset...
         len(account_model_qs)
@@ -2016,7 +2018,9 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError(
                 _(f'Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}'))
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_CASH).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=roles_module.ASSET_CA_CASH
+        ).is_role_default()
         bank_account_model = BankAccountModel(
             name=name,
             entity_model=self,
@@ -2172,11 +2176,12 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=[
-            roles_module.ASSET_CA_INVENTORY,
-            roles_module.COGS,
-            roles_module.INCOME_OPERATIONAL
-        ]).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=[
+                roles_module.ASSET_CA_INVENTORY,
+                roles_module.COGS,
+                roles_module.INCOME_OPERATIONAL
+            ]).is_role_default()
 
         # evaluates the queryset...
         len(account_model_qs)
@@ -2247,10 +2252,11 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=[
-            roles_module.COGS,
-            roles_module.INCOME_OPERATIONAL
-        ]).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=[
+                roles_module.COGS,
+                roles_module.INCOME_OPERATIONAL
+            ]).is_role_default()
 
         # evaluates the queryset...
         len(account_model_qs)
@@ -2326,7 +2332,9 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=roles_module.EXPENSE_OPERATIONAL)
+        account_model_qs = account_model_qs.with_roles(
+            roles=roles_module.EXPENSE_OPERATIONAL
+        )
         if not expense_account:
             expense_account = account_model_qs.is_role_default().get()
         elif isinstance(expense_account, UUID):
@@ -2425,7 +2433,9 @@ class EntityModelAbstract(MP_Node,
                 raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
-        account_model_qs = account_model_qs.with_roles(roles=roles_module.ASSET_CA_INVENTORY)
+        account_model_qs = account_model_qs.with_roles(
+            roles=roles_module.ASSET_CA_INVENTORY
+        )
         if not inventory_account:
             inventory_account = account_model_qs.is_role_default().get()
         elif isinstance(inventory_account, UUID):
@@ -2645,7 +2655,9 @@ class EntityModelAbstract(MP_Node,
             ROLES_NEEDED.append(roles_module.EQUITY_CAPITAL)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model)
-        account_model_qs = account_model_qs.with_roles(roles=ROLES_NEEDED).is_role_default()
+        account_model_qs = account_model_qs.with_roles(
+            roles=ROLES_NEEDED
+        ).is_role_default()
 
         if not cash_account or not capital_account:
             if cash_account or capital_account:
