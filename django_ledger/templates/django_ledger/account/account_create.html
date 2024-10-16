@@ -13,7 +13,7 @@
             </div>
             <div class="column is-8-tablet is-6-desktop">
                 <div class="box">
-                    <form method="post">
+                    <form method="post" id="{{ form.form_id }}">
                         {% csrf_token %}
                         {{ form.as_p }}
                         <button type="submit" class="button is-primary is-fullwidth djetler_my_1">Submit</button>

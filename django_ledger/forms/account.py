@@ -5,7 +5,7 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
-
+from random import randint
 from typing import Optional
 
 from django.forms import TextInput, Select, ModelForm, ChoiceField, ValidationError, CheckboxInput, HiddenInput
@@ -30,13 +30,20 @@ class AccountModelCreateForm(ModelForm):
         The Chart of Account Model being used in the form.
     """
 
+    FORM_ID_SEP = '___'
+
     def __init__(self, coa_model: ChartOfAccountModel, *args, **kwargs):
-        self.COA_MODEL = coa_model
+        self.COA_MODEL: ChartOfAccountModel = coa_model
         super().__init__(*args, **kwargs)
         self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
         self.fields['code'].required = False
         self.fields['coa_model'].disabled = True
         self.fields['coa_model'].required = False
+
+        self.form_id: str = self.get_form_id()
+
+    def get_form_id(self) -> str:
+        return f'account-model-create-form-{self.COA_MODEL.slug}{self.FORM_ID_SEP}{randint(100000, 999999)}'
 
     def clean_role_default(self):
         role_default = self.cleaned_data['role_default']

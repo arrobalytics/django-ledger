@@ -155,6 +155,11 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         roles = validate_roles(roles)
         return self.filter(role__in=roles)
 
+    def with_codes(self, codes: Union[List, str]):
+        if isinstance(codes, str):
+            codes = [codes]
+        return self.filter(code__in=codes)
+
     def expenses(self):
         """
         Retrieve a queryset containing expenses filtered by specified roles.
@@ -366,7 +371,6 @@ class AccountModelManager(MP_NodeManager):
             raise AccountModelValidationError(
                 message='Must pass an instance of EntityModel or String for entity_slug.'
             )
-
 
         return qs.filter(
             coa_model__slug__exact=coa_slug

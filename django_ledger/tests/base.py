@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.test import TestCase
 from django.test.client import Client
 from django.utils.timezone import get_default_timezone
@@ -30,7 +30,7 @@ class DjangoLedgerBaseTest(TestCase):
     TEST_DATA = list()
     CLIENT = None
     TZ = None
-    N = None
+    N = 1
     USER_EMAIL = None
     PASSWORD = None
     USERNAME = None
@@ -46,7 +46,6 @@ class DjangoLedgerBaseTest(TestCase):
         cls.USERNAME: str = 'testuser'
         cls.PASSWORD: str = 'NeverUseThisPassword12345'
         cls.USER_EMAIL: str = 'testuser@djangoledger.com'
-        cls.N: int = 1
 
         cls.DAYS_FWD: int = randint(180, 180 * 3)
         cls.TZ = get_default_timezone()
@@ -197,8 +196,7 @@ class DjangoLedgerBaseTest(TestCase):
         """
         account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=True)
         account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
-        # limits the queryset in case of large querysets...
-        return choice(account_qs[:50])
+        return choice(account_qs)
 
     def get_random_ledger(self,
                           entity_model: EntityModel,
@@ -278,3 +276,19 @@ class DjangoLedgerBaseTest(TestCase):
             entity_model.validate_ledger_model_for_entity(ledger_model)
         txs_model_qs = je_model.transactionmodel_set.all()
         return choice(txs_model_qs[:qs_limit])
+
+    def resolve_url_patterns(self, url_patterns):
+        self.URL_PATTERNS = {
+            p.name: set(p.pattern.converters.keys()) for p in url_patterns
+        }
+
+    def resolve_url_kwars(self):
+        url_patterns = getattr(self, 'URL_PATTERNS', None)
+        if not url_patterns:
+            raise ValidationError(
+                message='Must call resolve_url_patterns before calling resolve_url_kwars.'
+            )
+
+        return set.union(*[
+            set(v) for v in self.URL_PATTERNS.values()
+        ])
