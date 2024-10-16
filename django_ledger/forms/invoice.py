@@ -41,13 +41,11 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
             'prepaid_account' in self.fields,
             'unearned_account' in self.fields,
         ]):
-            account_qs = AccountModel.objects.for_invoice(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
-            )
 
-            # forcing evaluation of qs to cache results for fields... (avoids multiple database queries)
-            len(account_qs)
+            account_qs = AccountModel.objects.for_entity(
+                user_model=self.USER_MODEL,
+                entity_model=self.ENTITY_SLUG
+            ).for_invoice()
 
             self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
             self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_RECEIVABLES)

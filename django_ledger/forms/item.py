@@ -47,7 +47,7 @@ class ProductCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
+            entity_model=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         ).with_roles(
             roles=self.PRODUCT_OR_SERVICE_ROLES
@@ -142,7 +142,7 @@ class ServiceCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
+            entity_model=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         ).with_roles(
             roles=self.SERVICE_ROLES,
@@ -229,7 +229,7 @@ class ExpenseItemCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
+            entity_model=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         ).with_roles(
             roles=GROUP_EXPENSES
@@ -314,7 +314,7 @@ class InventoryItemCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
 
         accounts_qs = AccountModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
+            entity_model=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
         ).with_roles(
             roles=[ASSET_CA_INVENTORY]

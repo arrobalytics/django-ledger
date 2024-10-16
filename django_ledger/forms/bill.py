@@ -29,7 +29,7 @@ class BillModelCreateForm(ModelForm):
             'prepaid_account' in self.fields,
             'unearned_account' in self.fields,
         ]):
-            account_qs = self.ENTITY_MODEL.default_coa.accountmodel_set.all().active()
+            account_qs = self.ENTITY_MODEL.default_coa.accountmodel_set.all().for_bill()
             self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
             self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
             self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
@@ -95,11 +95,11 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
 
     def __init__(self,
                  *args,
-                 entity_slug,
+                 entity_model,
                  user_model,
                  **kwargs):
-        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
-        self.ENTITY_SLUG = entity_slug
+        super().__init__(entity_model=entity_model, *args, **kwargs)
+        self.ENTITY_MODEL = entity_model
         self.USER_MODEL = user_model
         self.BILL_MODEL: BillModel = self.instance
 
@@ -108,7 +108,7 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
             self.BILL_MODEL.update_state()
             self.instance.migrate_state(
                 user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG,
+                entity_slug=self.ENTITY_MODEL.slug,
                 raise_exception=False
             )
         super().save(commit=commit)

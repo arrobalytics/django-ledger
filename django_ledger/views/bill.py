@@ -302,14 +302,15 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
 
     def get_form(self, form_class=None):
         form_class = self.get_form_class()
+        entity_model: EntityModel = self.get_authorized_entity_instance()
         if self.request.method == 'POST' and self.action_update_items:
             return form_class(
-                entity_slug=self.kwargs['entity_slug'],
+                entity_model=entity_model,
                 user_model=self.request.user,
                 instance=self.object
             )
         return form_class(
-            entity_slug=self.kwargs['entity_slug'],
+            entity_model=entity_model,
             user_model=self.request.user,
             **self.get_form_kwargs()
         )
