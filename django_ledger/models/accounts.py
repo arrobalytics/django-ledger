@@ -64,7 +64,8 @@ from django_ledger.io.roles import (
     ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
     GROUP_ASSETS, GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
     ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
-    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS
+    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
+    ROLES_ORDER_ALL
 )
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
@@ -211,10 +212,14 @@ class AccountModelQuerySet(MP_NodeQuerySet):
                 and the second element is a list of tuples where each sub-tuple contains a role display
                 and a list of accounts that fall into that role within the BS bucket.
         """
-        accounts_gb = list((r, list(gb)) for r, gb in groupby(self, key=lambda acc: acc.get_bs_bucket()))
+        accounts_gb = list(
+            (r, sorted(list(gb), key=lambda acc: ROLES_ORDER_ALL.index(acc.role))) for r, gb in
+            groupby(self, key=lambda acc: acc.get_bs_bucket())
+        )
         return [
             (bsr, [
-                (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
+                (r, sorted(list(l), key=lambda acc: acc.code)) for r, l in
+                groupby(gb, key=lambda a: a.get_role_display())
             ]) for bsr, gb in accounts_gb
         ]
 
