@@ -190,11 +190,13 @@ class DjangoLedgerBaseTest(TestCase):
 
     def get_random_account(self,
                            entity_model: EntityModel,
-                           balance_type: Literal['credit', 'debit', None] = None) -> AccountModel:
+                           balance_type: Literal['credit', 'debit', None] = None,
+                           active: bool = True,
+                           locked: bool = False) -> AccountModel:
         """
         Returns 1 random AccountModel with the specified balance_type.
         """
-        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=True)
+        account_qs: AccountModelQuerySet = entity_model.get_coa_accounts(active=active, locked=locked)
         account_qs = account_qs.filter(balance_type=balance_type) if balance_type else account_qs
         return choice(account_qs)
 
