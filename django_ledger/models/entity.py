@@ -1286,6 +1286,7 @@ class EntityModelAbstract(MP_Node,
     def get_coa_accounts(self,
                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                          active: bool = True,
+                         locked: bool = False,
                          order_by: Optional[Tuple] = ('code',),
                          return_coa_model: bool = False,
                          ) -> Union[AccountModelQuerySet, Tuple[ChartOfAccountModel, AccountModelQuerySet]]:
@@ -1298,6 +1299,8 @@ class EntityModelAbstract(MP_Node,
             The ChartOfAccountsModel UUID, model instance or slug to pull accounts from. If None, will use default CoA.
         active: bool
             Selects only active accounts.
+        locked: bool
+            Selects only locked accounts.
         order_by: list of strings.
             Optional list of fields passed to the order_by QuerySet method.
 
@@ -1324,6 +1327,9 @@ class EntityModelAbstract(MP_Node,
 
         if active:
             account_model_qs = account_model_qs.active()
+
+        if locked:
+            account_model_qs = account_model_qs.locked()
 
         if order_by:
             account_model_qs = account_model_qs.order_by(*order_by)

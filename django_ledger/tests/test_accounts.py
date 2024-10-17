@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from django.urls import reverse
 
 from django_ledger.forms.account import AccountModelCreateForm
+from django_ledger.models import EntityModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.account import urlpatterns as account_urls
@@ -103,3 +104,36 @@ class AccountModelTests(DjangoLedgerBaseTest):
         self.assertEqual(response_create.status_code, 200)
         self.assertContains(response_create, 'Account with this Chart of Accounts and Account Code already exists')
 
+
+    def test_account_activation(self):
+
+        entity_model: EntityModel = self.get_random_entity_model()
+        account_model: AccountModel = self.get_random_account(entity_model=entity_model, active=True)
+
+        self.assertTrue(account_model.can_deactivate())
+        self.assertTrue(account_model.active)
+
+        account_model.deactivate(commit=True)
+        self.assertFalse(account_model.can_deactivate())
+        self.assertFalse(account_model.active)
+
+        account_model.activate(commit=True)
+        self.assertTrue(account_model.can_deactivate())
+        self.assertTrue(account_model.active)
+
+
+    def test_account_lock(self):
+        entity_model: EntityModel = self.get_random_entity_model()
+        account_model: AccountModel = self.get_random_account(entity_model=entity_model, active=True, locked=False)
+
+        self.assertTrue(account_model.can_lock())
+        self.assertFalse(account_model.can_unlock())
+
+        account_model.lock(commit=True)
+        self.assertFalse(account_model.can_lock())
+        self.assertTrue(account_model.can_unlock())
+
+
+        account_model.unlock(commit=True)
+        self.assertTrue(account_model.can_lock())
+        self.assertFalse(account_model.can_unlock())
