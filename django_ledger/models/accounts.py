@@ -311,6 +311,7 @@ class AccountModelManager(MP_NodeManager):
         ).order_by('path').select_related(
             'coa_model').annotate(
             _coa_slug=F('coa_model__slug'),
+            _coa_active=F('coa_model__active'),
             _entity_slug=F('coa_model__entity__slug'),
         )
 
@@ -692,6 +693,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         return self.locked is True
 
+    def is_coa_active(self) -> bool:
+        try:
+            return getattr(self, '_coa_active')
+        except AttributeError:
+            pass
+        return self.coa_model.active
+
     def can_activate(self):
         """
         Determines if the object can be activated.
@@ -830,9 +838,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         3. The entity itself must be active.
         """
         return all([
-            self.coa_model.is_active(),
-            not self.is_locked(),
-            self.is_active()
+            self.is_coa_active(),
+            not self.is_locked()
         ])
 
     def get_code_prefix(self) -> str:
@@ -1000,6 +1007,26 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     def get_action_activate_url(self) -> str:
         return reverse(
             viewname='django_ledger:account-action-activate',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_lock_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-lock',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_unlock_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-unlock',
             kwargs={
                 'account_pk': self.uuid,
                 'entity_slug': self.entity_slug,
