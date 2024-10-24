@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 The EstimateModel provides the means to estimate customer requests, jobs or quotes that may ultimately be considered
 contracts, if approved. The EstimateModels will estimate revenues and costs associated with a specific scope of work
 which is documented using ItemTransactionModels.

@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 A Journal Entry (JE) is the foundation of all double entry accounting and financial data of any EntityModel.
 A JE encapsulates a collection of TransactionModel, which must contain two transactions at a minimum. Each transaction
 must perform a DEBIT or a CREDIT to an AccountModel. The JE Model performs additional validation to make sure that
@@ -37,7 +34,7 @@ from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, QuerySet, F
+from django.db.models import Q, Sum, QuerySet, F, Manager
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.urls import reverse
@@ -144,7 +141,7 @@ class JournalEntryModelQuerySet(QuerySet):
         return self.filter(locked=False)
 
 
-class JournalEntryModelManager(models.Manager):
+class JournalEntryModelManager(Manager):
     """
     A custom defined Journal Entry Model Manager that supports additional complex initial Queries based on the
     EntityModel and authenticated UserModel.

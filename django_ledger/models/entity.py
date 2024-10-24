@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 The EntityModel represents the Company, Corporation, Legal Entity, Enterprise or Person that engage and operate as a
 business. EntityModels can be created as part of a parent/child model structure to accommodate complex corporate
 structures where certain entities may be owned by other entities and may also generate consolidated financial statements.

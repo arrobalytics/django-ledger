@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 The Items refer to the additional detail provided to Bills, Invoices, Purchase Orders and Estimates for the purposes of
 documenting a breakdown of materials, labor, equipment, and other resources used for the purposes of the business
 operations.

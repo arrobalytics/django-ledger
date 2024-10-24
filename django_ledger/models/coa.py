@@ -2,12 +2,8 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 Chart Of Accounts
-_________________
+-----------------
 
 A Chart of Accounts (CoA) is a crucial collection of logically grouped accounts within a ChartOfAccountModel,
 forming the backbone of financial statements. The CoA includes various account roles such as cash, accounts receivable,
