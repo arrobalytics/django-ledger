@@ -3,7 +3,7 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
@@ -391,7 +391,10 @@ class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
             'customer',
             'cash_account',
             'prepaid_account',
-            'unearned_account'
+            'unearned_account',
+            'cash_account__coa_model',
+            'prepaid_account__coa_model',
+            'unearned_account__coa_model'
         )
 
 

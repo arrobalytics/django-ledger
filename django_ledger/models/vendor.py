@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 A Vendor refers to the person or entity that provides products and services to the business for a fee.
 Vendors are an integral part of the billing process as they are the providers of goods and services for the
 business.

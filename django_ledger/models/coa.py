@@ -2,12 +2,8 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 Chart Of Accounts
-_________________
+-----------------
 
 A Chart of Accounts (CoA) is a crucial collection of logically grouped accounts within a ChartOfAccountModel,
 forming the backbone of financial statements. The CoA includes various account roles such as cash, accounts receivable,
@@ -29,7 +25,7 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -65,6 +61,12 @@ class ChartOfAccountModelManager(models.Manager):
     A custom defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
     to the ChartOfAccountModel.
     """
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.annotate(
+            _entity_slug=F('entity__slug')
+        )
 
     def for_user(self, user_model) -> ChartOfAccountModelQuerySet:
         """
@@ -156,6 +158,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         if self.name is not None:
             return f'{self.name} ({self.slug})'
         return self.slug
+
+    @property
+    def entity_slug(self) -> str:
+        try:
+            # from QS annotation...
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            return self.entity.slug
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
         """
@@ -563,23 +573,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 ]
             )
 
-    def mark_as_default_url(self) -> str:
-        """
-        Returns the URL to mark the current Chart of Accounts instances as Default for the EntityModel.
-
-        Returns
-        -------
-        str
-            The URL as a String.
-        """
-        return reverse(
-            viewname='django_ledger:coa-action-mark-as-default',
-            kwargs={
-                'entity_slug': self.entity.slug,
-                'coa_slug': self.slug
-            }
-        )
-
     def can_activate(self) -> bool:
         """
         Check if the ChartOffAccountModel instance can be activated.
@@ -630,23 +623,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     'updated'
                 ])
 
-    def mark_as_active_url(self) -> str:
-        """
-        Returns the URL to mark the current Chart of Accounts instances as active.
-
-        Returns
-        -------
-        str
-            The URL as a String.
-        """
-        return reverse(
-            viewname='django_ledger:coa-action-mark-as-active',
-            kwargs={
-                'entity_slug': self.entity.slug,
-                'coa_slug': self.slug
-            }
-        )
-
     def mark_as_inactive(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Marks the current Chart of Accounts as Active.
@@ -674,6 +650,41 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     'updated'
                 ])
 
+    # URLS....
+    def mark_as_default_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as Default for the EntityModel.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-default',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.slug
+            }
+        )
+
+    def mark_as_active_url(self) -> str:
+        """
+        Returns the URL to mark the current Chart of Accounts instances as active.
+
+        Returns
+        -------
+        str
+            The URL as a String.
+        """
+        return reverse(
+            viewname='django_ledger:coa-action-mark-as-active',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.slug
+            }
+        )
+
     def mark_as_inactive_url(self) -> str:
         """
         Returns the URL to mark the current Chart of Accounts instances as inactive.
@@ -686,7 +697,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return reverse(
             viewname='django_ledger:coa-action-mark-as-inactive',
             kwargs={
-                'entity_slug': self.entity.slug,
+                'entity_slug': self.entity_slug,
                 'coa_slug': self.slug
             }
         )
@@ -695,7 +706,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return reverse(
             viewname='django_ledger:coa-list',
             kwargs={
-                'entity_slug': self.entity.slug
+                'entity_slug': self.entity_slug
             }
         )
 
@@ -703,26 +714,26 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return reverse(
             viewname='django_ledger:coa-detail',
             kwargs={
-                'coa_slug': self.slug,
-                'entity_slug': self.entity.slug
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.slug
             }
         )
 
     def get_account_list_url(self):
         return reverse(
-            viewname='django_ledger:account-list-coa',
+            viewname='django_ledger:account-list',
             kwargs={
-                'entity_slug': self.entity.slug,
+                'entity_slug': self.entity_slug,
                 'coa_slug': self.slug
             }
         )
 
     def get_create_coa_account_url(self):
         return reverse(
-            viewname='django_ledger:account-create-coa',
+            viewname='django_ledger:account-create',
             kwargs={
                 'coa_slug': self.slug,
-                'entity_slug': self.entity.slug
+                'entity_slug': self.entity_slug
             }
         )
 

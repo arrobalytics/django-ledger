@@ -27,7 +27,7 @@ class EstimateModelCreateForm(forms.ModelForm):
         return CustomerModel.objects.for_entity(
             entity_slug=self.ENTITY_SLUG,
             user_model=self.USER_MODEL
-        )
+        ).active()
 
     class Meta:
         model = EstimateModel

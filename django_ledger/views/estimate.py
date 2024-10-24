@@ -1,3 +1,12 @@
+"""
+Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
+Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
+
+Contributions to this module:
+    * Miguel Sanda <msanda@arrobalytics.com>
+"""
+
+
 from django.contrib import messages
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.http import HttpResponseRedirect, HttpResponseForbidden
@@ -10,7 +19,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
                                           CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
                                           DraftEstimateModelUpdateForm)
-from django_ledger.models import EntityModel, ItemTransactionModelQuerySet
+from django_ledger.models import EntityModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
 
@@ -20,10 +29,8 @@ class EstimateModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).select_related('customer', 'entity')
+            entity_model: EntityModel = getattr(self, 'AUTHORIZED_ENTITY_MODEL')
+            self.queryset = entity_model.estimatemodel_set.select_related('customer', 'entity')
         return super().get_queryset()
 
 
@@ -70,9 +77,7 @@ class EstimateModelCreateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
 
     def form_valid(self, form):
         estimate_model: EstimateModel = form.save(commit=False)
-        entity_model_qs = EntityModel.objects.for_user(user_model=self.request.user).only('uuid')
-        entity_model: EntityModel = get_object_or_404(entity_model_qs, slug=self.kwargs['entity_slug'])
-        estimate_model.entity = entity_model
+        estimate_model.entity = self.AUTHORIZED_ENTITY_MODEL
         return super(EstimateModelCreateView, self).form_valid(form)
 
 

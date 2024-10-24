@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 The EstimateModel provides the means to estimate customer requests, jobs or quotes that may ultimately be considered
 contracts, if approved. The EstimateModels will estimate revenues and costs associated with a specific scope of work
 which is documented using ItemTransactionModels.
@@ -139,12 +136,6 @@ class EstimateModelManager(models.Manager):
             The entity slug or EntityModel used for filtering the QuerySet.
         user_model
             Logged in and authenticated django UserModel instance.
-
-        Examples
-        --------
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> bill_model_qs = EstimateModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
         Returns
         -------

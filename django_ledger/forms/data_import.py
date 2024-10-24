@@ -130,10 +130,10 @@ class BaseStagedTransactionModelFormSet(BaseModelFormSet):
         self.IMPORT_DISABLED = not exclude_account
         self.CASH_ACCOUNT = exclude_account
 
-        account_model_qs = AccountModel.objects.for_entity_available(
+        account_model_qs = AccountModel.objects.for_entity(
             user_model=self.USER_MODEL,
-            entity_slug=self.ENTITY_SLUG
-        ).order_by('role', 'name')
+            entity_model=self.ENTITY_SLUG
+        ).available().order_by('role', 'name')
 
         unit_model_qs = EntityUnitModel.objects.for_entity(
             user_model=self.USER_MODEL,

@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 The LedgerModel is the heart of Django Ledger. It is a self-contained unit of accounting that implements a
 double-entry accounting system capable of creating and managing transactions into the ledger and producing any financial
 statements. In essence, an EntityModel is made of a collection of LedgerModels that drive the whole bookkeeping process.

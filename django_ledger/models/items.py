@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 The Items refer to the additional detail provided to Bills, Invoices, Purchase Orders and Estimates for the purposes of
 documenting a breakdown of materials, labor, equipment, and other resources used for the purposes of the business
 operations.
@@ -389,7 +385,10 @@ class ItemModelManager(models.Manager):
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(
+            entity_slug=entity_slug,
+            user_model=user_model
+        )
         return qs.filter(
             (
                     Q(is_product_or_service=False) &
@@ -527,7 +526,6 @@ class ItemModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     name = models.CharField(max_length=100, verbose_name=_('Item Name'))
 
-    # todo: rename this and remove 'id' from it.
     item_id = models.CharField(max_length=50, blank=True, null=True, verbose_name=_('Internal ID'))
     item_number = models.CharField(max_length=30, editable=False, verbose_name=_('Item Number'))
     item_role = models.CharField(max_length=10, choices=ITEM_ROLE_CHOICES, null=True, blank=True)

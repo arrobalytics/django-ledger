@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 A Customer refers to the person or entity that buys product and services. When issuing Invoices, a Customer must be
 created before it can be assigned to the InvoiceModel. Only customers who are active can be assigned to new Invoices.
 """

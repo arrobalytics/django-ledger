@@ -2,14 +2,8 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
-
 AccountModel
 ------------
-
 The AccountModel is a fundamental component of the Django Ledger system, responsible for categorizing and organizing
 financial transactions related to an entity's assets, liabilities, and equity.
 
@@ -60,18 +54,19 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F, UniqueConstraint
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger.io.io_core import get_localdate
-from django_ledger.io.roles import (ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
-                                    GROUP_ASSETS,
-                                    GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
-                                    ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
-                                    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS)
+from django_ledger.io.roles import (
+    ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
+    GROUP_ASSETS, GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
+    ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
+    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
+    ROLES_ORDER_ALL
+)
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
@@ -155,10 +150,16 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         AccountModelQuerySet
             A QuerySet of accounts filtered by the provided roles.
         """
+        roles = validate_roles(roles)
         if isinstance(roles, str):
             roles = [roles]
         roles = validate_roles(roles)
         return self.filter(role__in=roles)
+
+    def with_codes(self, codes: Union[List, str]):
+        if isinstance(codes, str):
+            codes = [codes]
+        return self.filter(code__in=codes)
 
     def expenses(self):
         """
@@ -200,36 +201,6 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         return self.exclude(role__in=ROOT_GROUP)
 
-    def for_entity(self, entity_slug, user_model):
-        """
-        Parameters
-        ----------
-        entity_slug : str
-            The slug identifier for the entity.
-        user_model : UserModel
-            The user model instance to use for filtering.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A Django QuerySet filtered by the specified entity and user permissions, ordered by 'code'.
-        """
-        if isinstance(self, lazy_loader.get_entity_model()):
-            return self.filter(
-                Q(coa_model__entity=entity_slug) &
-                (
-                        Q(coa_model__entity__admin=user_model) |
-                        Q(coa_model__entity__managers__in=[user_model])
-                )
-            ).order_by('code')
-        return self.filter(
-            Q(coa_model__entity__slug__exact=entity_slug) &
-            (
-                    Q(coa_model__entity__admin=user_model) |
-                    Q(coa_model__entity__managers__in=[user_model])
-            )
-        ).order_by('code')
-
     def gb_bs_role(self):
         """
         Groups accounts by Balance Sheet Bucket and then further groups them by role.
@@ -241,10 +212,14 @@ class AccountModelQuerySet(MP_NodeQuerySet):
                 and the second element is a list of tuples where each sub-tuple contains a role display
                 and a list of accounts that fall into that role within the BS bucket.
         """
-        accounts_gb = list((r, list(gb)) for r, gb in groupby(self, key=lambda acc: acc.get_bs_bucket()))
+        accounts_gb = list(
+            (r, sorted(list(gb), key=lambda acc: ROLES_ORDER_ALL.index(acc.role))) for r, gb in
+            groupby(self, key=lambda acc: acc.get_bs_bucket())
+        )
         return [
             (bsr, [
-                (r, list(l)) for r, l in groupby(gb, key=lambda a: a.get_role_display())
+                (r, sorted(list(l), key=lambda acc: acc.code)) for r, l in
+                groupby(gb, key=lambda a: a.get_role_display())
             ]) for bsr, gb in accounts_gb
         ]
 
@@ -270,8 +245,46 @@ class AccountModelQuerySet(MP_NodeQuerySet):
             A QuerySet containing the filtered results.
         """
         return self.filter(
-            Q(locked=False) & Q(active=True)
+            Q(locked=False) &
+            Q(active=True) &
+            Q(coa_model__active=True)
         )
+
+    def available(self):
+        return self.filter(
+            Q(locked=False) &
+            Q(active=True) &
+            Q(coa_model__active=True)
+        )
+
+    def for_bill(self):
+        """
+        Retrieves only available and unlocked AccountModels for a specific EntityModel,
+        specifically for the creation and management of Bills. Roles within the 'GROUP_BILL'
+        context include: ASSET_CA_CASH, ASSET_CA_PREPAID, and LIABILITY_CL_ACC_PAYABLE.
+
+        Returns
+        -------
+        AccountModelQuerySet
+            A QuerySet of the requested EntityModel's chart of accounts.
+        """
+        return self.available().filter(role__in=GROUP_BILL)
+
+    def for_invoice(self):
+        """
+        Retrieves available and unlocked AccountModels for a specific EntityModel, specifically for the creation
+        and management of Invoices.
+
+        This method ensures that only relevant accounts are pulled, as defined under the roles in `GROUP_INVOICE`.
+        These roles include: ASSET_CA_CASH, ASSET_CA_RECEIVABLES, and LIABILITY_CL_DEFERRED_REVENUE.
+
+        Returns
+        -------
+        AccountModelQuerySet
+            A QuerySet containing the AccountModels relevant for the specified EntityModel and the roles defined
+            in `GROUP_INVOICE`.
+        """
+        return self.available().filter(role__in=GROUP_INVOICE)
 
 
 class AccountModelManager(MP_NodeManager):
@@ -295,7 +308,12 @@ class AccountModelManager(MP_NodeManager):
         return AccountModelQuerySet(
             self.model,
             using=self._db
-        ).order_by('path').select_related('coa_model')
+        ).order_by('path').select_related(
+            'coa_model').annotate(
+            _coa_slug=F('coa_model__slug'),
+            _coa_active=F('coa_model__active'),
+            _entity_slug=F('coa_model__entity__slug'),
+        )
 
     def for_user(self, user_model) -> AccountModelQuerySet:
         """
@@ -318,234 +336,53 @@ class AccountModelManager(MP_NodeManager):
             Q(coa_model__entity__managers__in=[user_model])
         )
 
-    # todo: search for uses and pass EntityModel whenever possible.
     def for_entity(
             self,
             user_model,
-            entity_slug,
-            coa_slug: Optional[str] = None,
-            select_coa_model: bool = True
+            entity_model,
+            coa_slug: Optional[str] = None
     ) -> AccountModelQuerySet:
         """
-        Retrieves accounts associated with the specified EntityModel.
+        Retrieve accounts associated with a specified EntityModel and Chart of Accounts.
 
         Parameters
         ----------
-        user_model: User
-            The Django User Model making the request to check for permissions.
-        entity_slug: Union[EntityModel, str]
-            The EntityModel instance or its slug to filter accounts by. If a slug is provided and `coa_slug` is None,
-            an additional
-            database query will be executed to determine the default Chart of Accounts.
-        coa_slug: Optional[str], default=None
-            The slug of the specific Chart of Accounts to use. If None, the default Chart of Accounts is selected.
-        select_coa_model: bool, default=True
-            If True, prefetches the CoA Model information in the QuerySet.
+        user_model : User
+            The Django User instance initiating the request. Used to check for required permissions.
+        entity_model : Union[EntityModel, str]
+            An instance of EntityModel or its slug. This determines the entity whose accounts are being retrieved.
+            A database query will be carried out to identify the default Chart of Accounts.
+        coa_slug : Optional[str], default=None
+            The slug for a specific Chart of Accounts to be used. If None, the default Chart of Accounts will be selected.
 
         Returns
         -------
         AccountModelQuerySet
             A QuerySet containing accounts associated with the specified EntityModel and Chart of Accounts.
+
+        Raises
+        ------
+        AccountModelValidationError
+            If the entity_model is neither an instance of EntityModel nor a string.
         """
         qs = self.for_user(user_model)
-        if select_coa_model:
-            qs = qs.select_related('coa_model')
-
         EntityModel = lazy_loader.get_entity_model()
-        if isinstance(entity_slug, EntityModel):
-            entity_model = entity_slug
+
+        if isinstance(entity_model, EntityModel):
+            entity_model = entity_model
             qs = qs.filter(coa_model__entity=entity_model)
-        elif isinstance(entity_slug, str):
-            qs = qs.filter(coa_model__entity__slug__exact=entity_slug)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(coa_model__entity__slug__exact=entity_model)
         else:
-            raise AccountModelValidationError(message='Must pass an instance of EntityModel or String for entity_slug.')
+            raise AccountModelValidationError(
+                message='Must pass an instance of EntityModel or String for entity_slug.'
+            )
 
-        if coa_slug:
-            qs = qs.filter(coa_model__slug__exact=coa_slug)
-        return qs.order_by('coa_model')
-
-    def for_entity_available(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
-        """
-        Retrieve available and unlocked AccountModels for a specific EntityModel.
-
-        This method filters AccountModels associated with the specified EntityModel
-        that are active, not locked, and have an active Chart of Accounts.
-
-        Parameters
-        ----------
-        user_model: User
-            The Django User Model instance making the request, used to validate permissions.
-
-        entity_slug: EntityModel or str
-            The EntityModel instance or its slug to pull accounts from. If entity_slug is passed
-            and coa_slug is None, an additional database query will be performed to determine
-            the default Chart of Accounts.
-
-        coa_slug: str, optional
-            The specific Chart of Accounts to use. If None, the default Chart of Accounts will be pulled.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet containing available and unlocked AccountModels for the specified EntityModel and Chart of Accounts.
-        """
-        qs = self.for_entity(
-            user_model=user_model,
-            entity_slug=entity_slug,
-            coa_slug=coa_slug)
         return qs.filter(
-            Q(active=True) &
-            Q(locked=False) &
-            Q(coa_model__active=True)
+            coa_model__slug__exact=coa_slug
+        ) if coa_slug else qs.filter(
+            coa_model__slug__exact=F('coa_model__entity__default_coa__slug')
         )
-
-    def with_roles(self, roles: Union[list, str], entity_slug, user_model) -> AccountModelQuerySet:
-        """
-        Retrieve accounts based on specific roles.
-
-        This method filters accounts associated with a given role or a list of roles. For example, if you need to
-        find all accounts under the "asset_ppe_build" role, which includes all buildings fixed assets, this method
-        can be used.
-
-        Parameters
-        ----------
-        entity_slug: EntityModel or str
-            The EntityModel instance or its slug to fetch accounts from. If only the slug is provided and coa_slug is
-            not specified, an additional database query will be performed to determine the default chart of accounts.
-        user_model: User
-            The Django User model instance making the request to ensure appropriate permissions are checked.
-        roles: list or str
-            Accepts either a single role as a string or a list of roles. Refer to io.roles.py for a comprehensive
-            list of roles.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet of accounts filtered by the specified roles.
-        """
-        roles = validate_roles(roles)
-        if isinstance(roles, str):
-            roles = [roles]
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(role__in=roles)
-
-    def with_roles_available(self, roles: Union[list, str],
-                             entity_slug,
-                             user_model,
-                             coa_slug: Optional[str]) -> AccountModelQuerySet:
-        """
-        Retrieve available and unlocked AccountModels for a specified EntityModel and list of roles.
-
-        Parameters
-        ----------
-        roles : Union[list, str]
-            A single role as a string or a list of roles.
-        entity_slug : Union[str, 'EntityModel']
-            The EntityModel object or its slug. If a slug is provided and `coa_slug` is None, an additional
-            database query will be executed to fetch the default Chart of Accounts.
-        user_model : 'UserModel'
-            The Django UserModel instance making the request, used to check permissions.
-        coa_slug : Optional[str], default None
-            The specific Chart of Accounts slug. If None, the default Chart of Accounts will be used.
-            This parameter assists in identifying the complete Chart of Accounts for the EntityModel.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet containing available and unlocked AccountModel instances for the specified
-            EntityModel and roles.
-        """
-
-        if isinstance(roles, str):
-            roles = [roles]
-        roles = validate_roles(roles)
-        qs = self.for_entity_available(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(role__in=roles)
-
-    def coa_roots(self, user_model, entity_slug, coa_slug) -> AccountModelQuerySet:
-        """
-        Retrieves the root accounts of a specified Code of Accounts (CoA).
-
-        Parameters
-        ----------
-        user_model: object
-            The Django User model instance requesting the data, used for permission checking.
-        entity_slug: Union[EntityModel, str]
-            The entity or its slug from which to fetch accounts. If a slug is provided and `coa_slug` is None,
-            an additional database query is performed to determine the default Code of Accounts.
-        coa_slug: Optional[str]
-            The specific chart of accounts to retrieve. If None, the default chart of accounts for the entity
-            will be used. This is crucial for identifying the complete set of accounts for a given entity.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A queryset of root accounts for the specified Code of Accounts.
-        """
-        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug, coa_slug=coa_slug)
-        return qs.is_coa_root()
-
-    def for_invoice(self, user_model, entity_slug: str, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
-        """
-        Retrieves available and unlocked AccountModels for a specific EntityModel, specifically for the creation
-        and management of Invoices.
-
-        This method ensures that only relevant accounts are pulled, as defined under the roles in `GROUP_INVOICE`.
-        These roles include: ASSET_CA_CASH, ASSET_CA_RECEIVABLES, and LIABILITY_CL_DEFERRED_REVENUE.
-
-        Parameters
-        ----------
-        user_model: User
-            The Django User Model instance requesting access. It is used to check the necessary permissions.
-
-        entity_slug: Union[EntityModel, str]
-            Specifies the EntityModel or its slug to pull accounts from. If a slug is provided and `coa_slug` is `None`,
-            the method will perform an additional database query to determine the default chart of accounts.
-
-        coa_slug: Optional[str], default=None
-            Explicitly specifies which chart of accounts to use. If `None`, the method will default to using
-            the EntityModel's default chart of accounts.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet containing the AccountModels relevant for the specified EntityModel and the roles defined
-            in `GROUP_INVOICE`.
-        """
-        qs = self.for_entity_available(
-            user_model=user_model,
-            entity_slug=entity_slug,
-            coa_slug=coa_slug)
-        return qs.filter(role__in=GROUP_INVOICE)
-
-    def for_bill(self, user_model, entity_slug, coa_slug: Optional[str] = None) -> AccountModelQuerySet:
-        """
-        Retrieves only available and unlocked AccountModels for a specific EntityModel,
-        specifically for the creation and management of Bills. Roles within the 'GROUP_BILL'
-        context include: ASSET_CA_CASH, ASSET_CA_PREPAID, and LIABILITY_CL_ACC_PAYABLE.
-
-        Parameters
-        ----------
-        user_model : Django User Model
-            The Django User Model that is making the request, used to check for permissions.
-
-        entity_slug : Union[EntityModel, str]
-            The EntityModel or EntityModel slug from which to pull accounts. If given a slug and coa_slug
-            is None, an additional database query will be made to determine the default chart of accounts.
-
-        coa_slug : Optional[str]
-            The specific chart of accounts to use. If None, it will default to the EntityModel's default chart of accounts.
-
-        Returns
-        -------
-        AccountModelQuerySet
-            A QuerySet of the requested EntityModel's chart of accounts.
-        """
-        qs = self.for_entity_available(
-            user_model=user_model,
-            entity_slug=entity_slug,
-            coa_slug=coa_slug)
-        return qs.filter(role__in=GROUP_BILL)
 
 
 def account_code_validator(value: str):
@@ -596,7 +433,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     active = models.BooleanField(default=False, verbose_name=_('Active'))
     coa_model = models.ForeignKey('django_ledger.ChartOfAccountModel',
                                   on_delete=models.CASCADE,
-                                  editable=False,
                                   verbose_name=_('Chart of Accounts'))
     objects = AccountModelManager()
     node_order_by = ['uuid']
@@ -606,9 +442,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ordering = ['-created']
         verbose_name = _('Account')
         verbose_name_plural = _('Accounts')
-        unique_together = [
-            ('coa_model', 'code'),
-            ('coa_model', 'role', 'role_default')
+        constraints = [
+            UniqueConstraint(
+                fields=('coa_model', 'code'),
+                name='unique_code_for_coa_model',
+                violation_error_message=_('Account codes must be unique for each Chart of Accounts Model.')
+            ),
+            UniqueConstraint(
+                fields=('coa_model', 'role', 'role_default'),
+                name='only_one_account_assigned_as_default_for_role',
+                violation_error_message=_('Only one default account for role permitted.')
+            )
         ]
         indexes = [
             models.Index(fields=['role']),
@@ -627,6 +471,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             x4=self.balance_type,
             x5=self.code
         )
+
+    @property
+    def coa_slug(self):
+        try:
+            return getattr(self, '_coa_slug')
+        except AttributeError:
+            return self.coa_model.slug
+
+    @property
+    def entity_slug(self):
+        return getattr(self, '_entity_slug')
 
     @classmethod
     def create_account(cls,
@@ -838,6 +693,13 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         return self.locked is True
 
+    def is_coa_active(self) -> bool:
+        try:
+            return getattr(self, '_coa_active')
+        except AttributeError:
+            pass
+        return self.coa_model.active
+
     def can_activate(self):
         """
         Determines if the object can be activated.
@@ -865,6 +727,46 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         return all([
             self.active is True
         ])
+
+    def can_lock(self):
+        return all([
+            self.locked is False
+        ])
+
+    def can_unlock(self):
+        return all([
+            self.locked is True
+        ])
+
+    def lock(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_lock():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot lock account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+
+        self.locked = True
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
+
+    def unlock(self, commit: bool = True, raise_exception: bool = True, **kwargs):
+        if not self.can_unlock():
+            if raise_exception:
+                raise AccountModelValidationError(
+                    message=_(f'Cannot unlock account {self.code}: {self.name}. Active: {self.is_active()}')
+                )
+            return
+
+        self.locked = False
+        if commit:
+            self.save(update_fields=[
+                'locked',
+                'updated'
+            ])
 
     def activate(self, commit: bool = True, raise_exception: bool = True, **kwargs):
         """
@@ -936,9 +838,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         3. The entity itself must be active.
         """
         return all([
-            self.coa_model.is_active(),
-            not self.is_locked(),
-            self.is_active()
+            self.is_coa_active(),
+            not self.is_locked()
         ])
 
     def get_code_prefix(self) -> str:
@@ -1072,15 +973,74 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ri = randint(10000, 99999)
         return f'{prefix}{ri}'
 
-    def get_absolute_url(self):
+    # URLS...
+    def get_absolute_url(self) -> str:
         return reverse(
-            viewname='django_ledger:account-detail-year',
+            viewname='django_ledger:account-detail',
             kwargs={
                 'account_pk': self.uuid,
-                'entity_slug': self.coa_model.entity.slug,
-                'year': get_localdate().year
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
             }
         )
+
+    def get_update_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-update',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_deactivate_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-deactivate',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_activate_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-activate',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_lock_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-lock',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_action_unlock_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-action-unlock',
+            kwargs={
+                'account_pk': self.uuid,
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            }
+        )
+
+    def get_coa_account_list_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:account-list',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.coa_slug
+            })
 
     def clean(self):
         if not self.code and DJANGO_LEDGER_ACCOUNT_CODE_GENERATE:

@@ -37,7 +37,7 @@ class CustomerModelForm(ModelForm):
             'hidden'
         ]
         help_texts = {
-            'sales_tax_rate': _('Example: 3.50% should be entered as 0.0035')
+            'sales_tax_rate': _('Example: 3.50% should be entered as 0.035')
         }
         widgets = {
             'customer_name': TextInput(attrs={

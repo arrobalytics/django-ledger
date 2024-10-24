@@ -6,25 +6,20 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.models import (ItemModel, AccountModel, BillModel, ItemTransactionModel,
-                                  VendorModel, EntityUnitModel)
+                                  VendorModel, EntityUnitModel, EntityModel)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class BillModelCreateForm(ModelForm):
-    def __init__(self, *args, entity_slug, user_model, **kwargs):
+    def __init__(self, *args, entity_model: EntityModel, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ENTITY_SLUG = entity_slug
-        self.USER_MODEL = user_model
-        self.BILL_MODEL: BillModel = self.instance
+        self.ENTITY_MODEL = entity_model
         self.get_vendor_queryset()
         self.get_accounts_queryset()
 
     def get_vendor_queryset(self):
         if 'vendor' in self.fields:
-            vendor_qs = VendorModel.objects.for_entity(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
-            )
+            vendor_qs = self.ENTITY_MODEL.vendormodel_set.active()
             self.fields['vendor'].queryset = vendor_qs
 
     def get_accounts_queryset(self):
@@ -34,14 +29,7 @@ class BillModelCreateForm(ModelForm):
             'prepaid_account' in self.fields,
             'unearned_account' in self.fields,
         ]):
-            account_qs = AccountModel.objects.for_bill(
-                user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG
-            )
-
-            # forcing evaluation of qs to cache results for fields... (avoids multiple database queries)
-            len(account_qs)
-
+            account_qs = self.ENTITY_MODEL.default_coa.accountmodel_set.all().for_bill()
             self.fields['cash_account'].queryset = account_qs.filter(role__exact=ASSET_CA_CASH)
             self.fields['prepaid_account'].queryset = account_qs.filter(role__exact=ASSET_CA_PREPAID)
             self.fields['unearned_account'].queryset = account_qs.filter(role__exact=LIABILITY_CL_ACC_PAYABLE)
@@ -107,11 +95,11 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
 
     def __init__(self,
                  *args,
-                 entity_slug,
+                 entity_model,
                  user_model,
                  **kwargs):
-        super().__init__(entity_slug=entity_slug, user_model=user_model, *args, **kwargs)
-        self.ENTITY_SLUG = entity_slug
+        super().__init__(entity_model=entity_model, *args, **kwargs)
+        self.ENTITY_MODEL = entity_model
         self.USER_MODEL = user_model
         self.BILL_MODEL: BillModel = self.instance
 
@@ -120,7 +108,7 @@ class BaseBillModelUpdateForm(BillModelCreateForm):
             self.BILL_MODEL.update_state()
             self.instance.migrate_state(
                 user_model=self.USER_MODEL,
-                entity_slug=self.ENTITY_SLUG,
+                entity_slug=self.ENTITY_MODEL.slug,
                 raise_exception=False
             )
         super().save(commit=commit)
@@ -226,6 +214,10 @@ class BillModelConfigureForm(BaseBillModelUpdateForm):
 
 class BillItemTransactionForm(ModelForm):
 
+    # def __init__(self, entity_unit_qs, *args, **kwargs):
+    #     super().__init__(self, *args, **kwargs)
+    #     self.fields['entity_unit'].queryset = entity_unit_qs
+
     def clean(self):
         cleaned_data = super(BillItemTransactionForm, self).clean()
         itemtxs_model: ItemTransactionModel = self.instance
@@ -262,28 +254,24 @@ class BillItemTransactionForm(ModelForm):
 class BaseBillItemTransactionFormset(BaseModelFormSet):
 
     def __init__(self, *args,
-                 entity_slug,
+                 entity_model: EntityModel,
                  bill_model: BillModel,
-                 user_model,
                  **kwargs):
         super().__init__(*args, **kwargs)
-        self.USER_MODEL = user_model
         self.BILL_MODEL = bill_model
-        self.ENTITY_SLUG = entity_slug
+        self.ENTITY_MODEL = entity_model
+        self.queryset = self.BILL_MODEL.itemtransactionmodel_set.select_related(
+            'item_model',
+            'po_model',
+            'bill_model'
+        ).order_by('-total_amount')
 
-        items_qs = ItemModel.objects.for_bill(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
-
-        unit_qs = EntityUnitModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
-        )
+        self.items_qs = self.ENTITY_MODEL.itemmodel_set.bills()
+        self.entity_unit_qs = self.ENTITY_MODEL.entityunitmodel_set.all()
 
         for form in self.forms:
-            form.fields['item_model'].queryset = items_qs
-            form.fields['entity_unit'].queryset = unit_qs
+            form.fields['item_model'].queryset = self.items_qs
+            form.fields['entity_unit'].queryset = self.entity_unit_qs
 
             if not self.BILL_MODEL.can_edit_items():
                 form.fields['item_model'].disabled = True

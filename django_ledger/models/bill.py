@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 This module implements the BillModel, which represents an Invoice received from a Supplier/Vendor, on which
 the Vendor states the amount owed by the recipient for the purposes of supplying goods and/or services.
 In addition to tracking the bill amount, it tracks the paid and due amount.
