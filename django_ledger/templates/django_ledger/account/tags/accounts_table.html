@@ -24,6 +24,7 @@
                         <th>{% trans 'CoA' %}</th>
                         <th>{% trans 'Balance Type' %}</th>
                         <th>{% trans 'Active' %}</th>
+                        <th>{% trans 'Locked' %}</th>
                         <th>{% trans 'CoA Role Default' %}</th>
                         <th>{% trans 'Actions' %}</th>
                     </tr>
@@ -48,28 +49,29 @@
                                 <td>{{ account.coa_model.name }}</td>
                                 <td>{{ account.get_balance_type_display }}</td>
                                 <td class="has-text-centered">
-                                    {% if account.active %}
+                                    {% if account.is_active %}
                                         <span class="icon has-text-success-dark">
                                         {% icon 'ant-design:check-circle-filled' 24 %}
                                     </span>
-                                    {% elif not account.active %}
+                                    {% else %}
                                         <span class="icon has-text-danger-dark">
                                         {% icon 'mdi:dangerous' 24 %}
                                     </span>
                                     {% endif %}
                                 </td>
+                            
+                                <td class="has-text-centered">
+                                    {% if account.is_locked %}
+                                        <span class="icon has-text-success-dark">
+                                        {% icon 'ooui:lock' 24 %}
+                                    </span>
+                                    {% else %}
+                                        <span class="icon has-text-danger-dark">
+                                        {% icon 'ooui:un-lock' 24 %}
+                                    </span>
+                                    {% endif %}
+                                </td>
 
-{#                                                                <td class="has-text-centered">#}
-                                {#                                                                    {% if account.locked %}#}
-                                {#                                                                        <span class="icon has-text-success-dark">#}
-                                {#                                                                        {% icon 'bi:lock-fill' 24 %}#}
-                                {#                                                                    </span>#}
-                                {#                                                                    {% elif not account.locked %}#}
-                                {#                                                                        <span class="icon has-text-danger-dark">#}
-                                {#                                                                        {% icon 'bx:bx-lock-open-alt' 24 %}#}
-                                {#                                                                    </span>#}
-                                {#                                                                    {% endif %}#}
-                                {#                                                                </td>#}
                                 <td class="has-text-centered">
                                     {% if account.role_default %}
                                         <span class="icon has-text-success-dark">
@@ -104,6 +106,14 @@
                                                 {% if account.can_deactivate %}
                                                     <a href="{{ account.get_action_deactivate_url }}"
                                                        class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Deactivate' %}</a>
+                                                {% endif %}
+                                                {% if account.can_lock %}
+                                                    <a href="{{ account.get_action_lock_url }}"
+                                                       class="dropdown-item has-text-success has-text-weight-bold">{% trans 'Lock' %}</a>
+                                                {% endif %}
+                                                {% if account.can_unlock %}
+                                                    <a href="{{ account.get_action_unlock_url }}"
+                                                       class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Unlock' %}</a>
                                                 {% endif %}
                                             </div>
                                         </div>
