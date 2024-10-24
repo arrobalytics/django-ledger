@@ -4,11 +4,11 @@ from urllib.parse import urlparse
 from django.urls import reverse
 
 from django_ledger.forms.account import AccountModelCreateForm
+from django_ledger.io import roles, CREDIT
 from django_ledger.models import EntityModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.account import urlpatterns as account_urls
-from django_ledger.io import roles, CREDIT, DEBIT
 
 
 class AccountModelTests(DjangoLedgerBaseTest):
@@ -94,16 +94,15 @@ class AccountModelTests(DjangoLedgerBaseTest):
         response_create = self.CLIENT.post(account_create_url, data=form_data)
         self.assertEqual(response_create.status_code, 302)
         self.assertTrue(AccountModel.objects.for_entity(
-                entity_model=entity_model,
-                user_model=self.user_model,
-                coa_slug=entity_model.default_coa_slug,
-            ).with_codes(codes=NEW_ACCOUNT_CODE).exists())
+            entity_model=entity_model,
+            user_model=self.user_model,
+            coa_slug=entity_model.default_coa_slug,
+        ).with_codes(codes=NEW_ACCOUNT_CODE).exists())
 
         # cannot create an account with same code again...
         response_create = self.CLIENT.post(account_create_url, data=form_data)
         self.assertEqual(response_create.status_code, 200)
         self.assertContains(response_create, 'Account with this Chart of Accounts and Account Code already exists')
-
 
     def test_account_activation(self):
 
@@ -121,7 +120,6 @@ class AccountModelTests(DjangoLedgerBaseTest):
         self.assertTrue(account_model.can_deactivate())
         self.assertTrue(account_model.active)
 
-
     def test_account_lock(self):
         entity_model: EntityModel = self.get_random_entity_model()
         account_model: AccountModel = self.get_random_account(entity_model=entity_model, active=True, locked=False)
@@ -133,7 +131,22 @@ class AccountModelTests(DjangoLedgerBaseTest):
         self.assertFalse(account_model.can_lock())
         self.assertTrue(account_model.can_unlock())
 
-
         account_model.unlock(commit=True)
         self.assertTrue(account_model.can_lock())
         self.assertFalse(account_model.can_unlock())
+
+    def test_annotations(self):
+        entity_model: EntityModel = self.get_random_entity_model()
+        account_model: AccountModel = self.get_random_account(entity_model=entity_model, active=True, locked=False)
+
+        self.assertEqual(account_model.entity_slug, entity_model.slug)
+        self.assertEqual(account_model.coa_slug, account_model.coa_model.slug)
+        self.assertEqual(account_model.coa_model.active, account_model.is_coa_active())
+
+    def test_can_transact(self):
+        entity_model: EntityModel = self.get_random_entity_model()
+        account_model: AccountModel = self.get_random_account(entity_model=entity_model, active=True, locked=False)
+        self.assertTrue(account_model.can_transact())
+        account_model.lock(commit=False)
+        self.assertFalse(account_model.can_transact())
+        account_model.unlock(commit=False)
