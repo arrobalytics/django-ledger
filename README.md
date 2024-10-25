@@ -1,58 +1,48 @@
 ![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-### An Accounting, Bookkeeping & Financial Analysis Engine for the Django Framework.
+Here's a more concise and readable version of the Django Ledger README:
 
-Introducing __Django Ledger__, a powerful double entry accounting system designed for financially driven applications
-using the [Django Web Framework](https://www.djangoproject.com). Developed by lead developer Miguel Sanda, this system
-offers a simplified, high-level API, making it easier for users to navigate the complexities of accounting. 
+# Django Ledger
 
-If you have prior experience with Django, you'll find this software even more effective. And, for those interested 
-in contributing, consider joining our new discord channel for further collaboration and discussions.
+## A Double Entry Accounting Engine for Django
 
-### Questions? Join our Discord Channel [Here](https://discord.gg/c7PZcbYgrc)
+Django Ledger is a powerful financial management system built on the Django Web Framework. It offers a simplified API for handling complex accounting tasks in financially driven applications.
 
-### Documentation
+[Join our Discord](https://discord.gg/c7PZcbYgrc) | [Documentation](https://django-ledger.readthedocs.io/en/latest/) | [QuickStart Notebook](https://github.com/arrobalytics/django-ledger/blob/develop/notebooks/QuickStart%20Notebook.ipynb)
 
-Access the latest documentation and QuickStart guide [here](https://django-ledger.readthedocs.io/en/latest/).
-Also, you may download the QuickStart Jupyter Notebook
-[here](https://github.com/arrobalytics/django-ledger/blob/develop/notebooks/QuickStart%20Notebook.ipynb).
+## Key Features
 
-# Main Features
+- High-level API
+- Double entry accounting
+- Hierarchical Chart of Accounts
+- Financial statements (Income Statement, Balance Sheet, Cash Flow)
+- Purchase Orders, Sales Orders, Bills, and Invoices
+- Financial ratio calculations
+- Multi-tenancy support
+- Ledgers, Journal Entries & Transactions
+- OFX & QFX file import
+- Closing Entries
+- Inventory management
+- Unit of Measures
+- Bank account information
+- Django Admin integration
+- Built-in Entity Management UI
 
-- High Level API.
-- Double entry accounting system.
-- Multiple Hierarchical Chart of Accounts.
-- Financial Statements (Income Statement, Balance Sheet & Cash Flow Statement).
-- Purchase Orders, Sales Orders (Estimates), Bills and Invoices.
-- Automatic financial ratio & insight calculations.
-- Multi tenancy (multiple companies/users/clients).
-- Self-contained Ledgers, Journal Entries & Transactions.
-- Basic OFX & QFX file import.
-- Closing Entries.
-- Items, lists & inventory management.
-- Unit of Measures.
-- Bank Accounts Information.
-- Django Admin Classes.
-- Built In Entity Management UI.
+## Getting Involved
 
-## Need a new feature or report a bug?
-Feel free to initiate an Issue describing your new feature request.
+- **Feature Requests/Bug Reports**: Open an issue in the repository
+- **For software customization, advanced features and consulting services**: 
+[Contact us](https://www.miguelsanda.com/work-with-me/) or email msanda@arrobalytics.com
+- **Contribute**: See our [contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/master/Contribute.md)
 
-# Want to contribute?
+## Who Should Contribute?
 
-Finance and Accounting is a complicated subject. Django Ledger stands out from other Django projects due to its focus
-on providing a developer-friendly accounting engine and a reliable, extensible API for financially driven applications.
-The project requires expertise in Python, Django programming, finance, and accounting. In essence, the project is
-seeking assistance from individuals with the specific skill set needed to contribute effectively.
+We're looking for contributors with:
+- Python and Django programming skills
+- Finance and accounting expertise
+- Interest in developing a robust accounting engine API
 
-The project is actively seeking contributors with financial and/or accounting experience. Prior accounting experience
-is a big plus for potential contributors. If you have the relevant experience and want to contribute, feel free to
-reach out to me or submit your pull request. 
-
-You can find the contribution guidelines at the specified link. 
-The project welcomes anyone interested in making a contribution.
-
-See __[contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)__.
+If you have relevant experience, especially in accounting, we welcome your pull requests or direct contact.
 
 # Installation
 

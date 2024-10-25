@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <Ptulshyan77@gmail.com>
-
 A purchase order is a commercial source document that is issued by a business purchasing department when placing an
 order with its vendors or suppliers. The document indicates the details on the items that are to be purchased, such as
 the types of goods, quantity, and price. In simple terms, it is the contract drafted by the buyer when purchasing goods

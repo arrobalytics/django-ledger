@@ -757,7 +757,6 @@ class IODatabaseMixIn:
                 by_unit=by_unit
             )
 
-            # idea: change digest() name to something else? maybe aggregate, calculate?...
             io_state = roles_mgr.digest()
 
         if any([

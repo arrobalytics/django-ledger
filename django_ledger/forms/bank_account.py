@@ -13,9 +13,10 @@ class BankAccountCreateForm(ModelForm):
         super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
-        account_qs = AccountModel.objects.for_entity_available(
+        account_qs = AccountModel.objects.for_entity(
             user_model=self.USER_MODEL,
-            entity_slug=self.ENTITY_SLUG).filter(
+            entity_model=self.ENTITY_SLUG
+        ).available().filter(
             role__exact=ASSET_CA_CASH)
         self.fields['cash_account'].queryset = account_qs
 
