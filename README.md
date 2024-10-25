@@ -31,8 +31,9 @@ Django Ledger is a powerful financial management system built on the Django Web 
 ## Getting Involved
 
 - **Feature Requests/Bug Reports**: Open an issue in the repository
-- **Need Help?**: [Contact us](https://www.miguelsanda.com/work-with-me/) or email msanda@arrobalytics.com
-- **Contribute**: See our [contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/develop/Contribute.md)
+- **For software customization, advanced features and consulting services**: 
+[Contact us](https://www.miguelsanda.com/work-with-me/) or email msanda@arrobalytics.com
+- **Contribute**: See our [contribution guidelines](https://github.com/arrobalytics/django-ledger/blob/master/Contribute.md)
 
 ## Who Should Contribute?
 
