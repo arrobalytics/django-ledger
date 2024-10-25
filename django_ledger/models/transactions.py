@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 The TransactionModel is the lowest accounting level where financial information is recorded. Every transaction with a
 financial implication must be part of a JournalEntryModel, which encapsulates a collection of TransactionModels.
 Transaction models cannot exist without being part of a validated JournalEntryModel. Orphan TransactionModels are not
@@ -24,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet, F
+from django.db.models import Q, QuerySet, Manager
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
@@ -209,7 +206,7 @@ class TransactionModelQuerySet(QuerySet):
         return self.filter(journal_entry__is_closing_entry=True)
 
 
-class TransactionModelManager(models.Manager):
+class TransactionModelManager(Manager):
     """
     A manager class for the TransactionModel.
     """

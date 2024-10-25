@@ -25,7 +25,7 @@ class Accountlist_Query(graphene.ObjectType):
     def resolve_all_accounts(self, info, slug_name, **kwargs):
         if info.context.user.is_authenticated:
             return AccountModel.objects.for_entity(
-            entity_slug=slug_name,
+            entity_model=slug_name,
             user_model=info.context.user,
         ).select_related('parent').order_by('code')
         else:

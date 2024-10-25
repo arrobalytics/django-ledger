@@ -3,7 +3,7 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -13,23 +13,22 @@ from django.views.generic import ListView, CreateView, UpdateView, RedirectView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
+from django_ledger.models import EntityModel
 from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class BankAccountModelModelViewQuerySetMixIn:
+class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = BankAccountModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).select_related('cash_account', 'entity_model')
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            self.queryset = entity_model.bankaccountmodel_set.select_related('cash_account', 'entity_model')
         return super().get_queryset()
 
 
-class BankAccountModelListView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, ListView):
+class BankAccountModelListView(BankAccountModelModelBaseView, ListView):
     template_name = 'django_ledger/bank_account/bank_account_list.html'
     PAGE_TITLE = _('Bank Accounts')
     context_object_name = 'bank_accounts'
@@ -40,7 +39,7 @@ class BankAccountModelListView(DjangoLedgerSecurityMixIn, BankAccountModelModelV
     }
 
 
-class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, CreateView):
+class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
     template_name = 'django_ledger/bank_account/bank_account_create.html'
     PAGE_TITLE = _('Create Bank Account')
     extra_context = {
@@ -71,7 +70,7 @@ class BankAccountModelCreateView(DjangoLedgerSecurityMixIn, BankAccountModelMode
         return super(BankAccountModelCreateView, self).form_valid(form)
 
 
-class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, BankAccountModelModelViewQuerySetMixIn, UpdateView):
+class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
     template_name = 'django_ledger/bank_account/bank_account_update.html'
     pk_url_kwarg = 'bank_account_pk'
     PAGE_TITLE = _('Update Bank Account')
@@ -97,8 +96,7 @@ class BankAccountModelUpdateView(DjangoLedgerSecurityMixIn, BankAccountModelMode
 
 
 # ACTION VIEWS...
-class BaseBankAccountModelActionView(DjangoLedgerSecurityMixIn,
-                                     BankAccountModelModelViewQuerySetMixIn,
+class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
                                      RedirectView,
                                      SingleObjectMixin):
     http_method_names = ['get']

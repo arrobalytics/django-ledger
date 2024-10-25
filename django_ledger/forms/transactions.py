@@ -51,10 +51,10 @@ class TransactionModelFormSet(BaseModelFormSet):
         self.LEDGER_PK = ledger_pk
         self.ENTITY_SLUG = entity_slug
 
-        account_qs = AccountModel.objects.for_entity_available(
+        account_qs = AccountModel.objects.for_entity(
             user_model=self.USER_MODEL,
-            entity_slug=self.ENTITY_SLUG
-        ).order_by('code')
+            entity_model=self.ENTITY_SLUG
+        ).available().order_by('code')
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs

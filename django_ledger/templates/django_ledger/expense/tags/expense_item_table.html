@@ -9,6 +9,7 @@
             <th>{% trans 'Item' %}</th>
             <th>{% trans 'UOM' %}</th>
             <th>{% trans 'Expense Account' %}</th>
+            <th>{% trans 'Is Active' %}</th>
             <th>{% trans 'Actions' %}</th>
         </tr>
         </thead>
@@ -19,6 +20,12 @@
                 <td>{{ expense_item.name }}</td>
                 <td>{{ expense_item.uom }}</td>
                 <td>{{ expense_item.expense_account }}</td>
+                <td class="has-text-centered">
+                    {% if expense_item.is_active %}
+                        <span class="icon is-small has-text-success">{% icon 'bi:check-circle-fill' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'healthicons:no' 24 %}</span>
+                    {% endif %} </td>
                 <td>
                     <div class="dropdown is-right is-hoverable" id="invoice-action-{{ invoice.uuid }}">
                         <div class="dropdown-trigger">

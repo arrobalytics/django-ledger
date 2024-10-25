@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 This module implements the InvoiceModel, which represents the Sales Invoice/ Sales Invoice/ Tax Invoice/ Proof of Sale
 which the :func:`EntityModel <django_ledger.models.entity.EntityModel>` issues to its customers for the supply of
 goods or services. The model manages all the Sales Invoices which are issued by the :func:`EntityModel

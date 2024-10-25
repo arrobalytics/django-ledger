@@ -3,7 +3,7 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
+    * Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from calendar import monthrange
@@ -389,7 +389,6 @@ class EntityUnitMixIn:
 
 
 class DigestContextMixIn:
-
     IO_DIGEST_UNBOUNDED = False
     IO_DIGEST_BOUNDED = False
 
@@ -522,7 +521,8 @@ class BaseDateNavigationUrlMixIn:
         'entity_slug',
         'unit_slug',
         'ledger_pk',
-        'account_pk'
+        'account_pk',
+        'coa_slug'
     )
 
     def get_context_data(self, **kwargs):
@@ -533,11 +533,12 @@ class BaseDateNavigationUrlMixIn:
     def get_base_date_nav_url(self, context, **kwargs):
         view_name = context['view'].request.resolver_match.url_name
         view_name_base = '-'.join(view_name.split('-')[:2])
-        context['date_navigation_url'] = reverse(f'django_ledger:{view_name_base}',
-                                                 kwargs={
-                                                     k: v for k, v in self.kwargs.items() if
-                                                     k in self.BASE_DATE_URL_KWARGS
-                                                 })
+        context['date_navigation_url'] = reverse(
+            f'django_ledger:{view_name_base}',
+            kwargs={
+                k: v for k, v in self.kwargs.items() if
+                k in self.BASE_DATE_URL_KWARGS
+            })
 
 
 class PDFReportMixIn:

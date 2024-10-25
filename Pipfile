@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = ">=2.2"
+django = ">=4.2"
 django-treebeard = ">=4.5.1"
 ofxtools = ">=0.9.5"
 markdown = ">=3.4.1"
@@ -26,6 +26,8 @@ behave = "*"
 twine = "*"
 jupyterlab = "*"
 pandas = "*"
+numpy = "*"
+
 
 [requires]
 python_version = "3.12"

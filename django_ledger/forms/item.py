@@ -46,10 +46,12 @@ class ProductCreateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.objects.with_roles(
-            roles=self.PRODUCT_OR_SERVICE_ROLES,
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL).active()
+        accounts_qs = AccountModel.objects.for_entity(
+            entity_model=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        ).with_roles(
+            roles=self.PRODUCT_OR_SERVICE_ROLES
+        ).active()
 
         # caches the QS for filtering...
         len(accounts_qs)
@@ -139,10 +141,12 @@ class ServiceCreateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.objects.with_roles(
+        accounts_qs = AccountModel.objects.for_entity(
+            entity_model=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        ).with_roles(
             roles=self.SERVICE_ROLES,
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL).active()
+        ).active()
 
         # caches the QS for filtering...
         len(accounts_qs)
@@ -224,10 +228,12 @@ class ExpenseItemCreateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.objects.with_roles(
-            roles=GROUP_EXPENSES,
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL).active()
+        accounts_qs = AccountModel.objects.for_entity(
+            entity_model=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        ).with_roles(
+            roles=GROUP_EXPENSES
+        ).active()
 
         self.fields['expense_account'].queryset = accounts_qs.filter(role__in=GROUP_EXPENSES)
 
@@ -295,6 +301,7 @@ class ExpenseItemUpdateForm(ExpenseItemCreateForm):
             'sku',
             'default_amount',
             'expense_account',
+            'is_active'
         ]
 
 
@@ -306,10 +313,12 @@ class InventoryItemCreateForm(ModelForm):
         self.USER_MODEL = user_model
         super().__init__(*args, **kwargs)
 
-        accounts_qs = AccountModel.objects.with_roles(
-            roles=[ASSET_CA_INVENTORY],
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL).active()
+        accounts_qs = AccountModel.objects.for_entity(
+            entity_model=self.ENTITY_SLUG,
+            user_model=self.USER_MODEL
+        ).with_roles(
+            roles=[ASSET_CA_INVENTORY]
+        ).active()
         self.fields['inventory_account'].queryset = accounts_qs
 
         if 'uom' in self.fields:

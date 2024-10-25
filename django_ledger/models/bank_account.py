@@ -2,10 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-    * Pranav P Tulshyan <ptulshyan77@gmail.com>
-
 A Bank Account refers to the financial institution which holds financial assets for the EntityModel.
 A bank account usually holds cash, which is a Current Asset. Transactions may be imported using the open financial
 format specification OFX into a staging area for final disposition into the EntityModel ledger.
