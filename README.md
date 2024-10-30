@@ -1,7 +1,5 @@
 ![django ledger logo](https://us-east-1.linodeobjects.com/django-ledger/logo/django-ledger-logo@2x.png)
 
-Here's a more concise and readable version of the Django Ledger README:
-
 # Django Ledger
 
 ## A Double Entry Accounting Engine for Django
