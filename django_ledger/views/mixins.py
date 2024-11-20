@@ -314,9 +314,16 @@ class SuccessUrlNextMixIn:
 
 class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
     ENTITY_SLUG_URL_KWARG = 'entity_slug'
+    ENTITY_MODEL_CONTEXT_NAME = 'entity_model'
     AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
     AUTHORIZE_SUPERUSER: bool = DJANGO_LEDGER_AUTHORIZED_SUPERUSER
     permission_required = []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context[self.ENTITY_MODEL_CONTEXT_NAME] = self.get_authorized_entity_instance()
+        return context
+
 
     def get_login_url(self):
         return reverse('django_ledger:login')

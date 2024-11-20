@@ -497,6 +497,9 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                    verbose_name=_('Tx Description'),
                                    help_text=_('A description to be included with this individual transaction'))
 
+    cleared = models.BooleanField(default=False, verbose_name=_('Cleared'))
+    reconciled = models.BooleanField(default=False, verbose_name=_('Reconciled'))
+
     objects = TransactionModelManager()
 
     class Meta:
@@ -509,7 +512,9 @@ class TransactionModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['account']),
             models.Index(fields=['journal_entry']),
             models.Index(fields=['created']),
-            models.Index(fields=['updated'])
+            models.Index(fields=['updated']),
+            models.Index(fields=['cleared']),
+            models.Index(fields=['reconciled']),
         ]
 
     def __str__(self):

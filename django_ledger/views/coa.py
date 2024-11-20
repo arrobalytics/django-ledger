@@ -1,20 +1,15 @@
 """
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
-
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.db.models import Count, Q
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import UpdateView, ListView, RedirectView
+from django.views.generic import UpdateView, ListView, RedirectView, CreateView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.coa import ChartOfAccountsModelUpdateForm
+from django_ledger.forms.coa import ChartOfAccountsModelUpdateForm, ChartOfAccountsModelCreateForm
 from django_ledger.models.coa import ChartOfAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
@@ -25,65 +20,76 @@ class ChartOfAccountModelModelBaseViewMixIn(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             entity_model = self.get_authorized_entity_instance()
-            self.queryset = entity_model.chartofaccountmodel_set.all().select_related(
-                'entity').order_by('-updated')
+            self.queryset = entity_model.chartofaccountmodel_set.all().order_by('-updated')
         return super().get_queryset()
 
 
 class ChartOfAccountModelListView(ChartOfAccountModelModelBaseViewMixIn, ListView):
     template_name = 'django_ledger/chart_of_accounts/coa_list.html'
-    extra_context = {
-        'page_title': _('Chart of Account List'),
-        'header_title': _('Chart of Account List'),
-    }
     context_object_name = 'coa_list'
-
-    def get_context_data(self, *, object_list=None, **kwargs):
-        context = super().get_context_data(object_list=None, **kwargs)
-        context['header_subtitle'] = self.AUTHORIZED_ENTITY_MODEL.name
-        context['header_subtitle_icon'] = 'gravity-ui:hierarchy'
-        return context
+    inactive = False
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.annotate(
-            accountmodel_total__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2)
-            ),
-            accountmodel_locked__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__locked=True)
-            ),
-            accountmodel_active__count=Count(
-                'accountmodel',
-                # excludes coa root accounts...
-                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__active=True)
-            ),
+        if self.inactive:
+            return qs.filter(active=False)
+        return qs.active()
 
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['inactive'] = self.inactive
+        context['header_subtitle'] = self.AUTHORIZED_ENTITY_MODEL.name
+        context['header_subtitle_icon'] = 'gravity-ui:hierarchy'
+        context['page_title'] = 'Inactive Chart of Account List' if self.inactive else 'Chart of Accounts List'
+        context['header_title'] = 'Inactive Chart of Account List' if self.inactive else 'Chart of Accounts List'
+        return context
+
+
+class ChartOfAccountModelCreateView(ChartOfAccountModelModelBaseViewMixIn, CreateView):
+    template_name = 'django_ledger/chart_of_accounts/coa_create.html'
+    extra_context = {
+        'header_title': _('Create Chart of Accounts'),
+        'page_title': _('Create Chart of Account'),
+    }
+
+    def get_initial(self):
+        return {
+            'entity': self.get_authorized_entity_instance(),
+        }
+
+    def get_form(self, form_class=None):
+        return ChartOfAccountsModelCreateForm(
+            entity_model=self.get_authorized_entity_instance(),
+            **self.get_form_kwargs()
         )
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=None, **kwargs)
+        context['header_subtitle'] = f'New Chart of Accounts: {self.AUTHORIZED_ENTITY_MODEL.name}'
+        context['header_subtitle_icon'] = 'gravity-ui:hierarchy'
+        return context
+
+    def get_success_url(self):
+        chart_of_accounts_model: ChartOfAccountModel = self.object
+        return chart_of_accounts_model.get_coa_list_url()
 
 
 class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, UpdateView):
-    context_object_name = 'coa'
+    context_object_name = 'coa_model'
     slug_url_kwarg = 'coa_slug'
     template_name = 'django_ledger/chart_of_accounts/coa_update.html'
     form_class = ChartOfAccountsModelUpdateForm
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = _('CoA: ') + self.object.name
-        context['header_title'] = _('CoA: ') + self.object.name
+        chart_of_accounts_model: ChartOfAccountModel = self.object
+        context['page_title'] = f'Update Chart of Account {chart_of_accounts_model.name}'
+        context['header_title'] = f'Update Chart of Account {chart_of_accounts_model.name}'
         return context
 
     def get_success_url(self):
-        entity_slug = self.kwargs.get('entity_slug')
-        return reverse('django_ledger:entity-dashboard',
-                       kwargs={
-                           'entity_slug': entity_slug
-                       })
+        chart_of_accounts_model: ChartOfAccountModel = self.object
+        return chart_of_accounts_model.get_coa_list_url()
 
 
 # todo: centralize this functionality into a separate class for ALL Action views...
@@ -96,10 +102,8 @@ class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
     commit = True
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse('django_ledger:coa-list',
-                       kwargs={
-                           'entity_slug': kwargs['entity_slug']
-                       })
+        chart_of_accounts_model: ChartOfAccountModel = self.get_object()
+        return chart_of_accounts_model.get_coa_list_url()
 
     def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user

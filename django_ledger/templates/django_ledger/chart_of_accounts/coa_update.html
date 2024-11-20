@@ -6,14 +6,14 @@
     <div class="columns is-centered">
         <div class="column is-8-tablet is-6-desktop">
             <div class="box">
-                <form action="{{ coa.get_update_url }}" method="post">
+                <form action="{{ coa_model.get_update_url }}" id="{{ form.form_id }}" method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
                     <button class="button is-primary is-outlined is-fullwidth djetler_my_1"
                             type="submit">Update
                     </button>
                     <a class="button is-small is-dark is-fullwidth"
-                       href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}"
+                       href="{{ coa_model.get_coa_list_url }}"
                        type="submit">Back</a>
                 </form>
             </div>

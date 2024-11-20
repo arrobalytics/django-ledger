@@ -38,7 +38,7 @@ class AccountModelCreateForm(ModelForm):
         self.fields['role'].choices = ACCOUNT_CHOICES_NO_ROOT
         self.fields['code'].required = False
         self.fields['coa_model'].disabled = True
-        self.fields['coa_model'].required = False
+        self.fields['coa_model'].required = True
 
         self.form_id: str = self.get_form_id()
 

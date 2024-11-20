@@ -1,15 +1,34 @@
 {% extends 'django_ledger/layouts/content_layout_1.html' %}
 {% load i18n %}
 {% load static %}
+{% load icon from django_ledger %}
 
 {% block view_content %}
-    <div class="box">
-        <div class="columns is-centered is-multiline">
-            {% for coa_model in coa_list %}
-                <div class="column is-6">
-                    {% include 'django_ledger/chart_of_accounts/includes/coa_card.html' with coa_model=coa_model %}
+    <div class="card">
+        <div class="card-content">
+            <div class="columns">
+                <div class="column is-12">
+                    <h1 class="is-size-1">Chart of Accounts
+                        <a href="{{ entity_model.get_coa_create_url }}">
+                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                    </h1>
+                    {% if not inactive %}
+                        <a class="button is-warning" href="{{ entity_model.get_coa_list_inactive_url }}">
+                            {% trans 'Show Inactive' %}</a>
+                    {% else %}
+                        <a class="button is-warning" href="{{ entity_model.get_coa_list_url }}">
+                            {% trans 'Show Active' %}</a>
+                    {% endif %}
+
                 </div>
-            {% endfor %}
+            </div>
+            <div class="columns is-centered is-multiline">
+                {% for coa_model in coa_list %}
+                    <div class="column is-6">
+                        {% include 'django_ledger/chart_of_accounts/includes/coa_card.html' with coa_model=coa_model %}
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 {% endblock %}
