@@ -40,11 +40,12 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
+from django_ledger import settings
 from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
 from django_ledger.io.io_core import IOMixIn, get_localtime, get_localdate
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
-from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
 from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet,
@@ -55,6 +56,7 @@ from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
+from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -3116,7 +3118,7 @@ class EntityModelAbstract(MP_Node,
         super(EntityModelAbstract, self).clean()
 
 
-class EntityModel(EntityModelAbstract):
+class EntityModel(load_model_class(settings.DJANGO_LEDGER_ENTITY_MODEL)):
     """
     Entity Model Base Class From Abstract
     """

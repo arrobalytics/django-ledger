@@ -41,6 +41,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io.io_core import get_localtime
 from django_ledger.io.roles import (
     ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
@@ -64,6 +65,7 @@ from django_ledger.settings import (
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
     DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
 )
+from django_ledger.utils import load_model_class
 
 
 class JournalEntryValidationError(ValidationError):
@@ -1345,7 +1347,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                        })
 
 
-class JournalEntryModel(JournalEntryModelAbstract):
+class JournalEntryModel(load_model_class(settings.DJANGO_LEDGER_JOURNAL_ENTRY_MODEL)):
     """
     Journal Entry Model Base Class From Abstract
     """

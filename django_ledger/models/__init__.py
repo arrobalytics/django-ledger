@@ -1,6 +1,6 @@
 from django_ledger.models.mixins import *
 from django_ledger.models.bank_account import *
-from django_ledger.models.coa import *
+from django_ledger.models.chart_of_accounts import *
 from django_ledger.models.bill import *
 from django_ledger.models.invoice import *
 from django_ledger.models.items import *

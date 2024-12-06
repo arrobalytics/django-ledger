@@ -14,11 +14,13 @@ from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 
 from django_ledger.models import JournalEntryModel
+from django_ledger.utils import load_model_class
 
 
 class ImportJobModelValidationError(ValidationError):
@@ -497,7 +499,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             self.is_role_mapping_valid(raise_exception=True)
 
 
-class ImportJobModel(ImportJobModelAbstract):
+class ImportJobModel(load_model_class(settings.DJANGO_LEDGER_IMPORT_JOB_MODEL)):
     """
     Transaction Import Job Model Base Class.
     """
@@ -514,7 +516,7 @@ def importjobmodel_presave(instance: ImportJobModel, **kwargs):
 pre_save.connect(importjobmodel_presave, sender=ImportJobModel)
 
 
-class StagedTransactionModel(StagedTransactionModelAbstract):
+class StagedTransactionModel(load_model_class(settings.DJANGO_LEDGER_STAGED_TRANSACTION_MODEL)):
     """
     Staged Transaction Model Base Class.
     """

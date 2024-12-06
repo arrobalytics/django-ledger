@@ -18,11 +18,13 @@ from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import lazy_loader
+from django_ledger.utils import load_model_class
 
 
 class ClosingEntryValidationError(ValidationError):
@@ -465,7 +467,7 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
         self.adjust_tx_type_for_negative_balance()
 
 
-class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
+class ClosingEntryTransactionModel(load_model_class(settings.DJANGO_LEDGER_CLOSING_ENTRY_MODEL)):
     """
     Base ClosingEntryModel Class
     """

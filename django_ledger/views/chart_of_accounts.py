@@ -9,8 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.generic import UpdateView, ListView, RedirectView, CreateView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.coa import ChartOfAccountsModelUpdateForm, ChartOfAccountsModelCreateForm
-from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.forms.chart_of_accounts import ChartOfAccountsModelUpdateForm, ChartOfAccountsModelCreateForm
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

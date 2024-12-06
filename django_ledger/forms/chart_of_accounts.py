@@ -1,9 +1,9 @@
 from random import randint
 
-from django.forms import ModelForm, TextInput, Textarea, Select, HiddenInput
+from django.forms import ModelForm, TextInput, Textarea, HiddenInput
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 

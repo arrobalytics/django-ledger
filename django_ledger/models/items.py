@@ -29,11 +29,13 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, 
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
                                     DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
                                     DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
+from django_ledger.utils import load_model_class
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -1404,20 +1406,19 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
 
 
 # FINAL MODEL CLASSES....
-
-class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
+class UnitOfMeasureModel(load_model_class(settings.DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL)):
     """
     Base UnitOfMeasureModel from Abstract.
     """
 
 
-class ItemTransactionModel(ItemTransactionModelAbstract):
+class ItemTransactionModel(load_model_class(settings.DJANGO_LEDGER_ITEM_TRANSACTION_MODEL)):
     """
     Base ItemTransactionModel from Abstract.
     """
 
 
-class ItemModel(ItemModelAbstract):
+class ItemModel(load_model_class(settings.DJANGO_LEDGER_ITEM_MODEL)):
     """
     Base ItemModel from Abstract.
     """

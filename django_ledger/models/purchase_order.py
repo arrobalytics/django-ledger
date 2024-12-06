@@ -28,13 +28,12 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
-from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 from django_ledger.models.signals import (
     po_status_draft,
     po_status_void,
@@ -43,6 +42,9 @@ from django_ledger.models.signals import (
     po_status_canceled,
     po_status_in_review
 )
+from django_ledger.models.utils import lazy_loader
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
+from django_ledger.utils import load_model_class
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -1228,7 +1230,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             self.generate_po_number(commit=True)
 
 
-class PurchaseOrderModel(PurchaseOrderModelAbstract):
+class PurchaseOrderModel(load_model_class(settings.DJANGO_LEDGER_PURCHASE_ORDER_MODEL)):
     """
     Purchase Order Base Model
     """

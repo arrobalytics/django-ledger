@@ -29,6 +29,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.models.entity import EntityModel
@@ -45,6 +46,7 @@ from django_ledger.models.signals import (
 )
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
+from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -1899,7 +1901,7 @@ class BillModelAbstract(
             raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}.')
 
 
-class BillModel(BillModelAbstract):
+class BillModel(load_model_class(settings.DJANGO_LEDGER_BILL_MODEL)):
     """
     Base BillModel from Abstract.
     """

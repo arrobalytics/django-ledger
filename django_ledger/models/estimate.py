@@ -26,6 +26,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet
 from django_ledger.models.customer import CustomerModel
@@ -42,6 +43,7 @@ from django_ledger.models.signals import (
     estimate_status_in_review
 )
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
+from django_ledger.utils import load_model_class
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -1231,7 +1233,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 'updated'
             ])
 
-    def update_state(self, itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
+    def update_state(self,
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
@@ -1607,7 +1610,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         super(EstimateModelAbstract, self).save(**kwargs)
 
 
-class EstimateModel(EstimateModelAbstract):
+class EstimateModel(load_model_class(settings.DJANGO_LEDGER_ESTIMATE_MODEL)):
     """
     Base EstimateModel Class.
     """

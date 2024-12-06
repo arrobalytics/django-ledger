@@ -25,6 +25,7 @@ from django.db.models import Q, QuerySet, Manager
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io.io_core import validate_io_timestamp
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.bill import BillModel
@@ -34,6 +35,7 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
+from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -531,7 +533,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
             )
 
 
-class TransactionModel(TransactionModelAbstract):
+class TransactionModel(load_model_class(settings.DJANGO_LEDGER_TRANSACTION_MODEL)):
     """
     Base Transaction Model From Abstract.
     """

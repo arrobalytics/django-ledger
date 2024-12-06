@@ -55,12 +55,14 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
                               ROOT_LIABILITIES, ROOT_CAPITAL,
                               ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -831,14 +833,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.generate_slug()
 
 
-class ChartOfAccountModel(ChartOfAccountModelAbstract):
+class ChartOfAccountModel(load_model_class(settings.DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL)):
     """
     Base ChartOfAccounts Model
     """
 
 
 @receiver(pre_save, sender=ChartOfAccountModel)
-def chartofaccountsmodel_presave(instance: ChartOfAccountModel, **kwargs):
+def chartofaccountsmodel_presave(instance: ChartOfAccountModelAbstract, **kwargs):
     instance.generate_slug()
     if instance.is_default() and not instance.active:
         raise ChartOfAccountsModelValidationError(
@@ -847,6 +849,6 @@ def chartofaccountsmodel_presave(instance: ChartOfAccountModel, **kwargs):
 
 
 @receiver(post_save, sender=ChartOfAccountModel)
-def chartofaccountsmodel_postsave(instance: ChartOfAccountModel, **kwargs):
+def chartofaccountsmodel_postsave(instance: ChartOfAccountModelAbstract, **kwargs):
     if instance._state.adding:
         instance.configure()

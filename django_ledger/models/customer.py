@@ -13,9 +13,11 @@ from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F, QuerySet
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger import settings
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
+from django_ledger.utils import load_model_class
 
 
 class CustomerModelQueryset(QuerySet):
@@ -325,7 +327,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         super(CustomerModelAbstract, self).save(**kwargs)
 
 
-class CustomerModel(CustomerModelAbstract):
+class CustomerModel(load_model_class(settings.DJANGO_LEDGER_CUSTOMER_MODEL)):
     """
     Base Customer Model Implementation
     """

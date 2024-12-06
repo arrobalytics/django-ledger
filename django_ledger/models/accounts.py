@@ -60,6 +60,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
+from django_ledger import settings
 from django_ledger.io.roles import (
     ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
     GROUP_ASSETS, GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
@@ -70,6 +71,7 @@ from django_ledger.io.roles import (
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_ACCOUNT_CODE_GENERATE, DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX
+from django_ledger.utils import load_model_class
 
 DEBIT = 'debit'
 """A constant, identifying a DEBIT Account or DEBIT transaction in the respective database fields"""
@@ -1053,7 +1055,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
                                                   f'must start with {pf} for CoA consistency')
 
 
-class AccountModel(AccountModelAbstract):
+class AccountModel(load_model_class(settings.DJANGO_LEDGER_ACCOUNT_MODEL)):
     """
     Base Account Model from Account Model Abstract Class
     """

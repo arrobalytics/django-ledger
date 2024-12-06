@@ -18,7 +18,6 @@ from django.db.models import QuerySet
 from django.utils.dateparse import parse_date
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel
 
 UserModel = get_user_model()
 
@@ -52,7 +51,7 @@ def get_default_unit_session_key():
     return 'djl_default_unit_model'
 
 
-def set_default_entity(request, entity_model: EntityModel):
+def set_default_entity(request, entity_model):
     session_key = get_default_entity_session_key()
     if not request.session.get(session_key):
         request.session[session_key] = {
