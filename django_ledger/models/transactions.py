@@ -21,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, QuerySet, Manager
+from django.db.models import Q, QuerySet, Manager, F
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
@@ -213,7 +213,9 @@ class TransactionModelManager(Manager):
 
     def get_queryset(self) -> TransactionModelQuerySet:
         qs = TransactionModelQuerySet(self.model, using=self._db)
-        return qs.select_related(
+        return qs.annotate(
+            _coa_id=F('account__coa_model_id'),
+        ).select_related(
             'journal_entry',
             'account',
             'account__coa_model',
@@ -524,6 +526,15 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                                                   x4=self.tx_type,
                                                   x5=self.account.balance_type)
 
+    @property
+    def coa_id(self):
+        try:
+            return getattr(self, '_coa_id')
+        except AttributeError:
+            if self.account is None:
+                return None
+            return self.account.coa_model_id
+
     def clean(self):
         if self.account_id and self.account.is_root_account():
             raise TransactionModelValidationError(
@@ -535,6 +546,7 @@ class TransactionModel(TransactionModelAbstract):
     """
     Base Transaction Model From Abstract.
     """
+
     class Meta(TransactionModelAbstract.Meta):
         abstract = False
         swappable = 'DJANGO_LEDGER_TRANSACTION_MODEL'
