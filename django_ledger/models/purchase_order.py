@@ -21,7 +21,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinLengthValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, F
+from django.db.models import Q, Sum, Count, F, Manager, QuerySet
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
@@ -33,8 +33,6 @@ from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
-from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 from django_ledger.models.signals import (
     po_status_draft,
     po_status_void,
@@ -43,6 +41,8 @@ from django_ledger.models.signals import (
     po_status_canceled,
     po_status_in_review
 )
+from django_ledger.models.utils import lazy_loader
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX
 
 PO_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -53,7 +53,7 @@ class PurchaseOrderModelValidationError(ValidationError):
     pass
 
 
-class PurchaseOrderModelQuerySet(models.QuerySet):
+class PurchaseOrderModelQuerySet(QuerySet):
     """
     A custom defined PurchaseOrderModel QuerySet.
     """
@@ -100,7 +100,7 @@ class PurchaseOrderModelQuerySet(models.QuerySet):
         return self.filter(po_status__exact=PurchaseOrderModel.PO_STATUS_DRAFT)
 
 
-class PurchaseOrderModelManager(models.Manager):
+class PurchaseOrderModelManager(Manager):
     """
     A custom defined PurchaseOrderModel Manager.
     """
@@ -1232,6 +1232,10 @@ class PurchaseOrderModel(PurchaseOrderModelAbstract):
     """
     Purchase Order Base Model
     """
+
+    class Meta(PurchaseOrderModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL'
+        abstract = False
 
 
 def purchaseordermodel_presave(instance: PurchaseOrderModel, **kwargs):

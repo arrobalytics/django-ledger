@@ -1,10 +1,8 @@
 """
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
-
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
 """
+
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
@@ -85,6 +83,16 @@ class AccountModelListView(BaseAccountModelBaseView, ListView):
         return qs
 
 
+
+    def get(self, request, *args, **kwargs):
+        response = super().get(request, *args, **kwargs)
+        chart_of_accounts_model: ChartOfAccountModel = self.get_coa_model()
+        if not chart_of_accounts_model.is_active():
+            messages.error(request, _('WARNING: The chart of accounts list is inactive.'), extra_tags='is-danger')
+        return response
+
+
+
 class AccountModelCreateView(BaseAccountModelBaseView, CreateView):
     template_name = 'django_ledger/account/account_create.html'
     PAGE_TITLE = _('Create Account')
@@ -100,6 +108,11 @@ class AccountModelCreateView(BaseAccountModelBaseView, CreateView):
             coa_model=self.get_coa_model(),
             **self.get_form_kwargs()
         )
+
+    def get_initial(self):
+        return {
+            'coa_model': self.get_coa_model(),
+        }
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

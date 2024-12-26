@@ -33,8 +33,8 @@ Default Chart of Accounts Table
   1910  asset_adjustment            debit           Securities Unrealized Gains/Losses                             root_assets
   1920  asset_adjustment            debit           PPE Unrealized Gains/Losses                                    root_assets
   1010  asset_ca_cash               debit           Cash                                                           root_assets
-  1200  asset_ca_inv                debit           Inventory                                                      root_assets
   1050  asset_ca_mkt_sec            debit           Short Term Investments                                         root_assets
+  1200  asset_ca_inv                debit           Inventory                                                      root_assets
   1300  asset_ca_prepaid            debit           Prepaid Expenses                                               root_assets
   1100  asset_ca_recv               debit           Accounts Receivable                                            root_assets
   1110  asset_ca_uncoll             credit          Uncollectibles                                                 root_assets

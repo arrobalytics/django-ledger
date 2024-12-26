@@ -33,7 +33,7 @@ from django.core.cache import caches
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import Q, F, Model
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
@@ -44,7 +44,7 @@ from django_ledger.io import roles as roles_module, validate_roles, IODigestCont
 from django_ledger.io.io_core import IOMixIn, get_localtime, get_localdate
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
-from django_ledger.models.coa import ChartOfAccountModel, ChartOfAccountModelQuerySet
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel, ChartOfAccountModelQuerySet
 from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
 from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet,
@@ -3038,6 +3038,22 @@ class EntityModelAbstract(MP_Node,
             }
         )
 
+    def get_coa_list_inactive_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-list-inactive',
+            kwargs={
+                'entity_slug': self.slug
+            }
+        )
+
+    def get_coa_create_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-create',
+            kwargs={
+                'entity_slug': self.slug
+            }
+        )
+
     def get_accounts_url(self) -> str:
         """
         The EntityModel Code of Accounts llist import URL.
@@ -3104,10 +3120,14 @@ class EntityModel(EntityModelAbstract):
     """
     Entity Model Base Class From Abstract
     """
+    class Meta(EntityModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_MODEL'
+        abstract = False
+
 
 
 # ## ENTITY STATE....
-class EntityStateModelAbstract(models.Model):
+class EntityStateModelAbstract(Model):
     KEY_JOURNAL_ENTRY = 'je'
     KEY_PURCHASE_ORDER = 'po'
     KEY_BILL = 'bill'
@@ -3167,6 +3187,10 @@ class EntityStateModel(EntityStateModelAbstract):
     """
     Entity State Model Base Class from Abstract.
     """
+
+    class Meta(EntityStateModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_STATE_MODEL'
+        abstract = False
 
 
 # ## ENTITY MANAGEMENT.....

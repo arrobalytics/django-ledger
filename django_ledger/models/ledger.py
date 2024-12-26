@@ -20,7 +20,7 @@ which is the class responsible for making accounting queries to the Database in 
 The digest() method executes all necessary aggregations and optimizations in order to push as much work to the Database
 layer as possible in order to minimize the amount of data being pulled for analysis into the Python memory.
 
-The Django Ledger core model follows the following structure: \n
+The Django Ledger core model follows the following structure:
 EntityModel -< LedgerModel -< JournalEntryModel -< TransactionModel
 """
 from datetime import date
@@ -34,6 +34,10 @@ from django.db import models
 from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+
+from django_ledger.io.io_core import IOMixIn
+from django_ledger.models import lazy_loader
+from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
     ledger_posted,
     ledger_unposted,
@@ -42,10 +46,6 @@ from django_ledger.models.signals import (
     ledger_hidden,
     ledger_unhidden
 )
-
-from django_ledger.io.io_core import IOMixIn
-from django_ledger.models import lazy_loader
-from django_ledger.models.mixins import CreateUpdateMixIn
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
@@ -725,6 +725,9 @@ class LedgerModel(LedgerModelAbstract):
     """
     Base LedgerModel from Abstract.
     """
+    class Meta(LedgerModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_LEDGER_MODEL'
+        abstract = False
 
 
 def ledgermodel_presave(instance: LedgerModel, **kwargs):

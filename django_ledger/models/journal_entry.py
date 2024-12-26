@@ -487,15 +487,18 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self._verified
 
-    def is_balance_valid(self, txs_qs: Optional[TransactionModelQuerySet] = None) -> bool:
+    # Transaction QuerySet
+    def is_balance_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
         Checks if CREDITs and DEBITs are equal.
 
         Parameters
         ----------
         txs_qs: TransactionModelQuerySet
-            Optional pre-fetched JE instance TransactionModelQuerySet. Will be validated if provided.
 
+        raise_exception: bool
+            Raises JournalEntryValidationError if TransactionModelQuerySet is not valid.
+            
         Returns
         -------
         bool
@@ -503,32 +506,38 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if len(txs_qs) > 0:
             balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
-            return balances[CREDIT] == balances[DEBIT]
+            is_valid = balances[CREDIT] == balances[DEBIT]
+            if not is_valid:
+                if raise_exception:
+                    raise JournalEntryValidationError(
+                        message='Balance of {0} CREDITs are {1} does not match DEBITs {2}.'.format(
+                            self,
+                            balances[CREDIT],
+                            balances[DEBIT]
+                        )
+                    )
+            return is_valid
         return True
 
-    def is_cash_involved(self, txs_qs=None):
-        return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
+    def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet) -> bool:
+        """
+        Validates that the Chart of Accounts (COA) is valid for the transactions.
+        Journal Entry transactions can only be associated with one Chart of Accounts (COA).
+        
+        
+        Parameters
+        ----------
+        txs_qs: TransactionModelQuerySet
 
-    def is_operating(self):
-        return self.activity in [
-            self.OPERATING_ACTIVITY
-        ]
+        Returns
+        -------
+        True if Transaction CoAs are valid, otherwise False.
+        """
 
-    def is_financing(self):
-        return self.activity in [
-            self.FINANCING_EQUITY,
-            self.FINANCING_LTD,
-            self.FINANCING_DIVIDENDS,
-            self.FINANCING_STD,
-            self.FINANCING_OTHER
-        ]
-
-    def is_investing(self):
-        return self.activity in [
-            self.INVESTING_SECURITIES,
-            self.INVESTING_PPE,
-            self.INVESTING_OTHER
-        ]
+        if len(txs_qs) > 0:
+            coa_count = len(set(tx.coa_id for tx in txs_qs))
+            return coa_count == 1
+        return True
 
     def is_txs_qs_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
@@ -559,6 +568,30 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             raise JournalEntryValidationError('Invalid TransactionModelQuerySet provided. All Transactions must be ',
                                               f'associated with LedgerModel {self.uuid}')
         return is_valid
+
+    def is_cash_involved(self, txs_qs=None):
+        return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
+
+    def is_operating(self):
+        return self.activity in [
+            self.OPERATING_ACTIVITY
+        ]
+
+    def is_financing(self):
+        return self.activity in [
+            self.FINANCING_EQUITY,
+            self.FINANCING_LTD,
+            self.FINANCING_DIVIDENDS,
+            self.FINANCING_STD,
+            self.FINANCING_OTHER
+        ]
+
+    def is_investing(self):
+        return self.activity in [
+            self.INVESTING_SECURITIES,
+            self.INVESTING_PPE,
+            self.INVESTING_OTHER
+        ]
 
     def get_entity_unit_name(self, no_unit_name: str = ''):
         if self.entity_unit_id:
@@ -1155,6 +1188,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             except JournalEntryValidationError as e:
                 raise e
 
+            # Transaction CoA if valid
+
+            try:
+                is_coa_valid = self.is_txs_qs_coa_valid(txs_qs=txs_qs)
+                if not is_coa_valid:
+                    raise JournalEntryValidationError('Transaction COA is not valid!')
+            except JournalEntryValidationError as e:
+                raise e
+
             # if not len(txs_qs):
             #     if raise_exception:
             #         raise JournalEntryValidationError('Journal entry has no transactions.')
@@ -1163,7 +1205,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             #     if raise_exception:
             #         raise JournalEntryValidationError('At least two transactions required.')
 
-            if all([is_balance_valid, is_txs_qs_valid]):
+            if all([is_balance_valid, is_txs_qs_valid, is_coa_valid]):
                 # activity flag...
                 self.generate_activity(txs_qs=txs_qs, raise_exception=raise_exception)
                 self._verified = True
@@ -1349,6 +1391,10 @@ class JournalEntryModel(JournalEntryModelAbstract):
     """
     Journal Entry Model Base Class From Abstract
     """
+
+    class Meta(JournalEntryModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL'
+        abstract = False
 
 
 def journalentrymodel_presave(instance: JournalEntryModel, **kwargs):

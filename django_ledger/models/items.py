@@ -25,7 +25,7 @@ from uuid import uuid4, UUID
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When, QuerySet
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When, QuerySet, Manager
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
@@ -42,12 +42,12 @@ class ItemModelValidationError(ValidationError):
     pass
 
 
-class UnitOfMeasureModelQuerySet(models.QuerySet):
+class UnitOfMeasureModelQuerySet(QuerySet):
     pass
 
 
 # UNIT OF MEASURES MODEL....
-class UnitOfMeasureModelManager(models.Manager):
+class UnitOfMeasureModelManager(Manager):
     """
     A custom defined QuerySet Manager for the UnitOfMeasureModel.
     """
@@ -149,7 +149,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
 
 
 # ITEM MODEL....
-class ItemModelQuerySet(models.QuerySet):
+class ItemModelQuerySet(QuerySet):
     """
     A custom-defined ItemModelQuerySet that implements custom QuerySet methods related to the ItemModel.
     """
@@ -287,7 +287,7 @@ class ItemModelQuerySet(models.QuerySet):
         return self.inventory_all()
 
 
-class ItemModelManager(models.Manager):
+class ItemModelManager(Manager):
     """
     A custom defined ItemModelManager that implement custom QuerySet methods related to the ItemModel
     """
@@ -849,7 +849,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
 
 # ITEM TRANSACTION MODELS...
-class ItemTransactionModelQuerySet(models.QuerySet):
+class ItemTransactionModelQuerySet(QuerySet):
 
     def is_received(self):
         return self.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
@@ -875,7 +875,7 @@ class ItemTransactionModelQuerySet(models.QuerySet):
         }
 
 
-class ItemTransactionModelManager(models.Manager):
+class ItemTransactionModelManager(Manager):
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -1404,11 +1404,14 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
 
 
 # FINAL MODEL CLASSES....
-
 class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
     """
     Base UnitOfMeasureModel from Abstract.
     """
+
+    class Meta(UnitOfMeasureModelAbstract.Meta):
+        abstract = False
+        swappable = 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL'
 
 
 class ItemTransactionModel(ItemTransactionModelAbstract):
@@ -1416,8 +1419,16 @@ class ItemTransactionModel(ItemTransactionModelAbstract):
     Base ItemTransactionModel from Abstract.
     """
 
+    class Meta(ItemTransactionModelAbstract.Meta):
+        abstract = False
+        swappable = 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL'
+
 
 class ItemModel(ItemModelAbstract):
     """
     Base ItemModel from Abstract.
     """
+
+    class Meta(ItemModelAbstract.Meta):
+        abstract = False
+        swappable = 'DJANGO_LEDGER_ITEM_MODEL'

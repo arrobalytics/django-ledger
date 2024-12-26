@@ -3,7 +3,7 @@ from django.db.models import Count
 from django.forms import ModelForm, BooleanField, BaseInlineFormSet
 
 from django_ledger.models.accounts import AccountModel
-from django_ledger.models.coa import ChartOfAccountModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.models.entity import EntityModel
 
 
