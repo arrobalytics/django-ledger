@@ -9,6 +9,7 @@ from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -18,13 +19,12 @@ from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import lazy_loader
-from django_ledger.utils import load_model_class
+from django_ledger.settings import DJANGO_LEDGER_LEDGER_MODEL
 
 
 class ClosingEntryValidationError(ValidationError):
@@ -340,7 +340,9 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
 
 class ClosingEntryModel(ClosingEntryModelAbstract):
-    pass
+    class Meta(ClosingEntryModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL'
+        abstract = False
 
 
 # todo: Remove this model!
@@ -350,12 +352,6 @@ class ClosingEntryTransactionModelQuerySet(models.QuerySet):
 
 
 class ClosingEntryTransactionModelManager(models.Manager):
-
-    # def get_queryset(self):
-    #     return super().get_queryset().select_related(
-    #         'closing_entry_model',
-    #         'closing_entry_model__entity_model'
-    #     )
 
     def for_entity(self, entity_slug):
         qs = self.get_queryset()
@@ -467,7 +463,7 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
         self.adjust_tx_type_for_negative_balance()
 
 
-class ClosingEntryTransactionModel(load_model_class(settings.DJANGO_LEDGER_CLOSING_ENTRY_MODEL)):
+class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
     """
     Base ClosingEntryModel Class
     """

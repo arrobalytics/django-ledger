@@ -55,14 +55,12 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
 from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
                               ROOT_LIABILITIES, ROOT_CAPITAL,
                               ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
-from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -833,10 +831,13 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.generate_slug()
 
 
-class ChartOfAccountModel(load_model_class(settings.DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL)):
+class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
+    class Meta(ChartOfAccountModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL'
+        abstract = False
 
 
 @receiver(pre_save, sender=ChartOfAccountModel)

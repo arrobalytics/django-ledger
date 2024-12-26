@@ -31,11 +31,9 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger import settings
 from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
-from django_ledger.utils import load_model_class
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -221,7 +219,11 @@ class EntityUnitModelAbstract(MP_Node,
         )
 
 
-class EntityUnitModel(load_model_class(settings.DJANGO_LEDGER_ENTITY_UNIT_MODEL)):
+class EntityUnitModel(EntityUnitModelAbstract):
     """
     Base Model Class for EntityUnitModel
     """
+
+    class Meta(EntityUnitModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_UNIT_MODEL'
+        abstract = False

@@ -10,14 +10,12 @@ from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet
+from django.db.models import Q, F, QuerySet, Manager
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
-from django_ledger.utils import load_model_class
 
 
 class CustomerModelQueryset(QuerySet):
@@ -79,7 +77,7 @@ class CustomerModelQueryset(QuerySet):
         )
 
 
-class CustomerModelManager(models.Manager):
+class CustomerModelManager(Manager):
     """
     A custom defined CustomerModelManager that will act as an interface to handling the DB queries to the
     CustomerModel.
@@ -327,7 +325,11 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         super(CustomerModelAbstract, self).save(**kwargs)
 
 
-class CustomerModel(load_model_class(settings.DJANGO_LEDGER_CUSTOMER_MODEL)):
+class CustomerModel(CustomerModelAbstract):
     """
     Base Customer Model Implementation
     """
+
+    class Meta:
+        swappable = 'DJANGO_LEDGER_CUSTOMER_MODEL'
+        abstract = False

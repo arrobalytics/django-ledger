@@ -18,11 +18,9 @@ from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, BankAccountInfoMixIn, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX
-from django_ledger.utils import load_model_class
 
 
 class VendorModelValidationError(ValidationError):
@@ -321,7 +319,11 @@ class VendorModelAbstract(ContactInfoMixIn,
         super(VendorModelAbstract, self).save(**kwargs)
 
 
-class VendorModel(load_model_class(settings.DJANGO_LEDGER_VENDOR_MODEL)):
+class VendorModel(VendorModelAbstract):
     """
     Base Vendor Model Implementation
     """
+
+    class Meta(VendorModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_VENDOR_MODEL'
+        abstract = False

@@ -33,14 +33,13 @@ from django.core.cache import caches
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import Q, F, Model
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
-from django_ledger import settings
 from django_ledger.io import roles as roles_module, validate_roles, IODigestContextManager
 from django_ledger.io.io_core import IOMixIn, get_localtime, get_localdate
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
@@ -56,7 +55,6 @@ from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
 from django_ledger.models.vendor import VendorModelQuerySet, VendorModel
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT
-from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -3118,14 +3116,18 @@ class EntityModelAbstract(MP_Node,
         super(EntityModelAbstract, self).clean()
 
 
-class EntityModel(load_model_class(settings.DJANGO_LEDGER_ENTITY_MODEL)):
+class EntityModel(EntityModelAbstract):
     """
     Entity Model Base Class From Abstract
     """
+    class Meta(EntityModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_MODEL'
+        abstract = False
+
 
 
 # ## ENTITY STATE....
-class EntityStateModelAbstract(models.Model):
+class EntityStateModelAbstract(Model):
     KEY_JOURNAL_ENTRY = 'je'
     KEY_PURCHASE_ORDER = 'po'
     KEY_BILL = 'bill'
@@ -3185,6 +3187,10 @@ class EntityStateModel(EntityStateModelAbstract):
     """
     Entity State Model Base Class from Abstract.
     """
+
+    class Meta(EntityStateModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_STATE_MODEL'
+        abstract = False
 
 
 # ## ENTITY MANAGEMENT.....

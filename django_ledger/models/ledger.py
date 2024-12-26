@@ -35,7 +35,9 @@ from django.db.models import Q, Min, F, Count
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
+from django_ledger.io.io_core import IOMixIn
+from django_ledger.models import lazy_loader
+from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
     ledger_posted,
     ledger_unposted,
@@ -44,11 +46,6 @@ from django_ledger.models.signals import (
     ledger_hidden,
     ledger_unhidden
 )
-
-from django_ledger.io.io_core import IOMixIn
-from django_ledger.models import lazy_loader
-from django_ledger.models.mixins import CreateUpdateMixIn
-from django_ledger.utils import load_model_class
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
@@ -724,10 +721,13 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
 
 
-class LedgerModel(load_model_class(settings.DJANGO_LEDGER_LEDGER_MODEL)):
+class LedgerModel(LedgerModelAbstract):
     """
     Base LedgerModel from Abstract.
     """
+    class Meta(LedgerModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_LEDGER_MODEL'
+        abstract = False
 
 
 def ledgermodel_presave(instance: LedgerModel, **kwargs):

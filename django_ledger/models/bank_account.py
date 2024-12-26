@@ -16,10 +16,8 @@ from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger import settings
 from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.utils import load_model_class
 
 UserModel = get_user_model()
 
@@ -93,7 +91,7 @@ class BankAccountModelManager(models.Manager):
         )
 
 
-class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
+class BankAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     """
     This is the main abstract class which the BankAccountModel database will inherit from.
     The BankAccountModel inherits functionality from the following MixIns:
@@ -206,7 +204,11 @@ class BackAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
             ])
 
 
-class BankAccountModel(load_model_class(settings.DJANGO_LEDGER_BANK_ACCOUNT_MODEL)):
+class BankAccountModel(BankAccountModelAbstract):
     """
     Base Bank Account Model Implementation
     """
+
+    class Meta(BankAccountModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_BANK_ACCOUNT_MODEL'
+        abstract = False
