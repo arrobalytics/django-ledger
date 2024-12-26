@@ -5,17 +5,41 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Chart Of Accounts
 -----------------
 
-A Chart of Accounts (CoA) is a crucial collection of logically grouped accounts within a ChartOfAccountModel,
-forming the backbone of financial statements. The CoA includes various account roles such as cash, accounts receivable,
-expenses, liabilities, and income. For example, the Balance Sheet may have a Fixed Assets heading consisting of
-Tangible and Intangible Assets with multiple accounts like Building, Plant &amp; Equipments, and Machinery under
-tangible assets. Aggregation of individual account balances based on the Chart of Accounts and AccountModel roles is
-essential for preparing Financial Statements.
+A Chart of Accounts (CoA) is a fundamental component of financial management in Django Ledger. It serves as the
+backbone of financial statements and is organized within a ChartOfAccountModel.
 
-All EntityModel must have a default CoA to create any type of transaction. When no explicit CoA is specified, the
-default behavior is to use the EntityModel default CoA. Only ONE Chart of Accounts can be used when creating
-Journal Entries. No commingling between CoAs is allowed to preserve the integrity of the Journal Entry.
+### Key Features
+
+- **Account Roles**: The CoA includes various account types such as:
+  - Cash
+  - Accounts Receivable
+  - Expenses
+  - Liabilities
+  - Income
+
+- **Hierarchical Structure**: Accounts are logically grouped to form financial statements. For example, the Balance
+Sheet may have a structure like this:
+  - Fixed Assets
+    - Tangible Assets
+      - Building
+      - Plant & Equipment
+      - Machinery
+    - Intangible Assets
+
+- **Financial Statement Preparation**: Individual account balances are aggregated based on the CoA and AccountModel
+roles to create comprehensive financial statements.
+
+### Usage in EntityModel
+
+- Every EntityModel must have a default CoA to create any type of transaction.
+- If no explicit CoA is specified, the EntityModel's default CoA is used.
+- Only ONE Chart of Accounts can be used when creating Journal Entries.
+- Commingling between different CoAs is not allowed to maintain the integrity of Journal Entries.
+
+This structure ensures a clear and organized approach to financial management within Django Ledger, facilitating
+accurate record-keeping and reporting.
 """
+
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Optional, Union, Dict
@@ -25,7 +49,9 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import Q, F, Count, Manager, QuerySet
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -47,7 +73,7 @@ class ChartOfAccountsModelValidationError(ValidationError):
     pass
 
 
-class ChartOfAccountModelQuerySet(models.QuerySet):
+class ChartOfAccountModelQuerySet(QuerySet):
 
     def active(self):
         """
@@ -56,7 +82,7 @@ class ChartOfAccountModelQuerySet(models.QuerySet):
         return self.filter(active=True)
 
 
-class ChartOfAccountModelManager(models.Manager):
+class ChartOfAccountModelManager(Manager):
     """
     A custom defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
     to the ChartOfAccountModel.
@@ -65,8 +91,23 @@ class ChartOfAccountModelManager(models.Manager):
     def get_queryset(self):
         qs = super().get_queryset()
         return qs.annotate(
-            _entity_slug=F('entity__slug')
-        )
+            _entity_slug=F('entity__slug'),
+            accountmodel_total__count=Count(
+                'accountmodel',
+                # excludes coa root accounts...
+                filter=Q(accountmodel__depth__gt=2)
+            ),
+            accountmodel_locked__count=Count(
+                'accountmodel',
+                # excludes coa root accounts...
+                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__locked=True)
+            ),
+            accountmodel_active__count=Count(
+                'accountmodel',
+                # excludes coa root accounts...
+                filter=Q(accountmodel__depth__gt=2) & Q(accountmodel__active=True)
+            ),
+        ).select_related('entity')
 
     def for_user(self, user_model) -> ChartOfAccountModelQuerySet:
         """
@@ -91,9 +132,9 @@ class ChartOfAccountModelManager(models.Manager):
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
-        ).select_related('entity')
+        )
 
-    def for_entity(self, entity_slug, user_model) -> ChartOfAccountModelQuerySet:
+    def for_entity(self, entity_model, user_model) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -113,9 +154,9 @@ class ChartOfAccountModelManager(models.Manager):
             Returns a ChartOfAccountQuerySet with applied filters.
         """
         qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(entity=entity_slug).select_related('entity')
-        return qs.filter(entity__slug__iexact=entity_slug).select_related('entity')
+        if isinstance(entity_model, lazy_loader.get_entity_model()):
+            return qs.filter(entity=entity_model)
+        return qs.filter(entity__slug__iexact=entity_model)
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
@@ -138,7 +179,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     entity = models.ForeignKey('django_ledger.EntityModel',
-                               editable=False,
                                verbose_name=_('Entity'),
                                on_delete=models.CASCADE)
     active = models.BooleanField(default=True, verbose_name=_('Is Active'))
@@ -292,7 +332,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         root_account = self.get_coa_root_node()
         return AccountModel.dump_bulk(parent=root_account)
 
-    def generate_slug(self, raise_exception: bool = False) -> str:
+    def generate_slug(self, commit: bool = False, raise_exception: bool = False) -> str:
         """
         Generates and assigns a slug based on the ChartOfAccounts model instance EntityModel information.
 
@@ -321,6 +361,14 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             return
         self.slug = f'coa-{self.entity.slug[-5:]}-' + ''.join(choices(SLUG_SUFFIX, k=15))
 
+        if commit:
+            self.save(
+                update_fields=[
+                    'slug',
+                    'updated'
+                ]
+            )
+
     def configure(self, raise_exception: bool = True):
         """
         A method that properly configures the ChartOfAccounts model and creates the appropriate hierarchy boilerplate
@@ -333,7 +381,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             Whether to raise an exception if root nodes already exist in the Chart of Accounts (default is True).
             This indicates that the ChartOfAccountModel instance is already configured.
         """
-        self.generate_slug()
+        self.generate_slug(commit=False)
 
         root_accounts_qs = self.get_coa_root_accounts_qs()
         existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
@@ -546,6 +594,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         account_qs.update(locked=False)
         return account_qs
 
+
     def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Marks the current Chart of Accounts instances as default for the EntityModel.
@@ -563,6 +612,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     message=_(f'The Chart of Accounts {self.slug} is already default')
                 )
             return
+        if not self.can_mark_as_default():
+            if raise_exception:
+                raise ChartOfAccountsModelValidationError(
+                    message=_(f'The Chart of Accounts {self.slug} cannot be marked as default')
+                )
+            return
         self.entity.default_coa_id = self.uuid
         self.clean()
         if commit:
@@ -572,6 +627,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                     'updated'
                 ]
             )
+
+    def can_mark_as_default(self):
+        return all([
+            self.is_active(),
+            not self.is_default()
+        ])
 
     def can_activate(self) -> bool:
         """
@@ -710,6 +771,22 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             }
         )
 
+    def get_coa_list_inactive_url(self):
+        return reverse(
+            viewname='django_ledger:coa-list-inactive',
+            kwargs={
+                'entity_slug': self.entity_slug
+            }
+        )
+
+    def get_coa_create_url(self):
+        return reverse(
+            viewname='django_ledger:coa-create',
+            kwargs={
+                'entity_slug': self.entity_slug
+            }
+        )
+
     def get_absolute_url(self) -> str:
         return reverse(
             viewname='django_ledger:coa-detail',
@@ -719,7 +796,20 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             }
         )
 
+    def get_update_url(self) -> str:
+        return reverse(
+            viewname='django_ledger:coa-update',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'coa_slug': self.slug
+            }
+        )
+
     def get_account_list_url(self):
+
+        if not self.slug:
+            self.generate_slug(commit=True)
+
         return reverse(
             viewname='django_ledger:account-list',
             kwargs={
@@ -739,13 +829,27 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def clean(self):
         self.generate_slug()
-        if self.is_default() and not self.active:
-            raise ChartOfAccountsModelValidationError(
-                _('Default Chart of Accounts cannot be deactivated.')
-            )
 
 
 class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
+    class Meta(ChartOfAccountModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL'
+        abstract = False
+
+
+@receiver(pre_save, sender=ChartOfAccountModel)
+def chartofaccountsmodel_presave(instance: ChartOfAccountModelAbstract, **kwargs):
+    instance.generate_slug()
+    if instance.is_default() and not instance.active:
+        raise ChartOfAccountsModelValidationError(
+            _('Default Chart of Accounts cannot be deactivated.')
+        )
+
+
+@receiver(post_save, sender=ChartOfAccountModel)
+def chartofaccountsmodel_postsave(instance: ChartOfAccountModelAbstract, **kwargs):
+    if instance._state.adding:
+        instance.configure()

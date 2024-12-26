@@ -18,7 +18,6 @@ from django.db.models import QuerySet
 from django.utils.dateparse import parse_date
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel
 
 UserModel = get_user_model()
 
@@ -52,7 +51,7 @@ def get_default_unit_session_key():
     return 'djl_default_unit_model'
 
 
-def set_default_entity(request, entity_model: EntityModel):
+def set_default_entity(request, entity_model):
     session_key = get_default_entity_session_key()
     if not request.session.get(session_key):
         request.session[session_key] = {
@@ -111,37 +110,3 @@ def get_end_date_from_session(entity_slug: str, request) -> date:
     end_date = request.session.get(session_end_date_filter)
     end_date = parse_date(end_date) if end_date else get_localdate()
     return end_date
-
-
-def load_model_class(model_path: str):
-    """
-    Loads a Python Model Class by using a string.
-    This functionality is inspired by the Django Blog Zinnia project.
-    This function allows for extension and customization of the stardard Django Ledger Models.
-
-    Examples
-    ________
-    >>> model_class = load_model_class(model_path='module.models.MyModel')
-
-    Parameters
-    ----------
-    model_path: str
-        The model path to load.
-
-    Returns
-    -------
-    The loaded Python model Class.
-
-    Raises
-    ______
-    ImportError or AttributeError if unable to load model.
-    """
-    dot = model_path.rindex('.')
-    module_name = model_path[:dot]
-    klass_name = model_path[dot + 1:]
-    try:
-        klass = getattr(import_module(module_name), klass_name)
-        return klass
-    except (ImportError, AttributeError) as e:
-        print(e)
-        raise ImproperlyConfigured(f'Model {model_path} cannot be imported!')

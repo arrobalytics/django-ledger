@@ -9,27 +9,26 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Count, Sum, Case, When, F, Value, DecimalField, BooleanField
+from django.db.models import Q, Count, Sum, Case, When, F, Value, DecimalField, BooleanField, Manager, QuerySet
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
+from django_ledger.models import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
-
-from django_ledger.models import JournalEntryModel
 
 
 class ImportJobModelValidationError(ValidationError):
     pass
 
 
-class ImportJobModelQuerySet(models.QuerySet):
+class ImportJobModelQuerySet(QuerySet):
     pass
 
 
-class ImportJobModelManager(models.Manager):
+class ImportJobModelManager(Manager):
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -502,6 +501,10 @@ class ImportJobModel(ImportJobModelAbstract):
     Transaction Import Job Model Base Class.
     """
 
+    class Meta(ImportJobModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_IMPORT_JOB_MODEL'
+        abstract = False
+
 
 def importjobmodel_presave(instance: ImportJobModel, **kwargs):
     if instance.is_configured():
@@ -518,3 +521,7 @@ class StagedTransactionModel(StagedTransactionModelAbstract):
     """
     Staged Transaction Model Base Class.
     """
+
+    class Meta(StagedTransactionModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL'
+        abstract = False

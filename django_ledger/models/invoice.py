@@ -33,14 +33,16 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.io.io_core import get_localtime, get_localdate
-from django_ledger.models import lazy_loader, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
+from django_ledger.models import (
+    lazy_loader, ItemTransactionModelQuerySet,
+    ItemModelQuerySet, ItemModel, QuerySet, Manager
+)
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import (
     CreateUpdateMixIn, AccrualMixIn,
     MarkdownNotesMixIn, PaymentTermsMixIn,
     ItemizeMixIn
 )
-
 from django_ledger.models.signals import (
     invoice_status_draft,
     invoice_status_in_review,
@@ -49,7 +51,6 @@ from django_ledger.models.signals import (
     invoice_status_canceled,
     invoice_status_void
 )
-
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()
@@ -59,7 +60,7 @@ class InvoiceModelValidationError(ValidationError):
     pass
 
 
-class InvoiceModelQuerySet(models.QuerySet):
+class InvoiceModelQuerySet(QuerySet):
     """
    A custom defined QuerySet for the InvoiceModel.
    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
@@ -176,7 +177,7 @@ class InvoiceModelQuerySet(models.QuerySet):
         return self.filter(invoice_status__exact=InvoiceModel.INVOICE_STATUS_APPROVED)
 
 
-class InvoiceModelManager(models.Manager):
+class InvoiceModelManager(Manager):
     """
     A custom defined InvoiceModel Manager that will act as an interface to handling the DB queries to the InvoiceModel.
     The default "get_queryset" has been overridden to refer the custom defined "InvoiceModelQuerySet"
@@ -572,9 +573,10 @@ class InvoiceModelAbstract(
         else:
             self.validate_itemtxs_qs(queryset)
 
-        return queryset.select_related('item_model').order_by('item_model__earnings_account__uuid',
-                                                              'entity_unit__uuid',
-                                                              'item_model__earnings_account__balance_type').values(
+        return queryset.select_related('item_model').order_by(
+            'item_model__earnings_account__uuid',
+            'entity_unit__uuid',
+            'item_model__earnings_account__balance_type').values(
             'item_model__earnings_account__uuid',
             'item_model__earnings_account__balance_type',
             'item_model__cogs_account__uuid',
@@ -1816,6 +1818,10 @@ class InvoiceModel(InvoiceModelAbstract):
     """
     Base Invoice Model from Abstract.
     """
+
+    class Meta:
+        swappable = 'DJANGO_LEDGER_INVOICE_MODEL'
+        abstract = False
 
 
 def invoicemodel_presave(instance: InvoiceModel, **kwargs):

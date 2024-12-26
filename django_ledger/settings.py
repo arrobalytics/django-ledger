@@ -1,9 +1,6 @@
 """
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
-
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
 """
 import logging
 from decimal import Decimal
@@ -30,6 +27,34 @@ except ImportError:
     DJANGO_LEDGER_PDF_SUPPORT_ENABLED = False
 
 logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
+
+
+## MODEL ABSTRACTS ##
+DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
+DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModelAbstract')
+DJANGO_LEDGER_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_TRANSACTION_MODEL', 'django_ledger.TransactionModelAbstract')
+DJANGO_LEDGER_JOURNAL_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL', 'django_ledger.JournalEntryModelAbstract')
+DJANGO_LEDGER_LEDGER_MODEL = getattr(settings, 'DJANGO_LEDGER_LEDGER_MODEL', 'django_ledger.LedgerModel')
+DJANGO_LEDGER_ENTITY_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_MODEL', 'django_ledger.EntityModelAbstract')
+DJANGO_LEDGER_ENTITY_STATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_STATE_MODEL', 'django_ledger.EntityStateModel')
+
+DJANGO_LEDGER_ENTITY_UNIT_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_UNIT_MODEL', 'django_ledger.EntityUnitModelAbstract')
+
+DJANGO_LEDGER_ESTIMATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ESTIMATE_MODEL', 'django_ledger.EstimateModelAbstract')
+DJANGO_LEDGER_BILL_MODEL = getattr(settings, 'DJANGO_LEDGER_BILL_MODEL', 'django_ledger.BillModelAbstract')
+DJANGO_LEDGER_INVOICE_MODEL = getattr(settings, 'DJANGO_LEDGER_INVOICE_MODEL', 'django_ledger.InvoiceModelAbstract')
+DJANGO_LEDGER_PURCHASE_ORDER_MODEL = getattr(settings, 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL', 'django_ledger.PurchaseOrderModelAbstract')
+
+DJANGO_LEDGER_CUSTOMER_MODEL = getattr(settings, 'DJANGO_LEDGER_CUSTOMER_MODEL', 'django_ledger.CustomerModelAbstract')
+DJANGO_LEDGER_VENDOR_MODEL = getattr(settings, 'DJANGO_LEDGER_VENDOR_MODEL', 'django_ledger.VendorModelAbstract')
+
+DJANGO_LEDGER_BANK_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_BANK_ACCOUNT_MODEL', 'django_ledger.BackAccountModelAbstract')
+DJANGO_LEDGER_CLOSING_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL', 'django_ledger.ClosingEntryTransactionModelAbstract')
+DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL = getattr(settings, 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL', 'django_ledger.UnitOfMeasureModelAbstract')
+DJANGO_LEDGER_ITEM_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL', 'django_ledger.ItemTransactionModelAbstract')
+DJANGO_LEDGER_ITEM_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_MODEL', 'django_ledger.ItemModelAbstract')
+DJANGO_LEDGER_STAGED_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL', 'django_ledger.StagedTransactionModelAbstract')
+DJANGO_LEDGER_IMPORT_JOB_MODEL = getattr(settings, 'DJANGO_LEDGER_IMPORT_JOB_MODEL', 'django_ledger.ImportJobModelAbstract')
 
 DJANGO_LEDGER_USE_CLOSING_ENTRIES = getattr(settings, 'DJANGO_LEDGER_USE_CLOSING_ENTRIES', True)
 DJANGO_LEDGER_DEFAULT_CLOSING_ENTRY_CACHE_TIMEOUT = getattr(settings,

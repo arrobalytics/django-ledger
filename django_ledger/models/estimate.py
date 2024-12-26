@@ -1231,7 +1231,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 'updated'
             ])
 
-    def update_state(self, itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
+    def update_state(self,
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
@@ -1611,3 +1612,7 @@ class EstimateModel(EstimateModelAbstract):
     """
     Base EstimateModel Class.
     """
+
+    class Meta(EstimateModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ESTIMATE_MODEL'
+        abstract = False

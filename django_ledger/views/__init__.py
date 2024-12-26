@@ -10,7 +10,7 @@ from django_ledger.views.account import *
 from django_ledger.views.auth import *
 from django_ledger.views.bank_account import *
 from django_ledger.views.bill import *
-from django_ledger.views.coa import *
+from django_ledger.views.chart_of_accounts import *
 from django_ledger.views.customer import *
 from django_ledger.views.data_import import *
 from django_ledger.views.djl_api import *

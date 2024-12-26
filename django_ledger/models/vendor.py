@@ -323,3 +323,7 @@ class VendorModel(VendorModelAbstract):
     """
     Base Vendor Model Implementation
     """
+
+    class Meta(VendorModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_VENDOR_MODEL'
+        abstract = False

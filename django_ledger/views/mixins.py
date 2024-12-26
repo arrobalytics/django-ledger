@@ -314,9 +314,19 @@ class SuccessUrlNextMixIn:
 
 class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
     ENTITY_SLUG_URL_KWARG = 'entity_slug'
-    AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
+    ENTITY_MODEL_CONTEXT_NAME = 'entity_model'
     AUTHORIZE_SUPERUSER: bool = DJANGO_LEDGER_AUTHORIZED_SUPERUSER
     permission_required = []
+
+    def __init__(self, *args, **kwargs):
+        self.AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
+        super().__init__(*args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context[self.ENTITY_MODEL_CONTEXT_NAME] = self.get_authorized_entity_instance(raise_exception=False)
+        return context
+
 
     def get_login_url(self):
         return reverse('django_ledger:login')
@@ -355,12 +365,13 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
         return EntityModel.objects.for_user(
             user_model=self.request.user,
             authorized_superuser=self.get_superuser_authorization(),
-        ).only(
-            'uuid', 'slug', 'name', 'default_coa', 'admin')
+        )
 
-    def get_authorized_entity_instance(self) -> Optional[EntityModel]:
+    def get_authorized_entity_instance(self, raise_exception: bool = True) -> Optional[EntityModel]:
         if self.AUTHORIZED_ENTITY_MODEL is None:
-            raise Http404()
+            if raise_exception:
+                raise Http404()
+            return
         return self.AUTHORIZED_ENTITY_MODEL
 
 

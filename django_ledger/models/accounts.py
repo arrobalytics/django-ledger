@@ -1058,6 +1058,10 @@ class AccountModel(AccountModelAbstract):
     Base Account Model from Account Model Abstract Class
     """
 
+    class Meta(AccountModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ACCOUNT_MODEL'
+        abstract = False
+
 
 def accountmodel_presave(instance: AccountModel, **kwargs):
     if instance.role_default is False:

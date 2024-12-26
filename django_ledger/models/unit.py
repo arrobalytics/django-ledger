@@ -223,3 +223,7 @@ class EntityUnitModel(EntityUnitModelAbstract):
     """
     Base Model Class for EntityUnitModel
     """
+
+    class Meta(EntityUnitModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_ENTITY_UNIT_MODEL'
+        abstract = False

@@ -23,7 +23,7 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, Count
+from django.db.models import Q, Sum, F, Count, QuerySet, Manager
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -53,7 +53,7 @@ class BillModelValidationError(ValidationError):
     pass
 
 
-class BillModelQuerySet(models.QuerySet):
+class BillModelQuerySet(QuerySet):
     """
     A custom defined QuerySet for the BillModel. This implements multiple methods or queries needed to get a filtered
     QuerySet based on the BillModel status. For example, we might want to have list of bills which are paid, unpaid,
@@ -170,7 +170,7 @@ class BillModelQuerySet(models.QuerySet):
         return self.filter(bill_status__exact=BillModel.BILL_STATUS_APPROVED)
 
 
-class BillModelManager(models.Manager):
+class BillModelManager(Manager):
     """
     A custom defined BillModelManager that will act as an interface to handling the initial DB queries
     to the BillModel. The default "get_queryset" has been overridden to refer the custom defined
@@ -1903,6 +1903,10 @@ class BillModel(BillModelAbstract):
     """
     Base BillModel from Abstract.
     """
+
+    class Meta(BillModelAbstract.Meta):
+        swappable = 'DJANGO_LEDGER_BILL_MODEL'
+        abstract = False
 
 
 def billmodel_presave(instance: BillModel, **kwargs):

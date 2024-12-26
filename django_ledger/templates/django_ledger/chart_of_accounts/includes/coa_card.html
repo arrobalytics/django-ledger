@@ -4,7 +4,7 @@
 
 
 <div class="card">
-    <div class="card-header" {% if coa_model.is_default %}style="background-color: #04e304"{% endif %}>
+    <div class="card-header" {% if coa_model.is_default %}style="background-color: #04e304" {% elif not coa_model.is_active %}style="background-color: #d34e4e"{% endif %}>
         <div class="card-header-icon">
             {% icon "ic:baseline-business" 36 %}
         </div>
@@ -43,6 +43,12 @@
     </div>
 
     <footer class="card-footer">
+        <a href="{{ coa_model.get_update_url }}"
+           class="card-footer-item has-text-warning has-text-weight-bold">
+            {% trans 'Update' %}
+        </a>
+    </footer>
+    <footer class="card-footer">
         <a href="{{ coa_model.get_account_list_url }}"
            class="card-footer-item has-text-success has-text-weight-bold">
             {% trans 'Accounts' %}
@@ -51,14 +57,14 @@
            class="card-footer-item has-text-info has-text-weight-bold">
             {% trans 'Add Account' %}
         </a>
-
-        {% if not coa_model.is_default %}
+    </footer>
+    <footer class="card-footer">
+        {% if coa_model.can_mark_as_default %}
             <a href="{{ coa_model.mark_as_default_url }}"
                class="card-footer-item has-text-danger has-text-weight-bold">
                 {% trans 'Mark as Default' %}
             </a>
         {% endif %}
-
         {% if coa_model.can_deactivate %}
             <a href="{{ coa_model.mark_as_inactive_url }}"
                class="card-footer-item has-text-warning has-text-weight-bold">
