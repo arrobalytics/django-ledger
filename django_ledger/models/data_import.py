@@ -32,7 +32,25 @@ class ImportJobModelManager(Manager):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        return qs.select_related(
+        return qs.annotate(
+            txs_count=Count('stagedtransactionmodel',
+                            filter=Q(stagedtransactionmodel__parent__isnull=False)),
+            txs_mapped_count=Count(
+                'stagedtransactionmodel__account_model_id',
+                filter=Q(stagedtransactionmodel__parent__isnull=False) | Q(
+                    stagedtransactionmodel__parent__parent__isnull=False)
+
+            ),
+        ).annotate(
+            txs_pending=F('txs_count') - F('txs_mapped_count')
+        ).annotate(
+            is_complete=Case(
+                When(txs_count__exact=0, then=False),
+                When(txs_pending__exact=0, then=True),
+                default=False,
+                output_field=BooleanField()
+            ),
+        ).select_related(
             'bank_account_model',
             'bank_account_model__cash_account',
             'ledger_model'
@@ -101,7 +119,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         return _(f'Are you sure you want to delete Import Job {self.description}?')
 
 
-class StagedTransactionModelQuerySet(models.QuerySet):
+class StagedTransactionModelQuerySet(QuerySet):
 
     def is_pending(self):
         return self.filter(transaction_model__isnull=True)
@@ -116,7 +134,7 @@ class StagedTransactionModelQuerySet(models.QuerySet):
         return self.filter(ready_to_import=True)
 
 
-class StagedTransactionModelManager(models.Manager):
+class StagedTransactionModelManager(Manager):
 
     def get_queryset(self):
         qs = super().get_queryset()

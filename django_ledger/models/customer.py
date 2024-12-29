@@ -330,6 +330,6 @@ class CustomerModel(CustomerModelAbstract):
     Base Customer Model Implementation
     """
 
-    class Meta:
+    class Meta(CustomerModelAbstract.Meta):
         swappable = 'DJANGO_LEDGER_CUSTOMER_MODEL'
         abstract = False

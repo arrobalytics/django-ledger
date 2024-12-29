@@ -9,6 +9,7 @@
             <th>Description</th>
             <th>Bank Account</th>
             <th>Created</th>
+            <th>Completed</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -19,6 +20,13 @@
                 <td>{{ job.description }}</td>
                 <td>{{ job.bank_account_model }}</td>
                 <td>{{ job.created }}</td>
+                <td class="has-text-centered">
+                    {% if job.is_complete %}
+                        <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                    {% else %}
+                        <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                    {% endif %}
+                </td>
                 <td>
                     <div class="dropdown is-right" id="customer-action-{{ job.uuid }}">
 
