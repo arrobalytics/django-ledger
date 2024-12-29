@@ -1819,7 +1819,7 @@ class InvoiceModel(InvoiceModelAbstract):
     Base Invoice Model from Abstract.
     """
 
-    class Meta:
+    class Meta(InvoiceModelAbstract.Meta):
         swappable = 'DJANGO_LEDGER_INVOICE_MODEL'
         abstract = False
 
