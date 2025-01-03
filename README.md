@@ -85,7 +85,12 @@ pipenv install django
 * Install Django Ledger
 
 ```shell script
-pipenv install django-ledger[graphql,pdf]
+pipenv install "django-ledger[graphql,pdf]"
+```
+
+Alternatively, you can use:
+```shell script
+pipenv install django-ledger\[graphql,pdf\]
 ```
 
 * Activate your new virtual environment:
