@@ -106,7 +106,9 @@ def balance_sheet_statement(context, io_model, to_date=None):
         balance_sheet_statement=True)
 
     return {
-        'tx_digest': io_digest.get_io_data()
+        'entity_slug': entity_slug,
+        'user_model': user_model,
+        'tx_digest': io_digest.get_io_data(),
     }
 
 
