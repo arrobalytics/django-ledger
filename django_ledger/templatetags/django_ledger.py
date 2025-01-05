@@ -391,10 +391,12 @@ def default_entity(context):
 def session_entity_name(context, request=None):
     session_key = get_default_entity_session_key()
     if not request:
-        request = context['request']
-    session = request.session
+        request = context.get('request')
     try:
+        session = request.session
         entity_name = session.get(session_key)['entity_name']
+    except AttributeError:
+        entity_name = 'Django Ledger'
     except KeyError:
         entity_name = 'Django Ledger'
     except TypeError:

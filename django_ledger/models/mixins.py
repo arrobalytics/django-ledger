@@ -898,11 +898,11 @@ class AccrualMixIn(models.Model):
             ]):
                 raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
 
-        if self.accrue:
-            if self.is_approved():
-                self.progress = Decimal.from_float(1.00)
-            else:
-                self.progress = Decimal.from_float(0.00)
+        # if self.accrue:
+        #     if self.is_approved():
+        #         self.progress = Decimal.from_float(1.00)
+        #     else:
+        #         self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
             raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
