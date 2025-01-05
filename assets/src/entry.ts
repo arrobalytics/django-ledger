@@ -1,6 +1,6 @@
 import {DjangoLedgerApp} from "./DjangoLedgerApp";
 import {NetPayablesChart, NetReceivablesChart, PnLChart} from "./AppCharts";
-import Iconify from '@iconify/iconify';
+import 'iconify-icon'
 
 // @ts-ignore
 import * as Pikaday from 'pikaday';
@@ -96,14 +96,3 @@ export function getCalendar(htmlId: string, baseUrl: string) {
     })
 }
 
-// export function getCalendarVue(htmlId: string, baseUrl: string) {
-//     const htmlIdVue = '#' + htmlId;
-//     return new Vue({
-//         el: htmlIdVue,
-//         components: {
-//             DatePicker
-//         }
-//     })
-// }
-
-export {Iconify};

@@ -1,10 +1,14 @@
-import Chart, {ChartOptions, ChartTooltipOptions} from "chart.js";
 import Axios, {AxiosInstance, AxiosRequestConfig, AxiosResponse} from "axios";
+import {Chart, ChartItem, ChartOptions, TooltipItem, TooltipOptions} from "chart.js/auto";
+import defaultCallbacks from "chart.js/dist/plugins/plugin.tooltip";
 
 function currencyFormatter(value: number): string {
     return Intl.NumberFormat(
         'en-US',
-        {style: 'currency', currency: 'USD'})
+        {
+            style: 'currency',
+            currency: 'USD'
+        })
         .format(value);
 }
 
@@ -124,58 +128,81 @@ class PnLChart extends BaseChart {
                         borderColor: 'rgb(255, 99, 132)',
                         data: expenses
                     }]
-            }
+            };
 
-            let tooltipOptions: ChartTooltipOptions = {
-                callbacks: {
-                    label(
-                        tooltipItem: Chart.ChartTooltipItem,
-                        data: Chart.ChartData): string | string[] {
 
-                        // @ts-ignore
-                        let dataSet = data.datasets[tooltipItem.datasetIndex];
-                        let tooltipLabelIndex = tooltipItem.index;
-                        let value = dataSet.data[tooltipLabelIndex];
+            // let tooltipOptions: TooltipOptions = {
+            //     callbacks: {
+            //         label(
+            //             tooltipItem: Chart.ChartTooltipItem,
+            //             data: Chart.ChartData): string | string[] {
+            //
+            //             // @ts-ignore
+            //             let dataSet = data.datasets[tooltipItem.datasetIndex];
+            //             let tooltipLabelIndex = tooltipItem.index;
+            //             let value = dataSet.data[tooltipLabelIndex];
+            //
+            //             return `${dataSet.label}: ${currencyFormatter(value)}`;
+            //
+            //         }
+            //     }
+            // }
 
-                        return `${dataSet.label}: ${currencyFormatter(value)}`;
 
+            // @ts-ignore
+            const ctx = document.getElementById(this.selector) as ChartItem
+            let chartOptions: ChartOptions = {
+
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${entityName} - Income & Expenses`,
+                        font: {
+                            size: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            // label(tooltipItem: TooltipItem<any>): string | string[] | void {
+                            //     let dataSet = tooltipItem.dataset[tooltipItem.datasetIndex]
+                            //     let tooltipLabelIndex = tooltipItem.dataIndex;
+                            //     let value = dataSet.data[tooltipLabelIndex];
+                            //     return `${dataSet.label}: ${currencyFormatter(value)}`;
+                            // }
+                        }
+                    }
+                },
+                aspectRatio: 1.0,
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
             }
 
+            // tooltips: tooltipOptions,
+            // scales: {
+            //     y: [{
+            //         ticks: {
+            //             callback: (value: number, index, values) => {
+            //                 return currencyFormatter(value);
+            //             },
+            //             beginAtZero: true
+            //         },
+            //     }]
+            // }
 
-            // @ts-ignore
-            var ctx = document.getElementById(this.selector).getContext('2d');
-            let chartOptions: ChartOptions = {
-                title: {
-                    display: true,
-                    text: `${entityName} - Income & Expenses`,
-                    fontSize: 20
-                },
-                aspectRatio: 1.0,
-                tooltips: tooltipOptions,
-                scales: {
-                    yAxes: [{
-                        ticks: {
-                            callback: (value: number, index, values) => {
-                                return currencyFormatter(value);
-                            },
-                            beginAtZero: true
-                        },
-                    }]
-                }
-            }
-
-            this.chart = new Chart(ctx, {
-                type: 'bar',
-                data: data,
-                options: chartOptions
-            });
+            this.chart = new Chart(
+                ctx,
+                {
+                    type: 'bar',
+                    data: data,
+                    options: chartOptions
+                });
         }
-
     }
-
 }
+
 
 class NetPayablesChart extends BaseChart {
 
@@ -215,35 +242,35 @@ class NetPayablesChart extends BaseChart {
 
 
             // @ts-ignore
-            var ctx = document.getElementById(this.selector).getContext('2d');
-            let tooltipOptions: ChartTooltipOptions = {
-                callbacks: {
-                    label(
-                        tooltipItem: Chart.ChartTooltipItem,
-                        data: Chart.ChartData): string | string[] {
-
-                        // @ts-ignore
-                        let dataSet = data.datasets[tooltipItem.datasetIndex];
-                        let tooltipLabelIndex = tooltipItem.index;
-                        let value = dataSet.data[tooltipLabelIndex];
-
-                        return currencyFormatter(value);
-
-                    }
-                }
-            }
+            const ctx = document.getElementById(this.selector) as ChartItem
 
             let chartOptions: ChartOptions = {
-                title: {
-                    display: true,
-                    position: "top",
-                    text: "Net Payables 0-90+ Days",
-                    fontSize: 20
+
+                plugins: {
+                    title: {
+                        display: true,
+                        position: "top",
+                        text: "Net Payables 0-90+ Days",
+                        font: {
+                            size: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            // label(tooltipItem: TooltipItem<any>): string | string[] | void {
+                            //     let dataSet = tooltipItem.dataset[tooltipItem.datasetIndex]
+                            //     let tooltipLabelIndex = tooltipItem.dataIndex;
+                            //     let value = dataSet.data[tooltipLabelIndex];
+                            //     return `${dataSet.label}: ${currencyFormatter(value)}`;
+                            // }
+                        }
+                    }
                 },
-                aspectRatio: 1,
-                tooltips: tooltipOptions,
-                legend: {
-                    position: "right"
+                aspectRatio: 1.0,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
 
@@ -257,6 +284,7 @@ class NetPayablesChart extends BaseChart {
     }
 
 }
+
 
 class NetReceivablesChart extends BaseChart {
 
@@ -296,38 +324,69 @@ class NetReceivablesChart extends BaseChart {
 
 
             // @ts-ignore
-            var ctx = document.getElementById(this.selector).getContext('2d');
-            let tooltipOptions: ChartTooltipOptions = {
-                callbacks: {
-                    label(
-                        tooltipItem: Chart.ChartTooltipItem,
-                        data: Chart.ChartData): string | string[] {
+            // var ctx = document.getElementById(this.selector).getContext('2d');
+            // let tooltipOptions: TooltipOptions = {
+            //     callbacks: {
+            //         label(
+            //             tooltipItem: Chart.ChartTooltipItem,
+            //             data: Chart.ChartData): string | string[] {
+            //
+            //             // @ts-ignore
+            //             let dataSet = data.datasets[tooltipItem.datasetIndex];
+            //             let tooltipLabelIndex = tooltipItem.index;
+            //             let value = dataSet.data[tooltipLabelIndex];
+            //
+            //             return currencyFormatter(value);
+            //
+            //         }
+            //     }
+            // }
+            //
+            // let chartOptions: ChartOptions = {
+            //     title: {
+            //         display: true,
+            //         position: "top",
+            //         text: "Net Receivables 0-90+ Days",
+            //         fontSize: 20
+            //     },
+            //     aspectRatio: 1.0,
+            //     tooltips: tooltipOptions,
+            //     legend: {
+            //         position: "right"
+            //     },
+            // }
 
-                        // @ts-ignore
-                        let dataSet = data.datasets[tooltipItem.datasetIndex];
-                        let tooltipLabelIndex = tooltipItem.index;
-                        let value = dataSet.data[tooltipLabelIndex];
+            const ctx = document.getElementById(this.selector) as ChartItem
 
-                        return currencyFormatter(value);
+            let chartOptions: ChartOptions = {
 
+                plugins: {
+                    title: {
+                        display: true,
+                        position: "top",
+                        text: "Net Receivables 0-90+ Days",
+                        font: {
+                            size: 20
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            // label(tooltipItem: TooltipItem<any>): string | string[] | void {
+                            //     let dataSet = tooltipItem.dataset[tooltipItem.datasetIndex]
+                            //     let tooltipLabelIndex = tooltipItem.dataIndex;
+                            //     let value = dataSet.data[tooltipLabelIndex];
+                            //     return `${dataSet.label}: ${currencyFormatter(value)}`;
+                            // }
+                        }
+                    }
+                },
+                aspectRatio: 1.0,
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
             }
-
-            let chartOptions: ChartOptions = {
-                title: {
-                    display: true,
-                    position: "top",
-                    text: "Net Receivables 0-90+ Days",
-                    fontSize: 20
-                },
-                aspectRatio: 1.0,
-                tooltips: tooltipOptions,
-                legend: {
-                    position: "right"
-                },
-            }
-
             this.chart = new Chart(ctx, {
                 type: 'doughnut',
                 data: data,
@@ -339,5 +398,10 @@ class NetReceivablesChart extends BaseChart {
 
 }
 
-export {PnLChart, NetPayablesChart, NetReceivablesChart};
+
+export {
+    PnLChart,
+    NetPayablesChart,
+    NetReceivablesChart
+};
 

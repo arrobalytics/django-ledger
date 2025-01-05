@@ -1,13 +1,10 @@
-import Vue from 'vue';
-
-
 export class DjangoLedgerApp {
 
     dateFilters: any | null = null;
     endDateFilters: any | null = null;
-    vueInstance: Vue | null = null;
 
     constructor() {
+
         document.addEventListener('DOMContentLoaded', () => {
             (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
                 let $notification: any;
@@ -17,6 +14,7 @@ export class DjangoLedgerApp {
                 });
             });
         });
+
         document.addEventListener('DOMContentLoaded', () => {
 
             const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
@@ -34,6 +32,7 @@ export class DjangoLedgerApp {
                 });
             }
         });
+
         document.addEventListener('DOMContentLoaded', () => {
             (document.querySelectorAll('.djetler-set-entity-form-input') || []).forEach(f => {
                 f.addEventListener('change', this.setEntityFilter);
