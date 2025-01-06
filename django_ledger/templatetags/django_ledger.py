@@ -133,6 +133,8 @@ def cash_flow_statement(context, io_model):
         process_groups=True)
 
     return {
+        'entity_slug': entity_slug,
+        'user_model': user_model,
         'tx_digest': io_digest.get_io_data()
     }
 
@@ -164,6 +166,8 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
     )
 
     return {
+        'entity_slug': entity_slug,
+        'user_model': user_model,
         'tx_digest': io_digest.get_io_data()
     }
 
