@@ -156,6 +156,7 @@ class StagedTransactionModelManager(Manager):
                 When(parent_id__isnull=False, then=F('parent_id'))
             ),
         ).annotate(
+            entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
             ready_to_import=Case(
                 # is mapped singleton...
                 When(

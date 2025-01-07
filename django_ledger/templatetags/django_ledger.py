@@ -106,7 +106,9 @@ def balance_sheet_statement(context, io_model, to_date=None):
         balance_sheet_statement=True)
 
     return {
-        'tx_digest': io_digest.get_io_data()
+        'entity_slug': entity_slug,
+        'user_model': user_model,
+        'tx_digest': io_digest.get_io_data(),
     }
 
 
@@ -131,6 +133,8 @@ def cash_flow_statement(context, io_model):
         process_groups=True)
 
     return {
+        'entity_slug': entity_slug,
+        'user_model': user_model,
         'tx_digest': io_digest.get_io_data()
     }
 
@@ -162,6 +166,8 @@ def income_statement_table(context, io_model, from_date=None, to_date=None):
     )
 
     return {
+        'entity_slug': entity_slug,
+        'user_model': user_model,
         'tx_digest': io_digest.get_io_data()
     }
 
@@ -389,10 +395,12 @@ def default_entity(context):
 def session_entity_name(context, request=None):
     session_key = get_default_entity_session_key()
     if not request:
-        request = context['request']
-    session = request.session
+        request = context.get('request')
     try:
+        session = request.session
         entity_name = session.get(session_key)['entity_name']
+    except AttributeError:
+        entity_name = 'Django Ledger'
     except KeyError:
         entity_name = 'Django Ledger'
     except TypeError:

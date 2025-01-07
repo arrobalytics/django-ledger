@@ -42,6 +42,7 @@
             </div>
 
             {% balance_sheet_statement io_model=object %}
+
             {% if entity %}
                 <a class="button is-fullwidth is-dark mb-1"
                    href="{% url 'django_ledger:entity-dashboard' entity_slug=view.kwargs.entity_slug %}">{% trans 'Go Back' %}</a>

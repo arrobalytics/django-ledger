@@ -53,85 +53,85 @@
                     {% trans 'Invoice Info' %}</h2>
             </div>
             <div class="card-content has-text-centered">
-                    {% if invoice.is_draft %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
+                {% if invoice.is_draft %}
+                    <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
+                    <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
+                        <span class="has-text-weight-bold">
                                     {% currency_symbol %}{{ invoice.amount_due | currency_format }}
                                 </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                            <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
-                        </p>
-                        <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if invoice.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
-                        </p>
-                    {% elif invoice.is_review %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
-                                    {% currency_symbol %}{{ invoice.amount_due | currency_format }}
-                                </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                            <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
-                        </p>
-                        <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if invoice.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
-                        </p>
-                        {% if invoice.xref %}
-                            <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ invoice.xref }}</p>
+                    </p>
+                    <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
+                        <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
+                    </p>
+                    <p class="is-size-3">{% trans 'Is Accrued' %}:
+                        {% if invoice.accrue %}
+                            <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                        {% else %}
+                            <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                         {% endif %}
-
-                    {% elif invoice.is_approved %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-info">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
-                            <span class="has-text-weight-bold">
+                    </p>
+                {% elif invoice.is_review %}
+                    <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-warning">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
+                    <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
+                        <span class="has-text-weight-bold">
                                     {% currency_symbol %}{{ invoice.amount_due | currency_format }}
                                 </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
-                            <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
-                        </p>
-                        <p class="is-size-3">{% trans 'Is Accrued' %}:
-                            {% if invoice.accrue %}
-                                <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
-                            {% else %}
-                                <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
-                            {% endif %}
-                        </p>
-                        <p class="is-size-3 has-text-weight-bold">{% trans 'Amount Paid' %}:
-                            {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
-                        <p class="is-size-5">{% trans 'Progressed' %}: {{ invoice.get_progress | percentage }}</p><br>
-                        <progress class="progress is-medium is-success"
-                                  value="{{ invoice.get_progress_percent }}"
-                                  max="100">
-                            {{ invoice.get_progress | percentage }}
-                        </progress>
-                    {% elif invoice.is_paid %}
-                        <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-success">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
-                        <p class="is-size-3 has-text-dark">{% trans 'Amount Paid' %}:
-                            <span class="has-text-weight-bold">
+                    </p>
+                    <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
+                        <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
+                    </p>
+                    <p class="is-size-3">{% trans 'Is Accrued' %}:
+                        {% if invoice.accrue %}
+                            <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                        {% else %}
+                            <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                        {% endif %}
+                    </p>
+                    {% if invoice.xref %}
+                        <p class="is-size-5 is-italic">{% trans 'External Ref' %}: {{ invoice.xref }}</p>
+                    {% endif %}
+
+                {% elif invoice.is_approved %}
+                    <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-info">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
+                    <p class="is-size-3 has-text-dark">{% trans 'Amount Due' %}:
+                        <span class="has-text-weight-bold">
+                                    {% currency_symbol %}{{ invoice.amount_due | currency_format }}
+                                </span>
+                    </p>
+                    <p class="is-size-3 has-text-dark">{% trans 'Due Date' %}:
+                        <span class="has-text-weight-bold">{{ invoice.date_due | timeuntil }}</span>
+                    </p>
+                    <p class="is-size-3">{% trans 'Is Accrued' %}:
+                        {% if invoice.accrue %}
+                            <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
+                        {% else %}
+                            <span class="icon has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
+                        {% endif %}
+                    </p>
+                    <p class="is-size-3 has-text-weight-bold">{% trans 'Amount Paid' %}:
+                        {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
+                    <p class="is-size-5">{% trans 'Progressed' %}: {{ invoice.get_progress | percentage }}</p><br>
+                    <progress class="progress is-medium is-success"
+                              value="{{ invoice.get_progress_percent }}"
+                              max="100">
+                        {{ invoice.get_progress | percentage }}
+                    </progress>
+                {% elif invoice.is_paid %}
+                    <h3 class="is-size-3 has-text-centered has-text-weight-bold has-text-success">{% trans 'This invoice is' %} {{ invoice.get_invoice_status_display }}</h3>
+                    <p class="is-size-3 has-text-dark">{% trans 'Amount Paid' %}:
+                        <span class="has-text-weight-bold">
                                     {% currency_symbol %}{{ invoice.amount_paid | currency_format }}
                                 </span>
-                        </p>
-                        <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
-                            <span class="has-text-weight-bold">{{ invoice.date_paid | date }}</span>
-                    {% else %}
-                        <p class="is-size-3 has-text-dark">Invoice Amount:
-                            <span class="has-text-weight-bold">{% currency_symbol %}{{ invoice.amount_due | currency_format }}</span>
-                        </p>
-                        <p class="is-size-3 has-text-danger-dark">{{ invoice.get_invoice_status_display | upper }}</p>
-                    {% endif %}
-                </div>
+                    </p>
+                    <p class="is-size-3 has-text-dark">{% trans 'Paid Date' %}:
+                        <span class="has-text-weight-bold">{{ invoice.date_paid | date }}</span>
+                        {% else %}
+                    <p class="is-size-3 has-text-dark">Invoice Amount:
+                        <span class="has-text-weight-bold">{% currency_symbol %}{{ invoice.amount_due | currency_format }}</span>
+                    </p>
+                    <p class="is-size-3 has-text-danger-dark">{{ invoice.get_invoice_status_display | upper }}</p>
+                {% endif %}
+            </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-update' entity_slug=entity_slug invoice_pk=invoice.uuid %}"
                    class="card-footer-item has-text-primary has-text-centered">{% trans 'Update' %}</a>

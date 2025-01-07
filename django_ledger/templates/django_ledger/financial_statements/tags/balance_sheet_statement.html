@@ -49,9 +49,9 @@
                             <td class="has-text-centered">{{ acc.balance_type.0 | upper }}</td>
                             <td class="has-text-right">{% currency_symbol %}{{ acc.balance | currency_format }}</td>
                             <td>
-                                <div class="dropdown is-right is-hoverable" id="account-action-{{ account.uuid }}">
+                                <div class="dropdown is-hoverable" id="account-action-{{ account.uuid }}">
                                     <div class="dropdown-trigger">
-                                        <button class="button is-small is-rounded is-outlined"
+                                        <button class="button is-small is-rounded"
                                                 aria-haspopup="true"
                                                 aria-controls="dropdown-menu">
                                             <span>{% trans 'Actions' %}</span>
@@ -60,9 +60,9 @@
                                     </div>
                                     <div class="dropdown-menu" id="dropdown-menu-{{ acc.uuid }}" role="menu">
                                         <div class="dropdown-content">
-                                            <a href="{{ acc.get_absolute_url }}"
+                                            <a href="{% url 'django_ledger:account-detail' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-success">{% trans 'Detail' %}</a>
-                                            <a href="{{ acc.get_update_url }}"
+                                            <a href="{% url 'django_ledger:account-update' entity_slug=entity_slug coa_slug=acc.coa_slug account_pk=acc.account_uuid %}"
                                                class="dropdown-item has-text-warning">{% trans 'Update' %}</a>
                                         </div>
                                     </div>

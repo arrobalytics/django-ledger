@@ -186,7 +186,7 @@ class AccountModelYearDetailView(BaseAccountModelBaseView,
         account_model: AccountModel = context['object']
         context['header_title'] = f'Account {account_model.code} - {account_model.name}'
         context['page_title'] = f'Account {account_model.code} - {account_model.name}'
-        txs_qs = account_model.transactionmodel_set.all().posted().order_by(
+        txs_qs = account_model.transactionmodel_set.all().not_closing_entry().posted().order_by(
             'journal_entry__timestamp'
         ).select_related(
             'journal_entry',

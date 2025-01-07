@@ -499,10 +499,11 @@ class IODatabaseMixIn:
         VALUES = [
             'account__uuid',
             'account__balance_type',
-            'tx_type',
             'account__code',
             'account__name',
             'account__role',
+            'account__coa_model__slug',
+            'tx_type',
         ]
 
         ANNOTATE = {'balance': Sum('amount')}
@@ -663,6 +664,7 @@ class IODatabaseMixIn:
         gl = list(g)
         return {
             'account_uuid': k[0],
+            'coa_slug': gl[0]['account__coa_model__slug'],
             'unit_uuid': k[1],
             'unit_name': gl[0].get('journal_entry__entity_unit__name'),
             'activity': gl[0].get('journal_entry__activity'),

@@ -145,11 +145,14 @@ class AccountModelUpdateForm(MoveNodeForm):
 
     class Meta:
         model = AccountModel
-        exclude = ('depth', 'numchild', 'path', 'balance_type')
+        exclude = ('depth', 'numchild', 'path')
         widgets = {
             'role': HiddenInput(),
             'coa_model': HiddenInput(),
             'parent': Select(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'balance_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'code': TextInput(attrs={
