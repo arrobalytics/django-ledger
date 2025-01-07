@@ -147,12 +147,8 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
         quarter_end = self.get_quarter_end_date(year=year, quarter=quarter)
         context['quarter_start'] = quarter_start
         context['quarter_end'] = quarter_end
-
-        if self.get_from_date_context_name() not in context:
-            context[self.get_from_date_context_name()] = quarter_start
-        if self.get_to_date_context_name() not in context:
-            context[self.get_to_date_context_name()] = quarter_end
-
+        context[self.get_from_date_context_name()] = quarter_start
+        context[self.get_to_date_context_name()] = quarter_end
         context['has_quarter'] = True
         return context
 
@@ -217,12 +213,8 @@ class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
         month_end = self.get_month_end_date(year=year, month=month)
         context['month_start'] = month_start
         context['month_end'] = month_end
-
-        if self.get_from_date_context_name() not in context:
-            context[self.get_from_date_context_name()] = month_start
-        if self.get_to_date_context_name() not in context:
-            context[self.get_to_date_context_name()] = month_end
-
+        context[self.get_from_date_context_name()] = month_start
+        context[self.get_to_date_context_name()] = month_end
         context['has_month'] = True
         return context
 
@@ -236,12 +228,8 @@ class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
         context['next_day'] = view_date + timedelta(days=1)
         context['previous_day'] = view_date - timedelta(days=1)
         context['view_date'] = view_date
-
-        if self.get_from_date_context_name() not in context:
-            context[self.get_from_date_context_name()] = view_date
-        if self.get_to_date_context_name() not in context:
-            context[self.get_to_date_context_name()] = view_date
-
+        context[self.get_from_date_context_name()] = view_date
+        context[self.get_to_date_context_name()] = view_date
         return context
 
     def get_date(self) -> date:
