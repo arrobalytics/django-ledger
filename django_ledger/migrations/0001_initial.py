@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
                 ('lia_cl_acc_payable', 'Accounts Payable'), ('lia_cl_wages_payable', 'Wages Payable'),
                 ('lia_cl_int_payable', 'Interest Payable'), ('lia_cl_taxes_payable', 'Taxes Payable'),
                 ('lia_cl_st_notes_payable', 'Notes Payable'),
-                ('lia_cl_ltd_mat', 'Current Maturities of Long Tern Debt'), ('lia_cl_def_rev', 'Deferred Revenue'),
+                ('lia_cl_ltd_mat', 'Current Maturities of Long Term Debt'), ('lia_cl_def_rev', 'Deferred Revenue'),
                 ('lia_cl_other', 'Other Liabilities'), ('lia_ltl_notes', 'Notes Payable'),
                 ('lia_ltl_bonds', 'Bonds Payable'), ('lia_ltl_mortgage', 'Mortgage Payable'))), ('Equity', (
                 ('eq_capital', 'Capital'), ('eq_stock_common', 'Common Stock'),
