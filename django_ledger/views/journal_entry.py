@@ -39,7 +39,7 @@ class JournalEntryModelModelViewQuerySetMixIn:
 
 
 # JE Views ---
-class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObjectMixin):
+class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView):
     template_name = 'django_ledger/journal_entry/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
     extra_context = {
@@ -102,11 +102,6 @@ class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelView
     date_field = 'timestamp'
     paginate_by = 20
     allow_empty = True
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.annotate(txs_count=Count('transactionmodel'))
-        return qs
 
 
 class JournalEntryYearListView(YearArchiveView, JournalEntryListView):

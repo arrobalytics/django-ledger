@@ -34,7 +34,7 @@ from uuid import uuid4, UUID
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, QuerySet, F, Manager
+from django.db.models import Q, Sum, QuerySet, F, Manager, Count
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.urls import reverse
@@ -146,6 +146,12 @@ class JournalEntryModelManager(Manager):
     A custom defined Journal Entry Model Manager that supports additional complex initial Queries based on the
     EntityModel and authenticated UserModel.
     """
+
+    def get_queryset(self):
+        qs = JournalEntryModelQuerySet(self.model, using=self._db)
+        return qs.annotate(
+            txs_count=Count('transactionmodel')
+        )
 
     def for_user(self, user_model):
         qs = self.get_queryset()
