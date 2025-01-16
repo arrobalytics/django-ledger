@@ -779,6 +779,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         if self.is_locked():
             self.locked = False
+            self.activity = None
             if not self.is_locked():
                 if commit:
                     self.save(verify=False)

@@ -67,7 +67,7 @@
                             {% if journal_entry.can_unlock %}
                                 <a class="button is-dark is-warning"
                                    href="{% url "django_ledger:je-mark-as-unlocked" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                                    {% trans 'Lock' %}
+                                    {% trans 'UnLock' %}
                                 </a>
                             {% endif %}
                             {% if journal_entry.can_post %}
