@@ -315,7 +315,6 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
         context[self.ENTITY_MODEL_CONTEXT_NAME] = self.get_authorized_entity_instance(raise_exception=False)
         return context
 
-
     def get_login_url(self):
         return reverse('django_ledger:login')
 
@@ -448,15 +447,17 @@ class DigestContextMixIn:
                 context[self.get_io_digest_unbounded_context_name()] = io_digest.get_io_data()
 
             if self.IO_DIGEST_BOUNDED:
-                io_digest_equity = entity_model.digest(user_model=self.request.user,
-                                                       equity_only=True,
-                                                       to_date=to_date,
-                                                       from_date=from_date,
-                                                       unit_slug=unit_slug,
-                                                       by_period=True if by_period else False,
-                                                       process_ratios=True,
-                                                       process_roles=True,
-                                                       process_groups=True)
+                io_digest_equity = entity_model.digest(
+                    user_model=self.request.user,
+                    equity_only=True,
+                    to_date=to_date,
+                    from_date=from_date,
+                    unit_slug=unit_slug,
+                    by_period=True if by_period else False,
+                    process_ratios=True,
+                    process_roles=True,
+                    process_groups=True
+                )
 
                 context[self.get_io_manager_bounded_context_name()] = io_digest_equity
                 context[self.get_io_digest_bounded_context_name()] = io_digest_equity.get_io_data()

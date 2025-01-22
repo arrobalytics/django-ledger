@@ -13,15 +13,18 @@
                 <th>{% trans 'Debit' %}</th>
                 <th>{% trans 'Description' %}</th>
             </tr>
-            {% for tx in txs %}
+            {% for transaction_model in transaction_model_qs %}
                 <tr>
-                    <td>{{ tx.journal_entry.timestamp }}</td>
-                    <td>{{ tx.account.code }}</td>
-                    <td>{{ tx.account.name }}</td>
-                    <td>{% if tx.journal_entry.entity_unit %}{{ tx.journal_entry.entity_unit.name }}{% endif %}</td>
-                    <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                    <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                    <td>{% if tx.description %}{{ tx.description }}{% endif %}</td>
+                    <td>{{ transaction_model.journal_entry.timestamp }}</td>
+                    <td>{{ transaction_model.account.code }}</td>
+                    <td>{{ transaction_model.account.name }}</td>
+                    <td>{% if transaction_model.journal_entry.entity_unit %}
+                        {{ transaction_model.journal_entry.entity_unit.name }}{% endif %}</td>
+                    <td>{% if transaction_model.tx_type == 'credit' %}$
+                        {{ transaction_model.amount | currency_format }}{% endif %}</td>
+                    <td>{% if transaction_model.tx_type == 'debit' %}$
+                        {{ transaction_model.amount | currency_format }}{% endif %}</td>
+                    <td>{% if transaction_model.description %}{{ transaction_model.description }}{% endif %}</td>
                 </tr>
             {% endfor %}
             <tr class="has-text-weight-bold">
@@ -45,13 +48,13 @@
                 <th>{% trans 'Debit' %}</th>
                 <th>{% trans 'Description' %}</th>
             </tr>
-            {% for tx in txs %}
+            {% for transaction_model in transaction_model_qs %}
                 <tr>
-                    <td>{{ tx.account.code }}</td>
-                    <td>{{ tx.account.name }}</td>
-                    <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                    <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                    <td>{% if tx.description %}{{ tx.description }}{% endif %}</td>
+                    <td>{{ transaction_model.account.code }}</td>
+                    <td>{{ transaction_model.account.name }}</td>
+                    <td>{% if transaction_model.tx_type == 'credit' %}${{ transaction_model.amount | currency_format }}{% endif %}</td>
+                    <td>{% if transaction_model.tx_type == 'debit' %}${{ transaction_model.amount | currency_format }}{% endif %}</td>
+                    <td>{% if transaction_model.description %}{{ transaction_model.description }}{% endif %}</td>
                 </tr>
             {% endfor %}
             <tr class="has-text-weight-bold">

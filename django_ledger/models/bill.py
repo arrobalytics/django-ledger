@@ -33,8 +33,13 @@ from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_P
 from django_ledger.io.io_core import get_localtime, get_localdate
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
-from django_ledger.models.mixins import (CreateUpdateMixIn, AccrualMixIn, MarkdownNotesMixIn,
-                                         PaymentTermsMixIn, ItemizeMixIn)
+from django_ledger.models.mixins import (
+    CreateUpdateMixIn,
+    AccrualMixIn,
+    MarkdownNotesMixIn,
+    PaymentTermsMixIn,
+    ItemizeMixIn
+)
 from django_ledger.models.signals import (
     bill_status_draft,
     bill_status_in_review,
@@ -574,6 +579,17 @@ class BillModelAbstract(
         } if not lazy_agg else None
 
     # ### ItemizeMixIn implementation END...
+
+    def get_transaction_queryset(self) -> Dict:
+        """
+        Fetches the TransactionModelQuerySet associated with the BillModel instance.
+        """
+        TransactionModel = lazy_loader.get_txs_model()
+        return TransactionModel.objects.select_related(
+            'journal_entry',
+            'journal_entry__entity_unit',
+            'account'
+        ).for_bill(self)
 
     # State..
     def get_migrate_state_desc(self) -> str:

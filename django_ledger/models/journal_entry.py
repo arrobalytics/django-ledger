@@ -42,6 +42,8 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.io.roles import (
     ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
@@ -140,6 +142,25 @@ class JournalEntryModelQuerySet(QuerySet):
     def unlocked(self):
         return self.filter(locked=False)
 
+    def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]):
+        """
+        Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel & LedgerModel.
+        May pass an instance of EntityModel or a String representing the EntityModel slug.
+
+        Parameters
+        ----------
+        ledger_pk: str or UUID
+            The LedgerModel uuid as a string or UUID.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            Returns a JournalEntryModelQuerySet with applied filters.
+        """
+        if isinstance(ledger_pk, LedgerModel):
+            return self.filter(ledger=ledger_pk)
+        return self.filter(ledger__uuid__exact=ledger_pk)
+
 
 class JournalEntryModelManager(Manager):
     """
@@ -147,13 +168,13 @@ class JournalEntryModelManager(Manager):
     EntityModel and authenticated UserModel.
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> JournalEntryModelQuerySet:
         qs = JournalEntryModelQuerySet(self.model, using=self._db)
         return qs.annotate(
             txs_count=Count('transactionmodel')
         )
 
-    def for_user(self, user_model):
+    def for_user(self, user_model) -> JournalEntryModelQuerySet:
         qs = self.get_queryset()
         if user_model.is_superuser:
             return qs
@@ -162,7 +183,7 @@ class JournalEntryModelManager(Manager):
             Q(ledger__entity__managers__in=[user_model])
         )
 
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_slug: Union[str, EntityModel], user_model) -> JournalEntryModelQuerySet:
         """
         Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -174,54 +195,15 @@ class JournalEntryModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        --------
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> journal_entry_qs = JournalEntryModel.objects.for_entity(user_model=request_user, entity_slug=slug)
-
         Returns
-        _______
+        -------
         JournalEntryModelQuerySet
             Returns a JournalEntryModelQuerySet with applied filters.
         """
         qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(ledger__entity=entity_slug)
-            )
-        return self.get_queryset().filter(
-            Q(ledger__entity__slug__iexact=entity_slug)
-        )
-
-    def for_ledger(self, ledger_pk: Union[str, UUID], entity_slug, user_model):
-        """
-        Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel & LedgerModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
-
-        Parameters
-        __________
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
-        ledger_pk: str or UUID
-            The LedgerModel uuid as a string or UUID.
-
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> ledger_pk = kwargs['ledger_pk'] # may come from request kwargs
-            >>> journal_entry_qs = JournalEntryModel.objects.for_ledger(ledger_pk=ledger_pk, user_model=request_user, entity_slug=slug)
-
-        Returns
-        _______
-        JournalEntryModelQuerySet
-            Returns a JournalEntryModelQuerySet with applied filters.
-        """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return qs.filter(ledger__uuid__exact=ledger_pk)
+        if isinstance(entity_slug, EntityModel):
+            return qs.filter(ledger__entity=entity_slug)
+        return qs.filter(ledger__entity__slug__iexact=entity_slug)
 
 
 class ActivityEnum(Enum):

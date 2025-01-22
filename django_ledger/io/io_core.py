@@ -359,11 +359,12 @@ class IODatabaseMixIn:
                     raise IOValidationError('Inconsistent entity_slug. '
                                             f'Provided {entity_slug} does not match actual {self.slug}')
             if unit_slug:
-                txs_queryset_init = TransactionModel.objects.for_unit(
+
+                txs_queryset_init = TransactionModel.objects.for_entity(
                     user_model=user_model,
-                    entity_slug=entity_slug or self.slug,
-                    unit_slug=unit_slug
-                )
+                    entity_slug=entity_slug or self.slug
+                ).for_unit(unit_slug=unit_slug)
+
             else:
                 txs_queryset_init = TransactionModel.objects.for_entity(
                     user_model=user_model,
@@ -373,20 +374,22 @@ class IODatabaseMixIn:
             if not entity_slug:
                 raise IOValidationError(
                     'Calling digest from Entity Unit requires entity_slug explicitly for safety')
-            txs_queryset_init = TransactionModel.objects.for_unit(
+
+            txs_queryset_init = TransactionModel.objects.for_entity(
                 user_model=user_model,
                 entity_slug=entity_slug,
-                unit_slug=unit_slug or self
-            )
+            ).for_unit(unit_slug=unit_slug or self)
+
         elif self.is_ledger_model():
             if not entity_slug:
                 raise IOValidationError(
                     'Calling digest from Ledger Model requires entity_slug explicitly for safety')
-            txs_queryset_init = TransactionModel.objects.for_ledger(
-                user_model=user_model,
+
+            txs_queryset_init = TransactionModel.objects.for_entity(
                 entity_slug=entity_slug,
-                ledger_model=self
-            )
+                user_model=user_model,
+            ).for_ledger(ledger_model=self)
+
         else:
             raise IOValidationError(
                 message=f'Cannot call digest from {self.__class__.__name__}'

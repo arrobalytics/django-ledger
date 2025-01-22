@@ -546,6 +546,17 @@ class InvoiceModelAbstract(
 
     # ### ItemizeMixIn implementation END...
 
+    def get_transaction_queryset(self) -> Dict:
+        """
+        Fetches the TransactionModelQuerySet associated with the InvoiceModel instance.
+        """
+        TransactionModel = lazy_loader.get_txs_model()
+        return TransactionModel.objects.select_related(
+            'journal_entry',
+            'journal_entry__entity_unit',
+            'account'
+        ).for_invoice(self)
+
     def get_migrate_state_desc(self):
         """
         Description used when migrating transactions into the LedgerModel.

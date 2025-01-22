@@ -167,7 +167,7 @@ class LedgerModelManager(models.Manager):
 
 class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     """
-    Base implmentation of the LedgerModel.
+    Base implementation of the LedgerModel.
 
     Attributes
     ----------

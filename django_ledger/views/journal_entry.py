@@ -7,7 +7,6 @@ Contributions to this module:
 """
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.db.models import Count
 from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -30,10 +29,11 @@ class JournalEntryModelModelViewQuerySetMixIn:
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = JournalEntryModel.objects.for_ledger(
-                ledger_pk=self.kwargs['ledger_pk'],
+            self.queryset = JournalEntryModel.objects.for_entity(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user
+            ).for_ledger(
+                ledger_pk=self.kwargs['ledger_pk']
             ).select_related('entity_unit', 'ledger', 'ledger__entity')
         return super().get_queryset()
 

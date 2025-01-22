@@ -27,10 +27,9 @@ class JournalEntryQuery(graphene.ObjectType):
             sort = info.context.GET.get('sort')
             if not sort:
                 sort = '-updated'
-                return JournalEntryModel.objects.for_ledger(
-                    ledger_pk=pk_ledger,
+                return JournalEntryModel.objects.for_entity(
                     entity_slug=slug_name,
                     user_model=info.context.user
-                ).order_by(sort)
+                ).for_ledger(ledger_pk=pk_ledger).order_by(sort)
         else:
             return JournalEntryModel.objects.none()
