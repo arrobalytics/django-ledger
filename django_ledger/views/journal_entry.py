@@ -134,10 +134,6 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
         je_model: JournalEntryModel = self.object
         return je_model.get_journal_entry_list_url()
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
-
 
 class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
     context_object_name = 'journal_entry'
@@ -152,10 +148,6 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
     }
     http_method_names = ['get']
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
-
 
 class JournalEntryDeleteView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DeleteView):
     template_name = 'django_ledger/journal_entry/je_delete.html'
@@ -164,15 +156,10 @@ class JournalEntryDeleteView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
 
     def get_success_url(self) -> str:
         je_model: JournalEntryModel = self.object
-        return reverse(
-            viewname='django_ledger:je-list',
-            kwargs={
-                'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug,
-                'ledger_pk': je_model.ledger_id
-            }
-        )
+        return je_model.get_journal_entry_list_url()
 
 
+# todo:.... move this to transaction list view?.....
 class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
     template_name = 'django_ledger/journal_entry/je_detail_txs.html'
     PAGE_TITLE = _('Edit Transactions')
