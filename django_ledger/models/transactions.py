@@ -488,21 +488,6 @@ class TransactionModelAbstract(CreateUpdateMixIn):
                 return None
             return self.account.coa_model_id
 
-    def clean(self):
-        """
-        Performs validation on the transaction instance.
-
-        Validates that the associated account is not a root account.
-        A root account cannot be linked to a transaction.
-
-        Raises:
-            TransactionModelValidationError: If the account is a root account.
-        """
-        if self.account_id and self.account.is_root_account():
-            raise TransactionModelValidationError(
-                message=_('Transactions cannot be linked to root accounts.')
-            )
-
 
 class TransactionModel(TransactionModelAbstract):
     """
@@ -569,6 +554,12 @@ def transactionmodel_presave(instance: TransactionModel, **kwargs):
     ```
     """
     bypass_account_state = kwargs.get('bypass_account_state', False)
+
+    if instance.account_id and instance.account.is_root_account():
+        raise TransactionModelValidationError(
+            message=_('Transactions cannot be linked to root accounts.')
+        )
+
     if all([
         not bypass_account_state,
         not instance.account.can_transact()

@@ -42,8 +42,6 @@ from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime
-from django_ledger.models.ledger import LedgerModel
-from django_ledger.models.entity import EntityModel
 from django_ledger.io.roles import (
     ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
@@ -52,6 +50,7 @@ from django_ledger.io.roles import (
 )
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
     journal_entry_unlocked,
@@ -60,7 +59,6 @@ from django_ledger.models.signals import (
     journal_entry_unposted
 )
 from django_ledger.models.transactions import TransactionModelQuerySet, TransactionModel
-from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
     DJANGO_LEDGER_JE_NUMBER_PREFIX,
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
@@ -171,6 +169,7 @@ class JournalEntryModelManager(Manager):
     def get_queryset(self) -> JournalEntryModelQuerySet:
         qs = JournalEntryModelQuerySet(self.model, using=self._db)
         return qs.annotate(
+            _entity_slug=F('ledger__entity__slug'),
             txs_count=Count('transactionmodel')
         )
 
@@ -359,6 +358,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         super().__init__(*args, **kwargs)
         self._verified = False
         self._last_closing_date: Optional[date] = None
+
+    @property
+    def entity_slug(self):
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            pass
+        return self.ledger.entity_slug
 
     def can_post(self, ignore_verify: bool = True) -> bool:
         """
@@ -1004,32 +1011,33 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           raise_exception: bool = True,
                           force_update: bool = False) -> Optional[str]:
 
-        if raise_exception and self.is_closing_entry:
-            raise_exception = False
+        if not self._state.adding:
+            if raise_exception and self.is_closing_entry:
+                raise_exception = False
 
-        if any([
-            not self.has_activity(),
-            not self.is_locked(),
-            force_update
-        ]):
+            if any([
+                not self.has_activity(),
+                not self.is_locked(),
+                force_update
+            ]):
 
-            txs_is_valid = True
-            if not txs_qs:
-                txs_qs = self.get_transaction_queryset(select_accounts=False)
-            else:
-                try:
-                    txs_is_valid = self.is_txs_qs_valid(txs_qs=txs_qs, raise_exception=raise_exception)
-                except JournalEntryValidationError as e:
-                    if raise_exception:
-                        raise e
-
-            if txs_is_valid:
-                cash_is_involved = self.is_cash_involved(txs_qs=txs_qs)
-                if not cash_is_involved:
-                    self.activity = None
+                txs_is_valid = True
+                if not txs_qs:
+                    txs_qs = self.get_transaction_queryset(select_accounts=False)
                 else:
-                    role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
-                    self.activity = self.get_activity_from_roles(role_set=role_list)
+                    try:
+                        txs_is_valid = self.is_txs_qs_valid(txs_qs=txs_qs, raise_exception=raise_exception)
+                    except JournalEntryValidationError as e:
+                        if raise_exception:
+                            raise e
+
+                if txs_is_valid:
+                    cash_is_involved = self.is_cash_involved(txs_qs=txs_qs)
+                    if not cash_is_involved:
+                        self.activity = None
+                    else:
+                        role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
+                        self.activity = self.get_activity_from_roles(role_set=role_list)
         return self.activity
 
     # todo: add entity_model as parameter on all functions...
@@ -1324,6 +1332,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                            'entity_slug': self.ledger.entity.slug,
                            'ledger_pk': self.ledger_id,
                            'je_pk': self.uuid
+                       })
+
+    def get_journal_entry_list_url(self):
+        return reverse('django_ledger:je-list',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.ledger_id
                        })
 
     def get_detail_txs_url(self) -> str:

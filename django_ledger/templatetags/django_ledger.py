@@ -223,27 +223,28 @@ def jes_table(context, journal_entry_qs, next_url=None):
     }
 
 
+# todo: consolidate next 3 functions into one...
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def journal_entry_txs_table(journal_entry_model, style='detail'):
-    txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account').order_by('account__code')
-    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
-    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
+    transaction_model_qs = journal_entry_model.transactionmodel_set.all().select_related('account').order_by('account__code')
+    total_credits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == 'credit')
+    total_debits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == 'debit')
     return {
-        'txs': txs_queryset,
+        'style': style,
+        'transaction_model_qs': transaction_model_qs,
         'total_debits': total_debits,
         'total_credits': total_credits,
-        'style': style
     }
 
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def bill_txs_table(bill_model: BillModel, style='detail'):
-    bill_transactions = bill_model.get_transaction_queryset()
-    total_credits = sum(tx.amount for tx in bill_transactions if tx.tx_type == CREDIT)
-    total_debits = sum(tx.amount for tx in bill_transactions if tx.tx_type == DEBIT)
+    transaction_model_qs = bill_model.get_transaction_queryset()
+    total_credits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == CREDIT)
+    total_debits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == DEBIT)
     return {
         'style': style,
-        'transaction_model_qs': bill_transactions,
+        'transaction_model_qs': transaction_model_qs,
         'total_credits': total_credits,
         'total_debits': total_debits,
     }
@@ -251,12 +252,12 @@ def bill_txs_table(bill_model: BillModel, style='detail'):
 
 @register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
 def invoice_txs_table(invoice_model: InvoiceModel, style='detail'):
-    invoice_transactions = invoice_model.get_transaction_queryset()
-    total_credits = sum(tx.amount for tx in invoice_transactions if tx.tx_type == CREDIT)
-    total_debits = sum(tx.amount for tx in invoice_transactions if tx.tx_type == DEBIT)
+    transaction_model_qs = invoice_model.get_transaction_queryset()
+    total_credits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == CREDIT)
+    total_debits = sum(tx.amount for tx in transaction_model_qs if tx.tx_type == DEBIT)
     return {
         'style': style,
-        'transaction_model_qs': invoice_transactions,
+        'transaction_model_qs': transaction_model_qs,
         'total_credits': total_credits,
         'total_debits': total_debits,
     }
