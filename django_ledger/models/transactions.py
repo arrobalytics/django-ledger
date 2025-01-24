@@ -286,6 +286,14 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__ledger__invoicemodel=invoice_model)
         return self.filter(journal_entry__ledger__invoicemodel__uuid__exact=invoice_model)
 
+    def with_annotated_details(self):
+        return self.annotate(
+            entity_unit_name=F('journal_entry__entity_unit__name'),
+            account_code=F('account__code'),
+            account_name=F('account__name'),
+            timestamp=F('journal_entry__timestamp'),
+        )
+
 
 class TransactionModelManager(Manager):
     """
@@ -487,6 +495,12 @@ class TransactionModelAbstract(CreateUpdateMixIn):
             if self.account is None:
                 return None
             return self.account.coa_model_id
+
+    def is_debit(self):
+        return self.tx_type == self.DEBIT
+
+    def is_credit(self):
+        return self.tx_type == self.CREDIT
 
 
 class TransactionModel(TransactionModelAbstract):

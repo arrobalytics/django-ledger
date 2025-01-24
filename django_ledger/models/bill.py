@@ -580,16 +580,15 @@ class BillModelAbstract(
 
     # ### ItemizeMixIn implementation END...
 
-    def get_transaction_queryset(self) -> Dict:
+    def get_transaction_queryset(self, annotated: bool = False):
         """
         Fetches the TransactionModelQuerySet associated with the BillModel instance.
         """
         TransactionModel = lazy_loader.get_txs_model()
-        return TransactionModel.objects.select_related(
-            'journal_entry',
-            'journal_entry__entity_unit',
-            'account'
-        ).for_bill(self)
+        transaction_model_qs = TransactionModel.objects.all().for_ledger(ledger_model=self.ledger_id)
+        if annotated:
+            return transaction_model_qs.with_annotated_details()
+        return transaction_model_qs
 
     # State..
     def get_migrate_state_desc(self) -> str:
