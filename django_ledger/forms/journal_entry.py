@@ -64,7 +64,7 @@ class JournalEntryModelCreateForm(ModelForm):
         }
 
 
-class JournalEntryModelUpdateForm(JournalEntryModelCreateForm):
+class JournalEntryModelUpdateForm(ModelForm):
 
     def clean_timestamp(self):
         if 'timestamp' in self.changed_data:

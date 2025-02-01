@@ -122,21 +122,11 @@ class JournalEntryUpdateView(JournalEntryModelModelBaseView, UpdateView):
         'header_title': PAGE_TITLE
     }
 
-    def get_form(self, form_class=None):
+    def get_form_class(self, form_class=None):
         je_model: JournalEntryModel = self.object
         if not je_model.can_edit():
-            return JournalEntryModelCannotEditForm(
-                entity_model=self.get_authorized_entity_instance(),
-                ledger_model=je_model.ledger,
-                user_model=self.request.user,
-                **self.get_form_kwargs()
-            )
-        return JournalEntryModelUpdateForm(
-            entity_model=self.get_authorized_entity_instance(),
-            ledger_model=je_model.ledger,
-            user_model=self.request.user,
-            **self.get_form_kwargs()
-        )
+            return JournalEntryModelCannotEditForm
+        return JournalEntryModelUpdateForm
 
     def get_success_url(self):
         je_model: JournalEntryModel = self.object
