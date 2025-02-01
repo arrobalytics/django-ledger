@@ -36,12 +36,9 @@ class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = JournalEntryModel.objects.for_entity(
-                entity_slug=self.get_authorized_entity_instance(),
-                user_model=self.request.user
-            ).for_ledger(
-                ledger_pk=self.kwargs['ledger_pk']
-            ).select_related('entity_unit', 'ledger', 'ledger__entity').order_by('-timestamp')
+            ledger_model: LedgerModel = self.get_ledger_model()
+            journal_entry_queryset = ledger_model.journal_entries.select_related('entity_unit', 'ledger', 'ledger__entity').order_by('-timestamp')
+            self.queryset = journal_entry_queryset
         return self.queryset
 
     def get_ledger_model(self) -> LedgerModel:
