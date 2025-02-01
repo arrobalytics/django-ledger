@@ -218,7 +218,7 @@ def jes_table(context, journal_entry_qs, next_url=None):
                                'ledger_pk': ledger_pk
                            })
     return {
-        'jes': journal_entry_qs,
+        'journal_entry_qs': journal_entry_qs,
         'entity_slug': entity_slug,
         'ledger_pk': ledger_pk,
         'next_url': next_url
