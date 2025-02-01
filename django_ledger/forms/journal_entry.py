@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.models import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
-from django_ledger.models.unit import EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
@@ -15,7 +14,8 @@ class JournalEntryModelCreateForm(ModelForm):
     def __init__(self,
                  entity_model: EntityModel,
                  ledger_model: Union[str, UUID, LedgerModel],
-                 user_model, *args, **kwargs):
+                 *args, **kwargs
+                 ):
         super().__init__(*args, **kwargs)
         self.ENTITY_MODEL: EntityModel = entity_model
 
@@ -26,18 +26,14 @@ class JournalEntryModelCreateForm(ModelForm):
             self.ENTITY_MODEL.validate_ledger_model_for_entity(ledger_model)
 
         self.LEDGER_MODEL: LedgerModel = ledger_model
-        self.USER_MODEL = user_model
 
         if 'timestamp' in self.fields:
             self.fields['timestamp'].required = False
         if 'entity_unit' in self.fields:
-            self.fields['entity_unit'].queryset = EntityUnitModel.objects.for_entity(
-                entity_slug=self.ENTITY_MODEL,
-                user_model=self.USER_MODEL
-            )
+            self.fields['entity_unit'].queryset = self.ENTITY_MODEL.entityunitmodel_set.all()
 
     def clean(self):
-        if not self.LEDGER_MODEL.can_edit_journal_entries():
+        if self.LEDGER_MODEL.is_locked():
             raise ValidationError(message=_('Cannot create new Journal Entries on a locked Ledger.'))
         self.instance.ledger = self.LEDGER_MODEL
         return super().clean()
