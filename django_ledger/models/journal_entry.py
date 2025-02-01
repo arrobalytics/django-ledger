@@ -46,7 +46,8 @@ from django_ledger.io.roles import (
     ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
     GROUP_CFS_FIN_LT_DEBT_PAYMENTS, GROUP_CFS_FIN_ST_DEBT_PAYMENTS,
     GROUP_CFS_INVESTING_AND_FINANCING, GROUP_CFS_INVESTING_PPE,
-    GROUP_CFS_INVESTING_SECURITIES, validate_roles
+    GROUP_CFS_INVESTING_SECURITIES,
+    validate_roles
 )
 from django_ledger.models.accounts import CREDIT, DEBIT
 from django_ledger.models.entity import EntityStateModel, EntityModel
@@ -64,6 +65,7 @@ from django_ledger.settings import (
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
     DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
 )
+from django_ledger.io import roles
 
 
 class JournalEntryValidationError(ValidationError):
@@ -72,88 +74,114 @@ class JournalEntryValidationError(ValidationError):
 
 class JournalEntryModelQuerySet(QuerySet):
     """
-    Custom defined JournalEntryQuerySet.
+    A custom QuerySet for working with Journal Entry models, providing additional
+    convenience methods and validations for specific use cases.
+
+    This class enhances Django's default QuerySet by adding tailored methods
+    to manage and filter Journal Entries, such as handling posted, unposted,
+    locked entries, and querying entries associated with specific ledgers.
     """
 
     def create(self, verify_on_save: bool = False, force_create: bool = False, **kwargs):
         """
-        Overrides the standard Django QuerySet create() method to avoid the creation of POSTED Journal Entries without
-        proper business logic validation. New JEs using the create() method don't have any transactions to validate.
-        therefore, it is not necessary to query DB to balance TXS
+        Creates a new Journal Entry while enforcing business logic validations.
+
+        This method overrides Django's default `create()` to ensure that Journal Entries
+        cannot be created in a "posted" state unless explicitly overridden.
+        Additionally, it offers optional pre-save verification.
 
         Parameters
         ----------
-
-        verify_on_save: bool
-            Executes a Journal Entry verification hook before saving. Avoids additional queries to
-            validate the Journal Entry
-
-        force_create: bool
-            If True, will create return a new JournalEntryModel even if Posted at time of creation.
-            Use only if you know what you are doing.
+        verify_on_save : bool
+            If True, performs a verification step before saving. This avoids
+            additional database queries for validation when creating new entries.
+            Should be used when the Journal Entry needs no transactional validation.
+        force_create : bool
+            If True, allows the creation of a Journal Entry even in a "posted"
+            state. Use with caution and only if you are certain of the consequences.
+        **kwargs : dict
+            Additional keyword arguments passed to instantiate the Journal Entry model.
 
         Returns
         -------
         JournalEntryModel
-            The newly created Journal Entry Model.
+            The newly created Journal Entry.
+
+        Raises
+        ------
+        FieldError
+            Raised if attempting to create a "posted" Journal Entry without
+            setting `force_create=True`.
         """
         is_posted = kwargs.get('posted')
-
         if is_posted and not force_create:
-            raise FieldError('Cannot create Journal Entries as posted')
+            raise FieldError("Cannot create Journal Entries in a posted state without 'force_create=True'.")
 
         obj = self.model(**kwargs)
         self._for_write = True
 
-        # verify_on_save option avoids additional queries to validate the journal entry.
-        # New JEs using the create() method don't have any transactions to validate.
-        # therefore, it is not necessary to query DB to balance TXS.
+        # Save the object with optional pre-save verification.
         obj.save(force_insert=True, using=self.db, verify=verify_on_save)
         return obj
 
     def posted(self):
         """
-        Filters the QuerySet to only posted Journal Entries.
+        Filters the QuerySet to include only "posted" Journal Entries.
 
         Returns
         -------
         JournalEntryModelQuerySet
-            A QuerySet with applied filters.
+            A filtered QuerySet containing only posted Journal Entries.
         """
         return self.filter(posted=True)
 
     def unposted(self):
+        """
+        Filters the QuerySet to include only "unposted" Journal Entries.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            A filtered QuerySet containing only unposted Journal Entries.
+        """
         return self.filter(posted=False)
 
     def locked(self):
         """
-        Filters the QuerySet to only locked Journal Entries.
+        Filters the QuerySet to include only "locked" Journal Entries.
 
         Returns
         -------
         JournalEntryModelQuerySet
-            A QuerySet with applied filters.
+            A filtered QuerySet containing only locked Journal Entries.
         """
-
         return self.filter(locked=True)
 
     def unlocked(self):
+        """
+        Filters the QuerySet to include only "unlocked" Journal Entries.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            A filtered QuerySet containing only unlocked Journal Entries.
+        """
         return self.filter(locked=False)
 
     def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]):
         """
-        Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel & LedgerModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        Filters the QuerySet to include Journal Entries associated with a specific Ledger.
 
         Parameters
         ----------
-        ledger_pk: str or UUID
-            The LedgerModel uuid as a string or UUID.
+        ledger_pk : str, UUID, or LedgerModel
+            The LedgerModel instance, its UUID, or a string representation of the UUID
+            to identify the Ledger.
 
         Returns
         -------
         JournalEntryModelQuerySet
-            Returns a JournalEntryModelQuerySet with applied filters.
+            A filtered QuerySet of Journal Entries associated with the specified Ledger.
         """
         if isinstance(ledger_pk, LedgerModel):
             return self.filter(ledger=ledger_pk)
@@ -162,64 +190,108 @@ class JournalEntryModelQuerySet(QuerySet):
 
 class JournalEntryModelManager(Manager):
     """
-    A custom defined Journal Entry Model Manager that supports additional complex initial Queries based on the
-    EntityModel and authenticated UserModel.
+    A custom manager for the JournalEntryModel that extends Django's default
+    Manager with additional query features. It allows complex query handling
+    based on relationships to the `EntityModel` and the authenticated `UserModel`.
+
+    This manager provides utility methods for generating filtered querysets
+    (e.g., entries associated with specific users or entities), as well as
+    annotations for convenience in query results.
     """
 
     def get_queryset(self) -> JournalEntryModelQuerySet:
-        qs = JournalEntryModelQuerySet(self.model, using=self._db)
-        return qs.annotate(
-            _entity_slug=F('ledger__entity__slug'),
-            txs_count=Count('transactionmodel')
-        )
-
-    def for_user(self, user_model) -> JournalEntryModelQuerySet:
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug: Union[str, EntityModel], user_model) -> JournalEntryModelQuerySet:
         """
-        Fetches a QuerySet of JournalEntryModels associated with a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        Returns the default queryset for JournalEntryModel with additional
+        annotations applied.
 
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
+        Annotations:
+        - `_entity_slug`: The slug of the related `EntityModel`.
+        - `txs_count`: The count of transactions (related `TransactionModel` instances)
+          for each journal entry.
 
         Returns
         -------
         JournalEntryModelQuerySet
-            Returns a JournalEntryModelQuerySet with applied filters.
+            A custom queryset enhanced with annotations.
+        """
+        qs = JournalEntryModelQuerySet(self.model, using=self._db)
+        return qs.annotate(
+            _entity_uuid=F('ledger__entity_id'),
+            _entity_slug=F('ledger__entity__slug'),  # Annotates the entity slug
+            _entity_last_closing_date=F('ledger__entity__last_closing_date'),
+            _ledger_is_locked=F('ledger__locked'),
+            txs_count=Count('transactionmodel')  # Annotates the count of transactions
+        )
+
+    def for_user(self, user_model) -> JournalEntryModelQuerySet:
+        """
+        Filters the JournalEntryModel queryset for the given user.
+
+        - Superusers will have access to all journal entries.
+        - Other authenticated users will only see entries for entities where
+          they are admins or managers.
+
+        Parameters
+        ----------
+        user_model : UserModel
+            An authenticated Django user object.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            A filtered queryset restricted by the user's entity relationships.
+        """
+        qs = self.get_queryset()
+        if user_model.is_superuser:
+            return qs
+
+        return qs.filter(
+            Q(ledger__entity__admin=user_model) |  # Entries for entities where the user is admin
+            Q(ledger__entity__managers__in=[user_model])  # Entries for entities where the user is a manager
+        )
+
+    def for_entity(self, entity_slug: Union[str, EntityModel], user_model) -> JournalEntryModelQuerySet:
+        """
+        Filters the JournalEntryModel queryset for a specific entity and user.
+
+        This method provides a way to fetch journal entries related to a specific
+        `EntityModel`, identified by its slug or model instance, with additional
+        filtering scoped to the user.
+
+        Parameters
+        ----------
+        entity_slug : str or EntityModel
+            The slug of the entity (or an instance of `EntityModel`) used for filtering.
+        user_model : UserModel
+            An authenticated Django user object.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            A customized queryset containing journal entries associated with the
+            given entity and restricted by the user's access permissions.
         """
         qs = self.for_user(user_model)
+
+        # Handle the `entity_slug` as either a string or an EntityModel instance
         if isinstance(entity_slug, EntityModel):
             return qs.filter(ledger__entity=entity_slug)
-        return qs.filter(ledger__entity__slug__iexact=entity_slug)
+
+        return qs.filter(ledger__entity__slug__iexact=entity_slug)  # Case-insensitive slug match
 
 
 class ActivityEnum(Enum):
     """
-    The database string representation of each accounting activity prefix in the database.
+    Represents the database prefixes used for different types of accounting activities.
 
     Attributes
-    __________
-
-    OPERATING: str
-        The database representation prefix of a Journal Entry that is an Operating Activity.
-
-    INVESTING: str
-        The database representation prefix of a Journal Entry that is an Investing Activity.
-
-    FINANCING: str
-        The database representation prefix of a Journal Entry that is an Financing Activity.
+    ----------
+    OPERATING : str
+        Prefix for a Journal Entry categorized as an Operating Activity.
+    INVESTING : str
+        Prefix for a Journal Entry categorized as an Investing Activity.
+    FINANCING : str
+        Prefix for a Journal Entry categorized as a Financing Activity.
     """
     OPERATING = 'op'
     INVESTING = 'inv'
@@ -228,51 +300,50 @@ class ActivityEnum(Enum):
 
 class JournalEntryModelAbstract(CreateUpdateMixIn):
     """
-    The base implementation of the JournalEntryModel.
+    Abstract base model for handling journal entries in the bookkeeping system.
 
     Attributes
     ----------
-    uuid: UUID
-        This is a unique primary key generated for the table. The default value of this field is uuid4().
-    je_number: str
-        A unique, sequential, human-readable alphanumeric Journal Entry Number (a.k.a Voucher or Document Number in
-        other commercial bookkeeping software). Contains the fiscal year under which the JE takes place within the
-        EntityModel as a prefix.
-    timestamp: datetime
-        The date of the JournalEntryModel. This date is applied to all TransactionModels contained within the JE, and
-        drives the financial statements of the EntityModel.
-    description: str
-        A user defined description for the JournalEntryModel.
-    entity_unit: EntityUnitModel
-        A logical, self-contained, user defined class or structure defined withing the EntityModel.
-        See EntityUnitModel documentation for more details.
-    activity: str
-        Programmatically determined based on the JE transactions and must be a value from ACTIVITIES. Gives
-        additional insight of the nature of the JournalEntryModel in order to produce the Statement of Cash Flows for the
-        EntityModel.
-    origin: str
-        A string giving additional information behind the origin or trigger of the JournalEntryModel.
-        For example: reconciliations, migrations, auto-generated, etc. Any string value is valid. Max 30 characters.
-    posted: bool
-        Determines if the JournalLedgerModel is posted, which means is affecting the books. Defaults to False.
-    locked: bool
-        Determines  if the JournalEntryModel is locked, which the creation or updates of new transactions are not
-        allowed.
-    ledger: LedgerModel
-        The LedgerModel associated with this JournalEntryModel. Cannot be null.
+    uuid : UUID
+        A unique identifier (primary key) for the journal entry, generated using uuid4().
+    je_number : str
+        A human-readable, unique, alphanumeric identifier for the journal entry (e.g., Voucher or Document Number).
+        Includes the fiscal year as a prefix for organizational purposes.
+    timestamp : datetime
+        The date of the journal entry, used for financial statements. This timestamp applies to associated transactions.
+    description : str
+        An optional user-defined description for the journal entry.
+    entity_unit : EntityUnitModel
+        A reference to a logical and self-contained structure within the `EntityModel`.
+        Provides context for the journal entry. See `EntityUnitModel` documentation for details.
+    activity : str
+        Indicates the nature of the activity associated with the journal entry.
+        Must be one of the predefined `ACTIVITIES` (e.g., Operating, Financing, Investing) and is programmatically determined.
+    origin : str
+        Describes the origin or trigger for the journal entry (e.g., reconciliations, migrations, auto-generated).
+        Max length: 30 characters.
+    posted : bool
+        Determines whether the journal entry has been posted (affecting the books). Defaults to `False`.
+    locked : bool
+        Indicates whether the journal entry is locked, preventing further modifications. Defaults to `False`.
+    ledger : LedgerModel
+        A reference to the LedgerModel associated with this journal entry. This field is mandatory.
+    is_closing_entry : bool
+        Indicates if the journal entry is a closing entry. Defaults to `False`.
     """
+
+    # Constants for activity types
     OPERATING_ACTIVITY = ActivityEnum.OPERATING.value
     FINANCING_OTHER = ActivityEnum.FINANCING.value
     INVESTING_OTHER = ActivityEnum.INVESTING.value
-
     INVESTING_SECURITIES = f'{ActivityEnum.INVESTING.value}_securities'
     INVESTING_PPE = f'{ActivityEnum.INVESTING.value}_ppe'
-
     FINANCING_STD = f'{ActivityEnum.FINANCING.value}_std'
     FINANCING_LTD = f'{ActivityEnum.FINANCING.value}_ltd'
     FINANCING_EQUITY = f'{ActivityEnum.FINANCING.value}_equity'
     FINANCING_DIVIDENDS = f'{ActivityEnum.FINANCING.value}_dividends'
 
+    # Activity categories for dropdown
     ACTIVITIES = [
         (_('Operating'), (
             (OPERATING_ACTIVITY, _('Operating')),
@@ -291,36 +362,43 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         )),
     ]
 
+    # Utility mappings for activity validation
     VALID_ACTIVITIES = list(chain.from_iterable([[a[0] for a in cat[1]] for cat in ACTIVITIES]))
     MAP_ACTIVITIES = dict(chain.from_iterable([[(a[0], cat[0]) for a in cat[1]] for cat in ACTIVITIES]))
     NON_OPERATIONAL_ACTIVITIES = [a for a in VALID_ACTIVITIES if ActivityEnum.OPERATING.value not in a]
 
+    # Field definitions
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     je_number = models.SlugField(max_length=25, editable=False, verbose_name=_('Journal Entry Number'))
     timestamp = models.DateTimeField(verbose_name=_('Timestamp'), default=localtime)
     description = models.CharField(max_length=70, blank=True, null=True, verbose_name=_('Description'))
-    entity_unit = models.ForeignKey('django_ledger.EntityUnitModel',
-                                    on_delete=models.RESTRICT,
-                                    blank=True,
-                                    null=True,
-                                    verbose_name=_('Associated Entity Unit'))
-    activity = models.CharField(choices=ACTIVITIES,
-                                max_length=20,
-                                null=True,
-                                blank=True,
-                                editable=False,
-                                verbose_name=_('Activity'))
+    entity_unit = models.ForeignKey(
+        'django_ledger.EntityUnitModel',
+        on_delete=models.RESTRICT,
+        blank=True,
+        null=True,
+        verbose_name=_('Associated Entity Unit')
+    )
+    activity = models.CharField(
+        choices=ACTIVITIES,
+        max_length=20,
+        null=True,
+        blank=True,
+        editable=False,
+        verbose_name=_('Activity')
+    )
     origin = models.CharField(max_length=30, blank=True, null=True, verbose_name=_('Origin'))
     posted = models.BooleanField(default=False, verbose_name=_('Posted'))
     locked = models.BooleanField(default=False, verbose_name=_('Locked'))
     is_closing_entry = models.BooleanField(default=False)
+    ledger = models.ForeignKey(
+        'django_ledger.LedgerModel',
+        verbose_name=_('Ledger'),
+        related_name='journal_entries',
+        on_delete=models.CASCADE
+    )
 
-    # todo: rename to ledger_model?
-    ledger = models.ForeignKey('django_ledger.LedgerModel',
-                               verbose_name=_('Ledger'),
-                               related_name='journal_entries',
-                               on_delete=models.CASCADE)
-
+    # Custom manager
     objects = JournalEntryModelManager.from_queryset(queryset_class=JournalEntryModelQuerySet)()
 
     class Meta:
@@ -339,165 +417,225 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['is_closing_entry']),
         ]
 
-    def __str__(self):
-        if self.je_number:
-            return 'JE: {x1} (posted={p}, locked={l}) - Desc: {x2}'.format(
-                x1=self.je_number,
-                x2=self.description,
-                p=self.posted,
-                l=self.locked
-            )
-        return 'JE ID: {x1} (posted={p}, locked={l}) - Desc: {x2}'.format(
-            x1=self.pk,
-            x2=self.description,
-            p=self.posted,
-            l=self.locked
-        )
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._verified = False
-        self._last_closing_date: Optional[date] = None
+
+    def __str__(self):
+        if self.je_number:
+            return f"JE: {self.je_number} (posted={self.posted}, locked={self.locked}) - Desc: {self.description or ''}"
+        return f"JE ID: {self.pk} (posted={self.posted}, locked={self.locked}) - Desc: {self.description or ''}"
+
+    @property
+    def entity_uuid(self):
+        try:
+            return getattr(self, '_entity_uuid')
+        except AttributeError:
+            pass
+        return self.ledger.entity_id
 
     @property
     def entity_slug(self):
+        """
+        Retrieves the unique slug associated with the entity.
+
+        The property first attempts to return the value stored in the `_entity_slug`
+        attribute if it exists. If `_entity_slug` is not set, it falls back to the
+        `ledger.entity.slug` attribute.
+
+        Returns:
+            str: The slug value from `_entity_slug` if available, or `ledger.entity.slug` otherwise.
+        """
         try:
             return getattr(self, '_entity_slug')
         except AttributeError:
             pass
-        return self.ledger.entity_slug
+        return self.ledger.entity.slug
 
-    def can_post(self, ignore_verify: bool = True) -> bool:
+    @property
+    def entity_last_closing_date(self) -> Optional[date]:
         """
-        Determines if a JournalEntryModel can be posted.
+            Retrieves the last closing date for an entity, if available.
+
+            This property returns the date of the most recent closing event
+            associated with the entity. If no closing date exists, the
+            result will be None.
+
+            Returns
+            -------
+            Optional[date]
+                The date of the last closing event, or None if no closing
+                date is available.
+        """
+        return self.get_entity_last_closing_date()
+
+    def validate_for_entity(self, entity_model: Union[EntityModel, str, UUID], raise_exception: bool = True) -> bool:
+        """
+        Validates whether the given entity_model owns thr Journal Entry instance.
+
+        This method checks if the provided entity_model owns the Journal Entry model instance.
+        The entity_model can be of type `EntityModel`, `str`, or
+        `UUID`. The method performs type-specific checks to ensure proper validation
+        and returns the validation result.
 
         Parameters
         ----------
-        ignore_verify: bool
-            Skips JournalEntryModel verification if True. Defaults to False.
+        entity_model : Union[EntityModel, str, UUID]
+            The entity to validate against. It can either be an instance of the
+            `EntityModel`, a string representation of a UUID, or a UUID object.
 
         Returns
         -------
         bool
-            True if JournalEntryModel can be posted, otherwise False.
+            A boolean value. True if the given entity_model corresponds to the current
+            entity's UUID, otherwise False.
         """
+        if isinstance(entity_model, str):
+            is_valid = str(self.entity_uuid) == entity_model
+        elif isinstance(entity_model, UUID):
+            is_valid = self.entity_uuid == entity_model
+        else:
+            is_valid = self.entity_uuid == entity_model.uuid
 
+        if not is_valid and raise_exception:
+            raise JournalEntryValidationError(
+                message='The Journal Entry does not belong to the provided entity.'
+            )
+        return is_valid
+
+    def ledger_is_locked(self):
+        """
+        Determines whether the ledger is locked.
+
+        This method checks the current state of the ledger to determine if it is
+        locked and unavailable for further operations. It looks for an annotated
+        attribute `_ledger_is_locked` and returns its value if found. If the
+        attribute is not set, it delegates the check to the actual `is_locked`
+        method of the `ledger` object.
+
+        Returns
+        -------
+        bool
+            A boolean value indicating whether the ledger is locked.
+        """
+        try:
+            return getattr(self, '_ledger_is_locked')
+        except AttributeError:
+            pass
+        return self.ledger.is_locked()
+
+    def can_post(self, ignore_verify: bool = True) -> bool:
+        """Determines if the journal entry can be posted."""
         return all([
             self.is_locked(),
             not self.is_posted(),
-            self.is_verified() if not ignore_verify else True,
-            not self.ledger.is_locked(),
+            self.is_verified() if not ignore_verify else True, # avoids db queries, will be verified before saving
+            not self.ledger_is_locked(),
             not self.is_in_locked_period()
         ])
 
     def can_unpost(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be un-posted.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be un-posted, otherwise False.
-        """
+        """Checks if the journal entry can be un-posted."""
         return all([
             self.is_posted(),
-            not self.ledger.is_locked(),
+            not self.ledger_is_locked(),
             not self.is_in_locked_period()
         ])
 
     def can_lock(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be locked.
-        Locked JournalEntryModels cannot be modified.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be locked, otherwise False.
-        """
+        """Determines if the journal entry can be locked."""
         return all([
             not self.is_locked(),
-            not self.ledger.is_locked()
+            not self.ledger_is_locked()
         ])
 
     def can_unlock(self) -> bool:
-        """
-        Determines if a JournalEntryModel can be un-locked.
-        Locked transactions cannot be modified.
-
-        Returns
-        -------
-        bool
-            True if JournalEntryModel can be un-locked, otherwise False.
-        """
+        """Checks if the journal entry can be unlocked."""
         return all([
             self.is_locked(),
             not self.is_posted(),
             not self.is_in_locked_period(),
-            not self.ledger.is_locked()
+            not self.ledger_is_locked()
         ])
 
     def can_delete(self) -> bool:
+        """Checks if the journal entry can be deleted."""
         return all([
             not self.is_locked(),
             not self.is_posted(),
         ])
 
     def can_edit(self) -> bool:
-        return not self.is_locked()
+        """Checks if the journal entry is editable."""
+        return all([
+            not self.is_locked(),
 
-    def is_posted(self):
+        ])
+
+    def is_posted(self) -> bool:
+        """Returns whether the journal entry has been posted."""
         return self.posted is True
 
     def is_in_locked_period(self, new_timestamp: Optional[Union[date, datetime]] = None) -> bool:
-        last_closing_date = self.get_entity_last_closing_date()
+        """
+        Checks if the current Journal Entry falls within a locked period.
+
+        Parameters
+        ----------
+            new_timestamp: Optional[Union[date, datetime]])
+                An optional date or timestamp to be checked instead of the current timestamp.
+
+        Returns
+        -------
+            bool: True if the Journal Entry is in a locked period, otherwise False.
+        """
+        last_closing_date = self.entity_last_closing_date
         if last_closing_date is not None:
             if not new_timestamp:
                 return last_closing_date >= self.timestamp.date()
             elif isinstance(new_timestamp, datetime):
                 return last_closing_date >= new_timestamp.date()
-            else:
-                return last_closing_date >= new_timestamp
+            return last_closing_date >= new_timestamp
         return False
 
-    def is_locked(self):
-        if self.is_posted():
-            return True
-        return any([
-            self.locked is True,
-            any([
-                self.is_in_locked_period(),
-                self.ledger.is_locked()
-            ])
+    def is_locked(self) -> bool:
+        """
+        Determines if the Journal Entry is locked.
+
+        A Journal Entry is considered locked if it is posted, explicitly marked
+        as locked, falls within a locked period, or the associated ledger is locked.
+
+        Returns:
+            bool: True if the Journal Entry is locked, otherwise False.
+        """
+        return self.is_posted() or any([
+            self.locked,
+            self.is_in_locked_period(),
+            self.ledger_is_locked()
         ])
 
     def is_verified(self) -> bool:
         """
-        Determines if the JournalEntryModel is verified.
+        Checks if the Journal Entry is verified.
 
-        Returns
-        -------
-        bool
-            True if is verified, otherwise False.
+        Returns:
+            bool: True if the Journal Entry is verified, otherwise False.
         """
         return self._verified
 
-    # Transaction QuerySet
     def is_balance_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
-        Checks if CREDITs and DEBITs are equal.
+        Validates whether the DEBITs and CREDITs of the transactions balance correctly.
 
-        Parameters
-        ----------
-        txs_qs: TransactionModelQuerySet
+        Parameters:
+            txs_qs (TransactionModelQuerySet): A QuerySet containing transactions to validate.
+            raise_exception (bool): Whether to raise a JournalEntryValidationError if the validation fails.
 
-        raise_exception: bool
-            Raises JournalEntryValidationError if TransactionModelQuerySet is not valid.
-            
-        Returns
-        -------
-        bool
-            True if JE balances are valid (i.e. are equal).
+        Returns:
+            bool: True if the transactions are balanced, otherwise False.
+
+        Raises:
+            JournalEntryValidationError: If the transactions are not balanced and raise_exception is True.
         """
         if len(txs_qs) > 0:
             balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
@@ -514,65 +652,78 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return is_valid
         return True
 
-    def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet) -> bool:
+    def is_txs_qs_coa_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
-        Validates that the Chart of Accounts (COA) is valid for the transactions.
-        Journal Entry transactions can only be associated with one Chart of Accounts (COA).
-        
-        
-        Parameters
-        ----------
-        txs_qs: TransactionModelQuerySet
+        Validates that all transactions in the QuerySet are associated with the same Chart of Accounts (COA).
 
-        Returns
-        -------
-        True if Transaction CoAs are valid, otherwise False.
+        Parameters:
+            txs_qs (TransactionModelQuerySet): A QuerySet containing transactions to validate.
+
+        Returns:
+            bool: True if all transactions have the same Chart of Accounts, otherwise False.
         """
-
         if len(txs_qs) > 0:
             coa_count = len(set(tx.coa_id for tx in txs_qs))
-            return coa_count == 1
+            is_valid = coa_count == 1
+            if not is_valid and raise_exception:
+                raise JournalEntryValidationError(
+                    message='All transactions in the QuerySet must be associated with the same Chart of Accounts.'
+                )
+            return is_valid
         return True
 
     def is_txs_qs_valid(self, txs_qs: TransactionModelQuerySet, raise_exception: bool = True) -> bool:
         """
-        Validates a given TransactionModelQuerySet against the JournalEntryModel instance.
+        Validates whether the given Transaction QuerySet belongs to the current Journal Entry.
 
-        Parameters
-        ----------
-        txs_qs: TransactionModelQuerySet
-            The queryset to validate.
+        Parameters:
+            txs_qs (TransactionModelQuerySet): A QuerySet containing transactions to validate.
+            raise_exception (bool): Whether to raise a JournalEntryValidationError if the validation fails.
 
-        raise_exception: bool
-            Raises JournalEntryValidationError if TransactionModelQuerySet is not valid.
+        Returns:
+            bool: True if all transactions belong to the Journal Entry, otherwise False.
 
-        Raises
-        ------
-        JournalEntryValidationError if JE model is invalid and raise_exception is True.
-
-        Returns
-        -------
-        bool
-            True if valid, otherwise False.
+        Raises:
+            JournalEntryValidationError: If validation fails and raise_exception is True.
         """
         if not isinstance(txs_qs, TransactionModelQuerySet):
             raise JournalEntryValidationError('Must pass an instance of TransactionModelQuerySet')
 
         is_valid = all(tx.journal_entry_id == self.uuid for tx in txs_qs)
         if not is_valid and raise_exception:
-            raise JournalEntryValidationError('Invalid TransactionModelQuerySet provided. All Transactions must be ',
-                                              f'associated with LedgerModel {self.uuid}')
+            raise JournalEntryValidationError(
+                f'Invalid TransactionModelQuerySet. All transactions must be associated with Journal Entry {self.uuid}.'
+            )
         return is_valid
 
-    def is_cash_involved(self, txs_qs=None):
-        return ASSET_CA_CASH in self.get_txs_roles(txs_qs=None)
+    def is_cash_involved(self, txs_qs: Optional[TransactionModelQuerySet] = None) -> bool:
+        """
+        Checks if the transactions involve cash assets.
 
-    def is_operating(self):
-        return self.activity in [
-            self.OPERATING_ACTIVITY
-        ]
+        Parameters:
+            txs_qs (Optional[TransactionModelQuerySet]): Transactions to evaluate. If None, defaults to class behavior.
 
-    def is_financing(self):
+        Returns:
+            bool: True if cash assets are involved, otherwise False.
+        """
+        return roles.ASSET_CA_CASH in self.get_txs_roles(txs_qs)
+
+    def is_operating(self) -> bool:
+        """
+        Checks if the Journal Entry is categorized as an operating activity.
+
+        Returns:
+            bool: True if the activity is operating, otherwise False.
+        """
+        return self.activity in [self.OPERATING_ACTIVITY]
+
+    def is_financing(self) -> bool:
+        """
+        Checks if the Journal Entry is categorized as a financing activity.
+
+        Returns:
+            bool: True if the activity is financing, otherwise False.
+        """
         return self.activity in [
             self.FINANCING_EQUITY,
             self.FINANCING_LTD,
@@ -581,19 +732,44 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.FINANCING_OTHER
         ]
 
-    def is_investing(self):
+    def is_investing(self) -> bool:
+        """
+        Checks if the Journal Entry is categorized as an investing activity.
+
+        Returns:
+            bool: True if the activity is investing, otherwise False.
+        """
         return self.activity in [
             self.INVESTING_SECURITIES,
             self.INVESTING_PPE,
             self.INVESTING_OTHER
         ]
 
-    def get_entity_unit_name(self, no_unit_name: str = ''):
+    def get_entity_unit_name(self, no_unit_name: str = "") -> str:
+        """
+        Retrieves the name of the entity unit associated with the Journal Entry.
+
+        Parameters:
+            no_unit_name (str): The fallback name to return if no unit is associated.
+
+        Returns:
+            str: The name of the entity unit, or the fallback provided.
+        """
         if self.entity_unit_id:
             return self.entity_unit.name
         return no_unit_name
 
     def get_entity_last_closing_date(self) -> Optional[date]:
+        """
+        Retrieves the last closing date for the entity associated with the Journal Entry.
+
+        Returns:
+            Optional[date]: The last closing date if one exists, otherwise None.
+        """
+        try:
+            return getattr(self, '_entity_last_closing_date')
+        except AttributeError:
+            pass
         return self.ledger.entity.last_closing_date
 
     def mark_as_posted(self,
@@ -604,21 +780,16 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                        **kwargs):
         """
         Posted transactions show on the EntityModel ledger and financial statements.
-
         Parameters
         ----------
         commit: bool
             Commits changes into the Database, Defaults to False.
-
         verify: bool
             Verifies JournalEntryModel before marking as posted. Defaults to False.
-
         force_lock: bool
             Forces to lock the JournalEntry before is posted.
-
         raise_exception: bool
             Raises JournalEntryValidationError if cannot post. Defaults to False.
-
         kwargs: dict
             Additional keyword arguments.
         """
@@ -630,7 +801,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                         message=_('Cannot post an empty Journal Entry.')
                     )
                 return
-
         if force_lock and not self.is_locked():
             try:
                 self.mark_as_locked(commit=False, raise_exception=True)
@@ -638,13 +808,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 if raise_exception:
                     raise e
                 return
-
         if not self.can_post(ignore_verify=False):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
                                                   f' Is verified: {self.is_verified()}')
             return
-
         if not self.is_posted():
             self.posted = True
             if self.is_posted():
@@ -675,10 +843,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         ----------
         commit: bool
             Commits changes into the Database, Defaults to False.
-
         raise_exception: bool
             Raises JournalEntryValidationError if cannot post. Defaults to False.
-
         kwargs: dict
             Additional keyword arguments.
         """
@@ -718,10 +884,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         ----------
         commit: bool
             Commits changes into the Database, Defaults to False.
-
         raise_exception: bool
             Raises JournalEntryValidationError if cannot lock. Defaults to False.
-
         kwargs: dict
             Additional keyword arguments.
         """
@@ -730,7 +894,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 if raise_exception:
                     raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
                 return
-
         if not self.is_locked():
             self.generate_activity(force_update=True)
             self.locked = True
@@ -765,7 +928,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
             return
-
         if self.is_locked():
             self.locked = False
             self.activity = None
@@ -785,138 +947,129 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def get_transaction_queryset(self, select_accounts: bool = True) -> TransactionModelQuerySet:
         """
-        Fetches the TransactionModelQuerySet associated with the JournalEntryModel instance.
+        Retrieves the `TransactionModelQuerySet` associated with this `JournalEntryModel` instance.
 
         Parameters
         ----------
-        select_accounts: bool
-            Fetches the associated AccountModel of each transaction. Defaults to True.
+        select_accounts : bool, optional
+            If True, prefetches the related `AccountModel` for each transaction. Defaults to True.
 
         Returns
         -------
         TransactionModelQuerySet
-            The TransactionModelQuerySet associated with the current JournalEntryModel instance.
+            A queryset containing transactions related to this journal entry. If `select_accounts` is
+            True, the accounts are included in the query as well.
         """
         if select_accounts:
             return self.transactionmodel_set.all().select_related('account')
         return self.transactionmodel_set.all()
 
-    def get_txs_balances(self,
-                         txs_qs: Optional[TransactionModelQuerySet] = None,
-                         as_dict: bool = False) -> Union[TransactionModelQuerySet, Dict]:
+    def get_txs_balances(
+            self,
+            txs_qs: Optional[TransactionModelQuerySet] = None,
+            as_dict: bool = False
+    ) -> Union[TransactionModelQuerySet, Dict[str, Decimal]]:
         """
-        Fetches the sum total of CREDITs and DEBITs associated with the JournalEntryModel instance. This method
-        performs a reduction/aggregation at the database level and fetches exactly two records. Optionally,
-        may pass an  existing TransactionModelQuerySet if previously fetched. Additional validation occurs to ensure
-        that all TransactionModels in QuerySet are of the JE instance. Due to JournalEntryModel pre-save validation
-        and basic rules of accounting, CREDITs and DEBITS will always match.
+        Calculates the total CREDIT and DEBIT balances for the journal entry.
+
+        This method performs an aggregate database query to compute the sum of CREDITs and
+        DEBITs across the transactions related to this journal entry. Optionally, a pre-fetched
+        `TransactionModelQuerySet` can be supplied for efficiency. Validation is performed to
+        ensure that all transactions belong to this journal entry.
 
         Parameters
         ----------
-        txs_qs: TransactionModelQuerySet
-            The JE TransactionModelQuerySet to use if previously fetched. Will be validated to make sure all
-            TransactionModel in QuerySet belong to the JournalEntryModel instance.
+        txs_qs : TransactionModelQuerySet, optional
+            A pre-fetched queryset of transactions. If None, the queryset is fetched automatically.
+        as_dict : bool, optional
+            If True, returns the results as a dictionary with keys "credit" and "debit". Defaults to False.
 
-        as_dict: bool
-            If True, returns the result as a dictionary, with exactly two keys: 'credit' and 'debit'.
-            The values will be the total CREDIT or DEBIT amount as Decimal.
-
-        Examples
-        --------
-        >>> je_model: JournalEntryModel = je_qs.first() # any existing JournalEntryModel QuerySet...
-        >>> balances = je_model.get_txs_balances()
-        >>> balances
-        Returns exactly two records:
-        <TransactionModelQuerySet [{'tx_type': 'credit', 'amount__sum': Decimal('2301.5')},
-        {'tx_type': 'debit', 'amount__sum': Decimal('2301.5')}]>
-
-        Examples
-        --------
-        >>> balances = je_model.get_txs_balances(as_dict=True)
-        >>> balances
-        Returns a dictionary:
-        {'credit': Decimal('2301.5'), 'debit': Decimal('2301.5')}
+        Returns
+        -------
+        Union[TransactionModelQuerySet, Dict[str, Decimal]]
+            If `as_dict` is False, returns a queryset of aggregated balances. If `as_dict` is True,
+            returns a dictionary containing the CREDIT and DEBIT totals.
 
         Raises
         ------
         JournalEntryValidationError
-            If JE is not valid or TransactionModelQuerySet provided does not belong to JE instance.
-
-        Returns
-        -------
-        TransactionModelQuerySet or dict
-            An aggregated queryset containing exactly two records. The total CREDIT or DEBIT amount as Decimal.
+            If the provided queryset is invalid or does not belong to this journal entry.
         """
         if not txs_qs:
             txs_qs = self.get_transaction_queryset(select_accounts=False)
-        else:
-            if not isinstance(txs_qs, TransactionModelQuerySet):
-                raise JournalEntryValidationError(
-                    message=f'Must pass a TransactionModelQuerySet. Got {txs_qs.__class__.__name__}'
-                )
-
-            # todo: add maximum transactions per JE model as a setting...
-            is_valid = self.is_txs_qs_valid(txs_qs)
-            if not is_valid:
-                raise JournalEntryValidationError(
-                    message='Invalid Transaction QuerySet used. Must be from same Journal Entry'
-                )
+        elif not isinstance(txs_qs, TransactionModelQuerySet):
+            raise JournalEntryValidationError(
+                f"Expected a TransactionModelQuerySet, got {type(txs_qs).__name__}"
+            )
+        elif not self.is_txs_qs_valid(txs_qs):
+            raise JournalEntryValidationError(
+                "Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry."
+            )
 
         balances = txs_qs.values('tx_type').annotate(
-            amount__sum=Coalesce(Sum('amount'),
-                                 Decimal('0.00'),
-                                 output_field=models.DecimalField()))
+            amount__sum=Coalesce(Sum('amount'), Decimal('0.00'), output_field=models.DecimalField())
+        )
 
         if as_dict:
-            return {
-                tx['tx_type']: tx['amount__sum'] for tx in balances
-            }
+            return {tx['tx_type']: tx['amount__sum'] for tx in balances}
         return balances
 
-    def get_txs_roles(self,
-                      txs_qs: Optional[TransactionModelQuerySet] = None,
-                      exclude_cash_role: bool = False) -> Set[str]:
+    def get_txs_roles(
+            self,
+            txs_qs: Optional[TransactionModelQuerySet] = None,
+            exclude_cash_role: bool = False
+    ) -> Set[str]:
         """
-        Determines the list of account roles involved in the JournalEntryModel instance.
-        It reaches into the AccountModel associated with each TransactionModel of the JE to determine a Set of
-        all roles involved in transactions. This method is important in determining the nature of the
+        Retrieves the set of account roles involved in the journal entry's transactions.
+
+        This method extracts the roles associated with the accounts linked to each transaction.
+        Optionally, the CASH role can be excluded from the results.
 
         Parameters
         ----------
-        txs_qs: TransactionModelQuerySet
-            Prefetched TransactionModelQuerySet. Will be validated if provided.
-            Avoids additional DB query if provided.
-
-        exclude_cash_role: bool
-            Removes CASH role from the Set if present.
-            Useful in some cases where cash role must be excluded for additional validation.
+        txs_qs : TransactionModelQuerySet, optional
+            A pre-fetched queryset of transactions. If None, the queryset is fetched automatically.
+        exclude_cash_role : bool, optional
+            If True, excludes the CASH role from the result. Defaults to False.
 
         Returns
         -------
-        set
-            The set of account roles as strings associated with the JournalEntryModel instance.
+        Set[str]
+            A set of account roles associated with this journal entry's transactions.
         """
         if not txs_qs:
             txs_qs = self.get_transaction_queryset(select_accounts=True)
         else:
             self.is_txs_qs_valid(txs_qs)
 
-        # todo: implement distinct for non SQLite Backends...
+        roles = {tx.account.role for tx in txs_qs}
+
         if exclude_cash_role:
-            return set([i.account.role for i in txs_qs if i.account.role != ASSET_CA_CASH])
-        return set([i.account.role for i in txs_qs])
+            roles.discard(ASSET_CA_CASH)
+
+        return roles
 
     def has_activity(self) -> bool:
+        """
+        Checks if the journal entry has an associated activity.
+
+        Returns
+        -------
+        bool
+            True if an activity is defined for the journal entry, otherwise False.
+        """
         return self.activity is not None
 
     def get_activity_name(self) -> Optional[str]:
         """
-        Returns a human-readable, GAAP string representing the JournalEntryModel activity.
+        Gets the name of the activity associated with this journal entry.
+
+        The activity indicates its categorization based on GAAP (e.g., operating, investing, financing).
 
         Returns
         -------
-        str or None
-            Representing the JournalEntryModel activity in the statement of cash flows.
+        Optional[str]
+            The activity name if defined, otherwise None.
         """
         if self.activity:
             if self.is_operating():
@@ -925,13 +1078,38 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 return ActivityEnum.INVESTING.value
             elif self.is_financing():
                 return ActivityEnum.FINANCING.value
+        return None
 
     @classmethod
-    def get_activity_from_roles(cls,
-                                role_set: Union[List[str], Set[str]],
-                                validate: bool = False,
-                                raise_exception: bool = True) -> Optional[str]:
+    def get_activity_from_roles(
+            cls,
+            role_set: Union[List[str], Set[str]],
+            validate: bool = False,
+            raise_exception: bool = True
+    ) -> Optional[str]:
+        """
+        Determines the financial activity type (e.g., operating, investing, financing)
+        based on a set of account roles.
 
+        Parameters
+        ----------
+        role_set : Union[List[str], Set[str]]
+            The set of roles to analyze.
+        validate : bool, optional
+            If True, validates the roles before analysis. Defaults to False.
+        raise_exception : bool, optional
+            If True, raises an exception if multiple activities are detected. Defaults to True.
+
+        Returns
+        -------
+        Optional[str]
+            The detected activity name, or None if no activity type is matched.
+
+        Raises
+        ------
+        JournalEntryValidationError
+            If multiple activities are detected and `raise_exception` is True.
+        """
         if validate:
             role_set = validate_roles(roles=role_set)
         else:
@@ -1010,7 +1188,23 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                           txs_qs: Optional[TransactionModelQuerySet] = None,
                           raise_exception: bool = True,
                           force_update: bool = False) -> Optional[str]:
+        """
+        Generates the activity for the Journal Entry model based on its transactions.
 
+        Parameters
+        ----------
+        txs_qs : Optional[TransactionModelQuerySet], default None
+            Queryset of TransactionModel instances for validation. If None, transactions are queried.
+        raise_exception : bool, default True
+            Determines whether exceptions are raised during processing.
+        force_update : bool, default False
+            Forces the regeneration of activity even if it exists.
+
+        Returns
+        -------
+        Optional[str]
+            Generated activity or None if not applicable.
+        """
         if not self._state.adding:
             if raise_exception and self.is_closing_entry:
                 raise_exception = False
@@ -1043,7 +1237,19 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     # todo: add entity_model as parameter on all functions...
     # todo: outsource this function to EntityStateModel...?...
     def _get_next_state_model(self, raise_exception: bool = True) -> EntityStateModel:
+        """
+        Retrieves or creates the next state model for the Journal Entry.
 
+        Parameters
+        ----------
+        raise_exception : bool, default True
+            Determines if exceptions should be raised when the entity state is not found.
+
+        Returns
+        -------
+        EntityStateModel
+            The state model with an incremented sequence.
+        """
         entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
         fy_key = entity_model.get_fy_for_date(dt=self.timestamp)
 
@@ -1079,15 +1285,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def can_generate_je_number(self) -> bool:
         """
-        Checks if the JournalEntryModel instance can generate its own JE number.
-        Conditions are:
-        * The JournalEntryModel must have a LedgerModel instance assigned.
-        * The JournalEntryModel instance must not have a pre-existing JE number.
+        Checks if a Journal Entry Number can be generated.
 
         Returns
         -------
         bool
-            True if JournalEntryModel needs a JE number, otherwise False.
+            True if the Journal Entry can generate a JE number, otherwise False.
         """
         return all([
             self.ledger_id,
@@ -1096,19 +1299,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def generate_je_number(self, commit: bool = False) -> str:
         """
-        Atomic Transaction. Generates the next Journal Entry document number available. The operation
-        will result in two additional queries if the Journal Entry LedgerModel & EntityUnitModel are not cached in
-        QuerySet via select_related('ledger', 'entity_unit').
+        Generates the Journal Entry number in an atomic transaction.
 
         Parameters
         ----------
-        commit: bool
-            Commits transaction into JournalEntryModel when function is called.
+        commit : bool, default False
+            Saves the generated JE number in the database.
 
         Returns
         -------
         str
-            A String, representing the new or current JournalEntryModel instance Document Number.
+            The generated or existing JE number.
         """
         if self.can_generate_je_number():
 
@@ -1138,30 +1339,24 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                **kwargs) -> Tuple[TransactionModelQuerySet, bool]:
 
         """
-        Verifies the JournalEntryModel. The JE Model is verified when:
-            * All TransactionModels associated with the JE instance are in balance (i.e. the sum of CREDITs and DEBITs are equal).
-            * If the JournalEntryModel is using cash, a cash flow activity is assigned.
+        Verifies the validity of the Journal Entry model instance.
 
         Parameters
         ----------
-        txs_qs: TransactionModelQuerySet
-            Prefetched TransactionModelQuerySet. If provided avoids additional DB query. Will be verified against
-            JournalEntryModel instance.
-        force_verify: bool
-            If True, forces new verification of JournalEntryModel if previously verified. Defaults to False.
-        raise_exception: bool
-            If True, will raise JournalEntryValidationError if verification fails.
-        kwargs: dict
-            Additional function key-word args.
-
-        Raises
-        ------
-        JournalEntryValidationError if JE instance could not be verified.
+        txs_qs : Optional[TransactionModelQuerySet], default None
+            Queryset of TransactionModel instances to validate. If None, transactions are queried.
+        force_verify : bool, default False
+            Forces re-verification even if already verified.
+        raise_exception : bool, default True
+            Determines if exceptions are raised on validation failure.
+        kwargs : dict
+            Additional options.
 
         Returns
         -------
-        tuple: TransactionModelQuerySet, bool
-            The TransactionModelQuerySet of the JournalEntryModel instance, verification result as True/False.
+        Tuple[TransactionModelQuerySet, bool]
+            - The TransactionModelQuerySet associated with the JournalEntryModel.
+            - A boolean indicating whether verification was successful.
         """
 
         if not self.is_verified() or force_verify:
@@ -1173,6 +1368,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 is_txs_qs_valid = True
             else:
                 try:
+                    # if provided, it is verified...
                     is_txs_qs_valid = self.is_txs_qs_valid(raise_exception=raise_exception, txs_qs=txs_qs)
                 except JournalEntryValidationError as e:
                     raise e
@@ -1185,7 +1381,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             except JournalEntryValidationError as e:
                 raise e
 
-            # Transaction CoA if valid
+            # Transaction CoA if valid...
 
             try:
                 is_coa_valid = self.is_txs_qs_coa_valid(txs_qs=txs_qs)
@@ -1202,34 +1398,45 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             #     if raise_exception:
             #         raise JournalEntryValidationError('At least two transactions required.')
 
-            if all([is_balance_valid, is_txs_qs_valid, is_coa_valid]):
+            if all([
+                is_balance_valid,
+                is_txs_qs_valid,
+                is_coa_valid
+            ]):
                 # activity flag...
                 self.generate_activity(txs_qs=txs_qs, raise_exception=raise_exception)
                 self._verified = True
                 return txs_qs, self.is_verified()
-        return TransactionModel.objects.none(), self.is_verified()
+        return self.get_transaction_queryset(), self.is_verified()
 
     def clean(self,
               verify: bool = False,
               raise_exception: bool = True,
               txs_qs: Optional[TransactionModelQuerySet] = None) -> Tuple[TransactionModelQuerySet, bool]:
         """
-        Customized JournalEntryModel clean method. Generates a JE number if needed. Optional verification hook on clean.
+        Cleans the JournalEntryModel instance, optionally verifying it and generating a Journal Entry (JE) number if required.
 
         Parameters
         ----------
-        raise_exception: bool
-            Raises exception if JE could not be verified. Defaults to True.
-        verify: bool
-            Attempts to verify the JournalEntryModel during cleaning.
-        txs_qs: TransactionModelQuerySet
-            Prefetched TransactionModelQuerySet. If provided avoids additional DB query. Will be verified against
-            JournalEntryModel instance.
+        verify : bool, optional
+            If True, attempts to verify the JournalEntryModel during the cleaning process. Default is False.
+        raise_exception : bool, optional
+            If True, raises an exception when the instance fails verification. Default is True.
+        txs_qs : TransactionModelQuerySet, optional
+            A pre-fetched TransactionModelQuerySet. If provided, avoids additional database queries. The provided queryset is
+            validated against the JournalEntryModel instance.
 
         Returns
         -------
-        tuple: TransactionModelQuerySet, bool
-            The TransactionModelQuerySet of the JournalEntryModel instance, verification result as True/False.
+        Tuple[TransactionModelQuerySet, bool]
+            A tuple containing:
+            - The validated TransactionModelQuerySet for the JournalEntryModel instance.
+            - A boolean indicating whether the instance passed verification.
+
+        Raises
+        ------
+        JournalEntryValidationError
+            If the instance has a timestamp in the future and is posted, or if verification fails and `raise_exception` is True.
         """
 
         if txs_qs:
@@ -1248,147 +1455,216 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if verify:
             txs_qs, verified = self.verify()
             return txs_qs, self.is_verified()
-        return TransactionModel.objects.none(), self.is_verified()
+        return self.get_transaction_queryset(), self.is_verified()
 
     def get_delete_message(self) -> str:
+        """
+        Generates a confirmation message for deleting the JournalEntryModel instance.
+
+        Returns
+        -------
+        str
+            A confirmation message including the Journal Entry number and Ledger name.
+        """
         return _(f'Are you sure you want to delete JournalEntry Model {self.je_number} on Ledger {self.ledger.name}?')
 
     def delete(self, **kwargs):
+        """
+        Deletes the JournalEntryModel instance, ensuring it is allowed to be deleted.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Additional arguments passed to the parent delete method.
+
+        Raises
+        ------
+        JournalEntryValidationError
+            If the instance is not eligible for deletion.
+        """
         if not self.can_delete():
             raise JournalEntryValidationError(
                 message=_(f'JournalEntryModel {self.uuid} cannot be deleted...')
             )
         return super().delete(**kwargs)
 
-    def save(self,
-             verify: bool = True,
-             post_on_verify: bool = False,
-             *args, **kwargs):
-        # todo this does not show up on docs...
+    def save(
+            self,
+            verify: bool = True,
+            post_on_verify: bool = False,
+            *args,
+            **kwargs
+    ):
         """
-        Custom JournalEntryModel instance save method. Additional options are added to attempt to verify JournalEntryModel
-        before saving into database.
+        Saves the JournalEntryModel instance, with optional verification and posting prior to saving.
 
         Parameters
         ----------
-        verify: bool
-            If True, verifies JournalEntryModel transactions before saving. Defaults to True.
-        post_on_verify: bool
-            Posts JournalEntryModel if verification is successful and can_post() is True.
+        verify : bool, optional
+            If True, verifies the transactions of the JournalEntryModel before saving. Default is True.
+        post_on_verify : bool, optional
+            If True, posts the JournalEntryModel if verification is successful and `can_post()` is True. Default is False.
 
         Returns
         -------
         JournalEntryModel
-            The saved instance.
+            The saved JournalEntryModel instance.
+
+        Raises
+        ------
+        JournalEntryValidationError
+            If the instance fails verification or encounters an issue during save.
         """
         try:
+            # Generate the Journal Entry number prior to verification and saving
             self.generate_je_number(commit=False)
+
             if verify:
                 txs_qs, is_verified = self.clean(verify=True)
                 if self.is_verified() and post_on_verify:
-                    # commit is False since the super call takes place at the end of save()
-                    # self.mark_as_locked(commit=False, raise_exception=True)
+                    # Mark as posted if verification succeeds and posting is requested
                     self.mark_as_posted(commit=False, verify=False, force_lock=True, raise_exception=True)
+
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)
             raise JournalEntryValidationError(
-                f'Something went wrong validating journal entry ID: {self.uuid}: {e.message}')
+                f'Error validating Journal Entry ID: {self.uuid}: {e.message}'
+            )
         except Exception as e:
-            # safety net, for any unexpected error...
-            # no JE can be posted if not fully validated...
+            # Safety net for unexpected errors during save
             self.posted = False
             self._verified = False
             self.save(update_fields=['posted', 'updated'], verify=False)
             raise JournalEntryValidationError(e)
 
+        # Prevent saving an unverified Journal Entry
         if not self.is_verified() and verify:
             raise JournalEntryValidationError(message='Cannot save an unverified Journal Entry.')
 
         return super(JournalEntryModelAbstract, self).save(*args, **kwargs)
 
     # URLS Generation...
-    def get_absolute_url(self) -> str:
 
-        return reverse('django_ledger:je-detail',
-                       kwargs={
-                           'je_pk': self.uuid,
-                           'ledger_pk': self.ledger_id,
-                           'entity_slug': self.ledger.entity.slug
-                       })
+    def get_absolute_url(self) -> str:
+        """
+        Generates the URL to view the details of the journal entry.
+
+        Returns
+        -------
+        str
+            The absolute URL for the journal entry details.
+        """
+        return reverse('django_ledger:je-detail', kwargs={
+            'je_pk': self.uuid,
+            'ledger_pk': self.ledger_id,
+            'entity_slug': self.entity_slug
+        })
 
     def get_detail_url(self) -> str:
         """
-        Determines the update URL of the LedgerModel instance.
-        Results in additional Database query if entity field is not selected in QuerySet.
+        Generates the detail URL for the journal entry.
 
         Returns
         -------
         str
-            URL as a string.
+            The URL for updating or viewing journal entry details.
         """
-        return reverse('django_ledger:je-detail',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse('django_ledger:je-detail', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
 
-    def get_journal_entry_list_url(self):
-        return reverse('django_ledger:je-list',
-                       kwargs={
-                           'entity_slug': self.entity_slug,
-                           'ledger_pk': self.ledger_id
-                       })
+    def get_journal_entry_list_url(self) -> str:
+        """
+        Constructs the URL to access the list of journal entries
+        associated with a specific ledger and entity.
+
+        Returns
+        -------
+        str
+            The URL for the journal entry list.
+        """
+        return reverse('django_ledger:je-list', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id
+        })
 
     def get_detail_txs_url(self) -> str:
         """
-        Determines the update URL of the LedgerModel instance.
-        Results in additional Database query if entity field is not selected in QuerySet.
+        Generates the URL to view transaction details of the journal entry.
 
         Returns
         -------
         str
-            URL as a string.
+            The URL for transaction details of the journal entry.
         """
-        return reverse('django_ledger:je-detail-txs',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        return reverse('django_ledger:je-detail-txs', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
 
-    def get_unlock_url(self):
-        return reverse('django_ledger:je-mark-as-unlocked',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+    def get_unlock_url(self) -> str:
+        """
+        Generates the URL to mark the journal entry as unlocked.
 
-    def get_lock_url(self):
-        return reverse('django_ledger:je-mark-as-locked',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        Returns
+        -------
+        str
+            The URL for unlocking the journal entry.
+        """
+        return reverse('django_ledger:je-mark-as-unlocked', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
 
-    def get_post_url(self):
-        return reverse('django_ledger:je-mark-as-posted',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+    def get_lock_url(self) -> str:
+        """
+        Generates the URL to mark the journal entry as locked.
 
-    def get_unpost_url(self):
-        return reverse('django_ledger:je-mark-as-unposted',
-                       kwargs={
-                           'entity_slug': self.ledger.entity.slug,
-                           'ledger_pk': self.ledger_id,
-                           'je_pk': self.uuid
-                       })
+        Returns
+        -------
+        str
+            The URL for locking the journal entry.
+        """
+        return reverse('django_ledger:je-mark-as-locked', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
+
+    def get_post_url(self) -> str:
+        """
+        Generates the URL to mark the journal entry as posted.
+
+        Returns
+        -------
+        str
+            The URL for posting the journal entry.
+        """
+        return reverse('django_ledger:je-mark-as-posted', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
+
+    def get_unpost_url(self) -> str:
+        """
+        Generates the URL to mark the journal entry as unposted.
+
+        Returns
+        -------
+        str
+            The URL for unposting the journal entry.
+        """
+        return reverse('django_ledger:je-mark-as-unposted', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id,
+            'je_pk': self.uuid
+        })
 
 
 class JournalEntryModel(JournalEntryModelAbstract):
@@ -1402,10 +1678,12 @@ class JournalEntryModel(JournalEntryModelAbstract):
 
 
 def journalentrymodel_presave(instance: JournalEntryModel, **kwargs):
-    if instance._state.adding and not instance.ledger.can_edit_journal_entries():
-        raise JournalEntryValidationError(
-            message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
-        )
+    if instance._state.adding:
+        # cannot add journal entries to a locked ledger...
+        if instance.ledger_is_locked():
+            raise JournalEntryValidationError(
+                message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
+            )
 
 
 pre_save.connect(journalentrymodel_presave, sender=JournalEntryModel)
