@@ -444,9 +444,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             return True
         return False
 
-    def can_edit_journal_entries(self) -> bool:
-        return not self.is_locked()
-
     def post(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Posts the LedgerModel.
@@ -742,6 +739,7 @@ class LedgerModel(LedgerModelAbstract):
     """
     Base LedgerModel from Abstract.
     """
+
     class Meta(LedgerModelAbstract.Meta):
         swappable = 'DJANGO_LEDGER_LEDGER_MODEL'
         abstract = False
