@@ -69,7 +69,6 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
         return JournalEntryModelCreateForm(
             entity_model=self.get_authorized_entity_instance(),
             ledger_model=self.get_ledger_model(),
-            user_model=self.request.user,
             **self.get_form_kwargs()
         )
 
@@ -88,14 +87,18 @@ class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
     context_object_name = 'journal_entry_list'
     template_name = 'django_ledger/journal_entry/je_list.html'
     PAGE_TITLE = _('Journal Entries')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
     http_method_names = ['get']
     date_field = 'timestamp'
     paginate_by = 20
     allow_empty = True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = entity_model.name
+        return context
 
 
 class JournalEntryYearListView(JournalEntryListView, YearArchiveView):
@@ -190,11 +193,8 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         if not txs_formset:
             TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
             context['txs_formset'] = TransactionModelFormSet(
-                user_model=self.request.user,
                 je_model=je_model,
-                ledger_pk=self.kwargs['ledger_pk'],
-                entity_slug=self.kwargs['entity_slug'],
-                queryset=je_model.transactionmodel_set.all().order_by('account__code')
+                entity_model=self.get_authorized_entity_instance(),
             )
         else:
             context['txs_formset'] = txs_formset
@@ -210,9 +210,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
 
         TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
         txs_formset = TransactionModelFormSet(request.POST,
-                                              user_model=self.request.user,
-                                              ledger_pk=kwargs['ledger_pk'],
-                                              entity_slug=kwargs['entity_slug'],
+                                              entity_model=self.get_authorized_entity_instance(),
                                               je_model=je_model)
 
         if je_model.locked:
