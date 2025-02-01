@@ -2,20 +2,23 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-An EntityUnit is a logical, user-defined grouping which is assigned to JournalEntryModels to help segregate business
-operations into separate components. Examples of business units may include Departments (i.e. Human Resources, IT, etc.)
-office locations, a real estate property, or any other label relevant to the business.
+An EntityUnit is a logical, user-defined grouping assigned to JournalEntryModels,
+helping to segregate business operations into distinct components. Examples of
+EntityUnits may include departments (e.g., Human Resources, IT), office locations,
+real estate properties, or any other labels relevant to the business.
 
-An EntityUnit is self contained. Meaning that double entry accounting rules apply to all transactions associated within
-them. When An Invoice or Bill is updated, the migration process generates the appropriate Journal Entries associated
-with each unit, if any. This means that an invoice or bill can split items into different units and the migration
-process will allocate costs to each unit accordingly.
+EntityUnits are self-contained entities, meaning that double-entry accounting rules
+apply to all transactions associated with them. When an Invoice or Bill is updated,
+the migration process generates the corresponding Journal Entries for each relevant
+unit. This allows invoices or bills to split specific items into different units,
+with the migration process allocating costs to each unit accordingly.
 
-The main advantages of EntityUnits are:
-    1. Entity units can generate their own financial statements which can give additional insight to specific operations
-       of the business.
-    2. Entity units can be assigned to specific items on Bills and Invoices, providing additional flexibility to track
-       inventory, expenses or income attributable to specific units of the business.
+Key advantages of EntityUnits:
+    1. EntityUnits can generate their own financial statements, providing deeper
+       insights into the specific operations of the business.
+    2. EntityUnits can be assigned to specific items on Bills and Invoices, offering
+       flexibility to track inventory, expenses, or income associated with distinct
+       business units.
 """
 
 from random import choices
@@ -25,7 +28,7 @@ from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -50,6 +53,13 @@ class EntityUnitModelQuerySet(MP_NodeQuerySet):
 
 class EntityUnitModelManager(MP_NodeManager):
 
+    def get_queryset(self):
+        qs = EntityUnitModelQuerySet(self.model, using=self._db)
+        return qs.annotate(
+            _entity_slug=F('entity__slug'),
+            _entity_name=F('entity__name'),
+        )
+
     def for_user(self, user_model):
         qs = self.get_queryset()
         if user_model.is_superuser:
@@ -70,12 +80,6 @@ class EntityUnitModelManager(MP_NodeManager):
             The entity slug or EntityModel used for filtering the QuerySet.
         user_model
             Logged in and authenticated django UserModel instance.
-
-        Examples
-        --------
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> bill_model_qs = EntityUnitModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
         Returns
         -------
@@ -149,7 +153,23 @@ class EntityUnitModelAbstract(MP_Node,
         ]
 
     def __str__(self):
-        return f'Unit: {self.name}'
+        return f'{self.entity_name}: {self.name}'
+
+    @property
+    def entity_slug(self):
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            pass
+        return self.entity.slug
+
+    @property
+    def entity_name(self):
+        try:
+            return getattr(self, '_entity_name')
+        except AttributeError:
+            pass
+        return self.entity.name
 
     def clean(self):
         self.create_entity_unit_slug()
