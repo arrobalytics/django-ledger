@@ -701,6 +701,13 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         return reverse('django_ledger:je-list',
                        kwargs={
                            'entity_slug': self.entity_slug,
+                           'ledger_pk': self.uuid,
+                       })
+
+    def get_journal_entry_create_url(self) -> str:
+        return reverse('django_ledger:je-create',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
                            'ledger_pk': self.uuid
                        })
 
@@ -733,6 +740,25 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
 
     def get_delete_message(self):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
+
+    # Action URL...
+    def get_action_post_journal_entries_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-action-post-journal-entries',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'ledger_pk': self.uuid
+            }
+        )
+
+    def get_action_lock_journal_entries_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-action-lock-journal-entries',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'ledger_pk': self.uuid
+            }
+        )
 
 
 class LedgerModel(LedgerModelAbstract):
