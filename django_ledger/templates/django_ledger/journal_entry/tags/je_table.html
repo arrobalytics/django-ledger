@@ -17,21 +17,21 @@
         </tr>
         </thead>
         <tbody>
-        {% for je in jes %}
+        {% for journal_entry_model in journal_entry_qs %}
             <tr class="has-text-centered">
-                <td>{{ je.je_number }}</td>
-                <td>{{ je.timestamp }}</td>
-                <td>{% if je.activity %}{{ je.get_activity_display }}{% endif %}</td>
-                <td>{% if je.description %}{{ je.description }}{% endif %}</td>
+                <td>{{ journal_entry_model.je_number }}</td>
+                <td>{{ journal_entry_model.timestamp }}</td>
+                <td>{% if journal_entry_model.activity %}{{ journal_entry_model.get_activity_display }}{% endif %}</td>
+                <td>{% if journal_entry_model.description %}{{ journal_entry_model.description }}{% endif %}</td>
                 <td>
-                    {% if je.is_posted %}
+                    {% if journal_entry_model.is_posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                     {% else %}
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                     {% endif %}
                 </td>
                 <td>
-                    {% if je.is_locked %}
+                    {% if journal_entry_model.is_locked %}
                         <span class="icon has-text-success-dark">
                             {% icon 'bi:lock-fill' 24 %}
                         </span>
@@ -41,11 +41,11 @@
                         </span>
                     {% endif %}
                 </td>
-                <td>{{ je.get_entity_unit_name }}</td>
-                <td class="has-text-weight-bold">{{ je.txs_count }}</td>
+                <td>{{ journal_entry_model.get_entity_unit_name }}</td>
+                <td class="has-text-weight-bold">{{ journal_entry_model.txs_count }}</td>
                 <td>
                     <div class="dropdown is-right is-hoverable"
-                         id="je-action-{{ je.uuid }}">
+                         id="je-action-{{ journal_entry_model.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
@@ -58,37 +58,37 @@
                         </div>
 
                         <div class="dropdown-menu"
-                             id="dropdown-menu-{{ je.uuid }}"
+                             id="dropdown-menu-{{ journal_entry_model.uuid }}"
                              role="menu">
                             <div class="dropdown-content">
-                                {% if je.can_post %}
+                                {% if journal_entry_model.can_post %}
                                     <a class="dropdown-item"
-                                       href="{% url 'django_ledger:je-mark-as-posted' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}">
+                                       href="{{ journal_entry_model.get_action_post_url }}?next={{ next_url }}">
                                         {% trans 'Post' %}</a>
-                                {% elif je.can_unpost %}
+                                {% elif journal_entry_model.can_unpost %}
                                     <a class="dropdown-item"
-                                       href="{% url 'django_ledger:je-mark-as-unposted' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}">
+                                       href="{{ journal_entry_model.get_action_unpost_url }}?next={{ next_url }}">
                                         {% trans 'UnPost' %}</a>
                                 {% endif %}
-                                {% if je.can_lock %}
+                                {% if journal_entry_model.can_lock %}
                                     <a class="dropdown-item"
-                                       href="{% url 'django_ledger:je-mark-as-locked' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}">
+                                       href="{{ journal_entry_model.get_action_lock_url }}?next={{ next_url }}">
                                         {% trans 'Lock' %}</a>
-                                {% elif je.can_unlock %}
+                                {% elif journal_entry_model.can_unlock %}
                                     <a class="dropdown-item"
-                                       href="{% url 'django_ledger:je-mark-as-unlocked' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}?next={{ next_url }}">
+                                       href="{{ journal_entry_model.get_action_unlock_url }}?next={{ next_url }}">
                                         {% trans 'Unlock' %}</a>
                                 {% endif %}
                                 <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Edit' %}</a>
+                                   href="{% url 'django_ledger:je-update' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Edit' %}</a>
                                 <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'View' %}</a>
-                                {% if je.can_delete %}
+                                   href="{% url 'django_ledger:je-detail' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'View' %}</a>
+                                {% if journal_entry_model.can_delete %}
                                     <a class="dropdown-item has-text-danger has-text-weight-bold"
-                                       href="{% url 'django_ledger:je-delete' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Delete' %}</a>
+                                       href="{% url 'django_ledger:je-delete' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Delete' %}</a>
                                 {% endif %}
                                 <a class="dropdown-item"
-                                   href="{% url 'django_ledger:je-detail-txs' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=je.uuid %}">{% trans 'Transactions' %}</a>
+                                   href="{% url 'django_ledger:je-detail-txs' entity_slug=entity_slug ledger_pk=ledger_pk je_pk=journal_entry_model.uuid %}">{% trans 'Transactions' %}</a>
                             </div>
                         </div>
                     </div>
