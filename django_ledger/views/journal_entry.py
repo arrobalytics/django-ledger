@@ -63,9 +63,11 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        ledger_model: LedgerModel = self.get_ledger_model()
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = self.get_ledger_model()
+        context['header_subtitle'] = ledger_model.name
+        context['ledger_model'] = ledger_model
         return context
 
     def get_form(self, form_class=None):
@@ -265,6 +267,9 @@ class BaseJournalEntryActionView(
         ).for_ledger(ledger_pk=self.kwargs['ledger_pk'])
 
     def get_redirect_url(self, *args, **kwargs):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
         return reverse('django_ledger:je-list',
                        kwargs={
                            'entity_slug': kwargs['entity_slug'],
