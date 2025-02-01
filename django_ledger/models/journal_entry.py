@@ -529,7 +529,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return all([
             self.is_locked(),
             not self.is_posted(),
-            self.is_verified() if not ignore_verify else True, # avoids db queries, will be verified before saving
+            self.is_verified() if not ignore_verify else True,  # avoids db queries, will be verified before saving
             not self.ledger_is_locked(),
             not self.is_in_locked_period()
         ])
@@ -1591,6 +1591,21 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             'ledger_pk': self.ledger_id
         })
 
+    def get_journal_entry_create_url(self) -> str:
+        """
+        Constructs the URL to create a new journal entry
+        associated with a specific ledger and entity.
+
+        Returns
+        -------
+        str
+            The URL to create a journal entry.
+        """
+        return reverse('django_ledger:je-create', kwargs={
+            'entity_slug': self.entity_slug,
+            'ledger_pk': self.ledger_id
+        })
+
     def get_detail_txs_url(self) -> str:
         """
         Generates the URL to view transaction details of the journal entry.
@@ -1665,6 +1680,71 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             'ledger_pk': self.ledger_id,
             'je_pk': self.uuid
         })
+
+    # Action URLS....
+    def get_action_post_url(self) -> str:
+        """
+        Generates the URL used to mark the journal entry as posted.
+
+        Returns
+        -------
+        str
+            The generated URL for marking the journal entry as posted.
+        """
+        return reverse('django_ledger:je-mark-as-posted',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
+    def get_action_unpost_url(self) -> str:
+        """
+        Generates the URL used to mark the journal entry as unposted.
+
+        Returns
+        -------
+        str
+            The generated URL for marking the journal entry as unposted.
+        """
+        return reverse('django_ledger:je-mark-as-unposted',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
+    def get_action_lock_url(self) -> str:
+        """
+        Generates the URL used to mark the journal entry as locked.
+
+        Returns
+        -------
+        str
+            The generated URL for marking the journal entry as locked.
+        """
+        return reverse('django_ledger:je-mark-as-locked',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
+
+    def get_action_unlock_url(self) -> str:
+        """
+        Generates the URL used to mark the journal entry as unlocked.
+
+        Returns
+        -------
+        str
+            The generated URL for marking the journal entry as unlocked.
+        """
+        return reverse('django_ledger:je-mark-as-unlocked',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.ledger_id,
+                           'je_pk': self.uuid
+                       })
 
 
 class JournalEntryModel(JournalEntryModelAbstract):
