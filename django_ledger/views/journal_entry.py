@@ -32,14 +32,23 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
+    ledger_model: Optional[LedgerModel] = None
 
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = JournalEntryModel.objects.for_entity(
                 entity_slug=self.get_authorized_entity_instance(),
                 user_model=self.request.user
-            ).for_ledger(ledger_pk=self.kwargs['ledger_pk']).select_related('entity_unit', 'ledger', 'ledger__entity')
+            ).for_ledger(
+                ledger_pk=self.kwargs['ledger_pk']
+            ).select_related('entity_unit', 'ledger', 'ledger__entity').order_by('-timestamp')
         return self.queryset
+
+    def get_ledger_model(self) -> LedgerModel:
+        if self.ledger_model is None:
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            self.ledger_model = entity_model.get_ledgers().get(uuid__exact=self.kwargs['ledger_pk'])
+        return self.ledger_model
 
 
 # JE Views ---
@@ -51,12 +60,6 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
         'header_title': PAGE_TITLE
     }
     ledger_model: Optional[LedgerModel] = None
-
-    def get_ledger_model(self) -> LedgerModel:
-        if self.ledger_model is None:
-            entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.ledger_model = entity_model.get_ledgers().get(uuid__exact=self.kwargs['ledger_pk'])
-        return self.ledger_model
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -84,7 +87,7 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
 
 # ARCHIVE VIEWS START....
 class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
-    context_object_name = 'journal_entry_list'
+    context_object_name = 'journal_entry_qs'
     template_name = 'django_ledger/journal_entry/je_list.html'
     PAGE_TITLE = _('Journal Entries')
     http_method_names = ['get']
@@ -95,9 +98,19 @@ class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         entity_model: EntityModel = self.get_authorized_entity_instance()
+
+        ledger_model = self.get_ledger_model()
+        context['ledger_model'] = ledger_model
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
-        context['header_subtitle'] = entity_model.name
+        context['header_subtitle'] = f'{entity_model.name} | Ledger: {ledger_model.name}'
+        context['header_subtitle_icon'] = 'bi:journal-check'
+
+        if ledger_model.is_locked():
+            messages.add_message(self.request,
+                                 message=_('Locked Journal Entry. Must unlock ledger to add new Journal Entries.'),
+                                 level=messages.WARNING,
+                                 extra_tags='is-warning')
         return context
 
 
