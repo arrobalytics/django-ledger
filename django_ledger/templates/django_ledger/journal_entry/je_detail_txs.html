@@ -55,31 +55,31 @@
                                 {% trans 'Save' %}
                             </button>
                             <a class="button is-dark"
-                               href="{% url "django_ledger:je-list" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                               href="{{ journal_entry.get_journal_entry_list_url }}?next={{ request.path }}">
                                 {% trans 'Done' %}
                             </a>
                             {% if journal_entry.can_lock %}
                                 <a class="button is-dark is-danger"
-                                   href="{% url "django_ledger:je-mark-as-locked" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                   href="{{ journal_entry.get_action_lock_url }}?next={{ request.path }}">
                                     {% trans 'Lock' %}
                                 </a>
                             {% endif %}
                             {% if journal_entry.can_unlock %}
                                 <a class="button is-dark is-warning"
-                                   href="{% url "django_ledger:je-mark-as-unlocked" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
+                                   href="{{ journal_entry.get_action_unlock_url }}?next={{ request.path }}">
                                     {% trans 'UnLock' %}
                                 </a>
                             {% endif %}
                             {% if journal_entry.can_post %}
                                 <a class="button is-dark is-danger"
-                                   href="{% url "django_ledger:je-mark-as-posted" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                                    {% trans 'Lock' %}
+                                   href="{{ journal_entry.get_action_post_url }}?next={{ request.path }}">
+                                    {% trans 'Post' %}
                                 </a>
                             {% endif %}
                             {% if journal_entry.can_unpost %}
                                 <a class="button is-warning"
-                                   href="{% url "django_ledger:je-mark-as-unposted" entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk je_pk=journal_entry.uuid %}">
-                                    {% trans 'Lock' %}
+                                   href="{{ journal_entry.get_action_unpost_url }}?next={{ request.path }}">
+                                    {% trans 'UnPost' %}
                                 </a>
                             {% endif %}
                         </div>
