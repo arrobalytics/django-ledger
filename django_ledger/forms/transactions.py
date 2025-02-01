@@ -3,15 +3,15 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 Contributions to this module:
-Miguel Sanda <msanda@arrobalytics.com>
-Michael Noel <noel.michael87@gmail.com>
+    - Miguel Sanda <msanda@arrobalytics.com>
+    - Michael Noel <noel.michael87@gmail.com>
 """
 
 from django.forms import ModelForm, modelformset_factory, BaseModelFormSet, TextInput, Select, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import check_tx_balance
-from django_ledger.models.accounts import AccountModel
+from django_ledger.models import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -44,17 +44,13 @@ class TransactionModelForm(ModelForm):
 
 class TransactionModelFormSet(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, ledger_pk, je_model=None, **kwargs):
+    def __init__(self, *args, entity_model: EntityModel, je_model: JournalEntryModel, **kwargs):
         super().__init__(*args, **kwargs)
-        self.USER_MODEL = user_model
+        je_model.validate_for_entity(entity_model)
         self.JE_MODEL: JournalEntryModel = je_model
-        self.LEDGER_PK = ledger_pk
-        self.ENTITY_SLUG = entity_slug
+        self.ENTITY_MODEL = entity_model
 
-        account_qs = AccountModel.objects.for_entity(
-            user_model=self.USER_MODEL,
-            entity_model=self.ENTITY_SLUG
-        ).available().order_by('code')
+        account_qs = self.ENTITY_MODEL.get_coa_accounts().active().order_by('code')
 
         for form in self.forms:
             form.fields['account'].queryset = account_qs
@@ -64,7 +60,7 @@ class TransactionModelFormSet(BaseModelFormSet):
                 form.fields['amount'].disabled = True
 
     def get_queryset(self):
-        return self.JE_MODEL.transactionmodel_set.all().order_by('account__code')
+        return self.JE_MODEL.transactionmodel_set.all()
 
     def clean(self):
         if any(self.errors):
