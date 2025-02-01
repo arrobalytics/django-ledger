@@ -18,21 +18,22 @@
         </tr>
         </thead>
         <tbody>
-        {% for ledger in ledgers %}
+        {% for ledger_model in ledger_model_qs %}
             <tr>
-                <td>{% if ledger.has_wrapped_model %}
-                    <a href="{{ ledger.get_wrapped_model_url }}">{{ ledger.get_wrapped_model_instance }}</a>
-                {% else %}{{ ledger.name }}{% endif %}</td>
-                <td><a class="button is-primary is-small"
-                       href="{% url 'django_ledger:je-list' entity_slug=entity_slug ledger_pk=ledger.uuid %}">
-                    <span class="icon has-text-dark">{% icon 'grommet-icons:transaction' 24 %}</span>
-                    <span>
-                        <span class="has-text-weight-bold">{{ ledger.journal_entries__count }}</span>
+                <td>{% if ledger_model.has_wrapped_model %}
+                    <a href="{{ ledger_model.get_wrapped_model_url }}">{{ ledger_model.get_wrapped_model_instance }}</a>
+                {% else %}{{ ledger_model.name }}{% endif %}</td>
+                <td>
+                    <a class="button is-primary is-small"
+                       href="{{ ledger_model.get_journal_entry_list_url }}">
+                        <span class="icon has-text-dark">{% icon 'grommet-icons:transaction' 24 %}</span>
+                        <span>
+                        <span class="has-text-weight-bold">{{ ledger_model.journal_entries__count }}</span>
                         <span>{% trans 'Journal Entries' %}</span>
                     </span>
-
-                </a></td>
-                {% if ledger.is_posted %}
+                    </a>
+                </td>
+                {% if ledger_model.is_posted %}
                     <td>
                         <div class="dropdown is-hoverable">
                             <div class="dropdown-trigger">
@@ -45,40 +46,40 @@
                             <div class="dropdown-menu" id="dropdown-menu5" role="menu">
                                 <div class="dropdown-content">
                                     <div class="dropdown-item"><a
-                                            href="{{ ledger.get_balance_sheet_url }}">{% trans 'Balance Sheet' %}</a>
+                                            href="{{ ledger_model.get_balance_sheet_url }}">{% trans 'Balance Sheet' %}</a>
                                     </div>
                                     <div class="dropdown-item"><a
-                                            href="{{ ledger.get_income_statement_url }}">{% trans 'Income Statement' %}</a>
+                                            href="{{ ledger_model.get_income_statement_url }}">{% trans 'Income Statement' %}</a>
                                     </div>
                                     <div class="dropdown-item"><a
-                                            href="{{ ledger.get_cash_flow_statement_url }}">{% trans 'Cash Flow Statement' %}</a>
+                                            href="{{ ledger_model.get_cash_flow_statement_url }}">{% trans 'Cash Flow Statement' %}</a>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </td>
-                    <td>{% if ledger.earliest_timestamp %}{{ ledger.earliest_timestamp | date }}{% endif %}</td>
+                    <td>{% if ledger_model.earliest_timestamp %}{{ ledger_model.earliest_timestamp | date }}{% endif %}</td>
                 {% else %}
                     <td></td>
                     <td></td>
                 {% endif %}
 
                 <td class="has-text-centered">
-                    {% if ledger.is_posted %}
+                    {% if ledger_model.is_posted %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>
                     {% else %}
                         <span class="icon is-small has-text-danger">{% icon 'maki:roadblock-11' 24 %}</span>
                     {% endif %}
                 </td>
                 <td class="has-text-centered">
-                    {% if ledger.is_locked %}
+                    {% if ledger_model.is_locked %}
                         <span class="icon has-text-success">{% icon 'bi:lock-fill' 24 %}</span>
                     {% else %}
                         <span class="icon has-text-danger">{% icon 'bx:bx-lock-open-alt' 24 %}</span>
                     {% endif %}
                 </td>
                 <td class="has-text-centered">
-                    {% if ledger.has_jes_in_locked_period %}
+                    {% if ledger_model.has_jes_in_locked_period %}
                         <span class="icon has-text-success">{% icon 'bi:lock-fill' 24 %}</span>
                     {% else %}
                         <span class="icon has-text-danger">{% icon 'bx:bx-lock-open-alt' 24 %}</span>
@@ -86,7 +87,7 @@
                 </td>
                 <td>
                     <div class="dropdown is-right is-hoverable"
-                         id="ledger-action-{{ ledger.uuid }}">
+                         id="ledger-action-{{ ledger_model.uuid }}">
                         <div class="dropdown-trigger">
                             <button class="button is-small is-rounded is-outlined is-dark"
                                     aria-haspopup="true"
@@ -95,45 +96,45 @@
                                 <span class="icon is-small">{% icon 'bi:arrow-down' 24 %}</span>
                             </button>
                         </div>
-                        <div class="dropdown-menu" id="dropdown-menu-{{ ledger.uuid }}" role="menu">
+                        <div class="dropdown-menu" id="dropdown-menu-{{ ledger_model.uuid }}" role="menu">
                             <div class="dropdown-content">
-                                <a href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                <a href="{% url 'django_ledger:ledger-update' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                    class="dropdown-item has-text-success">{% trans 'Edit' %}</a>
-                                {% if ledger.can_lock %}
-                                    <a href="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_lock %}
+                                    <a href="{% url 'django_ledger:ledger-action-lock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-info has-text-weight-bold">{% trans 'Lock' %}</a>
                                 {% endif %}
-                                {% if ledger.can_unlock %}
-                                    <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_unlock %}
+                                    <a href="{% url 'django_ledger:ledger-action-unlock' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnLock' %}</a>
                                 {% endif %}
-                                {% if ledger.can_post %}
-                                    <a href="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_post %}
+                                    <a href="{% url 'django_ledger:ledger-action-post' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-info has-text-weight-bold">{% trans 'Post' %}</a>
                                 {% endif %}
-                                {% if ledger.can_unpost %}
-                                    <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_unpost %}
+                                    <a href="{% url 'django_ledger:ledger-action-unpost' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'UnPost' %}</a>
                                 {% endif %}
 
-                                {% if ledger.can_hide %}
-                                    <a href="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_hide %}
+                                    <a href="{% url 'django_ledger:ledger-action-hide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-warning has-text-weight-bold">{% trans 'Hide' %}</a>
                                 {% endif %}
-                                {% if ledger.can_unhide %}
-                                    <a href="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_unhide %}
+                                    <a href="{% url 'django_ledger:ledger-action-unhide' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'UnHide' %}</a>
                                 {% endif %}
 
-                                {% if ledger.can_delete %}
-                                    <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger.uuid %}"
+                                {% if ledger_model.can_delete %}
+                                    <a href="{% url 'django_ledger:ledger-delete' entity_slug=entity_slug ledger_pk=ledger_model.uuid %}"
                                        class="dropdown-item has-text-danger has-text-weight-bold">{% trans 'Delete' %}</a>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                 </td>
-                <td>{{ ledger.created }}</td>
+                <td>{{ ledger_model.created }}</td>
             </tr>
         {% endfor %}
         </tbody>
