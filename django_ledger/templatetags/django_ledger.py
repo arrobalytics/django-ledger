@@ -11,17 +11,17 @@ from random import randint
 from typing import Union
 
 from django import template
-from django.db.models import Sum, F
+from django.core.exceptions import ValidationError
+from django.db.models import Sum
 from django.urls import reverse
 from django.utils.formats import number_format
-from rfc3986.exceptions import ValidationError
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
-from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ALL
+from django_ledger.io import ROLES_ORDER_ALL
 from django_ledger.io.io_core import validate_activity, get_localdate
-from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel, JournalEntryModel
+from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
@@ -236,7 +236,8 @@ def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceM
         transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     else:
         raise ValidationError(
-            'Cannot handle object of type {} to get transaction model queryset'.format(type(object_type)))
+            'Cannot handle object of type {} to get transaction model queryset'.format(type(object_type))
+        )
 
     total_credits = sum(tx.amount for tx in transaction_model_qs if tx.is_credit())
     total_debits = sum(tx.amount for tx in transaction_model_qs if tx.is_debit())
