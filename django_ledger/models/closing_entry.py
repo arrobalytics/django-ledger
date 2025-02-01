@@ -232,10 +232,11 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 message=_(f'Closing Entry {self.closing_date} is not posted.')
             )
         self.posted = False
-        TransactionModel.objects.for_ledger(
-            ledger_model=self.ledger_model,
+
+        TransactionModel.objects.for_entity(
             entity_slug=self.entity_model_id
-        ).delete()
+        ).for_ledger(ledger_model=self.ledger_model).delete()
+
         self.ledger_model.journal_entries.all().delete()
         if commit:
             self.save(
@@ -303,10 +304,11 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ClosingEntryValidationError(
                 message=_('Cannot delete a posted Closing Entry')
             )
-        TransactionModel.objects.for_ledger(
-            ledger_model=self.ledger_model,
+
+        TransactionModel.objects.for_entity(
             entity_slug=self.entity_model_id
-        ).delete()
+        ).for_ledger(ledger_model=self.ledger_model).delete()
+
         return self.ledger_model.delete()
 
     def get_delete_html_id(self) -> str:

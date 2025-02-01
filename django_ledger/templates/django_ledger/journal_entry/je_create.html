@@ -10,14 +10,13 @@
         </div>
         <div class="column is-4">
             <div class="box">
-                <form method="post"
-                      action="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                <form method="post">
                     {% csrf_token %}
                     {{ form.as_p }}
                     <button class="button is-outlined is-primary is-fullwidth djetler_my_1" type="submit">Create
                     </button>
                     <a class="button is-small is-dark is-fullwidth"
-                       href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">Back</a>
+                       href="{{ ledger_model.get_journal_entry_list_url }}">Back</a>
                 </form>
             </div>
         </div>

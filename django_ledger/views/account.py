@@ -200,28 +200,28 @@ class AccountModelYearDetailView(BaseAccountModelBaseView,
         return context
 
 
-class AccountModelQuarterDetailView(QuarterlyReportMixIn, AccountModelYearDetailView):
+class AccountModelQuarterDetailView(AccountModelYearDetailView, QuarterlyReportMixIn):
     """
     Account Model Quarter Detail View
     """
 
 
-class AccountModelMonthDetailView(MonthlyReportMixIn, AccountModelYearDetailView):
+class AccountModelMonthDetailView(AccountModelYearDetailView, MonthlyReportMixIn):
     """
     Account Model Month Detail View
     """
 
 
-class AccountModelDateDetailView(DateReportMixIn, AccountModelYearDetailView):
+class AccountModelDateDetailView(AccountModelYearDetailView, DateReportMixIn):
     """
     Account Model Date Detail View
     """
 
 
 # ACTIONS...
-class AccountModelModelActionView(BaseAccountModelBaseView,
-                                  RedirectView,
-                                  SingleObjectMixin):
+class BaseAccountModelActionView(BaseAccountModelBaseView,
+                                 RedirectView,
+                                 SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'account_pk'
     action_name = None
@@ -235,7 +235,7 @@ class AccountModelModelActionView(BaseAccountModelBaseView,
         kwargs['user_model'] = self.request.user
         if not self.action_name:
             raise ImproperlyConfigured('View attribute action_name is required.')
-        response = super(AccountModelModelActionView, self).get(request, *args, **kwargs)
+        response = super(BaseAccountModelActionView, self).get(request, *args, **kwargs)
         account_model: AccountModel = self.get_object()
 
         try:

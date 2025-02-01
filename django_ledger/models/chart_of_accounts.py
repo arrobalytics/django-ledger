@@ -286,6 +286,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                 return qs
             return qs.get()
 
+        raise ChartOfAccountsModelValidationError(
+            message='Adding Root account to Chart of Accounts is not allowed.'
+        )
+
     def get_non_root_coa_accounts_qs(self) -> AccountModelQuerySet:
         """
         Returns a query set of non-root accounts in the chart of accounts.

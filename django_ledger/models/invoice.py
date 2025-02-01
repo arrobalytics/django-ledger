@@ -546,6 +546,16 @@ class InvoiceModelAbstract(
 
     # ### ItemizeMixIn implementation END...
 
+    def get_transaction_queryset(self, annotated: bool = False):
+        """
+        Fetches the TransactionModelQuerySet associated with the InvoiceModel instance.
+        """
+        TransactionModel = lazy_loader.get_txs_model()
+        transaction_model_qs = TransactionModel.objects.all().for_ledger(ledger_model=self.ledger_id)
+        if annotated:
+            return transaction_model_qs.with_annotated_details()
+        return transaction_model_qs
+
     def get_migrate_state_desc(self):
         """
         Description used when migrating transactions into the LedgerModel.
@@ -557,8 +567,7 @@ class InvoiceModelAbstract(
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
-    def get_migration_data(self,
-                           queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def get_migration_data(self, queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
 
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
@@ -591,8 +600,7 @@ class InvoiceModelAbstract(
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self,
-                          itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def update_amount_due(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
         """
         Updates the InvoiceModel amount due.
 

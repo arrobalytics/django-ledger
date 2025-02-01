@@ -17,6 +17,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.io.io_core import get_localdate
+from django_ledger.models import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     YearlyReportMixIn, QuarterlyReportMixIn,
@@ -25,19 +26,17 @@ from django_ledger.views.mixins import (
 )
 
 
-class LedgerModelModelViewQuerySetMixIn:
+class LedgerModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = LedgerModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).select_related('entity')
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            self.queryset = entity_model.get_ledgers()
         return self.queryset
 
 
-class LedgerModelListView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, ArchiveIndexView):
+class LedgerModelListView(LedgerModelModelBaseView, ArchiveIndexView):
     allow_empty = True
     context_object_name = 'ledger_list'
     template_name = 'django_ledger/ledger/ledger_list.html'
@@ -91,7 +90,7 @@ class LedgerModelMonthListView(MonthArchiveView, LedgerModelListView):
     make_object_list = True
 
 
-class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, CreateView):
+class LedgerModelCreateView(LedgerModelModelBaseView, CreateView):
     template_name = 'django_ledger/ledger/ledger_create.html'
     PAGE_TITLE = _('Create Ledger')
     extra_context = {
@@ -118,7 +117,7 @@ class LedgerModelCreateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
                        })
 
 
-class LedgerModelDetailView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, RedirectView):
+class LedgerModelDetailView(LedgerModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse('django_ledger:je-list',
@@ -128,7 +127,7 @@ class LedgerModelDetailView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
                        })
 
 
-class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, UpdateView):
+class LedgerModelUpdateView(LedgerModelModelBaseView, UpdateView):
     context_object_name = 'ledger'
     pk_url_kwarg = 'ledger_pk'
     template_name = 'django_ledger/ledger/ledger_update.html'
@@ -153,7 +152,7 @@ class LedgerModelUpdateView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
                        })
 
 
-class LedgerModelDeleteView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuerySetMixIn, DeleteView):
+class LedgerModelDeleteView(LedgerModelModelBaseView, DeleteView):
     template_name = 'django_ledger/ledger/ledger_delete.html'
     pk_url_kwarg = 'ledger_pk'
     context_object_name = 'ledger_model'
@@ -167,9 +166,8 @@ class LedgerModelDeleteView(DjangoLedgerSecurityMixIn, LedgerModelModelViewQuery
 
 # ACTIONS....
 
-class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
+class LedgerModelModelActionView(LedgerModelModelBaseView,
                                  RedirectView,
-                                 LedgerModelModelViewQuerySetMixIn,
                                  SingleObjectMixin):
     http_method_names = ['get']
     pk_url_kwarg = 'ledger_pk'
@@ -200,7 +198,7 @@ class LedgerModelModelActionView(DjangoLedgerSecurityMixIn,
 
 
 # Ledger Balance Sheet Views...
-class BaseLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseLedgerModelBalanceSheetView(LedgerModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -211,8 +209,7 @@ class BaseLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
         })
 
 
-class FiscalYearLedgerModelBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                            LedgerModelModelViewQuerySetMixIn,
+class FiscalYearLedgerModelBalanceSheetView(LedgerModelModelBaseView,
                                             BaseDateNavigationUrlMixIn,
                                             EntityUnitMixIn,
                                             YearlyReportMixIn,
@@ -249,7 +246,7 @@ class DateLedgerModelBalanceSheetView(FiscalYearLedgerModelBalanceSheetView, Dat
 
 
 # Ledger Income Statement Views...
-class BaseLedgerIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseLedgerIncomeStatementView(LedgerModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -261,8 +258,7 @@ class BaseLedgerIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
                        })
 
 
-class FiscalYearLedgerIncomeStatementView(DjangoLedgerSecurityMixIn,
-                                          LedgerModelModelViewQuerySetMixIn,
+class FiscalYearLedgerIncomeStatementView(LedgerModelModelBaseView,
                                           BaseDateNavigationUrlMixIn,
                                           EntityUnitMixIn,
                                           YearlyReportMixIn,
@@ -298,7 +294,7 @@ class DateLedgerIncomeStatementView(FiscalYearLedgerIncomeStatementView, DateRep
 
 
 # CASH FLOW STATEMENT ----
-class BaseLedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseLedgerModelCashFlowStatementRedirectView(LedgerModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -310,8 +306,7 @@ class BaseLedgerModelCashFlowStatementRedirectView(DjangoLedgerSecurityMixIn, Re
                        })
 
 
-class FiscalYearLedgerModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
-                                                 LedgerModelModelViewQuerySetMixIn,
+class FiscalYearLedgerModelCashFlowStatementView(LedgerModelModelBaseView,
                                                  BaseDateNavigationUrlMixIn,
                                                  EntityUnitMixIn,
                                                  YearlyReportMixIn,

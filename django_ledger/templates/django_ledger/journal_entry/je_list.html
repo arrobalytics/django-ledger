@@ -4,9 +4,7 @@
 {% load django_ledger %}
 
 {% block view_content %}
-    
-{#    {% include 'django_ledger/journal_entry/includes/card_journal_entry.html' je_model= %}#}
-    
+
     <div class="card">
         <div class="card-content">
             <div class="level">
@@ -21,10 +19,15 @@
                             <h1 class="is-size-1 has-text-weight-thin">{% trans 'Journal Entries' %}</h1>
                         {% endif %}
                     </div>
-                    <div class="level-item">
-                        <a href="{% url 'django_ledger:je-create' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
-                            <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
-                    </div>
+
+                    {# Do not show + button if ledger is locked #}
+                    {% if not ledger_model.is_locked %}
+                        <div class="level-item">
+                            <a href="{{ ledger_model.get_journal_entry_create_url }}">
+                                <span class="icon is-large has-text-success">{% icon 'carbon:add-alt' 60 %}</span></a>
+                        </div>
+                    {% endif %}
+
                 </div>
                 <div class="level-right">
                     {% if previous_month %}
@@ -88,12 +91,12 @@
                 </div>
             </div>
 
-            {% jes_table journal_entry_list %}
+            {% jes_table journal_entry_qs %}
 
             {% if year %}
                 <h5 class="is-size-5">{% trans 'Go to month:' %}</h5>
                 <p>
-                    <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                    <a href="{{ ledger_model.get_journal_entry_list_url }}">
                         {% trans 'All' %} |
                     </a>
                     {% for date in date_list %}
@@ -105,7 +108,7 @@
             {% else %}
                 <h5 class="is-size-5">{% trans 'Go to year:' %}</h5>
                 <p>
-                    <a href="{% url 'django_ledger:je-list' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                    <a href="{{ ledger_model.get_journal_entry_list_url }}">
                         {% trans 'All' %} |
                     </a>
                     {% for date in date_list %}
@@ -119,17 +122,17 @@
                 <div class="columns is-centered">
                     <div class="column is-3">
                         <a class="button is-dark is-fullwidth"
-                           href="{% url 'django_ledger:ledger-list' entity_slug=view.kwargs.entity_slug %}">
+                           href="{{ ledger_model.get_list_url }}">
                             {% trans 'Back to Ledger List' %}</a>
                     </div>
                     <div class="column is-3">
                         <a class="button is-success is-fullwidth"
-                           href="{% url 'django_ledger:ledger-action-lock-journal-entries' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                           href="{{ ledger_model.get_action_lock_journal_entries_url }}">
                             {% trans 'Lock All' %}</a>
                     </div>
                     <div class="column is-3">
                         <a class="button is-warning is-fullwidth"
-                           href="{% url 'django_ledger:ledger-action-post-journal-entries' entity_slug=view.kwargs.entity_slug ledger_pk=view.kwargs.ledger_pk %}">
+                           href="{{ ledger_model.get_action_post_journal_entries_url }}">
                             {% trans 'Post All' %}</a>
                     </div>
                 </div>

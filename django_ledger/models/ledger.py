@@ -125,6 +125,7 @@ class LedgerModelManager(models.Manager):
         qs = super().get_queryset()
         return qs.select_related('entity').annotate(
             Count('journal_entries'),
+            _entity_slug=F('entity__slug'),
             earliest_timestamp=Min('journal_entries__timestamp',
                                    filter=Q(journal_entries__posted=True)),
         )
@@ -167,7 +168,7 @@ class LedgerModelManager(models.Manager):
 
 class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     """
-    Base implmentation of the LedgerModel.
+    Base implementation of the LedgerModel.
 
     Attributes
     ----------
@@ -230,6 +231,14 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         else:
             ledger_str = f'LedgerModel: {self.uuid}'
         return f'{ledger_str} | Posted: {self.posted} | Locked: {self.locked}'
+
+    @property
+    def entity_slug(self):
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            pass
+        return self.entity.slug
 
     def has_wrapped_model_info(self):
         if self.additional_info is not None:
@@ -435,9 +444,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             return True
         return False
 
-    def can_edit_journal_entries(self) -> bool:
-        return not self.is_locked()
-
     def post(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """
         Posts the LedgerModel.
@@ -628,6 +634,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def get_entity_last_closing_date(self) -> Optional[date]:
         return self.entity.last_closing_date
 
+    # URLS....
     def get_absolute_url(self) -> str:
         """
         Determines the absolute URL of the LedgerModel instance.
@@ -690,6 +697,20 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
                            'entity_slug': self.entity.slug
                        })
 
+    def get_journal_entry_list_url(self) -> str:
+        return reverse('django_ledger:je-list',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.uuid,
+                       })
+
+    def get_journal_entry_create_url(self) -> str:
+        return reverse('django_ledger:je-create',
+                       kwargs={
+                           'entity_slug': self.entity_slug,
+                           'ledger_pk': self.uuid
+                       })
+
     def get_balance_sheet_url(self):
         return reverse(
             viewname='django_ledger:ledger-bs',
@@ -720,11 +741,31 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def get_delete_message(self):
         return _(f'Are you sure you want to delete Ledger {self.name} from Entity {self.get_entity_name()}?')
 
+    # Action URL...
+    def get_action_post_journal_entries_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-action-post-journal-entries',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'ledger_pk': self.uuid
+            }
+        )
+
+    def get_action_lock_journal_entries_url(self):
+        return reverse(
+            viewname='django_ledger:ledger-action-lock-journal-entries',
+            kwargs={
+                'entity_slug': self.entity_slug,
+                'ledger_pk': self.uuid
+            }
+        )
+
 
 class LedgerModel(LedgerModelAbstract):
     """
     Base LedgerModel from Abstract.
     """
+
     class Meta(LedgerModelAbstract.Meta):
         swappable = 'DJANGO_LEDGER_LEDGER_MODEL'
         abstract = False

@@ -433,9 +433,9 @@ class IOBluePrint:
         return round(amount, self.precision_decimals)
 
     def _amount(self, amount: Union[float, Decimal, int]) -> Decimal:
-        if amount <= 0:
+        if amount < 0:
             raise IOBluePrintValidationError(
-                message='Amounts must be greater than 0'
+                message='Amounts cannot be negative.'
             )
 
         if isinstance(amount, float):
@@ -448,7 +448,7 @@ class IOBluePrint:
             return Decimal(str(amount))
 
         raise IOBluePrintValidationError(
-            message='Amounts must be float or Decimal'
+            message='Amounts must be float, Decimal or int.'
         )
 
     def credit(self, account_code: str, amount: Union[float, Decimal], description: str = None):

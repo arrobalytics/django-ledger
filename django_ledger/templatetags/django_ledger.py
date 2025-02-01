@@ -8,18 +8,20 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import month_abbr
 from random import randint
+from typing import Union
 
 from django import template
-from django.db.models import Sum
+from django.db.models import Sum, F
 from django.urls import reverse
 from django.utils.formats import number_format
+from rfc3986.exceptions import ValidationError
 
 from django_ledger import __version__
 from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import CREDIT, DEBIT, ROLES_ORDER_ALL
 from django_ledger.io.io_core import validate_activity, get_localdate
-from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel
+from django_ledger.models import TransactionModel, BillModel, InvoiceModel, EntityUnitModel, JournalEntryModel
 from django_ledger.settings import (
     DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
@@ -216,65 +218,42 @@ def jes_table(context, journal_entry_qs, next_url=None):
                                'ledger_pk': ledger_pk
                            })
     return {
-        'jes': journal_entry_qs,
+        'journal_entry_qs': journal_entry_qs,
         'entity_slug': entity_slug,
         'ledger_pk': ledger_pk,
         'next_url': next_url
     }
 
 
-@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html')
-def journal_entry_txs_table(journal_entry_model, style='detail'):
-    txs_queryset = journal_entry_model.transactionmodel_set.all().select_related('account').order_by('account__code')
-    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'credit')
-    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == 'debit')
+@register.inclusion_tag('django_ledger/transactions/tags/txs_table.html')
+def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceModel], style='detail'):
+    if isinstance(object_type, JournalEntryModel):
+        transaction_model_qs = object_type.transactionmodel_set.all().with_annotated_details().order_by(
+            '-timestamp')
+    elif isinstance(object_type, BillModel):
+        transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
+    elif isinstance(object_type, InvoiceModel):
+        transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
+    else:
+        raise ValidationError(
+            'Cannot handle object of type {} to get transaction model queryset'.format(type(object_type)))
+
+    total_credits = sum(tx.amount for tx in transaction_model_qs if tx.is_credit())
+    total_debits = sum(tx.amount for tx in transaction_model_qs if tx.is_debit())
+
     return {
-        'txs': txs_queryset,
+        'style': style,
+        'transaction_model_qs': transaction_model_qs,
         'total_debits': total_debits,
         'total_credits': total_credits,
-        'style': style
-    }
-
-
-@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
-def bill_txs_table(context, bill_model: BillModel):
-    # todo: move this to bill model...
-    txs_queryset = TransactionModel.objects.for_bill(
-        bill_model=bill_model.uuid,
-        user_model=context['request'].user,
-        entity_slug=context['view'].kwargs['entity_slug']
-    ).select_related('journal_entry', 'journal_entry__entity_unit', 'account').order_by('-journal_entry__timestamp')
-    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == CREDIT)
-    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == DEBIT)
-    return {
-        'style': 'detail',
-        'txs': txs_queryset,
-        'total_debits': total_debits,
-        'total_credits': total_credits
-    }
-
-
-@register.inclusion_tag('django_ledger/journal_entry/tags/je_txs_table.html', takes_context=True)
-def invoice_txs_table(context, invoice_model: InvoiceModel):
-    txs_queryset = TransactionModel.objects.for_invoice(
-        invoice_model=invoice_model,
-        user_model=context['request'].user,
-        entity_slug=context['view'].kwargs['entity_slug']
-    ).select_related('journal_entry', 'journal_entry__entity_unit', 'account').order_by('-journal_entry__timestamp')
-    total_credits = sum(tx.amount for tx in txs_queryset if tx.tx_type == CREDIT)
-    total_debits = sum(tx.amount for tx in txs_queryset if tx.tx_type == DEBIT)
-    return {
-        'style': 'detail',
-        'txs': txs_queryset,
-        'total_debits': total_debits,
-        'total_credits': total_credits
+        'object': object_type
     }
 
 
 @register.inclusion_tag('django_ledger/ledger/tags/ledgers_table.html', takes_context=True)
 def ledgers_table(context, ledger_model_qs):
     return {
-        'ledgers': ledger_model_qs,
+        'ledger_model_qs': ledger_model_qs,
         'entity_slug': context['view'].kwargs['entity_slug'],
     }
 

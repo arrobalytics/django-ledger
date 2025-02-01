@@ -5,75 +5,72 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
+from typing import Optional
+
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.db.models import Count
 from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import (YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
-                                  ArchiveIndexView, DeleteView)
+from django.views.generic import (
+    YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
+    ArchiveIndexView, DeleteView
+)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.journal_entry import (JournalEntryModelUpdateForm,
-                                               JournalEntryModelCannotEditForm,
-                                               JournalEntryModelCreateForm)
+from django_ledger.forms.journal_entry import (
+    JournalEntryModelUpdateForm,
+    JournalEntryModelCannotEditForm,
+    JournalEntryModelCreateForm
+)
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
 from django_ledger.io.io_core import get_localtime
+from django_ledger.models import EntityModel, LedgerModel
 from django_ledger.models.journal_entry import JournalEntryModel
-from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class JournalEntryModelModelViewQuerySetMixIn:
+class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
+    ledger_model: Optional[LedgerModel] = None
 
     def get_queryset(self):
         if self.queryset is None:
-            self.queryset = JournalEntryModel.objects.for_ledger(
-                ledger_pk=self.kwargs['ledger_pk'],
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            ).select_related('entity_unit', 'ledger', 'ledger__entity')
-        return super().get_queryset()
+            ledger_model: LedgerModel = self.get_ledger_model()
+            journal_entry_queryset = ledger_model.journal_entries.select_related('entity_unit', 'ledger', 'ledger__entity').order_by('-timestamp')
+            self.queryset = journal_entry_queryset
+        return self.queryset
+
+    def get_ledger_model(self) -> LedgerModel:
+        if self.ledger_model is None:
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            self.ledger_model = entity_model.get_ledgers().get(uuid__exact=self.kwargs['ledger_pk'])
+        return self.ledger_model
 
 
 # JE Views ---
-class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObjectMixin):
+class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
     template_name = 'django_ledger/journal_entry/je_create.html'
     PAGE_TITLE = _('Create Journal Entry')
     extra_context = {
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
-    context_object_name = 'ledger_model'
-    pk_url_kwarg = 'ledger_pk'
-    ledger_model = None
+    ledger_model: Optional[LedgerModel] = None
 
     def get_context_data(self, **kwargs):
-        if self.ledger_model is None:
-            ledger_model = self.get_object()
-            self.ledger_model = ledger_model
-        ctx = super().get_context_data(**kwargs)
-        ctx['page_title'] = self.PAGE_TITLE
-        ctx['header_title'] = self.PAGE_TITLE
-        ctx['header_subtitle'] = self.ledger_model
-        return ctx
-
-    def get_queryset(self):
-        return LedgerModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug'],
-        )
+        context = super().get_context_data(**kwargs)
+        ledger_model: LedgerModel = self.get_ledger_model()
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = ledger_model.name
+        context['ledger_model'] = ledger_model
+        return context
 
     def get_form(self, form_class=None):
-        if self.ledger_model is None:
-            ledger_model = self.get_object()
-            self.ledger_model = ledger_model
         return JournalEntryModelCreateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            ledger_model=self.ledger_model,
-            user_model=self.request.user,
+            entity_model=self.get_authorized_entity_instance(),
+            ledger_model=self.get_ledger_model(),
             **self.get_form_kwargs()
         )
 
@@ -83,42 +80,51 @@ class JournalEntryCreateView(DjangoLedgerSecurityMixIn, CreateView, SingleObject
         }
 
     def get_success_url(self):
-        return reverse('django_ledger:je-list',
-                       kwargs={
-                           'entity_slug': self.kwargs.get('entity_slug'),
-                           'ledger_pk': self.kwargs.get('ledger_pk')
-                       })
+        ledger_model = self.get_ledger_model()
+        return ledger_model.get_journal_entry_list_url()
 
 
-class JournalEntryListView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, ArchiveIndexView):
-    context_object_name = 'journal_entry_list'
+# ARCHIVE VIEWS START....
+class JournalEntryListView(JournalEntryModelModelBaseView, ArchiveIndexView):
+    context_object_name = 'journal_entry_qs'
     template_name = 'django_ledger/journal_entry/je_list.html'
     PAGE_TITLE = _('Journal Entries')
-    extra_context = {
-        'page_title': PAGE_TITLE,
-        'header_title': PAGE_TITLE
-    }
     http_method_names = ['get']
     date_field = 'timestamp'
     paginate_by = 20
     allow_empty = True
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        qs = qs.annotate(txs_count=Count('transactionmodel'))
-        return qs
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
+
+        ledger_model = self.get_ledger_model()
+        context['ledger_model'] = ledger_model
+        context['page_title'] = self.PAGE_TITLE
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = f'{entity_model.name} | Ledger: {ledger_model.name}'
+        context['header_subtitle_icon'] = 'bi:journal-check'
+
+        if ledger_model.is_locked():
+            messages.add_message(self.request,
+                                 message=_('Locked Journal Entry. Must unlock ledger to add new Journal Entries.'),
+                                 level=messages.WARNING,
+                                 extra_tags='is-warning')
+        return context
 
 
-class JournalEntryYearListView(YearArchiveView, JournalEntryListView):
+class JournalEntryYearListView(JournalEntryListView, YearArchiveView):
     make_object_list = True
 
 
-class JournalEntryMonthListView(MonthArchiveView, JournalEntryListView):
+class JournalEntryMonthListView(JournalEntryListView, MonthArchiveView):
     make_object_list = True
     month_format = '%m'
 
 
-class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, UpdateView):
+# ARCHIVE VIEWS END....
+
+class JournalEntryUpdateView(JournalEntryModelModelBaseView, UpdateView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_update.html'
     pk_url_kwarg = 'je_pk'
@@ -128,34 +134,18 @@ class JournalEntryUpdateView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
         'header_title': PAGE_TITLE
     }
 
-    def get_form(self, form_class=None):
+    def get_form_class(self, form_class=None):
         je_model: JournalEntryModel = self.object
         if not je_model.can_edit():
-            return JournalEntryModelCannotEditForm(
-                entity_slug=self.kwargs['entity_slug'],
-                ledger_model=je_model.ledger,
-                user_model=self.request.user,
-                **self.get_form_kwargs()
-            )
-        return JournalEntryModelUpdateForm(
-            entity_slug=self.kwargs['entity_slug'],
-            ledger_model=je_model.ledger,
-            user_model=self.request.user,
-            **self.get_form_kwargs()
-        )
+            return JournalEntryModelCannotEditForm
+        return JournalEntryModelUpdateForm
 
     def get_success_url(self):
-        return reverse('django_ledger:je-list', kwargs={
-            'entity_slug': self.kwargs['entity_slug'],
-            'ledger_pk': self.kwargs['ledger_pk']
-        })
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
+        je_model: JournalEntryModel = self.object
+        return je_model.get_journal_entry_list_url()
 
 
-class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
+class JournalEntryDetailView(JournalEntryModelModelBaseView, DetailView):
     context_object_name = 'journal_entry'
     template_name = 'django_ledger/journal_entry/je_detail.html'
     slug_url_kwarg = 'je_pk'
@@ -168,28 +158,19 @@ class JournalEntryDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelVi
     }
     http_method_names = ['get']
 
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
 
-
-class JournalEntryDeleteView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DeleteView):
+class JournalEntryDeleteView(JournalEntryModelModelBaseView, DeleteView):
     template_name = 'django_ledger/journal_entry/je_delete.html'
     context_object_name = 'je_model'
     pk_url_kwarg = 'je_pk'
 
     def get_success_url(self) -> str:
         je_model: JournalEntryModel = self.object
-        return reverse(
-            viewname='django_ledger:je-list',
-            kwargs={
-                'entity_slug': self.AUTHORIZED_ENTITY_MODEL.slug,
-                'ledger_pk': je_model.ledger_id
-            }
-        )
+        return je_model.get_journal_entry_list_url()
 
 
-class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryModelModelViewQuerySetMixIn, DetailView):
+# todo:.... move this to transaction list view?.....
+class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView):
     template_name = 'django_ledger/journal_entry/je_detail_txs.html'
     PAGE_TITLE = _('Edit Transactions')
     pk_url_kwarg = 'je_pk'
@@ -214,11 +195,8 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
         if not txs_formset:
             TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
             context['txs_formset'] = TransactionModelFormSet(
-                user_model=self.request.user,
                 je_model=je_model,
-                ledger_pk=self.kwargs['ledger_pk'],
-                entity_slug=self.kwargs['entity_slug'],
-                queryset=je_model.transactionmodel_set.all().order_by('account__code')
+                entity_model=self.get_authorized_entity_instance(),
             )
         else:
             context['txs_formset'] = txs_formset
@@ -234,9 +212,7 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
 
         TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
         txs_formset = TransactionModelFormSet(request.POST,
-                                              user_model=self.request.user,
-                                              ledger_pk=kwargs['ledger_pk'],
-                                              entity_slug=kwargs['entity_slug'],
+                                              entity_model=self.get_authorized_entity_instance(),
                                               je_model=je_model)
 
         if je_model.locked:
@@ -271,7 +247,11 @@ class JournalEntryModelTXSDetailView(DjangoLedgerSecurityMixIn, JournalEntryMode
 
 
 # ACTION VIEWS...
-class BaseJournalEntryActionView(DjangoLedgerSecurityMixIn, RedirectView, SingleObjectMixin):
+class BaseJournalEntryActionView(
+    JournalEntryModelModelBaseView,
+    RedirectView,
+    SingleObjectMixin
+):
     http_method_names = ['get']
     pk_url_kwarg = 'je_pk'
     action_name = None
@@ -279,11 +259,14 @@ class BaseJournalEntryActionView(DjangoLedgerSecurityMixIn, RedirectView, Single
 
     def get_queryset(self):
         return JournalEntryModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
+            entity_slug=self.get_authorized_entity_instance(),
             user_model=self.request.user
-        )
+        ).for_ledger(ledger_pk=self.kwargs['ledger_pk'])
 
     def get_redirect_url(self, *args, **kwargs):
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
         return reverse('django_ledger:je-list',
                        kwargs={
                            'entity_slug': kwargs['entity_slug'],
