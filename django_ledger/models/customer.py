@@ -106,8 +106,8 @@ class CustomerModelManager(Manager):
         if user_model.is_superuser:
             return qs
         return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
+            Q(entity_model__admin=user_model) |
+            Q(entity_model__managers__in=[user_model])
         )
 
     def for_entity(self, entity_slug, user_model) -> CustomerModelQueryset:
@@ -157,7 +157,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    entity: EntityModel
+    entity_model: EntityModel
         The EntityModel associated with this Customer.
 
     customer_name: str
