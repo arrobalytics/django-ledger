@@ -477,7 +477,7 @@ class IODatabaseMixIn:
             txs_queryset = txs_queryset.posted()
 
         if accounts:
-            if not isinstance(accounts, str):
+            if isinstance(accounts, str):
                 accounts = [accounts]
             txs_queryset = txs_queryset.for_accounts(account_list=accounts)
 
