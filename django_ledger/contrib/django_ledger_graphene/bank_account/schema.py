@@ -28,7 +28,7 @@ class Bank_account_Query(graphene.ObjectType):
             return BankAccountModel.objects.for_entity(
             entity_slug=slug_name,
             user_model=info.context.user
-        ).select_related('cash_account')
+        ).select_related('account_model')
         else:
             return BankAccountModel.objects.none()
 

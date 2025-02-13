@@ -1102,7 +1102,7 @@ class MarkdownNotesMixIn(models.Model):
         super().clean()
 
 
-class BankAccountInfoMixIn(models.Model):
+class FinancialAccountInfoMixin(models.Model):
     """
     Implements functionality used to add bank account details to base Django Models.
 
@@ -1122,10 +1122,16 @@ class BankAccountInfoMixIn(models.Model):
 
     ACCOUNT_CHECKING = 'checking'
     ACCOUNT_SAVINGS = 'savings'
+    ACCOUNT_CREDIT_CARD = 'credit_card'
+    ACCOUNT_MORTGAGE = 'mortgage'
+
     ACCOUNT_TYPE_CHOICES = [
         (ACCOUNT_CHECKING, _('Checking')),
-        (ACCOUNT_SAVINGS, _('Savings'))
+        (ACCOUNT_SAVINGS, _('Savings')),
+        (ACCOUNT_CREDIT_CARD, _('Credit Card')),
+        (ACCOUNT_MORTGAGE, _('Mortgage')),
     ]
+
     VALID_ACCOUNT_TYPES = tuple(atc[0] for atc in ACCOUNT_TYPE_CHOICES)
 
     account_number = models.CharField(max_length=30, null=True, blank=True,
@@ -1139,7 +1145,7 @@ class BankAccountInfoMixIn(models.Model):
     aba_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('ABA Number'))
     swift_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number'))
     account_type = models.CharField(choices=ACCOUNT_TYPE_CHOICES,
-                                    max_length=10,
+                                    max_length=20,
                                     default=ACCOUNT_CHECKING,
                                     verbose_name=_('Account Type'))
 
