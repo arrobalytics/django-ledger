@@ -777,7 +777,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info(f'Funding entity...')
         capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
-        cash_acc = choice(self.bank_account_models).cash_account
+        cash_acc = choice(self.bank_account_models).account_model
 
         self.entity_model.deposit_capital(
             cash_account=cash_acc,

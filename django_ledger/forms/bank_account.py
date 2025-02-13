@@ -20,10 +20,10 @@ class BankAccountCreateForm(ModelForm):
             entity_model=self.ENTITY_SLUG
         ).available().filter(
             role__exact=ASSET_CA_CASH)
-        self.fields['cash_account'].queryset = account_qs
+        self.fields['account_model'].queryset = account_qs
 
     def clean(self):
-        cash_account = self.cleaned_data['cash_account']
+        cash_account = self.cleaned_data['account_model']
         routing_number = self.cleaned_data['routing_number']
         account_number = self.cleaned_data['account_number']
 
@@ -47,7 +47,7 @@ class BankAccountCreateForm(ModelForm):
             'routing_number',
             'aba_number',
             'swift_number',
-            'cash_account',
+            'account_model',
             'active'
         ]
         widgets = {
@@ -74,7 +74,7 @@ class BankAccountCreateForm(ModelForm):
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'cash_account': Select(attrs={
+            'account_model': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }
@@ -82,7 +82,7 @@ class BankAccountCreateForm(ModelForm):
             'name': _('Account Name'),
             'account_number': _('Account Number'),
             'account_type': _('Account Type'),
-            'cash_account': _('Cash Account'),
+            'account_model': _('Cash Account'),
             'aba_number': _('ABA Number'),
             'routing_number': _('Routing Number'),
             'active': _('Make Active'),
@@ -95,7 +95,7 @@ class BankAccountUpdateForm(BankAccountCreateForm):
         fields = [
             'name',
             'account_type',
-            'cash_account',
+            'account_model',
             'active'
         ]
         widgets = {
@@ -106,13 +106,13 @@ class BankAccountUpdateForm(BankAccountCreateForm):
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'cash_account': Select(attrs={
+            'account_model': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }
 
     def clean(self):
-        cash_account = self.cleaned_data['cash_account']
+        cash_account = self.cleaned_data['account_model']
 
         if not cash_account:
             raise ValidationError('Must select a bank account.')

@@ -279,7 +279,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def from_commit_dict(self, split_amount: Optional[Decimal] = None) -> List[Dict]:
         amt = split_amount if split_amount else self.amount
         return [{
-            'account': self.import_job.bank_account_model.cash_account,
+            'account': self.import_job.bank_account_model.account_model,
             'amount': abs(amt),
             'tx_type': DEBIT if not amt < 0.00 else CREDIT,
             'description': self.name,

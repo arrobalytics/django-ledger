@@ -16,7 +16,7 @@ from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, BankAccountInfoMixIn
+from django_ledger.models import CreateUpdateMixIn, FinancialAccountMixin
 from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()
@@ -60,6 +60,9 @@ class BankAccountModelManager(models.Manager):
     Custom defined Model Manager for the BankAccountModel.
     """
 
+    def get_queryset(self):
+        return BankAccountModelQuerySet(self.model, using=self._db)
+
     def for_user(self, user_model):
         qs = self.get_queryset()
         if user_model.is_superuser:
@@ -91,7 +94,7 @@ class BankAccountModelManager(models.Manager):
         )
 
 
-class BankAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
+class BankAccountModelAbstract(FinancialAccountMixin, CreateUpdateMixIn):
     """
     This is the main abstract class which the BankAccountModel database will inherit from.
     The BankAccountModel inherits functionality from the following MixIns:
@@ -108,7 +111,7 @@ class BankAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
         A user defined name for the bank account as a String.
     entity_model: EntityModel
         The EntityModel associated with the BankAccountModel instance.
-    cash_account: AccountModel
+    account_model: AccountModel
         The AccountModel associated with the BankAccountModel instance. Must be an account with role ASSET_CA_CASH.
     active: bool
         Determines whether the BackAccountModel instance bank account is active. Defaults to True.
@@ -124,13 +127,15 @@ class BankAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Entity Model'))
-    cash_account = models.ForeignKey('django_ledger.AccountModel',
-                                     on_delete=models.RESTRICT,
-                                     verbose_name=_('Cash Account'),
-                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
+    account_model = models.ForeignKey('django_ledger.AccountModel',
+                                      on_delete=models.RESTRICT,
+                                      help_text=_(
+                                          'Account model be used to map transactions from financial institution'),
+                                      verbose_name=_('Associated Account Model'),
+                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
     active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
-    objects = BankAccountModelManager.from_queryset(queryset_class=BankAccountModelQuerySet)()
+    objects = BankAccountModelManager()
 
     def configure(self,
                   entity_slug,
@@ -165,11 +170,11 @@ class BankAccountModelAbstract(BankAccountInfoMixIn, CreateUpdateMixIn):
         verbose_name = _('Bank Account')
         indexes = [
             models.Index(fields=['account_type']),
-            models.Index(fields=['cash_account'])
+            models.Index(fields=['account_model'])
         ]
         unique_together = [
             ('entity_model', 'account_number'),
-            ('entity_model', 'cash_account', 'account_number', 'routing_number')
+            ('entity_model', 'account_model', 'account_number', 'routing_number')
         ]
 
     def __str__(self):

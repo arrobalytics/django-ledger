@@ -96,11 +96,6 @@ class CustomerModelManager(Manager):
         __________
         user_model
             Logged in and authenticated django UserModel instance.
-
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> customer_model_qs = CustomerModel.objects.for_user(user_model=request_user)
         """
         qs = self.get_queryset()
         if user_model.is_superuser:
@@ -122,11 +117,6 @@ class CustomerModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> customer_model_qs = CustomerModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
         Returns
         -------

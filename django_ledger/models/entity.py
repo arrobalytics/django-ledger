@@ -2668,7 +2668,7 @@ class EntityModelAbstract(MP_Node,
 
         if cash_account:
             if isinstance(cash_account, BankAccountModel):
-                cash_account = cash_account.cash_account
+                cash_account = cash_account.account_model
             self.validate_account_model_for_coa(account_model=cash_account, coa_model=coa_model)
             self.validate_account_model_for_role(cash_account, roles_module.ASSET_CA_CASH)
         else:

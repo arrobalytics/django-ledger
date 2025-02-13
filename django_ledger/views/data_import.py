@@ -77,7 +77,7 @@ class ImportJobModelCreateView(DjangoLedgerSecurityMixIn, FormView):
         try:
             ba_model = self.AUTHORIZED_ENTITY_MODEL.bankaccountmodel_set.filter(
                 account_number__exact=ofx_account_number
-            ).select_related('cash_account', 'entity_model').get()
+            ).select_related('account_model', 'entity_model').get()
         except ObjectDoesNotExist:
             create_url = reverse(
                 viewname='django_ledger:bank-account-create',
@@ -217,7 +217,7 @@ class DataImportJobDetailView(DjangoLedgerSecurityMixIn, ImportJobModelViewQuery
         ctx['header_subtitle'] = job_model.description
         ctx['header_subtitle_icon'] = 'tabler:table-import'
         bank_account_model = job_model.bank_account_model
-        cash_account_model = job_model.bank_account_model.cash_account
+        cash_account_model = job_model.bank_account_model.account_model
         if not cash_account_model:
             bank_acct_url = reverse('django_ledger:bank-account-update',
                                     kwargs={
