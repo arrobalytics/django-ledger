@@ -156,38 +156,28 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         job_model: ImportJobModel = self.object
+
         ctx['page_title'] = job_model.description
         ctx['header_title'] = self.PAGE_TITLE
         ctx['header_subtitle'] = job_model.description
         ctx['header_subtitle_icon'] = 'tabler:table-import'
 
-        bank_account_model = job_model.bank_account_model
-        coa_account_model = job_model.bank_account_model.account_model
-
-        staged_txs_qs: StagedTransactionModelQuerySet = job_model.stagedtransactionmodel_set.all()
-
-        ctx['staged_txs_qs'] = staged_txs_qs
-
-        txs_formset = StagedTransactionModelFormSet(
+        staged_txs_formset = StagedTransactionModelFormSet(
             entity_model=self.get_authorized_entity_instance(),
             import_job_model=job_model,
         )
+        ctx['staged_txs_formset'] = staged_txs_formset
 
-        ctx['staged_txs_formset'] = txs_formset
-        ctx['cash_account_model'] = coa_account_model
-        ctx['bank_account_model'] = bank_account_model
         return ctx
 
     def post(self, request, **kwargs):
-        _ = super().get(request, **kwargs)
+        response = super().get(request, **kwargs)
         job_model: ImportJobModel = self.object
-        staged_txs_qs = job_model.stagedtransactionmodel_set.all().select_related('unit_model', 'account_model')
 
         txs_formset = StagedTransactionModelFormSet(
-            data=request.POST,
             entity_model=self.get_authorized_entity_instance(),
             import_job_model=job_model,
-            queryset=staged_txs_qs
+            data=request.POST,
         )
 
         if txs_formset.has_changed():
@@ -195,21 +185,22 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
                 txs_formset.save()
                 for tx_form in txs_formset:
 
-                    # import entry was selected to be split....
-                    is_split = tx_form.cleaned_data['tx_split'] is True
-                    if is_split:
-                        tx_form.instance.add_split()
+                    # perform work only if form has changed...
+                    if tx_form.has_changed():
 
-                    # import entry was selected for import...
-                    is_import = tx_form.cleaned_data['tx_import']
-                    if is_import:
+                        # import entry was selected to be split....
+                        is_split = tx_form.cleaned_data['tx_split'] is True
+                        if is_split:
+                            tx_form.instance.add_split()
 
-                        # all entries in split will be going so the same journal entry... (same unit...)
-                        is_split_bundled = tx_form.cleaned_data['bundle_split']
-                        if not is_split_bundled:
-                            tx_form.instance.migrate(split_txs=True)
-                        else:
-                            tx_form.instance.migrate()
+                        # import entry was selected for import...
+                        is_import = tx_form.cleaned_data['tx_import']
+                        if is_import:
+                            # all entries in split will be going so the same journal entry... (same unit...)
+                            is_split_bundled = tx_form.cleaned_data['bundle_split']
+                            tx_form.instance.migrate(
+                                split_txs=True) if not is_split_bundled else tx_form.instance.migrate()
+
             else:
                 context = self.get_context_data(**kwargs)
                 context['staged_txs_formset'] = txs_formset
@@ -223,4 +214,4 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
                              messages.SUCCESS,
                              'Successfully saved transactions.',
                              extra_tags='is-success')
-        return self.render_to_response(context=self.get_context_data())
+        return response
