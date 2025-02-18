@@ -31,14 +31,16 @@ class ImportJobModelQuerySet(QuerySet):
 class ImportJobModelManager(Manager):
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = ImportJobModelQuerySet(self.model, using=self._db)
         return qs.annotate(
+            _entity_uuid=F('ledger_model__entity__uuid'),
+            _entity_slug=F('ledger_model__entity__slug'),
             txs_count=Count('stagedtransactionmodel',
                             filter=Q(stagedtransactionmodel__parent__isnull=False)),
             txs_mapped_count=Count(
                 'stagedtransactionmodel__account_model_id',
-                filter=Q(stagedtransactionmodel__parent__isnull=False) | Q(
-                    stagedtransactionmodel__parent__parent__isnull=False)
+                filter=Q(stagedtransactionmodel__parent__isnull=False) |
+                       Q(stagedtransactionmodel__parent__parent__isnull=False)
 
             ),
         ).annotate(
@@ -52,7 +54,7 @@ class ImportJobModelManager(Manager):
             ),
         ).select_related(
             'bank_account_model',
-            'bank_account_model__cash_account',
+            'bank_account_model__account_model',
             'ledger_model'
         )
 
@@ -77,7 +79,6 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     description = models.CharField(max_length=200, verbose_name=_('Description'))
     bank_account_model = models.ForeignKey('django_ledger.BankAccountModel',
-                                           editable=False,
                                            on_delete=models.CASCADE,
                                            verbose_name=_('Associated Bank Account Model'))
     ledger_model = models.OneToOneField('django_ledger.LedgerModel',
@@ -87,7 +88,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
                                         null=True,
                                         blank=True)
     completed = models.BooleanField(default=False, verbose_name=_('Import Job Completed'))
-    objects = ImportJobModelManager.from_queryset(queryset_class=ImportJobModelQuerySet)()
+    objects = ImportJobModelManager()
 
     class Meta:
         abstract = True
@@ -97,6 +98,22 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
             models.Index(fields=['ledger_model']),
             models.Index(fields=['completed']),
         ]
+
+    @property
+    def entity_uuid(self):
+        try:
+            return getattr(self, '_entity_uuid')
+        except AttributeError:
+            pass
+        return self.ledger_model.entity_model_id
+
+    @property
+    def entity_slug(self):
+        try:
+            return getattr(self, '_entity_slug')
+        except AttributeError:
+            pass
+        return self.ledger_model.entity_model.slug
 
     def is_configured(self):
         return all([
@@ -137,14 +154,22 @@ class StagedTransactionModelQuerySet(QuerySet):
 class StagedTransactionModelManager(Manager):
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = StagedTransactionModelQuerySet(self.model, using=self._db)
         return qs.select_related(
-            'parent',
             'account_model',
             'unit_model',
             'transaction_model',
             'transaction_model__journal_entry',
-            'transaction_model__account').annotate(
+            'transaction_model__account',
+            'import_job',
+
+            # selecting parent data....
+            'parent',
+            'parent__account_model',
+            'parent__unit_model',
+        ).annotate(
+            entity_slug=F('import_job__bank_account_model__entity_model__slug'),
+            entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
             children_count=Count('split_transaction_set'),
             children_mapped_count=Count('split_transaction_set__account_model_id'),
             total_amount_split=Coalesce(
@@ -156,7 +181,6 @@ class StagedTransactionModelManager(Manager):
                 When(parent_id__isnull=False, then=F('parent_id'))
             ),
         ).annotate(
-            entity_unit=F('transaction_model__journal_entry__entity_unit__name'),
             ready_to_import=Case(
                 # is mapped singleton...
                 When(
@@ -211,7 +235,11 @@ class StagedTransactionModelManager(Manager):
                     Q(import_job__bank_account_model__entity__managers__in=[user_model])
             ) &
             Q(import_job__uuid__exact=job_pk)
-        ).prefetch_related('split_transaction_set')
+        ).prefetch_related(
+            'split_transaction_set',
+            'split_transaction_set__account_model',
+            'split_transaction_set__unit_model'
+        )
 
 
 class StagedTransactionModelAbstract(CreateUpdateMixIn):
@@ -257,7 +285,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                                              null=True,
                                              blank=True)
 
-    objects = StagedTransactionModelManager.from_queryset(queryset_class=StagedTransactionModelQuerySet)()
+    objects = StagedTransactionModelManager()
 
     class Meta:
         abstract = True
@@ -288,7 +316,11 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
 
     def to_commit_dict(self) -> List[Dict]:
         if self.has_children():
-            children_qs = self.split_transaction_set.all()
+            children_qs = self.split_transaction_set.all().prefetch_related(
+                'split_transaction_set',
+                'split_transaction_set__account_model',
+                'split_transaction_set__unit_model'
+            )
             return [{
                 'account': child_txs_model.account_model,
                 'amount': abs(child_txs_model.amount_split),
@@ -312,7 +344,9 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if split_txs:
             to_commit = self.to_commit_dict()
             return [
-                [self.from_commit_dict(split_amount=to_split['amount_staged'])[0], to_split] for to_split in to_commit
+                [
+                    self.from_commit_dict(split_amount=to_split['amount_staged'])[0], to_split] for to_split in
+                to_commit
             ]
         return [self.from_commit_dict() + self.to_commit_dict()]
 

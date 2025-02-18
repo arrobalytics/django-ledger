@@ -1,16 +1,29 @@
 from django import forms
-from django.forms import (ModelForm, BaseModelFormSet, modelformset_factory, Select, NumberInput, HiddenInput,
-                          TextInput,
-                          ValidationError)
+from django.forms import (
+    ModelForm, BaseModelFormSet, modelformset_factory,
+    Select, NumberInput, HiddenInput,
+    TextInput, ValidationError
+)
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import StagedTransactionModel, AccountModel, EntityUnitModel, ImportJobModel
+from django_ledger.models import (
+    StagedTransactionModel,
+    ImportJobModel,
+    EntityModel
+)
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 
 class ImportJobModelCreateForm(ModelForm):
+
+    def __init__(self, entity_model: EntityModel, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ENTITY_MODEL: EntityModel = entity_model
+        self.fields['bank_account_model'].queryset = self.ENTITY_MODEL.bankaccountmodel_set.all().active()
+
     ofx_file = forms.FileField(
         label='Select File...',
+        required=True,
         widget=forms.FileInput(
             attrs={
                 'class': 'file-input',
@@ -21,13 +34,21 @@ class ImportJobModelCreateForm(ModelForm):
     class Meta:
         model = ImportJobModel
         fields = [
-            'description'
+            'bank_account_model',
+            'description',
         ]
         widgets = {
             'description': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
                 'placeholder': _('What\'s this import about?...')
-            })
+            }),
+            'bank_account_model': Select(
+                attrs={
+                    'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                }),
+        }
+        help_texts = {
+            'bank_account_model': _('Select the bank account to import transactions from.'),
         }
 
 
@@ -48,11 +69,20 @@ class StagedTransactionModelForm(ModelForm):
     tx_import = forms.BooleanField(initial=False, required=False)
     tx_split = forms.BooleanField(initial=False, required=False)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, base_formset_instance, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        instance: StagedTransactionModel = getattr(self, 'instance', None)
-        if instance:
+        self.BASE_FORMSET_INSTANCE = base_formset_instance
 
+        # for IDE typing hints...
+        instance: StagedTransactionModel = getattr(self, 'instance', None)
+
+        # avoids multiple DB queries rendering the formset...
+        self.fields['unit_model'].choices = self.BASE_FORMSET_INSTANCE.UNIT_MODEL_CHOICES
+
+        # avoids multiple DB queries rendering the formset...
+        self.fields['account_model'].choices = self.BASE_FORMSET_INSTANCE.ACCOUNT_MODEL_CHOICES
+
+        if instance:
             if not instance.is_children():
                 self.fields['amount_split'].widget = HiddenInput()
                 self.fields['amount_split'].disabled = True
@@ -100,7 +130,7 @@ class StagedTransactionModelForm(ModelForm):
             raise ValidationError(message=_('Cannot import and split at the same time'))
 
     class Meta:
-        model = StagedTransactionModel.objects.get_queryset().model
+        model = StagedTransactionModel
         fields = [
             'tx_import',
             'bundle_split',
@@ -123,32 +153,39 @@ class StagedTransactionModelForm(ModelForm):
 
 class BaseStagedTransactionModelFormSet(BaseModelFormSet):
 
-    def __init__(self, *args, entity_slug, user_model, exclude_account=None, **kwargs):
+    def __init__(self, *args,
+                 entity_model: EntityModel,
+                 import_job_model: ImportJobModel,
+                 **kwargs):
         super().__init__(*args, **kwargs)
-        self.ENTITY_SLUG = entity_slug
-        self.USER_MODEL = user_model
-        self.IMPORT_DISABLED = not exclude_account
-        self.CASH_ACCOUNT = exclude_account
 
-        account_model_qs = AccountModel.objects.for_entity(
-            user_model=self.USER_MODEL,
-            entity_model=self.ENTITY_SLUG
-        ).available().order_by('role', 'name')
+        # validates that the job import model belongs to the entity model...
+        if import_job_model.entity_uuid != entity_model.uuid:
+            raise ValidationError(message=_('Import job does not belong to this entity'))
 
-        unit_model_qs = EntityUnitModel.objects.for_entity(
-            user_model=self.USER_MODEL,
-            entity_slug=self.ENTITY_SLUG
+        self.ENTITY_MODEL = entity_model
+        self.IMPORT_JOB_MODEL: ImportJobModel = import_job_model
+        self.MAPPED_ACCOUNT_MODEL = self.IMPORT_JOB_MODEL.bank_account_model.account_model
+
+        self.account_model_qs = entity_model.get_coa_accounts().available().exclude(
+            uuid__exact=self.MAPPED_ACCOUNT_MODEL.uuid
         )
+        self.ACCOUNT_MODEL_CHOICES = [
+            (a.uuid, a) if i > 0 else (None, '----') for i, a in
+            enumerate(self.account_model_qs)
+        ]
 
-        if exclude_account:
-            account_model_qs = account_model_qs.exclude(uuid__exact=exclude_account.uuid)
+        self.unit_model_qs = entity_model.entityunitmodel_set.all()
+        self.UNIT_MODEL_CHOICES = [
+            (u.uuid, u) if i > 0 else (None, '----') for i, u in
+            enumerate(self.unit_model_qs)
+        ]
+        self.queryset = self.IMPORT_JOB_MODEL.stagedtransactionmodel_set.all().is_pending()
 
-        for form in self.forms:
-            form.fields['account_model'].queryset = account_model_qs
-            form.fields['account_model'].widget.attrs['disabled'] = self.IMPORT_DISABLED
-            form.fields['unit_model'].queryset = unit_model_qs
-
-    # def get_queryset(self):
+    def get_form_kwargs(self, index):
+        return {
+            'base_formset_instance': self,
+        }
 
 
 StagedTransactionModelFormSet = modelformset_factory(
@@ -156,6 +193,6 @@ StagedTransactionModelFormSet = modelformset_factory(
     form=StagedTransactionModelForm,
     formset=BaseStagedTransactionModelFormSet,
     can_delete=True,
-    can_delete_extra=0,
     can_order=False,
-    extra=0)
+    extra=0
+)
