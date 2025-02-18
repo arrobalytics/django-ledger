@@ -1,7 +1,7 @@
 from django.forms import ModelForm, TextInput, Select, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH
+from django_ledger.io.roles import ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE
 from django_ledger.models import BankAccountModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -19,20 +19,24 @@ class BankAccountCreateForm(ModelForm):
             user_model=self.USER_MODEL,
             entity_model=self.ENTITY_SLUG
         ).available().filter(
-            role__exact=ASSET_CA_CASH)
+            role__in=[
+                ASSET_CA_CASH,
+                LIABILITY_CL_ACC_PAYABLE,
+                LIABILITY_LTL_MORTGAGE_PAYABLE
+            ])
         self.fields['account_model'].queryset = account_qs
 
     def clean(self):
-        cash_account = self.cleaned_data['account_model']
+        account_model = self.cleaned_data['account_model']
         routing_number = self.cleaned_data['routing_number']
         account_number = self.cleaned_data['account_number']
 
-        if not cash_account:
+        if not account_model:
             raise ValidationError('Must select a bank account.')
 
         # catching unique database constraint...
         if BankAccountModel.objects.filter(
-                cash_account=cash_account,
+                account_model=account_model,
                 routing_number__exact=routing_number,
                 account_number__exact=account_number
         ).exists():
