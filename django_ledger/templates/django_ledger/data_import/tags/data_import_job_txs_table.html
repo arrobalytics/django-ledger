@@ -14,6 +14,7 @@
         <table class="table is-narrow is-fullwidth is-bordered is-striped django-ledger-table-bottom-margin-75">
             <thead>
             <tr class="has-text-centered is-error">
+                <th></th>
                 <th>Dated Posted</th>
                 <th>Description</th>
                 <th>Amount</th>
@@ -27,11 +28,11 @@
             </tr>
             </thead>
 
-
             <tbody>
 
             {% for txf in staged_txs_formset %}
                 <tr class="{% if txf.instance.is_children %}has-background-primary{% elif txf.instance.has_children %}has-background-primary-light{% endif %}">
+                    <td>{{ forloop.counter }}</td>
                     {% for hidden_field in txf.hidden_fields %}{{ hidden_field }}{% endfor %}
                     {% if txf.instance.is_children %}
                         <td class="has-background-primary-light" style="border: 0px"></td>
@@ -59,7 +60,7 @@
                         {{ txf.account_model }}
                     </td>
                     <td>{{ txf.unit_model }}{% if txf.instance.is_children %}
-                    	<span class="content is-small">{{ txf.instance.unit_model.name }}</span>
+                        <span class="content is-small">{{ txf.instance.unit_model.name }}</span>
                     {% endif %}
                     </td>
                     <td class="has-text-centered">{{ txf.tx_import }}</td>
