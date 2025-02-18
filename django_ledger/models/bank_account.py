@@ -60,7 +60,7 @@ class BankAccountModelManager(models.Manager):
     Custom defined Model Manager for the BankAccountModel.
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> BankAccountModelQuerySet:
         return BankAccountModelQuerySet(self.model, using=self._db)
 
     def for_user(self, user_model):
@@ -118,7 +118,6 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
     hidden: bool
         Determines whether the BackAccountModel instance bank account is hidden. Defaults to False.
     """
-    REL_NAME_PREFIX = 'bank'
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
 
@@ -131,8 +130,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
                                       on_delete=models.RESTRICT,
                                       help_text=_(
                                           'Account model be used to map transactions from financial institution'),
-                                      verbose_name=_('Associated Account Model'),
-                                      related_name=f'{REL_NAME_PREFIX}_cash_account')
+                                      verbose_name=_('Associated Account Model'))
     active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)
     objects = BankAccountModelManager()
