@@ -1583,11 +1583,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         str
             The URL for updating or viewing journal entry details.
         """
-        return reverse('django_ledger:je-detail', kwargs={
-            'entity_slug': self.entity_slug,
-            'ledger_pk': self.ledger_id,
-            'je_pk': self.uuid
-        })
+        return self.get_absolute_url()
 
     def get_journal_entry_list_url(self) -> str:
         """

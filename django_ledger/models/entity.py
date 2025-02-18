@@ -1518,8 +1518,10 @@ class EntityModelAbstract(MP_Node,
         return coa_model, coa_model.create_account(**account_model_kwargs)
 
     # ### LEDGER MANAGEMENT ####
-    def get_ledgers(self, posted: bool = True):
-        return self.ledgermodel_set.filter(posted=posted)
+    def get_ledgers(self, posted: Optional[bool] = None):
+        if posted is not None:
+            return self.ledgermodel_set.filter(posted=posted)
+        return self.ledgermodel_set.all()
 
     # ### JOURNAL ENTRY MANAGEMENT ####
     def get_journal_entries(self, ledger_model: LedgerModel, posted: bool = True):
