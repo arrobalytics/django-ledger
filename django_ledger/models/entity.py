@@ -1985,7 +1985,7 @@ class EntityModelAbstract(MP_Node,
                             name: str,
                             account_type: str,
                             active=False,
-                            cash_account: Optional[AccountModel] = None,
+                            account_model: Optional[AccountModel] = None,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                             bank_account_model_kwargs: Optional[Dict] = None,
                             commit: bool = True):
@@ -2024,14 +2024,18 @@ class EntityModelAbstract(MP_Node,
                 _(f'Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}'))
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
-            roles=roles_module.ASSET_CA_CASH
+            roles=[
+                roles_module.ASSET_CA_CASH,
+                roles_module.LIABILITY_CL_ACC_PAYABLE,
+                roles_module.LIABILITY_LTL_MORTGAGE_PAYABLE
+            ]
         ).is_role_default()
         bank_account_model = BankAccountModel(
             name=name,
             entity_model=self,
             account_type=account_type,
             active=active,
-            cash_account=account_model_qs.get() if not cash_account else cash_account,
+            account_model=account_model_qs.get() if not account_model else account_model,
             **bank_account_model_kwargs
         )
         bank_account_model.clean()
