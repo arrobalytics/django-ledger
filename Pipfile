@@ -22,11 +22,13 @@ fpdf2 = ">=2.7.4"
 
 [dev-packages]
 sphinx = "*"
+myst_parser = "*"
 behave = "*"
 twine = "*"
 jupyterlab = "*"
 pandas = "*"
 numpy = "*"
+furo = "*"
 django-debug-toolbar = "*"
 
 [requires]

@@ -1,6 +1,6 @@
 -i https://pypi.org/simple
 asgiref==3.8.1; python_version >= '3.8'
-django==5.1.6; python_version >= '3.10'
+django==4.2.19; python_version >= '3.10'
 django-treebeard==4.7.1; python_version >= '3.8'
 faker==36.1.0; python_version >= '3.9'
 markdown==3.7; python_version >= '3.8'
@@ -9,3 +9,4 @@ pillow==11.1.0; python_version >= '3.9'
 sqlparse==0.5.3; python_version >= '3.8'
 tzdata==2025.1; python_version >= '2'
 furo==2024.8.6
+myst_parser==4.0.1
