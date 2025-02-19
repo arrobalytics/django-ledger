@@ -2,9 +2,6 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
-Contributions to this module:
-    * Miguel Sanda <msanda@arrobalytics.com>
-
 This module serves as a core component of the Django Ledger framework, providing an optimized interface and
 utilities for handling financial transactions, journal entries, and generating financial statements.
 It is designed to allow efficient interaction with the database, minimizing Python's memory usage by emphasizing
@@ -22,24 +19,21 @@ Key Features:
 
 3. **Database Interaction**:
    - Aggregation and querying of financial data at the database layer to improve memory efficiency.
-   - Implements advanced filtering options for transactions based on attributes like activity, account roles,
-     business units, and time periods.
+   - Implements advanced filtering options for transactions based on attributes like activity, account roles, business units, and time periods.
    - Leverages Closing Entries as "checkpoints" to minimize aggregation workload on large datasets.
 
 4. **Financial Statement Reports**:
-   - Offers functionalities to generate financial statements, including:
+    - Offers functionalities to generate financial statements, including:
      - Balance Sheet
      - Income Statement
      - Cash Flow Statement
-   - Supports PDF generation for these reports (if PDF support is enabled).
+    - Supports PDF generation for these reports (if PDF support is enabled).
 
 5. **Extensibility**:
-   - Implements a layered architecture with reusable mixins (`IODatabaseMixIn`, `IOReportMixIn`, `IOMixIn`) that allow
-     developers to customize behavior for specific use cases or extend functionality when needed.
+   - Implements a layered architecture with reusable mixins (`IODatabaseMixIn`, `IOReportMixIn`, `IOMixIn`) that allow developers to customize behavior for specific use cases or extend functionality when needed.
 
 6. **Middleware and Ratios**:
-   - Includes middleware support for handling roles, financial groups, and ratios as additional processing layers
-     for generated reports.
+   - Includes middleware support for handling roles, financial groups, and ratios as additional processing layers for generated reports.
 
 Classes:
 --------
@@ -58,25 +52,20 @@ Classes:
 Functions:
 ----------
 - **Utility Functions**:
-  - `diff_tx_data()`: Validates whether the credits and debits for a given transaction dataset are balanced.
-  - `check_tx_balance()`: Ensures transaction datasets are corrected to be balanced if requested.
-  - `validate_io_timestamp()`: Ensures that input dates or timestamps are valid and timezone-aware.
-  - `get_localtime()`, `get_localdate()`: Retrieve local time or local date based on Django's timezone settings.
-  - `validate_dates()`: Validates and parses `from_date` and `to_date` inputs.
+    - `diff_tx_data()`: Validates whether the credits and debits for a given transaction dataset are balanced.
+    - `check_tx_balance()`: Ensures transaction datasets are corrected to be balanced if requested.
+    - `validate_io_timestamp()`: Ensures that input dates or timestamps are valid and timezone-aware.
+    - `get_localtime()`, `get_localdate()`: Retrieve local time or local date based on Django's timezone settings.
+    - `validate_dates()`: Validates and parses `from_date` and `to_date` inputs.
 
 - **Digest Operations**:
-  - `database_digest()`: Processes and aggregates transactions directly in the database with support for filters
-    such as activity, role, and period.
-  - `python_digest()`: Applies additional processing and group-by operations on transaction data after database-level
-    aggregation.
-  - `digest()`: A unified entry point for performing database digests and Python-level post-processing, with options
-    to process roles, groups, ratios, and financial statements.
+    - `database_digest()`: Processes and aggregates transactions directly in the database with support for filters such as activity, role, and period.
+    - `python_digest()`: Applies additional processing and group-by operations on transaction data after database-level aggregation.
+    - `digest()`: A unified entry point for performing database digests and Python-level post-processing, with options to process roles, groups, ratios, and financial statements.
 
-- **Report Generation**:
-  - `get_balance_sheet_statement()`, `get_income_statement()`, `get_cash_flow_statement()`: Generate specific
-    financial statements, with optional PDF output.
-  - `get_financial_statements()`: Generate all key financial statements together (Balance Sheet, Income Statement,
-    Cash Flow Statement).
+- **Report Data Generation**:
+    - `get_balance_sheet_statement()`, `get_income_statement()`, `get_cash_flow_statement()`: Generate specific financial statements, with optional PDF output.
+    - `get_financial_statements()`: Generate all key financial statements together (Balance Sheet, Income Statement, Cash Flow Statement).
 
 Error Handling:
 ---------------
@@ -162,12 +151,9 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     -------
     tuple
         A tuple containing the following:
-        1. `IS_TX_MODEL` (bool): Indicates whether the transaction data uses the
-           `TransactionModel`.
-        2. `is_valid` (bool): Indicates whether the total credits match the total
-           debits within the defined tolerance.
-        3. `diff` (float): The difference between the sum of credits and the
-           sum of debits.
+            1. `IS_TX_MODEL` (bool): Indicates whether the transaction data uses the `TransactionModel`.
+            2. `is_valid` (bool): Indicates whether the total credits match the total debits within the defined tolerance.
+            3. `diff` (float): The difference between the sum of credits and the sum of debits.
 
     Raises
     ------
