@@ -22,19 +22,20 @@ fpdf2 = ">=2.7.4"
 
 [dev-packages]
 sphinx = "*"
+myst_parser = "*"
 behave = "*"
 twine = "*"
 jupyterlab = "*"
 pandas = "*"
 numpy = "*"
-
+furo = "*"
+django-debug-toolbar = "*"
 
 [requires]
-python_version = "3.12"
+python_version = "3.13"
 
 [scripts]
 publish-package-test = "twine upload --repository testpypi -u __token__ -p ${DJL_PYPI_TEST_TOKEN} dist/*"
 publish-package = "twine upload -u __token__ -p ${DJL_PYPI_TOKEN} dist/*"
-
 generate-graphql-schema = "python manage.py graphql_schema --schema django_ledger.contrib.django_ledger_graphene.api.schema --out django_ledger/contrib/django_ledger_graphene/schema.graphql --indent 2"
 generate-graphql-introspection = "python manage.py graphql_schema --schema django_ledger.contrib.django_ledger_graphene.api.schema --out django_ledger/contrib/django_ledger_graphene/schema.json --indent 2"

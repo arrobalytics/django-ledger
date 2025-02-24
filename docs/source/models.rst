@@ -46,7 +46,7 @@ Bank Account Model
 
 Chart of Accounts Model
 -----------------------
-.. automodule:: django_ledger.models.coa
+.. automodule:: django_ledger.models.chart_of_accounts
     :members:
 
 Default Chart of Accounts

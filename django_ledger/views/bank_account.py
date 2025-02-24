@@ -24,7 +24,7 @@ class BankAccountModelModelBaseView(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             entity_model: EntityModel = self.get_authorized_entity_instance()
-            self.queryset = entity_model.bankaccountmodel_set.select_related('cash_account', 'entity_model')
+            self.queryset = entity_model.bankaccountmodel_set.select_related('account_model', 'entity_model')
         return super().get_queryset()
 
 

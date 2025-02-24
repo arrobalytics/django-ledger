@@ -18,7 +18,7 @@ from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F, QuerySet
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, BankAccountInfoMixIn, TaxInfoMixIn
+from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX
 
@@ -131,7 +131,7 @@ class VendorModelManager(models.Manager):
 
 
 class VendorModelAbstract(ContactInfoMixIn,
-                          BankAccountInfoMixIn,
+                          FinancialAccountInfoMixin,
                           TaxInfoMixIn,
                           CreateUpdateMixIn):
     """

@@ -282,11 +282,13 @@ class EntityDataGenerator(LoggingMixIn):
     def create_bank_accounts(self):
         self.logger.info(f'Creating entity accounts...')
         bank_account_models = [
+
+            # creates a bank cash checking account...
             self.entity_model.create_bank_account(
                 name=f'{self.entity_model.name} Checking Account',
                 account_type=BankAccountModel.ACCOUNT_CHECKING,
                 active=True,
-                cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
+                account_model=choice(self.accounts_by_role[ASSET_CA_CASH]),
                 bank_account_model_kwargs={
                     'aba_number': self.fk.swift(),
                     'routing_number': str(randint(0, 9999999)).zfill(9),
@@ -294,11 +296,13 @@ class EntityDataGenerator(LoggingMixIn):
                 },
                 commit=False
             ),
+
+            # creates a bank cash savings account...
             self.entity_model.create_bank_account(
                 name=f'{self.entity_model.name} Savings Account',
                 account_type=BankAccountModel.ACCOUNT_SAVINGS,
                 active=True,
-                cash_account=choice(self.accounts_by_role[ASSET_CA_CASH]),
+                account_model=choice(self.accounts_by_role[ASSET_CA_CASH]),
                 bank_account_model_kwargs={
                     'aba_number': self.fk.swift(),
                     'routing_number': str(randint(0, 9999999)).zfill(9),
@@ -777,7 +781,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info(f'Funding entity...')
         capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
-        cash_acc = choice(self.bank_account_models).cash_account
+        cash_acc = choice(self.bank_account_models).account_model
 
         self.entity_model.deposit_capital(
             cash_account=cash_acc,

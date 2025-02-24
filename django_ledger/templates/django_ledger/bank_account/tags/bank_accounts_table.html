@@ -9,7 +9,7 @@
             <th class="has-text-centered">Account Number</th>
             <th class="has-text-centered">Routing Number</th>
             <th class="has-text-centered">Type</th>
-            <th class="has-text-centered">Cash Account</th>
+            <th class="has-text-centered">Account</th>
             <th class="has-text-centered">Active</th>
             <th class="has-text-centered">Actions</th>
         </tr>
@@ -21,7 +21,7 @@
                 <td>{{ bank_acc.account_number | last_four }}</td>
                 <td>{{ bank_acc.routing_number | last_four }}</td>
                 <td>{{ bank_acc.get_account_type_display }}</td>
-                <td>{{ bank_acc.cash_account }}</td>
+                <td>{{ bank_acc.account_model }}</td>
                 <td>
                     {% if bank_acc.active %}
                         <span class="icon has-text-success">{% icon 'ant-design:check-circle-filled' 24 %}</span>

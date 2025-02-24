@@ -1,7 +1,7 @@
 from django.forms import ModelForm, TextInput, Select, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import ASSET_CA_CASH
+from django_ledger.io.roles import ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE
 from django_ledger.models import BankAccountModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
@@ -19,20 +19,24 @@ class BankAccountCreateForm(ModelForm):
             user_model=self.USER_MODEL,
             entity_model=self.ENTITY_SLUG
         ).available().filter(
-            role__exact=ASSET_CA_CASH)
-        self.fields['cash_account'].queryset = account_qs
+            role__in=[
+                ASSET_CA_CASH,
+                LIABILITY_CL_ACC_PAYABLE,
+                LIABILITY_LTL_MORTGAGE_PAYABLE
+            ])
+        self.fields['account_model'].queryset = account_qs
 
     def clean(self):
-        cash_account = self.cleaned_data['cash_account']
+        account_model = self.cleaned_data['account_model']
         routing_number = self.cleaned_data['routing_number']
         account_number = self.cleaned_data['account_number']
 
-        if not cash_account:
+        if not account_model:
             raise ValidationError('Must select a bank account.')
 
         # catching unique database constraint...
         if BankAccountModel.objects.filter(
-                cash_account=cash_account,
+                account_model=account_model,
                 routing_number__exact=routing_number,
                 account_number__exact=account_number
         ).exists():
@@ -47,7 +51,7 @@ class BankAccountCreateForm(ModelForm):
             'routing_number',
             'aba_number',
             'swift_number',
-            'cash_account',
+            'account_model',
             'active'
         ]
         widgets = {
@@ -74,7 +78,7 @@ class BankAccountCreateForm(ModelForm):
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'cash_account': Select(attrs={
+            'account_model': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }
@@ -82,7 +86,7 @@ class BankAccountCreateForm(ModelForm):
             'name': _('Account Name'),
             'account_number': _('Account Number'),
             'account_type': _('Account Type'),
-            'cash_account': _('Cash Account'),
+            'account_model': _('CoA Account'),
             'aba_number': _('ABA Number'),
             'routing_number': _('Routing Number'),
             'active': _('Make Active'),
@@ -95,7 +99,7 @@ class BankAccountUpdateForm(BankAccountCreateForm):
         fields = [
             'name',
             'account_type',
-            'cash_account',
+            'account_model',
             'active'
         ]
         widgets = {
@@ -106,13 +110,13 @@ class BankAccountUpdateForm(BankAccountCreateForm):
             'account_type': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
-            'cash_account': Select(attrs={
+            'account_model': Select(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             })
         }
 
     def clean(self):
-        cash_account = self.cleaned_data['cash_account']
+        cash_account = self.cleaned_data['account_model']
 
         if not cash_account:
             raise ValidationError('Must select a bank account.')

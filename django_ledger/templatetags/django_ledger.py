@@ -191,19 +191,18 @@ def data_import_job_list_table(context):
 @register.inclusion_tag('django_ledger/data_import/tags/data_import_job_txs_table.html', takes_context=True)
 def data_import_job_txs_pending(context, staged_txs_formset):
     return {
-        'entity_slug': context['view'].kwargs['entity_slug'],
-        'job_pk': context['view'].kwargs['job_pk'],
+        'entity_slug': staged_txs_formset.IMPORT_JOB_MODEL.entity_slug,
+        'import_job_model': staged_txs_formset.IMPORT_JOB_MODEL,
         'staged_txs_formset': staged_txs_formset
     }
 
 
 @register.inclusion_tag('django_ledger/data_import/tags/data_import_job_txs_imported.html', takes_context=True)
-def data_import_job_txs_imported(context, staged_txs_qs):
-    imported_txs = [stx for stx in staged_txs_qs if stx.is_imported()]
+def data_import_job_txs_imported(context, import_job_model):
     return {
-        'entity_slug': context['view'].kwargs['entity_slug'],
-        'job_pk': context['view'].kwargs['job_pk'],
-        'imported_txs': imported_txs
+        'entity_slug': import_job_model.entity_slug,
+        'import_job_model': import_job_model,
+        'imported_txs': import_job_model.stagedtransactionmodel_set.all().is_imported()
     }
 
 
