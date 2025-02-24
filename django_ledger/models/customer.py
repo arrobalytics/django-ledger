@@ -96,18 +96,13 @@ class CustomerModelManager(Manager):
         __________
         user_model
             Logged in and authenticated django UserModel instance.
-
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> customer_model_qs = CustomerModel.objects.for_user(user_model=request_user)
         """
         qs = self.get_queryset()
         if user_model.is_superuser:
             return qs
         return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
+            Q(entity_model__admin=user_model) |
+            Q(entity_model__managers__in=[user_model])
         )
 
     def for_entity(self, entity_slug, user_model) -> CustomerModelQueryset:
@@ -122,11 +117,6 @@ class CustomerModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> customer_model_qs = CustomerModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
         Returns
         -------
@@ -157,7 +147,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
 
-    entity: EntityModel
+    entity_model: EntityModel
         The EntityModel associated with this Customer.
 
     customer_name: str

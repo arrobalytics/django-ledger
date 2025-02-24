@@ -13,12 +13,21 @@
                               enctype="multipart/form-data"
                               method="post">
                             {% csrf_token %}
-                            <div class="field">
+
+                            <div class="field mb-4">
                                 <div class="control">
                                     {{ form.description }}
                                 </div>
                             </div>
-                            <div class="field">
+
+                            <div class="field mb-4">
+                                {{ form.bank_account_model.help_text }}
+                                <div class="control">
+                                    {{ form.bank_account_model }}
+                                </div>
+                            </div>
+
+                            <div class="field mb-4">
                                 <div class="control">
                                     <div id="file-js-django-ledger" class="file has-name">
                                         <label class="file-label">
