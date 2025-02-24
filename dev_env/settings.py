@@ -154,3 +154,47 @@ CACHES = {
 #         }
 #     }
 # }
+
+# DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
+# DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
+# DJANGO_LEDGER_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_TRANSACTION_MODEL', 'django_ledger.TransactionModel')
+# DJANGO_LEDGER_JOURNAL_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL', 'django_ledger.JournalEntryModel')
+# DJANGO_LEDGER_LEDGER_MODEL = getattr(settings, 'DJANGO_LEDGER_LEDGER_MODEL', 'django_ledger.LedgerModel')
+# DJANGO_LEDGER_ENTITY_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_MODEL', 'django_ledger.EntityModel')
+# DJANGO_LEDGER_ENTITY_STATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_STATE_MODEL', 'django_ledger.EntityStateModel')
+# DJANGO_LEDGER_ENTITY_UNIT_MODEL = getattr(settings, 'DJANGO_LEDGER_ENTITY_UNIT_MODEL', 'django_ledger.EntityUnitModel')
+# DJANGO_LEDGER_ESTIMATE_MODEL = getattr(settings, 'DJANGO_LEDGER_ESTIMATE_MODEL', 'django_ledger.EstimateModel')
+# DJANGO_LEDGER_BILL_MODEL = getattr(settings, 'DJANGO_LEDGER_BILL_MODEL', 'django_ledger.BillModel')
+# DJANGO_LEDGER_INVOICE_MODEL = getattr(settings, 'DJANGO_LEDGER_INVOICE_MODEL', 'django_ledger.InvoiceModel')
+# DJANGO_LEDGER_PURCHASE_ORDER_MODEL = getattr(settings, 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL', 'django_ledger.PurchaseOrderModel')
+# DJANGO_LEDGER_CUSTOMER_MODEL = getattr(settings, 'DJANGO_LEDGER_CUSTOMER_MODEL', 'django_ledger.CustomerModel')
+# DJANGO_LEDGER_VENDOR_MODEL = getattr(settings, 'DJANGO_LEDGER_VENDOR_MODEL', 'django_ledger.VendorModel')
+# DJANGO_LEDGER_BANK_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_BANK_ACCOUNT_MODEL', 'django_ledger.BankAccountModel')
+# DJANGO_LEDGER_CLOSING_ENTRY_MODEL = getattr(settings, 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL', 'django_ledger.ClosingEntryModel')
+# DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL = getattr(settings, 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL', 'django_ledger.UnitOfMeasureModel')
+# DJANGO_LEDGER_ITEM_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL', 'django_ledger.ItemTransactionModel')
+# DJANGO_LEDGER_ITEM_MODEL = getattr(settings, 'DJANGO_LEDGER_ITEM_MODEL', 'django_ledger.ItemModel')
+# DJANGO_LEDGER_STAGED_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL', 'django_ledger.StagedTransactionModel')
+# DJANGO_LEDGER_IMPORT_JOB_MODEL = getattr(settings, 'DJANGO_LEDGER_IMPORT_JOB_MODEL', 'django_ledger.ImportJobModel')
+
+DJANGO_LEDGER_ACCOUNT_MODEL = 'django_ledger.AccountModel'
+DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = 'django_ledger.ChartOfAccountModel'
+DJANGO_LEDGER_TRANSACTION_MODEL = 'django_ledger.TransactionModel'
+DJANGO_LEDGER_JOURNAL_ENTRY_MODEL = 'django_ledger.JournalEntryModel'
+DJANGO_LEDGER_LEDGER_MODEL = 'django_ledger.LedgerModel'
+DJANGO_LEDGER_ENTITY_MODEL = 'django_ledger.EntityModel'
+DJANGO_LEDGER_ENTITY_STATE_MODEL = 'django_ledger.EntityStateModel'
+DJANGO_LEDGER_ENTITY_UNIT_MODEL = 'django_ledger.EntityUnitModel'
+DJANGO_LEDGER_ESTIMATE_MODEL = 'django_ledger.EstimateModel'
+DJANGO_LEDGER_BILL_MODEL = 'django_ledger.BillModel'
+DJANGO_LEDGER_INVOICE_MODEL = 'django_ledger.InvoiceModel'
+DJANGO_LEDGER_PURCHASE_ORDER_MODEL = 'django_ledger.PurchaseOrderModel'
+DJANGO_LEDGER_CUSTOMER_MODEL = 'django_ledger.CustomerModel'
+DJANGO_LEDGER_VENDOR_MODEL = 'django_ledger.VendorModel'
+DJANGO_LEDGER_BANK_ACCOUNT_MODEL = 'django_ledger.BankAccountModel'
+DJANGO_LEDGER_CLOSING_ENTRY_MODEL = 'django_ledger.ClosingEntryModel'
+DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL = 'django_ledger.UnitOfMeasureModel'
+DJANGO_LEDGER_ITEM_TRANSACTION_MODEL = 'django_ledger.ItemTransactionModel'
+DJANGO_LEDGER_ITEM_MODEL = 'django_ledger.ItemModel'
+DJANGO_LEDGER_STAGED_TRANSACTION_MODEL = 'django_ledger.StagedTransactionModel'
+DJANGO_LEDGER_IMPORT_JOB_MODEL = 'django_ledger.ImportJobModel'
