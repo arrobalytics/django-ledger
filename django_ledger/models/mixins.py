@@ -23,6 +23,7 @@ from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
+from django_ledger.io import ASSET_CA_CASH, LIABILITY_CL_ST_NOTES_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE
 from django_ledger.io.io_core import validate_io_timestamp, check_tx_balance, get_localtime, get_localdate
 from django_ledger.models.utils import lazy_loader
 
@@ -1124,6 +1125,13 @@ class FinancialAccountInfoMixin(models.Model):
     ACCOUNT_SAVINGS = 'savings'
     ACCOUNT_CREDIT_CARD = 'credit_card'
     ACCOUNT_MORTGAGE = 'mortgage'
+
+    ACCOUNT_TYPE_ROLE_MAPPING = {
+        ACCOUNT_CHECKING: ASSET_CA_CASH,
+        ACCOUNT_SAVINGS: ASSET_CA_CASH,
+        ACCOUNT_CREDIT_CARD: LIABILITY_CL_ST_NOTES_PAYABLE,
+        ACCOUNT_MORTGAGE: LIABILITY_LTL_MORTGAGE_PAYABLE
+    }
 
     ACCOUNT_TYPE_CHOICES = [
         (ACCOUNT_CHECKING, _('Checking')),
