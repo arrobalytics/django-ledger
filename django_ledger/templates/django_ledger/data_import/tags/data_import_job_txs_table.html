@@ -3,11 +3,13 @@
 
 
 <form method="post">
+
     {{ staged_txs_formset.non_form_errors }}
     {% if staged_txs_formset.errors %}
         {{ staged_txs_formset.errors }}
     {% endif %}
     {{ staged_txs_formset.management_form }}
+
     {% csrf_token %}
 
     <div class="table-container">

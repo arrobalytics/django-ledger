@@ -86,7 +86,7 @@ class BankAccountCreateForm(ModelForm):
             'name': _('Account Name'),
             'account_number': _('Account Number'),
             'account_type': _('Account Type'),
-            'account_model': _('Cash Account'),
+            'account_model': _('CoA Account'),
             'aba_number': _('ABA Number'),
             'routing_number': _('Routing Number'),
             'active': _('Make Active'),

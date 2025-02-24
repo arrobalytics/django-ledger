@@ -16,7 +16,6 @@ from django.views.generic import ListView, FormView, DetailView, UpdateView, Del
 from django_ledger.forms.data_import import ImportJobModelCreateForm, ImportJobModelUpdateForm
 from django_ledger.forms.data_import import StagedTransactionModelFormSet
 from django_ledger.io.ofx import OFXFileManager
-from django_ledger.models import StagedTransactionModelQuerySet
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
@@ -152,66 +151,66 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
     context_object_name = 'import_job'
     pk_url_kwarg = 'job_pk'
     import_transactions = False
+    form_class = StagedTransactionModelFormSet
+    http_method_names = ['get', 'post']
+
+    def get_form_kwargs(self):
+        return {
+            'entity_model': self.get_authorized_entity_instance(),
+            'import_job_model': self.get_object(),
+        }
 
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
+
+        # job_model: ImportJobModel = getattr(self, 'object', self.get_object())
         job_model: ImportJobModel = self.object
 
-        ctx['page_title'] = job_model.description
-        ctx['header_title'] = self.PAGE_TITLE
-        ctx['header_subtitle'] = job_model.description
-        ctx['header_subtitle_icon'] = 'tabler:table-import'
+        context['page_title'] = job_model.description
+        context['header_title'] = self.PAGE_TITLE
+        context['header_subtitle'] = job_model.description
+        context['header_subtitle_icon'] = 'tabler:table-import'
 
         staged_txs_formset = StagedTransactionModelFormSet(
             entity_model=self.get_authorized_entity_instance(),
-            import_job_model=job_model,
+            import_job_model=job_model
         )
-        ctx['staged_txs_formset'] = staged_txs_formset
 
-        return ctx
+        context['staged_txs_formset'] = staged_txs_formset
+
+        return context
 
     def post(self, request, **kwargs):
-        response = super().get(request, **kwargs)
-        job_model: ImportJobModel = self.object
+        self.object = self.get_object()
 
         txs_formset = StagedTransactionModelFormSet(
             entity_model=self.get_authorized_entity_instance(),
-            import_job_model=job_model,
-            data=request.POST,
+            import_job_model=self.object,
+            data=request.POST
         )
 
-        if txs_formset.has_changed():
-            if txs_formset.is_valid():
-                txs_formset.save()
-                for tx_form in txs_formset:
+        # if txs_formset.is_valid():
+        for tx_form in txs_formset:
+            if tx_form.has_changed():
+                # perform work only if form has changed...
+                if tx_form.is_valid():
+                    tx_form.save()
+                    # import entry was selected to be split....
+                    is_split = tx_form.cleaned_data['tx_split'] is True
+                    if is_split:
+                        tx_form.instance.add_split()
 
-                    # perform work only if form has changed...
-                    if tx_form.has_changed():
-
-                        # import entry was selected to be split....
-                        is_split = tx_form.cleaned_data['tx_split'] is True
-                        if is_split:
-                            tx_form.instance.add_split()
-
-                        # import entry was selected for import...
-                        is_import = tx_form.cleaned_data['tx_import']
-                        if is_import:
-                            # all entries in split will be going so the same journal entry... (same unit...)
-                            is_split_bundled = tx_form.cleaned_data['bundle_split']
-                            tx_form.instance.migrate(
-                                split_txs=True) if not is_split_bundled else tx_form.instance.migrate()
-
-            else:
-                context = self.get_context_data(**kwargs)
-                context['staged_txs_formset'] = txs_formset
-                messages.add_message(request,
-                                     messages.ERROR,
-                                     'Hmmm, this doesn\'t add up!. Check your math!',
-                                     extra_tags='is-danger')
-                return self.render_to_response(context)
+                    # import entry was selected for import...
+                    is_import = tx_form.cleaned_data['tx_import']
+                    if is_import:
+                        # all entries in split will be going so the same journal entry... (same unit...)
+                        is_bundled = tx_form.cleaned_data['bundle_split']
+                        tx_form.instance.migrate() if is_bundled else tx_form.instance.migrate(split_txs=True)
 
         messages.add_message(request,
                              messages.SUCCESS,
                              'Successfully saved transactions.',
                              extra_tags='is-success')
-        return response
+
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)

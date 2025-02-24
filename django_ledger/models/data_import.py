@@ -89,7 +89,7 @@ class ImportJobModelManager(Manager):
         ).annotate(
             is_complete=Case(
                 When(txs_count__exact=0, then=False),
-                When(txs_pendixng__exact=0, then=True),
+                When(txs_pending__exact=0, then=True),
                 default=False,
                 output_field=BooleanField()
             ),
@@ -373,7 +373,9 @@ class StagedTransactionModelManager(Manager):
             'transaction_model',
             'transaction_model__journal_entry',
             'transaction_model__account',
+
             'import_job',
+            'import_job__bank_account_model__account_model',
 
             # selecting parent data....
             'parent',
@@ -644,7 +646,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             to_commit = self.to_commit_dict()
             return [
                 [
-                    self.from_commit_dict(split_amount=to_split['amount_staged'])[0], to_split] for to_split in
+                    self.from_commit_dict(split_amount=to_split['amount_staged'])[0], to_split
+                ] for to_split in
                 to_commit
             ]
         return [self.from_commit_dict() + self.to_commit_dict()]
