@@ -13,7 +13,7 @@ Django Ledger - The Django Book Keeping Engine.
    :maxdepth: 3
    :caption: Contents:
 
-   ./README.md
+   ./../../README.md
    ./quickstart
    ./io
    ./models
