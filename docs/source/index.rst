@@ -6,6 +6,8 @@ contain the root `toctree` directive.
 Django Ledger - The Django Book Keeping Engine.
 ===============================================
 
+Created and developed by `Miguel Sanda <https://www.miguelsanda.com>`_.
+
 .. autosummary::
    :toctree: generated
 
@@ -13,7 +15,7 @@ Django Ledger - The Django Book Keeping Engine.
    :maxdepth: 3
    :caption: Contents:
 
-   ./README.md
+   ./../../README.md
    ./quickstart
    ./io
    ./models

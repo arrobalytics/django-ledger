@@ -28,7 +28,7 @@ twine = "*"
 jupyterlab = "*"
 pandas = "*"
 numpy = "*"
-furo = "*"
+renku-sphinx-theme = "*"
 django-debug-toolbar = "*"
 
 [requires]
