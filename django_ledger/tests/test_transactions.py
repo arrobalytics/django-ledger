@@ -102,13 +102,11 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
                 txs_count=Count('transactionmodel')).filter(
                 txs_count__gt=0).order_by('-timestamp').first()
 
-        TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
+        transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
-        txs_formset = TransactionModelFormSet(
-            entity_slug=entity_model.slug,
-            user_model=self.user_model,
+        txs_formset = transaction_model_form_set(
+            entity_model=entity_model,
             je_model=je_model,
-            ledger_pk=je_model.ledger_id,
         )
         return txs_formset
 
@@ -240,10 +238,8 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
         txs_formset = transaction_model_form_set(
-            user_model=self.user_model,
+            entity_model=entity_model,
             je_model=je_model,
-            ledger_pk=ledger_model,
-            entity_slug=entity_model.slug,
         )
 
         self.assertTrue(not je_model.is_locked(),
@@ -278,10 +274,8 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
         txs_formset = transaction_model_form_set(
-            user_model=self.user_model,
+            entity_model=entity_model,
             je_model=je_model,
-            ledger_pk=ledger_model,
-            entity_slug=entity_model.slug,
             queryset=je_model.transactionmodel_set.all().order_by('account__code')
         )
 
