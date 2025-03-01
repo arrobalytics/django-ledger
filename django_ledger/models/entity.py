@@ -45,7 +45,7 @@ from django_ledger.io.io_core import IOMixIn, get_localtime, get_localdate
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, DEBIT, CREDIT
 from django_ledger.models.bank_account import BankAccountModelQuerySet, BankAccountModel
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel, ChartOfAccountModelQuerySet
-from django_ledger.models.coa_default import CHART_OF_ACCOUNTS_ROOT_MAP
+from django_ledger.models.coa_default import get_default_coa_root_map
 from django_ledger.models.customer import CustomerModelQueryset, CustomerModel
 from django_ledger.models.items import (ItemModelQuerySet, ItemTransactionModelQuerySet,
                                         UnitOfMeasureModel, UnitOfMeasureModelQuerySet, ItemModel)
@@ -1114,7 +1114,7 @@ class EntityModelAbstract(MP_Node,
                         balance_type=a['balance_type'],
                         active=activate_accounts,
                         coa_model=coa_model,
-                    ) for a in v] for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
+                    ) for a in v] for k, v in get_default_coa_root_map().items()
             }
 
             for root_acc, acc_model_list in root_maps.items():

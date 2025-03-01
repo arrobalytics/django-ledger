@@ -120,7 +120,7 @@ Default Chart of Accounts Table
   2110  lia_ltl_notes               credit          Long Term Notes Payable                                        root_liabilities
 ======  ==========================  ==============  ===================================================  ========  ================
 """
-
+from copy import copy
 from itertools import groupby
 from typing import Optional, Dict, List
 
@@ -128,7 +128,6 @@ from django_ledger.exceptions import DjangoLedgerConfigurationError
 from django_ledger.io import roles, ROOT_ASSETS, ROOT_INCOME, ROOT_EXPENSES, ROOT_LIABILITIES, ROOT_CAPITAL, ROOT_COGS
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_COA
 
-# todo: include a function to use a user-defined CHART_OF_ACCOUNTS option.
 
 DEFAULT_CHART_OF_ACCOUNTS = [
 
@@ -312,15 +311,9 @@ DEFAULT_CHART_OF_ACCOUNTS = [
 
 ]
 
-
-def get_default_coa() -> List[Dict]:
-    if DJANGO_LEDGER_DEFAULT_COA is not None and isinstance(DJANGO_LEDGER_DEFAULT_COA, list):
-        return DJANGO_LEDGER_DEFAULT_COA
-    return DEFAULT_CHART_OF_ACCOUNTS
-
-
-if DJANGO_LEDGER_DEFAULT_COA:
-    DJANGO_LEDGER_DEFAULT_COA = get_default_coa()
+# Store the default COA template and the root map to use.
+_DEFAULT_COA = []
+_DEFAULT_COA_ROOT_MAP = {}
 
 PREFIX_MAP = {
     'in': ROOT_INCOME,
@@ -331,20 +324,54 @@ PREFIX_MAP = {
     'cogs': ROOT_COGS
 }
 
-for i in DEFAULT_CHART_OF_ACCOUNTS:
-    i['root_group'] = PREFIX_MAP[i['role'].split('_')[0]]
 
-DEFAULT_CHART_OF_ACCOUNTS.sort(key=lambda x: (x['root_group'], x['role'], x['code']))
-CHART_OF_ACCOUNTS_ROOT_MAP = {
-    k: list(v) for k, v in groupby(DEFAULT_CHART_OF_ACCOUNTS, key=lambda x: x['root_group'])
-}
+def get_default_coa() -> List[Dict]:
+    if not _DEFAULT_COA:    # if the default COA hasn't been set yet, set it first
+        set_default_coa()
+    return _DEFAULT_COA
+
+
+def set_default_coa(default_coa: Optional[List] = None):
+    global _DEFAULT_COA, _DEFAULT_COA_ROOT_MAP
+
+    # set it to a new default COA passed as an argument
+    if default_coa is not None:
+        if isinstance(default_coa, list):
+            _DEFAULT_COA = copy(default_coa)
+        else:
+            raise TypeError(f"Expected a default chart of accounts of type List[Dict], got {type(default_coa)} instead.")
+    # else default to DJANGO_LEDGER_DEFAULT_COA, if any, else DEFAULT_CHART_OF_ACCOUNTS
+    else:
+        if DJANGO_LEDGER_DEFAULT_COA is not None:
+            if isinstance(DJANGO_LEDGER_DEFAULT_COA, list):
+                _DEFAULT_COA = copy(DJANGO_LEDGER_DEFAULT_COA)
+            else:
+                raise TypeError(f"Expected a default chart of accounts of type List[Dict], got {type(DJANGO_LEDGER_DEFAULT_COA)} instead.")
+        else:
+            _DEFAULT_COA = copy(DEFAULT_CHART_OF_ACCOUNTS)
+
+    # set the default root map
+    for i in _DEFAULT_COA:
+        i['root_group'] = PREFIX_MAP[i['role'].split('_')[0]]
+    _DEFAULT_COA.sort(key=lambda x: (x['root_group'], x['role'], x['code']))
+    _DEFAULT_COA_ROOT_MAP = {
+        k: list(v) for k, v in groupby(_DEFAULT_COA, key=lambda x: x['root_group'])
+    }
+
+
+def get_default_coa_root_map() -> Dict[str, List[Dict]]:
+    global _DEFAULT_COA_ROOT_MAP
+    if not _DEFAULT_COA_ROOT_MAP:
+        set_default_coa()
+    return _DEFAULT_COA_ROOT_MAP
+
 
 
 def verify_unique_code():
     """
     A function that verifies that there are no duplicate code in the Default CoA during the development and launch.
     """
-    code_list = [i['code'] for i in DEFAULT_CHART_OF_ACCOUNTS]
+    code_list = [i['code'] for i in get_default_coa()]
     code_set = set(code_list)
     if not len(code_list) == len(code_set):
         raise DjangoLedgerConfigurationError('Default CoA is not unique.')
