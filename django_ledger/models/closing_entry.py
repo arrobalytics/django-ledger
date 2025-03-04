@@ -13,7 +13,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import make_aware
@@ -41,6 +41,12 @@ class ClosingEntryModelQuerySet(models.QuerySet):
 
 
 class ClosingEntryModelManager(models.Manager):
+
+    def get_queryset(self):
+        qs = ClosingEntryModelQuerySet(self.model, using=self._db)
+        return qs.annotate(
+            ce_txs_count=Count('closingentrytransactionmodel')
+        )
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -102,6 +108,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return make_aware(datetime.combine(self.closing_date, time.max))
 
     def migrate(self):
+
         ce_txs = self.closingentrytransactionmodel_set.all().select_related(
             'account_model',
             'unit_model'
@@ -118,7 +125,6 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ce_txs_gb = groupby(ce_txs, key=lambda k: k.tx_type)
 
         # adding DEBITS and CREDITS...
-        # ce_txs_gb = {k: list(l) for k, l in ce_txs_gb}
         ce_txs_sum = {k: sum(v.balance for v in l) for k, l in ce_txs_gb}
 
         if len(ce_txs_sum) and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
@@ -131,7 +137,9 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         ce_txs.sort(key=key_func)
         ce_txs_gb = groupby(ce_txs, key=key_func)
-        ce_txs_gb = {unit_model_id: list(je_txs) for unit_model_id, je_txs in ce_txs_gb}
+        ce_txs_gb = {
+            unit_model_id: list(je_txs) for unit_model_id, je_txs in ce_txs_gb
+        }
 
         ce_txs_journal_entries = {
             (unit_model_id, activity): JournalEntryModel(
@@ -346,8 +354,6 @@ class ClosingEntryModel(ClosingEntryModelAbstract):
         swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL'
         abstract = False
 
-
-# todo: Remove this model!
 
 class ClosingEntryTransactionModelQuerySet(models.QuerySet):
     pass
