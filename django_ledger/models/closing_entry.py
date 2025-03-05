@@ -9,7 +9,6 @@ from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -24,7 +23,6 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_LEDGER_MODEL
 
 
 class ClosingEntryValidationError(ValidationError):
@@ -439,7 +437,6 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
                 name='unique_ce_opt_3'
             )
         ]
-
         indexes = [
             models.Index(fields=['closing_entry_model']),
             models.Index(fields=['account_model'])
@@ -475,6 +472,10 @@ class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
     """
     Base ClosingEntryModel Class
     """
+
+    class Meta(ClosingEntryTransactionModelAbstract.Meta):
+        abstract = False
+        swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL'
 
 
 def closingentrymodel_presave(instance: ClosingEntryModel, **kwargs):
