@@ -67,7 +67,7 @@ class TransactionModelQuerySet(QuerySet):
             Q(journal_entry__ledger__posted=True)
         )
 
-    def for_accounts(self, account_list: List[str or AccountModel]):
+    def for_accounts(self, account_list: List[Union[AccountModel, str, UUID]]):
         """
         Filters transactions based on the accounts they are associated with.
 
@@ -82,9 +82,20 @@ class TransactionModelQuerySet(QuerySet):
         TransactionModelQuerySet
             A QuerySet filtered for transactions associated with the specified accounts.
         """
-        if isinstance(account_list, list) > 0 and isinstance(account_list[0], str):
+
+        if not isinstance(account_list, list) or not len(account_list) > 0:
+            raise TransactionModelValidationError(
+                message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
+            )
+        if isinstance(account_list[0], str):
             return self.filter(account__code__in=account_list)
-        return self.filter(account__in=account_list)
+        elif isinstance(account_list[0], UUID):
+            return self.filter(account__uuid__in=account_list)
+        elif isinstance(account_list[0], AccountModel):
+            return self.filter(account__in=account_list)
+        raise TransactionModelValidationError(
+            message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
+        )
 
     def for_roles(self, role_list: Union[str, List[str], Set[str]]):
         """
@@ -294,6 +305,18 @@ class TransactionModelQuerySet(QuerySet):
             timestamp=F('journal_entry__timestamp'),
         )
 
+    def is_cleared(self):
+        return self.filter(cleared=True)
+
+    def not_cleared(self):
+        return self.filter(cleared=False)
+
+    def is_reconciled(self):
+        return self.filter(reconciled=True)
+
+    def not_reconciled(self):
+        return self.filter(reconciled=False)
+
 
 class TransactionModelManager(Manager):
     """
@@ -317,6 +340,7 @@ class TransactionModelManager(Manager):
         """
         qs = TransactionModelQuerySet(self.model, using=self._db)
         return qs.annotate(
+            timestamp=F('journal_entry__timestamp'),
             _coa_id=F('account__coa_model_id')  # Annotates the `coa_model_id` from the related `account`.
         ).select_related(
             'journal_entry',  # Pre-loads the related Journal Entry.
