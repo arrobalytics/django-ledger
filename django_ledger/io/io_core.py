@@ -847,6 +847,28 @@ class IODatabaseMixIn:
         if role:
             txs_queryset = txs_queryset.for_roles(role_list=role)
 
+        # Cleared transaction filter via KWARGS....
+        cleared_filter = kwargs.get('cleared')
+        if cleared_filter is not None:
+            if cleared_filter in [True, False]:
+                txs_queryset = txs_queryset.is_cleared() if cleared_filter else txs_queryset.not_cleared()
+            else:
+                raise IOValidationError(
+                    message=f'Invalid value for cleared filter: {cleared_filter}. '
+                            f'Valid values are True, False'
+                )
+
+        # Reconciled transaction filter via KWARGS....
+        reconciled_filter = kwargs.get('reconciled')
+        if reconciled_filter is not None:
+            if reconciled_filter in [True, False]:
+                txs_queryset = txs_queryset.is_reconciled() if reconciled_filter else txs_queryset.not_reconciled()
+            else:
+                raise IOValidationError(
+                    message=f'Invalid value for reconciled filter: {reconciled_filter}. '
+                            f'Valid values are True, False'
+                )
+
         if io_result.is_bounded:
             txs_queryset = txs_queryset.annotate(
                 amount_io=Case(
