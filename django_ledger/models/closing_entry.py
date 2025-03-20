@@ -123,7 +123,9 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ce_txs_gb = groupby(ce_txs, key=lambda k: k.tx_type)
 
         # adding DEBITS and CREDITS...
-        ce_txs_sum = {k: sum(v.balance for v in l) for k, l in ce_txs_gb}
+        ce_txs_sum = {
+            k: sum(v.balance for v in l) for k, l in ce_txs_gb
+        }
 
         if len(ce_txs_sum) and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
             raise ClosingEntryValidationError(
@@ -170,6 +172,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         for k, je_model in ce_txs_journal_entries.items():
             je_model.save(verify=True)
 
+        self.ledger_model.lock(commit=True, raise_exception=True)
+
         return ce_txs_journal_entries, ce_je_txs
 
     def create_entry_ledger(self, commit: bool = False):
@@ -178,7 +182,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 name=f'Closing Entry {self.closing_date} Ledger',
                 entity_id=self.entity_model_id,
                 hidden=True,
-                locked=True,
+                locked=False,
                 posted=True
             )
             ledger_model.clean()
@@ -195,7 +199,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_post(self) -> bool:
         return not self.is_posted()
 
-    def mark_as_posted(self, commit: bool = False, update_entity_meta: bool = False, **kwargs):
+    def mark_as_posted(self, commit: bool = False, update_entity_meta: bool = True, **kwargs):
         if not self.can_post():
             raise ClosingEntryValidationError(
                 message=_(f'Closing Entry {self.closing_date} is already posted.')
@@ -232,11 +236,14 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_unpost(self) -> bool:
         return self.is_posted()
 
-    def mark_as_unposted(self, commit: bool = False, update_entity_meta: bool = False, **kwargs):
+    def mark_as_unposted(self, commit: bool = False, update_entity_meta: bool = True, **kwargs):
         if not self.can_unpost():
             raise ClosingEntryValidationError(
                 message=_(f'Closing Entry {self.closing_date} is not posted.')
             )
+
+        self.ledger_model.unlock(commit=False, raise_exception=True)
+        self.ledger_model.save(update_fields=['posted', 'locked', 'updated'])
         self.posted = False
 
         TransactionModel.objects.for_entity(
@@ -310,6 +317,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             raise ClosingEntryValidationError(
                 message=_('Cannot delete a posted Closing Entry')
             )
+
+        self.ledger_model.unpost(commit=True, raise_exception=True)
 
         TransactionModel.objects.for_entity(
             entity_slug=self.entity_model_id
