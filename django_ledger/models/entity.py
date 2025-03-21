@@ -3151,7 +3151,6 @@ class EntityModel(EntityModelAbstract):
     """
 
     class Meta(EntityModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ENTITY_MODEL'
         abstract = False
 
 
@@ -3218,7 +3217,6 @@ class EntityStateModel(EntityStateModelAbstract):
     """
 
     class Meta(EntityStateModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ENTITY_STATE_MODEL'
         abstract = False
 
 

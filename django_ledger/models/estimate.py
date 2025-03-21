@@ -1614,5 +1614,4 @@ class EstimateModel(EstimateModelAbstract):
     """
 
     class Meta(EstimateModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ESTIMATE_MODEL'
         abstract = False

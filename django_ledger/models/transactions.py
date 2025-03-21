@@ -534,7 +534,6 @@ class TransactionModel(TransactionModelAbstract):
 
     class Meta(TransactionModelAbstract.Meta):
         abstract = False
-        swappable = 'DJANGO_LEDGER_TRANSACTION_MODEL'
 
 
 def transactionmodel_presave(instance: TransactionModel, **kwargs):

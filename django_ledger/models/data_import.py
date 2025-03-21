@@ -1176,7 +1176,6 @@ class ImportJobModel(ImportJobModelAbstract):
     """
 
     class Meta(ImportJobModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_IMPORT_JOB_MODEL'
         abstract = False
 
 
@@ -1197,5 +1196,4 @@ class StagedTransactionModel(StagedTransactionModelAbstract):
     """
 
     class Meta(StagedTransactionModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_STAGED_TRANSACTION_MODEL'
         abstract = False

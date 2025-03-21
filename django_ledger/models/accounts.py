@@ -1099,7 +1099,6 @@ class AccountModel(AccountModelAbstract):
     """
 
     class Meta(AccountModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ACCOUNT_MODEL'
         abstract = False
 
 

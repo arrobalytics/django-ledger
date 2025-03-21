@@ -1765,7 +1765,6 @@ class JournalEntryModel(JournalEntryModelAbstract):
     """
 
     class Meta(JournalEntryModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL'
         abstract = False
 
 

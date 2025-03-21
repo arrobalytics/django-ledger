@@ -358,7 +358,6 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
 class ClosingEntryModel(ClosingEntryModelAbstract):
     class Meta(ClosingEntryModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL'
         abstract = False
 
 
@@ -484,7 +483,6 @@ class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
 
     class Meta(ClosingEntryTransactionModelAbstract.Meta):
         abstract = False
-        swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_TRANSACTION_MODEL'
 
 
 def closingentrymodel_presave(instance: ClosingEntryModel, **kwargs):
