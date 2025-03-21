@@ -1828,7 +1828,6 @@ class InvoiceModel(InvoiceModelAbstract):
     """
 
     class Meta(InvoiceModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_INVOICE_MODEL'
         abstract = False
 
 

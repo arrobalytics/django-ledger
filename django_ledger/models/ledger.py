@@ -767,7 +767,6 @@ class LedgerModel(LedgerModelAbstract):
     """
 
     class Meta(LedgerModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_LEDGER_MODEL'
         abstract = False
 
 

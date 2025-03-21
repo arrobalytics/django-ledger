@@ -26,7 +26,8 @@ class ClosingEntryCreateForm(ModelForm):
             'closing_date': DateInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' is-large',
                 'placeholder': _('Closing Date (YYYY-MM-DD)...'),
-                'id': 'djl-datepicker'
+                'id': 'djl-datepicker',
+                'type': 'date'
             })
         }
         labels = {

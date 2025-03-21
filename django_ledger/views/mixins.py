@@ -361,6 +361,12 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             return
         return self.AUTHORIZED_ENTITY_MODEL
 
+    def get_authorized_entity_instance_name(self) -> Optional[str]:
+        entity_model: EntityModel = self.get_authorized_entity_instance()
+        if not entity_model:
+            return None
+        return entity_model.name
+
 
 class EntityUnitMixIn:
     UNIT_SLUG_KWARG = 'unit_slug'
