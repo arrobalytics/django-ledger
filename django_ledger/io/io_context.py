@@ -89,6 +89,16 @@ class IODigestContextManager:
     def is_by_activity(self) -> bool:
         return self.IO_DATA['by_activity']
 
+    # Account Information
+    def get_account_data(self, key_func=None) -> Dict:
+        if key_func:
+            return {
+                key_func(acc): acc for acc in self.IO_DATA['accounts']
+            }
+        return {
+            acc['account_uuid']: acc for acc in self.IO_DATA['accounts']
+        }
+
     # Balance Sheet Data...
     def has_balance_sheet(self) -> bool:
         return 'balance_sheet' in self.IO_DATA

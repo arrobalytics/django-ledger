@@ -1920,7 +1920,6 @@ class BillModel(BillModelAbstract):
     """
 
     class Meta(BillModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_BILL_MODEL'
         abstract = False
 
 

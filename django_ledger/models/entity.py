@@ -1517,6 +1517,20 @@ class EntityModelAbstract(MP_Node,
         # account_model.clean()
         return coa_model, coa_model.create_account(**account_model_kwargs)
 
+    def get_account_balance(self,
+                            account_codes: List[str],
+                            to_date: Union[datetime, date, str],
+                            **kwargs):
+
+        io_context = self.digest(
+            entity_model=self.slug,
+            accounts=account_codes,
+            to_date=to_date,
+            **kwargs
+        )
+
+        return io_context
+
     # ### LEDGER MANAGEMENT ####
     def get_ledgers(self, posted: Optional[bool] = None):
         if posted is not None:
@@ -3135,10 +3149,9 @@ class EntityModel(EntityModelAbstract):
     """
     Entity Model Base Class From Abstract
     """
-    class Meta(EntityModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ENTITY_MODEL'
-        abstract = False
 
+    class Meta(EntityModelAbstract.Meta):
+        abstract = False
 
 
 # ## ENTITY STATE....
@@ -3204,7 +3217,6 @@ class EntityStateModel(EntityStateModelAbstract):
     """
 
     class Meta(EntityStateModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_ENTITY_STATE_MODEL'
         abstract = False
 
 

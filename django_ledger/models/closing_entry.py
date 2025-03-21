@@ -9,11 +9,10 @@ from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import make_aware
@@ -24,7 +23,6 @@ from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_LEDGER_MODEL
 
 
 class ClosingEntryValidationError(ValidationError):
@@ -41,6 +39,12 @@ class ClosingEntryModelQuerySet(models.QuerySet):
 
 
 class ClosingEntryModelManager(models.Manager):
+
+    def get_queryset(self):
+        qs = ClosingEntryModelQuerySet(self.model, using=self._db)
+        return qs.annotate(
+            ce_txs_count=Count('closingentrytransactionmodel')
+        )
 
     def for_user(self, user_model):
         qs = self.get_queryset()
@@ -102,6 +106,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return make_aware(datetime.combine(self.closing_date, time.max))
 
     def migrate(self):
+
         ce_txs = self.closingentrytransactionmodel_set.all().select_related(
             'account_model',
             'unit_model'
@@ -118,8 +123,9 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         ce_txs_gb = groupby(ce_txs, key=lambda k: k.tx_type)
 
         # adding DEBITS and CREDITS...
-        # ce_txs_gb = {k: list(l) for k, l in ce_txs_gb}
-        ce_txs_sum = {k: sum(v.balance for v in l) for k, l in ce_txs_gb}
+        ce_txs_sum = {
+            k: sum(v.balance for v in l) for k, l in ce_txs_gb
+        }
 
         if len(ce_txs_sum) and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
             raise ClosingEntryValidationError(
@@ -131,7 +137,9 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         ce_txs.sort(key=key_func)
         ce_txs_gb = groupby(ce_txs, key=key_func)
-        ce_txs_gb = {unit_model_id: list(je_txs) for unit_model_id, je_txs in ce_txs_gb}
+        ce_txs_gb = {
+            unit_model_id: list(je_txs) for unit_model_id, je_txs in ce_txs_gb
+        }
 
         ce_txs_journal_entries = {
             (unit_model_id, activity): JournalEntryModel(
@@ -164,6 +172,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         for k, je_model in ce_txs_journal_entries.items():
             je_model.save(verify=True)
 
+        self.ledger_model.lock(commit=True, raise_exception=True)
+
         return ce_txs_journal_entries, ce_je_txs
 
     def create_entry_ledger(self, commit: bool = False):
@@ -172,7 +182,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 name=f'Closing Entry {self.closing_date} Ledger',
                 entity_id=self.entity_model_id,
                 hidden=True,
-                locked=True,
+                locked=False,
                 posted=True
             )
             ledger_model.clean()
@@ -189,7 +199,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_post(self) -> bool:
         return not self.is_posted()
 
-    def mark_as_posted(self, commit: bool = False, update_entity_meta: bool = False, **kwargs):
+    def mark_as_posted(self, commit: bool = False, update_entity_meta: bool = True, **kwargs):
         if not self.can_post():
             raise ClosingEntryValidationError(
                 message=_(f'Closing Entry {self.closing_date} is already posted.')
@@ -226,11 +236,14 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def can_unpost(self) -> bool:
         return self.is_posted()
 
-    def mark_as_unposted(self, commit: bool = False, update_entity_meta: bool = False, **kwargs):
+    def mark_as_unposted(self, commit: bool = False, update_entity_meta: bool = True, **kwargs):
         if not self.can_unpost():
             raise ClosingEntryValidationError(
                 message=_(f'Closing Entry {self.closing_date} is not posted.')
             )
+
+        self.ledger_model.unlock(commit=False, raise_exception=True)
+        self.ledger_model.save(update_fields=['posted', 'locked', 'updated'])
         self.posted = False
 
         TransactionModel.objects.for_entity(
@@ -305,6 +318,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
                 message=_('Cannot delete a posted Closing Entry')
             )
 
+        self.ledger_model.unpost(commit=True, raise_exception=True)
+
         TransactionModel.objects.for_entity(
             entity_slug=self.entity_model_id
         ).for_ledger(ledger_model=self.ledger_model).delete()
@@ -343,11 +358,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
 class ClosingEntryModel(ClosingEntryModelAbstract):
     class Meta(ClosingEntryModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_CLOSING_ENTRY_MODEL'
         abstract = False
 
-
-# todo: Remove this model!
 
 class ClosingEntryTransactionModelQuerySet(models.QuerySet):
     pass
@@ -433,7 +445,6 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
                 name='unique_ce_opt_3'
             )
         ]
-
         indexes = [
             models.Index(fields=['closing_entry_model']),
             models.Index(fields=['account_model'])
@@ -469,6 +480,9 @@ class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
     """
     Base ClosingEntryModel Class
     """
+
+    class Meta(ClosingEntryTransactionModelAbstract.Meta):
+        abstract = False
 
 
 def closingentrymodel_presave(instance: ClosingEntryModel, **kwargs):
