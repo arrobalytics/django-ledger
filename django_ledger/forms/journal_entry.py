@@ -53,6 +53,7 @@ class JournalEntryModelCreateForm(ModelForm):
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'timestamp': DateTimeInput(attrs={
+                'type': 'datetime-local',
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
             }),
             'description': Textarea(attrs={

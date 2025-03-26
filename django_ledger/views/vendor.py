@@ -16,7 +16,7 @@ from django_ledger.models.vendor import VendorModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
-class VendorModelModelViewQuerySetMixIn:
+class VendorModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
@@ -28,7 +28,7 @@ class VendorModelModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-class VendorModelListView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, ListView):
+class VendorModelListView(VendorModelModelBaseView, ListView):
     template_name = 'django_ledger/vendor/vendor_list.html'
     context_object_name = 'vendors'
     PAGE_TITLE = _('Vendor List')
@@ -38,8 +38,14 @@ class VendorModelListView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySe
         'header_subtitle_icon': 'bi:person-lines-fill'
     }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        entity_model: EntityModel = self.get_authorized_entity_instance()
+        context['header_subtitle'] = entity_model.name
+        return context
 
-class VendorModelCreateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, CreateView):
+
+class VendorModelCreateView(VendorModelModelBaseView, CreateView):
     template_name = 'django_ledger/vendor/vendor_create.html'
     PAGE_TITLE = _('Create New Vendor')
     form_class = VendorModelForm
@@ -66,7 +72,7 @@ class VendorModelCreateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuery
         return super().form_valid(form)
 
 
-class VendorModelUpdateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuerySetMixIn, UpdateView):
+class VendorModelUpdateView(VendorModelModelBaseView, UpdateView):
     template_name = 'django_ledger/vendor/vendor_update.html'
     PAGE_TITLE = _('Vendor Update')
     context_object_name = 'vendor'
@@ -89,7 +95,3 @@ class VendorModelUpdateView(DjangoLedgerSecurityMixIn, VendorModelModelViewQuery
                        kwargs={
                            'entity_slug': self.kwargs['entity_slug']
                        })
-
-    def form_valid(self, form):
-        form.save()
-        return super().form_valid(form)

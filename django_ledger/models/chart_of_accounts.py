@@ -840,7 +840,6 @@ class ChartOfAccountModel(ChartOfAccountModelAbstract):
     Base ChartOfAccounts Model
     """
     class Meta(ChartOfAccountModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL'
         abstract = False
 
 

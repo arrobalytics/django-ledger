@@ -1243,7 +1243,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                         self.activity = None
                     else:
                         role_list = self.get_txs_roles(txs_qs, exclude_cash_role=True)
-                        self.activity = self.get_activity_from_roles(role_set=role_list)
+                        self.activity = self.get_activity_from_roles(
+                            role_set=role_list,
+                            raise_exception=raise_exception
+                        )
         return self.activity
 
     # todo: add entity_model as parameter on all functions...
@@ -1534,7 +1537,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
             if verify:
                 txs_qs, is_verified = self.clean(verify=True)
-                if self.is_verified() and post_on_verify:
+                if is_verified and post_on_verify:
                     # Mark as posted if verification succeeds and posting is requested
                     self.mark_as_posted(commit=False, verify=False, force_lock=True, raise_exception=True)
 
@@ -1762,7 +1765,6 @@ class JournalEntryModel(JournalEntryModelAbstract):
     """
 
     class Meta(JournalEntryModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_JOURNAL_ENTRY_MODEL'
         abstract = False
 
 

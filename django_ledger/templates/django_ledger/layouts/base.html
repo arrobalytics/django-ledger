@@ -10,6 +10,10 @@
     <title>{% block page_title %}{% session_entity_name %} | {{ page_title }}{% endblock %}</title>
     <script src="{% static 'django_ledger/bundle/styles.bundle.js' %}"></script>
     <link rel="shortcut icon" type="image/jpg" href="{% static 'django_ledger/logo/favicon.png' %}">
+
+    {% block header_extra_js %}{% endblock %}
+    {% block header_extra_css %}{% endblock %}
+
 </head>
 
 <body>
@@ -50,8 +54,9 @@
             datePickers.forEach(dp => djLedger.getCalendar(dp.attributes.id.value, dateNavigationUrl))
         {% endif %}
     </script>
-
 {% endblock %}
+
+{% block bottom_extra_js %}{% endblock %}
 
 </body>
 </html>
