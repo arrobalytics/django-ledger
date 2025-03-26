@@ -1234,7 +1234,6 @@ class PurchaseOrderModel(PurchaseOrderModelAbstract):
     """
 
     class Meta(PurchaseOrderModelAbstract.Meta):
-        swappable = 'DJANGO_LEDGER_PURCHASE_ORDER_MODEL'
         abstract = False
 
 

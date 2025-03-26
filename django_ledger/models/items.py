@@ -1411,7 +1411,6 @@ class UnitOfMeasureModel(UnitOfMeasureModelAbstract):
 
     class Meta(UnitOfMeasureModelAbstract.Meta):
         abstract = False
-        swappable = 'DJANGO_LEDGER_UNIT_OF_MEASURE_MODEL'
 
 
 class ItemTransactionModel(ItemTransactionModelAbstract):
@@ -1421,7 +1420,6 @@ class ItemTransactionModel(ItemTransactionModelAbstract):
 
     class Meta(ItemTransactionModelAbstract.Meta):
         abstract = False
-        swappable = 'DJANGO_LEDGER_ITEM_TRANSACTION_MODEL'
 
 
 class ItemModel(ItemModelAbstract):
@@ -1431,4 +1429,3 @@ class ItemModel(ItemModelAbstract):
 
     class Meta(ItemModelAbstract.Meta):
         abstract = False
-        swappable = 'DJANGO_LEDGER_ITEM_MODEL'

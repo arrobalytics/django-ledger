@@ -14,7 +14,7 @@ urlpatterns = [
     path('<slug:entity_slug>/list/year/<int:year>/',
          views.LedgerModelYearListView.as_view(),
          name='ledger-list-year'),
-    path('<slug:entity_slug>/list/month/<int:year>/<int:month>',
+    path('<slug:entity_slug>/list/month/<int:year>/<int:month>/',
          views.LedgerModelMonthListView.as_view(),
          name='ledger-list-month'),
     path('<slug:entity_slug>/create/',

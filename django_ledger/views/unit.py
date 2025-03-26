@@ -22,7 +22,7 @@ from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyRepo
                                         PDFReportMixIn)
 
 
-class EntityUnitModelModelViewQuerySetMixIn:
+class EntityUnitModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
 
     def get_queryset(self):
@@ -34,7 +34,7 @@ class EntityUnitModelModelViewQuerySetMixIn:
         return super().get_queryset()
 
 
-class EntityUnitModelListView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, ListView):
+class EntityUnitModelListView(EntityUnitModelModelBaseView, ListView):
     template_name = 'django_ledger/unit/unit_list.html'
     PAGE_TITLE = _('Entity Unit List')
     extra_context = {
@@ -45,7 +45,7 @@ class EntityUnitModelListView(DjangoLedgerSecurityMixIn, EntityUnitModelModelVie
     context_object_name = 'unit_list'
 
 
-class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, DetailView):
+class EntityUnitModelDetailView(EntityUnitModelModelBaseView, DetailView):
     template_name = 'django_ledger/unit/unit_detail.html'
     PAGE_TITLE = _('Entity Unit Detail')
     slug_url_kwarg = 'unit_slug'
@@ -57,7 +57,7 @@ class EntityUnitModelDetailView(DjangoLedgerSecurityMixIn, EntityUnitModelModelV
     context_object_name = 'unit'
 
 
-class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, CreateView):
+class EntityUnitModelCreateView(EntityUnitModelModelBaseView, CreateView):
     template_name = 'django_ledger/unit/unit_create.html'
     PAGE_TITLE = _('Entity Unit Create')
     extra_context = {
@@ -88,7 +88,7 @@ class EntityUnitModelCreateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelV
         return HttpResponseRedirect(self.get_success_url())
 
 
-class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQuerySetMixIn, UpdateView):
+class EntityUnitUpdateView(EntityUnitModelModelBaseView, UpdateView):
     template_name = 'django_ledger/unit/unit_update.html'
     PAGE_TITLE = _('Entity Unit Update')
     slug_url_kwarg = 'unit_slug'
@@ -123,7 +123,7 @@ class EntityUnitUpdateView(DjangoLedgerSecurityMixIn, EntityUnitModelModelViewQu
 
 
 # BALANCE SHEET.....
-class BaseEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelBalanceSheetView(EntityUnitModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -135,8 +135,7 @@ class BaseEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn, RedirectVie
                        })
 
 
-class FiscalYearEntityUnitModelBalanceSheetView(DjangoLedgerSecurityMixIn,
-                                                EntityUnitModelModelViewQuerySetMixIn,
+class FiscalYearEntityUnitModelBalanceSheetView(EntityUnitModelModelBaseView,
                                                 BaseDateNavigationUrlMixIn,
                                                 EntityUnitMixIn,
                                                 YearlyReportMixIn,
@@ -176,7 +175,7 @@ class DateEntityUnitModelBalanceSheetView(MonthlyEntityUnitModelBalanceSheetView
 
 
 # INCOME STATEMENT....
-class BaseEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelIncomeStatementView(EntityUnitModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -188,8 +187,7 @@ class BaseEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn, Redirect
                        })
 
 
-class FiscalYearEntityUnitModelIncomeStatementView(DjangoLedgerSecurityMixIn,
-                                                   EntityUnitModelModelViewQuerySetMixIn,
+class FiscalYearEntityUnitModelIncomeStatementView(EntityUnitModelModelBaseView,
                                                    BaseDateNavigationUrlMixIn,
                                                    EntityUnitMixIn,
                                                    YearlyReportMixIn,
@@ -225,7 +223,7 @@ class DateIncomeStatementView(FiscalYearIncomeStatementView, DateReportMixIn):
 
 
 # CASHFLOW STATEMENT
-class BaseEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn, RedirectView):
+class BaseEntityUnitModelCashFlowStatementView(EntityUnitModelModelBaseView, RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         year = get_localdate().year
@@ -237,8 +235,7 @@ class BaseEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn, Redire
                        })
 
 
-class FiscalYearEntityUnitModelCashFlowStatementView(DjangoLedgerSecurityMixIn,
-                                                     EntityUnitModelModelViewQuerySetMixIn,
+class FiscalYearEntityUnitModelCashFlowStatementView(EntityUnitModelModelBaseView,
                                                      BaseDateNavigationUrlMixIn,
                                                      EntityUnitMixIn,
                                                      YearlyReportMixIn,
