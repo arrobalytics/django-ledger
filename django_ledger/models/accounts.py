@@ -632,11 +632,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines whether the current Account Model role belongs to the income group.
 
-        Parameters
-        ----------
-        self : object
-            The instance of the class containing attribute 'role'.
-
         Returns
         -------
         bool
@@ -658,10 +653,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     def is_expense(self) -> bool:
         """
         Checks if the current Account Model `role` is categorized under `GROUP_EXPENSES`.
-
-        Parameters
-        ----------
-        None
 
         Returns
         -------
