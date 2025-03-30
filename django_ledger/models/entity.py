@@ -228,7 +228,6 @@ class EntityModelFiscalPeriodMixIn:
 
         Raises:
         ------
-
         ValidationError
             If month is not valid.
         """
