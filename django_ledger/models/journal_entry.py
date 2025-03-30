@@ -1554,7 +1554,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.is_verified() and verify:
             raise JournalEntryValidationError(message='Cannot save an unverified Journal Entry.')
 
-        return super(JournalEntryModelAbstract, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     # URLS Generation...
 

@@ -101,7 +101,7 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
     for_estimate = False
 
     def get(self, request, entity_slug, **kwargs):
-        response = super(PurchaseOrderModelCreateView, self).get(request, entity_slug, **kwargs)
+        response = super().get(request, entity_slug, **kwargs)
         if self.for_estimate and 'ce_pk' in self.kwargs:
             estimate_qs = EstimateModel.objects.for_entity(
                 entity_slug=entity_slug,
@@ -113,7 +113,7 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
         return response
 
     def get_context_data(self, **kwargs):
-        context = super(PurchaseOrderModelCreateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         if self.for_estimate:
             context['form_action_url'] = reverse('django_ledger:po-create-estimate',
@@ -229,7 +229,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
                                         'po_pk': po_pk
                                     })
             )
-        return super(PurchaseOrderModelUpdateView, self).get(request, entity_slug, po_pk, *args, **kwargs)
+        return super().get(request, entity_slug, po_pk, *args, **kwargs)
 
     def post(self, request, entity_slug, *args, **kwargs):
         if self.action_update_items:
@@ -280,7 +280,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
                     return self.render_to_response(context=self.get_context_data())
                 # if not valid, return formset with errors...
                 return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
-        return super(PurchaseOrderModelUpdateView, self).post(request, **kwargs)
+        return super().post(request, **kwargs)
 
     def get_form(self, form_class=None):
         po_model: PurchaseOrderModel = self.object
@@ -315,7 +315,7 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
                 'prefix': self.get_prefix(),
                 'instance': self.object
             }
-        return super(PurchaseOrderModelUpdateView, self).get_form_kwargs()
+        return super().get_form_kwargs()
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
@@ -468,7 +468,7 @@ class BasePurchaseOrderActionActionView(DjangoLedgerSecurityMixIn,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BasePurchaseOrderActionActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         po_model: PurchaseOrderModel = self.get_object()
 
         try:

@@ -24,7 +24,7 @@ class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
     http_method_names = ['get']
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        context = super(InventoryListView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
 
         # evaluates the queryset...
@@ -80,7 +80,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
 
     def get_context_data(self, adjustment=None, counted_qs=None, recorded_qs=None, **kwargs):
         self.object = self.get_object()
-        context = super(InventoryRecountView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['page_title'] = _('Inventory Recount')
         context['header_title'] = _('Inventory Recount')
 

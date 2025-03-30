@@ -198,13 +198,13 @@ class InvoiceItemForm(ModelForm):
                  user_model,
                  invoice_model,
                  **kwargs):
-        super(InvoiceItemForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
         self.INVOICE_MODEL = invoice_model
 
     def clean(self):
-        cleaned_data = super(InvoiceItemForm, self).clean()
+        cleaned_data = super().clean()
         quantity = cleaned_data['quantity']
         if self.instance.item_model_id:
             item_model: ItemModel = self.instance.item_model

@@ -82,7 +82,7 @@ class VendorModelUpdateView(VendorModelModelBaseView, UpdateView):
     slug_field = 'uuid'
 
     def get_context_data(self, **kwargs):
-        context = super(VendorModelUpdateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         vendor_model: VendorModel = self.object
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE

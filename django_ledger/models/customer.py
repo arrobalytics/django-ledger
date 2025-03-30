@@ -312,7 +312,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         """
         if not self.customer_number:
             self.generate_customer_number(commit=False)
-        super(CustomerModelAbstract, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class CustomerModel(CustomerModelAbstract):

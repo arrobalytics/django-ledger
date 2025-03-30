@@ -799,7 +799,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def save(self, **kwargs):
         if self.can_generate_item_number():
             self.generate_item_number(commit=False)
-        super(ItemModelAbstract, self).save(**kwargs)
+        super().save(**kwargs)
 
     def clean(self):
 

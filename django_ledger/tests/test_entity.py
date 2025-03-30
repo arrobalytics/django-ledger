@@ -17,7 +17,7 @@ UserModel = get_user_model()
 class EntityModelTests(DjangoLedgerBaseTest):
 
     def setUp(self) -> None:
-        super(EntityModelTests, self).setUp()
+        super().setUp()
 
         self.ENTITY_URL_PATTERN = {
             p.name: set(p.pattern.converters.keys()) for p in entity_urls

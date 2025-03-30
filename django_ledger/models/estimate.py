@@ -1608,7 +1608,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     def save(self, **kwargs):
         if self.can_generate_estimate_number():
             self.generate_estimate_number(commit=False)
-        super(EstimateModelAbstract, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class EstimateModel(EstimateModelAbstract):

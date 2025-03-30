@@ -3139,7 +3139,7 @@ class EntityModelAbstract(MP_Node,
     def clean(self):
         if not self.slug:
             self.generate_slug()
-        super(EntityModelAbstract, self).clean()
+        super().clean()
 
 
 class EntityModel(EntityModelAbstract):

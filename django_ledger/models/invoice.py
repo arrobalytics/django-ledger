@@ -1836,7 +1836,7 @@ class InvoiceModelAbstract(
         """
         if self.can_generate_invoice_number():
             self.generate_invoice_number(commit=True)
-        super(InvoiceModelAbstract, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class InvoiceModel(InvoiceModelAbstract):

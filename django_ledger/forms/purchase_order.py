@@ -132,7 +132,7 @@ class PurchaseOrderItemTransactionForm(ModelForm):
         }
 
     def clean(self):
-        cleaned_data = super(PurchaseOrderItemTransactionForm, self).clean()
+        cleaned_data = super().clean()
         po_item_status = cleaned_data['po_item_status']
         po_item_model: ItemTransactionModel = self.instance
         if 'po_item_status' in self.changed_data:

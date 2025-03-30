@@ -240,7 +240,7 @@ class BaseAccountModelActionView(BaseAccountModelBaseView,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseAccountModelActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         account_model: AccountModel = self.get_object()
 
         try:

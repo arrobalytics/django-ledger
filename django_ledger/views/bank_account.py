@@ -67,7 +67,7 @@ class BankAccountModelCreateView(BankAccountModelModelBaseView, CreateView):
             entity_slug=self.kwargs['entity_slug'],
             user_model=self.request.user,
             commit=False)
-        return super(BankAccountModelCreateView, self).form_valid(form)
+        return super().form_valid(form)
 
 
 class BankAccountModelUpdateView(BankAccountModelModelBaseView, UpdateView):
@@ -115,7 +115,7 @@ class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         ba_model: BankAccountModel = self.get_object()
 
         try:

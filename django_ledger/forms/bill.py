@@ -234,7 +234,7 @@ class BillItemTransactionForm(ModelForm):
     #     self.fields['entity_unit'].queryset = entity_unit_qs
 
     def clean(self):
-        cleaned_data = super(BillItemTransactionForm, self).clean()
+        cleaned_data = super().clean()
         itemtxs_model: ItemTransactionModel = self.instance
         if itemtxs_model.po_model is not None:
             quantity = cleaned_data['quantity']

@@ -59,7 +59,7 @@ class YearlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeri
         return self.get_fy_end(year, fy_start)
 
     def get_context_data(self, **kwargs):
-        context = super(YearlyReportMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         year = self.get_year()
         context['year'] = year
         context['next_year'] = year + 1
@@ -137,7 +137,7 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
         return self.get_quarter_end(year, quarter, fy_start)
 
     def get_context_data(self, **kwargs) -> dict:
-        context = super(QuarterlyReportMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         quarter = self.get_quarter()
         year = self.get_year()
         context['quarter'] = quarter
@@ -203,7 +203,7 @@ class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
         return 12
 
     def get_context_data(self, **kwargs):
-        context = super(MonthlyReportMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         month = int(self.get_month())
         year = int(self.get_year())
         context['month'] = month
@@ -379,7 +379,7 @@ class EntityUnitMixIn:
         return unit_slug
 
     def get_context_data(self, **kwargs):
-        context = super(EntityUnitMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         unit_slug = self.get_unit_slug()
         context['unit_slug'] = unit_slug
 
@@ -415,7 +415,7 @@ class DigestContextMixIn:
         return self.IO_MANAGER_BOUNDED_CONTEXT_NAME
 
     def get_context_data(self, **kwargs):
-        context = super(DigestContextMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         return self.get_io_digest(context=context, **kwargs)
 
     def get_io_digest(self,
@@ -478,7 +478,7 @@ class UnpaidElementsMixIn:
     FETCH_UNPAID_BILLS: bool = False
 
     def get_context_data(self, **kwargs):
-        context = super(UnpaidElementsMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['invoices'] = self.get_unpaid_invoices_qs(context)
         context['bills'] = self.get_unpaid_bills_qs(context)
         return context
@@ -532,7 +532,7 @@ class BaseDateNavigationUrlMixIn:
     )
 
     def get_context_data(self, **kwargs):
-        context = super(BaseDateNavigationUrlMixIn, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         self.get_base_date_nav_url(context)
         return context
 

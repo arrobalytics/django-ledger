@@ -110,7 +110,7 @@ class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(CharOfAccountModelActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         coa_model: ChartOfAccountModel = self.get_object()
 
         try:

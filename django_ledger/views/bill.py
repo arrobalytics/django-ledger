@@ -75,10 +75,10 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
                 return HttpResponseNotFound('404 Not Found')
-        return super(BillModelCreateView, self).get(request, **kwargs)
+        return super().get(request, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(BillModelCreateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         if self.for_purchase_order:
             po_pk = self.kwargs['po_pk']
@@ -188,7 +188,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
             po_model_items_qs.update(bill_model=bill_model)
             return HttpResponseRedirect(self.get_success_url())
 
-        return super(BillModelCreateView, self).form_valid(form)
+        return super().form_valid(form)
 
     def get_success_url(self):
         entity_slug = self.kwargs['entity_slug']
@@ -435,7 +435,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
                                         'bill_pk': self.kwargs['bill_pk']
                                     })
             )
-        return super(BillModelUpdateView, self).get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         if self.action_update_items:
@@ -499,7 +499,7 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
                 )
             context = self.get_context_data(itemtxs_formset=itemtxs_formset)
             return self.render_to_response(context=context)
-        return super(BillModelUpdateView, self).post(request, **kwargs)
+        return super().post(request, **kwargs)
 
 
 # ACTION VIEWS...
@@ -521,7 +521,7 @@ class BaseBillActionView(BillModelModelBaseView, RedirectView, SingleObjectMixin
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseBillActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         bill_model: BillModel = self.get_object()
 
         try:

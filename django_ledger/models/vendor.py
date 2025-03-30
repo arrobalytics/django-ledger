@@ -315,7 +315,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         """
         if self.can_generate_vendor_number():
             self.generate_vendor_number(commit=False)
-        super(VendorModelAbstract, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class VendorModel(VendorModelAbstract):

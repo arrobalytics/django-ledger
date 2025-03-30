@@ -99,10 +99,10 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
                 return HttpResponseNotFound('404 Not Found')
-        return super(InvoiceModelCreateView, self).get(request, entity_slug, **kwargs)
+        return super().get(request, entity_slug, **kwargs)
 
     def get_context_data(self, **kwargs):
-        context = super(InvoiceModelCreateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         if self.for_estimate:
             context['form_action_url'] = reverse('django_ledger:invoice-create-estimate',
@@ -302,7 +302,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
                                         'invoice_pk': invoice_pk
                                     })
             )
-        return super(InvoiceModelUpdateView, self).get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
     def post(self, request, entity_slug, invoice_pk, *args, **kwargs):
         if self.action_update_items:
@@ -371,7 +371,7 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
 
                 # if not valid, return formset with errors...
                 return self.render_to_response(context=self.get_context_data(itemtxs_formset=itemtxs_formset))
-        return super(InvoiceModelUpdateView, self).post(request, **kwargs)
+        return super().post(request, **kwargs)
 
 
 class InvoiceModelDetailView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQuerySetMixIn, DetailView):
@@ -455,7 +455,7 @@ class BaseInvoiceActionView(DjangoLedgerSecurityMixIn,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseInvoiceActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         invoice_model: InvoiceModel = self.get_object()
 
         try:

@@ -137,7 +137,7 @@ class UnitOfMeasureModelDeleteView(UnitOfMeasureModelModelBaseView, DeleteView):
 
     def form_valid(self, form):
         try:
-            return super(UnitOfMeasureModelDeleteView, self).form_valid(form)
+            return super().form_valid(form)
         except RestrictedError:
 
             uom_model: UnitOfMeasureModel = self.object
@@ -259,7 +259,7 @@ class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
     def form_valid(self, form):
         try:
             # TODO: add success message...
-            return super(ProductDeleteView, self).form_valid(form)
+            return super().form_valid(form)
         except RestrictedError:
 
             item_model: ItemModel = self.object
@@ -380,7 +380,7 @@ class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
     def form_valid(self, form):
         try:
             # TODO: add success message...
-            return super(ServiceDeleteView, self).form_valid(form)
+            return super().form_valid(form)
         except RestrictedError:
 
             item_model: ItemModel = self.object

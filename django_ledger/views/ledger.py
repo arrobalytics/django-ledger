@@ -196,7 +196,7 @@ class LedgerModelModelActionView(LedgerModelModelBaseView,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(LedgerModelModelActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         ledger_model: LedgerModel = self.get_object()
 
         try:

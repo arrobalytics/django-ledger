@@ -191,7 +191,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         return qs.prefetch_related('transactionmodel_set', 'transactionmodel_set__account')
 
     def get_context_data(self, txs_formset=None, **kwargs):
-        context = super(JournalEntryModelTXSDetailView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         je_model: JournalEntryModel = self.object
         if je_model.is_locked():
             messages.add_message(self.request,
@@ -284,7 +284,7 @@ class BaseJournalEntryActionView(
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseJournalEntryActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         je_model: BaseJournalEntryActionView = self.get_object()
 
         try:

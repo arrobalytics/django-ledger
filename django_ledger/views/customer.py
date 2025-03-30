@@ -81,7 +81,7 @@ class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
     slug_field = 'uuid'
 
     def get_context_data(self, **kwargs):
-        context = super(CustomerModelUpdateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         customer_model: CustomerModel = self.object
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE

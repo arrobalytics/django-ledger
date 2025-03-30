@@ -209,7 +209,7 @@ class ClosingEntryModelActionView(ClosingEntryModelBaseView,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(ClosingEntryModelActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         closing_entry_model: ClosingEntryModel = self.get_object()
 
         try:

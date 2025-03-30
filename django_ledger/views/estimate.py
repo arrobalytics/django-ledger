@@ -82,7 +82,7 @@ class EstimateModelCreateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
     def form_valid(self, form):
         estimate_model: EstimateModel = form.save(commit=False)
         estimate_model.entity = self.AUTHORIZED_ENTITY_MODEL
-        return super(EstimateModelCreateView, self).form_valid(form)
+        return super().form_valid(form)
 
 
 class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQuerySetMixIn, DetailView):
@@ -96,7 +96,7 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
     http_method_names = ['get', 'post']
 
     def get_context_data(self, **kwargs):
-        context = super(EstimateModelDetailView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         ce_model: EstimateModel = self.object
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
@@ -161,7 +161,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
         )
 
     def get_context_data(self, itemtxs_formset=None, **kwargs):
-        context = super(EstimateModelUpdateView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         ce_model: EstimateModel = self.object
         context['page_title'] = self.PAGE_TITLE
         context['header_title'] = self.PAGE_TITLE
@@ -210,7 +210,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
                                         'ce_pk': ce_pk
                                     })
             )
-        return super(EstimateModelUpdateView, self).get(request, entity_slug, ce_pk, *args, **kwargs)
+        return super().get(request, entity_slug, ce_pk, *args, **kwargs)
 
     def post(self, request, entity_slug, ce_pk, *args, **kwargs):
         if self.action_update_items:
@@ -255,7 +255,7 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
                 return self.render_to_response(context=self.get_context_data())
             context = self.get_context_data(itemtxs_formset=itemtxs_formset)
             return self.render_to_response(context=context)
-        return super(EstimateModelUpdateView, self).post(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
 
 
 # ---- ACTION VIEWS ----
@@ -279,7 +279,7 @@ class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
         if not self.action_name:
             msg = 'View attribute action_name is required.'
             raise ImproperlyConfigured(msg)
-        response = super(BaseEstimateActionView, self).get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
         ce_model: EstimateModel = self.get_object()
 
         try:

@@ -60,7 +60,7 @@ class FiscalYearBalanceSheetView(DjangoLedgerSecurityMixIn,
     pdf_report_type = 'BS'
 
     def get_context_data(self, **kwargs):
-        context = super(FiscalYearBalanceSheetView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context['page_title'] = _('Balance Sheet') + ': ' + self.object.name
         context['header_title'] = context['page_title']
         unit_slug = self.request.GET.get('unit')
