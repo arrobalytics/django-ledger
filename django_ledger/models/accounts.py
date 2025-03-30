@@ -147,7 +147,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         return self.filter(locked=False)
 
-    def with_roles(self, roles: Union[list, str]):
+    def with_roles(self, roles: list | str):
         """
         Filter the accounts based on the specified roles. This method helps to retrieve accounts associated
         with a particular role or a list of roles.
@@ -172,7 +172,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         roles = validate_roles(roles)
         return self.filter(role__in=roles)
 
-    def with_codes(self, codes: Union[list, str]):
+    def with_codes(self, codes: list | str):
         if isinstance(codes, str):
             codes = [codes]
         return self.filter(code__in=codes)
@@ -356,7 +356,7 @@ class AccountModelManager(MP_NodeManager):
             self,
             user_model,
             entity_model,
-            coa_slug: Optional[str] = None
+            coa_slug: str | None = None
     ) -> AccountModelQuerySet:
         """
         Retrieve accounts associated with a specified EntityModel and Chart of Accounts.

@@ -396,11 +396,11 @@ class InvoiceModelAbstract(
         ])
 
     def configure(self,
-                  entity_slug: Union[EntityModel, str],
-                  user_model: Optional[UserModel] = None,
-                  date_draft: Optional[date] = None,
+                  entity_slug: EntityModel | str,
+                  user_model: UserModel | None = None,
+                  date_draft: date | None = None,
                   ledger_posted: bool = False,
-                  ledger_name: Optional[str] = None,
+                  ledger_name: str | None = None,
                   commit: bool = False,
                   commit_ledger: bool = False):
         """
@@ -572,7 +572,7 @@ class InvoiceModelAbstract(
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
-    def get_migration_data(self, queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def get_migration_data(self, queryset: ItemTransactionModelQuerySet | None = None) -> ItemTransactionModelQuerySet:
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
 
@@ -604,7 +604,7 @@ class InvoiceModelAbstract(
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def update_amount_due(self, itemtxs_qs: ItemTransactionModelQuerySet | None = None) -> ItemTransactionModelQuerySet:
         """
         Updates the InvoiceModel amount due.
 
@@ -898,8 +898,8 @@ class InvoiceModelAbstract(
         return self.is_approved()
 
     def make_payment(self,
-                     payment_amount: Union[Decimal, float],
-                     payment_date: Optional[Union[datetime, date]] = None,
+                     payment_amount: Decimal | float,
+                     payment_date: datetime | date | None = None,
                      commit: bool = False,
                      raise_exception: bool = True):
         """
@@ -992,7 +992,7 @@ class InvoiceModelAbstract(
             ])
 
     # DRAFT...
-    def mark_as_draft(self, draft_date: Union[date, datetime], commit: bool = False, **kwargs):
+    def mark_as_draft(self, draft_date: date | datetime, commit: bool = False, **kwargs):
         """
         Marks InvoiceModel as Draft.
 
@@ -1378,7 +1378,7 @@ class InvoiceModelAbstract(
     def mark_as_void(self,
                      entity_slug: str,
                      user_model,
-                     date_void: Optional[Union[date, datetime]] = None,
+                     date_void: date | datetime | None = None,
                      commit: bool = False,
                      **kwargs):
         """

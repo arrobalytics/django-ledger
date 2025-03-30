@@ -65,7 +65,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.FY_STARTS = list(str(i) for i in range(1, 13))
         cls.TEST_DATA = list()
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
-        cls.ENTITY_MODEL_QUERYSET: Optional[EntityModelQuerySet] = None
+        cls.ENTITY_MODEL_QUERYSET: EntityModelQuerySet | None = None
 
         cls.create_entity_models(n=cls.N)
         cls.populate_entity_models()
@@ -226,7 +226,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     def get_random_je(self,
                       entity_model: EntityModel,
-                      ledger_model: Optional[LedgerModel] = None,
+                      ledger_model: LedgerModel | None = None,
                       posted: bool = True,
                       qs_limit: int = 100
                       ) -> JournalEntryModel:
@@ -265,7 +265,7 @@ class DjangoLedgerBaseTest(TestCase):
 
     def get_random_transaction(self,
                                entity_model: EntityModel,
-                               je_model: Optional[JournalEntryModel] = None,
+                               je_model: JournalEntryModel | None = None,
                                posted: bool = True,
                                qs_limit: int = 100) -> TransactionModel:
         """

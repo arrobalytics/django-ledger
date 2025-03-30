@@ -42,7 +42,7 @@ class IODigestContextManager:
     def from_datetime(self):
         return self.get_from_datetime()
 
-    def get_from_datetime(self, as_str: bool = False, fmt=None) -> Optional[datetime]:
+    def get_from_datetime(self, as_str: bool = False, fmt=None) -> datetime | None:
         from_date = self.IO_DATA['from_date']
         if from_date:
             if as_str:

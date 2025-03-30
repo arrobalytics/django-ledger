@@ -422,9 +422,9 @@ class BillModelAbstract(
 
     # Configuration...
     def configure(self,
-                  entity_slug: Union[str, EntityModel],
-                  user_model: Optional[UserModel] = None,
-                  date_draft: Optional[Union[date, datetime]] = None,
+                  entity_slug: str | EntityModel,
+                  user_model: UserModel | None = None,
+                  date_draft: date | datetime | None = None,
                   ledger_posted: bool = False,
                   ledger_name: str = None,
                   commit: bool = False,
@@ -526,7 +526,7 @@ class BillModelAbstract(
             entity_id__exact=self.ledger.entity_id
         ).bills()
 
-    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
+    def validate_itemtxs_qs(self, queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
@@ -542,7 +542,7 @@ class BillModelAbstract(
             raise BillModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: Optional[ItemTransactionModelQuerySet] = None,
+                         queryset: ItemTransactionModelQuerySet | None = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False) -> tuple[ItemTransactionModelQuerySet, dict]:
         """
@@ -603,7 +603,7 @@ class BillModelAbstract(
         return f'Bill {self.bill_number} account adjustment.'
 
     def get_migration_data(self,
-                           queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+                           queryset: ItemTransactionModelQuerySet | None = None) -> ItemTransactionModelQuerySet:
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
 
@@ -630,8 +630,7 @@ class BillModelAbstract(
             account_unit_total=Sum('total_amount')
         )
 
-    def update_amount_due(self, itemtxs_qs: Optional[
-        Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None) -> ItemTransactionModelQuerySet:
+    def update_amount_due(self, itemtxs_qs: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None) -> ItemTransactionModelQuerySet:
         """
         Updates the BillModel amount due.
 
@@ -958,8 +957,8 @@ class BillModelAbstract(
         return self.is_approved()
 
     def make_payment(self,
-                     payment_amount: Union[Decimal, float],
-                     payment_date: Optional[Union[datetime, date]] = None,
+                     payment_amount: Decimal | float,
+                     payment_date: datetime | date | None = None,
                      commit: bool = False,
                      raise_exception: bool = True):
         """
@@ -1051,7 +1050,7 @@ class BillModelAbstract(
                 'updated'
             ])
 
-    def mark_as_draft(self, date_draft: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_draft(self, date_draft: date | None = None, commit: bool = False, **kwargs):
         """
         Marks BillModel as Draft.
 
@@ -1102,7 +1101,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-draft'
 
-    def get_mark_as_draft_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_draft_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Draft action URL.
 
@@ -1140,7 +1139,7 @@ class BillModelAbstract(
     def mark_as_review(self,
                        commit: bool = False,
                        itemtxs_qs: ItemTransactionModelQuerySet = None,
-                       date_in_review: Optional[date] = None,
+                       date_in_review: date | None = None,
                        raise_exception: bool = True,
                        **kwargs):
         """
@@ -1210,7 +1209,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-review'
 
-    def get_mark_as_review_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_review_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Review action URL.
 
@@ -1247,8 +1246,8 @@ class BillModelAbstract(
     # APPROVED ACTIONS....
     def mark_as_approved(self,
                          user_model,
-                         entity_slug: Optional[str] = None,
-                         date_approved: Optional[Union[date, datetime]] = None,
+                         entity_slug: str | None = None,
+                         date_approved: date | datetime | None = None,
                          commit: bool = False,
                          force_migrate: bool = False,
                          raise_exception: bool = True,
@@ -1320,7 +1319,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-approved'
 
-    def get_mark_as_approved_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_approved_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Approved action URL.
 
@@ -1357,9 +1356,9 @@ class BillModelAbstract(
     # PAY ACTIONS....
     def mark_as_paid(self,
                      user_model,
-                     entity_slug: Optional[str] = None,
-                     date_paid: Optional[Union[date, datetime]] = None,
-                     itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
+                     entity_slug: str | None = None,
+                     date_paid: date | datetime | None = None,
+                     itemtxs_qs: ItemTransactionModelQuerySet | None = None,
                      commit: bool = False,
                      **kwargs):
         """
@@ -1445,7 +1444,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-paid'
 
-    def get_mark_as_paid_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_paid_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Paid action URL.
 
@@ -1482,8 +1481,8 @@ class BillModelAbstract(
     # VOID Actions...
     def mark_as_void(self,
                      user_model,
-                     entity_slug: Optional[str] = None,
-                     date_void: Optional[date] = None,
+                     entity_slug: str | None = None,
+                     date_void: date | None = None,
                      commit: bool = False,
                      **kwargs):
         """
@@ -1549,7 +1548,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-void'
 
-    def get_mark_as_void_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_void_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Void action URL.
 
@@ -1583,7 +1582,7 @@ class BillModelAbstract(
         return _('Do you want to void Bill %s?') % self.bill_number
 
     # Cancel Actions...
-    def mark_as_canceled(self, date_canceled: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_canceled(self, date_canceled: date | None = None, commit: bool = False, **kwargs):
         """
         Mark BillModel as Canceled.
 
@@ -1619,7 +1618,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-mark-as-canceled'
 
-    def get_mark_as_canceled_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_canceled_url(self, entity_slug: str | None = None) -> str:
         """
         BillModel Mark-as-Canceled action URL.
 
@@ -1729,7 +1728,7 @@ class BillModelAbstract(
         return getattr(self, f'date_{self.bill_status}')
 
     # HTML Tags...
-    def get_document_id(self) -> Optional[str]:
+    def get_document_id(self) -> str | None:
         """
         Human-readable document number. Defaults to bill_number.
 
@@ -1784,7 +1783,7 @@ class BillModelAbstract(
         """
         return f'djl-bill-model-{self.uuid}-form'
 
-    def get_terms_start_date(self) -> Optional[date]:
+    def get_terms_start_date(self) -> date | None:
         """
         Date where BillModel term start to apply.
 

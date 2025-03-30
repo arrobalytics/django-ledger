@@ -630,7 +630,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def get_entity_name(self) -> str:
         return self.entity.name
 
-    def get_entity_last_closing_date(self) -> Optional[date]:
+    def get_entity_last_closing_date(self) -> date | None:
         return self.entity.last_closing_date
 
     # URLS....

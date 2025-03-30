@@ -195,7 +195,7 @@ class EntityUnitModelAbstract(MP_Node,
         return self.entity.name
 
     def create_entity_unit_slug(self,
-                                name: Optional[str] = None,
+                                name: str | None = None,
                                 force: bool = False,
                                 add_suffix: bool = True,
                                 k: int = 5) -> str:

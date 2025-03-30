@@ -269,7 +269,7 @@ class AccrualMixIn(models.Model):
         return self.ledger.posted
 
     # OTHERS...
-    def get_progress(self) -> Union[Decimal, float]:
+    def get_progress(self) -> Decimal | float:
         """
         Determines the progress amount based on amount due, amount paid and accrue field.
 
@@ -295,7 +295,7 @@ class AccrualMixIn(models.Model):
         """
         return round(self.get_progress() * 100, 2)
 
-    def get_amount_cash(self) -> Union[Decimal, float]:
+    def get_amount_cash(self) -> Decimal | float:
         """
         Determines the impact to the EntityModel cash balance based on the financial instrument debit or credit
         configuration. i.e, Invoices are debit financial instrument because payments to invoices increase cash.
@@ -310,7 +310,7 @@ class AccrualMixIn(models.Model):
         if not self.IS_DEBIT_BALANCE:
             return -self.amount_paid
 
-    def get_amount_earned(self) -> Union[Decimal, float]:
+    def get_amount_earned(self) -> Decimal | float:
         """
         Determines the impact to the EntityModel earnings based on financial instrument progress.
 
@@ -324,7 +324,7 @@ class AccrualMixIn(models.Model):
             return self.get_progress() * amount_due
         return self.amount_paid or Decimal.from_float(0.00)
 
-    def get_amount_prepaid(self) -> Union[Decimal, float]:
+    def get_amount_prepaid(self) -> Decimal | float:
         """
         Determines the impact to the EntityModel Accounts Receivable based on financial instrument progress.
 
@@ -348,7 +348,7 @@ class AccrualMixIn(models.Model):
                 return payments - self.get_amount_earned()
         return Decimal.from_float(0.00)
 
-    def get_amount_unearned(self) -> Union[Decimal, float]:
+    def get_amount_unearned(self) -> Decimal | float:
         """
         Determines the impact to the EntityModel Accounts Payable based on financial instrument progress.
 
@@ -371,7 +371,7 @@ class AccrualMixIn(models.Model):
                 return amt_earned - self.amount_paid
         return Decimal.from_float(0.00)
 
-    def get_amount_open(self) -> Union[Decimal, float]:
+    def get_amount_open(self) -> Decimal | float:
         """
         Determines the open amount left to be progressed.
 
@@ -431,7 +431,7 @@ class AccrualMixIn(models.Model):
         return self.TX_TYPE_MAPPING[acc_bal_type + d_or_i]
 
     @classmethod
-    def split_amount(cls, amount: Union[Decimal, float],
+    def split_amount(cls, amount: Decimal | float,
                      unit_split: dict,
                      account_uuid: UUID,
                      account_balance_type: str) -> dict:
@@ -545,11 +545,11 @@ class AccrualMixIn(models.Model):
                       # TODO: remove usermodel param...?
                       user_model,
                       entity_slug: str,
-                      itemtxs_qs: Optional[QuerySet] = None,
+                      itemtxs_qs: QuerySet | None = None,
                       force_migrate: bool = False,
                       commit: bool = True,
                       void: bool = False,
-                      je_timestamp: Optional[Union[str, date, datetime]] = None,
+                      je_timestamp: str | date | datetime | None = None,
                       raise_exception: bool = True,
                       **kwargs):
         """
@@ -850,7 +850,7 @@ class AccrualMixIn(models.Model):
             self.update_state(new_state)
         return new_state
 
-    def update_state(self, state: Optional[dict] = None):
+    def update_state(self, state: dict | None = None):
         """
         Updates the state on the financial instrument.
 
@@ -1021,7 +1021,7 @@ class PaymentTermsMixIn(models.Model):
         """
         return timedelta(days=self.get_terms_timedelta_days())
 
-    def due_in_days(self) -> Optional[int]:
+    def due_in_days(self) -> int | None:
         """
         Determines how many days until the due date.
 

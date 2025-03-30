@@ -227,7 +227,7 @@ def jes_table(context, journal_entry_qs, next_url=None):
 
 
 @register.inclusion_tag('django_ledger/transactions/tags/txs_table.html')
-def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceModel], style='detail'):
+def transactions_table(object_type: JournalEntryModel | BillModel | InvoiceModel, style='detail'):
     if isinstance(object_type, JournalEntryModel):
         transaction_model_qs = object_type.transactionmodel_set.all().with_annotated_details().order_by(
             '-timestamp')

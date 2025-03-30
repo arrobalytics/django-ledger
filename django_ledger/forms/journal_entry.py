@@ -13,7 +13,7 @@ from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 class JournalEntryModelCreateForm(ModelForm):
     def __init__(self,
                  entity_model: EntityModel,
-                 ledger_model: Union[str, UUID, LedgerModel],
+                 ledger_model: str | UUID | LedgerModel,
                  *args, **kwargs
                  ):
         super().__init__(*args, **kwargs)

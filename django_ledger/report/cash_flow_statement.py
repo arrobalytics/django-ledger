@@ -9,7 +9,7 @@ from django_ledger.templatetags.django_ledger import currency_format
 
 class CashFlowStatementReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: Optional[str] = None, **kwargs):
+    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: str | None = None, **kwargs):
 
         if not io_digest.has_cash_flow_statement():
             raise PDFReportValidationError('IO Digest does not have income statement information.')
@@ -210,8 +210,8 @@ class CashFlowStatementReport(BaseReportSupport):
         self.ln(5)
 
     def get_pdf_filename(self,
-                         from_dt: Optional[Union[datetime, date]] = None,
-                         to_dt: Optional[Union[datetime, date]] = None,
+                         from_dt: datetime | date | None = None,
+                         to_dt: datetime | date | None = None,
                          dt_strfmt: str = '%Y%m%d'):
         if from_dt:
             from_dt = from_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())

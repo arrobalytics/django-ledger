@@ -38,7 +38,7 @@ from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 class JournalEntryModelModelBaseView(DjangoLedgerSecurityMixIn):
     queryset = None
-    ledger_model: Optional[LedgerModel] = None
+    ledger_model: LedgerModel | None = None
 
     def get_queryset(self):
         if self.queryset is None:
@@ -62,7 +62,7 @@ class JournalEntryCreateView(JournalEntryModelModelBaseView, CreateView):
         'page_title': PAGE_TITLE,
         'header_title': PAGE_TITLE
     }
-    ledger_model: Optional[LedgerModel] = None
+    ledger_model: LedgerModel | None = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

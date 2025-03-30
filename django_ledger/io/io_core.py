@@ -293,9 +293,9 @@ def get_localdate() -> date:
 
 
 def validate_io_timestamp(
-        dt: Union[str, date, datetime],
+        dt: str | date | datetime,
         no_parse_localdate: bool = True
-) -> Optional[Union[datetime, date]]:
+) -> datetime | date | None:
     """
     Validates and processes a given date or datetime input and returns a processed
     datetime or date object depending on the parsing and processing results. This
@@ -378,8 +378,8 @@ def validate_io_timestamp(
 
 
 def validate_dates(
-        from_date: Optional[Union[str, datetime, date]] = None,
-        to_date: Optional[Union[str, datetime, date]] = None
+        from_date: str | datetime | date | None = None,
+        to_date: str | datetime | date | None = None
 ) -> tuple[date, date]:
     """
     Validates and converts the input dates to date objects. This function ensures that the
@@ -485,19 +485,19 @@ class IOResult:
         data.
     """
     # DB Aggregation...
-    db_from_date: Optional[date] = None
-    db_to_date: Optional[date] = None
+    db_from_date: date | None = None
+    db_to_date: date | None = None
 
     # Closing Entry lookup...
     ce_match: bool = False
-    ce_from_date: Optional[date] = None
-    ce_to_date: Optional[date] = None
+    ce_from_date: date | None = None
+    ce_to_date: date | None = None
 
     # the final queryset to evaluate...
     txs_queryset = None
 
     # the aggregated account balance...
-    accounts_digest: Optional[list[dict]] = None
+    accounts_digest: list[dict] | None = None
 
     @property
     def is_bounded(self) -> bool:
@@ -625,18 +625,18 @@ class IODatabaseMixIn:
         return lazy_loader.get_journal_entry_model()
 
     def database_digest(self,
-                        entity_slug: Optional[str] = None,
-                        unit_slug: Optional[str] = None,
-                        user_model: Optional[UserModel] = None,
-                        from_date: Optional[Union[date, datetime]] = None,
-                        to_date: Optional[Union[date, datetime]] = None,
+                        entity_slug: str | None = None,
+                        unit_slug: str | None = None,
+                        user_model: UserModel | None = None,
+                        from_date: date | datetime | None = None,
+                        to_date: date | datetime | None = None,
                         by_activity: bool = False,
                         by_tx_type: bool = False,
                         by_period: bool = False,
                         by_unit: bool = False,
-                        activity: Optional[str] = None,
-                        role: str = Optional[str],
-                        accounts: Optional[Union[str, list[str], set[str]]] = None,
+                        activity: str | None = None,
+                        role: str | None = None,
+                        accounts: str | list[str] | set[str] | None = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
                         use_closing_entries: bool = False,
@@ -915,15 +915,15 @@ class IODatabaseMixIn:
         return io_result
 
     def python_digest(self,
-                      user_model: Optional[UserModel] = None,
-                      entity_slug: Optional[str] = None,
-                      unit_slug: Optional[str] = None,
-                      to_date: Optional[Union[date, datetime, str]] = None,
-                      from_date: Optional[Union[date, datetime, str]] = None,
+                      user_model: UserModel | None = None,
+                      entity_slug: str | None = None,
+                      unit_slug: str | None = None,
+                      to_date: date | datetime | str | None = None,
+                      from_date: date | datetime | str | None = None,
                       equity_only: bool = False,
                       activity: str = None,
-                      role: Optional[Union[set[str], list[str]]] = None,
-                      accounts: Optional[Union[set[str], list[str]]] = None,
+                      role: set[str] | list[str] | None = None,
+                      accounts: set[str] | list[str] | None = None,
                       signs: bool = True,
                       by_unit: bool = False,
                       by_activity: bool = False,
@@ -1103,14 +1103,14 @@ class IODatabaseMixIn:
         }
 
     def digest(self,
-               entity_slug: Optional[str] = None,
-               unit_slug: Optional[str] = None,
-               to_date: Optional[Union[date, datetime, str]] = None,
-               from_date: Optional[Union[date, datetime, str]] = None,
-               user_model: Optional[UserModel] = None,
-               accounts: Optional[Union[set[str], list[str]]] = None,
-               role: Optional[Union[set[str], list[str]]] = None,
-               activity: Optional[str] = None,
+               entity_slug: str | None = None,
+               unit_slug: str | None = None,
+               to_date: date | datetime | str | None = None,
+               from_date: date | datetime | str | None = None,
+               user_model: UserModel | None = None,
+               accounts: set[str] | list[str] | None = None,
+               role: set[str] | list[str] | None = None,
+               activity: str | None = None,
                signs: bool = True,
                process_roles: bool = False,
                process_groups: bool = False,
@@ -1124,7 +1124,7 @@ class IODatabaseMixIn:
                balance_sheet_statement: bool = False,
                income_statement: bool = False,
                cash_flow_statement: bool = False,
-               use_closing_entry: Optional[bool] = None,
+               use_closing_entry: bool | None = None,
                **kwargs) -> IODigestContextManager:
         """
         Processes financial data and generates various financial statements, ratios, or activity digests
@@ -1291,7 +1291,7 @@ class IODatabaseMixIn:
         return IODigestContextManager(io_state=io_state)
 
     def commit_txs(self,
-                   je_timestamp: Union[str, datetime, date],
+                   je_timestamp: str | datetime | date,
                    je_txs: list[dict],
                    je_posted: bool = False,
                    je_ledger_model=None,
@@ -1488,9 +1488,9 @@ class IOReportMixIn:
                              ])
 
     def digest_balance_sheet(self,
-                             to_date: Union[date, datetime],
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
+                             to_date: date | datetime,
+                             user_model: UserModel | None = None,
+                             txs_queryset: QuerySet | None = None,
                              **kwargs: dict) -> IODigestContextManager:
         """
         Digest the balance sheet for a specific time period, user, and optionally a specific set
@@ -1530,11 +1530,11 @@ class IOReportMixIn:
         )
 
     def get_balance_sheet_statement(self,
-                                    to_date: Union[date, datetime],
-                                    subtitle: Optional[str] = None,
-                                    filepath: Optional[Path] = None,
-                                    filename: Optional[str] = None,
-                                    user_model: Optional[UserModel] = None,
+                                    to_date: date | datetime,
+                                    subtitle: str | None = None,
+                                    filepath: Path | None = None,
+                                    filename: str | None = None,
+                                    user_model: UserModel | None = None,
                                     save_pdf: bool = False,
                                     **kwargs
                                     ) -> IODigestContextManager:
@@ -1610,10 +1610,10 @@ class IOReportMixIn:
         return report
 
     def digest_income_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                user_model: Optional[UserModel] = None,
-                                txs_queryset: Optional[QuerySet] = None,
+                                from_date: date | datetime,
+                                to_date: date | datetime,
+                                user_model: UserModel | None = None,
+                                txs_queryset: QuerySet | None = None,
                                 **kwargs) -> IODigestContextManager:
         """
         Digest the income statement within the specified date range and optionally filter
@@ -1657,13 +1657,13 @@ class IOReportMixIn:
         )
 
     def get_income_statement(self,
-                             from_date: Union[date, datetime],
-                             to_date: Union[date, datetime],
-                             subtitle: Optional[str] = None,
-                             filepath: Optional[Path] = None,
-                             filename: Optional[str] = None,
-                             user_model: Optional[UserModel] = None,
-                             txs_queryset: Optional[QuerySet] = None,
+                             from_date: date | datetime,
+                             to_date: date | datetime,
+                             subtitle: str | None = None,
+                             filepath: Path | None = None,
+                             filename: str | None = None,
+                             user_model: UserModel | None = None,
+                             txs_queryset: QuerySet | None = None,
                              save_pdf: bool = False,
                              **kwargs
                              ):
@@ -1740,10 +1740,10 @@ class IOReportMixIn:
         return report
 
     def digest_cash_flow_statement(self,
-                                   from_date: Union[date, datetime],
-                                   to_date: Union[date, datetime],
-                                   user_model: Optional[UserModel] = None,
-                                   txs_queryset: Optional[QuerySet] = None,
+                                   from_date: date | datetime,
+                                   to_date: date | datetime,
+                                   user_model: UserModel | None = None,
+                                   txs_queryset: QuerySet | None = None,
                                    **kwargs) -> IODigestContextManager:
         """
         Generates a digest of the cash flow statement for a specified date range, user model,
@@ -1782,12 +1782,12 @@ class IOReportMixIn:
         )
 
     def get_cash_flow_statement(self,
-                                from_date: Union[date, datetime],
-                                to_date: Union[date, datetime],
-                                subtitle: Optional[str] = None,
-                                filepath: Optional[Path] = None,
-                                filename: Optional[str] = None,
-                                user_model: Optional[UserModel] = None,
+                                from_date: date | datetime,
+                                to_date: date | datetime,
+                                subtitle: str | None = None,
+                                filepath: Path | None = None,
+                                filename: str | None = None,
+                                user_model: UserModel | None = None,
                                 save_pdf: bool = False,
                                 **kwargs):
         """
@@ -1857,9 +1857,9 @@ class IOReportMixIn:
         return report
 
     def digest_financial_statements(self,
-                                    from_date: Union[date, datetime],
-                                    to_date: Union[date, datetime],
-                                    user_model: Optional[UserModel] = None,
+                                    from_date: date | datetime,
+                                    to_date: date | datetime,
+                                    user_model: UserModel | None = None,
                                     **kwargs) -> IODigestContextManager:
         """
         Digest financial statements within a given date range, allowing optional
@@ -1907,12 +1907,12 @@ class IOReportMixIn:
         )
 
     def get_financial_statements(self,
-                                 from_date: Union[date, datetime],
-                                 to_date: Union[date, datetime],
+                                 from_date: date | datetime,
+                                 to_date: date | datetime,
                                  dt_strfmt: str = '%Y%m%d',
-                                 user_model: Optional[UserModel] = None,
+                                 user_model: UserModel | None = None,
                                  save_pdf: bool = False,
-                                 filepath: Optional[Path] = None,
+                                 filepath: Path | None = None,
                                  **kwargs) -> ReportTuple:
         """
         Generates financial statements for a specified date range, optionally saving them as

@@ -235,7 +235,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def get_account_root_node(self,
                               account_model: AccountModel,
-                              root_account_qs: Optional[AccountModelQuerySet] = None,
+                              root_account_qs: AccountModelQuerySet | None = None,
                               as_queryset: bool = False) -> AccountModel:
         """
         Fetches the root node of the ChartOfAccountModel instance. The root node is the highest level of the CoA
@@ -488,7 +488,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
 
     def insert_account(self,
                        account_model: AccountModel,
-                       root_account_qs: Optional[AccountModelQuerySet] = None):
+                       root_account_qs: AccountModelQuerySet | None = None):
         """
         This method inserts the given account model into the chart of accounts (COA) instance.
         It first verifies if the account model's COA model ID matches the COA's UUID. If not, it
@@ -549,7 +549,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
                        name: str,
                        balance_type: str,
                        active: bool,
-                       root_account_qs: Optional[AccountModelQuerySet] = None):
+                       root_account_qs: AccountModelQuerySet | None = None):
         """
         Proper method for inserting a new Account Model into a CoA.
         Use this in liu of the direct instantiation of the AccountModel of using the django related manager.

@@ -30,15 +30,15 @@ class BaseReportSupport(*load_support()):
     def __init__(self,
                  *args,
                  io_digest: IODigestContextManager,
-                 report_subtitle: Optional[str] = None,
+                 report_subtitle: str | None = None,
                  **kwargs):
 
         if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
             raise NotImplementedError('PDF support not enabled.')
 
         super().__init__(*args, **kwargs)
-        self.REPORT_TYPE: Optional[str] = None
-        self.REPORT_SUBTITLE: Optional[str] = report_subtitle
+        self.REPORT_TYPE: str | None = None
+        self.REPORT_SUBTITLE: str | None = report_subtitle
         self.FONT_SIZE: int = 9
         self.FONT_FAMILY: str = 'helvetica'
         self.PAGE_WIDTH = 210
@@ -47,7 +47,7 @@ class BaseReportSupport(*load_support()):
         self.set_default_font()
         self.alias_nb_pages()
         self.add_page()
-        self.TABLE_HEADERS: Optional[dict]
+        self.TABLE_HEADERS: dict | None
 
     def set_default_font(self):
         self.set_font(

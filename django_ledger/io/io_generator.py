@@ -92,7 +92,7 @@ class EntityDataGenerator(LoggingMixIn):
 
     def __init__(self,
                  user_model,
-                 entity_model: Union[EntityModel, str],
+                 entity_model: EntityModel | str,
                  start_dttm: datetime,
                  capital_contribution: Decimal,
                  days_forward: int,
@@ -123,7 +123,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.DAYS_FORWARD = days_forward
 
         self.entity_model: EntityModel = entity_model
-        self.default_coa: Optional[ChartOfAccountModel] = None
+        self.default_coa: ChartOfAccountModel | None = None
         self.capital_contribution = capital_contribution
         self.user_model = user_model
 
@@ -201,7 +201,7 @@ class EntityDataGenerator(LoggingMixIn):
         if create_closing_entry:
             self.create_closing_entry()
 
-    def get_next_timestamp(self, prev_timestamp: Union[date, datetime] = None) -> date:
+    def get_next_timestamp(self, prev_timestamp: date | datetime = None) -> date:
         if not prev_timestamp:
             prev_timestamp = self.start_date
 

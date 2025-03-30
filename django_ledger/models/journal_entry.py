@@ -172,7 +172,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(locked=False)
 
-    def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]):
+    def for_ledger(self, ledger_pk: str | UUID | LedgerModel):
         """
         Filters the QuerySet to include Journal Entries associated with a specific Ledger.
 
@@ -254,7 +254,7 @@ class JournalEntryModelManager(Manager):
             Q(ledger__entity__managers__in=[user_model])  # Entries for entities where the user is a manager
         )
 
-    def for_entity(self, entity_slug: Union[str, EntityModel], user_model) -> JournalEntryModelQuerySet:
+    def for_entity(self, entity_slug: str | EntityModel, user_model) -> JournalEntryModelQuerySet:
         """
         Filters the JournalEntryModel queryset for a specific entity and user.
 
@@ -469,7 +469,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return self.ledger.entity
 
     @property
-    def entity_last_closing_date(self) -> Optional[date]:
+    def entity_last_closing_date(self) -> date | None:
         """
         Retrieves the last closing date for an entity, if available.
 
@@ -485,7 +485,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.get_entity_last_closing_date()
 
-    def validate_for_entity(self, entity_model: Union[EntityModel, str, UUID], raise_exception: bool = True) -> bool:
+    def validate_for_entity(self, entity_model: EntityModel | str | UUID, raise_exception: bool = True) -> bool:
         """
         Validates whether the given entity_model owns thr Journal Entry instance.
 
@@ -592,7 +592,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """Returns whether the journal entry has been posted."""
         return self.posted is True
 
-    def is_in_locked_period(self, new_timestamp: Optional[Union[date, datetime]] = None) -> bool:
+    def is_in_locked_period(self, new_timestamp: date | datetime | None = None) -> bool:
         """
         Checks if the current Journal Entry falls within a locked period.
 
@@ -708,7 +708,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             )
         return is_valid
 
-    def is_cash_involved(self, txs_qs: Optional[TransactionModelQuerySet] = None) -> bool:
+    def is_cash_involved(self, txs_qs: TransactionModelQuerySet | None = None) -> bool:
         """
         Checks if the transactions involve cash assets.
 
@@ -771,7 +771,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return self.entity_unit.name
         return no_unit_name
 
-    def get_entity_last_closing_date(self) -> Optional[date]:
+    def get_entity_last_closing_date(self) -> date | None:
         """
         Retrieves the last closing date for the entity associated with the Journal Entry.
 
@@ -978,9 +978,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def get_txs_balances(
             self,
-            txs_qs: Optional[TransactionModelQuerySet] = None,
+            txs_qs: TransactionModelQuerySet | None = None,
             as_dict: bool = False
-    ) -> Union[TransactionModelQuerySet, dict[str, Decimal]]:
+    ) -> TransactionModelQuerySet | dict[str, Decimal]:
         """
         Calculates the total CREDIT and DEBIT balances for the journal entry.
 
@@ -1028,7 +1028,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     def get_txs_roles(
             self,
-            txs_qs: Optional[TransactionModelQuerySet] = None,
+            txs_qs: TransactionModelQuerySet | None = None,
             exclude_cash_role: bool = False
     ) -> set[str]:
         """
@@ -1072,7 +1072,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         return self.activity is not None
 
-    def get_activity_name(self) -> Optional[str]:
+    def get_activity_name(self) -> str | None:
         """
         Gets the name of the activity associated with this journal entry.
 
@@ -1095,10 +1095,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     @classmethod
     def get_activity_from_roles(
             cls,
-            role_set: Union[list[str], set[str]],
+            role_set: list[str] | set[str],
             validate: bool = False,
             raise_exception: bool = True
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Determines the financial activity type (e.g., operating, investing, financing)
         based on a set of account roles.
@@ -1194,9 +1194,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return activity
 
     def generate_activity(self,
-                          txs_qs: Optional[TransactionModelQuerySet] = None,
+                          txs_qs: TransactionModelQuerySet | None = None,
                           raise_exception: bool = True,
-                          force_update: bool = False) -> Optional[str]:
+                          force_update: bool = False) -> str | None:
         """
         Generates the activity for the Journal Entry model based on its transactions.
 
@@ -1248,7 +1248,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
     # TODO: add entity_model as parameter on all functions...
     # TODO: outsource this function to EntityStateModel...?...
-    def _get_next_state_model(self, raise_exception: bool = True) -> Optional[EntityStateModel]:
+    def _get_next_state_model(self, raise_exception: bool = True) -> EntityStateModel | None:
         """
         Retrieves or creates the next state model for the Journal Entry.
 
@@ -1346,7 +1346,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         return self.je_number
 
     def verify(self,
-               txs_qs: Optional[TransactionModelQuerySet] = None,
+               txs_qs: TransactionModelQuerySet | None = None,
                force_verify: bool = False,
                raise_exception: bool = True,
                **kwargs) -> tuple[TransactionModelQuerySet, bool]:
@@ -1423,7 +1423,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def clean(self,
               verify: bool = False,
               raise_exception: bool = True,
-              txs_qs: Optional[TransactionModelQuerySet] = None) -> tuple[TransactionModelQuerySet, bool]:
+              txs_qs: TransactionModelQuerySet | None = None) -> tuple[TransactionModelQuerySet, bool]:
         """
         Cleans the JournalEntryModel instance, optionally verifying it and generating a Journal Entry (JE) number if required.
 

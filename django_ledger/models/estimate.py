@@ -125,7 +125,7 @@ class EstimateModelManager(models.Manager):
             Q(entity__managers__in=[user_model])
         )
 
-    def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
+    def for_entity(self, entity_slug: EntityModel | str, user_model):
         """
         Fetches a QuerySet of EstimateModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -336,11 +336,11 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # Configuration...
 
     def configure(self,
-                  entity_slug: Union[EntityModel, UUID, str],
+                  entity_slug: EntityModel | UUID | str,
                   customer_model: CustomerModel,
-                  user_model: Optional[UserModel] = None,
-                  date_draft: Optional[date] = None,
-                  estimate_title: Optional[str] = None,
+                  user_model: UserModel | None = None,
+                  date_draft: date | None = None,
+                  estimate_title: str | None = None,
                   commit: bool = False,
                   raise_exception: bool = True):
         """
@@ -673,8 +673,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
     # REVIEW...
     def mark_as_review(self,
-                       itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
-                       date_in_review: Optional[date] = None,
+                       itemtxs_qs: ItemTransactionModelQuerySet | None = None,
+                       date_in_review: date | None = None,
                        raise_exception: bool = True,
                        commit: bool = True,
                        **kwargs):
@@ -764,7 +764,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # APPROVED
     def mark_as_approved(self,
                          commit=False,
-                         date_approved: Optional[date] = None,
+                         date_approved: date | None = None,
                          raise_exception: bool = True,
                          **kwargs):
         """
@@ -840,7 +840,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # COMPLETED
     def mark_as_completed(self,
                           commit=False,
-                          date_completed: Optional[date] = None,
+                          date_completed: date | None = None,
                           raise_exception: bool = True,
                           **kwargs):
         """
@@ -917,7 +917,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # CANCEL
     def mark_as_canceled(self,
                          commit: bool = False,
-                         date_canceled: Optional[date] = None,
+                         date_canceled: date | None = None,
                          raise_exception: bool = True,
                          **kwargs):
         """
@@ -992,7 +992,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # VOID
     def mark_as_void(self,
                      commit: bool = False,
-                     date_void: Optional[date] = None,
+                     date_void: date | None = None,
                      raise_exception: bool = True,
                      **kwargs):
         """
@@ -1095,7 +1095,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             entity_id__exact=self.entity_id
         ).estimates()
 
-    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
+    def validate_itemtxs_qs(self, queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the EstimateModel.
 
@@ -1111,7 +1111,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None,
+                         queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False):
         """
@@ -1135,7 +1135,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         return queryset, None
 
     # ### ItemizeMixIn implementation END...
-    def get_itemtxs_annotation(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None):
+    def get_itemtxs_annotation(self, itemtxs_qs: ItemTransactionModelQuerySet | None = None):
         """
         Gets an annotated ItemTransactionModelQuerySet with additional average unit cost & revenue.
 
@@ -1168,7 +1168,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             )
         )
 
-    def update_revenue_estimate(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None, commit: bool = False):
+    def update_revenue_estimate(self, itemtxs_qs: ItemTransactionModelQuerySet | None = None, commit: bool = False):
         """
         Updates the revenue estimate of the EstimateModel instance.
 
@@ -1190,7 +1190,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 'updated'
             ])
 
-    def update_cost_estimate(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None, commit: bool = False):
+    def update_cost_estimate(self, itemtxs_qs: ItemTransactionModelQuerySet | None = None, commit: bool = False):
         """
         Updates the cost estimate of the EstimateModel instance.
 
@@ -1228,13 +1228,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             ])
 
     def update_state(self,
-                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None):
+                     itemtxs_qs: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None):
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
 
     # Features...
-    def get_cost_estimate(self, as_float: bool = False) -> Union[float, Decimal]:
+    def get_cost_estimate(self, as_float: bool = False) -> float | Decimal:
         """
         Calculates the total EstimateModel cost by summing all individual cost components: Labor, Material, Equipment &
         Other costs.
@@ -1339,7 +1339,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # --- CONTRACT METHODS ---
 
     # Queryset validation....
-    def validate_item_transaction_qs(self, itemtxs_qs: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
+    def validate_item_transaction_qs(self, itemtxs_qs: ItemTransactionModelQuerySet | list[ItemTransactionModel]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
@@ -1435,7 +1435,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
         return po_qs.aggregate(po_amount__sum=Coalesce(Sum('po_amount'), 0.0, output_field=models.FloatField()))
 
-    def get_billed_amount(self, bill_qs: Optional[BillModelQuerySet] = None) -> dict:
+    def get_billed_amount(self, bill_qs: BillModelQuerySet | None = None) -> dict:
         if not bill_qs:
             bill_qs = self.billmodel_set.all().active()
         else:
@@ -1449,7 +1449,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             bill_amount_unearned__sum=Coalesce(Sum('amount_unearned'), 0.0, output_field=models.FloatField()),
         )
 
-    def get_invoiced_amount(self, invoice_qs: Optional[InvoiceModelQuerySet] = None) -> dict:
+    def get_invoiced_amount(self, invoice_qs: InvoiceModelQuerySet | None = None) -> dict:
         if not invoice_qs:
             invoice_qs = self.invoicemodel_set.all().active()
         else:
@@ -1464,9 +1464,9 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         )
 
     def get_contract_summary(self,
-                             po_qs: Optional[PurchaseOrderModelQuerySet] = None,
-                             bill_qs: Optional[BillModelQuerySet] = None,
-                             invoice_qs: Optional[InvoiceModelQuerySet] = None) -> dict:
+                             po_qs: PurchaseOrderModelQuerySet | None = None,
+                             bill_qs: BillModelQuerySet | None = None,
+                             invoice_qs: InvoiceModelQuerySet | None = None) -> dict:
         """
         Computes an aggregate of all related ItemTransactionModels summarizing
         original contract amounts, amounts authorized, amounts billed and amount invoiced.

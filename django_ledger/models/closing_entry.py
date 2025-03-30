@@ -223,7 +223,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_mark_as_posted_message(self):
         return _(f'Are you sure you want to post Closing Entry dated {self.closing_date}?')
 
-    def get_mark_as_posted_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_posted_url(self, entity_slug: str | None = None) -> str:
         if not entity_slug:
             entity_slug = self.entity_model.slug
         return reverse(viewname='django_ledger:closing-entry-action-mark-as-posted',
@@ -267,7 +267,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
     def get_mark_as_unposted_message(self):
         return _(f'Are you sure you want to unpost Closing Entry dated {self.closing_date}?')
 
-    def get_mark_as_unposted_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_mark_as_unposted_url(self, entity_slug: str | None = None) -> str:
         if not entity_slug:
             entity_slug = self.entity_model.slug
         return reverse(viewname='django_ledger:closing-entry-action-mark-as-unposted',
@@ -299,7 +299,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _(f'Are you sure you want to update all Closing Entry {self.closing_date} transactions? '
                  'This action will delete existing closing entry transactions and create new ones.')
 
-    def get_update_transactions_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_update_transactions_url(self, entity_slug: str | None = None) -> str:
         if not entity_slug:
             entity_slug = self.entity_model.slug
         return reverse(viewname='django_ledger:closing-entry-action-update-txs',
@@ -333,7 +333,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         return _(f'Are you sure you want to delete Closing Entry {self.closing_date}? '
                  'This action cannot be undone.')
 
-    def get_delete_url(self, entity_slug: Optional[str] = None) -> str:
+    def get_delete_url(self, entity_slug: str | None = None) -> str:
         if not entity_slug:
             entity_slug = self.entity_model.slug
         return reverse(viewname='django_ledger:closing-entry-action-delete',
@@ -453,11 +453,11 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.closing_entry_model.closing_date.strftime("%D")} | {self.balance}'
 
-    def is_debit(self) -> Optional[bool]:
+    def is_debit(self) -> bool | None:
         if self.tx_type is not None:
             return self.tx_type == TransactionModel.DEBIT
 
-    def is_credit(self) -> Optional[bool]:
+    def is_credit(self) -> bool | None:
         if self.tx_type is not None:
             return self.tx_type == TransactionModel.CREDIT
 

@@ -546,7 +546,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.get_amount()}'
 
-    def from_commit_dict(self, split_amount: Optional[Decimal] = None) -> list[dict]:
+    def from_commit_dict(self, split_amount: Decimal | None = None) -> list[dict]:
         """
         Converts a commit dictionary to a list of dictionaries containing
         transactional data. The method processes the transaction's amount,
@@ -1003,7 +1003,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 return set([txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH])
         return set()
 
-    def get_prospect_je_activity_try(self, raise_exception: bool = True, force_update: bool = False) -> Optional[str]:
+    def get_prospect_je_activity_try(self, raise_exception: bool = True, force_update: bool = False) -> str | None:
         """
         Retrieve or attempt to fetch the journal entry activity for the current prospect object.
 
@@ -1042,7 +1042,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                         raise e
         return self.activity
 
-    def get_prospect_je_activity(self) -> Optional[str]:
+    def get_prospect_je_activity(self) -> str | None:
         """
         Gets the activity of the prospect JE (Journal Entry) in a safe manner.
 
@@ -1058,7 +1058,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         return self.get_prospect_je_activity_try(raise_exception=False)
 
-    def get_prospect_je_activity_display(self) -> Optional[str]:
+    def get_prospect_je_activity_display(self) -> str | None:
         """
         Provides functionality to retrieve and display the prospect journal entry activity
         based on the mapped activity associated with a prospect. The method attempts to

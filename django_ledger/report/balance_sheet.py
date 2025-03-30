@@ -9,7 +9,7 @@ from django_ledger.templatetags.django_ledger import currency_format, currency_s
 
 class BalanceSheetReport(BaseReportSupport):
 
-    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: Optional[str] = None, **kwargs):
+    def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: str | None = None, **kwargs):
 
         if not io_digest.has_balance_sheet():
             raise PDFReportValidationError('IO Digest does not have balance sheet information.')
@@ -227,7 +227,7 @@ class BalanceSheetReport(BaseReportSupport):
         self.ln(h=5)
 
     def get_pdf_filename(self,
-                         to_dt: Optional[Union[datetime, date]] = None,
+                         to_dt: datetime | date | None = None,
                          dt_strfmt: str = '%Y%m%d'):
         if to_dt:
             to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())

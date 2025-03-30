@@ -137,7 +137,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
 
     def configure(self,
                   entity_slug,
-                  user_model: Optional[UserModel],
+                  user_model: UserModel | None,
                   commit: bool = False):
 
         EntityModel = lazy_loader.get_entity_model()

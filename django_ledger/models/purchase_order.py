@@ -269,10 +269,10 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         ])
 
     def configure(self,
-                  entity_slug: Union[str, EntityModel],
-                  po_title: Optional[str] = None,
-                  user_model: Optional[UserModel] = None,
-                  draft_date: Optional[date] = None,
+                  entity_slug: str | EntityModel,
+                  po_title: str | None = None,
+                  user_model: UserModel | None = None,
+                  draft_date: date | None = None,
                   estimate_model=None,
                   commit: bool = False):
         """
@@ -335,7 +335,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 self.save()
         return self
 
-    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
+    def validate_item_transaction_qs(self, queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the PurchaseOrderModel.
 
@@ -371,7 +371,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         ).purchase_orders()
 
     def get_itemtxs_data(self,
-                         queryset: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None,
+                         queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False) -> tuple:
         """
@@ -407,8 +407,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         } if not lazy_agg else None
 
     # ### ItemizeMixIn implementation END...
-    def update_state(self, itemtxs_qs: Optional[
-        Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None) -> tuple:
+    def update_state(self, itemtxs_qs: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None) -> tuple:
         """
         Updates the state of the PurchaseOrderModel.
 
@@ -676,7 +675,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     # Actions...
 
     # DRAFT...
-    def mark_as_draft(self, date_draft: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_draft(self, date_draft: date | None = None, commit: bool = False, **kwargs):
         """
         Marks PurchaseOrderModel as Draft.
 
@@ -741,7 +740,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         return _('Do you want to mark Purchase Order %s as Draft?') % self.po_number
 
     # REVIEW...
-    def mark_as_review(self, date_in_review: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_review(self, date_in_review: date | None = None, commit: bool = False, **kwargs):
         """
         Marks PurchaseOrderModel as In Review.
 
@@ -814,7 +813,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         return _('Do you want to mark Purchase Order %s as In Review?') % self.po_number
 
     # APPROVED...
-    def mark_as_approved(self, date_approved: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_approved(self, date_approved: date | None = None, commit: bool = False, **kwargs):
         """
         Marks PurchaseOrderModel as Approved.
 
@@ -881,7 +880,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         return _('Do you want to mark Purchase Order %s as Approved?') % self.po_number
 
     # CANCEL...
-    def mark_as_canceled(self, date_canceled: Optional[date] = None, commit: bool = False, **kwargs):
+    def mark_as_canceled(self, date_canceled: date | None = None, commit: bool = False, **kwargs):
         """
         Marks PurchaseOrderModel as Canceled.
 
@@ -949,7 +948,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     # FULFILL...
     def mark_as_fulfilled(self,
                           date_fulfilled: date = None,
-                          po_items: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]] = None,
+                          po_items: ItemTransactionModelQuerySet | list[ItemTransactionModel] = None,
                           commit: bool = False,
                           **kwargs):
         """
@@ -1044,7 +1043,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     # VOID...
     def mark_as_void(self,
-                     void_date: Optional[date] = None,
+                     void_date: date | None = None,
                      commit: bool = False,
                      **kwargs):
         """

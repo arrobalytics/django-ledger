@@ -23,7 +23,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
 
     def create_purchase_order(self,
                               entity_model: EntityModel,
-                              draft_date: Optional[Union[date, datetime]] = None) -> PurchaseOrderModel:
+                              draft_date: date | datetime | None = None) -> PurchaseOrderModel:
         po_model = PurchaseOrderModel()
         po_model = po_model.configure(entity_slug=entity_model,
                                       draft_date=draft_date,

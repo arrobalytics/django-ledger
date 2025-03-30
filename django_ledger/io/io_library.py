@@ -46,10 +46,10 @@ class TransactionInstructionItem:
         The resolved account model for the transaction. Not to be modified. Defaults to None.
     """
     account_code: str
-    amount: Union[Decimal, float]
+    amount: Decimal | float
     tx_type: str
-    description: Optional[str]
-    account_model: Optional[AccountModel] = None
+    description: str | None
+    account_model: AccountModel | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -93,15 +93,15 @@ class IOCursor:
                  entity_model: EntityModel,
                  user_model,
                  mode: IOCursorMode = IOCursorMode.PERMISSIVE,
-                 coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None):
+                 coa_model: ChartOfAccountModel | UUID | str | None = None):
         self.IO_LIBRARY = io_library
         self.MODE = mode
         self.ENTITY_MODEL = entity_model
         self.USER_MODEL = user_model
         self.COA_MODEL = coa_model
         self.blueprints = defaultdict(list)
-        self.ledger_model_qs: Optional[LedgerModelQuerySet] = None
-        self.account_model_qs: Optional[AccountModelQuerySet] = None
+        self.ledger_model_qs: LedgerModelQuerySet | None = None
+        self.account_model_qs: AccountModelQuerySet | None = None
         self.ledger_map = dict()
         self.commit_plan = dict()
         self.instructions = None
@@ -180,7 +180,7 @@ class IOCursor:
 
     def dispatch(self,
                  name,
-                 ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
+                 ledger_model: str | LedgerModel | UUID | None = None,
                  **kwargs):
         """
         Stages the instructions to be processed by the IOCursor class. This method does not commit the transactions
@@ -251,8 +251,8 @@ class IOCursor:
         return self.__COMMITTED
 
     def commit(self,
-               je_timestamp: Optional[Union[datetime, date, str]] = None,
-               je_description: Optional[str] = None,
+               je_timestamp: datetime | date | str | None = None,
+               je_description: str | None = None,
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
                **kwargs):
@@ -403,7 +403,7 @@ class IOBluePrint:
         The number of decimals to use when balancing transactions. Defaults to 2.
     """
 
-    def __init__(self, name: Optional[str] = None, precision_decimals: int = 2):
+    def __init__(self, name: str | None = None, precision_decimals: int = 2):
         self.name = name
         self.precision_decimals = precision_decimals
         self.registry = list()
@@ -430,7 +430,7 @@ class IOBluePrint:
     def _round_amount(self, amount: Decimal) -> Decimal:
         return round(amount, self.precision_decimals)
 
-    def _amount(self, amount: Union[float, Decimal]) -> Decimal:
+    def _amount(self, amount: float | Decimal) -> Decimal:
         if amount < 0:
             raise IOBluePrintValidationError(
                 message='Amounts cannot be negative.'
@@ -449,7 +449,7 @@ class IOBluePrint:
             message='Amounts must be float, Decimal or int.'
         )
 
-    def credit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+    def credit(self, account_code: str, amount: float | Decimal, description: str = None):
         """
         Registers a CREDIT to the specified account..
 
@@ -470,7 +470,7 @@ class IOBluePrint:
                 description=description
             ))
 
-    def debit(self, account_code: str, amount: Union[float, Decimal], description: str = None):
+    def debit(self, account_code: str, amount: float | Decimal, description: str = None):
         """
         Registers a DEBIT to the specified account.
 
@@ -494,8 +494,8 @@ class IOBluePrint:
     def commit(self,
                entity_model: EntityModel,
                user_model,
-               ledger_model: Optional[Union[str, LedgerModel, UUID]] = None,
-               je_timestamp: Optional[Union[datetime, date, str]] = None,
+               ledger_model: str | LedgerModel | UUID | None = None,
+               je_timestamp: datetime | date | str | None = None,
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
                **kwargs) -> dict:
@@ -592,7 +592,7 @@ class IOLibrary:
             entity_model: EntityModel,
             user_model,
             mode: IOCursorMode = IOCursorMode.PERMISSIVE,
-            coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
+            coa_model: ChartOfAccountModel | UUID | str | None = None
     ) -> IOCursor:
         """
         Creates a cursor instance for associated with the library, entity and user model.

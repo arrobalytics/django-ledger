@@ -307,7 +307,7 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
     permission_required = []
 
     def __init__(self, *args, **kwargs):
-        self.AUTHORIZED_ENTITY_MODEL: Optional[EntityModel] = None
+        self.AUTHORIZED_ENTITY_MODEL: EntityModel | None = None
         super().__init__(*args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -354,14 +354,14 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
             authorized_superuser=self.get_superuser_authorization(),
         )
 
-    def get_authorized_entity_instance(self, raise_exception: bool = True) -> Optional[EntityModel]:
+    def get_authorized_entity_instance(self, raise_exception: bool = True) -> EntityModel | None:
         if self.AUTHORIZED_ENTITY_MODEL is None:
             if raise_exception:
                 raise Http404()
             return None
         return self.AUTHORIZED_ENTITY_MODEL
 
-    def get_authorized_entity_instance_name(self) -> Optional[str]:
+    def get_authorized_entity_instance_name(self) -> str | None:
         entity_model: EntityModel = self.get_authorized_entity_instance()
         if not entity_model:
             return None
@@ -554,7 +554,7 @@ class PDFReportMixIn:
         CFS = 'CFS'
 
     pdf_report_enum = PDFReportEnum
-    pdf_report_type: Optional[PDFReportEnum] = None
+    pdf_report_type: PDFReportEnum | None = None
     pdf_format_query_param = 'format'
     pdf_format_query_param_value = 'pdf'
     pdf_subtitle_query_param = 'report_subtitle'
@@ -586,7 +586,7 @@ class PDFReportMixIn:
     def get_pdf_subtitle(self) -> str:
         return self.request.GET.get(self.pdf_subtitle_query_param)
 
-    def get_pdf_from_date(self) -> Optional[date]:
+    def get_pdf_from_date(self) -> date | None:
         ctx = getattr(self, 'get_context_data')()
         return ctx['from_date']
 

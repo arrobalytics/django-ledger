@@ -67,7 +67,7 @@ class TransactionModelQuerySet(QuerySet):
             Q(journal_entry__ledger__posted=True)
         )
 
-    def for_accounts(self, account_list: list[Union[AccountModel, str, UUID]]):
+    def for_accounts(self, account_list: list[AccountModel | str | UUID]):
         """
         Filters transactions based on the accounts they are associated with.
 
@@ -96,7 +96,7 @@ class TransactionModelQuerySet(QuerySet):
             message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
         )
 
-    def for_roles(self, role_list: Union[str, list[str], set[str]]):
+    def for_roles(self, role_list: str | list[str] | set[str]):
         """
         Fetches a QuerySet of TransactionModels which AccountModel has a specific role.
 
@@ -114,7 +114,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(account__role__in=[role_list])
         return self.filter(account__role__in=role_list)
 
-    def for_unit(self, unit_slug: Union[str, EntityUnitModel]):
+    def for_unit(self, unit_slug: str | EntityUnitModel):
         """
         Filters transactions based on their associated entity unit.
 
@@ -132,7 +132,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__entity_unit=unit_slug)
         return self.filter(journal_entry__entity_unit__slug__exact=unit_slug)
 
-    def for_activity(self, activity_list: Union[str, list[str], set[str]]):
+    def for_activity(self, activity_list: str | list[str] | set[str]):
         """
         Filters transactions based on their associated activity or activities.
 
@@ -150,7 +150,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__activity__in=[activity_list])
         return self.filter(journal_entry__activity__in=activity_list)
 
-    def to_date(self, to_date: Union[str, date, datetime]):
+    def to_date(self, to_date: str | date | datetime):
         """
         Filters transactions occurring on or before a specific date or timestamp.
 
@@ -175,7 +175,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__timestamp__date__lte=to_date)
         return self.filter(journal_entry__timestamp__lte=to_date)
 
-    def from_date(self, from_date: Union[str, date, datetime]):
+    def from_date(self, from_date: str | date | datetime):
         """
         Filters transactions occurring on or after a specific date or timestamp.
 
@@ -223,7 +223,7 @@ class TransactionModelQuerySet(QuerySet):
         """
         return self.filter(journal_entry__is_closing_entry=True)
 
-    def for_ledger(self, ledger_model: Union[LedgerModel, UUID, str]):
+    def for_ledger(self, ledger_model: LedgerModel | UUID | str):
         """
         Filters transactions for a specific ledger under a given entity.
 
@@ -259,7 +259,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry=je_model)
         return self.filter(journal_entry__uuid__exact=je_model)
 
-    def for_bill(self, bill_model: Union[BillModel, str, UUID]):
+    def for_bill(self, bill_model: BillModel | str | UUID):
         """
         Filters transactions for a specific bill under a given entity.
 
@@ -277,7 +277,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__ledger__billmodel=bill_model)
         return self.filter(journal_entry__ledger__billmodel__uuid__exact=bill_model)
 
-    def for_invoice(self, invoice_model: Union[InvoiceModel, str, UUID]):
+    def for_invoice(self, invoice_model: InvoiceModel | str | UUID):
         """
         Filters transactions for a specific invoice under a given entity.
 
@@ -374,8 +374,8 @@ class TransactionModelManager(Manager):
         )
 
     def for_entity(self,
-                   entity_slug: Union[EntityModel, str, UUID],
-                   user_model: Optional[UserModel] = None) -> TransactionModelQuerySet:
+                   entity_slug: EntityModel | str | UUID,
+                   user_model: UserModel | None = None) -> TransactionModelQuerySet:
         """
         Filters transactions for a specific entity, optionally scoped to a specific user.
 

@@ -350,7 +350,7 @@ def verify_unique_code():
         raise DjangoLedgerConfigurationError('Default CoA is not unique.')
 
 
-def get_default_coa_rst(default_coa: Optional[dict] = None) -> str:
+def get_default_coa_rst(default_coa: dict | None = None) -> str:
     """
     Converts the provided Chart of Account into restructuredText format.
     Parameters

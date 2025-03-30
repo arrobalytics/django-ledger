@@ -35,7 +35,7 @@ class OFXFileManager:
 
         self.BANK_NAME = self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None
         self.FID = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None
-        self.ACCOUNT_DATA: Optional[dict] = None
+        self.ACCOUNT_DATA: dict | None = None
 
         self.get_account_data()
         # self.ACCOUNT_TXS = self.get_account_txs(account=self.ACCOUNTS[0]['account'].acctid)
