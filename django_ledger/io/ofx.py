@@ -52,14 +52,14 @@ class OFXFileManager:
 
     def get_account_data(self):
         if self.ACCOUNT_DATA is None:
-            self.ACCOUNT_DATA = [
+            self.ACCOUNT_DATA = next(
                 dict(
                     (attr, getattr(account, attr)) for attr in self.statement_attrs()
                 ) | {
                     'bank': self.BANK_NAME,
                     'fid': self.FID
                 } for account in self.statements
-            ][0]
+            )
         return self.ACCOUNT_DATA
 
     def get_account_number(self):
