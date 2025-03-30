@@ -91,7 +91,8 @@ ignore = [
     "BLE001",
     "D100",
     "D200",
-    "S311"
+    "S311",
+    "RSE102"
 ]
 
 [tool.ruff.lint.per-file-ignores]
