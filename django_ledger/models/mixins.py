@@ -482,7 +482,8 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if ledger_model.locked:
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already locked...')
+                msg = f'Bill ledger {ledger_model.name} is already locked...'
+                raise ValidationError(msg)
             return
         ledger_model.lock(commit, raise_exception=raise_exception)
 
@@ -500,7 +501,8 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if not ledger_model.is_locked():
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already unlocked...')
+                msg = f'Bill ledger {ledger_model.name} is already unlocked...'
+                raise ValidationError(msg)
             return
         ledger_model.unlock(commit, raise_exception=raise_exception)
 
@@ -519,7 +521,8 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if ledger_model.posted:
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is already posted...')
+                msg = f'Bill ledger {ledger_model.name} is already posted...'
+                raise ValidationError(msg)
             return
         ledger_model.post(commit, raise_exception=raise_exception)
 
@@ -537,7 +540,8 @@ class AccrualMixIn(models.Model):
         ledger_model = self.ledger
         if not ledger_model.is_posted():
             if raise_exception:
-                raise ValidationError(f'Bill ledger {ledger_model.name} is not posted...')
+                msg = f'Bill ledger {ledger_model.name} is not posted...'
+                raise ValidationError(msg)
             return
         ledger_model.post(commit, raise_exception=raise_exception)
 
@@ -800,7 +804,8 @@ class AccrualMixIn(models.Model):
 
             return item_data, io_data
         if raise_exception:
-            raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+            msg = f'{self.REL_NAME_PREFIX.upper()} state migration not allowed'
+            raise ValidationError(msg)
 
     def void_state(self, commit: bool = False) -> dict:
         """
@@ -874,13 +879,16 @@ class AccrualMixIn(models.Model):
             self.amount_due = 0
 
         if self.cash_account_id is None:
-            raise ValidationError('Must provide a cash account.')
+            msg = 'Must provide a cash account.'
+            raise ValidationError(msg)
 
         if self.accrue:
             if not self.prepaid_account_id:
-                raise ValidationError(f'Accrued {self.__class__.__name__} must define a Prepaid Expense account.')
+                msg = f'Accrued {self.__class__.__name__} must define a Prepaid Expense account.'
+                raise ValidationError(msg)
             if not self.unearned_account_id:
-                raise ValidationError(f'Accrued {self.__class__.__name__} must define an Unearned Income account.')
+                msg = f'Accrued {self.__class__.__name__} must define an Unearned Income account.'
+                raise ValidationError(msg)
 
         if any([
             self.cash_account_id is not None,
@@ -892,7 +900,8 @@ class AccrualMixIn(models.Model):
                 self.prepaid_account_id is not None,
                 self.unearned_account_id is not None
             ]):
-                raise ValidationError('Must provide all accounts Cash, Prepaid, UnEarned.')
+                msg = 'Must provide all accounts Cash, Prepaid, UnEarned.'
+                raise ValidationError(msg)
 
         # if self.accrue:
         #     if self.is_approved():
@@ -901,7 +910,8 @@ class AccrualMixIn(models.Model):
         #         self.progress = Decimal.from_float(0.00)
 
         if self.amount_paid > self.amount_due:
-            raise ValidationError(f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}')
+            msg = f'Amount paid {self.amount_paid} cannot exceed amount due {self.amount_due}'
+            raise ValidationError(msg)
 
         if self.is_paid():
             self.progress = Decimal.from_float(1.0)
@@ -911,7 +921,8 @@ class AccrualMixIn(models.Model):
             if not self.date_paid:
                 self.date_paid = today
             if self.date_paid > today:
-                raise ValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+                msg = f'Cannot pay {self.__class__.__name__} in the future.'
+                raise ValidationError(msg)
         else:
             self.date_paid = None
 
@@ -922,7 +933,8 @@ class AccrualMixIn(models.Model):
                 self.amount_unearned,
                 self.amount_receivable
             ]):
-                raise ValidationError('Voided element cannot have any balance.')
+                msg = 'Voided element cannot have any balance.'
+                raise ValidationError(msg)
 
             self.progress = Decimal.from_float(0.00)
 
@@ -1280,7 +1292,8 @@ class ItemizeMixIn(models.Model):
                 ]) for i, d in itemtxs.items()
             ]):
                 return
-        raise ItemizeError('itemtxs must be an instance of dict.')
+        msg = 'itemtxs must be an instance of dict.'
+        raise ItemizeError(msg)
 
     def can_migrate_itemtxs(self) -> bool:
         """

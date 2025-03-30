@@ -306,7 +306,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise PurchaseOrderModelValidationError('entity_slug must be an instance of str or EntityModel')
+                msg = 'entity_slug must be an instance of str or EntityModel'
+                raise PurchaseOrderModelValidationError(msg)
 
             self.date_draft = get_localdate() if not draft_date else draft_date
             self.po_status = PurchaseOrderModel.PO_STATUS_DRAFT
@@ -348,7 +349,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             i.po_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise PurchaseOrderModelValidationError(f'Invalid queryset. All items must be assigned to PO {self.uuid}')
+            msg = f'Invalid queryset. All items must be assigned to PO {self.uuid}'
+            raise PurchaseOrderModelValidationError(msg)
 
     # ### ItemizeMixIn implementation START...
 
@@ -617,20 +619,20 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         if self.is_contract_bound():
             if raise_exception:
-                raise PurchaseOrderModelValidationError(
-                    f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
+                msg = f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}'
+                raise PurchaseOrderModelValidationError(msg)
             return False
         if self.entity_id != estimate_model.entity_id:
             if raise_exception:
-                raise PurchaseOrderModelValidationError(
-                    f'Invalid EstimateModel for entity {self.entity.slug}'
-                )
+                msg = f'Invalid EstimateModel for entity {self.entity.slug}'
+                raise PurchaseOrderModelValidationError(msg)
             return False
 
         # check if estimate_model is passed and raise exception if needed...
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise PurchaseOrderModelValidationError('Cannot bind estimate that is not approved.')
+            msg = 'Cannot bind estimate that is not approved.'
+            raise PurchaseOrderModelValidationError(msg)
         return all([
             is_approved
         ])
@@ -977,15 +979,18 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         bill_models = [i.bill_model for i in po_items]
         all_items_billed = all(bill_models)
         if not all_items_billed:
-            raise PurchaseOrderModelValidationError('All items must be billed before PO can be fulfilled.')
+            msg = 'All items must be billed before PO can be fulfilled.'
+            raise PurchaseOrderModelValidationError(msg)
 
         all_bills_paid = all(b.is_paid() for b in bill_models)
         if not all_bills_paid:
-            raise PurchaseOrderModelValidationError('All Bills must be paid before PO can be fulfilled.')
+            msg = 'All Bills must be paid before PO can be fulfilled.'
+            raise PurchaseOrderModelValidationError(msg)
 
         all_items_received = all(i.is_received() for i in po_items)
         if not all_items_received:
-            raise PurchaseOrderModelValidationError('All items must be received before PO is fulfilled.')
+            msg = 'All items must be received before PO is fulfilled.'
+            raise PurchaseOrderModelValidationError(msg)
 
         self.date_fulfilled = date_fulfilled
         self.po_status = self.PO_STATUS_FULFILLED
@@ -1065,7 +1070,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         bill_model_qs = bill_model_qs.only('bill_status')
 
         if not all(b.is_void() for b in bill_model_qs):
-            raise PurchaseOrderModelValidationError('Must void all PO bills before PO can be voided.')
+            msg = 'Must void all PO bills before PO can be voided.'
+            raise PurchaseOrderModelValidationError(msg)
 
         self.date_void = get_localdate() if not void_date else void_date
         self.po_status = self.PO_STATUS_VOID

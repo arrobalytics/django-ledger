@@ -102,7 +102,8 @@ class EntityDataGenerator(LoggingMixIn):
         assert capital_contribution > 0, 'Capital contribution must be greater than 0'
 
         if not FAKER_IMPORTED:
-            raise ImproperlyConfigured('Must install Faker library to generate random data.')
+            msg = 'Must install Faker library to generate random data.'
+            raise ImproperlyConfigured(msg)
 
         if entity_model.admin != user_model:
             raise EntityModelValidationError(
@@ -165,9 +166,8 @@ class EntityDataGenerator(LoggingMixIn):
         )
 
         if txs_qs.count() > 0 and not force_populate:
-            raise EntityModelValidationError(
-                f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions'
-            )
+            msg = f'Cannot populate random data on {self.entity_model.name} because it already has existing Transactions'
+            raise EntityModelValidationError(msg)
 
         self.create_coa()
         self.logger.info(f'Pulling Entity {self.entity_model} accounts...')

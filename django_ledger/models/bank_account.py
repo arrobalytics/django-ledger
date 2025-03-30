@@ -149,7 +149,8 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         elif isinstance(entity_slug, EntityModel):
             entity_model = entity_slug
         else:
-            raise BankAccountValidationError('entity_slug must be an instance of str or EntityModel')
+            msg = 'entity_slug must be an instance of str or EntityModel'
+            raise BankAccountValidationError(msg)
 
         self.entity_model = entity_model
         self.clean()
@@ -187,7 +188,8 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
     def mark_as_active(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_activate():
             if raise_exception:
-                raise BankAccountValidationError('Bank Account cannot be activated.')
+                msg = 'Bank Account cannot be activated.'
+                raise BankAccountValidationError(msg)
         self.active = True
         if commit:
             self.save(update_fields=[
@@ -198,7 +200,8 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
     def mark_as_inactive(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         if not self.can_inactivate():
             if raise_exception:
-                raise BankAccountValidationError('Bank Account cannot be deactivated.')
+                msg = 'Bank Account cannot be deactivated.'
+                raise BankAccountValidationError(msg)
         self.active = False
         if commit:
             self.save(update_fields=[

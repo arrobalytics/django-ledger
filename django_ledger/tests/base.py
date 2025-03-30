@@ -135,7 +135,8 @@ class DjangoLedgerBaseTest(TestCase):
     def get_random_entity_model(self) -> EntityModel:
         if self.ENTITY_MODEL_QUERYSET:
             return choice(self.ENTITY_MODEL_QUERYSET)
-        raise ValueError('EntityModels have not been populated.')
+        msg = 'EntityModels have not been populated.'
+        raise ValueError(msg)
 
     def create_entity_model(self, use_accrual_method: bool = False, fy_start_month: int = 1) -> EntityModel:
         """

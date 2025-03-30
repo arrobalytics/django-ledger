@@ -356,9 +356,8 @@ class CashFlowStatementIOMiddleware:
 
     def check_io_digest(self):
         if AccountGroupIOMiddleware.GROUP_BALANCE_KEY not in self.IO_DATA:
-            raise ValidationError(
-                'IO Digest must have groups for Cash Flow Statement'
-            )
+            msg = 'IO Digest must have groups for Cash Flow Statement'
+            raise ValidationError(msg)
 
     def operating(self):
         group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]

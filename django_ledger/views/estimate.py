@@ -278,7 +278,8 @@ class BaseEstimateActionView(DjangoLedgerSecurityMixIn,
 
     def get(self, request, *args, **kwargs):
         if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
+            msg = 'View attribute action_name is required.'
+            raise ImproperlyConfigured(msg)
         response = super(BaseEstimateActionView, self).get(request, *args, **kwargs)
         ce_model: EstimateModel = self.get_object()
 

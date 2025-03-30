@@ -207,7 +207,8 @@ class ClosingEntryModelActionView(ClosingEntryModelBaseView,
     def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
+            msg = 'View attribute action_name is required.'
+            raise ImproperlyConfigured(msg)
         response = super(ClosingEntryModelActionView, self).get(request, *args, **kwargs)
         closing_entry_model: ClosingEntryModel = self.get_object()
 

@@ -113,7 +113,8 @@ class BaseReportSupport(*load_support()):
         elif to_date:
             period = f'Through {to_date}'
         else:
-            raise PDFReportValidationError('PDF report must have dates specified.')
+            msg = 'PDF report must have dates specified.'
+            raise PDFReportValidationError(msg)
         w = self.get_string_width(period)
         self.set_x((self.PAGE_WIDTH - w) / 2)
         self.cell(w=w,
@@ -179,11 +180,12 @@ class BaseReportSupport(*load_support()):
             if self.REPORT_SUBTITLE:
                 return unit_model.get_entity_name()
             return f'{unit_model.get_entity_name()} | Unit {unit_model.name}'
-        raise PDFReportValidationError('get_report_title() not implemented for'
-                                       f' IO_MODEL {self.IO_DIGEST.IO_MODEL.__class__.__name__}')
+        msg = f'get_report_title() not implemented for IO_MODEL {self.IO_DIGEST.IO_MODEL.__class__.__name__}'
+        raise PDFReportValidationError(msg)
 
     def get_report_name(self):
-        raise NotImplementedError(f'Must define REPORT_TYPE on {self.__class__.__name__}')
+        msg = f'Must define REPORT_TYPE on {self.__class__.__name__}'
+        raise NotImplementedError(msg)
 
     def get_report_data(self):
         raise NotImplementedError()

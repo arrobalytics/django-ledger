@@ -438,7 +438,8 @@ class InvoiceModelAbstract(
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise InvoiceModelValidationError('entity_slug must be an instance of str or EntityModel')
+                msg = 'entity_slug must be an instance of str or EntityModel'
+                raise InvoiceModelValidationError(msg)
 
             if entity_model.is_accrual_method():
                 self.accrue = True
@@ -509,7 +510,8 @@ class InvoiceModelAbstract(
             i.invoice_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise InvoiceModelValidationError(f'Invalid queryset. All items must be assigned to Invoice {self.uuid}')
+            msg = f'Invalid queryset. All items must be assigned to Invoice {self.uuid}'
+            raise InvoiceModelValidationError(msg)
 
     def get_itemtxs_data(self,
                          queryset: ItemTransactionModelQuerySet = None,
@@ -855,13 +857,17 @@ class InvoiceModelAbstract(
         """
         if self.ce_model_id:
             if raise_exception:
-                raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
-                                                  f'Estimate {self.ce_model.estimate_number}')
+                msg = (
+                    f'Invoice {self.invoice_number} already bound to '
+                    f'Estimate {self.ce_model.estimate_number}'
+                )
+                raise InvoiceModelValidationError(msg)
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise InvoiceModelValidationError('Cannot bind estimate that is not approved.')
+            msg = 'Cannot bind estimate that is not approved.'
+            raise InvoiceModelValidationError(msg)
         return all([
             is_approved
         ])
@@ -934,9 +940,8 @@ class InvoiceModelAbstract(
 
         if self.amount_paid > self.amount_due:
             if raise_exception:
-                raise InvoiceModelValidationError(
-                    f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
-                )
+                msg = f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
+                raise InvoiceModelValidationError(msg)
             return
 
         self.get_state(commit=True)
@@ -1006,7 +1011,8 @@ class InvoiceModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_draft():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as draft...')
+            msg = f'Cannot mark PO {self.uuid} as draft...'
+            raise InvoiceModelValidationError(msg)
 
         if draft_date:
             if isinstance(draft_date, datetime):
@@ -1092,7 +1098,8 @@ class InvoiceModelAbstract(
             Raises InvoiceModelValidationError if InvoiceModel cannot be marked as in review. Defaults to True.
         """
         if not self.can_review():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as In Review...')
+            msg = f'Cannot mark PO {self.uuid} as In Review...'
+            raise InvoiceModelValidationError(msg)
 
         self.date_in_review = get_localdate() if not date_in_review else date_in_review
 
@@ -1101,9 +1108,8 @@ class InvoiceModelAbstract(
         if not itemtxs_qs.count():
             raise InvoiceModelValidationError(message='Cannot review an Invoice without items...')
         if not self.amount_due:
-            raise InvoiceModelValidationError(
-                f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
-            )
+            msg = f'PO {self.invoice_number} cannot be marked as in review. Amount due must be greater than 0.'
+            raise InvoiceModelValidationError(msg)
 
         self.invoice_status = self.INVOICE_STATUS_REVIEW
         self.clean()
@@ -1193,7 +1199,8 @@ class InvoiceModelAbstract(
         """
         if not self.can_approve():
             if raise_exception:
-                raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Approved...')
+                msg = f'Cannot mark PO {self.uuid} as Approved...'
+                raise InvoiceModelValidationError(msg)
             return
 
         self.invoice_status = self.INVOICE_STATUS_APPROVED
@@ -1295,7 +1302,8 @@ class InvoiceModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_pay():
-            raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Paid...')
+            msg = f'Cannot mark PO {self.uuid} as Paid...'
+            raise InvoiceModelValidationError(msg)
 
         self.progress = Decimal.from_float(1.0)
         self.amount_paid = self.amount_due
@@ -1309,7 +1317,8 @@ class InvoiceModelAbstract(
             self.date_paid = get_localdate()
 
         if self.date_paid > get_localdate():
-            raise InvoiceModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+            msg = f'Cannot pay {self.__class__.__name__} in the future.'
+            raise InvoiceModelValidationError(msg)
 
         self.get_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_PAID
@@ -1401,7 +1410,8 @@ class InvoiceModelAbstract(
             Commits transaction into DB. Defaults to False.
         """
         if not self.can_void():
-            raise InvoiceModelValidationError(f'Cannot mark Invoice {self.uuid} as Void...')
+            msg = f'Cannot mark Invoice {self.uuid} as Void...'
+            raise InvoiceModelValidationError(msg)
 
         if date_void:
             if isinstance(date_void, datetime):
@@ -1412,11 +1422,14 @@ class InvoiceModelAbstract(
             self.date_void = get_localdate()
 
         if self.date_void > get_localdate():
-            raise InvoiceModelValidationError(f'Cannot void {self.__class__.__name__} in the future.')
+            msg = f'Cannot void {self.__class__.__name__} in the future.'
+            raise InvoiceModelValidationError(msg)
         if self.date_void < self.date_approved:
-            raise InvoiceModelValidationError(
+            msg = (
                 f'Cannot void {self.__class__.__name__} at {self.date_void} before approved '
-                f'{self.date_approved}')
+                f'{self.date_approved}'
+            )
+            raise InvoiceModelValidationError(msg)
 
         self.void_state(commit=True)
         self.invoice_status = self.INVOICE_STATUS_VOID
@@ -1499,7 +1512,8 @@ class InvoiceModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_cancel():
-            raise InvoiceModelValidationError(f'Cannot cancel Invoice {self.invoice_number}.')
+            msg = f'Cannot cancel Invoice {self.invoice_number}.'
+            raise InvoiceModelValidationError(msg)
 
         self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.invoice_status = self.INVOICE_STATUS_CANCELED
@@ -1805,11 +1819,14 @@ class InvoiceModelAbstract(
         super().clean()
 
         if self.cash_account.role != ASSET_CA_CASH:
-            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            msg = f'Cash account must be of role {ASSET_CA_CASH}.'
+            raise ValidationError(msg)
         if self.prepaid_account.role != ASSET_CA_RECEIVABLES:
-            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}.')
+            msg = f'Prepaid account must be of role {ASSET_CA_RECEIVABLES}.'
+            raise ValidationError(msg)
         if self.unearned_account.role != LIABILITY_CL_DEFERRED_REVENUE:
-            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.')
+            msg = f'Unearned account must be of role {LIABILITY_CL_DEFERRED_REVENUE}.'
+            raise ValidationError(msg)
 
     def save(self, **kwargs):
         """

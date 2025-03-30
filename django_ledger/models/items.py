@@ -729,11 +729,14 @@ class ItemModelAbstract(CreateUpdateMixIn):
             return DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX
         if self.is_product() or self.is_service():
             return DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX
-        raise ItemModelValidationError('Cannot determine Item Number prefix for ItemModel. '
-                                       f'For Inventory: {self.for_inventory}, '
-                                       f'IsProductOrService: {self.is_product_or_service}, '
-                                       f'Type: {self.item_type} '
-                                       f'IsLabor: {self.is_labor()} ')
+        msg = (
+            'Cannot determine Item Number prefix for ItemModel. '
+            f'For Inventory: {self.for_inventory}, '
+            f'IsProductOrService: {self.is_product_or_service}, '
+            f'Type: {self.item_type} '
+            f'IsLabor: {self.is_labor()} '
+        )
+        raise ItemModelValidationError(msg)
 
     def can_generate_item_number(self) -> bool:
         return all([
@@ -1276,19 +1279,18 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
             if self.has_po():
 
                 if self.quantity > self.po_quantity:
-                    raise ValidationError(f'Billed quantity {self.quantity} cannot be greater than '
-                                          f'PO quantity {self.po_quantity}')
+                    msg = f'Billed quantity {self.quantity} cannot be greater than PO quantity {self.po_quantity}'
+                    raise ValidationError(msg)
                 if self.total_amount > self.po_total_amount:
-                    raise ValidationError(f'Item amount {self.total_amount} cannot exceed authorized '
-                                          f'PO amount {self.po_total_amount}')
+                    msg = f'Item amount {self.total_amount} cannot exceed authorized PO amount {self.po_total_amount}'
+                    raise ValidationError(msg)
 
                 if self.total_amount > self.po_total_amount:
                     # checks if difference is within tolerance...
                     diff = self.total_amount - self.po_total_amount
                     if diff > DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
-                        raise ValidationError(
-                            f'Difference between PO Amount {self.po_total_amount} and Bill {self.total_amount} '
-                            f'exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}')
+                        msg = f'Difference between PO Amount {self.po_total_amount} and Bill {self.total_amount} exceeds tolerance of {DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+                        raise ValidationError(msg)
                     self.total_amount = self.po_total_amount
                     return
 

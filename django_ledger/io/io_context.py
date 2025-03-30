@@ -108,9 +108,8 @@ class IODigestContextManager:
             return self.IO_DATA['balance_sheet']
         except KeyError:
             if raise_exception:
-                raise IODigestValidationError(
-                    'IO Digest does not have balance sheet information available.'
-                )
+                msg = 'IO Digest does not have balance sheet information available.'
+                raise IODigestValidationError(msg)
 
     # Income Statement Data...
     def has_income_statement(self) -> bool:
@@ -121,9 +120,8 @@ class IODigestContextManager:
             return self.IO_DATA['income_statement']
         except KeyError:
             if raise_exception:
-                raise IODigestValidationError(
-                    'IO Digest does not have income statement information available.'
-                )
+                msg = 'IO Digest does not have income statement information available.'
+                raise IODigestValidationError(msg)
 
     # Cash Flow Statement Data...
     def has_cash_flow_statement(self):
@@ -134,9 +132,8 @@ class IODigestContextManager:
             return self.IO_DATA['cash_flow_statement']
         except KeyError:
             if raise_exception:
-                raise IODigestValidationError(
-                    'IO Digest does not have cash flow statement information available.'
-                )
+                msg = 'IO Digest does not have cash flow statement information available.'
+                raise IODigestValidationError(msg)
 
     # All Available Statements
     def get_financial_statements_data(self) -> dict:

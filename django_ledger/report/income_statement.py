@@ -12,7 +12,8 @@ class IncomeStatementReport(BaseReportSupport):
     def __init__(self, *args, io_digest: IODigestContextManager, report_subtitle: str | None = None, **kwargs):
 
         if not io_digest.has_income_statement():
-            raise PDFReportValidationError('IO Digest does not have income statement information.')
+            msg = 'IO Digest does not have income statement information.'
+            raise PDFReportValidationError(msg)
         super().__init__(*args, io_digest=io_digest, report_subtitle=report_subtitle, **kwargs)
         self.TABLE_HEADERS = {
             'role': {

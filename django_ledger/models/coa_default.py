@@ -347,7 +347,8 @@ def verify_unique_code():
     code_list = [i['code'] for i in DEFAULT_CHART_OF_ACCOUNTS]
     code_set = set(code_list)
     if not len(code_list) == len(code_set):
-        raise DjangoLedgerConfigurationError('Default CoA is not unique.')
+        msg = 'Default CoA is not unique.'
+        raise DjangoLedgerConfigurationError(msg)
 
 
 def get_default_coa_rst(default_coa: dict | None = None) -> str:

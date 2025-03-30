@@ -108,7 +108,8 @@ class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
     def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
+            msg = 'View attribute action_name is required.'
+            raise ImproperlyConfigured(msg)
         response = super(CharOfAccountModelActionView, self).get(request, *args, **kwargs)
         coa_model: ChartOfAccountModel = self.get_object()
 

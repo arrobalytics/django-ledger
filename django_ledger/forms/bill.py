@@ -239,7 +239,8 @@ class BillItemTransactionForm(ModelForm):
         if itemtxs_model.po_model is not None:
             quantity = cleaned_data['quantity']
             if quantity > itemtxs_model.po_quantity:
-                raise ValidationError(f'Cannot bill more than {itemtxs_model.po_quantity} authorized.')
+                msg = f'Cannot bill more than {itemtxs_model.po_quantity} authorized.'
+                raise ValidationError(msg)
         return cleaned_data
 
     class Meta:

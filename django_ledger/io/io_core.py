@@ -176,17 +176,19 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
         credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == CREDIT)
         debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == DEBIT)
     else:
-        raise ValidationError('Only Dictionary or TransactionModel allowed.')
+        msg = 'Only Dictionary or TransactionModel allowed.'
+        raise ValidationError(msg)
 
     is_valid = (credits == debits)
     diff = credits - debits
 
     if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
         if raise_exception:
-            raise TransactionNotInBalanceError(
+            msg = (
                 f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.'
                 f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
             )
+            raise TransactionNotInBalanceError(msg)
 
     return IS_TX_MODEL, is_valid, diff
 
@@ -714,8 +716,11 @@ class IODatabaseMixIn:
         if self.is_entity_model():
             if entity_slug:
                 if entity_slug != self.slug:
-                    raise IOValidationError('Inconsistent entity_slug. '
-                                            f'Provided {entity_slug} does not match actual {self.slug}')
+                    msg = (
+                        'Inconsistent entity_slug. '
+                        f'Provided {entity_slug} does not match actual {self.slug}'
+                    )
+                    raise IOValidationError(msg)
             if unit_slug:
 
                 txs_queryset_init = TransactionModel.objects.for_entity(
@@ -730,8 +735,8 @@ class IODatabaseMixIn:
                 )
         elif self.is_entity_unit_model():
             if not entity_slug:
-                raise IOValidationError(
-                    'Calling digest from Entity Unit requires entity_slug explicitly for safety')
+                msg = 'Calling digest from Entity Unit requires entity_slug explicitly for safety'
+                raise IOValidationError(msg)
 
             txs_queryset_init = TransactionModel.objects.for_entity(
                 user_model=user_model,
@@ -740,8 +745,8 @@ class IODatabaseMixIn:
 
         elif self.is_ledger_model():
             if not entity_slug:
-                raise IOValidationError(
-                    'Calling digest from Ledger Model requires entity_slug explicitly for safety')
+                msg = 'Calling digest from Ledger Model requires entity_slug explicitly for safety'
+                raise IOValidationError(msg)
 
             txs_queryset_init = TransactionModel.objects.for_entity(
                 entity_slug=entity_slug,
@@ -1383,7 +1388,8 @@ class IODatabaseMixIn:
             isinstance(self, lazy_loader.get_entity_model()),
             je_ledger_model is None
         ]):
-            raise IOValidationError('Committing from EntityModel requires an instance of LedgerModel')
+            msg = 'Committing from EntityModel requires an instance of LedgerModel'
+            raise IOValidationError(msg)
 
         # Validates that the provided LedgerModel id valid...
         if all([
@@ -1391,7 +1397,8 @@ class IODatabaseMixIn:
             je_ledger_model is not None,
         ]):
             if je_ledger_model.entity_id != self.uuid:
-                raise IOValidationError(f'LedgerModel {je_ledger_model} does not belong to {self}')
+                msg = f'LedgerModel {je_ledger_model} does not belong to {self}'
+                raise IOValidationError(msg)
 
         # Validates that the provided EntityUnitModel id valid...
         if all([
@@ -1399,7 +1406,8 @@ class IODatabaseMixIn:
             je_unit_model is not None,
         ]):
             if je_unit_model.entity_id != self.uuid:
-                raise IOValidationError(f'EntityUnitModel {je_unit_model} does not belong to {self}')
+                msg = f'EntityUnitModel {je_unit_model} does not belong to {self}'
+                raise IOValidationError(msg)
 
         if not je_ledger_model:
             je_ledger_model = self

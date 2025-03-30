@@ -466,7 +466,8 @@ class BillModelAbstract(
             elif isinstance(entity_slug, EntityModel):
                 entity_model = entity_slug
             else:
-                raise BillModelValidationError('entity_slug must be an instance of str or EntityModel')
+                msg = 'entity_slug must be an instance of str or EntityModel'
+                raise BillModelValidationError(msg)
 
             if entity_model.is_accrual_method():
                 self.accrue = True
@@ -539,7 +540,8 @@ class BillModelAbstract(
             i.bill_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise BillModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
+            msg = f'Invalid queryset. All items must be assigned to Bill {self.uuid}'
+            raise BillModelValidationError(msg)
 
     def get_itemtxs_data(self,
                          queryset: ItemTransactionModelQuerySet | None = None,
@@ -883,13 +885,17 @@ class BillModelAbstract(
         """
         if self.ce_model_id:
             if raise_exception:
-                raise BillModelValidationError(f'Bill {self.bill_number} already bound to '
-                                               f'Estimate {self.ce_model.estimate_number}')
+                msg = (
+                    f'Bill {self.bill_number} already bound to '
+                    f'Estimate {self.ce_model.estimate_number}'
+                )
+                raise BillModelValidationError(msg)
             return False
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise BillModelValidationError('Cannot bind estimate that is not approved.')
+            msg = 'Cannot bind estimate that is not approved.'
+            raise BillModelValidationError(msg)
         return all([
             is_approved
         ])
@@ -915,12 +921,14 @@ class BillModelAbstract(
         """
         if not po_model.is_approved():
             if raise_exception:
-                raise BillModelValidationError('Cannot bind an unapproved PO.')
+                msg = 'Cannot bind an unapproved PO.'
+                raise BillModelValidationError(msg)
             return False
 
         if po_model.date_approved > self.date_draft:
             if raise_exception:
-                raise BillModelValidationError('Approved PO date cannot be greater than Bill draft date.')
+                msg = 'Approved PO date cannot be greater than Bill draft date.'
+                raise BillModelValidationError(msg)
             return False
 
         return True
@@ -994,9 +1002,8 @@ class BillModelAbstract(
 
         if self.amount_paid > self.amount_due:
             if raise_exception:
-                raise BillModelValidationError(
-                    f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
-                )
+                msg = f'Amount paid: {self.amount_paid} exceed amount due: {self.amount_due}.'
+                raise BillModelValidationError(msg)
             return
 
         self.get_state(commit=True)
@@ -1064,9 +1071,8 @@ class BillModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_draft():
-            raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
-            )
+            msg = f'Bill {self.bill_number} cannot be marked as draft. Must be In Review.'
+            raise BillModelValidationError(msg)
         self.bill_status = self.BILL_STATUS_DRAFT
 
         if date_draft:
@@ -1159,9 +1165,8 @@ class BillModelAbstract(
         """
         if not self.can_review():
             if raise_exception:
-                raise BillModelValidationError(
-                    f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
-                )
+                msg = f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
+                raise BillModelValidationError(msg)
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
@@ -1171,9 +1176,8 @@ class BillModelAbstract(
         if not itemtxs_qs.count():
             raise BillModelValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
         if not self.amount_due:
-            raise BillModelValidationError(
-                f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
-            )
+            msg = f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'
+            raise BillModelValidationError(msg)
 
         self.bill_status = self.BILL_STATUS_REVIEW
 
@@ -1275,9 +1279,8 @@ class BillModelAbstract(
         """
         if not self.can_approve():
             if raise_exception:
-                raise BillModelValidationError(
-                    f'Bill {self.bill_number} cannot be marked as in approved.'
-                )
+                msg = f'Bill {self.bill_number} cannot be marked as in approved.'
+                raise BillModelValidationError(msg)
             return
         self.bill_status = self.BILL_STATUS_APPROVED
 
@@ -1383,7 +1386,8 @@ class BillModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_pay():
-            raise BillModelValidationError(f'Cannot mark Bill {self.bill_number} as paid...')
+            msg = f'Cannot mark Bill {self.bill_number} as paid...'
+            raise BillModelValidationError(msg)
 
         if date_paid:
             if isinstance(date_paid, datetime):
@@ -1397,10 +1401,11 @@ class BillModelAbstract(
         self.amount_paid = self.amount_due
 
         if self.date_paid > get_localdate():
-            raise BillModelValidationError(f'Cannot pay {self.__class__.__name__} in the future.')
+            msg = f'Cannot pay {self.__class__.__name__} in the future.'
+            raise BillModelValidationError(msg)
         if self.date_paid < self.date_approved:
-            raise BillModelValidationError(
-                f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.')
+            msg = f'Cannot pay {self.__class__.__name__} before approved date {self.date_approved}.'
+            raise BillModelValidationError(msg)
 
         self.bill_status = self.BILL_STATUS_PAID
         self.get_state(commit=True)
@@ -1505,7 +1510,8 @@ class BillModelAbstract(
             Commits transaction into DB. Defaults to False.
         """
         if not self.can_void():
-            raise BillModelValidationError(f'Bill {self.bill_number} cannot be voided. Must be approved.')
+            msg = f'Bill {self.bill_number} cannot be voided. Must be approved.'
+            raise BillModelValidationError(msg)
 
         if date_void:
             if isinstance(date_void, datetime):
@@ -1596,7 +1602,8 @@ class BillModelAbstract(
             Commits transaction into the Database. Defaults to False.
         """
         if not self.can_cancel():
-            raise BillModelValidationError(f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.')
+            msg = f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.'
+            raise BillModelValidationError(msg)
 
         self.date_canceled = get_localdate() if not date_canceled else date_canceled
         self.bill_status = self.BILL_STATUS_CANCELED
@@ -1901,11 +1908,14 @@ class BillModelAbstract(
         """
         super().clean()
         if self.cash_account.role != ASSET_CA_CASH:
-            raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')
+            msg = f'Cash account must be of role {ASSET_CA_CASH}.'
+            raise ValidationError(msg)
         if self.prepaid_account.role != ASSET_CA_PREPAID:
-            raise ValidationError(f'Prepaid account must be of role {ASSET_CA_PREPAID}.')
+            msg = f'Prepaid account must be of role {ASSET_CA_PREPAID}.'
+            raise ValidationError(msg)
         if self.unearned_account.role != LIABILITY_CL_ACC_PAYABLE:
-            raise ValidationError(f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}.')
+            msg = f'Unearned account must be of role {LIABILITY_CL_ACC_PAYABLE}.'
+            raise ValidationError(msg)
 
 
 class BillModel(BillModelAbstract):

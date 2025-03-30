@@ -213,7 +213,8 @@ class EntityModelFiscalPeriodMixIn:
             If quarter is not valid.
         """
         if quarter not in self.VALID_QUARTERS:
-            raise ValidationError(f'Specified quarter is not valid: {quarter}')
+            msg = f'Specified quarter is not valid: {quarter}'
+            raise ValidationError(msg)
 
     def validate_month(self, month: int):
         """
@@ -232,7 +233,8 @@ class EntityModelFiscalPeriodMixIn:
             If month is not valid.
         """
         if month not in self.VALID_MONTHS:
-            raise ValidationError(f'Specified month is not valid: {month}')
+            msg = f'Specified month is not valid: {month}'
+            raise ValidationError(msg)
 
     def get_fy_start(self, year: int, fy_start_month: int | None = None) -> date:
         """
@@ -1001,7 +1003,8 @@ class EntityModelAbstract(MP_Node,
         """
         if not self.default_coa_id:
             if raise_exception:
-                raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
+                msg = f'EntityModel {self.slug} does not have a default CoA'
+                raise EntityModelValidationError(msg)
         return self.default_coa
 
     def set_default_coa(self, coa_model: ChartOfAccountModel | str | None, commit: bool = False):
@@ -1131,10 +1134,11 @@ class EntityModelAbstract(MP_Node,
                     coa_model.insert_account(account_model, root_account_qs=root_account_qs)
 
         elif not ignore_if_default_coa:
-            raise EntityModelValidationError(
+            msg = (
                 f'Entity {self.name} already has existing accounts. '
                 'Use force=True to bypass this check'
             )
+            raise EntityModelValidationError(msg)
 
     def get_coa_model_qs(self, active: bool = True):
         """
@@ -1176,8 +1180,8 @@ class EntityModelAbstract(MP_Node,
         if coa_model.entity_id == self.uuid:
             return True
         if raise_exception:
-            raise EntityModelValidationError(
-                f'Invalid ChartOfAccounts model {coa_model.slug} for EntityModel {self.slug}')
+            msg = f'Invalid ChartOfAccounts model {coa_model.slug} for EntityModel {self.slug}'
+            raise EntityModelValidationError(msg)
         return False
 
     def validate_account_model_for_coa(self,
@@ -1207,19 +1211,20 @@ class EntityModelAbstract(MP_Node,
         if valid and account_model.coa_model_id == coa_model.uuid:
             return True
         if raise_exception:
-            raise EntityModelValidationError(
-                f'Invalid AccountModel model {account_model.uuid} for EntityModel {self.slug}'
-            )
+            msg = f'Invalid AccountModel model {account_model.uuid} for EntityModel {self.slug}'
+            raise EntityModelValidationError(msg)
         return False
 
     @staticmethod
     def validate_account_model_for_role(account_model: AccountModel, role: str):
         if account_model.role != role:
-            raise EntityModelValidationError(f'Invalid account role: {account_model.role}, expected {role}')
+            msg = f'Invalid account role: {account_model.role}, expected {role}'
+            raise EntityModelValidationError(msg)
 
     def validate_ledger_model_for_entity(self, ledger_model: LedgerModel | UUID | str):
         if ledger_model.entity_id != self.uuid:
-            raise EntityModelValidationError(f'Invalid LedgerModel {ledger_model.uuid} for entity {self.slug}')
+            msg = f'Invalid LedgerModel {ledger_model.uuid} for entity {self.slug}'
+            raise EntityModelValidationError(msg)
 
     def get_all_coa_accounts(self,
                              order_by: tuple[str] | None = ('code',),
@@ -1311,9 +1316,8 @@ class EntityModelAbstract(MP_Node,
         elif isinstance(coa_model, ChartOfAccountModel):
             self.validate_chart_of_accounts_for_entity(coa_model=coa_model)
         else:
-            raise EntityModelValidationError(
-                f'CoA Model {coa_model} must be an instance of ChartOfAccountModel, UUID, str or None.'
-            )
+            msg = f'CoA Model {coa_model} must be an instance of ChartOfAccountModel, UUID, str or None.'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = coa_model.accountmodel_set.select_related('coa_model', 'coa_model__entity').not_coa_root()
 
@@ -1626,7 +1630,8 @@ class EntityModelAbstract(MP_Node,
 
     def validate_customer(self, customer_model: CustomerModel):
         if customer_model.entity_model_id != self.uuid:
-            raise EntityModelValidationError(f'Invalid CustomerModel {self.uuid} for EntityModel {self.uuid}...')
+            msg = f'Invalid CustomerModel {self.uuid} for EntityModel {self.uuid}...'
+            raise EntityModelValidationError(msg)
 
     def create_customer(self, customer_model_kwargs: dict, commit: bool = True) -> CustomerModel:
         """
@@ -1715,13 +1720,15 @@ class EntityModelAbstract(MP_Node,
 
         if isinstance(vendor_model, VendorModel):
             if not vendor_model.entity_model_id == self.uuid:
-                raise EntityModelValidationError(f'VendorModel {vendor_model.uuid} belongs to a different EntityModel.')
+                msg = f'VendorModel {vendor_model.uuid} belongs to a different EntityModel.'
+                raise EntityModelValidationError(msg)
         elif isinstance(vendor_model, UUID):
             vendor_model = self.get_vendor_by_uuid(vendor_uuid=vendor_model)
         elif isinstance(vendor_model, str):
             vendor_model = self.get_vendor_by_number(vendor_number=vendor_model)
         else:
-            raise EntityModelValidationError('VendorModel must be an instance of VendorModel, UUID or str.')
+            msg = 'VendorModel must be an instance of VendorModel, UUID or str.'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
 
@@ -1824,14 +1831,15 @@ class EntityModelAbstract(MP_Node,
 
         if isinstance(customer_model, CustomerModel):
             if not customer_model.entity_model_id == self.uuid:
-                raise EntityModelValidationError(
-                    f'CustomerModel {customer_model.uuid} belongs to a different EntityModel.')
+                msg = f'CustomerModel {customer_model.uuid} belongs to a different EntityModel.'
+                raise EntityModelValidationError(msg)
         elif isinstance(customer_model, UUID):
             customer_model = self.get_customer_by_uuid(customer_uuid=customer_model)
         elif isinstance(customer_model, str):
             customer_model = self.get_customer_by_number(customer_number=customer_model)
         else:
-            raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
+            msg = 'CustomerModel must be an instance of CustomerModel, UUID or str.'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -1957,7 +1965,8 @@ class EntityModelAbstract(MP_Node,
         elif isinstance(customer_model, UUID):
             customer_model = self.get_customer_by_uuid(customer_uuid=customer_model)
         else:
-            raise EntityModelValidationError('CustomerModel must be an instance of CustomerModel, UUID or str.')
+            msg = 'CustomerModel must be an instance of CustomerModel, UUID or str.'
+            raise EntityModelValidationError(msg)
 
         EstimateModel = lazy_loader.get_estimate_model()
         estimate_model = EstimateModel(terms=contract_terms)
@@ -2076,7 +2085,8 @@ class EntityModelAbstract(MP_Node,
         for item_model in item_qs:
             if item_model.entity_id != self.uuid:
                 if raise_exception:
-                    raise EntityModelValidationError(f'Invalid item_qs provided for entity {self.slug}...')
+                    msg = f'Invalid item_qs provided for entity {self.slug}...'
+                    raise EntityModelValidationError(msg)
                 return False
         return True
 
@@ -2197,7 +2207,8 @@ class EntityModelAbstract(MP_Node,
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
         elif isinstance(uom_model, UnitOfMeasureModel):
             if uom_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2272,7 +2283,8 @@ class EntityModelAbstract(MP_Node,
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
         elif isinstance(uom_model, UnitOfMeasureModel):
             if uom_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2351,7 +2363,8 @@ class EntityModelAbstract(MP_Node,
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
         elif isinstance(uom_model, UnitOfMeasureModel):
             if uom_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2363,7 +2376,8 @@ class EntityModelAbstract(MP_Node,
             expense_account = account_model_qs.get(uuid__exact=expense_account)
         elif isinstance(expense_account, AccountModel):
             if expense_account.coa_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+                msg = f'Invalid account for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
 
         expense_item_model = ItemModel(
             entity=self,
@@ -2452,7 +2466,8 @@ class EntityModelAbstract(MP_Node,
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
         elif isinstance(uom_model, UnitOfMeasureModel):
             if uom_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid UnitOfMeasureModel for entity {self.slug}...')
+                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2464,9 +2479,11 @@ class EntityModelAbstract(MP_Node,
             inventory_account = account_model_qs.get(uuid__exact=inventory_account)
         elif isinstance(inventory_account, AccountModel):
             if inventory_account.coa_model.entity_id != self.uuid:
-                raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
+                msg = f'Invalid account for entity {self.slug}...'
+                raise EntityModelValidationError(msg)
             if inventory_account.coa_model_id != coa_model.uuid:
-                raise EntityModelValidationError(f'Invalid account for coa {coa_model.slug}...')
+                msg = f'Invalid account for coa {coa_model.slug}...'
+                raise EntityModelValidationError(msg)
 
         inventory_item_model = ItemModel(
             name=name,

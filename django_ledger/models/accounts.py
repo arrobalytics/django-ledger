@@ -924,7 +924,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             return '5'
         if self.is_expense():
             return '6'
-        raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
+        msg = f'Invalid role match for role {self.role}...'
+        raise AccountModelValidationError(msg)
 
     def get_root_role(self) -> str:
         """
@@ -954,7 +955,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             return ROOT_EXPENSES
         if self.is_coa_root():
             return ROOT_COA
-        raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
+        msg = f'Invalid role match for role {self.role}...'
+        raise AccountModelValidationError(msg)
 
     def get_account_move_choice_queryset(self):
         """
@@ -1017,7 +1019,8 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             A randomly generated code prefixed with a role-based prefix.
         """
         if not self.role:
-            raise AccountModelValidationError('Must assign account role before generate random code')
+            msg = 'Must assign account role before generate random code'
+            raise AccountModelValidationError(msg)
 
         prefix = self.get_code_prefix()
         ri = randint(10000, 99999)
@@ -1099,8 +1102,11 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         if DJANGO_LEDGER_ACCOUNT_CODE_USE_PREFIX:
             pf = self.get_code_prefix()
             if self.code[0] != pf:
-                raise AccountModelValidationError(f'Account {self.get_role_display()} code {self.code} '
-                                                  f'must start with {pf} for CoA consistency')
+                msg = (
+                    f'Account {self.get_role_display()} code {self.code} '
+                    f'must start with {pf} for CoA consistency'
+                )
+                raise AccountModelValidationError(msg)
 
 
 class AccountModel(AccountModelAbstract):

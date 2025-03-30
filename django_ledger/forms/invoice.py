@@ -209,7 +209,8 @@ class InvoiceItemForm(ModelForm):
         if self.instance.item_model_id:
             item_model: ItemModel = self.instance.item_model
             if item_model.for_inventory and quantity > item_model.inventory_received:
-                raise ValidationError(f'Cannot invoice more than {item_model.inventory_received} units available.')
+                msg = f'Cannot invoice more than {item_model.inventory_received} units available.'
+                raise ValidationError(msg)
         return cleaned_data
 
     class Meta:

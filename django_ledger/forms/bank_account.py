@@ -32,7 +32,8 @@ class BankAccountCreateForm(ModelForm):
         account_number = self.cleaned_data['account_number']
 
         if not account_model:
-            raise ValidationError('Must select a bank account.')
+            msg = 'Must select a bank account.'
+            raise ValidationError(msg)
 
         # catching unique database constraint...
         if BankAccountModel.objects.filter(
@@ -40,7 +41,8 @@ class BankAccountCreateForm(ModelForm):
                 routing_number__exact=routing_number,
                 account_number__exact=account_number
         ).exists():
-            raise ValidationError('Duplicate bank account model.')
+            msg = 'Duplicate bank account model.'
+            raise ValidationError(msg)
 
     class Meta:
         model = BankAccountModel
@@ -119,7 +121,8 @@ class BankAccountUpdateForm(BankAccountCreateForm):
         cash_account = self.cleaned_data['account_model']
 
         if not cash_account:
-            raise ValidationError('Must select a bank account.')
+            msg = 'Must select a bank account.'
+            raise ValidationError(msg)
 
         # catching unique database constraint...
         if 'cash_account' in self.changed_data:
@@ -128,4 +131,5 @@ class BankAccountUpdateForm(BankAccountCreateForm):
                     routing_number__exact=self.instance.routing_number,
                     account_number__exact=self.instance.account_number
             ).exists():
-                raise ValidationError('Duplicate bank account model.')
+                msg = 'Duplicate bank account model.'
+                raise ValidationError(msg)

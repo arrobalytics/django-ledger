@@ -234,9 +234,8 @@ def transactions_table(object_type: JournalEntryModel | BillModel | InvoiceModel
     elif isinstance(object_type, BillModel) or isinstance(object_type, InvoiceModel):
         transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     else:
-        raise ValidationError(
-            f'Cannot handle object of type {type(object_type)} to get transaction model queryset'
-        )
+        msg = f'Cannot handle object of type {type(object_type)} to get transaction model queryset'
+        raise ValidationError(msg)
 
     total_credits = sum(tx.amount for tx in transaction_model_qs if tx.is_credit())
     total_debits = sum(tx.amount for tx in transaction_model_qs if tx.is_debit())

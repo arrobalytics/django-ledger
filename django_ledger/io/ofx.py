@@ -31,7 +31,8 @@ class OFXFileManager:
             self.parse_ofx()
 
         if self.NUMBER_OF_STATEMENTS != 1:
-            raise OFXImportValidationError('Only one account per OFX file is supported.')
+            msg = 'Only one account per OFX file is supported.'
+            raise OFXImportValidationError(msg)
 
         self.BANK_NAME = self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None
         self.FID = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None

@@ -384,7 +384,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 entity_model = entity_slug
             else:
                 if raise_exception:
-                    raise EstimateModelValidationError('entity_slug must be an instance of str or EntityModel')
+                    msg = 'entity_slug must be an instance of str or EntityModel'
+                    raise EstimateModelValidationError(msg)
                 return None
 
             if estimate_title:
@@ -620,7 +621,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_draft():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as draft...')
+                msg = f'Estimate {self.estimate_number} cannot be marked as draft...'
+                raise EstimateModelValidationError(msg)
             return
         self.status = self.CONTRACT_STATUS_DRAFT
         self.clean()
@@ -693,7 +695,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_review():
             if raise_exception:
-                raise ValidationError(f'Estimate {self.estimate_number} cannot be marked as In Review...')
+                msg = f'Estimate {self.estimate_number} cannot be marked as In Review...'
+                raise ValidationError(msg)
             return
 
         if not itemtxs_qs:
@@ -779,9 +782,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_approve():
             if raise_exception:
-                raise EstimateModelValidationError(
-                    f'Estimate {self.estimate_number} cannot be marked as approved.'
-                )
+                msg = f'Estimate {self.estimate_number} cannot be marked as approved.'
+                raise EstimateModelValidationError(msg)
             return
 
         if not date_approved:
@@ -855,7 +857,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_complete():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be marked as completed.')
+                msg = f'Estimate {self.estimate_number} cannot be marked as completed.'
+                raise EstimateModelValidationError(msg)
             return
         if not date_completed:
             date_completed = get_localdate()
@@ -932,7 +935,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_cancel():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be canceled...')
+                msg = f'Estimate {self.estimate_number} cannot be canceled...'
+                raise EstimateModelValidationError(msg)
             return
         if not date_canceled:
             date_canceled = get_localdate()
@@ -1007,7 +1011,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         if not self.can_void():
             if raise_exception:
-                raise EstimateModelValidationError(f'Estimate {self.estimate_number} cannot be void...')
+                msg = f'Estimate {self.estimate_number} cannot be void...'
+                raise EstimateModelValidationError(msg)
             return
 
         if not date_void:
@@ -1108,7 +1113,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             i.ce_model_id == self.uuid for i in queryset
         ])
         if not valid:
-            raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
+            msg = f'Invalid queryset. All items must be assigned to Bill {self.uuid}'
+            raise EstimateModelValidationError(msg)
 
     def get_itemtxs_data(self,
                          queryset: ItemTransactionModelQuerySet | list[ItemTransactionModel] | None = None,
@@ -1359,7 +1365,8 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             i.ce_model_id == self.uuid for i in itemtxs_qs
         ])
         if not valid:
-            raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Estimate {self.uuid}')
+            msg = f'Invalid queryset. All items must be assigned to Estimate {self.uuid}'
+            raise EstimateModelValidationError(msg)
 
     def validate_po_queryset(self, po_qs: PurchaseOrderModelQuerySet) -> PurchaseOrderModelQuerySet:
         """

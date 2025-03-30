@@ -113,7 +113,8 @@ class BaseBankAccountModelActionView(BankAccountModelModelBaseView,
     def get(self, request, *args, **kwargs):
         kwargs['user_model'] = self.request.user
         if not self.action_name:
-            raise ImproperlyConfigured('View attribute action_name is required.')
+            msg = 'View attribute action_name is required.'
+            raise ImproperlyConfigured(msg)
         response = super(BaseBankAccountModelActionView, self).get(request, *args, **kwargs)
         ba_model: BankAccountModel = self.get_object()
 

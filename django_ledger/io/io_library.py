@@ -337,7 +337,8 @@ class IOCursor:
                 self.commit_plan[k] = txs
 
             else:
-                raise IOLibraryError(f'Unsupported ledger of type {type(k)}')
+                msg = f'Unsupported ledger of type {type(k)}'
+                raise IOLibraryError(msg)
 
         instructions = self.compile_instructions()
         account_codes = set(tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items()))

@@ -119,7 +119,8 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         is_posted = kwargs.get('posted')
         if is_posted and not force_create:
-            raise FieldError("Cannot create Journal Entries in a posted state without 'force_create=True'.")
+            msg = "Cannot create Journal Entries in a posted state without 'force_create=True'."
+            raise FieldError(msg)
 
         obj = self.model(**kwargs)
         self._for_write = True
@@ -699,13 +700,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             JournalEntryValidationError: If validation fails and raise_exception is True.
         """
         if not isinstance(txs_qs, TransactionModelQuerySet):
-            raise JournalEntryValidationError('Must pass an instance of TransactionModelQuerySet')
+            msg = 'Must pass an instance of TransactionModelQuerySet'
+            raise JournalEntryValidationError(msg)
 
         is_valid = all(tx.journal_entry_id == self.uuid for tx in txs_qs)
         if not is_valid and raise_exception:
-            raise JournalEntryValidationError(
-                f'Invalid TransactionModelQuerySet. All transactions must be associated with Journal Entry {self.uuid}.'
-            )
+            msg = f'Invalid TransactionModelQuerySet. All transactions must be associated with Journal Entry {self.uuid}.'
+            raise JournalEntryValidationError(msg)
         return is_valid
 
     def is_cash_involved(self, txs_qs: TransactionModelQuerySet | None = None) -> bool:
@@ -822,8 +823,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 return
         if not self.can_post(ignore_verify=False):
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot post.'
-                                                  f' Is verified: {self.is_verified()}')
+                msg = f'Journal Entry {self.uuid} cannot post. Is verified: {self.is_verified()}'
+                raise JournalEntryValidationError(msg)
             return
         if not self.is_posted():
             self.posted = True
@@ -862,7 +863,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_unpost():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} cannot unpost.')
+                msg = f'Journal Entry {self.uuid} cannot unpost.'
+                raise JournalEntryValidationError(msg)
             return
         if self.is_posted():
             self.posted = False
@@ -904,7 +906,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not self.can_lock():
             if raise_exception:
                 if raise_exception:
-                    raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already locked.')
+                    msg = f'Journal Entry {self.uuid} is already locked.'
+                    raise JournalEntryValidationError(msg)
                 return
         if not self.is_locked():
             self.generate_activity(force_update=True)
@@ -938,7 +941,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if not self.can_unlock():
             if raise_exception:
-                raise JournalEntryValidationError(f'Journal Entry {self.uuid} is already unlocked.')
+                msg = f'Journal Entry {self.uuid} is already unlocked.'
+                raise JournalEntryValidationError(msg)
             return
         if self.is_locked():
             self.locked = False
@@ -1010,13 +1014,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if not txs_qs:
             txs_qs = self.get_transaction_queryset(select_accounts=False)
         elif not isinstance(txs_qs, TransactionModelQuerySet):
-            raise JournalEntryValidationError(
-                f'Expected a TransactionModelQuerySet, got {type(txs_qs).__name__}'
-            )
+            msg = f'Expected a TransactionModelQuerySet, got {type(txs_qs).__name__}'
+            raise JournalEntryValidationError(msg )
         elif not self.is_txs_qs_valid(txs_qs):
-            raise JournalEntryValidationError(
-                'Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry.'
-            )
+            msg = 'Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry.'
+            raise JournalEntryValidationError(msg)
 
         balances = txs_qs.values('tx_type').annotate(
             amount__sum=Coalesce(Sum('amount'), Decimal('0.00'), output_field=models.DecimalField())
@@ -1171,8 +1173,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             is_operating
         ]) > 1:
             if raise_exception:
-                raise JournalEntryValidationError(
-                    f'Multiple activities detected in roles JE {role_set}.')
+                msg = f'Multiple activities detected in roles JE {role_set}.'
+                raise JournalEntryValidationError(msg)
         elif is_investing_for_ppe:
             activity = cls.INVESTING_PPE
         elif is_investing_for_securities:
@@ -1188,9 +1190,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         elif is_operating:
             activity = cls.OPERATING_ACTIVITY
         elif raise_exception:
-            raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
-                                              'Split into multiple Journal Entries or check'
-                                              ' your account selection.')
+            msg = (
+                f'No activity match for roles {role_set}.'
+                'Split into multiple Journal Entries or check'
+                ' your account selection.'
+            )
+            raise JournalEntryValidationError(msg)
         return activity
 
     def generate_activity(self,
@@ -1388,7 +1393,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             try:
                 is_balance_valid = self.is_balance_valid(txs_qs=txs_qs)
                 if not is_balance_valid:
-                    raise JournalEntryValidationError('Transaction balances are not valid!')
+                    msg = 'Transaction balances are not valid!'
+                    raise JournalEntryValidationError(msg)
             except JournalEntryValidationError as e:
                 raise e
 
@@ -1397,7 +1403,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             try:
                 is_coa_valid = self.is_txs_qs_coa_valid(txs_qs=txs_qs)
                 if not is_coa_valid:
-                    raise JournalEntryValidationError('Transaction COA is not valid!')
+                    msg = 'Transaction COA is not valid!'
+                    raise JournalEntryValidationError(msg)
             except JournalEntryValidationError as e:
                 raise e
 
@@ -1538,9 +1545,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         except ValidationError as e:
             if self.can_unpost():
                 self.mark_as_unposted(raise_exception=True)
-            raise JournalEntryValidationError(
-                f'Error validating Journal Entry ID: {self.uuid}: {e.message}'
-            )
+            msg = f'Error validating Journal Entry ID: {self.uuid}: {e.message}'
+            raise JournalEntryValidationError(msg)
         except Exception as e:
             # Safety net for unexpected errors during save
             self.posted = False
