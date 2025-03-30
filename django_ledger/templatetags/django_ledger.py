@@ -357,7 +357,7 @@ def default_entity(context):
             form_id=identity,
             current_entity_uuid=entity_uuid
         )
-    except TypeError or KeyError:
+    except (TypeError, KeyError) as e:
         default_entity_form = EntityFilterForm(
             user_model=user,
             form_id=identity,
