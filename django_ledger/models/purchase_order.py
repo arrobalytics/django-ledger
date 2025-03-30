@@ -1164,6 +1164,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         EntityModel = lazy_loader.get_entity_model()
         entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
         fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
+
         try:
             LOOKUP = {
                 'entity_model_id__exact': self.entity_id,
@@ -1178,7 +1179,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
             state_model.sequence = F('sequence') + 1
             state_model.save()
             state_model.refresh_from_db()
-            return state_model
+
         except ObjectDoesNotExist:
             EntityModel = lazy_loader.get_entity_model()
             entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
@@ -1192,10 +1193,13 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 'sequence': 1
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
                 raise e
+
+        else:
+            return state_model
 
     def generate_po_number(self, commit: bool = False) -> str:
         """

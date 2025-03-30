@@ -1746,7 +1746,7 @@ class InvoiceModelAbstract(
             state_model.sequence = F('sequence') + 1
             state_model.save()
             state_model.refresh_from_db()
-            return state_model
+
         except ObjectDoesNotExist:
             EntityModel = lazy_loader.get_entity_model()
             entity_model = EntityModel.objects.get(uuid__exact=self.ledger.entity_id)
@@ -1759,12 +1759,13 @@ class InvoiceModelAbstract(
                 'key': EntityStateModel.KEY_INVOICE,
                 'sequence': 1
             }
-
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
                 raise e
+        else:
+            return state_model
 
     def generate_invoice_number(self, commit: bool = False) -> str:
         """

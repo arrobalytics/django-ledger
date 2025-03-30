@@ -247,9 +247,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
             state_model.save()
             state_model.refresh_from_db()
 
-            return state_model
         except ObjectDoesNotExist:
-
             LOOKUP = {
                 'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
@@ -258,10 +256,12 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
                 'sequence': 1
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
-                raise e
+                raise e from e
+        else:
+            return state_model
 
     def generate_customer_number(self, commit: bool = False) -> str:
         """

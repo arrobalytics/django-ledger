@@ -251,9 +251,7 @@ class VendorModelAbstract(ContactInfoMixIn,
             state_model.save()
             state_model.refresh_from_db()
 
-            return state_model
         except ObjectDoesNotExist:
-
             LOOKUP = {
                 'entity_model_id': self.entity_model_id,
                 'entity_unit_id': None,
@@ -262,11 +260,12 @@ class VendorModelAbstract(ContactInfoMixIn,
                 'sequence': 1
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
                 raise e
-
+        else:
+            return state_model
     def generate_vendor_number(self, commit: bool = False) -> str:
         """
         Atomic Transaction. Generates the next Vendor Number available.

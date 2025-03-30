@@ -1036,10 +1036,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 try:
                     self.activity = JournalEntryModel.get_activity_from_roles(role_set=role_set)
                     self.save(update_fields=['activity'])
-                    return self.activity
                 except ValidationError as e:
                     if raise_exception:
-                        raise e
+                        raise e from e
+                else:
+                    return self.activity
+
         return self.activity
 
     def get_prospect_je_activity(self) -> str | None:
@@ -1105,11 +1107,13 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 if activity is None:
                     return False
                 self.activity = activity
-                return True
             except ValidationError as e:
                 if raise_exception:
                     raise e
                 return False
+            else:
+                return True
+
         return True
 
     def migrate(self, split_txs: bool = False):

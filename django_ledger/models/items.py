@@ -752,16 +752,13 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 'entity_model_id__exact': self.entity_id,
                 'key__exact': EntityStateModel.KEY_ITEM
             }
-
             state_model_qs = EntityStateModel.objects.filter(**LOOKUP).select_for_update()
             state_model = state_model_qs.get()
             state_model.sequence = F('sequence') + 1
             state_model.save()
             state_model.refresh_from_db()
 
-            return state_model
         except ObjectDoesNotExist:
-
             LOOKUP = {
                 'entity_model_id': self.entity_id,
                 'entity_unit_id': None,
@@ -770,10 +767,13 @@ class ItemModelAbstract(CreateUpdateMixIn):
                 'sequence': 1
             }
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
                 raise e
+        else:
+            return state_model
+
 
     def generate_item_number(self, commit: bool = False) -> str:
         """

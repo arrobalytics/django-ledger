@@ -1319,11 +1319,12 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             gm = float(self.get_revenue_estimate()) / float(self.get_cost_estimate()) - 1.00
             if as_percent:
                 return gm * 100
-            return gm
         except ZeroDivisionError as e:
             if raise_exception:
-                raise EstimateModelValidationError(message=_('Cannot compute gross margin, total cost is zero.'))
+                raise EstimateModelValidationError(message=_('Cannot compute gross margin, total cost is zero.')) from e
             return 0.00
+        else:
+            return gm
 
     def get_status_action_date(self) -> date:
         """
@@ -1535,7 +1536,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             state_model.sequence = F('sequence') + 1
             state_model.save()
             state_model.refresh_from_db()
-            return state_model
+
         except ObjectDoesNotExist:
             entity_model = EntityModel.objects.get(uuid__exact=self.entity_id)
             fy_key = entity_model.get_fy_for_date(dt=self.date_draft)
@@ -1547,12 +1548,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 'key': EntityStateModel.KEY_ESTIMATE,
                 'sequence': 1
             }
-
             state_model = EntityStateModel.objects.create(**LOOKUP)
-            return state_model
+
         except IntegrityError as e:
             if raise_exception:
                 raise e
+        else:
+            return state_model
 
     def generate_estimate_number(self, commit: bool = False) -> str:
         """
