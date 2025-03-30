@@ -1,5 +1,5 @@
-import os
 from decimal import Decimal
+from pathlib import Path
 
 from django_ledger.io.ofx import OFXFileManager
 from django_ledger.tests.base import DjangoLedgerBaseTest
@@ -9,7 +9,7 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
     BASE_PATH = 'django_ledger/tests/test_io_ofx/samples/'
 
     def get_sample_ofx(self, ofx_sample_name: str):
-        ofx = OFXFileManager(ofx_file_or_path=os.path.join(self.BASE_PATH, ofx_sample_name))
+        ofx = OFXFileManager(ofx_file_or_path=Path(self.BASE_PATH) / ofx_sample_name)
 
         return ofx
 
