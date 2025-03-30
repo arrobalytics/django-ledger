@@ -994,7 +994,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         self.clean()
 
         if commit:
-            # todo: what if PO items is list???...
+            # TODO: what if PO items is list???...
             po_items.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
             self.save(update_fields=[
                 'date_fulfilled',

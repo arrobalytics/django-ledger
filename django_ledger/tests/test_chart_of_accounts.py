@@ -42,5 +42,5 @@ class ChartOfAccountsTests(DjangoLedgerBaseTest):
         for account in account_model_qs:
             self.assertTrue(account.code in ROOT_ACCOUNT_CODES)
 
-    # todo: cannot transact on root account
-    # todo: validate parent/child relationship...
+    # TODO: cannot transact on root account
+    # TODO: validate parent/child relationship...

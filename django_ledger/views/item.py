@@ -31,7 +31,7 @@ from django_ledger.forms.item import (
 from django_ledger.models import EntityModel, ItemModel, UnitOfMeasureModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
-# todo: Create delete views...
+# TODO: Create delete views...
 
 # UNIT OF MEASURE VIEWS....
 class UnitOfMeasureModelModelBaseView(DjangoLedgerSecurityMixIn):
@@ -258,7 +258,7 @@ class ProductDeleteView(ProductItemModelModelBaseView, DeleteView):
 
     def form_valid(self, form):
         try:
-            # todo: add success message...
+            # TODO: add success message...
             return super(ProductDeleteView, self).form_valid(form)
         except RestrictedError:
 
@@ -379,7 +379,7 @@ class ServiceDeleteView(ServiceItemModelModelBaseView, DeleteView):
 
     def form_valid(self, form):
         try:
-            # todo: add success message...
+            # TODO: add success message...
             return super(ServiceDeleteView, self).form_valid(form)
         except RestrictedError:
 

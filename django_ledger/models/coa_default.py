@@ -128,7 +128,7 @@ from django_ledger.exceptions import DjangoLedgerConfigurationError
 from django_ledger.io import ROOT_ASSETS, ROOT_CAPITAL, ROOT_COGS, ROOT_EXPENSES, ROOT_INCOME, ROOT_LIABILITIES, roles
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_COA
 
-# todo: include a function to use a user-defined CHART_OF_ACCOUNTS option.
+# TODO: include a function to use a user-defined CHART_OF_ACCOUNTS option.
 
 DEFAULT_CHART_OF_ACCOUNTS = [
 

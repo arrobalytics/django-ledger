@@ -92,7 +92,7 @@ class ChartOfAccountModelUpdateView(ChartOfAccountModelModelBaseViewMixIn, Updat
         return chart_of_accounts_model.get_coa_list_url()
 
 
-# todo: centralize this functionality into a separate class for ALL Action views...
+# TODO: centralize this functionality into a separate class for ALL Action views...
 class CharOfAccountModelActionView(ChartOfAccountModelModelBaseViewMixIn,
                                    RedirectView,
                                    SingleObjectMixin):

@@ -131,7 +131,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     unit_abbr = models.SlugField(max_length=10, verbose_name=_('UoM Abbreviation'))
     is_active = models.BooleanField(default=True, verbose_name=_('Is Active'))
 
-    # todo: rename to entity_model
+    # TODO: rename to entity_model
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -610,7 +610,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
                                        default=dict,
                                        verbose_name=_('Item Additional Info'))
 
-    # todo: rename to entity_model...
+    # TODO: rename to entity_model...
     entity = models.ForeignKey('django_ledger.EntityModel',
                                editable=False,
                                on_delete=models.CASCADE,
@@ -938,7 +938,7 @@ class ItemTransactionModelManager(Manager):
         qs = self.get_queryset()
         return qs.filter(item_model__entity__slug__exact=entity_slug)
 
-    # Todo move this to QuerySet....
+    # TODO move this to QuerySet....
     def inventory_count(self, entity_slug):
         PurchaseOrderModel = lazy_loader.get_purchase_order_model()
         qs = self.for_entity_inventory(entity_slug)

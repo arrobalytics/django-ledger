@@ -218,7 +218,7 @@ class BillModelListView(BillModelModelBaseView, ArchiveIndexView):
     context_object_name = 'bills'
     PAGE_TITLE = _('Bill List')
 
-    # todo: can this be status date?...
+    # TODO: can this be status date?...
     date_field = 'date_draft'
     paginate_by = 20
     paginate_orphans = 2

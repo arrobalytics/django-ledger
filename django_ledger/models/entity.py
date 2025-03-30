@@ -1048,7 +1048,7 @@ class EntityModelAbstract(MP_Node,
         ChartOfAccountModel
             The newly created chart of accounts model.
         """
-        # todo: this logic will generate always the same slug...
+        # TODO: this logic will generate always the same slug...
         if not coa_name:
             coa_name = 'Default CoA'
 
@@ -2538,7 +2538,7 @@ class EntityModelAbstract(MP_Node,
             } for i in recorded_qs
         }
 
-        # todo: change this to use a groupby then sum...
+        # TODO: change this to use a groupby then sum...
         item_ids = list(set(list(counted_map.keys()) + list(recorded_map)))
         adjustment = defaultdict(lambda: {
             # keeps track of inventory recounts...

@@ -175,7 +175,7 @@ class JournalEntryDeleteView(JournalEntryModelModelBaseView, DeleteView):
         return je_model.get_journal_entry_list_url()
 
 
-# todo:.... move this to transaction list view?.....
+# TODO:.... move this to transaction list view?.....
 class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView):
     template_name = 'django_ledger/journal_entry/je_detail_txs.html'
     PAGE_TITLE = _('Edit Transactions')

@@ -99,4 +99,4 @@ class CustomerModelUpdateView(DjangoLedgerSecurityMixIn,
         form.save()
         return super().form_valid(form)
 
-# todo: add CustomerDeleteView
+# TODO: add CustomerDeleteView

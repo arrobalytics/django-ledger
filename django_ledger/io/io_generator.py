@@ -688,7 +688,7 @@ class EntityDataGenerator(LoggingMixIn):
                                         po_i.po_item_status = ItemTransactionModel.STATUS_RECEIVED
                                         po_i.full_clean()
 
-                                    # todo: can pass po items??..
+                                    # TODO: can pass po items??..
                                     po_model.itemtransactionmodel_set.bulk_update(po_items,
                                                                                   fields=[
                                                                                       'po_item_status',

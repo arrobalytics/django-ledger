@@ -250,7 +250,7 @@ class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
         return dt, dt
 
 
-# todo: need to incorporate in base view...
+# TODO: need to incorporate in base view...
 class FromToDatesParseMixIn:
     DJL_FROM_DATE_PARAM: str = 'from_date'
     DJL_TO_DATE_PARAM: str = 'to_date'
@@ -468,7 +468,7 @@ class DigestContextMixIn:
                 context[self.get_io_manager_bounded_context_name()] = io_digest_equity
                 context[self.get_io_digest_bounded_context_name()] = io_digest_equity.get_io_data()
 
-            # todo: how is this used??....
+            # TODO: how is this used??....
             context['date_filter'] = to_date
         return context
 

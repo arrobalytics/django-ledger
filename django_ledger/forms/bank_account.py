@@ -14,7 +14,7 @@ class BankAccountCreateForm(ModelForm):
         self.ENTITY_SLUG = entity_slug
         self.USER_MODEL = user_model
 
-        # todo: only the accounts that do not hava an associated bank account should be available to pick from...
+        # TODO: only the accounts that do not hava an associated bank account should be available to pick from...
         account_qs = AccountModel.objects.for_entity(
             user_model=self.USER_MODEL,
             entity_model=self.ENTITY_SLUG

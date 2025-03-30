@@ -39,7 +39,7 @@ class PnLAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
                 from_date=self.request.GET.get('fromDate'),
                 to_date=self.request.GET.get('toDate'),
 
-                # todo: For PnL to display proper period values must not use closing entries.
+                # TODO: For PnL to display proper period values must not use closing entries.
                 use_closing_entries=False
             )
 
@@ -76,7 +76,7 @@ class PayableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).unpaid()
 
-            # todo: implement this...
+            # TODO: implement this...
             # unit_slug = self.get_unit_slug()
             # if unit_slug:
             #     bill_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)
@@ -108,7 +108,7 @@ class ReceivableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
                 user_model=request.user,
             ).unpaid()
 
-            # todo: implement this...
+            # TODO: implement this...
             # unit_slug = self.get_unit_slug()
             # if unit_slug:
             #     invoice_qs.filter(ledger__journal_entry__entity_unit__slug__exact=unit_slug)

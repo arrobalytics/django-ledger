@@ -389,7 +389,7 @@ def session_entity_name(context, request=None):
     return entity_name
 
 
-# todo: rename template to activity_form_filter.
+# TODO: rename template to activity_form_filter.
 @register.inclusion_tag('django_ledger/components/activity_form.html', takes_context=True)
 def activity_filter(context):
     request = context['request']

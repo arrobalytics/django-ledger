@@ -595,7 +595,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         return account_model
 
     # ACTIONS -----
-    # todo: use these methods once multi CoA features are enabled...
+    # TODO: use these methods once multi CoA features are enabled...
     def lock_all_accounts(self) -> AccountModelQuerySet:
         account_qs = self.get_coa_accounts()
         account_qs.update(locked=True)

@@ -1262,7 +1262,7 @@ class IODatabaseMixIn:
             )
             io_state = group_mgr.digest()
 
-            # todo: migrate this to group manager...
+            # TODO: migrate this to group manager...
             io_state['group_account']['GROUP_ASSETS'].sort(
                 key=lambda acc: roles_module.ROLES_ORDER_ASSETS.index(acc['role']))
             io_state['group_account']['GROUP_LIABILITIES'].sort(
@@ -1430,7 +1430,7 @@ class IODatabaseMixIn:
             )
             je_model.save(verify=False)
 
-        # todo: add method to process list of transaction models...
+        # TODO: add method to process list of transaction models...
         txs_models = [
             (
                 TransactionModel(

@@ -351,7 +351,7 @@ class BillModelAbstract(
     The different bill status options and their representation in the Database.
     """
 
-    # todo: implement Void Bill (& Invoice)....
+    # TODO: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
     bill_number = models.SlugField(max_length=20, verbose_name=_('Bill Number'), editable=False)
     bill_status = models.CharField(max_length=10,
@@ -456,7 +456,7 @@ class BillModelAbstract(
         A tuple of LedgerModel, BillModel
         """
 
-        # todo: add raise_exception flag, check if this is consistent...
+        # TODO: add raise_exception flag, check if this is consistent...
 
         if not self.is_configured():
             if isinstance(entity_slug, str):
@@ -793,9 +793,9 @@ class BillModelAbstract(
         """
         return self.is_approved()
 
-    # todo: check on invoice
-    # todo: check invoice canceled workflow...
-    # todo: check invoice card for canceled
+    # TODO: check on invoice
+    # TODO: check invoice canceled workflow...
+    # TODO: check invoice card for canceled
     def can_delete(self) -> bool:
         """
         Checks if the BillModel can be deleted.

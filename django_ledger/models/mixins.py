@@ -200,7 +200,7 @@ class AccrualMixIn(models.Model):
 
     accrue = models.BooleanField(default=False, verbose_name=_('Accrue'))
 
-    # todo: change progress method from percent to currency amount and FloatField??...
+    # TODO: change progress method from percent to currency amount and FloatField??...
     progress = models.DecimalField(default=0,
                                    verbose_name=_('Progress Amount'),
                                    decimal_places=2,
@@ -210,7 +210,7 @@ class AccrualMixIn(models.Model):
                                        MaxValueValidator(limit_value=1)
                                    ])
 
-    # todo: rename to ledger_model...
+    # TODO: rename to ledger_model...
     ledger = models.OneToOneField('django_ledger.LedgerModel',
                                   editable=False,
                                   verbose_name=_('Ledger'),
@@ -228,7 +228,7 @@ class AccrualMixIn(models.Model):
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
 
-    # todo: rename to payable account...
+    # TODO: rename to payable account...
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.RESTRICT,
                                          blank=True,
@@ -542,7 +542,7 @@ class AccrualMixIn(models.Model):
         ledger_model.post(commit, raise_exception=raise_exception)
 
     def migrate_state(self,
-                      # todo: remove usermodel param...?
+                      # TODO: remove usermodel param...?
                       user_model,
                       entity_slug: str,
                       itemtxs_qs: Optional[QuerySet] = None,
@@ -586,7 +586,7 @@ class AccrualMixIn(models.Model):
         if self.can_migrate() or force_migrate:
 
             # getting current ledger state
-            # todo: validate itemtxs_qs...?
+            # TODO: validate itemtxs_qs...?
             io_digest = self.ledger.digest(
                 user_model=user_model,
                 entity_slug=entity_slug,
@@ -1037,7 +1037,7 @@ class PaymentTermsMixIn(models.Model):
                 return 0
             return td.days
 
-    # todo: is this necessary?...
+    # TODO: is this necessary?...
     def net_due_group(self):
         """
         Determines the group where the financial instrument falls based on the number of days until the due date.
