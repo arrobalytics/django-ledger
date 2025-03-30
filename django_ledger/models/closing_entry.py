@@ -127,7 +127,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             k: sum(v.balance for v in l) for k, l in ce_txs_gb
         }
 
-        if len(ce_txs_sum) and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
+        if ce_txs_sum and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
             raise ClosingEntryValidationError(
                 message=f'Invalid transactions. Credits {ce_txs_sum[TransactionModel.CREDIT]} '
                         f'do not equal Debits {ce_txs_sum[TransactionModel.DEBIT]}'

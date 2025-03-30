@@ -196,8 +196,7 @@ class BalanceSheetReport(BaseReportSupport):
             w=20,
             h=2,
             align='R',
-            txt='{s}{tot}'.format(r='Retained Earnings',
-                                  s=currency_symbol(),
+            txt='{s}{tot}'.format(s=currency_symbol(),
                                   tot=currency_format(bs_data['retained_earnings_balance']))
         )
         self.ln(h=3)
