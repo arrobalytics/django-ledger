@@ -86,7 +86,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
             if po_item_uuids_qry_param:
                 try:
                     po_item_uuids = po_item_uuids_qry_param.split(',')
-                except:
+                except ValueError:
                     return HttpResponseBadRequest()
             else:
                 return HttpResponseBadRequest()
