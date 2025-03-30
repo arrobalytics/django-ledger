@@ -889,7 +889,7 @@ class BillModelAbstract(
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise BillModelValidationError(f'Cannot bind estimate that is not approved.')
+            raise BillModelValidationError('Cannot bind estimate that is not approved.')
         return all([
             is_approved
         ])
@@ -915,12 +915,12 @@ class BillModelAbstract(
         """
         if not po_model.is_approved():
             if raise_exception:
-                raise BillModelValidationError(f'Cannot bind an unapproved PO.')
+                raise BillModelValidationError('Cannot bind an unapproved PO.')
             return False
 
         if po_model.date_approved > self.date_draft:
             if raise_exception:
-                raise BillModelValidationError(f'Approved PO date cannot be greater than Bill draft date.')
+                raise BillModelValidationError('Approved PO date cannot be greater than Bill draft date.')
             return False
 
         return True

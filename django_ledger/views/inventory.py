@@ -111,7 +111,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
             messages.add_message(
                 request,
                 level=messages.INFO,
-                message=f'Successfully updated recorded inventory.',
+                message='Successfully updated recorded inventory.',
                 extra_tags='is-success'
             )
             return HttpResponseRedirect(

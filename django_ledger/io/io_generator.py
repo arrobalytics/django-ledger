@@ -227,7 +227,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.default_coa = coa_model
 
     def create_entity_units(self, nb_units: int = None):
-        self.logger.info(f'Creating entity units...')
+        self.logger.info('Creating entity units...')
         nb_units = self.NB_UNITS if not nb_units else nb_units
 
         if nb_units:
@@ -275,7 +275,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.vendor_models = VendorModel.objects.bulk_create(vendor_models, ignore_conflicts=True)
 
     def create_customers(self):
-        self.logger.info(f'Creating entity customers...')
+        self.logger.info('Creating entity customers...')
         customer_count = randint(10, 20)
         customer_models = [
             self.entity_model.create_customer(
@@ -292,7 +292,7 @@ class EntityDataGenerator(LoggingMixIn):
                     'website': self.fk.url(),
                     'active': True,
                     'hidden': False,
-                    'description': f'A cool customer description. We love customers!'
+                    'description': 'A cool customer description. We love customers!'
                 }) for _ in range(customer_count)
         ]
 
@@ -302,7 +302,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.customer_models = CustomerModel.objects.bulk_create(customer_models, ignore_conflicts=True)
 
     def create_bank_accounts(self):
-        self.logger.info(f'Creating entity accounts...')
+        self.logger.info('Creating entity accounts...')
         bank_account_models = [
 
             # creates a bank cash checking account...
@@ -339,7 +339,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.bank_account_models = BankAccountModel.objects.bulk_create(bank_account_models, ignore_conflicts=True)
 
     def create_uom_models(self):
-        self.logger.info(f'Creating entity Unit of Measures...')
+        self.logger.info('Creating entity Unit of Measures...')
 
         UOMs = {
             'unit': 'Unit',
@@ -364,7 +364,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.uom_models = UnitOfMeasureModel.objects.bulk_create(uom_models)
 
     def create_products(self):
-        self.logger.info(f'Creating entity product items...')
+        self.logger.info('Creating entity product items...')
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         product_models = list()
         for i in range(product_count):
@@ -392,7 +392,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.update_products()
 
     def create_services(self):
-        self.logger.info(f'Creating entity service items...')
+        self.logger.info('Creating entity service items...')
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         service_item_models = list()
         for i in range(product_count):
@@ -418,7 +418,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.update_services()
 
     def create_expenses(self):
-        self.logger.info(f'Creating entity expense items...')
+        self.logger.info('Creating entity expense items...')
         expense_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         expense_models = [
             ItemModel(
@@ -443,7 +443,7 @@ class EntityDataGenerator(LoggingMixIn):
         self.update_expenses()
 
     def create_inventories(self):
-        self.logger.info(f'Creating entity inventory items...')
+        self.logger.info('Creating entity inventory items...')
         inv_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
         inventory_models = [
             ItemModel(
@@ -469,19 +469,19 @@ class EntityDataGenerator(LoggingMixIn):
         self.inventory_models = ItemModel.objects.bulk_create(inventory_models)
 
     def update_products(self):
-        self.logger.info(f'Updating product catalog...')
+        self.logger.info('Updating product catalog...')
         self.product_models = self.entity_model.get_items_products()
 
     def update_services(self):
-        self.logger.info(f'Updating service catalog...')
+        self.logger.info('Updating service catalog...')
         self.service_models = self.entity_model.get_items_services()
 
     def update_inventory(self):
-        self.logger.info(f'Updating inventory...')
+        self.logger.info('Updating inventory...')
         self.inventory_models = self.entity_model.get_items_inventory()
 
     def update_expenses(self):
-        self.logger.info(f'Updating expenses...')
+        self.logger.info('Updating expenses...')
         self.expense_models = self.entity_model.get_items_expenses()
 
     def create_estimate(self, date_draft: date):
@@ -801,7 +801,7 @@ class EntityDataGenerator(LoggingMixIn):
 
     def fund_entity(self):
 
-        self.logger.info(f'Funding entity...')
+        self.logger.info('Funding entity...')
         capital_acc = choice(self.accounts_by_role[EQUITY_CAPITAL])
         cash_acc = choice(self.bank_account_models).account_model
 
@@ -824,7 +824,7 @@ class EntityDataGenerator(LoggingMixIn):
         )
 
     def recount_inventory(self):
-        self.logger.info(f'Recounting inventory...')
+        self.logger.info('Recounting inventory...')
         self.entity_model.update_inventory(
             # user_model=self.user_model,
             commit=True

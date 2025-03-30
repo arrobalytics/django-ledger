@@ -364,19 +364,19 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
             if ledger_model.locked:
                 messages.add_message(self.request,
                                      messages.ERROR,
-                                     f'Warning! This bill is locked. Must unlock before making any changes.',
+                                     'Warning! This bill is locked. Must unlock before making any changes.',
                                      extra_tags='is-danger')
 
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
-                                 f'Warning! This bill is locked. Must unlock before making any changes.',
+                                 'Warning! This bill is locked. Must unlock before making any changes.',
                                  extra_tags='is-danger')
 
         if not ledger_model.is_posted():
             messages.add_message(self.request,
                                  messages.INFO,
-                                 f'This bill has not been posted. Must post to see ledger changes.',
+                                 'This bill has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
         itemtxs_qs = itemtxs_formset.get_queryset() if itemtxs_formset else None

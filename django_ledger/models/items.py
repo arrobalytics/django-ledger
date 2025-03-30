@@ -822,7 +822,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             ]):
                 raise ItemModelValidationError(_('Products must have Inventory, COGS & Earnings accounts.'))
             if self.is_labor():
-                raise ItemModelValidationError(_(f'Product must not be labor...'))
+                raise ItemModelValidationError(_('Product must not be labor...'))
             self.expense_account = None
             self.for_inventory = True
             self.is_product_or_service = True

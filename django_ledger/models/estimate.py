@@ -255,7 +255,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                              verbose_name=_('Customer Estimate Title'),
                              validators=[
                                  MinLengthValidator(limit_value=5,
-                                                    message=_(f'EstimateModel Title length must be greater than 5'))
+                                                    message=_('EstimateModel Title length must be greater than 5'))
                              ])
     status = models.CharField(max_length=10,
                               choices=CONTRACT_STATUS_CHOICES,

@@ -204,7 +204,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                                 validators=[
                                     MinLengthValidator(limit_value=5,
                                                        message=_(
-                                                           f'PO Title must be greater than 5'))
+                                                           'PO Title must be greater than 5'))
                                 ])
     po_status = models.CharField(max_length=10, choices=PO_STATUS, default=PO_STATUS[0][0])
     po_amount = models.DecimalField(default=0, decimal_places=2, max_digits=20, verbose_name=_('Purchase Order Amount'))
@@ -631,7 +631,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         # check if estimate_model is passed and raise exception if needed...
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise PurchaseOrderModelValidationError(f'Cannot bind estimate that is not approved.')
+            raise PurchaseOrderModelValidationError('Cannot bind estimate that is not approved.')
         return all([
             is_approved
         ])

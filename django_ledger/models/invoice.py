@@ -860,7 +860,7 @@ class InvoiceModelAbstract(
 
         is_approved = estimate_model.is_approved()
         if not is_approved and raise_exception:
-            raise InvoiceModelValidationError(f'Cannot bind estimate that is not approved.')
+            raise InvoiceModelValidationError('Cannot bind estimate that is not approved.')
         return all([
             is_approved
         ])

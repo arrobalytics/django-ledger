@@ -260,7 +260,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                                 text=entity_model.slug)
             self.assertContains(response,
                                 status_code=200,
-                                text=f'Are you sure you want to delete')
+                                text='Are you sure you want to delete')
             self.assertContains(response,
                                 status_code=200,
                                 text=entity_delete_url)

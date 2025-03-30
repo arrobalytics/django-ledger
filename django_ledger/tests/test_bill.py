@@ -210,7 +210,7 @@ class BillModelTests(DjangoLedgerBaseTest):
 
         # bill create form is rendered
         self.assertContains(response,
-                            f'id="djl-bill-model-create-form-id"',
+                            'id="djl-bill-model-create-form-id"',
                             msg_prefix='Bill create form is not rendered.')
 
         # user can select a vendor

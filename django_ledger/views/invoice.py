@@ -236,19 +236,19 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
             if ledger_model.locked:
                 messages.add_message(self.request,
                                      messages.ERROR,
-                                     f'Warning! This invoice is locked. Must unlock before making any changes.',
+                                     'Warning! This invoice is locked. Must unlock before making any changes.',
                                      extra_tags='is-danger')
 
         if ledger_model.locked:
             messages.add_message(self.request,
                                  messages.ERROR,
-                                 f'Warning! This Invoice is Locked. Must unlock before making any changes.',
+                                 'Warning! This Invoice is Locked. Must unlock before making any changes.',
                                  extra_tags='is-danger')
 
         if not ledger_model.is_posted():
             messages.add_message(self.request,
                                  messages.INFO,
-                                 f'This Invoice has not been posted. Must post to see ledger changes.',
+                                 'This Invoice has not been posted. Must post to see ledger changes.',
                                  extra_tags='is-info')
 
         if not itemtxs_formset:

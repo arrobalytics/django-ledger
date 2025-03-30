@@ -168,7 +168,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
         self.assertFalse(
             txs_formset.is_valid(),
-            msg=f'Formset is supposed to be invalid because of imbalance transaction'
+            msg='Formset is supposed to be invalid because of imbalance transaction'
         )
 
     def test_je_locked(self):
@@ -195,7 +195,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
         with self.assertRaises(
                 TransactionModelValidationError,
-                msg=f'Cannot create transaction on locked Journal Entry'
+                msg='Cannot create transaction on locked Journal Entry'
         ):
             je_model.transactionmodel_set.create(
                 amount=Decimal.from_float(100.00),

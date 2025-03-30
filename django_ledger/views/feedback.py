@@ -29,7 +29,7 @@ class BugReportView(DjangoLedgerSecurityMixIn,
                   f'User email: {self.request.user.email}'
         if DJANGO_LEDGER_FEEDBACK_EMAIL_LIST:
             send_mail(
-                subject=f'DJL Bug Report',
+                subject='DJL Bug Report',
                 from_email=DJANGO_LEDGER_FEEDBACK_FROM_EMAIL,
                 recipient_list=DJANGO_LEDGER_FEEDBACK_EMAIL_LIST,
                 fail_silently=True,
@@ -52,7 +52,7 @@ class RequestNewFeatureView(DjangoLedgerSecurityMixIn,
                   f'User email: {self.request.user.email}'
         if DJANGO_LEDGER_FEEDBACK_EMAIL_LIST:
             send_mail(
-                subject=f'DJL New Feature Request',
+                subject='DJL New Feature Request',
                 from_email=DJANGO_LEDGER_FEEDBACK_FROM_EMAIL,
                 recipient_list=DJANGO_LEDGER_FEEDBACK_EMAIL_LIST,
                 fail_silently=True,
