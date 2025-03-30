@@ -1369,6 +1369,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
     def can_create_bill(self) -> bool:
         """
         Determines if the ItemModel instance can be associated with a BillModel.
+
         Returns:
         -------
         bool

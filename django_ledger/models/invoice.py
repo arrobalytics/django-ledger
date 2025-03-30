@@ -424,6 +424,7 @@ class InvoiceModelAbstract(
             Saves the current InvoiceModel after being configured.
         commit_ledger: bool
             Saves the InvoiceModel's LedgerModel while being configured.
+
         Returns:
         -------
         A tuple of LedgerModel, InvoiceModel

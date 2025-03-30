@@ -1264,6 +1264,7 @@ class EntityModelAbstract(MP_Node,
             Selects only active accounts.
         order_by: list of strings.
             Optional list of fields passed to the order_by QuerySet method.
+
         Returns:
         -------
         AccountModelQuerySet
@@ -2190,6 +2191,7 @@ class EntityModelAbstract(MP_Node,
             Optional ChartOfAccountsModel to use when fetching default role AccountModels.
         commit: bool
             Commits the ItemModel in the DB. Defaults to True.
+
         Returns:
         -------
         ItemModel

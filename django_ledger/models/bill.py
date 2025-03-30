@@ -554,6 +554,7 @@ class BillModelAbstract(
             Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
         aggregate_on_db: bool
             If True, performs aggregation of ItemsTransactions in the DB resulting in one additional DB query.
+
         Returns:
         -------
         A tuple: ItemTransactionModelQuerySet, dict
