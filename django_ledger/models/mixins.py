@@ -34,7 +34,7 @@ class SlugNameMixIn(models.Model):
     """
     Implements a slug field and a name field to a base Django Model.
 
-    Attributes
+    Attributes:
     ----------
     slug: str
         A unique slug field to use as an index. Validates that the slug is at least 10 characters long.
@@ -61,7 +61,7 @@ class CreateUpdateMixIn(models.Model):
     """
     Implements a created and an updated field to a base Django Model.
 
-    Attributes
+    Attributes:
     ----------
     created: datetime
         A created timestamp. Defaults to now().
@@ -82,7 +82,7 @@ class ContactInfoMixIn(models.Model):
     """
     Implements a common set of fields used to document contact information.
 
-    Attributes
+    Attributes:
     ----------
     address_1: str
         A string used to document the first line of an address. Mandatory. Max length is 70.
@@ -135,7 +135,7 @@ class AccrualMixIn(models.Model):
     Examples of this include bills and invoices expenses/income, that depending on the Entity's accrual method, may
     be recognized on the Income Statement differently.
 
-    Attributes
+    Attributes:
     ----------
     amount_due: Decimal
         The total amount due of the financial instrument.
@@ -245,7 +245,7 @@ class AccrualMixIn(models.Model):
         """
         Determines if the accruable financial instrument is properly configured.
 
-        Returns
+        Returns:
         -------
         bool
             True if configured, else False.
@@ -262,7 +262,7 @@ class AccrualMixIn(models.Model):
         Determines if the accruable financial instrument is posted.
         Results in additional Database query if 'ledger' field is not pre-fetch on QuerySet.
 
-        Returns
+        Returns:
         -------
         bool
             True if posted, else False.
@@ -274,7 +274,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the progress amount based on amount due, amount paid and accrue field.
 
-        Returns
+        Returns:
         -------
         Decimal
             Financial instrument progress as a Decimal.
@@ -289,7 +289,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the progress amount as percent based on amount due, amount paid and accrue field.
 
-        Returns
+        Returns:
         -------
         float
             Financial instrument progress as a percent.
@@ -301,7 +301,7 @@ class AccrualMixIn(models.Model):
         Determines the impact to the EntityModel cash balance based on the financial instrument debit or credit
         configuration. i.e, Invoices are debit financial instrument because payments to invoices increase cash.
 
-        Returns
+        Returns:
         -------
         float
             Financial instrument progress as a percent.
@@ -315,7 +315,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the impact to the EntityModel earnings based on financial instrument progress.
 
-        Returns
+        Returns:
         -------
         float or Decimal
             Financial instrument amount earned.
@@ -330,7 +330,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the impact to the EntityModel Accounts Receivable based on financial instrument progress.
 
-        Returns
+        Returns:
         -------
         float or Decimal
             Financial instrument amount prepaid.
@@ -354,7 +354,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the impact to the EntityModel Accounts Payable based on financial instrument progress.
 
-        Returns
+        Returns:
         -------
         float or Decimal
             Financial instrument amount unearned.
@@ -377,7 +377,7 @@ class AccrualMixIn(models.Model):
         """
         Determines the open amount left to be progressed.
 
-        Returns
+        Returns:
         -------
         float or Decimal
             Financial instrument amount open.
@@ -400,7 +400,7 @@ class AccrualMixIn(models.Model):
         Determines if the Accruable financial instrument can be migrated to the books.
         Results in additional Database query if 'ledger' field is not pre-fetch on QuerySet.
 
-        Returns
+        Returns:
         -------
         bool
             True if can migrate, else False.
@@ -423,7 +423,7 @@ class AccrualMixIn(models.Model):
         adjustment_amount: Decimal
             The adjustment, whether positive or negative.
 
-        Returns
+        Returns:
         -------
         str
             The transaction type of the account adjustment.
@@ -452,7 +452,7 @@ class AccrualMixIn(models.Model):
         account_balance_type: str
             The AccountModel balance type to determine whether to perform a credit or a debit.
 
-        Returns
+        Returns:
         -------
         dict
             A dictionary with the split information.
@@ -580,7 +580,7 @@ class AccrualMixIn(models.Model):
         raise_exception: bool
             Raises ValidationError if migration is not allowed. Defaults to True.
 
-        Returns
+        Returns:
         -------
         tuple
             A tuple of the ItemTransactionModel and the Digest Result from IOMixIn.
@@ -816,7 +816,7 @@ class AccrualMixIn(models.Model):
         commit: bool
             Commits the new financial instrument state into the model.
 
-        Returns
+        Returns:
         -------
         dict
             A dictionary with new amount_paid, amount_receivable, amount_unearned and amount_earned as keys.
@@ -840,7 +840,7 @@ class AccrualMixIn(models.Model):
         commit: bool
             Commits the new financial instrument state into the model.
 
-        Returns
+        Returns:
         -------
         dict
             A dictionary with new amount_paid, amount_receivable, amount_unearned and amount_earned as keys.
@@ -941,7 +941,7 @@ class PaymentTermsMixIn(models.Model):
     Examples of this include tracking bills and invoices that are due on receipt, 30, 60 or 90 days after they are
     approved.
 
-    Attributes
+    Attributes:
     ----------
     terms: str
         A choice of TERM_CHOICES that determines the payment terms.
@@ -982,7 +982,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Determines the start date for the terms of payment.
 
-        Returns
+        Returns:
         -------
         date
             The date when terms of payment starts.
@@ -995,7 +995,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Determines the number of days for 90+ days terms of payment.
 
-        Returns
+        Returns:
         -------
         date
             The date when terms of payment starts.
@@ -1006,7 +1006,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Determines the number of days from the terms start date.
 
-        Returns
+        Returns:
         -------
         int
             The number of days as integer.
@@ -1019,7 +1019,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Calculates a timedelta relative to the terms start date.
 
-        Returns
+        Returns:
         -------
         timedelta
             Timedelta relative to terms start date.
@@ -1030,7 +1030,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Determines how many days until the due date.
 
-        Returns
+        Returns:
         -------
         int
             Days as integer.
@@ -1046,7 +1046,7 @@ class PaymentTermsMixIn(models.Model):
         """
         Determines the group where the financial instrument falls based on the number of days until the due date.
 
-        Returns
+        Returns:
         -------
         str
             The terms group as a string.
@@ -1076,7 +1076,7 @@ class MarkdownNotesMixIn(models.Model):
     """
     Implements functionality used to add a Mark-Down notes to a base Django Model.
 
-    Attributes
+    Attributes:
     ----------
     markdown_notes: str
         A string of text representing the mark-down document.
@@ -1090,7 +1090,7 @@ class MarkdownNotesMixIn(models.Model):
         """
         Compiles the markdown_notes field into html.
 
-        Returns
+        Returns:
         -------
         str
             Compiled HTML document as a string.
@@ -1107,7 +1107,7 @@ class FinancialAccountInfoMixin(models.Model):
     """
     Implements functionality used to add bank account details to base Django Models.
 
-    Attributes
+    Attributes:
     ----------
     account_number: str
         The Bank Account number. Only Digits are allowed. Max 30 digists.
@@ -1179,7 +1179,7 @@ class TaxCollectionMixIn(models.Model):
     Implements functionality used to add tax collection rates and or withholding to a base Django Model.
     This field may be used to set a pre-defined withholding rate to a financial instrument, customer, vendor, etc.
 
-    Attributes
+    Attributes:
     ----------
     sales_tax_rate: float
         The tax rate as a float. A Number between 0.00 and 1.00.
@@ -1240,7 +1240,7 @@ class ItemizeMixIn(models.Model):
         """
         Fetches the ItemModelQuerySet eligible to itemize.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -1259,7 +1259,7 @@ class ItemizeMixIn(models.Model):
         lazy_agg: bool
             If True, performs queryset aggregation metrics. Defaults to False.
 
-        Returns
+        Returns:
         -------
         tuple
             ItemModelQuerySet, dict
@@ -1291,7 +1291,7 @@ class ItemizeMixIn(models.Model):
         """
         Checks if item transaction list can be migrated.
 
-        Returns
+        Returns:
         -------
         bool
         """
@@ -1356,7 +1356,7 @@ class ItemizeMixIn(models.Model):
         commit: bool
             If True, commits transaction into the DB. Default to False
 
-        Returns
+        Returns:
         -------
         list
             A list of ItemTransactionModel appended or created.

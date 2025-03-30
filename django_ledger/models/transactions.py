@@ -57,7 +57,7 @@ class TransactionModelQuerySet(QuerySet):
         - It belongs to a journal entry marked as *posted*.
         - Its associated journal entry is part of a ledger marked as *posted*.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet containing only transactions that meet the "posted" criteria.
@@ -77,7 +77,7 @@ class TransactionModelQuerySet(QuerySet):
             A list containing account codes (strings) or `AccountModel` instances.
             Transactions will be filtered to match these accounts.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet filtered for transactions associated with the specified accounts.
@@ -106,7 +106,7 @@ class TransactionModelQuerySet(QuerySet):
         role_list: str or list
             A string or list of strings representing the roles to be used as filter.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             Returns a TransactionModelQuerySet with applied filters.
@@ -124,7 +124,7 @@ class TransactionModelQuerySet(QuerySet):
         unit_slug : str or EntityUnitModel
             A string representing the slug of the entity unit or an `EntityUnitModel` instance.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet filtered for transactions linked to the specified unit.
@@ -142,7 +142,7 @@ class TransactionModelQuerySet(QuerySet):
         activity_list : str or list of str
             A single activity or a list of activities to filter transactions by.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet filtered for transactions linked to the specified activity or activities.
@@ -164,7 +164,7 @@ class TransactionModelQuerySet(QuerySet):
             The maximum date or timestamp for filtering. When using a date (not datetime),
             the filter is inclusive (e.g., "2022-12-20" includes all transactions from that day).
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet filtered to include transactions up to the specified date or timestamp.
@@ -190,7 +190,7 @@ class TransactionModelQuerySet(QuerySet):
             The minimum date or timestamp for filtering. When using a date (not datetime),
             the filter is inclusive (e.g., "2022-12-20" includes all transactions from that day).
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet filtered to include transactions from the specified date or timestamp onwards.
@@ -207,7 +207,7 @@ class TransactionModelQuerySet(QuerySet):
         """
         Filters transactions that are *not* part of a closing journal entry.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet with transactions where the `journal_entry__is_closing_entry` field is False.
@@ -218,7 +218,7 @@ class TransactionModelQuerySet(QuerySet):
         """
         Filters transactions that are part of a closing journal entry.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A QuerySet with transactions where the `journal_entry__is_closing_entry` field is True.
@@ -234,7 +234,7 @@ class TransactionModelQuerySet(QuerySet):
         ledger_model : Union[LedgerModel, UUID]
             The ledger model or its UUID to filter by.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions associated with the given ledger and entity.
@@ -252,7 +252,7 @@ class TransactionModelQuerySet(QuerySet):
         je_model : Union[JournalEntryModel, UUID]
             The journal entry model or its UUID to filter by.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions associated with the given journal entry.
@@ -270,7 +270,7 @@ class TransactionModelQuerySet(QuerySet):
         bill_model : Union[BillModel, str, UUID]
             The bill model or its UUID to filter by.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions related to the specified bill.
@@ -288,7 +288,7 @@ class TransactionModelQuerySet(QuerySet):
         invoice_model : Union[InvoiceModel, str, UUID]
             The invoice model or its UUID to filter by.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions related to the specified invoice.
@@ -333,7 +333,7 @@ class TransactionModelManager(Manager):
         Retrieves the base queryset for `TransactionModel`, annotated and pre-loaded
         with commonly used related fields.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A custom queryset with essential annotations and relationships preloaded.
@@ -357,7 +357,7 @@ class TransactionModelManager(Manager):
         user_model : UserModel
             The user object for which the transactions should be filtered.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions filtered by the user's access level.
@@ -389,12 +389,12 @@ class TransactionModelManager(Manager):
             The user for whom transactions should be filtered. If provided, applies user-specific
             filtering. Defaults to None.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions associated with the specified entity.
 
-        Notes
+        Notes:
         -----
         - If `user_model` is provided, only transactions accessible by the user are included.
         - Supports flexible filtering by accepting different forms of `entity_slug`.
@@ -565,7 +565,7 @@ def transactionmodel_presave(instance: TransactionModel, **kwargs):
        the transaction cannot be modified. The save process is halted if the
        journal entry is marked as locked.
 
-    Raises
+    Raises:
     ------
     TransactionModelValidationError
         Raised in the following scenarios:
@@ -579,7 +579,7 @@ def transactionmodel_presave(instance: TransactionModel, **kwargs):
           preventing modification of any related transactions. The error message
           describes the locked journal entry constraint.
 
-    Example
+    Example:
     -------
     ```python
     instance = TransactionModel(...)

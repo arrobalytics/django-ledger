@@ -32,7 +32,7 @@ class TransactionInstructionItem:
     """
     A class to represent a transaction instruction used during the development of transaction blueprints.
 
-    Attributes
+    Attributes:
     ----------
     account_code: str
         The account code of the AccountModel as a String.
@@ -111,7 +111,7 @@ class IOCursor:
         """
         Determines the ledger model queryset associated with the entity model and user model provided.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
         """
@@ -124,7 +124,7 @@ class IOCursor:
         """
         Determines the AccountModelQuerySet associated with the Chart of Accounts specified.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
         """
@@ -142,7 +142,7 @@ class IOCursor:
             List of codes used during the execution of the blueprint.
 
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The resolved AccountModelQuerySet associated with the given codes.
@@ -158,7 +158,7 @@ class IOCursor:
         Resolves the final LedgerModelQuerySet associated with the provided ledger model identifiers used by the
         blueprints.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             The resolved LedgerModelQuerySet associated with the given ledger model identifiers.
@@ -214,7 +214,7 @@ class IOCursor:
         """
         Compiles the blueprint instructions into Journal Entries and Transactions to be committed to the ledger.
 
-        Returns
+        Returns:
         -------
         Dict
             A dictionary containing the compiled instructions.
@@ -244,7 +244,7 @@ class IOCursor:
         Determines if the IOCursor instance has committed the transactions into the database.
         A cursor can only commit transactions once.
 
-        Returns
+        Returns:
         -------
         bool
             True if committed, False otherwise.
@@ -419,7 +419,7 @@ class IOBluePrint:
         entity_model: EntityModel
             The EntityModel instance where the resulting blueprint transactions will be stored.
 
-        Returns
+        Returns:
         -------
         str
             The name of the blueprint.
@@ -521,7 +521,7 @@ class IOBluePrint:
         kwargs
             Keyword arguments passed to the IO Library.
 
-        Returns
+        Returns:
         -------
         Dict
             A dictionary containing the resulting models of the transactions.
@@ -578,7 +578,7 @@ class IOLibrary:
         name: str
             The name of the blueprint to retrieve.
 
-        Returns
+        Returns:
         -------
         Callable
         """
@@ -610,7 +610,7 @@ class IOLibrary:
         mode: IOCursorMode
             The Mode of the cursor instance. Defaults to IOCursorMode.PERMISSIVE.
 
-        Returns
+        Returns:
         -------
         IOCursor
         """

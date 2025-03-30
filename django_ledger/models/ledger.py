@@ -63,7 +63,7 @@ class LedgerModelQuerySet(models.QuerySet):
         """
         Filters the QuerySet to only locked LedgerModel.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             A QuerySet with applied filters.
@@ -74,7 +74,7 @@ class LedgerModelQuerySet(models.QuerySet):
         """
         Filters the QuerySet to only un-locked LedgerModel.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             A QuerySet with applied filters.
@@ -85,7 +85,7 @@ class LedgerModelQuerySet(models.QuerySet):
         """
         Filters the QuerySet to only posted LedgerModel.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             A QuerySet with applied filters.
@@ -96,7 +96,7 @@ class LedgerModelQuerySet(models.QuerySet):
         """
         Filters the QuerySet to only un-posted LedgerModel.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             A QuerySet with applied filters.
@@ -151,7 +151,7 @@ class LedgerModelManager(models.Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         LedgerModelQuerySet
             A Filtered LedgerModelQuerySet.
@@ -170,7 +170,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     """
     Base implementation of the LedgerModel.
 
-    Attributes
+    Attributes:
     ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -325,7 +325,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel instance is posted.
 
-        Returns
+        Returns:
         -------
         bool
             True if posted, else False.
@@ -336,7 +336,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel instance is locked.
 
-        Returns
+        Returns:
         -------
         bool
             True if locked, else False.
@@ -347,7 +347,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel instance is hidden.
 
-        Returns
+        Returns:
         -------
         bool
             True if hidden, else False.
@@ -358,7 +358,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be marked as posted.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be posted, else False.
@@ -373,7 +373,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be un-posted.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be un-posted, else False.
@@ -388,7 +388,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be locked.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be locked, else False.
@@ -402,7 +402,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be un-locked.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be un-locked, else False.
@@ -416,7 +416,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be hidden.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be hidden, else False.
@@ -427,7 +427,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         """
         Determines if the LedgerModel can be un-hidden.
 
-        Returns
+        Returns:
         -------
         bool
             True if can be un-hidden, else False.
@@ -640,7 +640,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         Determines the absolute URL of the LedgerModel instance.
         Results in additional Database query if entity field is not selected in QuerySet.
 
-        Returns
+        Returns:
         -------
         str
             URL as a string.
@@ -656,7 +656,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         Determines the update URL of the LedgerModel instance.
         Results in additional Database query if entity field is not selected in QuerySet.
 
-        Returns
+        Returns:
         -------
         str
             URL as a string.
@@ -671,7 +671,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         Determines the update URL of the LedgerModel instance.
         Results in additional Database query if entity field is not selected in QuerySet.
 
-        Returns
+        Returns:
         -------
         str
             URL as a string.
@@ -687,7 +687,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         Determines the list URL of the LedgerModel instances.
         Results in additional Database query if entity field is not selected in QuerySet.
 
-        Returns
+        Returns:
         -------
         str
             URL as a string.

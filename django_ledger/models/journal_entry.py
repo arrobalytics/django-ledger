@@ -102,12 +102,12 @@ class JournalEntryModelQuerySet(QuerySet):
         **kwargs : dict
             Additional keyword arguments passed to instantiate the Journal Entry model.
 
-        Returns
+        Returns:
         -------
         JournalEntryModel
             The newly created Journal Entry.
 
-        Raises
+        Raises:
         ------
         FieldError
             Raised if attempting to create a "posted" Journal Entry without
@@ -128,7 +128,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include only "posted" Journal Entries.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered QuerySet containing only posted Journal Entries.
@@ -139,7 +139,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include only "unposted" Journal Entries.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered QuerySet containing only unposted Journal Entries.
@@ -150,7 +150,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include only "locked" Journal Entries.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered QuerySet containing only locked Journal Entries.
@@ -161,7 +161,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include only "unlocked" Journal Entries.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered QuerySet containing only unlocked Journal Entries.
@@ -178,7 +178,7 @@ class JournalEntryModelQuerySet(QuerySet):
             The LedgerModel instance, its UUID, or a string representation of the UUID
             to identify the Ledger.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered QuerySet of Journal Entries associated with the specified Ledger.
@@ -209,7 +209,7 @@ class JournalEntryModelManager(Manager):
         - `txs_count`: The count of transactions (related `TransactionModel` instances)
           for each journal entry.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A custom queryset enhanced with annotations.
@@ -236,7 +236,7 @@ class JournalEntryModelManager(Manager):
         user_model : UserModel
             An authenticated Django user object.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A filtered queryset restricted by the user's entity relationships.
@@ -265,7 +265,7 @@ class JournalEntryModelManager(Manager):
         user_model : UserModel
             An authenticated Django user object.
 
-        Returns
+        Returns:
         -------
         JournalEntryModelQuerySet
             A customized queryset containing journal entries associated with the
@@ -284,7 +284,7 @@ class ActivityEnum(Enum):
     """
     Represents the database prefixes used for different types of accounting activities.
 
-    Attributes
+    Attributes:
     ----------
     OPERATING : str
         Prefix for a Journal Entry categorized as an Operating Activity.
@@ -302,7 +302,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     """
     Abstract base model for handling journal entries in the bookkeeping system.
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         A unique identifier (primary key) for the journal entry, generated using uuid4().
@@ -457,7 +457,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Provides access to the `EntityModel` related to the JournalEntryModel.
 
-        Returns
+        Returns:
         -------
         EntityModel
             The `EntityModel` instance linked to the instance LedgerModel.
@@ -473,7 +473,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             associated with the entity. If no closing date exists, the
             result will be None.
 
-            Returns
+            Returns:
             -------
             Optional[date]
                 The date of the last closing event, or None if no closing
@@ -496,7 +496,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             The entity to validate against. It can either be an instance of the
             `EntityModel`, a string representation of a UUID, or a UUID object.
 
-        Returns
+        Returns:
         -------
         bool
             A boolean value. True if the given entity_model corresponds to the current
@@ -525,7 +525,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         attribute is not set, it delegates the check to the actual `is_locked`
         method of the `ledger` object.
 
-        Returns
+        Returns:
         -------
         bool
             A boolean value indicating whether the ledger is locked.
@@ -597,7 +597,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             new_timestamp: Optional[Union[date, datetime]])
                 An optional date or timestamp to be checked instead of the current timestamp.
 
-        Returns
+        Returns:
         -------
             bool: True if the Journal Entry is in a locked period, otherwise False.
         """
@@ -966,7 +966,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         select_accounts : bool, optional
             If True, prefetches the related `AccountModel` for each transaction. Defaults to True.
 
-        Returns
+        Returns:
         -------
         TransactionModelQuerySet
             A queryset containing transactions related to this journal entry. If `select_accounts` is
@@ -996,13 +996,13 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         as_dict : bool, optional
             If True, returns the results as a dictionary with keys "credit" and "debit". Defaults to False.
 
-        Returns
+        Returns:
         -------
         Union[TransactionModelQuerySet, Dict[str, Decimal]]
             If `as_dict` is False, returns a queryset of aggregated balances. If `as_dict` is True,
             returns a dictionary containing the CREDIT and DEBIT totals.
 
-        Raises
+        Raises:
         ------
         JournalEntryValidationError
             If the provided queryset is invalid or does not belong to this journal entry.
@@ -1044,7 +1044,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         exclude_cash_role : bool, optional
             If True, excludes the CASH role from the result. Defaults to False.
 
-        Returns
+        Returns:
         -------
         Set[str]
             A set of account roles associated with this journal entry's transactions.
@@ -1065,7 +1065,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Checks if the journal entry has an associated activity.
 
-        Returns
+        Returns:
         -------
         bool
             True if an activity is defined for the journal entry, otherwise False.
@@ -1078,7 +1078,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         The activity indicates its categorization based on GAAP (e.g., operating, investing, financing).
 
-        Returns
+        Returns:
         -------
         Optional[str]
             The activity name if defined, otherwise None.
@@ -1112,12 +1112,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         raise_exception : bool, optional
             If True, raises an exception if multiple activities are detected. Defaults to True.
 
-        Returns
+        Returns:
         -------
         Optional[str]
             The detected activity name, or None if no activity type is matched.
 
-        Raises
+        Raises:
         ------
         JournalEntryValidationError
             If multiple activities are detected and `raise_exception` is True.
@@ -1212,7 +1212,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         force_update : bool, default False
             Forces the regeneration of activity even if it exists.
 
-        Returns
+        Returns:
         -------
         Optional[str]
             Generated activity or None if not applicable.
@@ -1260,7 +1260,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         raise_exception : bool, default True
             Determines if exceptions should be raised when the entity state is not found.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             The state model with an incremented sequence.
@@ -1303,7 +1303,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Checks if a Journal Entry Number can be generated.
 
-        Returns
+        Returns:
         -------
         bool
             True if the Journal Entry can generate a JE number, otherwise False.
@@ -1322,7 +1322,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         commit : bool, default False
             Saves the generated JE number in the database.
 
-        Returns
+        Returns:
         -------
         str
             The generated or existing JE number.
@@ -1368,7 +1368,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs : dict
             Additional options.
 
-        Returns
+        Returns:
         -------
         Tuple[TransactionModelQuerySet, bool]
             - The TransactionModelQuerySet associated with the JournalEntryModel.
@@ -1442,14 +1442,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             A pre-fetched TransactionModelQuerySet. If provided, avoids additional database queries. The provided queryset is
             validated against the JournalEntryModel instance.
 
-        Returns
+        Returns:
         -------
         Tuple[TransactionModelQuerySet, bool]
             A tuple containing:
             - The validated TransactionModelQuerySet for the JournalEntryModel instance.
             - A boolean indicating whether the instance passed verification.
 
-        Raises
+        Raises:
         ------
         JournalEntryValidationError
             If the instance has a timestamp in the future and is posted, or if verification fails and `raise_exception` is True.
@@ -1477,7 +1477,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates a confirmation message for deleting the JournalEntryModel instance.
 
-        Returns
+        Returns:
         -------
         str
             A confirmation message including the Journal Entry number and Ledger name.
@@ -1493,7 +1493,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         **kwargs : dict
             Additional arguments passed to the parent delete method.
 
-        Raises
+        Raises:
         ------
         JournalEntryValidationError
             If the instance is not eligible for deletion.
@@ -1521,12 +1521,12 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         post_on_verify : bool, optional
             If True, posts the JournalEntryModel if verification is successful and `can_post()` is True. Default is False.
 
-        Returns
+        Returns:
         -------
         JournalEntryModel
             The saved JournalEntryModel instance.
 
-        Raises
+        Raises:
         ------
         JournalEntryValidationError
             If the instance fails verification or encounters an issue during save.
@@ -1566,7 +1566,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to view the details of the journal entry.
 
-        Returns
+        Returns:
         -------
         str
             The absolute URL for the journal entry details.
@@ -1581,7 +1581,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the detail URL for the journal entry.
 
-        Returns
+        Returns:
         -------
         str
             The URL for updating or viewing journal entry details.
@@ -1593,7 +1593,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         Constructs the URL to access the list of journal entries
         associated with a specific ledger and entity.
 
-        Returns
+        Returns:
         -------
         str
             The URL for the journal entry list.
@@ -1608,7 +1608,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         Constructs the URL to create a new journal entry
         associated with a specific ledger and entity.
 
-        Returns
+        Returns:
         -------
         str
             The URL to create a journal entry.
@@ -1622,7 +1622,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to view transaction details of the journal entry.
 
-        Returns
+        Returns:
         -------
         str
             The URL for transaction details of the journal entry.
@@ -1637,7 +1637,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to mark the journal entry as unlocked.
 
-        Returns
+        Returns:
         -------
         str
             The URL for unlocking the journal entry.
@@ -1652,7 +1652,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to mark the journal entry as locked.
 
-        Returns
+        Returns:
         -------
         str
             The URL for locking the journal entry.
@@ -1667,7 +1667,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to mark the journal entry as posted.
 
-        Returns
+        Returns:
         -------
         str
             The URL for posting the journal entry.
@@ -1682,7 +1682,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL to mark the journal entry as unposted.
 
-        Returns
+        Returns:
         -------
         str
             The URL for unposting the journal entry.
@@ -1698,7 +1698,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL used to mark the journal entry as posted.
 
-        Returns
+        Returns:
         -------
         str
             The generated URL for marking the journal entry as posted.
@@ -1714,7 +1714,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL used to mark the journal entry as unposted.
 
-        Returns
+        Returns:
         -------
         str
             The generated URL for marking the journal entry as unposted.
@@ -1730,7 +1730,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL used to mark the journal entry as locked.
 
-        Returns
+        Returns:
         -------
         str
             The generated URL for marking the journal entry as locked.
@@ -1746,7 +1746,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         Generates the URL used to mark the journal entry as unlocked.
 
-        Returns
+        Returns:
         -------
         str
             The generated URL for marking the journal entry as unlocked.

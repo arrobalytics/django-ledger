@@ -91,7 +91,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Filters the queryset to include only active items.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A filtered queryset containing only the items marked as active.
@@ -102,7 +102,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Filters and returns queryset entries where the active field is set to False.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A queryset containing entries with active=False.
@@ -113,7 +113,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Filters the queryset to include only locked AccountModels.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A queryset containing only the objects with locked set to True.
@@ -124,7 +124,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Returns a filtered list of items where the 'locked' attribute is set to False.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A queryset of items with 'locked' attribute set to False
@@ -145,7 +145,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
             The role or a list of roles to filter the accounts by. If a single string is provided, it is converted
             into a list containing that role.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A QuerySet of accounts filtered by the provided roles.
@@ -169,7 +169,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         `GROUP_EXPENSES` constant. It ensures that only the relevant expenses
         associated with the specified roles are included in the queryset.
 
-        Returns
+        Returns:
         -------
             AccountModelQuerySet
                 A queryset consisting of expenses filtered according to the roles in `GROUP_EXPENSES`.
@@ -184,7 +184,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         account hierarchy. This method filters the queryset to include only the Chart of Accounts (CoA)
         root node.
 
-        Returns
+        Returns:
         -------
             AccountModelQuerySet
         """
@@ -194,7 +194,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Exclude AccountModels with ROOT_GROUP role from the QuerySet.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A QuerySet excluding users with role in ROOT_GROUP.
@@ -205,7 +205,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Groups accounts by Balance Sheet Bucket and then further groups them by role.
 
-        Returns
+        Returns:
         -------
             List[Tuple]
                 A list where each element is a tuple. The first element of the tuple is the BS bucket,
@@ -228,7 +228,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         Filter the queryset to include only entries where `role_default`
         is set to True, excluding entries marked as 'coa_root'.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             Filtered queryset with `role_default` set to True and excluding 'coa_root' entries.
@@ -239,7 +239,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         """
         Filter the queryset to include only accounts that can accept new transactions.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet containing the filtered results.
@@ -263,7 +263,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         specifically for the creation and management of Bills. Roles within the 'GROUP_BILL'
         context include: ASSET_CA_CASH, ASSET_CA_PREPAID, and LIABILITY_CL_ACC_PAYABLE.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A QuerySet of the requested EntityModel's chart of accounts.
@@ -278,7 +278,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         This method ensures that only relevant accounts are pulled, as defined under the roles in `GROUP_INVOICE`.
         These roles include: ASSET_CA_CASH, ASSET_CA_RECEIVABLES, and LIABILITY_CL_DEFERRED_REVENUE.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A QuerySet containing the AccountModels relevant for the specified EntityModel and the roles defined
@@ -300,7 +300,7 @@ class AccountModelManager(MP_NodeManager):
         The query set is ordered by the 'path' field and uses 'select_related' to reduce the number of database queries
         by retrieving the related 'coa_model'.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             An instance of AccountModelQuerySet ordered by 'path' and prefetching related 'coa_model'.
@@ -322,7 +322,7 @@ class AccountModelManager(MP_NodeManager):
         user_model : UserModel
             The user model instance to use for filtering.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The filtered queryset based on the user's permissions. Superusers get the complete queryset whereas other
@@ -355,12 +355,12 @@ class AccountModelManager(MP_NodeManager):
         coa_slug : Optional[str], default=None
             The slug for a specific Chart of Accounts to be used. If None, the default Chart of Accounts will be selected.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A QuerySet containing accounts associated with the specified EntityModel and Chart of Accounts.
 
-        Raises
+        Raises:
         ------
         AccountModelValidationError
             If the entity_model is neither an instance of EntityModel nor a string.
@@ -394,7 +394,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     """
     Abstract class representing an Account Model.
 
-    Attributes
+    Attributes:
     ----------
     BALANCE_TYPE : list
         List of choices for the balance type of the account. Options include 'Credit' and 'Debit'.
@@ -516,7 +516,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             slug is typically to provide a URL-friendly string representing
             the entity.
 
-            Returns
+            Returns:
             -------
             Any
                 The value of the '_entity_slug' attribute.
@@ -556,7 +556,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         **kwargs : dict, optional
             Additional attributes for account creation.
 
-        Returns
+        Returns:
         -------
         AccountModel
             The newly created `AccountModel` instance.
@@ -584,7 +584,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         - 'liability'
         - 'equity'
 
-        Returns
+        Returns:
         -------
         str
             A string representing the principal role of the account on the balance sheet.
@@ -595,7 +595,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Checks if the current user's role belongs to the ROOT_GROUP.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is in the ROOT_GROUP, False otherwise
@@ -606,7 +606,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Checks if the account has a DEBIT balance type.
 
-        Returns
+        Returns:
         -------
         bool
             True if account has a DEBIT balance, else False.
@@ -617,7 +617,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Checks if the Account Model has a CREDIT balance type.
 
-        Returns
+        Returns:
         -------
         bool
             True if account has a CREDIT balance, else False.
@@ -628,7 +628,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Check if the current Account Model role is 'ROOT_COA'.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is 'ROOT_COA', False otherwise.
@@ -639,7 +639,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the current Account Model role of the instance is considered an asset.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is part of the GROUP_ASSETS, False otherwise.
@@ -650,7 +650,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the current Account Model role is considered a liability.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is part of GROUP_LIABILITIES, otherwise False.
@@ -661,7 +661,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Checks if the current Account Model role is in the capital group.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is in GROUP_CAPITAL, otherwise False.
@@ -677,7 +677,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         self : object
             The instance of the class containing attribute 'role'.
 
-        Returns
+        Returns:
         -------
         bool
             True if the role is in the GROUP_INCOME list, False otherwise.
@@ -688,7 +688,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the role of the object is part of the GROUP_COGS.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object's role is part of the GROUP_COGS, False otherwise.
@@ -703,7 +703,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         ----------
         None
 
-        Returns
+        Returns:
         -------
         bool
             True if `role` is in `GROUP_EXPENSES`, otherwise False.
@@ -714,7 +714,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the current instance is active.
 
-        Returns
+        Returns:
         -------
         bool
             True if the instance is active, otherwise False
@@ -725,7 +725,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the current object is locked.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object is locked, False otherwise.
@@ -744,7 +744,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if the object can be activated.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object is inactive, otherwise False.
@@ -759,7 +759,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
 
         Checks if the `active` attribute is set to `True`.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object is currently active and can be deactivated, otherwise False.
@@ -867,7 +867,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Determines if a transaction can be performed based on multiple conditions.
 
-        Returns
+        Returns:
         -------
         bool
             True if all conditions are met, enabling a transaction; False otherwise.
@@ -889,7 +889,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         This method determines the account type by calling the respective
         account type methods and returns the corresponding code prefix based on Accounting best practices..
 
-        Returns
+        Returns:
         -------
         str
             The code prefix for the account type. The possible values are:
@@ -897,7 +897,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             '4' for income, '5' for cost of goods sold (COGS),
             '6' for expenses.
 
-        Raises
+        Raises:
         ------
         AccountModelValidationError
             If the account role does not match any of the predefined categories.
@@ -920,12 +920,12 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Returns the root role corresponding to the account type.
 
-        Returns
+        Returns:
         -------
         str
             The root role corresponding to the account type.
 
-        Raises
+        Raises:
         ------
         AccountModelValidationError
             If no valid role match is found for the account's role.
@@ -954,7 +954,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         The queryset is filtered based on the specified role and its hierarchical parent roles.
         Account models with a UUID matching the current instance's UUID are excluded from the results.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A filtered set of account models suitable for moving the current instance under.
@@ -974,7 +974,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Check if the current depth level is greater than 2.
 
-        Returns
+        Returns:
         -------
         bool
             True if the depth is greater than 2, False otherwise.
@@ -985,7 +985,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Calculates the pixel indentation for HTML elements based on the depth attribute for UI purposes
 
-        Returns
+        Returns:
         -------
         str
             The calculated pixel indentation as a string with 'px' suffix.
@@ -996,12 +996,12 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         Generates a random code for the account adding a prefix 1-6 depending on account role.
 
-        Raises
+        Raises:
         ------
         AccountModelValidationError
             If the account role is not assigned before code generation.
 
-        Returns
+        Returns:
         -------
         str
             A randomly generated code prefixed with a role-based prefix.

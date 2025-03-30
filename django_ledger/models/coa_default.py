@@ -358,7 +358,7 @@ def get_default_coa_rst(default_coa: Optional[Dict] = None) -> str:
     default_coa:
         A dictionary of chart of accounts. Must follow the same keys as CHART_OF_ACCOUNTS.
 
-    Returns
+    Returns:
     -------
     str:
         The table in RestructuredText format.

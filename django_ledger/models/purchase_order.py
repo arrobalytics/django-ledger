@@ -62,7 +62,7 @@ class PurchaseOrderModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include Approved PurchaseOrderModels only.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
@@ -73,7 +73,7 @@ class PurchaseOrderModelQuerySet(QuerySet):
         """
         Filters the QuerySet to include Fulfilled PurchaseOrderModels only.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
@@ -86,7 +86,7 @@ class PurchaseOrderModelQuerySet(QuerySet):
         Active PurchaseOrderModels are either approved or fulfilled, which are those that may contain associated
         transactions on the Ledger.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
@@ -119,7 +119,7 @@ class PurchaseOrderModelManager(Manager):
         Fetches a QuerySet of PurchaseOrderModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
             A PurchaseOrderModelQuerySet with applied filters.
@@ -136,7 +136,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     """
     The base implementation of the PurchaseOrderModel.
 
-    Attributes
+    Attributes:
     ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -292,7 +292,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         commit: bool
             Saves the current BillModel after being configured.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModel
             The configured PurchaseOrderModel instance.
@@ -385,7 +385,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         aggregate_on_db: bool
             If True, performs aggregation of ItemsTransactions in the DB resulting in one additional DB query.
 
-        Returns
+        Returns:
         -------
         A tuple: ItemTransactionModelQuerySet, dict
         """
@@ -417,7 +417,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         ----------
         itemtxs_qs: ItemTransactionModelQuerySet or list of ItemTransactionModel
 
-        Returns
+        Returns:
         -------
         tuple
             A tuple of ItemTransactionModels and Aggregation
@@ -440,7 +440,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Draft status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is Draft, else False.
@@ -451,7 +451,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Review status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is Review, else False.
@@ -462,7 +462,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Approved status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is Approved, else False.
@@ -473,7 +473,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Fulfilled status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is in Fulfilled status, else False.
@@ -484,7 +484,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Canceled status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is in Canceled, else False.
@@ -495,7 +495,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is in Void status.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is Void, else False.
@@ -507,7 +507,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as Draft.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as Draft, else False.
@@ -518,7 +518,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as In Review.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as In Review, else False.
@@ -529,7 +529,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as Approved.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as Approved, else False.
@@ -540,7 +540,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as Fulfilled.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as Fulfilled, else False.
@@ -551,7 +551,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as Canceled.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as Canceled, else False.
@@ -565,7 +565,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be marked as Void.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be marked as Void, else False.
@@ -576,7 +576,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel can be deleted.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be deleted, else False.
@@ -590,7 +590,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel items can be edited.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel items can be edited, else False.
@@ -601,7 +601,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel is bound to an EstimateModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel is bound to an EstimateModel, else False.
@@ -612,7 +612,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if the PurchaseOrderModel ican be bound to an EstimateModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can be bound to an EstimateModel, else False.
@@ -664,7 +664,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Checks if PurchaseOrderModel can generate its Document Number.
 
-        Returns
+        Returns:
         -------
         bool
             True if PurchaseOrderModel can generate its po_number, else False.
@@ -708,7 +708,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Draft HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -719,7 +719,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Draft URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -734,7 +734,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Draft Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -781,7 +781,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as In Review HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -792,7 +792,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as In Review URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -807,7 +807,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Review Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -848,7 +848,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Approved HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -859,7 +859,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Approved URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -874,7 +874,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Approved Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -914,7 +914,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Canceled HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -925,7 +925,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Canceled URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -940,7 +940,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Canceled Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -1011,7 +1011,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Fulfilled HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -1022,7 +1022,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Fulfilled URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             URL as a String.
@@ -1037,7 +1037,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Fulfilled Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -1089,7 +1089,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Void HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -1100,7 +1100,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Void URL ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String.
@@ -1115,7 +1115,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         PurchaseOrderModel Mark as Void Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String.
@@ -1126,7 +1126,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Fetches a BillModelQuerySet of all BillModels associated with the PurchaseOrderModel instance.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
         """
@@ -1136,7 +1136,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         """
         Current status action date.
 
-        Returns
+        Returns:
         -------
         date
             A date. i.e. If status is Approved, return date_approved. If In Review, return date_in_review.
@@ -1152,7 +1152,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         raise_exception: bool
             Raises IntegrityError if unable to secure transaction from DB.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             An instance of EntityStateModel
@@ -1203,7 +1203,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         commit: bool
             Commits transaction into PurchaseOrderModel.
 
-        Returns
+        Returns:
         -------
         str
             A String, representing the generated or current PurchaseOrderModel instance Document Number.

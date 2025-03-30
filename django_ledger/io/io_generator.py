@@ -53,7 +53,7 @@ class EntityDataGenerator(LoggingMixIn):
     """
     A random data generator for Entity Models. Requires a user to me the entity model administrator.
 
-    Attributes
+    Attributes:
     ----------
     user_model : UserModel
         The Django user model that administers the entity.

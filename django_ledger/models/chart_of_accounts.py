@@ -121,7 +121,7 @@ class ChartOfAccountModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Returns
+        Returns:
         -------
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
@@ -148,7 +148,7 @@ class ChartOfAccountModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Returns
+        Returns:
         -------
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
@@ -163,7 +163,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
     """
     Abstract base class for the Chart of Account model.
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUIDField
         UUID field for the chart of account model (primary key).
@@ -245,12 +245,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         as_queryset : bool, optional
             If True, return the root account queryset instead of a single root account. Default is False.
 
-        Returns
+        Returns:
         -------
         Union[AccountModelQuerySet, AccountModel]
             If `as_queryset` is True, returns the root account queryset. Otherwise, returns a single root account.
 
-        Raises
+        Raises:
         ------
         ChartOfAccountsModelValidationError
             If the account model is not part of the chart of accounts.
@@ -294,7 +294,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Returns a query set of non-root accounts in the chart of accounts.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A query set of non-root accounts in the chart of accounts.
@@ -311,7 +311,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             Flag to indicate whether to retrieve only active accounts or all accounts.
             Default is True.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             A queryset containing accounts from the chart of accounts.
@@ -328,7 +328,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         The method invokes the`dump_bulk` method on the ChartOfAccount model instance root node.
         See Django Tree Beard documentation for more information.
 
-        Returns
+        Returns:
         -------
         Dict
             A dictionary containing all accounts from the chart of accounts in a nested structure.
@@ -346,12 +346,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         raise_exception : bool, optional
                 If set to True, it will raise a ChartOfAccountsModelValidationError if the `self.slug` is already set.
 
-        Returns
+        Returns:
         -------
         str
                 The generated slug for the Chart of Accounts.
 
-        Raises
+        Raises:
         ------
         ChartOfAccountsModelValidationError
                 If `raise_exception` is set to True and `self.slug` is already set.
@@ -436,7 +436,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Check if the ChartOfAccountModel instance is set as the default for the EntityModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if the ChartOfAccountModel instance is set as the default for the EntityModel. Else, False.
@@ -465,7 +465,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         account_model_qs : AccountModelQuerySet
             The AccountModelQuerySet to validate.
 
-        Raises
+        Raises:
         ------
         ChartOfAccountsModelValidationError
             If the account_model_qs is not an instance of AccountModelQuerySet or if it contains an account model with a different coa_model_id than the current CoA model.
@@ -506,12 +506,12 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             The root account query set. If not provided, it will be obtained using the `get_coa_root_accounts_qs`
             method.
 
-        Returns
+        Returns:
         -------
         AccountModel
             The inserted account model.
 
-        Raises
+        Raises:
         ------
         ChartOfAccountsModelValidationError
             If the provided account model has an invalid COA model ID for the current COA.
@@ -565,7 +565,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         root_account_qs : Optional[AccountModelQuerySet], optional
             The query set of root accounts to which the created account should be linked. Defaults to None.
 
-        Returns
+        Returns:
         -------
         AccountModel
             The created account model instance.
@@ -642,7 +642,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Check if the ChartOffAccountModel instance can be activated.
 
-        Returns
+        Returns:
         -------
             True if the object can be activated, False otherwise.
         """
@@ -652,7 +652,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Check if the ChartOffAccountModel instance can be deactivated.
 
-        Returns
+        Returns:
         -------
             True if the object can be deactivated, False otherwise.
         """
@@ -720,7 +720,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Returns the URL to mark the current Chart of Accounts instances as Default for the EntityModel.
 
-        Returns
+        Returns:
         -------
         str
             The URL as a String.
@@ -737,7 +737,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Returns the URL to mark the current Chart of Accounts instances as active.
 
-        Returns
+        Returns:
         -------
         str
             The URL as a String.
@@ -754,7 +754,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         Returns the URL to mark the current Chart of Accounts instances as inactive.
 
-        Returns
+        Returns:
         -------
         str
             The URL as a String.

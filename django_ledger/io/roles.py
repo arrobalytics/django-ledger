@@ -648,7 +648,7 @@ def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -
     raise_exception: bool
         Raises InvalidRoleError if any of the roles provided if not valid.
 
-    Returns
+    Returns:
     -------
     set
         A set of the valid roles.

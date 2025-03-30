@@ -81,7 +81,7 @@ class EntityUnitModelManager(MP_NodeManager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Returns
+        Returns:
         -------
         EntityUnitModelQuerySet
             Returns a EntityUnitModelQuerySet with applied filters.
@@ -104,7 +104,7 @@ class EntityUnitModelAbstract(MP_Node,
     """
     Base implementation of the EntityUnitModel.
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -181,7 +181,7 @@ class EntityUnitModelAbstract(MP_Node,
         """
         The dashboard URL of the EntityModelUnit.
 
-        Returns
+        Returns:
         -------
         str
             The EntityModelUnit instance dashboard URL.
@@ -214,7 +214,7 @@ class EntityUnitModelAbstract(MP_Node,
         k: int
             Length of the suffix if add_suffix is True. Defaults to 5.
 
-        Returns
+        Returns:
         -------
         str
             The EntityUnitModel slug, regardless if generated or not.

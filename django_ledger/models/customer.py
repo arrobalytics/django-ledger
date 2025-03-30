@@ -30,7 +30,7 @@ class CustomerModelQueryset(QuerySet):
         """
         Active customers can be assigned to new Invoices and show on dropdown menus and views.
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             A QuerySet of active Customers.
@@ -44,7 +44,7 @@ class CustomerModelQueryset(QuerySet):
         CustomerModels that are not relevant to the Entity anymore. Also, it makes de UI cleaner by not populating
         unnecessary choices.
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             A QuerySet of inactive Customers.
@@ -56,7 +56,7 @@ class CustomerModelQueryset(QuerySet):
         Hidden customers do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             A QuerySet of hidden Customers.
@@ -67,7 +67,7 @@ class CustomerModelQueryset(QuerySet):
         """
         Visible customers show on dropdown menus and views. Visible customers are active and not hidden.
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             A QuerySet of visible Customers.
@@ -118,7 +118,7 @@ class CustomerModelManager(Manager):
             Logged in and authenticated django UserModel instance.
 
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             A filtered CustomerModel QuerySet.
@@ -142,7 +142,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         1. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
     
-    Attributes
+    Attributes:
     __________
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -208,7 +208,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         Determines if the CustomerModel can be issued a Customer Number.
         CustomerModels have a unique sequential number, which is unique for each EntityMode/CustomerModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if customer model can be generated, else False.
@@ -228,7 +228,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         raise_exception: bool
             Raises IntegrityError if Database cannot determine the next EntityStateModel available.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             The EntityStateModel associated with the CustomerModel number sequence.
@@ -273,7 +273,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
         commit: bool
             Commits transaction into CustomerModel. Defaults to False.
 
-        Returns
+        Returns:
         _______
         str
             A String, representing the current CustomerModel instance Document Number.

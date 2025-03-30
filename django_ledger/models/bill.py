@@ -6,7 +6,7 @@ This module implements the BillModel, which represents an Invoice received from 
 the Vendor states the amount owed by the recipient for the purposes of supplying goods and/or services.
 In addition to tracking the bill amount, it tracks the paid and due amount.
 
-Examples
+Examples:
 ________
 >>> user_model = request.user  # django UserModel
 >>> entity_slug = kwargs['entity_slug'] # may come from view kwargs
@@ -71,7 +71,7 @@ class BillModelQuerySet(QuerySet):
         Default status of any bill that is created.
         Draft bills do not impact the Ledger.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of draft bills only.
@@ -83,7 +83,7 @@ class BillModelQuerySet(QuerySet):
         In review bills are those that need additional review or approvals before being approved.
         In review bills do not impact the Ledger.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of bills in review only.
@@ -94,7 +94,7 @@ class BillModelQuerySet(QuerySet):
         """
         Approved bills are those that have been reviewed and are expected to be paid before the due date.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of approved bills only.
@@ -105,7 +105,7 @@ class BillModelQuerySet(QuerySet):
         """
         Paid bills are those that have received 100% of the amount due.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of paid bills only.
@@ -117,7 +117,7 @@ class BillModelQuerySet(QuerySet):
         Void bills are those that where rolled back after being approved.
         Void bills rollback all transactions by creating a new set of transactions posted on the date_void.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of void bills only.
@@ -129,7 +129,7 @@ class BillModelQuerySet(QuerySet):
         Canceled bills are those that are discarded during the draft or in review status.
         These bills never had an impact on the books.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of canceled bills only.
@@ -141,7 +141,7 @@ class BillModelQuerySet(QuerySet):
         Active bills are those that are approved or paid, which have
         impacted or have the potential to impact the Entity's Ledgers.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of active bills only.
@@ -155,7 +155,7 @@ class BillModelQuerySet(QuerySet):
         """
         Overdue bills are those which due date is in the past.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of overdue bills only.
@@ -167,7 +167,7 @@ class BillModelQuerySet(QuerySet):
         Unpaid bills are those that are approved but have not received 100% of the amount due.
         Equivalent to approved().
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             Returns a QuerySet of paid bills only.
@@ -203,12 +203,12 @@ class BillModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
+        Examples:
         ________
             >>> request_user = request.user
             >>> bill_model_qs = BillModel.objects.for_user(user_model=request_user)
 
-        Returns
+        Returns:
         _______
         BillModelQuerySet
             Returns a BillModelQuerySet with applied filters.
@@ -233,13 +233,13 @@ class BillModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
+        Examples:
         ________
             >>> request_user = request.user
             >>> slug = kwargs['entity_slug'] # may come from request kwargs
             >>> bill_model_qs = BillModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
-        Returns
+        Returns:
         _______
         BillModelQuerySet
             Returns a BillModelQuerySet with applied filters.
@@ -271,7 +271,7 @@ class BillModelAbstract(
         3. :func:`MarkdownNotesMixIn <django_ledger.models.mixins.MarkdownNotesMixIn>`
         4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -451,7 +451,7 @@ class BillModelAbstract(
         commit_ledger: bool
             Saves the BillModel's LedgerModel while being configured.
 
-        Returns
+        Returns:
         -------
         A tuple of LedgerModel, BillModel
         """
@@ -555,7 +555,7 @@ class BillModelAbstract(
             Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
         aggregate_on_db: bool
             If True, performs aggregation of ItemsTransactions in the DB resulting in one additional DB query.
-        Returns
+        Returns:
         -------
         A tuple: ItemTransactionModelQuerySet, dict
         """
@@ -595,7 +595,7 @@ class BillModelAbstract(
         """
         Description used when migrating transactions into the LedgerModel.
 
-        Returns
+        Returns:
         _______
         str
             Description as a string.
@@ -642,7 +642,7 @@ class BillModelAbstract(
             Optional pre-fetched ItemTransactionModelQuerySet. Avoids additional DB if provided.
             Queryset is validated if provided.
 
-        Returns
+        Returns:
         -------
         ItemTransactionModelQuerySet
             Newly fetched of previously fetched ItemTransactionModelQuerySet if provided.
@@ -655,7 +655,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is in Draft status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Draft, else False.
@@ -666,7 +666,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is In Review status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is in Review, else False.
@@ -677,7 +677,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is in Approved status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Approved, else False.
@@ -688,7 +688,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is in Paid status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Paid, else False.
@@ -699,7 +699,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is in Canceled status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Canceled, else False.
@@ -710,7 +710,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel has the potential to impact the books and produce financial statements status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Active, else False.
@@ -725,7 +725,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is in Void status.
 
-        Returns
+        Returns:
         _______
         bool
             True if BillModel is Void, else False.
@@ -736,7 +736,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel is past due.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel is past due, else False.
@@ -750,7 +750,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as Draft.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as draft, else False.
@@ -761,7 +761,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as In Review.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as in review, else False.
@@ -775,7 +775,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as Approved.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as approved, else False.
@@ -786,7 +786,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as Paid.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as paid, else False.
@@ -800,7 +800,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be deleted.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be deleted, else False.
@@ -815,7 +815,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as Void status.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as void, else False.
@@ -829,7 +829,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be marked as Canceled status.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be marked as canceled, else False.
@@ -843,7 +843,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel item transactions can be edited.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel items can be edited, else False.
@@ -854,7 +854,7 @@ class BillModelAbstract(
         """
         Checks if the BillModel can be migrated.
 
-        Returns
+        Returns:
         -------
         bool
             True if BillModel can be migrated, else False.
@@ -877,7 +877,7 @@ class BillModelAbstract(
         raise_exception: bool
             If True, raises BillModelValidationError if unable to bind. Else, returns False.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -909,7 +909,7 @@ class BillModelAbstract(
         raise_exception: bool
             If True, raises BillModelValidationError if unable to bind, else False.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -931,7 +931,7 @@ class BillModelAbstract(
         """
         Checks if BillModel can generate its Document Number.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -950,7 +950,7 @@ class BillModelAbstract(
         Checks if the BillModel can accept a payment.
 
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -982,7 +982,7 @@ class BillModelAbstract(
         raise_exception: bool
             If True, raises BillModelValidationError if payment exceeds amount due, else False.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -1097,7 +1097,7 @@ class BillModelAbstract(
         """
         BillModel Mark as Draft HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1114,7 +1114,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1131,7 +1131,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Draft BillModel confirmation message as a String.
@@ -1205,7 +1205,7 @@ class BillModelAbstract(
         """
         BillModel Mark as In Review HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1222,7 +1222,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             BillModel mark-as-review action URL.
@@ -1239,7 +1239,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Review BillModel confirmation message as a String.
@@ -1315,7 +1315,7 @@ class BillModelAbstract(
         """
         BillModel Mark as Approved HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1332,7 +1332,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             BillModel mark-as-approved action URL.
@@ -1349,7 +1349,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Approved BillModel confirmation message as a String.
@@ -1441,7 +1441,7 @@ class BillModelAbstract(
         """
         BillModel Mark as Paid HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1458,7 +1458,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             BillModel mark-as-paid action URL.
@@ -1475,7 +1475,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Paid BillModel confirmation message as a String.
@@ -1545,7 +1545,7 @@ class BillModelAbstract(
         """
         BillModel Mark as Void HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1562,7 +1562,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
             BillModel mark-as-void action URL.
         """
@@ -1578,7 +1578,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Void BillModel confirmation message as a String.
@@ -1615,7 +1615,7 @@ class BillModelAbstract(
         """
         BillModel Mark as Canceled HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1632,7 +1632,7 @@ class BillModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             BillModel mark-as-canceled action URL.
@@ -1651,7 +1651,7 @@ class BillModelAbstract(
         """
         Internationalized confirmation message with Bill Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Canceled BillModel confirmation message as a String.
@@ -1725,7 +1725,7 @@ class BillModelAbstract(
         """
         Current status action date.
 
-        Returns
+        Returns:
         _______
         date
             A date. i.e. If status is Approved, return date_approved. If Paid, return date_paid.
@@ -1737,7 +1737,7 @@ class BillModelAbstract(
         """
         Human-readable document number. Defaults to bill_number.
 
-        Returns
+        Returns:
         _______
         str
             Document Number as a String.
@@ -1748,7 +1748,7 @@ class BillModelAbstract(
         """
         Unique BillNumber HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1759,7 +1759,7 @@ class BillModelAbstract(
         """
         Unique amount due HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1770,7 +1770,7 @@ class BillModelAbstract(
         """
         Unique amount paid HTML ID
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1781,7 +1781,7 @@ class BillModelAbstract(
         """
         Unique BillModel Form HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1792,7 +1792,7 @@ class BillModelAbstract(
         """
         Date where BillModel term start to apply.
 
-        Returns
+        Returns:
         _______
         date
             A date which represents the start of BillModel terms.
@@ -1808,7 +1808,7 @@ class BillModelAbstract(
         raise_exception: bool
             Raises IntegrityError if unable to secure transaction from DB.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             An instance of EntityStateModel
@@ -1862,7 +1862,7 @@ class BillModelAbstract(
         commit: bool
             Commits transaction into BillModel.
 
-        Returns
+        Returns:
         _______
         str
             A String, representing the generated BillModel instance Document Number.

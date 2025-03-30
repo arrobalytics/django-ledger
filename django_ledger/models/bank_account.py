@@ -35,7 +35,7 @@ class BankAccountModelQuerySet(QuerySet):
         """
         Active bank accounts which can be used to create new transactions.
 
-        Returns
+        Returns:
         _______
         BankAccountModelQuerySet
             A filtered BankAccountModelQuerySet of active accounts.
@@ -47,7 +47,7 @@ class BankAccountModelQuerySet(QuerySet):
         Hidden bank accounts which can be used to create new transactions. but will not show in drop down menus
         in the UI.
 
-        Returns
+        Returns:
         _______
         BankAccountModelQuerySet
             A filtered BankAccountModelQuerySet of active accounts.
@@ -103,7 +103,7 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().

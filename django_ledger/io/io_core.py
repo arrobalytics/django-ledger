@@ -147,7 +147,7 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
         Whether to raise an exception if the transactions are not balanced and
         the difference exceeds the defined tolerance value. Defaults to True.
 
-    Returns
+    Returns:
     -------
     tuple
         A tuple containing the following:
@@ -155,7 +155,7 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
             2. `is_valid` (bool): Indicates whether the total credits match the total debits within the defined tolerance.
             3. `diff` (float): The difference between the sum of credits and the sum of debits.
 
-    Raises
+    Raises:
     ------
     ValidationError
         If the `tx_data` is neither a list of dictionaries nor a list of
@@ -206,7 +206,7 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
         A flag indicating whether to attempt to correct balance discrepancies
         in the transaction data. Defaults to False.
 
-    Returns
+    Returns:
     -------
     bool
         Returns True if the transactions are valid and satisfy the balance
@@ -262,7 +262,7 @@ def get_localtime(tz=None) -> datetime:
         The timezone to determine the local time. If `None`, defaults to the system
         timezone.
 
-    Returns
+    Returns:
     -------
     datetime
         A datetime object representing the calculated local time.
@@ -281,7 +281,7 @@ def get_localdate() -> date:
         local time zone. Otherwise, the date is based on the system's local time without
         any time zone consideration.
 
-        Returns
+        Returns:
         -------
         date
             The current local date, adjusted for the time zone setting if applicable.
@@ -312,20 +312,20 @@ def validate_io_timestamp(
         A flag to indicate if the local date should be returned directly when the
         input cannot be parsed or is unavailable. Defaults to True.
 
-    Returns
+    Returns:
     -------
     Optional[Union[datetime, date]]
         Returns a timezone-aware or naive `datetime` object that was processed
         depending on input and timezone settings. May also return a `date` object
         in specific scenarios. Returns `None` if the input is empty or invalid.
 
-    Raises
+    Raises:
     ------
     InvalidDateInputError
         Raised when the provided string cannot be parsed into a valid `date` or
         `datetime` object.
 
-    Notes
+    Notes:
     -----
     - The function handles both timezone-aware and naive datetime objects, and
       attempts to make objects timezone-aware when global time zone settings
@@ -397,7 +397,7 @@ def validate_dates(
         If not provided, it may default depending on the implementation of the
         `validate_io_timestamp` function.
 
-    Returns
+    Returns:
     -------
     Tuple[date, date]
         A tuple containing the validated `from_date` and `to_date` as `date` objects.
@@ -428,12 +428,12 @@ def validate_activity(activity: str, raise_404: bool = False):
         Whether to raise an Http404 error instead of ValidationError when the
         activity is invalid. Default is False.
 
-    Returns
+    Returns:
     -------
     str
         The activity string if it is valid.
 
-    Raises
+    Raises:
     ------
     ValidationError
         If the activity is invalid and `raise_404` is False.
@@ -464,7 +464,7 @@ class IOResult:
     lookup parameters, and the final dataset used for evaluation. It also provides
     utility to check bounded date constraints for closing entry lookups.
 
-    Attributes
+    Attributes:
     ----------
     db_from_date : Optional[date]
         The starting date for database aggregation queries.
@@ -516,7 +516,7 @@ class IODatabaseMixIn:
     derivation of specific models, validation of query parameters, and execution
     of data aggregation queries with flexible filtering and grouping options.
 
-    Attributes
+    Attributes:
     ----------
     TRANSACTION_MODEL_CLASS : NoneType or Type
         Specifies the Django model class for transactions. If None, a lazy loader
@@ -533,7 +533,7 @@ class IODatabaseMixIn:
         """
         Check if the instance is an EntityModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if the instance is an entity model, False otherwise.
@@ -544,7 +544,7 @@ class IODatabaseMixIn:
         """
         Checks if the current instance is a LedgerModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if the instance is of type ledger model, False otherwise.
@@ -555,7 +555,7 @@ class IODatabaseMixIn:
         """
         Checks if the current instance is an EntityUnitModel.
 
-        Returns
+        Returns:
         -------
         bool
             `True` if the object is an instance of the entity unit model;
@@ -572,7 +572,7 @@ class IODatabaseMixIn:
         EntityModel, it returns itself. If the instance is a ledgerModel or EntityUnitModel
         model, the associated entity model is retrieved from its attributes.
 
-        Returns
+        Returns:
         -------
         entity : EntityModel
             Retrieves the associated entity model if the instance is a ledger
@@ -597,7 +597,7 @@ class IODatabaseMixIn:
         class as the transaction model. If not set, it falls back to a default
         transaction model obtained from the `lazy_loader.get_txs_model()` method.
 
-        Returns
+        Returns:
         -------
         type
             The transaction model class defined in `TRANSACTION_MODEL_CLASS` or
@@ -613,7 +613,7 @@ class IODatabaseMixIn:
         attribute is set, it returns its value. Otherwise, it dynamically loads and
         returns the journal entry model using the `lazy_loader`.
 
-        Returns
+        Returns:
         -------
         Type
             The journal entry model class, either explicitly defined in
@@ -700,7 +700,7 @@ class IODatabaseMixIn:
             Additional parameters that can be passed for extended flexibility or
             customization when filtering and processing transactions.
 
-        Returns
+        Returns:
         -------
         IOResult
             An object containing the aggregated results, filtered transaction querysets,
@@ -977,7 +977,7 @@ class IODatabaseMixIn:
         **kwargs : dict
             Additional keyword arguments passed to the computation.
 
-        Returns
+        Returns:
         -------
         IOResult
             An object containing the transaction queryset, grouped and aggregated
@@ -1065,7 +1065,7 @@ class IODatabaseMixIn:
             An iterable of grouped account data, typically containing dictionaries with
             detailed account properties and their respective balance information.
 
-        Returns
+        Returns:
         -------
         dict
             A dictionary containing the aggregated balance information and related
@@ -1185,7 +1185,7 @@ class IODatabaseMixIn:
             Additional named arguments that can be passed to adjust the behavior of specific processing
             modules or middleware.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             A context manager instance containing the processed financial data and results, including
@@ -1337,13 +1337,13 @@ class IODatabaseMixIn:
             Additional keyword arguments that may be required for handling specific
             customization details during journal entry creation or retrieval.
 
-        Returns
+        Returns:
         -------
         tuple
             A tuple containing the journal entry model (je_model) and a list of
             transaction models (txs_models) created or associated with the journal entry.
 
-        Raises
+        Raises:
         ------
         IOValidationError
             Raised for various validation errors including invalid timestamps, attempting
@@ -1464,7 +1464,7 @@ class IOReportMixIn:
     generating summarized financial data for reporting purposes and outputting
     them in PDF format.
 
-    Attributes
+    Attributes:
     ----------
     PDF_REPORT_ORIENTATION : str
         Indicates the orientation of the generated PDF reports ('P' for portrait, 'L' for landscape).
@@ -1515,7 +1515,7 @@ class IOReportMixIn:
             Additional keyword arguments that can be used for the digestion process.
             Allows flexible filtering or additional specifications.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             A context manager for handling the digestion process of the balance sheet.
@@ -1576,7 +1576,7 @@ class IOReportMixIn:
             Additional keyword arguments required for generating the balance sheet.
             It may include filtering, formatting, or any other relevant parameters.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             The context manager object handling the generated balance sheet, either in
@@ -1641,7 +1641,7 @@ class IOReportMixIn:
             Additional keyword arguments for customization or requirements in
             the income statement digest generation process.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             A context manager containing the processed income statement data.
@@ -1699,13 +1699,13 @@ class IOReportMixIn:
         **kwargs :
             Additional optional keyword arguments for further customization or filtering.
 
-        Raises
+        Raises:
         ------
         IOValidationError
             Raised if PDF support is not enabled in the configuration. The error provides a
             message suggesting installing PDF support.
 
-        Returns
+        Returns:
         -------
         IncomeStatementReport
             A configured instance of the IncomeStatementReport class, representing the
@@ -1766,7 +1766,7 @@ class IOReportMixIn:
         **kwargs : dict
             Additional keyword arguments passed to the digest function.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             Context manager providing the digested cash flow statement.
@@ -1818,13 +1818,13 @@ class IOReportMixIn:
             Additional keyword arguments that are passed to the `digest_cash_flow_statement`
             method for further customization or additional processing.
 
-        Returns
+        Returns:
         -------
         CashFlowStatementReport
             An instance of the cash flow statement report class, either saved as a PDF if
             `save_pdf` is True or ready for further processing or display.
 
-        Raises
+        Raises:
         ------
         IOValidationError
             If PDF support is not enabled in the system's Django ledger configuration.
@@ -1890,7 +1890,7 @@ class IOReportMixIn:
             Additional optional parameters that may be used to further
             customize the processing of financial statements.
 
-        Returns
+        Returns:
         -------
         IODigestContextManager
             Represents the context manager containing the digested financial
@@ -1942,13 +1942,13 @@ class IOReportMixIn:
         **kwargs
             Additional keyword arguments for customizing financial statement generation.
 
-        Returns
+        Returns:
         -------
         ReportTuple
             A named tuple containing the generated balance sheet, income statement, and cash
             flow statement as objects.
 
-        Raises
+        Raises:
         ------
         IOValidationError
             Raised if PDF support is not enabled in the application configuration.

@@ -8,7 +8,7 @@ goods or services. The model manages all the Sales Invoices which are issued by 
 <django_ledger.models.entity.EntityModel>`. In addition to tracking the invoice amount , it tracks the receipt and
 due amount.
 
-Examples
+Examples:
 ________
 >>> user_model = request.user  # django UserModel
 >>> entity_slug = kwargs['entity_slug'] # may come from view kwargs
@@ -73,7 +73,7 @@ class InvoiceModelQuerySet(QuerySet):
         Default status of any invoice that is created.
         Draft invoices do not impact the Ledger.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of draft invoices only.
@@ -85,7 +85,7 @@ class InvoiceModelQuerySet(QuerySet):
         In review invoices are those that need additional review or approvals before being approved.
         Draft invoices do not impact the Ledger.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of in review invoices only.
@@ -96,7 +96,7 @@ class InvoiceModelQuerySet(QuerySet):
         """
         Approved invoices are those that have been reviewed and are expected to be paid before the due date.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of approved invoices only.
@@ -107,7 +107,7 @@ class InvoiceModelQuerySet(QuerySet):
         """
         Paid invoices are those that have received 100% of the amount due.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of paid invoices only.
@@ -119,7 +119,7 @@ class InvoiceModelQuerySet(QuerySet):
         Void invoices are those that where rolled back after being approved.
         Void invoices rollback all transactions by creating a new set of transactions posted on the date_void.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of void invoices only.
@@ -131,7 +131,7 @@ class InvoiceModelQuerySet(QuerySet):
         Canceled invoices are those that are discarded during the draft or in review status.
         These invoices never had an impact on the books.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of canceled invoices only.
@@ -143,7 +143,7 @@ class InvoiceModelQuerySet(QuerySet):
         Active invoices are those that are approved or paid, which have
         impacted or have the potential to impact the Entity's Ledgers.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of active invoices only.
@@ -157,7 +157,7 @@ class InvoiceModelQuerySet(QuerySet):
         """
         Overdue invoices are those which due date is in the past.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of overdue invoices only.
@@ -169,7 +169,7 @@ class InvoiceModelQuerySet(QuerySet):
         Unpaid invoices are those that are approved but have not received 100% of the amount due.
         Equivalent to approved().
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             Returns a QuerySet of paid invoices only.
@@ -211,7 +211,7 @@ class InvoiceModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             A Filtered InvoiceModelQuerySet.
@@ -244,7 +244,7 @@ class InvoiceModelAbstract(
         4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
 
-    Attributes
+    Attributes:
     ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -418,7 +418,7 @@ class InvoiceModelAbstract(
             Saves the current InvoiceModel after being configured.
         commit_ledger: bool
             Saves the InvoiceModel's LedgerModel while being configured.
-        Returns
+        Returns:
         -------
         A tuple of LedgerModel, InvoiceModel
         """
@@ -518,7 +518,7 @@ class InvoiceModelAbstract(
         queryset:
             Optional pre-fetched ItemModelQueryset to use. Avoids additional DB query if provided.
 
-        Returns
+        Returns:
         _______
         A tuple: ItemTransactionModelQuerySet, dict
         """
@@ -560,7 +560,7 @@ class InvoiceModelAbstract(
         """
         Description used when migrating transactions into the LedgerModel.
 
-        Returns
+        Returns:
         _______
         str
             Description as a string.
@@ -610,7 +610,7 @@ class InvoiceModelAbstract(
             Optional pre-fetched ItemTransactionModelQuerySet. Avoids additional DB if provided.
             Queryset is validated if provided.
 
-        Returns
+        Returns:
         -------
         ItemTransactionModelQuerySet
             Newly fetched of previously fetched ItemTransactionModelQuerySet if provided.
@@ -624,7 +624,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is in Draft status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Draft, else False.
@@ -635,7 +635,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is In Review status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is in Review, else False.
@@ -646,7 +646,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is in Approved status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Approved, else False.
@@ -657,7 +657,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is in Paid status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Paid, else False.
@@ -668,7 +668,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel has the potential to impact the books and produce financial statements status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Active, else False.
@@ -683,7 +683,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is in Canceled status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Canceled, else False.
@@ -694,7 +694,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is in Void status.
 
-        Returns
+        Returns:
         _______
         bool
             True if InvoiceModel is Void, else False.
@@ -705,7 +705,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel is past due.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel is past due, else False.
@@ -719,7 +719,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as Draft.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as draft, else False.
@@ -730,7 +730,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as In Review.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as in review, else False.
@@ -744,7 +744,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as Approved.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as approved, else False.
@@ -755,7 +755,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as Paid.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as paid, else False.
@@ -766,7 +766,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be deleted.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be deleted, else False.
@@ -781,7 +781,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as Void status.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as void, else False.
@@ -795,7 +795,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be marked as Canceled status.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be marked as canceled, else False.
@@ -809,7 +809,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel item transactions can be edited.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel items can be edited, else False.
@@ -820,7 +820,7 @@ class InvoiceModelAbstract(
         """
         Checks if the InvoiceModel can be migrated.
 
-        Returns
+        Returns:
         -------
         bool
             True if InvoiceModel can be migrated, else False.
@@ -843,7 +843,7 @@ class InvoiceModelAbstract(
         raise_exception: bool
             If True, raises InvoiceModelValidationError if unable to bind. Else, returns False.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -867,7 +867,7 @@ class InvoiceModelAbstract(
         """
         Checks if InvoiceModel can generate its Document Number.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -886,7 +886,7 @@ class InvoiceModelAbstract(
         Checks if the BillModel can accept a payment.
 
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -917,7 +917,7 @@ class InvoiceModelAbstract(
         raise_exception: bool
             If True, raises InvoiceModelValidationError if payment exceeds amount due, else False.
 
-        Returns
+        Returns:
         _______
 
         bool
@@ -1030,7 +1030,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as Draft HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1047,7 +1047,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1062,7 +1062,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Draft InvoiceModel confirmation message as a String.
@@ -1121,7 +1121,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as In Review HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1138,7 +1138,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             InvoiceModel mark-as-review action URL.
@@ -1153,7 +1153,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Review InvoiceModel confirmation message as a String.
@@ -1226,7 +1226,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as Approved HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1243,7 +1243,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             InvoiceModel mark-as-approved action URL.
@@ -1258,7 +1258,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Approved InvoiceModel confirmation message as a String.
@@ -1333,7 +1333,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as Paid HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1350,7 +1350,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             InvoiceModel mark-as-paid action URL.
@@ -1367,7 +1367,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Paid InvoiceModel confirmation message as a String.
@@ -1443,7 +1443,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as Void HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1460,7 +1460,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
             InvoiceModel mark-as-void action URL.
         """
@@ -1474,7 +1474,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Void InvoiceModel confirmation message as a String.
@@ -1517,7 +1517,7 @@ class InvoiceModelAbstract(
         """
         InvoiceModel Mark as Canceled HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1534,7 +1534,7 @@ class InvoiceModelAbstract(
             Entity Slug kwarg. If not provided, will result in addition DB query if select_related('ledger__entity')
             is not cached on QuerySet.
 
-        Returns
+        Returns:
         _______
         str
             InvoiceModel mark-as-canceled action URL.
@@ -1549,7 +1549,7 @@ class InvoiceModelAbstract(
         """
         Internationalized confirmation message with Invoice Number.
 
-        Returns
+        Returns:
         _______
         str
             Mark-as-Canceled InvoiceModel confirmation message as a String.
@@ -1627,7 +1627,7 @@ class InvoiceModelAbstract(
         """
         Current status action date.
 
-        Returns
+        Returns:
         _______
         date
             A date. i.e. If status is Approved, return date_approved. If Paid, return date_paid.
@@ -1638,7 +1638,7 @@ class InvoiceModelAbstract(
         """
         Human-readable document number. Defaults to invoice_number.
 
-        Returns
+        Returns:
         _______
         str
             Document Number as a String.
@@ -1649,7 +1649,7 @@ class InvoiceModelAbstract(
         """
         Unique InvoiceNumber HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1660,7 +1660,7 @@ class InvoiceModelAbstract(
         """
         Unique amount due HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1671,7 +1671,7 @@ class InvoiceModelAbstract(
         """
         Unique amount paid HTML ID
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1682,7 +1682,7 @@ class InvoiceModelAbstract(
         """
         Unique InvoiceModel Form HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1693,7 +1693,7 @@ class InvoiceModelAbstract(
         """
         Date where InvoiceModel term start to apply.
 
-        Returns
+        Returns:
         _______
         date
             A date which represents the start of InvoiceModel terms.
@@ -1709,7 +1709,7 @@ class InvoiceModelAbstract(
         raise_exception: bool
             Raises IntegrityError if unable to secure transaction from DB.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             An instance of EntityStateModel
@@ -1763,7 +1763,7 @@ class InvoiceModelAbstract(
         commit: bool
             Commits transaction into InvoiceModel.
 
-        Returns
+        Returns:
         _______
         str
             A String, representing the generated InvoiceModel instance Document Number.

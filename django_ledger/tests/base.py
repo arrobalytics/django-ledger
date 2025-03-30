@@ -148,7 +148,7 @@ class DjangoLedgerBaseTest(TestCase):
         fy_start_month:
             The month to start the financial year. Defaults to 1 (January).
 
-        Returns
+        Returns:
         -------
         EntityModel
         """

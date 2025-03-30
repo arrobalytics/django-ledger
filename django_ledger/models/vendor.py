@@ -36,7 +36,7 @@ class VendorModelQuerySet(QuerySet):
         """
         Active vendors can be assigned to new bills and show on dropdown menus and views.
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             A QuerySet of active Vendors.
@@ -50,7 +50,7 @@ class VendorModelQuerySet(QuerySet):
         VendorModels that are not relevant to the Entity anymore. Also, it makes de UI cleaner by not populating
         unnecessary choices.
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             A QuerySet of inactive Vendors.
@@ -62,7 +62,7 @@ class VendorModelQuerySet(QuerySet):
         Hidden vendors do not show on dropdown menus, but may be used via APIs or any other method that does not
         involve the UI.
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             A QuerySet of hidden Vendors.
@@ -73,7 +73,7 @@ class VendorModelQuerySet(QuerySet):
         """
         Visible vendors show on dropdown menus and views. Visible vendors are active and not hidden.
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             A QuerySet of visible Vendors.
@@ -109,13 +109,13 @@ class VendorModelManager(models.Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
+        Examples:
         ________
             >>> request_user = request.user
             >>> slug = kwargs['entity_slug'] # may come from request kwargs
             >>> vendor_model_qs = VendorModel.objects.for_entity(user_model=request_user, entity_slug=slug)
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             A filtered VendorModel QuerySet.
@@ -143,7 +143,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         3. :func:`TaxInfoMixIn <django_ledger.models.mixins.TaxInfoMixIn>`
         4. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
-    Attributes
+    Attributes:
     __________
 
     uuid : UUID
@@ -212,7 +212,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         Determines if the VendorModel can be issued a Vendor Number.
         VendorModel have a unique sequential number, which is unique for each EntityModel/VendorModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if vendor number can be generated, else False.
@@ -232,7 +232,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         raise_exception: bool
             Raises IntegrityError if Database cannot determine the next EntityStateModel available.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             The EntityStateModel associated with the VendorModel number sequence.
@@ -277,7 +277,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         commit: bool
             Commits transaction into VendorModel. Defaults to False.
 
-        Returns
+        Returns:
         _______
         str
             A String, representing the current VendorModel instance document number.

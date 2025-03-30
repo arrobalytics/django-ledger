@@ -63,7 +63,7 @@ class UnitOfMeasureModelManager(Manager):
         user_model: UserModel
             The Django UserModel to check permissions.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet with applied filters.
@@ -96,7 +96,7 @@ class UnitOfMeasureModelManager(Manager):
         user_model: UserModel
             The Django UserModel to check permissions.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet with applied filters.
@@ -109,7 +109,7 @@ class UnitOfMeasureModelAbstract(CreateUpdateMixIn):
     """
     Base implementation of a Unit of Measure assigned to each Item Transaction.
 
-    Attributes
+    Attributes:
     ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -158,7 +158,7 @@ class ItemModelQuerySet(QuerySet):
         """
         Filters the QuerySet to only active Item Models.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A QuerySet with applied filters.
@@ -169,7 +169,7 @@ class ItemModelQuerySet(QuerySet):
         """
         Filters the QuerySet to ItemModels that only qualify as products.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -186,7 +186,7 @@ class ItemModelQuerySet(QuerySet):
         """
         Filters the QuerySet to ItemModels that only qualify as services.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -203,7 +203,7 @@ class ItemModelQuerySet(QuerySet):
         """
         Filters the QuerySet to ItemModels that only qualify as expenses.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -220,7 +220,7 @@ class ItemModelQuerySet(QuerySet):
         Filters the QuerySet to ItemModels that only qualify as inventory.
         These types of items cannot be sold as they are not considered a finished product.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -238,7 +238,7 @@ class ItemModelQuerySet(QuerySet):
         These types of items may be finished or unfinished.
 
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -264,7 +264,7 @@ class ItemModelQuerySet(QuerySet):
         """
         Filters the QuerySet to ItemModels that are eligible only for bills..
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -304,7 +304,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -338,7 +338,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -359,7 +359,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -380,7 +380,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -410,7 +410,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -431,7 +431,7 @@ class ItemModelManager(Manager):
         user_model
             The request UserModel to check for privileges.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
@@ -444,7 +444,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     """
     Base implementation of the ItemModel.
 
-    Attributes
+    Attributes:
     ----------
     uuid: UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -1174,7 +1174,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         Determines if the ItemModel instance is received.
         ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
 
-        Returns
+        Returns:
         -------
         bool
             True if received, else False.
@@ -1186,7 +1186,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         Determines if the ItemModel instance is ordered.
         ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
 
-        Returns
+        Returns:
         -------
         bool
             True if received, else False.
@@ -1198,7 +1198,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         Determines if the ItemModel instance is canceled.
         ItemModel status is only relevant for ItemModels associated with PurchaseOrderModels.
 
-        Returns
+        Returns:
         -------
         bool
             True if canceled, else False.
@@ -1210,7 +1210,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determines if the ItemModel instance is associated with an EstimateModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if associated with an EstimateModel, else False.
@@ -1221,7 +1221,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determines if the ItemModel instance is associated with a PurchaseOrderModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if associated with an PurchaseOrderModel, else False.
@@ -1232,7 +1232,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determines if the ItemModel instance is associated with a InvoiceModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if associated with an InvoiceModel, else False.
@@ -1243,7 +1243,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determines if the ItemModel instance is associated with a BillModel.
 
-        Returns
+        Returns:
         -------
         bool
             True if associated with an BillModel, else False.
@@ -1333,7 +1333,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Unique ItemModel instance HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1344,7 +1344,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Unique ItemModel instance unit cost field HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1355,7 +1355,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Unique ItemModel instance quantity field HTML ID.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String.
@@ -1365,7 +1365,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
     def can_create_bill(self) -> bool:
         """
         Determines if the ItemModel instance can be associated with a BillModel.
-        Returns
+        Returns:
         -------
         bool
             True, if instance can be associated with a BillModel, else False.
@@ -1380,7 +1380,7 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         Determines the CSS Class used to represent the ItemModel instance in the UI based on its status.
 
-        Returns
+        Returns:
         -------
         str
             The CSS class as a String.

@@ -58,7 +58,7 @@ class ImportJobModelManager(Manager):
         of the import job. The QuerySet uses annotations and filters to derive
         various properties required for processing.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet with additional annotations:
@@ -114,7 +114,7 @@ class ImportJobModelManager(Manager):
         user_model : User
             The user model instance whose permissions determine the filtering of the queryset.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A filtered queryset based on the user's role and associated permissions.
@@ -145,7 +145,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
     import job, and properties for UUID and slug identifiers. Additionally, helper
     methods are provided for configuration and deletion confirmation.
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         Unique identifier for the import job instance.
@@ -192,7 +192,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         attribute exists, it is returned. Otherwise, the UUID is fetched
         from the `entity_model_id` attribute of the `ledger_model` instance.
 
-        Returns
+        Returns:
         -------
         str
             The UUID of the entity as a string.
@@ -214,7 +214,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         `ledger_model` is used as the default value.
 
 
-        Returns
+        Returns:
         -------
         str
             The slug identifier related to the entity.
@@ -233,7 +233,7 @@ class ImportJobModelAbstract(CreateUpdateMixIn):
         and bank account model ID are set. Only when both attributes are
         non-None, the configuration is considered complete.
 
-        Returns
+        Returns:
         -------
         bool
             True if both `ledger_model_id` and `bank_account_model_id` attributes
@@ -291,7 +291,7 @@ class StagedTransactionModelQuerySet(QuerySet):
         Pending transactions are identified by checking if the `transaction_model` is
         null for any of the objects in the queryset.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet containing objects with a null `transaction_model`.
@@ -305,7 +305,7 @@ class StagedTransactionModelQuerySet(QuerySet):
         related transaction model. This function checks whether the `transaction_model`
         field in the related objects is non-null.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A filtered queryset containing only objects where the `transaction_model`
@@ -322,7 +322,7 @@ class StagedTransactionModelQuerySet(QuerySet):
         where the `parent_id` is null. It is often used in hierarchical or
         parent-child data structures to fetch only parent items in the structure.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A filtered queryset containing only the objects with `parent_id` set
@@ -339,7 +339,7 @@ class StagedTransactionModelQuerySet(QuerySet):
         It is typically used to identify and retrieve items marked as ready for
         further processing or importing.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A QuerySet of elements that satisfy the `ready_to_import` condition.
@@ -360,7 +360,7 @@ class StagedTransactionModelManager(Manager):
         as the number of child transactions, the total amount split, and whether the transaction
         is ready to import or can be split into journal entries.
 
-        Returns
+        Returns:
         -------
         QuerySet
             A Django QuerySet preconfigured with selected related fields and annotations
@@ -452,7 +452,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     role mapping, unit handling, and other important functionalities required for staged
     transactions.
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUIDField
         The unique identifier for the transaction.
@@ -559,7 +559,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             A specific amount to override the transaction's default amount
             (`self.amount`). If not provided, `self.amount` will be used.
 
-        Returns
+        Returns:
         -------
         List[Dict]
             A list containing a single dictionary with the following keys:
@@ -591,7 +591,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         Depending on whether the current transaction has child transactions, it processes
         either the child transactions or itself to construct the dictionaries.
 
-        Returns
+        Returns:
         -------
         List[Dict]
             A list of dictionaries, each representing a transaction with fields such as
@@ -635,7 +635,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             If True, the function will generate a split for each staged amount in
             the commit dictionary. Defaults to False.
 
-        Returns
+        Returns:
         -------
         list
             A list representing the commit data. If `split_txs` is True, each entry
@@ -661,7 +661,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         it returns the value of `amount_split`. Otherwise, it returns the value of the
         `amount` attribute.
 
-        Returns
+        Returns:
         -------
         Decimal
             The calculated amount based on the object's state.
@@ -676,7 +676,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         properly. This method checks whether both `account_model_id` and
         `transaction_model_id` are set.
 
-        Returns
+        Returns:
         -------
         bool
             True if both `account_model_id` and `transaction_model_id` are not None,
@@ -695,7 +695,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         `transaction_model_id`. This function checks the attribute and returns
         a boolean indicating the status.
 
-        Returns
+        Returns:
         -------
         bool
             True if the transaction is pending (i.e., `transaction_model_id`
@@ -711,7 +711,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         indicating that the account model has been mapped. It returns a boolean
         result based on the presence of the `account_model_id`.
 
-        Returns
+        Returns:
         -------
         bool
             True if `account_model_id` is not None, indicating the account
@@ -728,7 +728,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         child of any other entry. The result is a boolean value indicating
         whether the entry meets these criteria.
 
-        Returns
+        Returns:
         -------
         bool
             True if the entry is a single, standalone entry; False otherwise.
@@ -745,7 +745,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         Checks whether the current object is associated with a parent by verifying the presence of `parent_id`.
         The method returns `True` if the `parent_id` attribute is not `None`, indicating that the object is indeed a child.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object has a valid `parent_id`, indicating it is a child entity;
@@ -763,7 +763,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         or not. If a value is set, it indicates that there is an associated
         activity. Otherwise, no activity is present.
 
-        Returns
+        Returns:
         -------
         bool
             True if the `activity` attribute is not None, indicating the
@@ -780,7 +780,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         signifying no children are present at that moment. Otherwise,
         it evaluates the `children_count` attribute to decide.
 
-        Returns
+        Returns:
         -------
         bool
             True if the instance has children and is not in the process of
@@ -797,7 +797,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         This method checks whether the object does not have any children and, as
         a result, is capable of being split.
 
-        Returns
+        Returns:
         -------
         bool
             `True` if the object has no children and can be split, otherwise
@@ -814,7 +814,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         the entity, whether it has children, if all children are mapped, and
         its relationship to its parent entity.
 
-        Returns
+        Returns:
         -------
         bool
             A boolean value indicating whether the entity can have a unit.
@@ -851,7 +851,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         by checking if the entity has any children. The account creation is
         prohibited if the entity has children and allowed otherwise.
 
-        Returns
+        Returns:
         -------
         bool
             True if the entity can have an account, False otherwise.
@@ -877,7 +877,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             Specifies if the object should be checked for readiness to be split
             into "je" (journal entries) for import. Defaults to False.
 
-        Returns
+        Returns:
         -------
         bool
             True if the object is ready to import (optionally as split entries),
@@ -915,7 +915,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             The number of split transactions to create. If the staged transaction has
             no children, one additional split transaction is created. Default is 1.
 
-        Returns
+        Returns:
         -------
         list of StagedTransactionModel
             List of newly created staged transactions in the split.
@@ -954,7 +954,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         Indicates whether the total amount is distributed as per the split rules.
 
-        Returns
+        Returns:
         -------
         bool
             True if the `amount` attribute equals the `total_amount_split` attribute,
@@ -969,7 +969,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         This method compares the total number of children with the number
         of mapped children to check whether all children have been mapped.
 
-        Returns
+        Returns:
         -------
         bool
             True if the number of children equals the number of mapped children,
@@ -988,7 +988,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         each transaction's account model, excluding a specific type of role, are
         aggregated and returned as a set.
 
-        Returns
+        Returns:
         -------
         Set[str]
             A set of roles derived from the account model(s) relating to the
@@ -1022,7 +1022,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             Forces the method to fetch and update the activity even if it already exists.
             Default is False.
 
-        Returns
+        Returns:
         -------
         Optional[str]
             The journal entry activity if successfully retrieved or updated; otherwise,
@@ -1051,7 +1051,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         exception. It serves as a wrapper for the `get_prospect_je_activity_try`
         method by specifying that exceptions should not be raised during retrieval.
 
-        Returns
+        Returns:
         -------
         Optional[str]
             The activity of the prospect journal entry if available, otherwise `None`.
@@ -1064,7 +1064,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         based on the mapped activity associated with a prospect. The method attempts to
         fetch the journal entry activity safely and returns its display name if available.
 
-        Returns
+        Returns:
         -------
         Optional[str]
             The display name of the prospect journal entry activity if it exists,
@@ -1089,12 +1089,12 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             Determines whether to raise an exception if validation fails
             (default is False).
 
-        Returns
+        Returns:
         -------
         bool
             True if the role mapping is valid, otherwise False.
 
-        Raises
+        Raises:
         ------
         ValidationError
             If raise_exception is set to True and the validation process fails.
@@ -1125,7 +1125,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             A flag that determines whether the transactions should be split into
             multiple entries based on the associated commit data. Defaults to False.
 
-        Notes
+        Notes:
         -----
         The method checks if the transactional data can be imported using the
         `can_import` method. If successful, it creates a commit dictionary and

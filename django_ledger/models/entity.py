@@ -75,7 +75,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
         """
         A QuerySet of all hidden EntityModel.
 
-        Returns
+        Returns:
         -------
         EntityModelQuerySet
             A filtered QuerySet of hidden EntityModels only.
@@ -86,7 +86,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
         """
         A Queryset of all visible EntityModel.
 
-        Returns
+        Returns:
         -------
         EntityModelQuerySet
             A filtered QuerySet of visible EntityModels only.
@@ -101,7 +101,7 @@ class EntityModelManager(MP_NodeManager):
     This Model Manager keeps track and maintains a root/parent/child relationship between Entities for the purposes of
     producing consolidated financial statements.
 
-    Examples
+    Examples:
     ________
     >>> user = request.user
     >>> entity_model_qs = EntityModel.objects.for_user(user_model=user)
@@ -131,7 +131,7 @@ class EntityModelManager(MP_NodeManager):
         authorized_superuser
             Allows any superuser to access the EntityModel. Default is False.
 
-        Returns
+        Returns:
         -------
         EntityModelQuerySet
             A filtered QuerySet of EntityModels that the user has access. The user has access to an Entity if:
@@ -161,12 +161,12 @@ class EntityModelFiscalPeriodMixIn:
         The fiscal year start month represents the month (as an integer) when the assigned fiscal year of the
         EntityModel starts.
 
-        Returns
+        Returns:
         -------
         int
             An integer representing the month that the fiscal year starts.
 
-        Examples
+        Examples:
         ________
             * 1 -> January.
             * 4 -> April.
@@ -204,7 +204,7 @@ class EntityModelFiscalPeriodMixIn:
         quarter: int
             The quarter number to validate.
 
-        Raises
+        Raises:
         ------
         ValidationError
             If quarter is not valid.
@@ -223,7 +223,7 @@ class EntityModelFiscalPeriodMixIn:
         month: int
             The month number to validate.
 
-        Raises
+        Raises:
         ------
 
         ValidationError
@@ -244,7 +244,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         date
             The date when the requested EntityModel fiscal year starts.
@@ -266,7 +266,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         date
             The date when the requested EntityModel fiscal year ends.
@@ -293,7 +293,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         date
             The date when the requested EntityModel quarter starts.
@@ -324,7 +324,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         date
             The date when the requested EntityModel quarter ends.
@@ -352,7 +352,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         tuple
             Both, the date when the requested EntityModel fiscal year start and end date as a tuple.
@@ -380,7 +380,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month: int
             Optional fiscal year month start. If passed, it will override the EntityModel setting.
 
-        Returns
+        Returns:
         -------
         tuple
             Both, the date when the requested EntityModel fiscal year quarter start and end date as a tuple.
@@ -408,7 +408,7 @@ class EntityModelFiscalPeriodMixIn:
             If True, return date as a string.
 
 
-        Returns
+        Returns:
         _______
         str or date
             Fiscal year as an integer or string, depending on as_str parameter.
@@ -710,7 +710,7 @@ class EntityModelAbstract(MP_Node,
         6. :func:`IOMixIn <django_ledger.io.io_mixin.IOMixIn>`
 
 
-    Attributes
+    Attributes:
     __________
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -842,7 +842,7 @@ class EntityModelAbstract(MP_Node,
             The parent Entity Model of the newly created Entity. If provided, the admin user must also be admin of the
             parent company.
 
-        Returns
+        Returns:
         -------
 
         """
@@ -929,7 +929,7 @@ class EntityModelAbstract(MP_Node,
         name: str
             The name or string to slugify.
 
-        Returns
+        Returns:
         -------
             The slug as a String.
         """
@@ -976,7 +976,7 @@ class EntityModelAbstract(MP_Node,
         """
         Determines if the EntityModel instance has a Default CoA.
 
-        Returns
+        Returns:
         -------
         bool
             True if EntityModel instance has a Default CoA.
@@ -992,7 +992,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises exception if no default CoA has been assigned.
 
-        Returns
+        Returns:
         -------
         ChartOfAccountModel
             The EntityModel default ChartOfAccount.
@@ -1037,7 +1037,7 @@ class EntityModelAbstract(MP_Node,
         assign_as_default: bool
             Assigns the newly created ChartOfAccountModel as the EntityModel default_coa.
 
-        Returns
+        Returns:
         -------
         ChartOfAccountModel
             The newly created chart of accounts model.
@@ -1146,7 +1146,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Returns only active Chart of Account Models. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ChartOfAccountModelQuerySet
         """
@@ -1170,7 +1170,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if CoA Model is not valid for the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         bool
             True if valid, else False.
@@ -1198,7 +1198,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if AccountModel is invalid for the EntityModel and CoA instance.
 
-        Returns
+        Returns:
         -------
         bool
             True if valid, else False.
@@ -1238,7 +1238,7 @@ class EntityModelAbstract(MP_Node,
         order_by: list of strings.
             Optional list of fields passed to the order_by QuerySet method.
 
-        Returns
+        Returns:
         -------
         Tuple: Tuple[ChartOfAccountModelQuerySet, Dict[ChartOfAccountModel, AccountModelQuerySet]
             The ChartOfAccountModelQuerySet and a grouping of AccountModels by ChartOfAccountModel as keys.
@@ -1264,7 +1264,7 @@ class EntityModelAbstract(MP_Node,
             Selects only active accounts.
         order_by: list of strings.
             Optional list of fields passed to the order_by QuerySet method.
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The AccountModelQuerySet of the assigned default CoA.
@@ -1301,7 +1301,7 @@ class EntityModelAbstract(MP_Node,
         order_by: list of strings.
             Optional list of fields passed to the order_by QuerySet method.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The AccountModelQuerySet of the assigned default CoA.
@@ -1351,7 +1351,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if no default_coa found.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The AccountModelQuerySet of the assigned default CoA.
@@ -1378,7 +1378,7 @@ class EntityModelAbstract(MP_Node,
         code_list: list or str
             Code or list of codes to fetch.
 
-        Returns
+        Returns:
         -------
         AccountModelQuerySet
             The requested AccountModelQuerySet with applied code filter.
@@ -1407,7 +1407,7 @@ class EntityModelAbstract(MP_Node,
         coa_model: ChartOfAccountModel
             The CoA Model to pull default account from. If not provided, will use EntityModel default CoA.
 
-        Returns
+        Returns:
         -------
         AccountModel
             The default account model for the specified CoA role.
@@ -1450,7 +1450,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if ChartOfAccountsModel is not valid for the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         A tuple of ChartOfAccountModel, AccountModel
             The ChartOfAccountModel and AccountModel instance just created.
@@ -1495,7 +1495,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if ChartOfAccountsModel is not valid for the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         A tuple of ChartOfAccountModel, AccountModel
             The ChartOfAccountModel and AccountModel instance just created.
@@ -1563,7 +1563,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Active VendorModels only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         VendorModelQuerySet
             The EntityModel instance VendorModelQuerySet with applied filters.
@@ -1592,7 +1592,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             Saves the VendorModel instance in the Database.
 
-        Returns
+        Returns:
         -------
         VendorModel
         """
@@ -1612,7 +1612,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Active CustomerModel only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         CustomerModelQueryset
             The EntityModel instance CustomerModelQueryset with applied filters.
@@ -1645,7 +1645,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             Saves the CustomerModel instance in the Database.
 
-        Returns
+        Returns:
         -------
         CustomerModel
         """
@@ -1660,7 +1660,7 @@ class EntityModelAbstract(MP_Node,
         """
         Fetches a QuerySet of BillModels associated with the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
         """
@@ -1712,7 +1712,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             If True, commits the new BillModel in the Database.
 
-        Returns
+        Returns:
         -------
         BillModel
             The newly created BillModel in DRAFT state.
@@ -1772,7 +1772,7 @@ class EntityModelAbstract(MP_Node,
         """
         Fetches a QuerySet of InvoiceModels associated with the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
         """
@@ -1822,7 +1822,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             If True, commits the new BillModel in the Database.
 
-        Returns
+        Returns:
         -------
         InvoiceModel
             The newly created InvoiceModel in DRAFT state.
@@ -1877,7 +1877,7 @@ class EntityModelAbstract(MP_Node,
         """
         Fetches a QuerySet of PurchaseOrderModels associated with the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
         """
@@ -1903,7 +1903,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             If True, commits the new PO in the Database. Defaults to True.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModel
             The newly created PurchaseOrderModel in DRAFT state.
@@ -1923,7 +1923,7 @@ class EntityModelAbstract(MP_Node,
         """
         Fetches a QuerySet of EstimateModels associated with the EntityModel instance.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
         """
@@ -1952,7 +1952,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             If True, commits the new PO in the Database. Defaults to True.
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModel
             The newly created PurchaseOrderModel in DRAFT state.
@@ -1986,7 +1986,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             If True, returns only active Bank Accounts. Defaults to True.
 
-        Returns
+        Returns:
         -------
         BankAccountModelQuerySet
         """
@@ -2032,7 +2032,7 @@ class EntityModelAbstract(MP_Node,
             Flag indicating whether to save the created bank account to the
             database. Defaults to True.
 
-        Returns
+        Returns:
         -------
         BankAccountModel
             The newly created and optionally saved instance of the bank account model.
@@ -2077,7 +2077,7 @@ class EntityModelAbstract(MP_Node,
         raise_exception: bool
             Raises EntityModelValidationError if ItemModelQuerySet is not valid.
 
-        Returns
+        Returns:
         -------
         bool
             True if valid, else False.
@@ -2093,7 +2093,7 @@ class EntityModelAbstract(MP_Node,
         """
         Fetches the EntityModel instance Unit of Measures QuerySet.
 
-        Returns
+        Returns:
         -------
         UnitOfMeasureModelQuerySet
         """
@@ -2114,7 +2114,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             Saves the model in the DB if True. Defaults to True
 
-        Returns
+        Returns:
         -------
         UnitOfMeasureModel
         """
@@ -2141,7 +2141,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2168,7 +2168,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2196,7 +2196,7 @@ class EntityModelAbstract(MP_Node,
             Optional ChartOfAccountsModel to use when fetching default role AccountModels.
         commit: bool
             Commits the ItemModel in the DB. Defaults to True.
-        Returns
+        Returns:
         -------
         ItemModel
             The created Product.
@@ -2245,7 +2245,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2271,7 +2271,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             Commits the ItemModel in the DB. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModel
             The created Service.
@@ -2319,7 +2319,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2353,7 +2353,7 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             Commits the ItemModel in the DB. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModel
         """
@@ -2402,7 +2402,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2420,7 +2420,7 @@ class EntityModelAbstract(MP_Node,
         active: bool
             Filters the QuerySet to active accounts only. Defaults to True.
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
         """
@@ -2454,7 +2454,7 @@ class EntityModelAbstract(MP_Node,
             Commits the ItemModel in the DB. Defaults to True.
 
 
-        Returns
+        Returns:
         -------
         ItemModel
         """
@@ -2511,7 +2511,7 @@ class EntityModelAbstract(MP_Node,
             <django_ledger.models.item.ItemTransactionModelManager.inventory_count>`
             Expects ItemModelQuerySet to be formatted "as values".
 
-        Returns
+        Returns:
         -------
         defaultdict
             A dictionary with necessary adjustments with keys as tuple:
@@ -2593,7 +2593,7 @@ class EntityModelAbstract(MP_Node,
         commit:
             Updates all inventory ItemModels with the new inventory count.
 
-        Returns
+        Returns:
         -------
         Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]
             Return a tuple as follows:
@@ -2646,7 +2646,7 @@ class EntityModelAbstract(MP_Node,
             Returns a list of dictionaries by calling the Django values() QuerySet function.
 
 
-        Returns
+        Returns:
         -------
         ItemModelQuerySet
             The ItemModelQuerySet containing inventory ItemModels with additional Unit of Measure information.
@@ -2923,7 +2923,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Dashboard URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel dashboard URL as a string.
@@ -2937,7 +2937,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Manage URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel manage URL as a string.
@@ -2951,7 +2951,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Ledger List URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel ledger list URL as a string.
@@ -2965,7 +2965,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel bill list URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel bill list URL as a string.
@@ -2979,7 +2979,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel invoice list URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel invoice list URL as a string.
@@ -2993,7 +2993,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel bank account list URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel bank account list URL as a string.
@@ -3007,7 +3007,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Balance Sheet Statement URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel Balance Sheet Statement URL as a string.
@@ -3021,7 +3021,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Income Statement URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel Income Statement URL as a string.
@@ -3035,7 +3035,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Cashflow Statement URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel Cashflow Statement URL as a string.
@@ -3049,7 +3049,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel transaction import URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel transaction import URL as a string.
@@ -3087,7 +3087,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel Code of Accounts llist import URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel Code of Accounts llist import URL as a string.
@@ -3101,7 +3101,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel customers list URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel customers list URL as a string.
@@ -3115,7 +3115,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel vendors list URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel vendors list URL as a string.
@@ -3129,7 +3129,7 @@ class EntityModelAbstract(MP_Node,
         """
         The EntityModel delete URL.
 
-        Returns
+        Returns:
         _______
         str
             EntityModel delete URL as a string.

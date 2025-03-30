@@ -22,7 +22,7 @@ class AccountModelCreateForm(ModelForm):
     """
     A form for creating and managing account models within the system.
 
-    Attributes
+    Attributes:
     ----------
     ENTITY_MODEL : Model
         The entity model being used in the form.
@@ -92,7 +92,7 @@ class AccountModelUpdateForm(MoveNodeForm):
 
     A form for updating account model, inheriting from MoveNodeForm.
 
-    Attributes
+    Attributes:
     ----------
     _position : ChoiceField
         A choice field for selecting the position.

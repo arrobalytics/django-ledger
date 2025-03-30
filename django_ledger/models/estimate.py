@@ -61,7 +61,7 @@ class EstimateModelQuerySet(models.QuerySet):
         """
         Approved Estimates or Sales Orders are those that have been approved or completed.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
             A EstimateModelQuerySet with applied filters.
@@ -75,7 +75,7 @@ class EstimateModelQuerySet(models.QuerySet):
         """
         Not approved Estimates or Sales Orders are those that have not been approved or completed.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
             A EstimateModelQuerySet with applied filters.
@@ -89,7 +89,7 @@ class EstimateModelQuerySet(models.QuerySet):
         """
         A contract are Estimates or Sales Orders are those that have been approved or completed.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
             A EstimateModelQuerySet with applied filters. Equivalent to approve.
@@ -100,7 +100,7 @@ class EstimateModelQuerySet(models.QuerySet):
         """
          Estimates or Sales Orders are those that have not been approved or completed.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
             A EstimateModelQuerySet with applied filters. Equivalent to not approved.
@@ -137,7 +137,7 @@ class EstimateModelManager(models.Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Returns
+        Returns:
         -------
         EstimateModelQuerySet
             Returns a EstimateModelQuerySet with applied filters.
@@ -162,7 +162,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         1. :func:`MarkdownNotesMixIn <django_ledger.models.mixins.MarkdownNotesMixIn>`
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
 
-    Attributes
+    Attributes:
     ----------
     uuid : UUID
         This is a unique primary key generated for the table. The default value of this field is uuid4().
@@ -364,7 +364,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         raise_exception: bool
             If True, raises EstimateModelValidationError when model is already configured.
 
-        Returns
+        Returns:
         -------
         EstimateModel
             The configured EstimateModel instance.
@@ -409,7 +409,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is in Draft status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is in Draft status, else False.
@@ -420,7 +420,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is In Review status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is In Review status, else False.
@@ -431,7 +431,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is in Approved status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is in Approved status, else False.
@@ -442,7 +442,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is in Completed status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is in Completed status, else False.
@@ -453,7 +453,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is in Canceled status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is in Canceled status, else False.
@@ -464,7 +464,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is in Void status.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is in Void status, else False.
@@ -475,7 +475,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is considered a Contract.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is a Contract, else False.
@@ -489,7 +489,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel is configured.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel is configured, else False.
@@ -505,7 +505,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as Draft.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as draft, else False.
@@ -516,7 +516,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as In Review.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as In Review, else False.
@@ -527,7 +527,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as approved.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as approved, else False.
@@ -538,7 +538,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as completed.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as completed, else False.
@@ -549,7 +549,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as canceled.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as canceled, else False.
@@ -563,7 +563,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be marked as void.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be marked as void, else False.
@@ -574,7 +574,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel item transactions can be edited or changed.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel item transactions can be edited or changed, else False.
@@ -585,7 +585,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can be bound to a set of POs, Bills or Invoices.
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can be bound, else False.
@@ -596,7 +596,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         Determines if the EstimateModel can generate its own estimate number..
 
-        Returns
+        Returns:
         -------
         bool
             True if EstimateModel can generate the estimate number, else False.
@@ -638,7 +638,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Draft HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -649,7 +649,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Draft URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -664,7 +664,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Draft Message.
 
-        Returns
+        Returns:
         _______
         str
             Message as a String
@@ -729,7 +729,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Review HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -740,7 +740,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as In Review URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -755,7 +755,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as In Review Message.
 
-        Returns
+        Returns:
         -------
         str
             Message as a String
@@ -805,7 +805,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Approved HTML ID Tag.
 
-        Returns
+        Returns:
         -------
         str
             HTML ID as a String
@@ -816,7 +816,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Approved URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -831,7 +831,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Approved Message.
 
-        Returns
+        Returns:
         _______
         str
             Message as a String
@@ -882,7 +882,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Complete HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -893,7 +893,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Completed URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -908,7 +908,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Completed Message.
 
-        Returns
+        Returns:
         _______
         str
             Message as a String
@@ -957,7 +957,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Canceled HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -968,7 +968,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Canceled URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -983,7 +983,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Canceled Message.
 
-        Returns
+        Returns:
         _______
         str
             Message as a String
@@ -1034,7 +1034,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Void HTML ID Tag.
 
-        Returns
+        Returns:
         _______
         str
             HTML ID as a String
@@ -1045,7 +1045,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Void URL.
 
-        Returns
+        Returns:
         _______
         str
             URL as a String
@@ -1060,7 +1060,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         EstimateModel Mark as Void message.
 
-        Returns
+        Returns:
         _______
         str
             Message as a String
@@ -1127,7 +1127,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             ItemTransactionModelQuerySet to use. Avoids additional DB query if provided.
             Validated if provided.
 
-        Returns
+        Returns:
         -------
         ItemTransactionModelQuerySet
         """
@@ -1150,7 +1150,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             Prefetched ItemTransactionModelQuerySet if any. If None a new queryset will be evaluated.
             Will be validated if provided.
 
-        Returns
+        Returns:
         -------
         tuple
             The original ItemTransactionModelQuerySet and the annotated ItemTransactionModelQuerySet.
@@ -1248,7 +1248,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         as_float: bool
             If True, will return value as float, else as Decimal.
 
-        Returns
+        Returns:
         -------
         Decimal or float
             The total EstimateModel cost.
@@ -1272,7 +1272,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         as_float: bool
             If True, will return value as float, else as Decimal.
 
-        Returns
+        Returns:
         -------
         Decimal or float
             The total EstimateModel revenue.
@@ -1290,7 +1290,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         as_float: bool
             If True, will return value as float, else as Decimal.
 
-        Returns
+        Returns:
         -------
         Decimal or float
             The total EstimateModel profit.
@@ -1309,7 +1309,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
         raise_exception: bool
 
-        Returns
+        Returns:
         -------
         float
             The EstimateModel gross margin.
@@ -1328,13 +1328,13 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         """
         The date when the latest status took place.
 
-        Examples
+        Examples:
         --------
         If EstimateModel is Draft, will return date_draft.
         If EstimateModel is In Review, will return date_in_review.
         If EstimateModel is Approved, will return date_approved.
 
-        Returns
+        Returns:
         -------
         date
             The latest action date.
@@ -1375,7 +1375,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         po_qs: PurchaseOrderModelQuerySet
             The PurchaseOrderModelQuerySet to validate
 
-        Returns
+        Returns:
         -------
         PurchaseOrderModelQuerySet
             The validated PurchaseOrderModelQuerySet.
@@ -1397,7 +1397,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         bill_qs: BillModelQuerySet
             The BillModelQuerySet to validate
 
-        Returns
+        Returns:
         -------
         BillModelQuerySet
             The validated BillModelQuerySet.
@@ -1419,7 +1419,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         invoice_qs: InvoiceModelQuerySet
             The InvoiceModelQuerySet to validate
 
-        Returns
+        Returns:
         -------
         InvoiceModelQuerySet
             The validated InvoiceModelQuerySet.
@@ -1485,7 +1485,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         invoice_qs: InvoiceModelQuerySet
             Prefetched InvoiceModelQuerySet. If provided will be validated.
 
-        Returns
+        Returns:
         -------
         dict
             A dictionary of aggregated values.
@@ -1512,7 +1512,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         raise_exception: bool
             Raises IntegrityError if unable to secure transaction from DB.
 
-        Returns
+        Returns:
         -------
         EntityStateModel
             An instance of EntityStateModel
@@ -1564,7 +1564,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         commit: bool
             Commits transaction into BillModel.
 
-        Returns
+        Returns:
         _______
         str
             A String, representing the generated BillModel instance Document Number.
