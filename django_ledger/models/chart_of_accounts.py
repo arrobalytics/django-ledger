@@ -136,10 +136,8 @@ class ChartOfAccountModelManager(Manager):
         """
         qs = self.get_queryset()
         return qs.filter(
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
         )
 
     def for_entity(self, entity_model, user_model) -> ChartOfAccountModelQuerySet:
