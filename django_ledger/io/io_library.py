@@ -441,10 +441,10 @@ class IOBluePrint:
         if isinstance(amount, float):
             return self._round_amount(Decimal.from_float(amount))
 
-        elif isinstance(amount, Decimal):
+        if isinstance(amount, Decimal):
             return self._round_amount(amount)
 
-        elif isinstance(amount, int):
+        if isinstance(amount, int):
             return Decimal(str(amount))
 
         raise IOBluePrintValidationError(

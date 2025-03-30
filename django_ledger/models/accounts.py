@@ -920,15 +920,15 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         if self.is_asset():
             return '1'
-        elif self.is_liability():
+        if self.is_liability():
             return '2'
-        elif self.is_capital():
+        if self.is_capital():
             return '3'
-        elif self.is_income():
+        if self.is_income():
             return '4'
-        elif self.is_cogs():
+        if self.is_cogs():
             return '5'
-        elif self.is_expense():
+        if self.is_expense():
             return '6'
         raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
 
@@ -948,17 +948,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
         """
         if self.is_asset():
             return ROOT_ASSETS
-        elif self.is_liability():
+        if self.is_liability():
             return ROOT_LIABILITIES
-        elif self.is_capital():
+        if self.is_capital():
             return ROOT_CAPITAL
-        elif self.is_income():
+        if self.is_income():
             return ROOT_INCOME
-        elif self.is_cogs():
+        if self.is_cogs():
             return ROOT_GROUP
-        elif self.is_expense():
+        if self.is_expense():
             return ROOT_EXPENSES
-        elif self.is_coa_root():
+        if self.is_coa_root():
             return ROOT_COA
         raise AccountModelValidationError(f'Invalid role match for role {self.role}...')
 

@@ -249,7 +249,7 @@ class BillModelManager(Manager):
             return qs.filter(
                 Q(ledger__entity=entity_slug)
             )
-        elif isinstance(entity_slug, str):
+        if isinstance(entity_slug, str):
             return qs.filter(
                 Q(ledger__entity__slug__exact=entity_slug)
             )

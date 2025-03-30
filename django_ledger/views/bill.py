@@ -199,7 +199,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                                'entity_slug': entity_slug,
                                'po_pk': po_pk
                            })
-        elif self.for_estimate:
+        if self.for_estimate:
             return reverse('django_ledger:customer-estimate-detail',
                            kwargs={
                                'entity_slug': entity_slug,
@@ -326,13 +326,13 @@ class BillModelUpdateView(BillModelModelBaseView, UpdateView):
             return BillModelConfigureForm
         if bill_model.is_draft():
             return DraftBillModelUpdateForm
-        elif bill_model.is_review():
+        if bill_model.is_review():
             return InReviewBillModelUpdateForm
-        elif bill_model.is_approved() and not bill_model.accrue:
+        if bill_model.is_approved() and not bill_model.accrue:
             return ApprovedBillModelUpdateForm
-        elif bill_model.is_approved() and bill_model.accrue:
+        if bill_model.is_approved() and bill_model.accrue:
             return AccruedAndApprovedBillModelUpdateForm
-        elif bill_model.is_paid():
+        if bill_model.is_paid():
             return PaidBillModelUpdateForm
         return BaseBillModelUpdateForm
 

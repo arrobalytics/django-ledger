@@ -637,11 +637,11 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         if self.is_expense():
             return f'Expense: {self.name} | {self.get_item_type_display()}'
-        elif self.is_inventory():
+        if self.is_inventory():
             return f'Inventory: {self.name} | {self.get_item_type_display()}'
-        elif self.is_service():
+        if self.is_service():
             return f'Service: {self.name} | {self.get_item_type_display()}'
-        elif self.is_product():
+        if self.is_product():
             return f'Product: {self.name}'
         return f'Item Model: {self.name} - {self.sku} | {self.get_item_type_display()}'
 
@@ -696,7 +696,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def product_or_service_display(self):
         if self.is_product():
             return 'product'
-        elif self.is_service():
+        if self.is_service():
             return 'service'
 
     def is_labor(self):
@@ -725,9 +725,9 @@ class ItemModelAbstract(CreateUpdateMixIn):
     def get_item_number_prefix(self):
         if self.is_expense():
             return DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX
-        elif self.is_inventory():
+        if self.is_inventory():
             return DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX
-        elif self.is_product() or self.is_service():
+        if self.is_product() or self.is_service():
             return DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX
         raise ItemModelValidationError('Cannot determine Item Number prefix for ItemModel. '
                                        f'For Inventory: {self.for_inventory}, '
@@ -1165,11 +1165,11 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         if self.po_model_id:
             po_status_display = self.get_po_item_status_display()
             return f'PO Model: {self.po_model_id} | {po_status_display} | {self.po_total_amount}'
-        elif self.bill_model_id:
+        if self.bill_model_id:
             return f'Bill Model: {self.bill_model_id} | {self.total_amount}'
-        elif self.invoice_model_id:
+        if self.invoice_model_id:
             return f'Invoice Model: {self.invoice_model_id} | {self.total_amount}'
-        elif self.ce_model_id:
+        if self.ce_model_id:
             return f'Estimate/Contract Model: {self.ce_model_id} | {self.ce_cost_estimate}'
         return f'Orphan {self.__class__.__name__}: {self.uuid}'
 
@@ -1391,9 +1391,9 @@ class ItemTransactionModelAbstract(CreateUpdateMixIn):
         """
         if self.is_received():
             return ' is-success'
-        elif self.is_canceled():
+        if self.is_canceled():
             return ' is-danger'
-        elif self.is_ordered():
+        if self.is_ordered():
             return ' is-info'
         return ' is-warning'
 

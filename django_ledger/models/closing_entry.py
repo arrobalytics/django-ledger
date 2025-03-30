@@ -371,7 +371,7 @@ class ClosingEntryTransactionModelManager(models.Manager):
         qs = self.get_queryset()
         if isinstance(entity_slug, lazy_loader.get_entity_model()):
             return qs.filter(closing_entry_model__entity_model=entity_slug)
-        elif isinstance(entity_slug, UUID):
+        if isinstance(entity_slug, UUID):
             return qs.filter(closing_entry_model__entity_model__uuid__exact=entity_slug)
         return qs.filter(closing_entry_model__entity_model__slug__exact=entity_slug)
 

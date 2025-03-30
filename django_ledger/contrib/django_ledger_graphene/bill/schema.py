@@ -30,5 +30,4 @@ class Bill_list_Query(graphene.ObjectType):
                 entity_slug=slug_name,
                 user_model=info.context.user
             ).select_related('vendor').order_by('-updated')
-        else:
-            return BillModel.objects.none()
+        return BillModel.objects.none()

@@ -307,7 +307,7 @@ class AccrualMixIn(models.Model):
         """
         if self.IS_DEBIT_BALANCE:
             return self.amount_paid
-        elif not self.IS_DEBIT_BALANCE:
+        if not self.IS_DEBIT_BALANCE:
             return -self.amount_paid
 
     def get_amount_earned(self) -> Union[Decimal, float]:
@@ -322,8 +322,7 @@ class AccrualMixIn(models.Model):
         if self.accrue:
             amount_due = self.amount_due or Decimal.from_float(0.00)
             return self.get_progress() * amount_due
-        else:
-            return self.amount_paid or Decimal.from_float(0.00)
+        return self.amount_paid or Decimal.from_float(0.00)
 
     def get_amount_prepaid(self) -> Union[Decimal, float]:
         """
@@ -342,7 +341,7 @@ class AccrualMixIn(models.Model):
                 amt_earned >= payments
             ]):
                 return self.get_amount_earned() - payments
-            elif all([
+            if all([
                 not self.IS_DEBIT_BALANCE,
                 amt_earned <= payments
             ]):
@@ -365,7 +364,7 @@ class AccrualMixIn(models.Model):
                 amt_earned <= self.amount_paid
             ]):
                 return self.amount_paid - amt_earned
-            elif all([
+            if all([
                 not self.IS_DEBIT_BALANCE,
                 amt_earned >= self.amount_paid
             ]):
@@ -802,9 +801,8 @@ class AccrualMixIn(models.Model):
                     )
 
             return item_data, io_data
-        else:
-            if raise_exception:
-                raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
+        if raise_exception:
+            raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
     def void_state(self, commit: bool = False) -> dict:
         """
@@ -1053,11 +1051,11 @@ class PaymentTermsMixIn(models.Model):
         due_in = self.due_in_days()
         if due_in == 0:
             return self.TERMS_ON_RECEIPT
-        elif due_in <= 30:
+        if due_in <= 30:
             return self.TERMS_NET_30
-        elif due_in <= 60:
+        if due_in <= 60:
             return self.TERMS_NET_60
-        elif due_in <= 90:
+        if due_in <= 90:
             return self.TERMS_NET_90
         return self.TERMS_NET_90_PLUS
 
@@ -1380,7 +1378,7 @@ class ItemizeMixIn(models.Model):
                     ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
                     itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
                     return itemtxs_qs
-                elif operation == self.ITEMIZE_REPLACE:
+                if operation == self.ITEMIZE_REPLACE:
                     itemtxs_qs, _ = self.get_itemtxs_data(lazy_agg=True)
                     itemtxs_qs.delete()
                     return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)

@@ -622,7 +622,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 raise PurchaseOrderModelValidationError(
                     f'PO {self.po_number} already bound to Estimate {self.ce_model.estimate_number}')
             return False
-        elif self.entity_id != estimate_model.entity_id:
+        if self.entity_id != estimate_model.entity_id:
             if raise_exception:
                 raise PurchaseOrderModelValidationError(
                     f'Invalid EstimateModel for entity {self.entity.slug}'

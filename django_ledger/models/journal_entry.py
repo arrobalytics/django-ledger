@@ -609,7 +609,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if last_closing_date is not None:
             if not new_timestamp:
                 return last_closing_date >= self.timestamp.date()
-            elif isinstance(new_timestamp, datetime):
+            if isinstance(new_timestamp, datetime):
                 return last_closing_date >= new_timestamp.date()
             return last_closing_date >= new_timestamp
         return False
@@ -1090,9 +1090,9 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if self.activity:
             if self.is_operating():
                 return ActivityEnum.OPERATING.value
-            elif self.is_investing():
+            if self.is_investing():
                 return ActivityEnum.INVESTING.value
-            elif self.is_financing():
+            if self.is_financing():
                 return ActivityEnum.FINANCING.value
         return None
 

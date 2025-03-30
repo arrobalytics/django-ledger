@@ -89,9 +89,9 @@ class TransactionModelQuerySet(QuerySet):
             )
         if isinstance(account_list[0], str):
             return self.filter(account__code__in=account_list)
-        elif isinstance(account_list[0], UUID):
+        if isinstance(account_list[0], UUID):
             return self.filter(account__uuid__in=account_list)
-        elif isinstance(account_list[0], AccountModel):
+        if isinstance(account_list[0], AccountModel):
             return self.filter(account__in=account_list)
         raise TransactionModelValidationError(
             message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
@@ -406,7 +406,7 @@ class TransactionModelManager(Manager):
 
         if isinstance(entity_slug, EntityModel):
             return qs.filter(journal_entry__ledger__entity=entity_slug)
-        elif isinstance(entity_slug, UUID):
+        if isinstance(entity_slug, UUID):
             return qs.filter(journal_entry__ledger__entity_id=entity_slug)
         return qs.filter(journal_entry__ledger__entity__slug__exact=entity_slug)
 

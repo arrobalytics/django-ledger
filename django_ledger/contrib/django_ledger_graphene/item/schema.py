@@ -27,5 +27,4 @@ class UnitOfMeasureQuery(graphene.ObjectType):
                 entity_slug=slug_name,
                 user_model=info.context.user
             )
-        else:
-            return UnitOfMeasureModel.objects.none()
+        return UnitOfMeasureModel.objects.none()

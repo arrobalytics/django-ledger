@@ -27,5 +27,4 @@ class PurchaseOrderQuery(graphene.ObjectType):
                 user_model=info.context.user
             ).order_by('-date_draft')
 
-        else:
-            return PurchaseOrderModel.objects.none()
+        return PurchaseOrderModel.objects.none()

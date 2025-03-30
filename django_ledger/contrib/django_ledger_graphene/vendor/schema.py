@@ -33,5 +33,4 @@ class VendorsQuery(graphene.ObjectType):
                 entity_slug=slug_name,
                 user_model=info.context.user
             ).order_by('-updated')
-        else:
-            return VendorModel.objects.none()
+        return VendorModel.objects.none()

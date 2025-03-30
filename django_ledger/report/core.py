@@ -169,12 +169,12 @@ class BaseReportSupport(*load_support()):
     def get_report_title(self):
         if self.IO_DIGEST.is_entity_model():
             return self.IO_DIGEST.IO_MODEL.name
-        elif self.IO_DIGEST.is_ledger_model():
+        if self.IO_DIGEST.is_ledger_model():
             ledger_model: LedgerModel = self.IO_DIGEST.IO_MODEL
             if self.REPORT_SUBTITLE:
                 return ledger_model.get_entity_name()
             return f'{ledger_model.get_entity_name()} | Ledger **{str(ledger_model.uuid)[-6:]}'
-        elif self.IO_DIGEST.is_unit_model():
+        if self.IO_DIGEST.is_unit_model():
             unit_model: EntityUnitModel = self.IO_DIGEST.IO_MODEL
             if self.REPORT_SUBTITLE:
                 return unit_model.get_entity_name()

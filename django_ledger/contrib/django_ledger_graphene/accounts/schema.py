@@ -28,6 +28,5 @@ class Accountlist_Query(graphene.ObjectType):
             entity_model=slug_name,
             user_model=info.context.user,
         ).select_related('parent').order_by('code')
-        else:
-            return AccountModel.objects.none()
+        return AccountModel.objects.none()
 

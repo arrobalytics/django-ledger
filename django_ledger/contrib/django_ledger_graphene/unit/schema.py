@@ -22,6 +22,5 @@ class EntityUnitQuery(graphene.ObjectType):
             entity_slug=slug_name,
             user_model=info.context.user
         )
-        else:
-            return EntityUnitModel.objects.none()
+        return EntityUnitModel.objects.none()
 

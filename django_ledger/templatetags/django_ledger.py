@@ -482,19 +482,18 @@ def fin_ratio_threshold_class(value, ratio):
         if params['good_incremental']:
             if value <= ranges['critical']:
                 return 'is-danger'
-            elif value <= ranges['warning']:
+            if value <= ranges['warning']:
                 return 'is-warning'
-            elif value <= ranges['watch']:
+            if value <= ranges['watch']:
                 return 'is-primary'
             return 'is-success'
-        else:
-            if value >= ranges['critical']:
-                return 'is-danger'
-            elif value >= ranges['warning']:
-                return 'is-warning'
-            elif value >= ranges['watch']:
-                return 'is-primary'
-            return 'is-success'
+        if value >= ranges['critical']:
+            return 'is-danger'
+        if value >= ranges['warning']:
+            return 'is-warning'
+        if value >= ranges['watch']:
+            return 'is-primary'
+        return 'is-success'
 
 
 @register.inclusion_tag('django_ledger/components/feedback_button.html', takes_context=True)

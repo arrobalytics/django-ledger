@@ -347,7 +347,7 @@ def validate_io_timestamp(
             )
         return dt
 
-    elif isinstance(dt, str):
+    if isinstance(dt, str):
         # try to parse a date object from string...
         fdt = parse_date(dt)
         if not fdt:
@@ -366,7 +366,7 @@ def validate_io_timestamp(
                 ))
         return datetime.combine(fdt, datetime.min.time())
 
-    elif isinstance(dt, date):
+    if isinstance(dt, date):
         if global_settings.USE_TZ:
             return make_aware(
                 value=datetime.combine(dt, datetime.min.time())
@@ -581,9 +581,9 @@ class IODatabaseMixIn:
         """
         if self.is_entity_model():
             return self
-        elif self.is_ledger_model():
+        if self.is_ledger_model():
             return getattr(self, 'entity')
-        elif self.is_entity_unit_model():
+        if self.is_entity_unit_model():
             return getattr(self, 'entity')
         raise IOValidationError(
             message=_(f'IODatabaseMixIn not compatible with {self.__class__.__name__} model.')

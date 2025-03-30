@@ -191,13 +191,13 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
 
         if invoice_model.is_draft():
             return DraftInvoiceModelUpdateForm
-        elif invoice_model.is_review():
+        if invoice_model.is_review():
             return InReviewInvoiceModelUpdateForm
-        elif invoice_model.is_approved():
+        if invoice_model.is_approved():
             if invoice_model.accrue:
                 return AccruedAndApprovedInvoiceModelUpdateForm
             return ApprovedInvoiceModelUpdateForm
-        elif invoice_model.is_paid():
+        if invoice_model.is_paid():
             return PaidInvoiceModelUpdateForm
         return BaseInvoiceModelUpdateForm
 

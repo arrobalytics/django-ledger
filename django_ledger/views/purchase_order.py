@@ -290,13 +290,13 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
                 user_model=self.request.user,
                 **self.get_form_kwargs()
             )
-        elif po_model.is_review():
+        if po_model.is_review():
             return ReviewPurchaseOrderModelUpdateForm(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
                 **self.get_form_kwargs()
             )
-        elif po_model.is_approved():
+        if po_model.is_approved():
             return ApprovedPurchaseOrderModelUpdateForm(
                 entity_slug=self.kwargs['entity_slug'],
                 user_model=self.request.user,
@@ -353,14 +353,13 @@ class PurchaseOrderModelUpdateView(DjangoLedgerSecurityMixIn,
                                          extra_tags='is-danger')
                     return self.get(self.request)
 
-                else:
-                    if not all([i.bill_model.is_paid() for i in po_items_qs]):
-                        messages.add_message(self.request,
-                                             messages.SUCCESS,
-                                             f'All bills must be paid before marking'
-                                             f' PO: {po_model.po_number} as fulfilled.',
-                                             extra_tags='is-success')
-                        return self.get(self.request)
+                if not all([i.bill_model.is_paid() for i in po_items_qs]):
+                    messages.add_message(self.request,
+                                         messages.SUCCESS,
+                                         f'All bills must be paid before marking'
+                                         f' PO: {po_model.po_number} as fulfilled.',
+                                         extra_tags='is-success')
+                    return self.get(self.request)
 
                 po_items_qs.update(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
