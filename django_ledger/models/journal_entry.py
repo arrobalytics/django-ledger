@@ -818,7 +818,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                 self.mark_as_locked(commit=False, raise_exception=True)
             except JournalEntryValidationError as e:
                 if raise_exception:
-                    raise e
+                    raise e from e
                 return
         if not self.can_post(ignore_verify=False):
             if raise_exception:
@@ -1233,7 +1233,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                         txs_is_valid = self.is_txs_qs_valid(txs_qs=txs_qs, raise_exception=raise_exception)
                     except JournalEntryValidationError as e:
                         if raise_exception:
-                            raise e
+                            raise e from e
 
                 if txs_is_valid:
                     cash_is_involved = self.is_cash_involved(txs_qs=txs_qs)
@@ -1292,7 +1292,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         except IntegrityError as e:
             if raise_exception:
-                raise e
+                raise e from e
 
         else:
             return state_model
@@ -1383,7 +1383,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                     # if provided, it is verified...
                     is_txs_qs_valid = self.is_txs_qs_valid(raise_exception=raise_exception, txs_qs=txs_qs)
                 except JournalEntryValidationError as e:
-                    raise e
+                    raise e from e
 
             # CREDIT/DEBIT Balance validation...
             try:
@@ -1392,7 +1392,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                     msg = 'Transaction balances are not valid!'
                     raise JournalEntryValidationError(msg)
             except JournalEntryValidationError as e:
-                raise e
+                raise e from e
 
             # Transaction CoA if valid...
 
@@ -1402,7 +1402,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                     msg = 'Transaction COA is not valid!'
                     raise JournalEntryValidationError(msg)
             except JournalEntryValidationError as e:
-                raise e
+                raise e from e
 
             # if not len(txs_qs):
             #     if raise_exception:

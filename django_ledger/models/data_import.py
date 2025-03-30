@@ -1109,7 +1109,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 self.activity = activity
             except ValidationError as e:
                 if raise_exception:
-                    raise e
+                    raise e from e
                 return False
             else:
                 return True

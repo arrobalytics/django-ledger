@@ -984,7 +984,7 @@ class InvoiceModelAbstract(
         try:
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
-            raise e
+            raise e from e
 
         self.ce_model = estimate_model
         self.customer_id = estimate_model.customer_id
@@ -1763,7 +1763,7 @@ class InvoiceModelAbstract(
 
         except IntegrityError as e:
             if raise_exception:
-                raise e
+                raise e from e
         else:
             return state_model
 

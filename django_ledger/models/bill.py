@@ -1047,7 +1047,7 @@ class BillModelAbstract(
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
             if raise_exception:
-                raise e
+                raise e from e
             return
         self.ce_model = estimate_model
         self.clean()

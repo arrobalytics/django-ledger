@@ -1552,7 +1552,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
 
         except IntegrityError as e:
             if raise_exception:
-                raise e
+                raise e from e
         else:
             return state_model
 

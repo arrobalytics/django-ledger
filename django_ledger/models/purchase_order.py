@@ -651,7 +651,8 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         try:
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
-            raise e
+            raise e from e
+
         self.ce_model = estimate_model
         self.clean()
         if commit:
@@ -1196,7 +1197,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
         except IntegrityError as e:
             if raise_exception:
-                raise e
+                raise e from e
 
         else:
             return state_model
