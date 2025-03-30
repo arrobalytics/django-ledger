@@ -237,7 +237,7 @@ def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceM
         transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     else:
         raise ValidationError(
-            'Cannot handle object of type {} to get transaction model queryset'.format(type(object_type))
+            f'Cannot handle object of type {type(object_type)} to get transaction model queryset'
         )
 
     total_credits = sum(tx.amount for tx in transaction_model_qs if tx.is_credit())

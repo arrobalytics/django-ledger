@@ -659,11 +659,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if not is_valid:
                 if raise_exception:
                     raise JournalEntryValidationError(
-                        message='Balance of {0} CREDITs are {1} does not match DEBITs {2}.'.format(
-                            self,
-                            balances[CREDIT],
-                            balances[DEBIT]
-                        )
+                        message=f'Balance of {self} CREDITs are {balances[CREDIT]} does not match DEBITs {balances[DEBIT]}.'
                     )
             return is_valid
         return True

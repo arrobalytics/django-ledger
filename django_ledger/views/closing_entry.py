@@ -178,7 +178,7 @@ class ClosingEntryDeleteView(ClosingEntryModelBaseView, DeleteView):
         context = super().get_context_data(**kwargs)
         closing_entry_model: ClosingEntryModel = self.object
         entity_model: EntityModel = self.get_authorized_entity_instance()
-        context['page_title'] = 'Delete Closing Entry {}'.format(closing_entry_model.closing_date)
+        context['page_title'] = f'Delete Closing Entry {closing_entry_model.closing_date}'
         context['header_subtitle'] = entity_model.name
         return context
 

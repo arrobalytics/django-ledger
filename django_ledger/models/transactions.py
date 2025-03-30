@@ -497,13 +497,7 @@ class TransactionModelAbstract(CreateUpdateMixIn):
         ]
 
     def __str__(self):
-        return '{code}-{name}/{balance_type}: {amount}/{tx_type}'.format(
-            code=self.account.code,
-            name=self.account.name,
-            balance_type=self.account.balance_type,
-            amount=self.amount,
-            tx_type=self.tx_type
-        )
+        return f'{self.account.code}-{self.account.name}/{self.account.balance_type}: {self.amount}/{self.tx_type}'
 
     @property
     def coa_id(self):
