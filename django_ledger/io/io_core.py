@@ -182,13 +182,12 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     is_valid = (credits == debits)
     diff = credits - debits
 
-    if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE:
-        if raise_exception:
-            msg = (
-                f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.'
-                f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
-            )
-            raise TransactionNotInBalanceError(msg)
+    if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE and raise_exception:
+        msg = (
+            f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.'
+            f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
+        )
+        raise TransactionNotInBalanceError(msg)
 
     return IS_TX_MODEL, is_valid, diff
 
@@ -714,13 +713,12 @@ class IODatabaseMixIn:
 
         # get_initial txs_queryset... where the IO model is operating from??...
         if self.is_entity_model():
-            if entity_slug:
-                if entity_slug != self.slug:
-                    msg = (
-                        'Inconsistent entity_slug. '
-                        f'Provided {entity_slug} does not match actual {self.slug}'
-                    )
-                    raise IOValidationError(msg)
+            if entity_slug and entity_slug != self.slug:
+                msg = (
+                    'Inconsistent entity_slug. '
+                    f'Provided {entity_slug} does not match actual {self.slug}'
+                )
+                raise IOValidationError(msg)
             if unit_slug:
 
                 txs_queryset_init = TransactionModel.objects.for_entity(
@@ -1370,18 +1368,16 @@ class IODatabaseMixIn:
                         message=_(
                             f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
                     )
-            elif isinstance(je_timestamp, date):
-                if entity_model.last_closing_date >= je_timestamp:
-                    raise IOValidationError(
-                        message=_(
-                            f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
-                    )
-
-        if self.is_ledger_model():
-            if self.is_locked():
+            elif isinstance(je_timestamp, date) and entity_model.last_closing_date >= je_timestamp:
                 raise IOValidationError(
-                    message=_('Cannot commit on locked ledger')
+                    message=_(
+                        f'Cannot commit transactions. The journal entry date {je_timestamp} is on a closed period.')
                 )
+
+        if self.is_ledger_model() and self.is_locked():
+            raise IOValidationError(
+                message=_('Cannot commit on locked ledger')
+            )
 
         # if calling from EntityModel must pass an instance of LedgerModel...
         if all([
@@ -1395,19 +1391,17 @@ class IODatabaseMixIn:
         if all([
             isinstance(self, lazy_loader.get_entity_model()),
             je_ledger_model is not None,
-        ]):
-            if je_ledger_model.entity_id != self.uuid:
-                msg = f'LedgerModel {je_ledger_model} does not belong to {self}'
-                raise IOValidationError(msg)
+        ]) and je_ledger_model.entity_id != self.uuid:
+            msg = f'LedgerModel {je_ledger_model} does not belong to {self}'
+            raise IOValidationError(msg)
 
         # Validates that the provided EntityUnitModel id valid...
         if all([
             isinstance(self, lazy_loader.get_entity_model()),
             je_unit_model is not None,
-        ]):
-            if je_unit_model.entity_id != self.uuid:
-                msg = f'EntityUnitModel {je_unit_model} does not belong to {self}'
-                raise IOValidationError(msg)
+        ]) and je_unit_model.entity_id != self.uuid:
+            msg = f'EntityUnitModel {je_unit_model} does not belong to {self}'
+            raise IOValidationError(msg)
 
         if not je_ledger_model:
             je_ledger_model = self

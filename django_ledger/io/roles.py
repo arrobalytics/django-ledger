@@ -658,9 +658,8 @@ def validate_roles(roles: str | list[str], raise_exception: bool = True) -> set[
     if isinstance(roles, str):
         roles = [roles]
     for r in roles:
-        if r not in VALID_ROLES:
-            if raise_exception:
-                raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
+        if r not in VALID_ROLES and raise_exception:
+            raise InvalidRoleError('{rls}) is invalid. Choices are {ch}'.format(ch=', '.join(VALID_ROLES), rls=r))
     return set(roles)
 
 VALID_PARENTS = {

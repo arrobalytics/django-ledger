@@ -433,11 +433,10 @@ class EntityModelClosingEntryMixIn:
     """
 
     def validate_closing_entry_model(self, closing_entry_model, closing_date: date | None = None):
-        if isinstance(self, EntityModel):
-            if self.uuid != closing_entry_model.entity_model_id:
-                raise EntityModelValidationError(
-                    message=_(f'The Closing Entry Model {closing_entry_model} does not belong to Entity {self.name}')
-                )
+        if isinstance(self, EntityModel) and self.uuid != closing_entry_model.entity_model_id:
+            raise EntityModelValidationError(
+                message=_(f'The Closing Entry Model {closing_entry_model} does not belong to Entity {self.name}')
+            )
         if closing_date and closing_entry_model.closing_date != closing_date:
             raise EntityModelValidationError(
                 message=_(f'The Closing Entry Model date {closing_entry_model.closing_date} '
@@ -960,11 +959,10 @@ class EntityModelAbstract(MP_Node,
         commit: bool
             If True,
         """
-        if not force_update and self.slug:
-            if raise_exception:
-                raise ValidationError(
-                    message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
-                )
+        if not force_update and self.slug and raise_exception:
+            raise ValidationError(
+                message=_(f'Cannot replace existing slug {self.slug}. Use force_update=True if needed.')
+            )
 
         self.slug = self.generate_slug_from_name(self.name)
 
@@ -1001,10 +999,9 @@ class EntityModelAbstract(MP_Node,
         ChartOfAccountModel
             The EntityModel default ChartOfAccount.
         """
-        if not self.default_coa_id:
-            if raise_exception:
-                msg = f'EntityModel {self.slug} does not have a default CoA'
-                raise EntityModelValidationError(msg)
+        if not self.default_coa_id and raise_exception:
+            msg = f'EntityModel {self.slug} does not have a default CoA'
+            raise EntityModelValidationError(msg)
         return self.default_coa
 
     def set_default_coa(self, coa_model: ChartOfAccountModel | str | None, commit: bool = False):
@@ -2205,10 +2202,9 @@ class EntityModelAbstract(MP_Node,
         """
         if isinstance(uom_model, UUID):
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
-        elif isinstance(uom_model, UnitOfMeasureModel):
-            if uom_model.entity_id != self.uuid:
-                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
-                raise EntityModelValidationError(msg)
+        elif isinstance(uom_model, UnitOfMeasureModel) and uom_model.entity_id != self.uuid:
+            msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2281,10 +2277,9 @@ class EntityModelAbstract(MP_Node,
         """
         if isinstance(uom_model, UUID):
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
-        elif isinstance(uom_model, UnitOfMeasureModel):
-            if uom_model.entity_id != self.uuid:
-                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
-                raise EntityModelValidationError(msg)
+        elif isinstance(uom_model, UnitOfMeasureModel) and uom_model.entity_id != self.uuid:
+            msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2361,10 +2356,9 @@ class EntityModelAbstract(MP_Node,
         """
         if isinstance(uom_model, UUID):
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
-        elif isinstance(uom_model, UnitOfMeasureModel):
-            if uom_model.entity_id != self.uuid:
-                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
-                raise EntityModelValidationError(msg)
+        elif isinstance(uom_model, UnitOfMeasureModel) and uom_model.entity_id != self.uuid:
+            msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2374,10 +2368,9 @@ class EntityModelAbstract(MP_Node,
             expense_account = account_model_qs.is_role_default().get()
         elif isinstance(expense_account, UUID):
             expense_account = account_model_qs.get(uuid__exact=expense_account)
-        elif isinstance(expense_account, AccountModel):
-            if expense_account.coa_model.entity_id != self.uuid:
-                msg = f'Invalid account for entity {self.slug}...'
-                raise EntityModelValidationError(msg)
+        elif isinstance(expense_account, AccountModel) and expense_account.coa_model.entity_id != self.uuid:
+            msg = f'Invalid account for entity {self.slug}...'
+            raise EntityModelValidationError(msg)
 
         expense_item_model = ItemModel(
             entity=self,
@@ -2464,10 +2457,9 @@ class EntityModelAbstract(MP_Node,
         """
         if isinstance(uom_model, UUID):
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
-        elif isinstance(uom_model, UnitOfMeasureModel):
-            if uom_model.entity_id != self.uuid:
-                msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
-                raise EntityModelValidationError(msg)
+        elif isinstance(uom_model, UnitOfMeasureModel) and uom_model.entity_id != self.uuid:
+            msg = f'Invalid UnitOfMeasureModel for entity {self.slug}...'
+            raise EntityModelValidationError(msg)
 
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
@@ -2698,9 +2690,8 @@ class EntityModelAbstract(MP_Node,
             roles=ROLES_NEEDED
         ).is_role_default()
 
-        if not cash_account or not capital_account:
-            if cash_account or capital_account:
-                len(account_model_qs)
+        if (not cash_account or not capital_account) and (cash_account or capital_account):
+            len(account_model_qs)
 
         if cash_account:
             if isinstance(cash_account, BankAccountModel):

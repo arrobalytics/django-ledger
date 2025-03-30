@@ -186,10 +186,9 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         return self.active is True
 
     def mark_as_active(self, commit: bool = False, raise_exception: bool = True, **kwargs):
-        if not self.can_activate():
-            if raise_exception:
-                msg = 'Bank Account cannot be activated.'
-                raise BankAccountValidationError(msg)
+        if not self.can_activate() and raise_exception:
+            msg = 'Bank Account cannot be activated.'
+            raise BankAccountValidationError(msg)
         self.active = True
         if commit:
             self.save(update_fields=[
@@ -198,10 +197,9 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
             ])
 
     def mark_as_inactive(self, commit: bool = False, raise_exception: bool = True, **kwargs):
-        if not self.can_inactivate():
-            if raise_exception:
-                msg = 'Bank Account cannot be deactivated.'
-                raise BankAccountValidationError(msg)
+        if not self.can_inactivate() and raise_exception:
+            msg = 'Bank Account cannot be deactivated.'
+            raise BankAccountValidationError(msg)
         self.active = False
         if commit:
             self.save(update_fields=[

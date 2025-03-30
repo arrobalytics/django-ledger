@@ -114,9 +114,8 @@ class StagedTransactionModelForm(ModelForm):
 
     def clean_unit_model(self):
         staged_txs_model: StagedTransactionModel = self.instance
-        if not staged_txs_model.can_have_unit():
-            if staged_txs_model.parent_id:
-                return staged_txs_model.parent.unit_model
+        if not staged_txs_model.can_have_unit() and staged_txs_model.parent_id:
+            return staged_txs_model.parent.unit_model
         return self.cleaned_data['unit_model']
 
     def clean_tx_import(self):

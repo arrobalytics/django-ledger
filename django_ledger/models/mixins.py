@@ -894,14 +894,13 @@ class AccrualMixIn(models.Model):
             self.cash_account_id is not None,
             self.prepaid_account_id is not None,
             self.unearned_account_id is not None
+        ]) and not all([
+            self.cash_account_id is not None,
+            self.prepaid_account_id is not None,
+            self.unearned_account_id is not None
         ]):
-            if not all([
-                self.cash_account_id is not None,
-                self.prepaid_account_id is not None,
-                self.unearned_account_id is not None
-            ]):
-                msg = 'Must provide all accounts Cash, Prepaid, UnEarned.'
-                raise ValidationError(msg)
+            msg = 'Must provide all accounts Cash, Prepaid, UnEarned.'
+            raise ValidationError(msg)
 
         # if self.accrue:
         #     if self.is_approved():
@@ -1282,16 +1281,15 @@ class ItemizeMixIn(models.Model):
         itemtxs: dict
             Item transaction list to replace/aggregate.
         """
-        if isinstance(itemtxs, dict):
-            if all([
-                all([
-                    isinstance(d, dict),
-                    'unit_cost' in d,
-                    'quantity' in d,
-                    'total_amount' in d
-                ]) for i, d in itemtxs.items()
-            ]):
-                return
+        if isinstance(itemtxs, dict) and all([
+            all([
+                isinstance(d, dict),
+                'unit_cost' in d,
+                'quantity' in d,
+                'total_amount' in d
+            ]) for i, d in itemtxs.items()
+        ]):
+            return
         msg = 'itemtxs must be an instance of dict.'
         raise ItemizeError(msg)
 

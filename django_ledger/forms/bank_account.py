@@ -125,11 +125,10 @@ class BankAccountUpdateForm(BankAccountCreateForm):
             raise ValidationError(msg)
 
         # catching unique database constraint...
-        if 'cash_account' in self.changed_data:
-            if BankAccountModel.objects.filter(
-                    cash_account=cash_account,
-                    routing_number__exact=self.instance.routing_number,
-                    account_number__exact=self.instance.account_number
-            ).exists():
-                msg = 'Duplicate bank account model.'
-                raise ValidationError(msg)
+        if 'cash_account' in self.changed_data and BankAccountModel.objects.filter(
+                cash_account=cash_account,
+                routing_number__exact=self.instance.routing_number,
+                account_number__exact=self.instance.account_number
+        ).exists():
+            msg = 'Duplicate bank account model.'
+            raise ValidationError(msg)

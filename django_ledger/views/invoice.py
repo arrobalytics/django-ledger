@@ -232,12 +232,11 @@ class InvoiceModelUpdateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
                 extra_tags='is-danger'
             )
 
-        if not invoice_model.is_paid():
-            if ledger_model.locked:
-                messages.add_message(self.request,
-                                     messages.ERROR,
-                                     'Warning! This invoice is locked. Must unlock before making any changes.',
-                                     extra_tags='is-danger')
+        if not invoice_model.is_paid() and ledger_model.locked:
+            messages.add_message(self.request,
+                                 messages.ERROR,
+                                 'Warning! This invoice is locked. Must unlock before making any changes.',
+                                 extra_tags='is-danger')
 
         if ledger_model.locked:
             messages.add_message(self.request,

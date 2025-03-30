@@ -67,13 +67,12 @@ class ChartOfAccountsAdminForm(ModelForm):
             self.fields['assign_as_default'].disabled = True
 
     def save(self, commit=True):
-        if commit:
-            if self.cleaned_data['assign_as_default']:
-                entity_model: EntityModel = self.instance.entity
-                entity_model.default_coa = self.instance
-                entity_model.save(update_fields=[
-                    'default_coa'
-                ])
+        if commit and self.cleaned_data['assign_as_default']:
+            entity_model: EntityModel = self.instance.entity
+            entity_model.default_coa = self.instance
+            entity_model.save(update_fields=[
+                'default_coa'
+            ])
         return super().save(commit=commit)
 
 

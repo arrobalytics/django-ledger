@@ -657,11 +657,10 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if len(txs_qs) > 0:
             balances = self.get_txs_balances(txs_qs=txs_qs, as_dict=True)
             is_valid = balances[CREDIT] == balances[DEBIT]
-            if not is_valid:
-                if raise_exception:
-                    raise JournalEntryValidationError(
-                        message=f'Balance of {self} CREDITs are {balances[CREDIT]} does not match DEBITs {balances[DEBIT]}.'
-                    )
+            if not is_valid and raise_exception:
+                raise JournalEntryValidationError(
+                    message=f'Balance of {self} CREDITs are {balances[CREDIT]} does not match DEBITs {balances[DEBIT]}.'
+                )
             return is_valid
         return True
 
@@ -828,15 +827,14 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             return
         if not self.is_posted():
             self.posted = True
-            if self.is_posted():
-                if commit:
-                    self.save(verify=False,
-                              update_fields=[
-                                  'posted',
-                                  'locked',
-                                  'activity',
-                                  'updated'
-                              ])
+            if self.is_posted() and commit:
+                self.save(verify=False,
+                          update_fields=[
+                              'posted',
+                              'locked',
+                              'activity',
+                              'updated'
+                          ])
             journal_entry_posted.send_robust(sender=self.__class__,
                                              instance=self,
                                              commited=commit,
@@ -869,16 +867,15 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         if self.is_posted():
             self.posted = False
             self.activity = None
-            if not self.is_posted():
-                if commit:
-                    self.save(
-                        verify=False,
-                        update_fields=[
-                            'posted',
-                            'activity',
-                            'updated'
-                        ]
-                    )
+            if not self.is_posted() and commit:
+                self.save(
+                    verify=False,
+                    update_fields=[
+                        'posted',
+                        'activity',
+                        'updated'
+                    ]
+                )
             journal_entry_unposted.send_robust(sender=self.__class__,
                                                instance=self,
                                                commited=commit,
@@ -903,12 +900,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         kwargs: dict
             Additional keyword arguments.
         """
-        if not self.can_lock():
+        if not self.can_lock() and raise_exception:
             if raise_exception:
-                if raise_exception:
-                    msg = f'Journal Entry {self.uuid} is already locked.'
-                    raise JournalEntryValidationError(msg)
-                return
+                msg = f'Journal Entry {self.uuid} is already locked.'
+                raise JournalEntryValidationError(msg)
+            return
         if not self.is_locked():
             self.generate_activity(force_update=True)
             self.locked = True
@@ -1769,12 +1765,11 @@ class JournalEntryModel(JournalEntryModelAbstract):
 
 
 def journalentrymodel_presave(instance: JournalEntryModel, **kwargs):
-    if instance._state.adding:
-        # cannot add journal entries to a locked ledger...
-        if instance.ledger_is_locked():
-            raise JournalEntryValidationError(
-                message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
-            )
+    # cannot add journal entries to a locked ledger...
+    if instance._state.adding and instance.ledger_is_locked():
+        raise JournalEntryValidationError(
+            message=_(f'Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}')
+        )
     instance.generate_je_number(commit=False)
 
 

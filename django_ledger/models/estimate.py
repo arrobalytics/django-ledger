@@ -1354,13 +1354,12 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         itemtxs_qs: ItemTransactionModelQuerySet
             ItemTransactionModelQuerySet to validate.
         """
-        if not isinstance(itemtxs_qs, ItemTransactionModelQuerySet):
-            if not all([
-                isinstance(i, ItemTransactionModel) for i in itemtxs_qs
-            ]):
-                raise EstimateModelValidationError(
-                    message='Must pass an instance of ItemTransactionModelQuerySet or a list of ItemTransactionModel'
-                )
+        if not isinstance(itemtxs_qs, ItemTransactionModelQuerySet) and not all([
+            isinstance(i, ItemTransactionModel) for i in itemtxs_qs
+        ]):
+            raise EstimateModelValidationError(
+                message='Must pass an instance of ItemTransactionModelQuerySet or a list of ItemTransactionModel'
+            )
         valid = all([
             i.ce_model_id == self.uuid for i in itemtxs_qs
         ])

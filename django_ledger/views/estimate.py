@@ -225,35 +225,34 @@ class EstimateModelUpdateView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
                                                                                                user_model=self.request.user,
                                                                                                customer_job_model=ce_model,
                                                                                                entity_slug=entity_slug)
-            if itemtxs_formset.has_changed():
-                if itemtxs_formset.is_valid():
-                    itemtxs_list = itemtxs_formset.save(commit=False)
-                    entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
-                    entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
+            if itemtxs_formset.has_changed() and itemtxs_formset.is_valid():
+                itemtxs_list = itemtxs_formset.save(commit=False)
+                entity_qs = EntityModel.objects.for_user(user_model=self.request.user)
+                entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
 
-                    for itemtxs in itemtxs_list:
-                        itemtxs.ce_model_id = ce_model.uuid
-                        itemtxs.clean()
+                for itemtxs in itemtxs_list:
+                    itemtxs.ce_model_id = ce_model.uuid
+                    itemtxs.clean()
 
-                    itemtxs_list = itemtxs_formset.save()
+                itemtxs_list = itemtxs_formset.save()
 
-                    ce_model.update_state()
-                    ce_model.clean()
-                    ce_model.save(update_fields=[
-                        'revenue_estimate',
-                        'labor_estimate',
-                        'equipment_estimate',
-                        'material_estimate',
-                        'other_estimate',
-                        'updated'
-                    ])
+                ce_model.update_state()
+                ce_model.clean()
+                ce_model.save(update_fields=[
+                    'revenue_estimate',
+                    'labor_estimate',
+                    'equipment_estimate',
+                    'material_estimate',
+                    'other_estimate',
+                    'updated'
+                ])
 
-                    messages.add_message(request,
-                                         message='Customer estimate items saved.',
-                                         level=messages.SUCCESS,
-                                         extra_tags='is-success')
+                messages.add_message(request,
+                                     message='Customer estimate items saved.',
+                                     level=messages.SUCCESS,
+                                     extra_tags='is-success')
 
-                    return self.render_to_response(context=self.get_context_data())
+                return self.render_to_response(context=self.get_context_data())
             context = self.get_context_data(itemtxs_formset=itemtxs_formset)
             return self.render_to_response(context=context)
         return super(EstimateModelUpdateView, self).post(request, *args, **kwargs)

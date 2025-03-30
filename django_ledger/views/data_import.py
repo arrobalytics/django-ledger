@@ -194,21 +194,20 @@ class DataImportJobDetailView(ImportJobModelViewBaseView, DetailView):
 
         # if txs_formset.is_valid():
         for tx_form in txs_formset:
-            if tx_form.has_changed():
-                # perform work only if form has changed...
-                if tx_form.is_valid():
-                    tx_form.save()
-                    # import entry was selected to be split....
-                    is_split = tx_form.cleaned_data['tx_split'] is True
-                    if is_split:
-                        tx_form.instance.add_split()
+            # perform work only if form has changed...
+            if tx_form.has_changed() and tx_form.is_valid():
+                tx_form.save()
+                # import entry was selected to be split....
+                is_split = tx_form.cleaned_data['tx_split'] is True
+                if is_split:
+                    tx_form.instance.add_split()
 
-                    # import entry was selected for import...
-                    is_import = tx_form.cleaned_data['tx_import']
-                    if is_import:
-                        # all entries in split will be going so the same journal entry... (same unit...)
-                        is_bundled = tx_form.cleaned_data['bundle_split']
-                        tx_form.instance.migrate() if is_bundled else tx_form.instance.migrate(split_txs=True)
+                # import entry was selected for import...
+                is_import = tx_form.cleaned_data['tx_import']
+                if is_import:
+                    # all entries in split will be going so the same journal entry... (same unit...)
+                    is_bundled = tx_form.cleaned_data['bundle_split']
+                    tx_form.instance.migrate() if is_bundled else tx_form.instance.migrate(split_txs=True)
 
         messages.add_message(request,
                              messages.SUCCESS,

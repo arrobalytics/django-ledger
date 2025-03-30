@@ -1163,10 +1163,9 @@ class BillModelAbstract(
         raise_exception: bool
             Raises BillModelValidationError if BillModel cannot be marked as in review. Defaults to True.
         """
-        if not self.can_review():
-            if raise_exception:
-                msg = f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
-                raise BillModelValidationError(msg)
+        if not self.can_review() and raise_exception:
+            msg = f'Bill {self.bill_number} cannot be marked as in review. Must be Draft and Configured.'
+            raise BillModelValidationError(msg)
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()

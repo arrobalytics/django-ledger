@@ -1162,9 +1162,8 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         elif self.is_children():
             self.amount = None
 
-        if not self.can_have_unit():
-            if self.parent_id:
-                self.unit_model = self.parent.unit_model
+        if not self.can_have_unit() and self.parent_id:
+            self.unit_model = self.parent.unit_model
 
         if verify:
             self.is_role_mapping_valid(raise_exception=True)
@@ -1180,11 +1179,10 @@ class ImportJobModel(ImportJobModelAbstract):
 
 
 def importjobmodel_presave(instance: ImportJobModel, **kwargs):
-    if instance.is_configured():
-        if instance.bank_account_model.entity_model_id != instance.ledger_model.entity_id:
-            raise ImportJobModelValidationError(
-                message=_('Invalid Bank Account for LedgerModel. No matching Entity Model found.')
-            )
+    if instance.is_configured() and instance.bank_account_model.entity_model_id != instance.ledger_model.entity_id:
+        raise ImportJobModelValidationError(
+            message=_('Invalid Bank Account for LedgerModel. No matching Entity Model found.')
+        )
 
 
 pre_save.connect(importjobmodel_presave, sender=ImportJobModel)
