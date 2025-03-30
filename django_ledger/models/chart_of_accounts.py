@@ -322,7 +322,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             return qs.active()
         return qs
 
-    def get_coa_account_tree(self) -> Dict:
+    def get_coa_account_tree(self) -> dict:
         """
         Performs a bulk dump of the ChartOfAccounts model instance accounts to a dictionary.
         The method invokes the`dump_bulk` method on the ChartOfAccount model instance root node.

@@ -980,7 +980,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self,
             txs_qs: Optional[TransactionModelQuerySet] = None,
             as_dict: bool = False
-    ) -> Union[TransactionModelQuerySet, Dict[str, Decimal]]:
+    ) -> Union[TransactionModelQuerySet, dict[str, Decimal]]:
         """
         Calculates the total CREDIT and DEBIT balances for the journal entry.
 
@@ -1030,7 +1030,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self,
             txs_qs: Optional[TransactionModelQuerySet] = None,
             exclude_cash_role: bool = False
-    ) -> Set[str]:
+    ) -> set[str]:
         """
         Retrieves the set of account roles involved in the journal entry's transactions.
 
@@ -1095,7 +1095,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     @classmethod
     def get_activity_from_roles(
             cls,
-            role_set: Union[List[str], Set[str]],
+            role_set: Union[list[str], set[str]],
             validate: bool = False,
             raise_exception: bool = True
     ) -> Optional[str]:
@@ -1352,7 +1352,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                txs_qs: Optional[TransactionModelQuerySet] = None,
                force_verify: bool = False,
                raise_exception: bool = True,
-               **kwargs) -> Tuple[TransactionModelQuerySet, bool]:
+               **kwargs) -> tuple[TransactionModelQuerySet, bool]:
 
         """
         Verifies the validity of the Journal Entry model instance.
@@ -1428,7 +1428,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     def clean(self,
               verify: bool = False,
               raise_exception: bool = True,
-              txs_qs: Optional[TransactionModelQuerySet] = None) -> Tuple[TransactionModelQuerySet, bool]:
+              txs_qs: Optional[TransactionModelQuerySet] = None) -> tuple[TransactionModelQuerySet, bool]:
         """
         Cleans the JournalEntryModel instance, optionally verifying it and generating a Journal Entry (JE) number if required.
 

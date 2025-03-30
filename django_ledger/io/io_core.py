@@ -379,7 +379,7 @@ def validate_io_timestamp(
 def validate_dates(
         from_date: Optional[Union[str, datetime, date]] = None,
         to_date: Optional[Union[str, datetime, date]] = None
-) -> Tuple[date, date]:
+) -> tuple[date, date]:
     """
     Validates and converts the input dates to date objects. This function ensures that the
     provided `from_date` and `to_date` are correctly parsed into `date` objects. If the dates
@@ -496,7 +496,7 @@ class IOResult:
     txs_queryset = None
 
     # the aggregated account balance...
-    accounts_digest: Optional[List[Dict]] = None
+    accounts_digest: Optional[list[dict]] = None
 
     @property
     def is_bounded(self) -> bool:
@@ -635,7 +635,7 @@ class IODatabaseMixIn:
                         by_unit: bool = False,
                         activity: Optional[str] = None,
                         role: str = Optional[str],
-                        accounts: Optional[Union[str, List[str], Set[str]]] = None,
+                        accounts: Optional[Union[str, list[str], set[str]]] = None,
                         posted: bool = True,
                         exclude_zero_bal: bool = True,
                         use_closing_entries: bool = False,
@@ -922,8 +922,8 @@ class IODatabaseMixIn:
                       from_date: Optional[Union[date, datetime, str]] = None,
                       equity_only: bool = False,
                       activity: str = None,
-                      role: Optional[Union[Set[str], List[str]]] = None,
-                      accounts: Optional[Union[Set[str], List[str]]] = None,
+                      role: Optional[Union[set[str], list[str]]] = None,
+                      accounts: Optional[Union[set[str], list[str]]] = None,
                       signs: bool = True,
                       by_unit: bool = False,
                       by_activity: bool = False,
@@ -1109,8 +1109,8 @@ class IODatabaseMixIn:
                to_date: Optional[Union[date, datetime, str]] = None,
                from_date: Optional[Union[date, datetime, str]] = None,
                user_model: Optional[UserModel] = None,
-               accounts: Optional[Union[Set[str], List[str]]] = None,
-               role: Optional[Union[Set[str], List[str]]] = None,
+               accounts: Optional[Union[set[str], list[str]]] = None,
+               role: Optional[Union[set[str], list[str]]] = None,
                activity: Optional[str] = None,
                signs: bool = True,
                process_roles: bool = False,
@@ -1293,7 +1293,7 @@ class IODatabaseMixIn:
 
     def commit_txs(self,
                    je_timestamp: Union[str, datetime, date],
-                   je_txs: List[Dict],
+                   je_txs: list[dict],
                    je_posted: bool = False,
                    je_ledger_model=None,
                    je_unit_model=None,
@@ -1492,7 +1492,7 @@ class IOReportMixIn:
                              to_date: Union[date, datetime],
                              user_model: Optional[UserModel] = None,
                              txs_queryset: Optional[QuerySet] = None,
-                             **kwargs: Dict) -> IODigestContextManager:
+                             **kwargs: dict) -> IODigestContextManager:
         """
         Digest the balance sheet for a specific time period, user, and optionally a specific set
         of transactions. Returns a context manager for digesting the specified balance sheet data.

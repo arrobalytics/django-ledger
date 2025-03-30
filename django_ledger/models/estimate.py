@@ -1076,7 +1076,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
-    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+    def migrate_itemtxs(self, itemtxs: dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_state(itemtxs_qs=itemtxs_batch)
         self.clean()
@@ -1098,7 +1098,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             entity_id__exact=self.entity_id
         ).estimates()
 
-    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the EstimateModel.
 
@@ -1114,7 +1114,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             raise EstimateModelValidationError(f'Invalid queryset. All items must be assigned to Bill {self.uuid}')
 
     def get_itemtxs_data(self,
-                         queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
+                         queryset: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False):
 
@@ -1232,7 +1232,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             ])
 
     def update_state(self,
-                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None):
+                     itemtxs_qs: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None):
         itemtxs_qs, _ = self.get_itemtxs_data(queryset=itemtxs_qs)
         self.update_cost_estimate(itemtxs_qs)
         self.update_revenue_estimate(itemtxs_qs)
@@ -1344,7 +1344,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
     # --- CONTRACT METHODS ---
 
     # Queryset validation....
-    def validate_item_transaction_qs(self, itemtxs_qs: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_item_transaction_qs(self, itemtxs_qs: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 

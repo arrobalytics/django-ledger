@@ -509,7 +509,7 @@ class BillModelAbstract(
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
-    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+    def migrate_itemtxs(self, itemtxs: dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
         self.get_state(commit=True)
@@ -527,7 +527,7 @@ class BillModelAbstract(
             entity_id__exact=self.ledger.entity_id
         ).bills()
 
-    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_itemtxs_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the BillModel.
 
@@ -545,7 +545,7 @@ class BillModelAbstract(
     def get_itemtxs_data(self,
                          queryset: Optional[ItemTransactionModelQuerySet] = None,
                          aggregate_on_db: bool = False,
-                         lazy_agg: bool = False) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         lazy_agg: bool = False) -> tuple[ItemTransactionModelQuerySet, dict]:
         """
         Fetches the BillModel Items and aggregates the QuerySet.
 
@@ -632,7 +632,7 @@ class BillModelAbstract(
         )
 
     def update_amount_due(self, itemtxs_qs: Optional[
-        Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None) -> ItemTransactionModelQuerySet:
+        Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None) -> ItemTransactionModelQuerySet:
         """
         Updates the BillModel amount due.
 

@@ -21,12 +21,12 @@ class IODigestValidationError(ValidationError):
 class IODigestContextManager:
 
     def __init__(self, io_state: defaultdict):
-        self.IO_DATA: Dict = io_state
+        self.IO_DATA: dict = io_state
         self.IO_RESULT = io_state['io_result']
         self.IO_MODEL = io_state['io_model']
         self.STRFTIME_FORMAT = '%B %d, %Y'
 
-    def get_io_data(self) -> Dict:
+    def get_io_data(self) -> dict:
         return self.IO_DATA
 
     def get_io_result(self):
@@ -90,7 +90,7 @@ class IODigestContextManager:
         return self.IO_DATA['by_activity']
 
     # Account Information
-    def get_account_data(self, key_func=None) -> Dict:
+    def get_account_data(self, key_func=None) -> dict:
         if key_func:
             return {
                 key_func(acc): acc for acc in self.IO_DATA['accounts']
@@ -103,7 +103,7 @@ class IODigestContextManager:
     def has_balance_sheet(self) -> bool:
         return 'balance_sheet' in self.IO_DATA
 
-    def get_balance_sheet_data(self, raise_exception: bool = True) -> Dict:
+    def get_balance_sheet_data(self, raise_exception: bool = True) -> dict:
         try:
             return self.IO_DATA['balance_sheet']
         except KeyError:
@@ -116,7 +116,7 @@ class IODigestContextManager:
     def has_income_statement(self) -> bool:
         return 'income_statement' in self.IO_DATA
 
-    def get_income_statement_data(self, raise_exception: bool = True) -> Dict:
+    def get_income_statement_data(self, raise_exception: bool = True) -> dict:
         try:
             return self.IO_DATA['income_statement']
         except KeyError:
@@ -129,7 +129,7 @@ class IODigestContextManager:
     def has_cash_flow_statement(self):
         return 'cash_flow_statement' in self.IO_DATA
 
-    def get_cash_flow_statement_data(self, raise_exception: bool = True) -> Dict:
+    def get_cash_flow_statement_data(self, raise_exception: bool = True) -> dict:
         try:
             return self.IO_DATA['cash_flow_statement']
         except KeyError:
@@ -139,7 +139,7 @@ class IODigestContextManager:
                 )
 
     # All Available Statements
-    def get_financial_statements_data(self) -> Dict:
+    def get_financial_statements_data(self) -> dict:
         return {
             'balance_sheet': self.get_balance_sheet_data() if self.has_balance_sheet() else None,
             'income_statement': self.get_income_statement_data() if self.has_income_statement() else None,

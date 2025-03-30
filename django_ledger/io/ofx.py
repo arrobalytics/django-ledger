@@ -24,7 +24,7 @@ class OFXFileManager:
         self.FILE = ofx_file_or_path
         self.ofx_tree: OFXTree = OFXTree()
         self.ofx_data: OFX or None = None
-        self.statements: List[STMTRS] or None = None
+        self.statements: list[STMTRS] or None = None
         self.NUMBER_OF_STATEMENTS: int = 0
 
         if parse_on_load:
@@ -35,7 +35,7 @@ class OFXFileManager:
 
         self.BANK_NAME = self.ofx_data.fi.org if hasattr(self.ofx_data.fi, 'org') else None
         self.FID = self.ofx_data.fi.fid if hasattr(self.ofx_data.fi, 'fid') else None
-        self.ACCOUNT_DATA: Optional[Dict] = None
+        self.ACCOUNT_DATA: Optional[dict] = None
 
         self.get_account_data()
         # self.ACCOUNT_TXS = self.get_account_txs(account=self.ACCOUNTS[0]['account'].acctid)

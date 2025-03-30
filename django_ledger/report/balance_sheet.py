@@ -49,7 +49,7 @@ class BalanceSheetReport(BaseReportSupport):
         for k, th in self.TABLE_HEADERS.items():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
-    def get_report_data(self) -> Dict:
+    def get_report_data(self) -> dict:
         return self.IO_DIGEST.get_balance_sheet_data()
 
     def get_report_name(self) -> str:

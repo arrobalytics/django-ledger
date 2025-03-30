@@ -47,7 +47,7 @@ class BaseReportSupport(*load_support()):
         self.set_default_font()
         self.alias_nb_pages()
         self.add_page()
-        self.TABLE_HEADERS: Optional[Dict]
+        self.TABLE_HEADERS: Optional[dict]
 
     def set_default_font(self):
         self.set_font(

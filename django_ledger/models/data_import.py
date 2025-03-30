@@ -546,7 +546,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.get_amount()}'
 
-    def from_commit_dict(self, split_amount: Optional[Decimal] = None) -> List[Dict]:
+    def from_commit_dict(self, split_amount: Optional[Decimal] = None) -> list[dict]:
         """
         Converts a commit dictionary to a list of dictionaries containing
         transactional data. The method processes the transaction's amount,
@@ -582,7 +582,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
             'staged_tx_model': self
         }]
 
-    def to_commit_dict(self) -> List[Dict]:
+    def to_commit_dict(self) -> list[dict]:
         """
         Converts the current transaction or its children into a list of commit dictionaries.
 
@@ -977,7 +977,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         """
         return getattr(self, 'children_count') == getattr(self, 'children_mapped_count')
 
-    def get_import_role_set(self) -> Set[str]:
+    def get_import_role_set(self) -> set[str]:
         """
         Retrieves the set of roles associated with import.
 

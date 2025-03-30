@@ -313,7 +313,7 @@ DEFAULT_CHART_OF_ACCOUNTS = [
 ]
 
 
-def get_default_coa() -> List[Dict]:
+def get_default_coa() -> list[dict]:
     if DJANGO_LEDGER_DEFAULT_COA is not None and isinstance(DJANGO_LEDGER_DEFAULT_COA, list):
         return DJANGO_LEDGER_DEFAULT_COA
     return DEFAULT_CHART_OF_ACCOUNTS
@@ -350,7 +350,7 @@ def verify_unique_code():
         raise DjangoLedgerConfigurationError('Default CoA is not unique.')
 
 
-def get_default_coa_rst(default_coa: Optional[Dict] = None) -> str:
+def get_default_coa_rst(default_coa: Optional[dict] = None) -> str:
     """
     Converts the provided Chart of Account into restructuredText format.
     Parameters

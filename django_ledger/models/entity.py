@@ -340,7 +340,7 @@ class EntityModelFiscalPeriodMixIn:
             year_end += 1
         return date(year_end, quarter_month_end, monthrange(year_end, quarter_month_end)[1])
 
-    def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> Tuple[date, date]:
+    def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year start and end dates.
 
@@ -365,7 +365,7 @@ class EntityModelFiscalPeriodMixIn:
         ed = self.get_fy_end(year, fy_start_month)
         return sd, ed
 
-    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> Tuple[date, date]:
+    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year quarter start and end dates.
 
@@ -446,7 +446,7 @@ class EntityModelClosingEntryMixIn:
                                  from_date: Optional[date] = None,
                                  user_model: Optional[UserModel] = None,
                                  closing_entry_model=None,
-                                 **kwargs: Dict) -> Tuple:
+                                 **kwargs: dict) -> tuple:
         ClosingEntryModel = lazy_loader.get_closing_entry_model()
         ClosingEntryTransactionModel = lazy_loader.get_closing_entry_transaction_model()
 
@@ -489,7 +489,7 @@ class EntityModelClosingEntryMixIn:
     def get_closing_entry_digest_for_date(self,
                                           closing_date: date,
                                           closing_entry_model=None,
-                                          **kwargs) -> Tuple:
+                                          **kwargs) -> tuple:
         return self.get_closing_entry_digest(
             to_date=closing_date,
             closing_entry_model=closing_entry_model,
@@ -499,12 +499,12 @@ class EntityModelClosingEntryMixIn:
     def get_closing_entry_digest_for_month(self,
                                            year: int,
                                            month: int,
-                                           **kwargs: Dict) -> Tuple:
+                                           **kwargs: dict) -> tuple:
         _, day_end = monthrange(year, month)
         closing_date = date(year=year, month=month, day=day_end)
         return self.get_closing_entry_digest_for_date(closing_date=closing_date, **kwargs)
 
-    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: Dict) -> Tuple:
+    def get_closing_entry_digest_for_fiscal_year(self, fiscal_year: int, **kwargs: dict) -> tuple:
         closing_date = getattr(self, 'get_fy_end')(year=fiscal_year)
         return self.get_closing_entry_digest_for_date(to_date=closing_date, **kwargs)
 
@@ -803,7 +803,7 @@ class EntityModelAbstract(MP_Node,
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._CLOSING_ENTRY_DATES: Optional[List[date]] = None
+        self._CLOSING_ENTRY_DATES: Optional[list[date]] = None
 
     @property
     def default_coa_slug(self):
@@ -1224,9 +1224,9 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError(f'Invalid LedgerModel {ledger_model.uuid} for entity {self.slug}')
 
     def get_all_coa_accounts(self,
-                             order_by: Optional[Tuple[str]] = ('code',),
-                             active: bool = True) -> Tuple[
-        ChartOfAccountModelQuerySet, Dict[ChartOfAccountModel, AccountModelQuerySet]]:
+                             order_by: Optional[tuple[str]] = ('code',),
+                             active: bool = True) -> tuple[
+        ChartOfAccountModelQuerySet, dict[ChartOfAccountModel, AccountModelQuerySet]]:
 
         """
         Fetches all the AccountModels associated with the EntityModel grouped by ChartOfAccountModel.
@@ -1254,7 +1254,7 @@ class EntityModelAbstract(MP_Node,
         }
 
     # ##### ACCOUNT MANAGEMENT ######
-    def get_all_accounts(self, active: bool = True, order_by: Optional[Tuple[str]] = ('code',)) -> AccountModelQuerySet:
+    def get_all_accounts(self, active: bool = True, order_by: Optional[tuple[str]] = ('code',)) -> AccountModelQuerySet:
         """
         Fetches all AccountModelQuerySet associated with the EntityModel.
 
@@ -1284,9 +1284,9 @@ class EntityModelAbstract(MP_Node,
                          coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                          active: bool = True,
                          locked: bool = False,
-                         order_by: Optional[Tuple] = ('code',),
+                         order_by: Optional[tuple] = ('code',),
                          return_coa_model: bool = False,
-                         ) -> Union[AccountModelQuerySet, Tuple[ChartOfAccountModel, AccountModelQuerySet]]:
+                         ) -> Union[AccountModelQuerySet, tuple[ChartOfAccountModel, AccountModelQuerySet]]:
         """
         Fetches the AccountModelQuerySet for a specific ChartOfAccountModel.
 
@@ -1337,7 +1337,7 @@ class EntityModelAbstract(MP_Node,
 
     def get_default_coa_accounts(self,
                                  active: bool = True,
-                                 order_by: Optional[Tuple[str]] = ('code',),
+                                 order_by: Optional[tuple[str]] = ('code',),
                                  raise_exception: bool = True) -> Optional[AccountModelQuerySet]:
         """
         Fetches the default AccountModelQuerySet.
@@ -1364,7 +1364,7 @@ class EntityModelAbstract(MP_Node,
         return self.get_coa_accounts(active=active, order_by=order_by)
 
     def get_accounts_with_codes(self,
-                                code_list: Union[str, List[str], Set[str]],
+                                code_list: Union[str, list[str], set[str]],
                                 coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None
                                 ) -> AccountModelQuerySet:
         """
@@ -1477,9 +1477,9 @@ class EntityModelAbstract(MP_Node,
         )
 
     def create_account_by_kwargs(self,
-                                 account_model_kwargs: Dict,
+                                 account_model_kwargs: dict,
                                  coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                                 raise_exception: bool = True) -> Tuple[ChartOfAccountModel, AccountModel]:
+                                 raise_exception: bool = True) -> tuple[ChartOfAccountModel, AccountModel]:
         """
         Creates a new AccountModel for the EntityModel by passing AccountModel KWARGS.
         This is a legacy method for creating a new AccountModel for the EntityModel.
@@ -1518,7 +1518,7 @@ class EntityModelAbstract(MP_Node,
         return coa_model, coa_model.create_account(**account_model_kwargs)
 
     def get_account_balance(self,
-                            account_codes: List[str],
+                            account_codes: list[str],
                             to_date: Union[datetime, date, str],
                             **kwargs):
 
@@ -1581,7 +1581,7 @@ class EntityModelAbstract(MP_Node,
         vendor_model_qs = self.get_vendors()
         return vendor_model_qs.get(uuid__exact=vendor_uuid)
 
-    def create_vendor(self, vendor_model_kwargs: Dict, commit: bool = True) -> VendorModel:
+    def create_vendor(self, vendor_model_kwargs: dict, commit: bool = True) -> VendorModel:
         """
         Creates a new VendorModel associated with the EntityModel instance.
 
@@ -1634,7 +1634,7 @@ class EntityModelAbstract(MP_Node,
         if customer_model.entity_model_id != self.uuid:
             raise EntityModelValidationError(f'Invalid CustomerModel {self.uuid} for EntityModel {self.uuid}...')
 
-    def create_customer(self, customer_model_kwargs: Dict, commit: bool = True) -> CustomerModel:
+    def create_customer(self, customer_model_kwargs: dict, commit: bool = True) -> CustomerModel:
         """
         Creates a new CustomerModel associated with the EntityModel instance.
 
@@ -1677,7 +1677,7 @@ class EntityModelAbstract(MP_Node,
                     cash_account: Optional[AccountModel] = None,
                     prepaid_account: Optional[AccountModel] = None,
                     payable_account: Optional[AccountModel] = None,
-                    additional_info: Optional[Dict] = None,
+                    additional_info: Optional[dict] = None,
                     ledger_name: Optional[str] = None,
                     coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                     commit: bool = True):
@@ -1787,7 +1787,7 @@ class EntityModelAbstract(MP_Node,
                        cash_account: Optional[AccountModel] = None,
                        prepaid_account: Optional[AccountModel] = None,
                        payable_account: Optional[AccountModel] = None,
-                       additional_info: Optional[Dict] = None,
+                       additional_info: Optional[dict] = None,
                        ledger_name: Optional[str] = None,
                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                        date_draft: Optional[date] = None,
@@ -2001,7 +2001,7 @@ class EntityModelAbstract(MP_Node,
                             active=False,
                             account_model: Optional[AccountModel] = None,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
-                            bank_account_model_kwargs: Optional[Dict] = None,
+                            bank_account_model_kwargs: Optional[dict] = None,
                             commit: bool = True):
 
         """
@@ -2584,7 +2584,7 @@ class EntityModelAbstract(MP_Node,
         return adjustment
 
     def update_inventory(self,
-                         commit: bool = False) -> Tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]:
+                         commit: bool = False) -> tuple[defaultdict, ItemTransactionModelQuerySet, ItemModelQuerySet]:
         """
         Triggers an inventory recount with optional commitment of transaction.
 
@@ -2757,19 +2757,19 @@ class EntityModelAbstract(MP_Node,
     def get_closing_entries(self):
         return self.closingentrymodel_set.all()
 
-    def get_closing_entry_dates_list_meta(self, as_iso: bool = True) -> List[Union[date, str]]:
+    def get_closing_entry_dates_list_meta(self, as_iso: bool = True) -> list[Union[date, str]]:
         date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
         if as_iso:
             return date_list
         return [date.fromisoformat(d) for d in date_list]
 
-    def compute_closing_entry_dates_list(self, as_iso: bool = True) -> List[Union[date, str]]:
+    def compute_closing_entry_dates_list(self, as_iso: bool = True) -> list[Union[date, str]]:
         closing_entry_qs = self.closingentrymodel_set.order_by('-closing_date').only('closing_date').posted()
         if as_iso:
             return [ce.closing_date.isoformat() for ce in closing_entry_qs]
         return [ce.closing_date for ce in closing_entry_qs]
 
-    def save_closing_entry_dates_meta(self, commit: bool = True) -> List[str]:
+    def save_closing_entry_dates_meta(self, commit: bool = True) -> list[str]:
         date_list = self.compute_closing_entry_dates_list(as_iso=False)
 
         try:
@@ -2787,7 +2787,7 @@ class EntityModelAbstract(MP_Node,
                 ])
         return date_list
 
-    def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> List[date]:
+    def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> list[date]:
         if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
             return list()
         date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]

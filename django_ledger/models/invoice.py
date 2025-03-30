@@ -472,7 +472,7 @@ class InvoiceModelAbstract(
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
-    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+    def migrate_itemtxs(self, itemtxs: dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_amount_due(itemtxs_qs=itemtxs_batch)
         self.get_state(commit=True)
@@ -509,7 +509,7 @@ class InvoiceModelAbstract(
                          queryset: ItemTransactionModelQuerySet = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False,
-                         ) -> Tuple[ItemTransactionModelQuerySet, Dict]:
+                         ) -> tuple[ItemTransactionModelQuerySet, dict]:
         """
         Fetches the InvoiceModel Items and aggregates the QuerySet.
 

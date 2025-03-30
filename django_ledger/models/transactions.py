@@ -67,7 +67,7 @@ class TransactionModelQuerySet(QuerySet):
             Q(journal_entry__ledger__posted=True)
         )
 
-    def for_accounts(self, account_list: List[Union[AccountModel, str, UUID]]):
+    def for_accounts(self, account_list: list[Union[AccountModel, str, UUID]]):
         """
         Filters transactions based on the accounts they are associated with.
 
@@ -97,7 +97,7 @@ class TransactionModelQuerySet(QuerySet):
             message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
         )
 
-    def for_roles(self, role_list: Union[str, List[str], Set[str]]):
+    def for_roles(self, role_list: Union[str, list[str], set[str]]):
         """
         Fetches a QuerySet of TransactionModels which AccountModel has a specific role.
 
@@ -133,7 +133,7 @@ class TransactionModelQuerySet(QuerySet):
             return self.filter(journal_entry__entity_unit=unit_slug)
         return self.filter(journal_entry__entity_unit__slug__exact=unit_slug)
 
-    def for_activity(self, activity_list: Union[str, List[str], Set[str]]):
+    def for_activity(self, activity_list: Union[str, list[str], set[str]]):
         """
         Filters transactions based on their associated activity or activities.
 

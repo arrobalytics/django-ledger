@@ -335,7 +335,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
                 self.save()
         return self
 
-    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]):
+    def validate_item_transaction_qs(self, queryset: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]):
         """
         Validates that the entire ItemTransactionModelQuerySet is bound to the PurchaseOrderModel.
 
@@ -355,7 +355,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     def can_migrate_itemtxs(self) -> bool:
         return self.is_draft()
 
-    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+    def migrate_itemtxs(self, itemtxs: dict, operation: str, commit: bool = False):
         itemtxs_batch = super().migrate_itemtxs(itemtxs=itemtxs, commit=commit, operation=operation)
         self.update_state(itemtxs_qs=itemtxs_batch)
         self.clean()
@@ -371,9 +371,9 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         ).purchase_orders()
 
     def get_itemtxs_data(self,
-                         queryset: Optional[Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None,
+                         queryset: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None,
                          aggregate_on_db: bool = False,
-                         lazy_agg: bool = False) -> Tuple:
+                         lazy_agg: bool = False) -> tuple:
         """
         Fetches the PurchaseOrderModel Items and aggregates the QuerySet.
 
@@ -408,7 +408,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     # ### ItemizeMixIn implementation END...
     def update_state(self, itemtxs_qs: Optional[
-        Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]]] = None) -> Tuple:
+        Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None) -> tuple:
 
         """
         Updates the state of the PurchaseOrderModel.
@@ -950,7 +950,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     # FULFILL...
     def mark_as_fulfilled(self,
                           date_fulfilled: date = None,
-                          po_items: Union[ItemTransactionModelQuerySet, List[ItemTransactionModel]] = None,
+                          po_items: Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]] = None,
                           commit: bool = False,
                           **kwargs):
         """

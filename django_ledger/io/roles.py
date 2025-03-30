@@ -638,7 +638,7 @@ for group in ROLES_GROUPS:
     GROUPS_DIRECTORY[group] = getattr(mod, group)
 
 
-def validate_roles(roles: Union[str, List[str]], raise_exception: bool = True) -> Set[str]:
+def validate_roles(roles: Union[str, list[str]], raise_exception: bool = True) -> set[str]:
     """
     Validates a given role identifier against the valid role available.
     Parameters

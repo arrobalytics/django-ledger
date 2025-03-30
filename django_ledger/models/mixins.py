@@ -434,9 +434,9 @@ class AccrualMixIn(models.Model):
 
     @classmethod
     def split_amount(cls, amount: Union[Decimal, float],
-                     unit_split: Dict,
+                     unit_split: dict,
                      account_uuid: UUID,
-                     account_balance_type: str) -> Dict:
+                     account_balance_type: str) -> dict:
         """
         Splits an amount into different proportions representing the unit splits.
         Makes sure that 100% of the amount is numerically allocated taking into consideration decimal points.
@@ -807,7 +807,7 @@ class AccrualMixIn(models.Model):
             if raise_exception:
                 raise ValidationError(f'{self.REL_NAME_PREFIX.upper()} state migration not allowed')
 
-    def void_state(self, commit: bool = False) -> Dict:
+    def void_state(self, commit: bool = False) -> dict:
         """
         Determines the VOID state of the financial instrument.
 
@@ -855,7 +855,7 @@ class AccrualMixIn(models.Model):
             self.update_state(new_state)
         return new_state
 
-    def update_state(self, state: Optional[Dict] = None):
+    def update_state(self, state: Optional[dict] = None):
         """
         Updates the state on the financial instrument.
 
@@ -1343,7 +1343,7 @@ class ItemizeMixIn(models.Model):
             ) for item_number, i in itemtxs.items()
         ]
 
-    def migrate_itemtxs(self, itemtxs: Dict, operation: str, commit: bool = False):
+    def migrate_itemtxs(self, itemtxs: dict, operation: str, commit: bool = False):
         """
         Migrates a predefined item transaction list.
 

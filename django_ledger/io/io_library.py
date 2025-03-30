@@ -51,7 +51,7 @@ class TransactionInstructionItem:
     description: Optional[str]
     account_model: Optional[AccountModel] = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             'account': self.account_model,
             'amount': self.amount,
@@ -132,7 +132,7 @@ class IOCursor:
             coa_model=self.COA_MODEL
         ).can_transact()
 
-    def resolve_account_model_qs(self, codes: Set[str]) -> AccountModelQuerySet:
+    def resolve_account_model_qs(self, codes: set[str]) -> AccountModelQuerySet:
         """
         Resolves the final AccountModelQuerySet associated with the given account codes used by the blueprint.
 
@@ -210,7 +210,7 @@ class IOCursor:
         blueprint_txs = blueprint_func(**kwargs)
         self.blueprints[ledger_model].append(blueprint_txs)
 
-    def compile_instructions(self) -> Dict:
+    def compile_instructions(self) -> dict:
         """
         Compiles the blueprint instructions into Journal Entries and Transactions to be committed to the ledger.
 
@@ -500,7 +500,7 @@ class IOBluePrint:
                je_timestamp: Optional[Union[datetime, date, str]] = None,
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
-               **kwargs) -> Dict:
+               **kwargs) -> dict:
         """
         Commits the blueprint transactions to the database.
 
@@ -561,7 +561,7 @@ class IOLibrary:
 
     def __init__(self, name: str):
         self.name = name
-        self.registry: Dict[str, Callable] = {}
+        self.registry: dict[str, Callable] = {}
 
     def _check_func_name(self, name) -> bool:
         return name in self.registry
