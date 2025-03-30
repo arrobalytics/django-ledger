@@ -37,5 +37,5 @@ class Command(BaseCommand):
                 'code_challenge': code_challenge
             }
 
-            with open(out_file, 'w') as io:
+            with Path.open(out_file, 'w') as io:
                 json.dump(codes, io, indent=4)
