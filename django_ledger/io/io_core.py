@@ -357,7 +357,7 @@ def validate_io_timestamp(
                 raise InvalidDateInputError(
                     message=f'Could not parse date from {dt}'
                 )
-            elif is_naive(fdt):
+            if is_naive(fdt):
                 fdt = make_aware(fdt)
         if global_settings.USE_TZ:
             return make_aware(

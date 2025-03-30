@@ -2468,7 +2468,7 @@ class EntityModelAbstract(MP_Node,
         elif isinstance(inventory_account, AccountModel):
             if inventory_account.coa_model.entity_id != self.uuid:
                 raise EntityModelValidationError(f'Invalid account for entity {self.slug}...')
-            elif inventory_account.coa_model_id != coa_model.uuid:
+            if inventory_account.coa_model_id != coa_model.uuid:
                 raise EntityModelValidationError(f'Invalid account for coa {coa_model.slug}...')
 
         inventory_item_model = ItemModel(
@@ -2835,7 +2835,7 @@ class EntityModelAbstract(MP_Node,
             raise EntityModelValidationError(
                 message=_('Closing books must be called by providing closing_date or closing_entry_model, not both.')
             )
-        elif not closing_date and not closing_entry_model:
+        if not closing_date and not closing_entry_model:
             raise EntityModelValidationError(
                 message=_('Closing books must be called by providing closing_date or closing_entry_model.')
             )
