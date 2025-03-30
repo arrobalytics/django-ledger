@@ -1133,12 +1133,11 @@ class EntityModelAbstract(MP_Node,
                     account_model.clean()
                     coa_model.insert_account(account_model, root_account_qs=root_account_qs)
 
-        else:
-            if not ignore_if_default_coa:
-                raise EntityModelValidationError(
-                    f'Entity {self.name} already has existing accounts. '
-                    'Use force=True to bypass this check'
-                )
+        elif not ignore_if_default_coa:
+            raise EntityModelValidationError(
+                f'Entity {self.name} already has existing accounts. '
+                'Use force=True to bypass this check'
+            )
 
     def get_coa_model_qs(self, active: bool = True):
         """
@@ -2728,12 +2727,11 @@ class EntityModelAbstract(MP_Node,
                 name=f'Capital Deposit on {je_timestamp.isoformat()}.',
                 posted=ledger_posted
             )
+        elif isinstance(ledger_model, LedgerModel):
+            self.validate_ledger_model_for_entity(ledger_model)
         else:
-            if isinstance(ledger_model, LedgerModel):
-                self.validate_ledger_model_for_entity(ledger_model)
-            else:
-                ledger_model_qs = LedgerModel.objects.filter(entity__uuid__exact=self.uuid)
-                ledger_model = ledger_model_qs.get(uuid__exact=ledger_model)
+            ledger_model_qs = LedgerModel.objects.filter(entity__uuid__exact=self.uuid)
+            ledger_model = ledger_model_qs.get(uuid__exact=ledger_model)
 
         self.commit_txs(
             je_timestamp=je_timestamp,

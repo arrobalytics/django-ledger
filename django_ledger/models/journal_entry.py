@@ -1124,9 +1124,8 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         """
         if validate:
             role_set = validate_roles(roles=role_set)
-        else:
-            if isinstance(role_set, list):
-                role_set = set(role_set)
+        elif isinstance(role_set, list):
+            role_set = set(role_set)
 
         activity = None
 
@@ -1174,26 +1173,24 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             if raise_exception:
                 raise JournalEntryValidationError(
                     f'Multiple activities detected in roles JE {role_set}.')
-        else:
-            if is_investing_for_ppe:
-                activity = cls.INVESTING_PPE
-            elif is_investing_for_securities:
-                activity = cls.INVESTING_SECURITIES
-            elif is_financing_st_debt:
-                activity = cls.FINANCING_STD
-            elif is_financing_lt_debt:
-                activity = cls.FINANCING_LTD
-            elif is_financing_issuing_equity:
-                activity = cls.FINANCING_EQUITY
-            elif is_financing_dividends:
-                activity = cls.FINANCING_DIVIDENDS
-            elif is_operating:
-                activity = cls.OPERATING_ACTIVITY
-            else:
-                if raise_exception:
-                    raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
-                                                      'Split into multiple Journal Entries or check'
-                                                      ' your account selection.')
+        elif is_investing_for_ppe:
+            activity = cls.INVESTING_PPE
+        elif is_investing_for_securities:
+            activity = cls.INVESTING_SECURITIES
+        elif is_financing_st_debt:
+            activity = cls.FINANCING_STD
+        elif is_financing_lt_debt:
+            activity = cls.FINANCING_LTD
+        elif is_financing_issuing_equity:
+            activity = cls.FINANCING_EQUITY
+        elif is_financing_dividends:
+            activity = cls.FINANCING_DIVIDENDS
+        elif is_operating:
+            activity = cls.OPERATING_ACTIVITY
+        elif raise_exception:
+            raise JournalEntryValidationError(f'No activity match for roles {role_set}.'
+                                              'Split into multiple Journal Entries or check'
+                                              ' your account selection.')
         return activity
 
     def generate_activity(self,
