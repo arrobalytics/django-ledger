@@ -41,7 +41,7 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
 
     def test_ofx_v2_good(self):
         """
-        ofx v2 uses XML rather than SGML. This is a good ofx v2 file.
+        OFX v2 uses XML rather than SGML. This is a good ofx v2 file.
         """
         ofx = self.get_sample_ofx('v2_good.ofx')
         accounts = ofx.get_accounts()
