@@ -155,10 +155,12 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
     def get_next_quarter(self, quarter) -> int:
         if quarter != 4:
             return quarter + 1
+        return None
 
     def get_previous_quarter(self, quarter) -> int:
         if quarter != 1:
             return quarter - 1
+        return None
 
 
 class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
@@ -501,6 +503,7 @@ class UnpaidElementsMixIn:
                 qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
 
             return qs
+        return None
 
     def get_unpaid_bills_qs(self, context, from_date=None, to_date=None):
         if self.FETCH_UNPAID_BILLS:
@@ -520,6 +523,7 @@ class UnpaidElementsMixIn:
                 qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
 
             return qs
+        return None
 
 
 class BaseDateNavigationUrlMixIn:

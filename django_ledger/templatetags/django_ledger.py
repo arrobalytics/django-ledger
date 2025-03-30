@@ -8,7 +8,6 @@ Miguel Sanda <msanda@arrobalytics.com>
 
 from calendar import month_abbr
 from random import randint
-from typing import Union
 
 from django import template
 from django.core.exceptions import ValidationError
@@ -50,6 +49,7 @@ def absolute(value):
         if isinstance(value, str):
             value = float(value)
         return abs(value)
+    return None
 
 
 @register.filter(name='reverse_sign')
@@ -58,6 +58,7 @@ def reverse_sign(value):
         if isinstance(value, str):
             value = float(value)
         return -value
+    return None
 
 
 @register.filter(name='currency_format')
@@ -71,6 +72,7 @@ def currency_format(value):
 def percentage(value):
     if value is not None:
         return '{0:,.2f}%'.format(value * 100)
+    return None
 
 
 @register.filter(name='last_four')
@@ -491,6 +493,7 @@ def fin_ratio_threshold_class(value, ratio):
         if value >= ranges['watch']:
             return 'is-primary'
         return 'is-success'
+    return None
 
 
 @register.inclusion_tag('django_ledger/components/feedback_button.html', takes_context=True)

@@ -315,11 +315,13 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         for model_class, attr in self.get_wrapper_info.items():
             if getattr(self, attr, None):
                 return getattr(self, attr)
+        return None
 
     def get_wrapped_model_url(self):
         if self.has_wrapped_model():
             wrapped_model = self.get_wrapped_model_instance()
             return wrapped_model.get_absolute_url()
+        return None
 
     def is_posted(self) -> bool:
         """

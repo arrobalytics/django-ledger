@@ -1076,6 +1076,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if activity is not None:
             JournalEntryModel = lazy_loader.get_journal_entry_model()
             return JournalEntryModel.MAP_ACTIVITIES[activity]
+        return None
 
     def is_role_mapping_valid(self, raise_exception: bool = False) -> bool:
         """

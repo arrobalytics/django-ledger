@@ -698,6 +698,7 @@ class ItemModelAbstract(CreateUpdateMixIn):
             return 'product'
         if self.is_service():
             return 'service'
+        return None
 
     def is_labor(self):
         return self.item_type == self.ITEM_TYPE_LABOR

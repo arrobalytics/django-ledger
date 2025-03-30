@@ -253,6 +253,7 @@ class BillModelManager(Manager):
             return qs.filter(
                 Q(ledger__entity__slug__exact=entity_slug)
             )
+        return None
 
 
 class BillModelAbstract(

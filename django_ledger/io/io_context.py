@@ -50,6 +50,7 @@ class IODigestContextManager:
                     fmt = self.get_strftime_format()
                 return from_date.strftime(fmt)
             return from_date
+        return None
 
     @property
     def to_datetime(self):

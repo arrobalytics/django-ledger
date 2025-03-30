@@ -376,6 +376,7 @@ def validate_io_timestamp(
 
     if no_parse_localdate:
         return localtime()
+    return None
 
 
 def validate_dates(

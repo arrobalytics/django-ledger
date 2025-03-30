@@ -227,6 +227,7 @@ class InvoiceModelManager(Manager):
             return qs.filter(ledger__entity=entity_slug)
         if isinstance(entity_slug, str):
             return qs.filter(ledger__entity__slug__exact=entity_slug)
+        return None
 
     def for_entity_unpaid(self, entity_slug, user_model):
         qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)

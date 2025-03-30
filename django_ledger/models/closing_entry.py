@@ -456,10 +456,12 @@ class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
     def is_debit(self) -> bool | None:
         if self.tx_type is not None:
             return self.tx_type == TransactionModel.DEBIT
+        return None
 
     def is_credit(self) -> bool | None:
         if self.tx_type is not None:
             return self.tx_type == TransactionModel.CREDIT
+        return None
 
     def adjust_tx_type_for_negative_balance(self):
         if self.balance < Decimal('0.00'):

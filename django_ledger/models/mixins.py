@@ -123,6 +123,7 @@ class ContactInfoMixIn(models.Model):
             self.country,
         ]):
             return f'{self.city}, {self.state}. {self.zip_code}. {self.country}'
+        return None
 
     def clean(self):
         super().clean()
@@ -309,6 +310,7 @@ class AccrualMixIn(models.Model):
             return self.amount_paid
         if not self.IS_DEBIT_BALANCE:
             return -self.amount_paid
+        return None
 
     def get_amount_earned(self) -> Decimal | float:
         """
@@ -806,6 +808,7 @@ class AccrualMixIn(models.Model):
         if raise_exception:
             msg = f'{self.REL_NAME_PREFIX.upper()} state migration not allowed'
             raise ValidationError(msg)
+        return None
 
     def void_state(self, commit: bool = False) -> dict:
         """
@@ -1046,6 +1049,7 @@ class PaymentTermsMixIn(models.Model):
             if td.days < 0:
                 return 0
             return td.days
+        return None
 
     # TODO: is this necessary?...
     def net_due_group(self):
@@ -1392,6 +1396,7 @@ class ItemizeMixIn(models.Model):
                     itemtxs_qs.delete()
                     return ItemTransactionModel.objects.bulk_create(objs=itemtxs_batch)
             return itemtxs_batch
+        return None
 
     def validate_itemtxs_qs(self):
         """

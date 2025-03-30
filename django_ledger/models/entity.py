@@ -2800,6 +2800,7 @@ class EntityModelAbstract(MP_Node,
         ce_lookup = io_date - timedelta(days=1) if not inclusive else io_date
         if ce_lookup in ce_date_list:
             return ce_lookup
+        return None
 
     def get_nearest_next_closing_entry(self, io_date: date | datetime) -> date | None:
         if io_date is None:
@@ -2821,6 +2822,7 @@ class EntityModelAbstract(MP_Node,
         for f, p in zip_longest(ce_date_list, ce_date_list[1:]):
             if p and p <= io_date < f:
                 return p
+        return None
 
     def close_entity_books(self,
                            closing_date: date | None = None,
