@@ -1605,7 +1605,7 @@ class IOReportMixIn:
         )
         if save_pdf:
             base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
+            filename = filename if filename else report.get_pdf_filename()
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)
@@ -1735,7 +1735,7 @@ class IOReportMixIn:
         )
         if save_pdf:
             base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
+            filename = filename if filename else report.get_pdf_filename()
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)
@@ -1852,7 +1852,7 @@ class IOReportMixIn:
         )
         if save_pdf:
             base_dir = Path(global_settings.BASE_DIR) if not filepath else Path(filepath)
-            filename = report.get_pdf_filename() if not filename else filename
+            filename = filename if filename else report.get_pdf_filename()
             filepath = base_dir.joinpath(filename)
             report.create_pdf_report()
             report.output(filepath)

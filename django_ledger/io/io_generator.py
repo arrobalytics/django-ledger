@@ -227,7 +227,7 @@ class EntityDataGenerator(LoggingMixIn):
 
     def create_entity_units(self, nb_units: int = None):
         self.logger.info('Creating entity units...')
-        nb_units = self.NB_UNITS if not nb_units else nb_units
+        nb_units = nb_units if nb_units else self.NB_UNITS
 
         if nb_units:
             assert nb_units >= 0, 'Number of unite must be greater than 0'

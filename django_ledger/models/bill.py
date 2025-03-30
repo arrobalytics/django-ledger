@@ -479,11 +479,11 @@ class BillModelAbstract(
 
             if date_draft and isinstance(date_draft, datetime):
                 date_draft = date_draft.date()
-            self.date_draft = get_localdate() if not date_draft else date_draft
+            self.date_draft = date_draft if date_draft else get_localdate()
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
-            ledger_name = f'Bill {self.uuid}' if not ledger_name else ledger_name
+            ledger_name = ledger_name if ledger_name else f'Bill {self.uuid}'
             ledger_model.name = ledger_name
             ledger_model.configure_for_wrapper_model(model_instance=self)
             ledger_model.clean()
@@ -1604,7 +1604,7 @@ class BillModelAbstract(
             msg = f'Bill {self.bill_number} cannot be canceled. Must be draft or in review.'
             raise BillModelValidationError(msg)
 
-        self.date_canceled = get_localdate() if not date_canceled else date_canceled
+        self.date_canceled = date_canceled if date_canceled else get_localdate()
         self.bill_status = self.BILL_STATUS_CANCELED
         self.clean()
         if commit:

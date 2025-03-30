@@ -448,12 +448,12 @@ class InvoiceModelAbstract(
                 self.accrue = False
 
             self.invoice_status = self.INVOICE_STATUS_DRAFT
-            self.date_draft = get_localdate() if not date_draft else date_draft
+            self.date_draft = date_draft if date_draft else get_localdate()
 
             LedgerModel = lazy_loader.get_ledger_model()
             ledger_model: LedgerModel = LedgerModel(entity=entity_model, posted=ledger_posted)
             ledger_model.configure_for_wrapper_model(model_instance=self)
-            ledger_name = f'Invoice {self.uuid}' if not ledger_name else ledger_name
+            ledger_name = ledger_name if ledger_name else f'Invoice {self.uuid}'
             ledger_model.name = ledger_name
             ledger_model.clean()
             ledger_model.clean_fields()
@@ -1101,7 +1101,7 @@ class InvoiceModelAbstract(
             msg = f'Cannot mark PO {self.uuid} as In Review...'
             raise InvoiceModelValidationError(msg)
 
-        self.date_in_review = get_localdate() if not date_in_review else date_in_review
+        self.date_in_review = date_in_review if date_in_review else get_localdate()
 
         if not itemtxs_qs:
             itemtxs_qs = self.itemtransactionmodel_set.all()
@@ -1515,7 +1515,7 @@ class InvoiceModelAbstract(
             msg = f'Cannot cancel Invoice {self.invoice_number}.'
             raise InvoiceModelValidationError(msg)
 
-        self.date_canceled = get_localdate() if not date_canceled else date_canceled
+        self.date_canceled = date_canceled if date_canceled else get_localdate()
         self.invoice_status = self.INVOICE_STATUS_CANCELED
         self.clean()
         if commit:

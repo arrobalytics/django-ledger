@@ -255,7 +255,7 @@ class EntityModelFiscalPeriodMixIn:
         """
         if fy_start_month:
             self.validate_month(fy_start_month)
-        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        fy_start_month = fy_start_month if fy_start_month else self.get_fy_start_month()
         return date(year, fy_start_month, 1)
 
     def get_fy_end(self, year: int, fy_start_month: int = None) -> date:
@@ -277,7 +277,7 @@ class EntityModelFiscalPeriodMixIn:
         """
         if fy_start_month:
             self.validate_month(fy_start_month)
-        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        fy_start_month = fy_start_month if fy_start_month else self.get_fy_start_month()
         ye = year if fy_start_month == 1 else year + 1
         me = 12 if fy_start_month == 1 else fy_start_month - 1
         return date(ye, me, monthrange(ye, me)[1])
@@ -304,7 +304,7 @@ class EntityModelFiscalPeriodMixIn:
         """
         if fy_start_month:
             self.validate_month(fy_start_month)
-        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        fy_start_month = fy_start_month if fy_start_month else self.get_fy_start_month()
         self.validate_quarter(quarter)
         quarter_month_start = (quarter - 1) * 3 + fy_start_month
         year_start = year
@@ -335,7 +335,7 @@ class EntityModelFiscalPeriodMixIn:
         """
         if fy_start_month:
             self.validate_month(fy_start_month)
-        fy_start_month = self.get_fy_start_month() if not fy_start_month else fy_start_month
+        fy_start_month = fy_start_month if fy_start_month else self.get_fy_start_month()
         self.validate_quarter(quarter)
         quarter_month_end = quarter * 3 + fy_start_month - 1
         year_end = year
@@ -1744,13 +1744,9 @@ class EntityModelAbstract(MP_Node,
             vendor=vendor_model,
             terms=terms,
             additional_info=additional_info,
-            cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
-            prepaid_account=account_model_qs.get(
-                role=roles_module.ASSET_CA_PREPAID
-            ) if not prepaid_account else prepaid_account,
-            unearned_account=account_model_qs.get(
-                role=roles_module.LIABILITY_CL_ACC_PAYABLE
-            ) if not payable_account else payable_account
+            cash_account=cash_account if cash_account else account_model_qs.get(role=roles_module.ASSET_CA_CASH),
+            prepaid_account=prepaid_account if prepaid_account else account_model_qs.get(role=roles_module.ASSET_CA_PREPAID),
+            unearned_account=payable_account if payable_account else account_model_qs.get(role=roles_module.LIABILITY_CL_ACC_PAYABLE)
         )
 
         _, bill_model = bill_model.configure(entity_slug=self,
@@ -1853,13 +1849,9 @@ class EntityModelAbstract(MP_Node,
             customer=customer_model,
             additional_info=additional_info,
             terms=terms,
-            cash_account=account_model_qs.get(role=roles_module.ASSET_CA_CASH) if not cash_account else cash_account,
-            prepaid_account=account_model_qs.get(
-                role=roles_module.ASSET_CA_RECEIVABLES
-            ) if not prepaid_account else prepaid_account,
-            unearned_account=account_model_qs.get(
-                role=roles_module.LIABILITY_CL_DEFERRED_REVENUE
-            ) if not payable_account else payable_account
+            cash_account=cash_account if cash_account else account_model_qs.get(role=roles_module.ASSET_CA_CASH),
+            prepaid_account=prepaid_account if prepaid_account else account_model_qs.get(role=roles_module.ASSET_CA_RECEIVABLES),
+            unearned_account=payable_account if payable_account else account_model_qs.get(role=roles_module.LIABILITY_CL_DEFERRED_REVENUE)
         )
 
         _, invoice_model = invoice_model.configure(entity_slug=self,
@@ -2054,7 +2046,7 @@ class EntityModelAbstract(MP_Node,
             entity_model=self,
             account_type=account_type,
             active=active,
-            account_model=account_model_qs.get() if not account_model else account_model,
+            account_model=account_model if account_model else account_model_qs.get(),
             **bank_account_model_kwargs
         )
 

@@ -71,7 +71,7 @@ class BillModelTests(DjangoLedgerBaseTest):
         cash_account = account_qs.filter(role__in=[ASSET_CA_CASH]).first()
         prepaid_account = account_qs.filter(role__in=[ASSET_CA_PREPAID]).first()
         unearned_account = account_qs.filter(role__in=[LIABILITY_CL_DEFERRED_REVENUE]).first()
-        dt = self.get_random_date() if not draft_date else draft_date
+        dt = draft_date if draft_date else self.get_random_date()
 
         bill_model = BillModel()
         ledger_model, bill_model = bill_model.configure(

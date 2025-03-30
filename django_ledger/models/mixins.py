@@ -752,7 +752,7 @@ class AccrualMixIn(models.Model):
                 if je_timestamp:
                     je_timestamp = validate_io_timestamp(dt=je_timestamp)
 
-                now_timestamp = get_localtime() if not je_timestamp else je_timestamp
+                now_timestamp = je_timestamp if je_timestamp else get_localtime()
                 je_list = {
                     u: JournalEntryModel(
                         entity_unit_id=u,

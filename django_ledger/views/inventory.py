@@ -84,9 +84,9 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
         context['page_title'] = _('Inventory Recount')
         context['header_title'] = _('Inventory Recount')
 
-        recorded_qs = self.recorded_inventory() if not recorded_qs else recorded_qs
-        counted_qs = self.counted_inventory() if not counted_qs else counted_qs
-        adjustment = EntityModel.inventory_adjustment(counted_qs, recorded_qs) if not adjustment else adjustment
+        recorded_qs = recorded_qs if recorded_qs else self.recorded_inventory()
+        counted_qs = counted_qs if counted_qs else self.counted_inventory()
+        adjustment = adjustment if adjustment else EntityModel.inventory_adjustment(counted_qs, recorded_qs)
 
         context['count_inventory_received'] = counted_qs
         context['current_inventory_levels'] = recorded_qs

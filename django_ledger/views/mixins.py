@@ -485,8 +485,8 @@ class UnpaidElementsMixIn:
 
     def get_unpaid_invoices_qs(self, context, from_date=None, to_date=None):
         if self.FETCH_UNPAID_INVOICES:
-            from_date = context['from_date'] if not from_date else from_date
-            to_date = context['to_date'] if not to_date else to_date
+            from_date = from_date if from_date else context['from_date']
+            to_date = to_date if to_date else context['to_date']
 
             qs = InvoiceModel.objects.for_entity(
                 user_model=self.request.user,
@@ -504,8 +504,8 @@ class UnpaidElementsMixIn:
 
     def get_unpaid_bills_qs(self, context, from_date=None, to_date=None):
         if self.FETCH_UNPAID_BILLS:
-            from_date = context['from_date'] if not from_date else from_date
-            to_date = context['to_date'] if not to_date else to_date
+            from_date = from_date if from_date else context['from_date']
+            to_date = to_date if to_date else context['to_date']
 
             qs = BillModel.objects.for_entity(
                 user_model=self.request.user,

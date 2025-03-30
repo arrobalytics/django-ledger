@@ -91,10 +91,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         """
         if ledger_model:
             # if ledger model provided, get a je_model from provided ledger model...
-            je_model: JournalEntryModel = self.get_random_je(
-                entity_model=entity_model,
-                ledger_model=ledger_model
-            ) if not je_model else je_model
+            je_model: JournalEntryModel = je_model if je_model else self.get_random_je(entity_model=entity_model, ledger_model=ledger_model)
 
         else:
 
