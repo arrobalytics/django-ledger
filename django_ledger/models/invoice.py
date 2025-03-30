@@ -68,11 +68,11 @@ class InvoiceModelValidationError(ValidationError):
 
 class InvoiceModelQuerySet(QuerySet):
     """
-   A custom defined QuerySet for the InvoiceModel.
-   This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
-   For example, We might want to have list of invoices which are paid, unpaid, due , overDue, approved or in draft stage.
-   All these separate functions will assist in making such queries and building customized reports.
-   """
+    A custom defined QuerySet for the InvoiceModel.
+    This implements multiple methods or queries that we need to run to get a status of Invoices raised by the entity.
+    For example, We might want to have list of invoices which are paid, unpaid, due , overDue, approved or in draft stage.
+    All these separate functions will assist in making such queries and building customized reports.
+    """
 
     def draft(self):
         """
