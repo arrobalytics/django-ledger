@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, RedirectView
+from django.views.generic import CreateView, ListView, RedirectView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm

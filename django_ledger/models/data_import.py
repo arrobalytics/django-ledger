@@ -12,12 +12,12 @@ or further processing.
 """
 
 from decimal import Decimal
-from typing import Optional, Set, Dict, List
-from uuid import uuid4, UUID
+from typing import Dict, List, Optional, Set
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Count, Sum, Case, When, F, Value, DecimalField, BooleanField, Manager, QuerySet
+from django.db.models import BooleanField, Case, Count, DecimalField, F, Manager, Q, QuerySet, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _

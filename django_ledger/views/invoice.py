@@ -8,21 +8,35 @@ Contributions to this module:
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import (UpdateView, CreateView, DeleteView, MonthArchiveView,
-                                  ArchiveIndexView, YearArchiveView, DetailView, RedirectView)
+from django.views.generic import (
+    ArchiveIndexView,
+    CreateView,
+    DeleteView,
+    DetailView,
+    MonthArchiveView,
+    RedirectView,
+    UpdateView,
+    YearArchiveView,
+)
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.invoice import (BaseInvoiceModelUpdateForm, InvoiceModelCreateForEstimateForm,
-                                         get_invoice_itemtxs_formset_class,
-                                         DraftInvoiceModelUpdateForm, InReviewInvoiceModelUpdateForm,
-                                         ApprovedInvoiceModelUpdateForm, PaidInvoiceModelUpdateForm,
-                                         AccruedAndApprovedInvoiceModelUpdateForm, InvoiceModelCreateForm)
+from django_ledger.forms.invoice import (
+    AccruedAndApprovedInvoiceModelUpdateForm,
+    ApprovedInvoiceModelUpdateForm,
+    BaseInvoiceModelUpdateForm,
+    DraftInvoiceModelUpdateForm,
+    InReviewInvoiceModelUpdateForm,
+    InvoiceModelCreateForEstimateForm,
+    InvoiceModelCreateForm,
+    PaidInvoiceModelUpdateForm,
+    get_invoice_itemtxs_formset_class,
+)
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel, LedgerModel, EstimateModel
+from django_ledger.models import EntityModel, EstimateModel, LedgerModel
 from django_ledger.models.invoice import InvoiceModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 

@@ -7,13 +7,21 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from django.core.exceptions import ValidationError
-from django.forms import (ModelForm, DateInput, TextInput, Select, CheckboxInput, modelformset_factory, Textarea,
-                          DateTimeInput)
+from django.forms import (
+    CheckboxInput,
+    DateInput,
+    DateTimeInput,
+    ModelForm,
+    Select,
+    Textarea,
+    TextInput,
+    modelformset_factory,
+)
 from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import (AccountModel, CustomerModel, InvoiceModel, ItemTransactionModel, ItemModel)
+from django_ledger.models import AccountModel, CustomerModel, InvoiceModel, ItemModel, ItemTransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

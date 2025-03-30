@@ -1,10 +1,16 @@
 from django.urls import path
 
-from django_ledger.views import (EstimateModelListView, EstimateModelCreateView,
-                                 EstimateModelDetailView, EstimateModelUpdateView,
-                                 EstimateActionMarkAsDraftView, EstimateActionMarkAsReviewView,
-                                 EstimateActionMarkAsApprovedView, EstimateActionMarkAsCompletedView,
-                                 EstimateActionMarkAsCanceledView)
+from django_ledger.views import (
+                                 EstimateActionMarkAsApprovedView,
+                                 EstimateActionMarkAsCanceledView,
+                                 EstimateActionMarkAsCompletedView,
+                                 EstimateActionMarkAsDraftView,
+                                 EstimateActionMarkAsReviewView,
+                                 EstimateModelCreateView,
+                                 EstimateModelDetailView,
+                                 EstimateModelListView,
+                                 EstimateModelUpdateView,
+)
 
 urlpatterns = [
     path('<slug:entity_slug>/list/', EstimateModelListView.as_view(), name='customer-estimate-list'),

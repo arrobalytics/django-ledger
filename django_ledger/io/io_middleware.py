@@ -6,7 +6,7 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 from collections import defaultdict
-from itertools import groupby, chain
+from itertools import chain, groupby
 
 from django.core.exceptions import ValidationError
 

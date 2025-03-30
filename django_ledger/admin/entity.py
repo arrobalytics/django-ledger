@@ -1,7 +1,7 @@
 from datetime import timedelta
 from uuid import uuid4
 
-from django.contrib.admin import TabularInline, ModelAdmin
+from django.contrib.admin import ModelAdmin, TabularInline
 from django.db.models import Count
 from django.forms import BaseInlineFormSet
 from django.urls import reverse
@@ -10,7 +10,7 @@ from django.utils.html import format_html
 from django_ledger.admin.chart_of_accounts import ChartOfAccountsInLine
 from django_ledger.io.io_core import get_localtime
 from django_ledger.models import EntityUnitModel
-from django_ledger.models.entity import EntityModel, EntityManagementModel
+from django_ledger.models.entity import EntityManagementModel, EntityModel
 
 
 class EntityManagementInLine(TabularInline):

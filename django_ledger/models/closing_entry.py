@@ -5,14 +5,14 @@ Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 
 from datetime import datetime, time
 from decimal import Decimal
-from itertools import groupby, chain
+from itertools import chain, groupby
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Count, Q
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import make_aware

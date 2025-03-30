@@ -8,17 +8,21 @@ Contributions to this module:
 
 
 from django.contrib import messages
-from django.core.exceptions import ValidationError, ImproperlyConfigured
-from django.http import HttpResponseRedirect, HttpResponseForbidden
+from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ArchiveIndexView, CreateView, DetailView, UpdateView, RedirectView
+from django.views.generic import ArchiveIndexView, CreateView, DetailView, RedirectView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
-from django_ledger.forms.estimate import (EstimateModelCreateForm, BaseEstimateModelUpdateForm,
-                                          CanEditEstimateItemModelFormset, ReadOnlyEstimateItemModelFormset,
-                                          DraftEstimateModelUpdateForm)
+from django_ledger.forms.estimate import (
+    BaseEstimateModelUpdateForm,
+    CanEditEstimateItemModelFormset,
+    DraftEstimateModelUpdateForm,
+    EstimateModelCreateForm,
+    ReadOnlyEstimateItemModelFormset,
+)
 from django_ledger.models import EntityModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import DjangoLedgerSecurityMixIn

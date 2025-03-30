@@ -19,37 +19,43 @@ ________
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Union, Optional, Tuple, Dict
+from typing import Dict, Optional, Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, Count
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Q, Sum
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.io.io_core import get_localtime, get_localdate
+from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.models import (
-    lazy_loader, ItemTransactionModelQuerySet,
-    ItemModelQuerySet, ItemModel, QuerySet, Manager
+    ItemModel,
+    ItemModelQuerySet,
+    ItemTransactionModelQuerySet,
+    Manager,
+    QuerySet,
+    lazy_loader,
 )
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import (
-    CreateUpdateMixIn, AccrualMixIn,
-    MarkdownNotesMixIn, PaymentTermsMixIn,
-    ItemizeMixIn
+    AccrualMixIn,
+    CreateUpdateMixIn,
+    ItemizeMixIn,
+    MarkdownNotesMixIn,
+    PaymentTermsMixIn,
 )
 from django_ledger.models.signals import (
+    invoice_status_approved,
+    invoice_status_canceled,
     invoice_status_draft,
     invoice_status_in_review,
-    invoice_status_approved,
     invoice_status_paid,
-    invoice_status_canceled,
-    invoice_status_void
+    invoice_status_void,
 )
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 

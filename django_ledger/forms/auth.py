@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import AuthenticationForm, UsernameField
-from django.forms import TextInput, CharField, PasswordInput
+from django.forms import CharField, PasswordInput, TextInput
 from django.utils.translation import gettext_lazy as _
 
 

@@ -14,14 +14,14 @@ Void. The PurchaseOrderModel also keeps track of when these states take place.
 """
 from datetime import date
 from string import ascii_uppercase, digits
-from typing import Tuple, List, Union, Optional, Dict
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import MinLengthValidator
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, Count, F, Manager, QuerySet
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Manager, Q, QuerySet, Sum
 from django.db.models.functions import Coalesce
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
@@ -31,15 +31,15 @@ from django.utils.translation import gettext_lazy as _
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModel, BillModelQuerySet
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
-from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
+from django_ledger.models.items import ItemModel, ItemModelQuerySet, ItemTransactionModel, ItemTransactionModelQuerySet
+from django_ledger.models.mixins import CreateUpdateMixIn, ItemizeMixIn, MarkdownNotesMixIn
 from django_ledger.models.signals import (
-    po_status_draft,
-    po_status_void,
-    po_status_fulfilled,
     po_status_approved,
     po_status_canceled,
-    po_status_in_review
+    po_status_draft,
+    po_status_fulfilled,
+    po_status_in_review,
+    po_status_void,
 )
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_PO_NUMBER_PREFIX

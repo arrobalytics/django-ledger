@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from random import choice, randint
-from typing import Union, Optional
+from typing import Optional, Union
 from urllib.parse import urlparse
 from uuid import uuid4
 

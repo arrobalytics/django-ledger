@@ -17,14 +17,16 @@ from django.urls import reverse
 from django.utils.formats import number_format
 
 from django_ledger import __version__
-from django_ledger.forms.app_filters import EntityFilterForm, ActivityFilterForm
+from django_ledger.forms.app_filters import ActivityFilterForm, EntityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import ROLES_ORDER_ALL
-from django_ledger.io.io_core import validate_activity, get_localdate
+from django_ledger.io.io_core import get_localdate, validate_activity
 from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel
 from django_ledger.settings import (
-    DJANGO_LEDGER_FINANCIAL_ANALYSIS, DJANGO_LEDGER_CURRENCY_SYMBOL,
-    DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL)
+    DJANGO_LEDGER_CURRENCY_SYMBOL,
+    DJANGO_LEDGER_FINANCIAL_ANALYSIS,
+    DJANGO_LEDGER_SPACED_CURRENCY_SYMBOL,
+)
 from django_ledger.utils import get_default_entity_session_key, get_end_date_from_session
 
 register = template.Library()

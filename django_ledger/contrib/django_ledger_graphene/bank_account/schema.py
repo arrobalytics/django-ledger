@@ -2,8 +2,9 @@
 import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
-from django_ledger.models import BankAccountModel
 from graphene_django.filter import DjangoFilterConnectionField
+
+from django_ledger.models import BankAccountModel
 
 
 class BankaccountNode(DjangoObjectType):

@@ -11,15 +11,22 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, RedirectView
+from django.views.generic import CreateView, DetailView, ListView, RedirectView, UpdateView
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityUnitModel, EntityModel
+from django_ledger.models import EntityModel, EntityUnitModel
 from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
-from django_ledger.views.mixins import (DjangoLedgerSecurityMixIn, QuarterlyReportMixIn, MonthlyReportMixIn,
-                                        DateReportMixIn, BaseDateNavigationUrlMixIn, EntityUnitMixIn, YearlyReportMixIn,
-                                        PDFReportMixIn)
+from django_ledger.views.mixins import (
+    BaseDateNavigationUrlMixIn,
+    DateReportMixIn,
+    DjangoLedgerSecurityMixIn,
+    EntityUnitMixIn,
+    MonthlyReportMixIn,
+    PDFReportMixIn,
+    QuarterlyReportMixIn,
+    YearlyReportMixIn,
+)
 
 
 class EntityUnitModelModelBaseView(DjangoLedgerSecurityMixIn):

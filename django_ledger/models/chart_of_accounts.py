@@ -42,22 +42,30 @@ accurate record-keeping and reporting.
 
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 from uuid import uuid4
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F, Count, Manager, QuerySet
-from django.db.models.signals import pre_save, post_save
+from django.db.models import Count, F, Manager, Q, QuerySet
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROOT_ASSETS,
-                              ROOT_LIABILITIES, ROOT_CAPITAL,
-                              ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
+from django_ledger.io import (
+    ROOT_ASSETS,
+    ROOT_CAPITAL,
+    ROOT_COA,
+    ROOT_COGS,
+    ROOT_EXPENSES,
+    ROOT_GROUP_LEVEL_2,
+    ROOT_GROUP_META,
+    ROOT_INCOME,
+    ROOT_LIABILITIES,
+)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn

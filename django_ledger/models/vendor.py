@@ -14,8 +14,8 @@ as an option in the UI, but can still be used programmatically (via API).
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet
+from django.db import IntegrityError, models, transaction
+from django.db.models import F, Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn

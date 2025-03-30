@@ -13,15 +13,21 @@ from django.http import HttpResponseForbidden
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    YearArchiveView, MonthArchiveView, DetailView, UpdateView, CreateView, RedirectView,
-    ArchiveIndexView, DeleteView
+    ArchiveIndexView,
+    CreateView,
+    DeleteView,
+    DetailView,
+    MonthArchiveView,
+    RedirectView,
+    UpdateView,
+    YearArchiveView,
 )
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.journal_entry import (
-    JournalEntryModelUpdateForm,
     JournalEntryModelCannotEditForm,
-    JournalEntryModelCreateForm
+    JournalEntryModelCreateForm,
+    JournalEntryModelUpdateForm,
 )
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
 from django_ledger.io.io_core import get_localtime

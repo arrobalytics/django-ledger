@@ -8,7 +8,7 @@ Contributions to this module:
 
 import sys
 from itertools import chain
-from typing import Set, List, Union
+from typing import List, Set, Union
 
 from django.utils.translation import gettext as _
 

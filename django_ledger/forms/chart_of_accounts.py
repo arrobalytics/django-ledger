@@ -1,6 +1,6 @@
 from random import randint
 
-from django.forms import ModelForm, TextInput, Textarea, HiddenInput
+from django.forms import HiddenInput, ModelForm, Textarea, TextInput
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel

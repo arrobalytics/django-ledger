@@ -17,39 +17,39 @@ ________
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Union, Optional, Tuple, Dict, List
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, Count, QuerySet, Manager
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db import IntegrityError, models, transaction
+from django.db.models import Count, F, Manager, Q, QuerySet, Sum
 from django.db.models.signals import pre_save
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
-from django_ledger.io.io_core import get_localtime, get_localdate
+from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.models.entity import EntityModel
-from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
+from django_ledger.models.items import ItemModel, ItemModelQuerySet, ItemTransactionModel, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import (
-    CreateUpdateMixIn,
     AccrualMixIn,
+    CreateUpdateMixIn,
+    ItemizeMixIn,
     MarkdownNotesMixIn,
     PaymentTermsMixIn,
-    ItemizeMixIn
 )
 from django_ledger.models.signals import (
+    bill_status_approved,
+    bill_status_canceled,
     bill_status_draft,
     bill_status_in_review,
-    bill_status_approved,
     bill_status_paid,
-    bill_status_canceled,
     bill_status_void,
 )
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
+from django_ledger.settings import DJANGO_LEDGER_BILL_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
 
 UserModel = get_user_model()
 

@@ -49,23 +49,39 @@ Roles serve several purposes:
 """
 from itertools import groupby
 from random import randint
-from typing import Union, List, Optional
+from typing import List, Optional, Union
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F, UniqueConstraint
+from django.db.models import F, Q, UniqueConstraint
 from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io.roles import (
-    ACCOUNT_ROLE_CHOICES, BS_ROLES, GROUP_INVOICE, GROUP_BILL, validate_roles,
-    GROUP_ASSETS, GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
-    ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
-    ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
-    ROLES_ORDER_ALL
+    ACCOUNT_ROLE_CHOICES,
+    BS_BUCKETS,
+    BS_ROLES,
+    GROUP_ASSETS,
+    GROUP_BILL,
+    GROUP_CAPITAL,
+    GROUP_COGS,
+    GROUP_EXPENSES,
+    GROUP_INCOME,
+    GROUP_INVOICE,
+    GROUP_LIABILITIES,
+    ROLES_ORDER_ALL,
+    ROOT_ASSETS,
+    ROOT_CAPITAL,
+    ROOT_COA,
+    ROOT_EXPENSES,
+    ROOT_GROUP,
+    ROOT_INCOME,
+    ROOT_LIABILITIES,
+    VALID_PARENTS,
+    validate_roles,
 )
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader

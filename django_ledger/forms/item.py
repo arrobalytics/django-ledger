@@ -1,7 +1,7 @@
-from django.forms import ModelForm, TextInput, Select, ChoiceField
+from django.forms import ChoiceField, ModelForm, Select, TextInput
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.roles import GROUP_INCOME, ASSET_CA_INVENTORY, GROUP_EXPENSES, GROUP_COGS
+from django_ledger.io.roles import ASSET_CA_INVENTORY, GROUP_COGS, GROUP_EXPENSES, GROUP_INCOME
 from django_ledger.models import AccountModel, ItemModel, UnitOfMeasureModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 

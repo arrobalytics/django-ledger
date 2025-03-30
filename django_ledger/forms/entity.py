@@ -6,14 +6,24 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import (ModelForm, TextInput, BooleanField, ValidationError, IntegerField,
-                          EmailInput, URLInput, CheckboxInput, Select, Form)
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.forms import (
+    BooleanField,
+    CheckboxInput,
+    EmailInput,
+    Form,
+    IntegerField,
+    ModelForm,
+    Select,
+    TextInput,
+    URLInput,
+    ValidationError,
+)
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
-from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class EntityModelCreateForm(ModelForm):

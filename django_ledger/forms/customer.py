@@ -6,7 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, TextInput, EmailInput, NumberInput
+from django.forms import EmailInput, ModelForm, NumberInput, TextInput
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.forms.utils import validate_cszc

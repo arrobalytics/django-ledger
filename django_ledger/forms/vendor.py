@@ -6,7 +6,7 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.forms import ModelForm, TextInput, EmailInput
+from django.forms import EmailInput, ModelForm, TextInput
 
 from django_ledger.forms.utils import validate_cszc
 from django_ledger.models.vendor import VendorModel

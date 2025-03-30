@@ -89,34 +89,35 @@ Notes:
 """
 from collections import namedtuple
 from dataclasses import dataclass
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 from itertools import groupby
 from pathlib import Path
 from random import choice
-from typing import List, Set, Union, Tuple, Optional, Dict
+from typing import Dict, List, Optional, Set, Tuple, Union
 from zoneinfo import ZoneInfo
 
 from django.conf import settings as global_settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db.models import Sum, QuerySet, F, DecimalField, When, Case
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.db.models import Case, DecimalField, F, QuerySet, Sum, When
 from django.db.models.functions import TruncMonth
 from django.http import Http404
 from django.utils.dateparse import parse_date, parse_datetime
-from django.utils.timezone import make_aware, is_naive, localtime, localdate
+from django.utils.timezone import is_naive, localdate, localtime, make_aware
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger import settings
 from django_ledger.exceptions import InvalidDateInputError, TransactionNotInBalanceError
-from django_ledger.io import roles as roles_module, CREDIT, DEBIT
+from django_ledger.io import CREDIT, DEBIT
+from django_ledger.io import roles as roles_module
 from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.io.io_middleware import (
-    AccountRoleIOMiddleware,
     AccountGroupIOMiddleware,
-    JEActivityIOMiddleware,
+    AccountRoleIOMiddleware,
     BalanceSheetIOMiddleware,
+    CashFlowStatementIOMiddleware,
     IncomeStatementIOMiddleware,
-    CashFlowStatementIOMiddleware
+    JEActivityIOMiddleware,
 )
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader

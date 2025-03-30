@@ -5,10 +5,7 @@ from django.forms import BaseInlineFormSet
 from django.shortcuts import get_object_or_404
 from django.utils.html import format_html
 
-from django_ledger.models import (
-    LedgerModel, JournalEntryModel, EntityModel,
-    LedgerModelValidationError
-)
+from django_ledger.models import EntityModel, JournalEntryModel, LedgerModel, LedgerModelValidationError
 
 
 class JournalEntryModelInLineFormSet(BaseInlineFormSet):

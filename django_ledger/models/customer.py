@@ -9,13 +9,13 @@ created before it can be assigned to the InvoiceModel. Only customers who are ac
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet, Manager
+from django.db import IntegrityError, models, transaction
+from django.db.models import F, Manager, Q, QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
+from django_ledger.settings import DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING
 
 
 class CustomerModelQueryset(QuerySet):

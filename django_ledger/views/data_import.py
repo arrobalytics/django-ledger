@@ -11,10 +11,13 @@ from django.contrib import messages
 from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, FormView, DetailView, UpdateView, DeleteView
+from django.views.generic import DeleteView, DetailView, FormView, ListView, UpdateView
 
-from django_ledger.forms.data_import import ImportJobModelCreateForm, ImportJobModelUpdateForm
-from django_ledger.forms.data_import import StagedTransactionModelFormSet
+from django_ledger.forms.data_import import (
+    ImportJobModelCreateForm,
+    ImportJobModelUpdateForm,
+    StagedTransactionModelFormSet,
+)
 from django_ledger.io.ofx import OFXFileManager
 from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn

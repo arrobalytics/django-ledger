@@ -7,15 +7,19 @@ Contributions to this module:
 """
 
 from django.contrib import messages
-from django.core.exceptions import ValidationError, ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    ArchiveIndexView, YearArchiveView,
-    MonthArchiveView, DetailView,
-    RedirectView, CreateView,
-    DeleteView, UpdateView
+    ArchiveIndexView,
+    CreateView,
+    DeleteView,
+    DetailView,
+    MonthArchiveView,
+    RedirectView,
+    UpdateView,
+    YearArchiveView,
 )
 from django.views.generic.detail import SingleObjectMixin
 

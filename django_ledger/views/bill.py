@@ -8,30 +8,35 @@ Contributions to this module:
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponseNotFound, HttpResponseForbidden
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    UpdateView, CreateView, ArchiveIndexView, MonthArchiveView, YearArchiveView,
-    DetailView, RedirectView
+    ArchiveIndexView,
+    CreateView,
+    DetailView,
+    MonthArchiveView,
+    RedirectView,
+    UpdateView,
+    YearArchiveView,
 )
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bill import (
-    BillModelCreateForm,
-    BaseBillModelUpdateForm,
-    DraftBillModelUpdateForm,
-    get_bill_itemtxs_formset_class,
-    BillModelConfigureForm,
-    InReviewBillModelUpdateForm,
-    ApprovedBillModelUpdateForm,
     AccruedAndApprovedBillModelUpdateForm,
-    PaidBillModelUpdateForm
+    ApprovedBillModelUpdateForm,
+    BaseBillModelUpdateForm,
+    BillModelConfigureForm,
+    BillModelCreateForm,
+    DraftBillModelUpdateForm,
+    InReviewBillModelUpdateForm,
+    PaidBillModelUpdateForm,
+    get_bill_itemtxs_formset_class,
 )
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel, PurchaseOrderModel, EstimateModel, BillModelQuerySet
+from django_ledger.models import BillModelQuerySet, EntityModel, EstimateModel, PurchaseOrderModel
 from django_ledger.models.bill import BillModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
-from typing import Union, Dict, Callable, Optional, List, Set
+from typing import Callable, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from django.core.exceptions import ValidationError
@@ -21,7 +21,7 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localtime
-from django_ledger.models.accounts import AccountModel, AccountModelQuerySet, CREDIT, DEBIT
+from django_ledger.models.accounts import CREDIT, DEBIT, AccountModel, AccountModelQuerySet
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel, LedgerModelQuerySet

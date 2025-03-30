@@ -122,10 +122,10 @@ Default Chart of Accounts Table
 """
 
 from itertools import groupby
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from django_ledger.exceptions import DjangoLedgerConfigurationError
-from django_ledger.io import roles, ROOT_ASSETS, ROOT_INCOME, ROOT_EXPENSES, ROOT_LIABILITIES, ROOT_CAPITAL, ROOT_COGS
+from django_ledger.io import ROOT_ASSETS, ROOT_CAPITAL, ROOT_COGS, ROOT_EXPENSES, ROOT_INCOME, ROOT_LIABILITIES, roles
 from django_ledger.settings import DJANGO_LEDGER_DEFAULT_COA
 
 # todo: include a function to use a user-defined CHART_OF_ACCOUNTS option.

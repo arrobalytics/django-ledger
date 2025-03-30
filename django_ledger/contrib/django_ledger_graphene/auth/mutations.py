@@ -1,8 +1,9 @@
-from django.contrib.auth import get_user_model
 import graphene
-from graphene_django import DjangoObjectType
 import graphql_jwt
+from django.contrib.auth import get_user_model
+from graphene_django import DjangoObjectType
 from graphql_auth import mutations
+
 ## register new user without graphql_auth ##
 
 # class UserType(DjangoObjectType):

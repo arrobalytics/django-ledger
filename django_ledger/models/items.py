@@ -20,20 +20,24 @@ Totals will be calculated and associated with the containing model at the time o
 """
 from decimal import Decimal
 from string import ascii_lowercase, digits
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models, transaction, IntegrityError
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, Case, When, QuerySet, Manager
+from django.db import IntegrityError, models, transaction
+from django.db.models import Case, DecimalField, ExpressionWrapper, F, Manager, Q, QuerySet, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-                                    DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
-                                    DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
+from django_ledger.settings import (
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX,
+    DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
+    DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX,
+    DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE,
+)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 

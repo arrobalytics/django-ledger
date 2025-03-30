@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.forms import ModelForm, TextInput, Select
+from django.forms import ModelForm, Select, TextInput
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.ledger import LedgerModel

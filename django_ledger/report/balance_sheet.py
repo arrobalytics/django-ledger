@@ -1,10 +1,10 @@
-from datetime import datetime, date
-from typing import Optional, Dict, Union
+from datetime import date, datetime
+from typing import Dict, Optional, Union
 
 from django_ledger.io import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError
 from django_ledger.settings import DJANGO_LEDGER_CURRENCY_SYMBOL
-from django_ledger.templatetags.django_ledger import currency_symbol, currency_format
+from django_ledger.templatetags.django_ledger import currency_format, currency_symbol
 
 
 class BalanceSheetReport(BaseReportSupport):

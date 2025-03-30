@@ -1,6 +1,6 @@
-from django.contrib.admin import TabularInline, ModelAdmin
+from django.contrib.admin import ModelAdmin, TabularInline
 from django.db.models import Count
-from django.forms import ModelForm, BooleanField, BaseInlineFormSet
+from django.forms import BaseInlineFormSet, BooleanField, ModelForm
 
 from django_ledger.models.accounts import AccountModel
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel

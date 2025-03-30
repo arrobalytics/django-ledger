@@ -15,7 +15,6 @@ from django_ledger.models import BillModel, EntityModel, InvoiceModel
 from django_ledger.utils import accruable_net_summary
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, EntityUnitMixIn
 
-
 # from jsonschema import validate, ValidationError
 
 

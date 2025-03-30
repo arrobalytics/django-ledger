@@ -10,7 +10,7 @@ from datetime import date
 from importlib import import_module
 from itertools import groupby
 from random import choice
-from string import ascii_uppercase, ascii_lowercase, digits
+from string import ascii_lowercase, ascii_uppercase, digits
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured

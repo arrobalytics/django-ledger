@@ -10,8 +10,14 @@ from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import (
-    DetailView, UpdateView, CreateView,
-    RedirectView, DeleteView, ArchiveIndexView, YearArchiveView, MonthArchiveView
+    ArchiveIndexView,
+    CreateView,
+    DeleteView,
+    DetailView,
+    MonthArchiveView,
+    RedirectView,
+    UpdateView,
+    YearArchiveView,
 )
 from django.views.generic.detail import SingleObjectMixin
 
@@ -20,9 +26,14 @@ from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
-    YearlyReportMixIn, QuarterlyReportMixIn,
-    MonthlyReportMixIn, DjangoLedgerSecurityMixIn, DateReportMixIn, BaseDateNavigationUrlMixIn,
-    EntityUnitMixIn, PDFReportMixIn
+    BaseDateNavigationUrlMixIn,
+    DateReportMixIn,
+    DjangoLedgerSecurityMixIn,
+    EntityUnitMixIn,
+    MonthlyReportMixIn,
+    PDFReportMixIn,
+    QuarterlyReportMixIn,
+    YearlyReportMixIn,
 )
 
 

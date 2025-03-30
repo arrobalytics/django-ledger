@@ -1,4 +1,4 @@
-from django.forms import Form, ModelChoiceField, Select, ChoiceField, CharField, HiddenInput, DateField, DateInput
+from django.forms import CharField, ChoiceField, DateField, DateInput, Form, HiddenInput, ModelChoiceField, Select
 from django.utils.translation import gettext_lazy as _l
 
 from django_ledger.models.entity import EntityModel

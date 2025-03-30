@@ -16,29 +16,51 @@ details page.
 
 All data generated is random and fake, not related to any other entity data.
 """
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import groupby
-from random import randint, random, choice, choices
+from random import choice, choices, randint, random
 from string import ascii_uppercase
-from typing import Union, Optional
+from typing import Optional, Union
 
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.io.io_core import get_localtime, get_localdate
-from django_ledger.io.roles import (INCOME_OPERATIONAL, ASSET_CA_INVENTORY, COGS, ASSET_CA_CASH, ASSET_CA_PREPAID,
-                                    LIABILITY_CL_DEFERRED_REVENUE, EXPENSE_OPERATIONAL, EQUITY_CAPITAL,
-                                    ASSET_CA_RECEIVABLES, LIABILITY_CL_ACC_PAYABLE)
-from django_ledger.models import (EntityModel, TransactionModel, VendorModel, CustomerModel,
-                                  EntityUnitModel, BankAccountModel, UnitOfMeasureModel, ItemModel,
-                                  BillModel, ItemTransactionModel, InvoiceModel,
-                                  EstimateModel, LoggingMixIn, InvoiceModelValidationError, ChartOfAccountModel)
-from django_ledger.utils import (generate_random_sku, generate_random_upc, generate_random_item_id)
+from django_ledger.io.io_core import get_localdate, get_localtime
+from django_ledger.io.roles import (
+    ASSET_CA_CASH,
+    ASSET_CA_INVENTORY,
+    ASSET_CA_PREPAID,
+    ASSET_CA_RECEIVABLES,
+    COGS,
+    EQUITY_CAPITAL,
+    EXPENSE_OPERATIONAL,
+    INCOME_OPERATIONAL,
+    LIABILITY_CL_ACC_PAYABLE,
+    LIABILITY_CL_DEFERRED_REVENUE,
+)
+from django_ledger.models import (
+    BankAccountModel,
+    BillModel,
+    ChartOfAccountModel,
+    CustomerModel,
+    EntityModel,
+    EntityUnitModel,
+    EstimateModel,
+    InvoiceModel,
+    InvoiceModelValidationError,
+    ItemModel,
+    ItemTransactionModel,
+    LoggingMixIn,
+    TransactionModel,
+    UnitOfMeasureModel,
+    VendorModel,
+)
+from django_ledger.utils import generate_random_item_id, generate_random_sku, generate_random_upc
 
 try:
     from faker import Faker
-    from faker.providers import company, address, phone_number, bank
+    from faker.providers import address, bank, company, phone_number
 
     FAKER_IMPORTED = True
 except ImportError:

@@ -1,16 +1,17 @@
 from django import forms
 from django.forms import (
-    ModelForm, BaseModelFormSet, modelformset_factory,
-    Select, NumberInput, HiddenInput,
-    TextInput, ValidationError
+    BaseModelFormSet,
+    HiddenInput,
+    ModelForm,
+    NumberInput,
+    Select,
+    TextInput,
+    ValidationError,
+    modelformset_factory,
 )
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import (
-    StagedTransactionModel,
-    ImportJobModel,
-    EntityModel
-)
+from django_ledger.models import EntityModel, ImportJobModel, StagedTransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

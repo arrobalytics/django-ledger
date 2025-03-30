@@ -22,13 +22,13 @@ Key advantages of EntityUnits:
 """
 
 from random import choices
-from string import ascii_lowercase, digits, ascii_uppercase
+from string import ascii_lowercase, ascii_uppercase, digits
 from typing import Optional
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import F, Q
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _

@@ -14,9 +14,14 @@ from django.views.generic import DetailView, RedirectView
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models import EntityModel, EntityUnitModel
 from django_ledger.views.mixins import (
-    QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
-    BaseDateNavigationUrlMixIn, PDFReportMixIn
+    BaseDateNavigationUrlMixIn,
+    DateReportMixIn,
+    DjangoLedgerSecurityMixIn,
+    EntityUnitMixIn,
+    MonthlyReportMixIn,
+    PDFReportMixIn,
+    QuarterlyReportMixIn,
+    YearlyReportMixIn,
 )
 
 

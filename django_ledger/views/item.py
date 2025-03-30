@@ -6,7 +6,7 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from django.contrib.messages import add_message, ERROR
+from django.contrib.messages import ERROR, add_message
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import RestrictedError
@@ -14,16 +14,22 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from django_ledger.forms.item import (
-    ProductCreateForm, UnitOfMeasureModelCreateForm, UnitOfMeasureModelUpdateForm, ProductUpdateForm,
-    ExpenseItemCreateForm, ExpenseItemUpdateForm, InventoryItemCreateForm, InventoryItemUpdateForm,
-    ServiceCreateForm, ServiceUpdateForm
+    ExpenseItemCreateForm,
+    ExpenseItemUpdateForm,
+    InventoryItemCreateForm,
+    InventoryItemUpdateForm,
+    ProductCreateForm,
+    ProductUpdateForm,
+    ServiceCreateForm,
+    ServiceUpdateForm,
+    UnitOfMeasureModelCreateForm,
+    UnitOfMeasureModelUpdateForm,
 )
-from django_ledger.models import ItemModel, UnitOfMeasureModel, EntityModel
+from django_ledger.models import EntityModel, ItemModel, UnitOfMeasureModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
-
 
 # todo: Create delete views...
 

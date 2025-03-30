@@ -1,5 +1,5 @@
-from datetime import datetime, date
-from typing import Optional, Dict, Union
+from datetime import date, datetime
+from typing import Dict, Optional, Union
 
 from django_ledger.io.io_context import IODigestContextManager
 from django_ledger.report.core import BaseReportSupport, PDFReportValidationError

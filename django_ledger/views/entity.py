@@ -13,20 +13,22 @@ from random import randint
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import ListView, DetailView, UpdateView, CreateView, RedirectView, DeleteView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, RedirectView, UpdateView
 
-from django_ledger.forms.entity import EntityModelUpdateForm, EntityModelCreateForm
+from django_ledger.forms.entity import EntityModelCreateForm, EntityModelUpdateForm
 from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models import (
-    EntityModel,
-    ItemTransactionModel,
-    TransactionModel
-)
+from django_ledger.models import EntityModel, ItemTransactionModel, TransactionModel
 from django_ledger.views.mixins import (
-    QuarterlyReportMixIn, YearlyReportMixIn,
-    MonthlyReportMixIn, DateReportMixIn, DjangoLedgerSecurityMixIn, EntityUnitMixIn,
-    DigestContextMixIn, UnpaidElementsMixIn, BaseDateNavigationUrlMixIn
+    BaseDateNavigationUrlMixIn,
+    DateReportMixIn,
+    DigestContextMixIn,
+    DjangoLedgerSecurityMixIn,
+    EntityUnitMixIn,
+    MonthlyReportMixIn,
+    QuarterlyReportMixIn,
+    UnpaidElementsMixIn,
+    YearlyReportMixIn,
 )
 
 

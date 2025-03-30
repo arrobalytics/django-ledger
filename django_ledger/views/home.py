@@ -8,7 +8,7 @@ Contributions to this module:
 
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.generic import RedirectView, ListView
+from django.views.generic import ListView, RedirectView
 
 from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
