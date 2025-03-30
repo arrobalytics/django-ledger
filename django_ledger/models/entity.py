@@ -178,7 +178,6 @@ class EntityModelFiscalPeriodMixIn:
             * 4 -> April.
             * 9 -> September.
         """
-
         try:
             fy: int = getattr(self, 'fy_start_month')
         except AttributeError:
@@ -1003,7 +1002,6 @@ class EntityModelAbstract(MP_Node,
         ChartOfAccountModel
             The EntityModel default ChartOfAccount.
         """
-
         if not self.default_coa_id:
             if raise_exception:
                 raise EntityModelValidationError(f'EntityModel {self.slug} does not have a default CoA')
@@ -1093,7 +1091,6 @@ class EntityModelAbstract(MP_Node,
         commit: bool
         '   Commits the newly created CoA into the Database. Defaults to True.
         """
-
         if not coa_model:
             if not self.has_default_coa():
                 self.create_chart_of_accounts(assign_as_default=True, commit=commit)
@@ -1156,7 +1153,6 @@ class EntityModelAbstract(MP_Node,
         -------
         ChartOfAccountModelQuerySet
         """
-
         coa_model_qs = self.chartofaccountmodel_set.all()
         if active:
             return coa_model_qs.active()
@@ -1248,7 +1244,6 @@ class EntityModelAbstract(MP_Node,
         Tuple: Tuple[ChartOfAccountModelQuerySet, Dict[ChartOfAccountModel, AccountModelQuerySet]
             The ChartOfAccountModelQuerySet and a grouping of AccountModels by ChartOfAccountModel as keys.
         """
-
         account_model_qs = ChartOfAccountModel.objects.filter(
             entity_id=self.uuid
         ).select_related('entity').prefetch_related('accountmodel_set')
@@ -1274,7 +1269,6 @@ class EntityModelAbstract(MP_Node,
         AccountModelQuerySet
             The AccountModelQuerySet of the assigned default CoA.
         """
-
         account_model_qs = AccountModel.objects.filter(
             coa_model__entity__uuid__exact=self.uuid
         ).select_related('coa_model', 'coa_model__entity')
@@ -1311,7 +1305,6 @@ class EntityModelAbstract(MP_Node,
         AccountModelQuerySet
             The AccountModelQuerySet of the assigned default CoA.
         """
-
         if not coa_model:
             coa_model = self.default_coa
         elif isinstance(coa_model, UUID):
@@ -1388,7 +1381,6 @@ class EntityModelAbstract(MP_Node,
         AccountModelQuerySet
             The requested AccountModelQuerySet with applied code filter.
         """
-
         if not coa_model:
             account_model_qs = self.get_default_coa_accounts()
         else:
@@ -2040,7 +2032,6 @@ class EntityModelAbstract(MP_Node,
         BankAccountModel
             The newly created and optionally saved instance of the bank account model.
         """
-
         if bank_account_model_kwargs is None:
             bank_account_model_kwargs = dict()
 
@@ -2279,7 +2270,6 @@ class EntityModelAbstract(MP_Node,
         ItemModel
             The created Service.
         """
-
         if isinstance(uom_model, UUID):
             uom_model = self.unitofmeasuremodel_set.select_related('entity').get(uuid__exact=uom_model)
         elif isinstance(uom_model, UnitOfMeasureModel):

@@ -121,7 +121,6 @@ class AccountModelUpdateForm(MoveNodeForm):
     @classmethod
     def mk_dropdown_tree(cls, model, for_node: Optional[AccountModel] = None):
         """ Creates a tree-like list of choices """
-
         if not for_node:
             raise ValidationError(message='Must provide for_node argument.')
 

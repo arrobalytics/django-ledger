@@ -82,7 +82,6 @@ class TransactionModelQuerySet(QuerySet):
         TransactionModelQuerySet
             A QuerySet filtered for transactions associated with the specified accounts.
         """
-
         if not isinstance(account_list, list) or not len(account_list) > 0:
             raise TransactionModelValidationError(
                 message=_('Account list must be a list of AccountModel, UUID or str objects (codes).')
@@ -169,7 +168,6 @@ class TransactionModelQuerySet(QuerySet):
         TransactionModelQuerySet
             A QuerySet filtered to include transactions up to the specified date or timestamp.
         """
-
         if isinstance(to_date, str):
             to_date = validate_io_timestamp(to_date)
 

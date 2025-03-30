@@ -519,7 +519,6 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         raise_exception: bool
             Raises LedgerModelValidationError if locking not allowed.
         """
-
         if not self.can_lock():
             if raise_exception:
                 raise LedgerModelValidationError(

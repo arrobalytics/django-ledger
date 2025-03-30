@@ -455,7 +455,6 @@ class BillModelAbstract(
         -------
         A tuple of LedgerModel, BillModel
         """
-
         # TODO: add raise_exception flag, check if this is consistent...
 
         if not self.is_configured():
@@ -612,7 +611,6 @@ class BillModelAbstract(
         queryset: ItemTransactionModelQuerySet
             Optional pre-fetched ItemModelTransactionQueryset to use. Avoids additional DB query if provided.
         """
-
         if not queryset:
             queryset = self.itemtransactionmodel_set.all()
         else:
@@ -988,7 +986,6 @@ class BillModelAbstract(
         bool
             True if can make payment, else False.
         """
-
         if isinstance(payment_amount, float):
             payment_amount = Decimal.from_float(payment_amount)
         elif isinstance(payment_amount, int):
@@ -1636,7 +1633,6 @@ class BillModelAbstract(
         str
             BillModel mark-as-canceled action URL.
         """
-
         if not entity_slug:
             entity_slug = self.ledger.entity.slug
 
@@ -1903,7 +1899,6 @@ class BillModelAbstract(
         commit: bool
             If True, commits into DB the generated BillModel number if generated.
         """
-
         super().clean()
         if self.cash_account.role != ASSET_CA_CASH:
             raise ValidationError(f'Cash account must be of role {ASSET_CA_CASH}.')

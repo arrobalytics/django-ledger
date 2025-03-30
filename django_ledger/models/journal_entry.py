@@ -1377,7 +1377,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             - The TransactionModelQuerySet associated with the JournalEntryModel.
             - A boolean indicating whether verification was successful.
         """
-
         if not self.is_verified() or force_verify:
             self._verified = False
 
@@ -1457,7 +1456,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
         JournalEntryValidationError
             If the instance has a timestamp in the future and is posted, or if verification fails and `raise_exception` is True.
         """
-
         if txs_qs:
             self.is_txs_qs_valid(txs_qs=txs_qs)
 

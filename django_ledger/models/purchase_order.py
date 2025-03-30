@@ -965,7 +965,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
         commit: bool
             Commits transaction into the Database. Defaults to False.
         """
-
         if not self.can_fulfill():
             raise PurchaseOrderModelValidationError(
                 message=f'Purchase Order {self.po_number} cannot be marked as fulfilled.')

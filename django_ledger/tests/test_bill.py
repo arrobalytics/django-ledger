@@ -33,7 +33,6 @@ class BillModelTests(DjangoLedgerBaseTest):
         All Bill Model views must have user authenticated.
         If not, user must be redirected to login page.
         """
-
         self.logout_client()
         entity_model = self.get_random_entity_model()
         bill_model = choice(entity_model.get_bills())

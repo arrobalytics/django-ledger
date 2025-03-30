@@ -428,7 +428,6 @@ class InvoiceModelAbstract(
         -------
         A tuple of LedgerModel, InvoiceModel
         """
-
         if not self.is_configured():
             if isinstance(entity_slug, str):
                 if not user_model:
@@ -528,7 +527,6 @@ class InvoiceModelAbstract(
         _______
         A tuple: ItemTransactionModelQuerySet, dict
         """
-
         if not queryset:
             queryset = self.itemtransactionmodel_set.all().select_related(
                 'item_model',
@@ -854,7 +852,6 @@ class InvoiceModelAbstract(
         bool
             True if can bind provided EstimateModel, else False.
         """
-
         if self.ce_model_id:
             if raise_exception:
                 raise InvoiceModelValidationError(f'Invoice {self.invoice_number} already bound to '
@@ -928,7 +925,6 @@ class InvoiceModelAbstract(
         bool
             True if can make payment, else False.
         """
-
         if isinstance(payment_amount, float):
             payment_amount = Decimal.from_float(payment_amount)
         elif isinstance(payment_amount, int):
@@ -979,7 +975,6 @@ class InvoiceModelAbstract(
         commit: bool
             Commits transaction into current InvoiceModel.
         """
-
         try:
             self.can_bind_estimate(estimate_model, raise_exception=True)
         except ValueError as e:
@@ -1298,7 +1293,6 @@ class InvoiceModelAbstract(
         commit: bool
             Commits transaction into the Database. Defaults to False.
         """
-
         if not self.can_pay():
             raise InvoiceModelValidationError(f'Cannot mark PO {self.uuid} as Paid...')
 
@@ -1807,7 +1801,6 @@ class InvoiceModelAbstract(
         commit: bool
             If True, commits into DB the generated InvoiceModel number if generated.
         """
-
         super().clean()
 
         if self.cash_account.role != ASSET_CA_CASH:

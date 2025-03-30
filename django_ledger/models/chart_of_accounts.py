@@ -263,7 +263,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         ChartOfAccountsModelValidationError
             If the account model is not part of the chart of accounts.
         """
-
         if account_model.coa_model_id != self.uuid:
             raise ChartOfAccountsModelValidationError(
                 message=_(f'The account model {account_model} is not part of the chart of accounts {self.name}.'),
@@ -524,7 +523,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         ChartOfAccountsModelValidationError
             If the provided account model has an invalid COA model ID for the current COA.
         """
-
         if account_model.coa_model_id:
             if account_model.coa_model_id != self.uuid:
                 raise ChartOfAccountsModelValidationError(

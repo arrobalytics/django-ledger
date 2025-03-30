@@ -89,7 +89,6 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
         """
         Returns a TransactionModelFormSet with prefilled form data.
         """
-
         if ledger_model:
             # if ledger model provided, get a je_model from provided ledger model...
             je_model: JournalEntryModel = self.get_random_je(

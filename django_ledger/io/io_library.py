@@ -196,7 +196,6 @@ class IOCursor:
         kwargs
             The keyword arguments to be passed to the blueprint function.
         """
-
         if ledger_model is not None:
             if not isinstance(ledger_model, (str, UUID, LedgerModel)):
                 raise IOCursorValidationError(

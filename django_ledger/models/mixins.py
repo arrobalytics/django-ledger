@@ -582,7 +582,6 @@ class AccrualMixIn(models.Model):
         tuple
             A tuple of the ItemTransactionModel and the Digest Result from IOMixIn.
         """
-
         if self.can_migrate() or force_migrate:
 
             # getting current ledger state

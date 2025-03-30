@@ -708,7 +708,6 @@ class IODatabaseMixIn:
             and metadata such as database query bounds or details about closing
             entry matches.
         """
-
         TransactionModel = self.get_transaction_model()
 
         # get_initial txs_queryset... where the IO model is operating from??...
@@ -984,7 +983,6 @@ class IODatabaseMixIn:
             An object containing the transaction queryset, grouped and aggregated
             account balances, and other relevant digest information.
         """
-
         if equity_only:
             role = roles_module.GROUP_EARNINGS
 

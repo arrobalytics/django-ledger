@@ -1063,7 +1063,6 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         str
             Message as a String
         """
-
         return _('Do you want to mark Estimate %s as Void?') % self.estimate_number
 
     # HTML Tags...
@@ -1292,7 +1291,6 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         Decimal or float
             The total EstimateModel profit.
         """
-
         return self.get_revenue_estimate(as_float=as_float) - self.get_cost_estimate(as_float=as_float)
 
     def get_gross_margin_estimate(self, as_percent: bool = False, raise_exception: bool = False) -> float:
