@@ -13,6 +13,8 @@ from typing import List, Set, Union
 from django.utils.translation import gettext as _
 
 from django_ledger.exceptions import InvalidRoleError
+import functools
+import operator
 
 mod = sys.modules[__name__]
 
@@ -608,7 +610,7 @@ ROLES_ORDER_ALL = list(chain.from_iterable([ROLES_ORDER_ASSETS, ROLES_ORDER_LIAB
 ACCOUNT_LIST_ROLE_ORDER = list(r[0] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT]))
 ACCOUNT_LIST_ROLE_VERBOSE = {r[0]: r[1] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT])}
 
-ROLE_TUPLES = sum([[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], list())
+ROLE_TUPLES = functools.reduce(operator.iadd, [[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], [])
 ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHOICES])
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
