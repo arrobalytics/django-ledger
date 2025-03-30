@@ -43,7 +43,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
                     self.START_DATE.month == start_month
                 ]):
                     break
-                elif start_month == 12:
+                if start_month == 12:
                     start_month = 1
                     start_year += 1
                 else:
