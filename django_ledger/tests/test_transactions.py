@@ -66,7 +66,7 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
             'account': account_model,
             'tx_type': 'crebit patty',
         })
-        self.assertFalse(form.is_valid(), msg='tx_type other than credit / debit shouldn\'t be valid')
+        self.assertFalse(form.is_valid(), msg='tx_type other than credit / debit should not be valid')
 
     def test_blank_data(self):
         form = TransactionModelForm()

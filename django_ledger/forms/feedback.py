@@ -46,7 +46,7 @@ class RequestNewFeatureForm(forms.Form):
         }))
 
     solution = forms.CharField(
-        label=_('Describe the solution you\'d like'),
+        label=_('Describe the solution you would like'),
         required=True,
         widget=forms.Textarea(attrs={
             'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' textarea',
@@ -54,7 +54,7 @@ class RequestNewFeatureForm(forms.Form):
         }))
 
     alternatives = forms.CharField(
-        label=_('Describe alternatives you\'ve considered'),
+        label=_("Describe alternatives you've considered"),
         widget=forms.Textarea(attrs={
             'class': DJANGO_LEDGER_FORM_INPUT_CLASSES + ' textarea',
             'rows': 3

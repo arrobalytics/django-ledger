@@ -246,7 +246,7 @@ class JournalEntryModelTXSDetailView(JournalEntryModelModelBaseView, DetailView)
         else:
             messages.add_message(request,
                                  messages.ERROR,
-                                 'Hmmm, this doesn\'t add up!. Check your math!',
+                                 'Hmmm, this does not add up!. Check your math!',
                                  extra_tags='is-danger')
             return self.render_to_response(context=self.get_context_data(txs_formset=txs_formset))
         return self.render_to_response(context=self.get_context_data())
