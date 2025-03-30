@@ -430,7 +430,7 @@ class IOBluePrint:
     def _round_amount(self, amount: Decimal) -> Decimal:
         return round(amount, self.precision_decimals)
 
-    def _amount(self, amount: Union[float, Decimal, int]) -> Decimal:
+    def _amount(self, amount: Union[float, Decimal]) -> Decimal:
         if amount < 0:
             raise IOBluePrintValidationError(
                 message='Amounts cannot be negative.'

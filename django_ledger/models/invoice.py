@@ -898,7 +898,7 @@ class InvoiceModelAbstract(
         return self.is_approved()
 
     def make_payment(self,
-                     payment_amount: Union[Decimal, float, int],
+                     payment_amount: Union[Decimal, float],
                      payment_date: Optional[Union[datetime, date]] = None,
                      commit: bool = False,
                      raise_exception: bool = True):
