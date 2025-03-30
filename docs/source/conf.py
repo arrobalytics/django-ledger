@@ -26,7 +26,7 @@ BASE_DIR_PATH = Path(BASE_DIR)
 
 # print(f'conf_path: {HERE}, project_path: {BASE_DIR}')
 
-os.environ["DJANGO_SETTINGS_MODULE"] = "dev_env.settings"
+os.environ['DJANGO_SETTINGS_MODULE'] = 'dev_env.settings'
 django.setup()
 
 # copies the readme into the source docs files.

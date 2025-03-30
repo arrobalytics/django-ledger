@@ -23,7 +23,7 @@ class Command(BaseCommand):
         code_challenge = hashlib.sha256(code_verifier).digest()
         code_challenge = base64.urlsafe_b64encode(code_challenge).decode('utf-8').replace('=', '')
 
-        code_verifier = code_verifier.decode("utf-8")
+        code_verifier = code_verifier.decode('utf-8')
 
         if options['output'] == 'stdout':
             self.stdout.write(self.style.SUCCESS(f'Code Verifier: {code_verifier}'))

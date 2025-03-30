@@ -172,13 +172,13 @@ class LedgerModelAdmin(ModelAdmin):
             return True
         return False
 
-    def add_view(self, request, form_url="", extra_context=None):
+    def add_view(self, request, form_url='', extra_context=None):
         entity_model = self.get_entity_model(request)
         extra_context = {
             'entity_model': entity_model,
             'title': f'Add Ledger: {entity_model.name}'
         }
-        return super().add_view(request, form_url="", extra_context=extra_context)
+        return super().add_view(request, form_url='', extra_context=extra_context)
 
     def is_locked(self, obj):
         return obj.is_locked()

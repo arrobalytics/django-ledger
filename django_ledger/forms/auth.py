@@ -12,7 +12,7 @@ class LogInForm(AuthenticationForm):
                 'id': 'djl-el-login-form-username-field'
             }))
     password = CharField(
-        label=_("Password"),
+        label=_('Password'),
         strip=False,
         widget=PasswordInput(
             attrs={

@@ -66,7 +66,7 @@ class AccountModelTests(DjangoLedgerBaseTest):
         response = self.CLIENT.get(account_create_url)
 
         # check if user can access page...
-        self.assertEqual(response.status_code, 200, msg="Fail to GET Account Create page.")
+        self.assertEqual(response.status_code, 200, msg='Fail to GET Account Create page.')
 
         # check if account create form is rendered...
         account_create_form: AccountModelCreateForm = response.context['form']

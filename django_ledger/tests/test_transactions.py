@@ -136,7 +136,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
         self.assertTrue(
             txs_formset.is_valid(),
-            msg=f"Formset is not valid, error: {txs_formset.errors}")
+            msg=f'Formset is not valid, error: {txs_formset.errors}')
 
         txs_instances = txs_formset.save(commit=False)
         for txs in txs_instances:
@@ -169,7 +169,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
         self.assertFalse(
             txs_formset.is_valid(),
-            msg=f"Formset is supposed to be invalid because of imbalance transaction"
+            msg=f'Formset is supposed to be invalid because of imbalance transaction'
         )
 
     def test_je_locked(self):
@@ -252,7 +252,7 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         )
 
         self.assertTrue(not je_model.is_locked(),
-                        msg="At this point in this test case, Journal Entry should be unlocked.")
+                        msg='At this point in this test case, Journal Entry should be unlocked.')
 
         delete_field = '<input type="checkbox" name="form-0-DELETE" id="id_form-0-DELETE">'
         self.assertInHTML(
@@ -278,7 +278,7 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
         je_model.mark_as_locked(commit=True)
         self.assertTrue(
             je_model.is_locked(),
-            msg="Journal Entry should be locked in this test case")
+            msg='Journal Entry should be locked in this test case')
 
         transaction_model_form_set = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
@@ -292,4 +292,4 @@ class GetTransactionModelFormSetClassTest(DjangoLedgerBaseTest):
 
         self.assertEqual(
             len(txs_formset), (je_model.transactionmodel_set.count()),  # Convert pairs to total count
-            msg="Transactions Formset with unlocked Journal Entry did not match the expected count")
+            msg='Transactions Formset with unlocked Journal Entry did not match the expected count')

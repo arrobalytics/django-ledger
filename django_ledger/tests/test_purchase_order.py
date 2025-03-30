@@ -76,7 +76,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
 
         with self.assertNumQueries(6):  # previously 5
             response = self.CLIENT.get(po_list_url)
-        self.assertEqual(response.status_code, 200, msg="Fail to GET Purchase Order list page")
+        self.assertEqual(response.status_code, 200, msg='Fail to GET Purchase Order list page')
 
         po_model_qs = response.context['po_list']
 
@@ -107,18 +107,18 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
         response = self.CLIENT.get(po_create_url)
 
         # purchase order create page is rendered
-        self.assertEqual(response.status_code, 200, msg="Fail to GET PO create page")
+        self.assertEqual(response.status_code, 200, msg='Fail to GET PO create page')
 
         # after successfully create a PO, redirect to list
         po_title = f'PO-Create-{randint(1000, 9999)}'
         redirect_response = self.CLIENT.post(po_create_url, data={'po_title': po_title}, follow=False)
-        self.assertEqual(redirect_response.status_code, 302, msg="Create PO failed.")
+        self.assertEqual(redirect_response.status_code, 302, msg='Create PO failed.')
 
         # check the redirect URL is correct
         redirect_url = urlparse(redirect_response.url)
         redirect_path = redirect_url.path
         list_path = reverse('django_ledger:po-list', kwargs={'entity_slug': entity_model.slug})
-        self.assertEqual(redirect_path, list_path, msg="Fail to redirect properly after create a PO")
+        self.assertEqual(redirect_path, list_path, msg='Fail to redirect properly after create a PO')
 
         # check the created PO is in the list
         response = self.CLIENT.get(redirect_response.url)
@@ -151,7 +151,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
 
             with self.assertNumQueries(5):
                 response = self.CLIENT.get(po_detail_url)
-            self.assertEqual(response.status_code, 200, msg=f"Error browsing PO {po_model.uuid} detail page.")
+            self.assertEqual(response.status_code, 200, msg=f'Error browsing PO {po_model.uuid} detail page.')
 
             # the correct status is displayed
             self.assertContains(response, po_status_dict[status])

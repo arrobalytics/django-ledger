@@ -761,7 +761,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             self.INVESTING_OTHER
         ]
 
-    def get_entity_unit_name(self, no_unit_name: str = "") -> str:
+    def get_entity_unit_name(self, no_unit_name: str = '') -> str:
         """
         Retrieves the name of the entity unit associated with the Journal Entry.
 
@@ -1015,11 +1015,11 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             txs_qs = self.get_transaction_queryset(select_accounts=False)
         elif not isinstance(txs_qs, TransactionModelQuerySet):
             raise JournalEntryValidationError(
-                f"Expected a TransactionModelQuerySet, got {type(txs_qs).__name__}"
+                f'Expected a TransactionModelQuerySet, got {type(txs_qs).__name__}'
             )
         elif not self.is_txs_qs_valid(txs_qs):
             raise JournalEntryValidationError(
-                "Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry."
+                'Invalid TransactionModelQuerySet. All transactions must belong to the same journal entry.'
             )
 
         balances = txs_qs.values('tx_type').annotate(

@@ -89,9 +89,9 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
             try:
                 self.validate_quarter(quarter)
             except ValidationError:
-                raise Http404(_("Invalid quarter number"))
+                raise Http404(_('Invalid quarter number'))
         except ValueError:
-            raise Http404(_(f"Invalid quarter format. Cannot parse {quarter} into integer."))
+            raise Http404(_(f'Invalid quarter format. Cannot parse {quarter} into integer.'))
         return quarter
 
     def get_quarter(self) -> int:
@@ -103,7 +103,7 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
                 try:
                     quarter = self.request.GET[self.quarter_url_kwarg]
                 except KeyError:
-                    raise Http404(_("No quarter specified"))
+                    raise Http404(_('No quarter specified'))
         quarter = self.parse_quarter(quarter)
         return quarter
 
@@ -600,7 +600,7 @@ class PDFReportMixIn:
         pdf = self.get_pdf()
         response = HttpResponse(
             bytes(pdf.output()),
-            content_type="application/pdf",
+            content_type='application/pdf',
         )
         response.headers['Content-Disposition'] = f'attachment; filename={pdf.get_pdf_filename()}'
         return response
