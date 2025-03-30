@@ -231,9 +231,7 @@ def transactions_table(object_type: Union[JournalEntryModel, BillModel, InvoiceM
     if isinstance(object_type, JournalEntryModel):
         transaction_model_qs = object_type.transactionmodel_set.all().with_annotated_details().order_by(
             '-timestamp')
-    elif isinstance(object_type, BillModel):
-        transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
-    elif isinstance(object_type, InvoiceModel):
+    elif isinstance(object_type, BillModel) or isinstance(object_type, InvoiceModel):
         transaction_model_qs = object_type.get_transaction_queryset(annotated=True).order_by('-timestamp')
     else:
         raise ValidationError(

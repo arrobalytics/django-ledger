@@ -187,9 +187,7 @@ class EntityModelFiscalPeriodMixIn:
             obj = getattr(self, 'object')
             if isinstance(obj, EntityModel):
                 entity = obj
-            elif isinstance(obj, LedgerModel):
-                entity = obj.entity
-            elif isinstance(obj, EntityUnitModel):
+            elif isinstance(obj, LedgerModel) or isinstance(obj, EntityUnitModel):
                 entity = obj.entity
             elif isinstance(obj, AccountModel):
                 entity = obj.coa_model.entity

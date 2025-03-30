@@ -53,13 +53,7 @@ def get_default_unit_session_key():
 
 def set_default_entity(request, entity_model):
     session_key = get_default_entity_session_key()
-    if not request.session.get(session_key):
-        request.session[session_key] = {
-            'entity_uuid': str(entity_model.uuid),
-            'entity_slug': entity_model.slug,
-            'entity_name': entity_model.name,
-        }
-    elif request.session[session_key].get('entity_slug') != entity_model.slug:
+    if not request.session.get(session_key) or request.session[session_key].get('entity_slug') != entity_model.slug:
         request.session[session_key] = {
             'entity_uuid': str(entity_model.uuid),
             'entity_slug': entity_model.slug,
