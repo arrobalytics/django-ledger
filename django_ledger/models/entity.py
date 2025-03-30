@@ -604,7 +604,7 @@ class EntityModelClosingEntryMixIn:
             if ce_ser:
                 ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
                 return list(ce.object for ce in ce_qs_serde_gen)
-            return
+            return None
 
         return self.save_closing_entry_cache_for_date(
             closing_date=closing_date,
@@ -1357,7 +1357,7 @@ class EntityModelAbstract(MP_Node,
         if not self.default_coa_id:
             if raise_exception:
                 raise EntityModelValidationError(message=_('No default_coa found.'))
-            return
+            return None
 
         return self.get_coa_accounts(active=active, order_by=order_by)
 
@@ -2791,11 +2791,11 @@ class EntityModelAbstract(MP_Node,
 
     def get_closing_entry_for_date(self, io_date: Union[date, datetime], inclusive: bool = True) -> Optional[date]:
         if io_date is None:
-            return
+            return None
         ce_date_list = self.fetch_closing_entry_dates_meta()
 
         if not ce_date_list:
-            return
+            return None
 
         if isinstance(io_date, datetime):
             io_date = io_date.date()
@@ -2806,11 +2806,11 @@ class EntityModelAbstract(MP_Node,
 
     def get_nearest_next_closing_entry(self, io_date: Union[date, datetime]) -> Optional[date]:
         if io_date is None:
-            return
+            return None
 
         ce_date_list = self.fetch_closing_entry_dates_meta()
         if not len(ce_date_list):
-            return
+            return None
 
         if all([
             isinstance(io_date, date),

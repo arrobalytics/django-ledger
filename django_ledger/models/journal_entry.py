@@ -1136,7 +1136,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
 
         # no roles involved
         if not len(role_set):
-            return
+            return None
 
         # determining if investing....
         is_investing_for_ppe = all([

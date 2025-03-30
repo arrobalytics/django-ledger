@@ -337,7 +337,7 @@ def validate_io_timestamp(
       local time for cases where parsing is not possible.
     """
     if not dt:
-        return
+        return None
 
     if isinstance(dt, datetime):
         if is_naive(dt):

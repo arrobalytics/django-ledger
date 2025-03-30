@@ -374,7 +374,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                 if not user_model:
                     if raise_exception:
                         raise EstimateModelValidationError(_('Must pass user_model when using entity_slug.'))
-                    return
+                    return None
                 entity_qs = EntityModel.objects.for_user(user_model=user_model)
                 if isinstance(entity_slug, str):
                     entity_model: EntityModel = get_object_or_404(entity_qs, slug__exact=entity_slug)
@@ -385,7 +385,7 @@ class EstimateModelAbstract(CreateUpdateMixIn,
             else:
                 if raise_exception:
                     raise EstimateModelValidationError('entity_slug must be an instance of str or EntityModel')
-                return
+                return None
 
             if estimate_title:
                 self.title = estimate_title

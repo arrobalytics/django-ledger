@@ -925,7 +925,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
                 raise ImportJobModelValidationError(
                     message=_(f'Staged Transaction {self.uuid} already split.')
                 )
-            return
+            return None
 
         if not self.has_children():
             n += 1

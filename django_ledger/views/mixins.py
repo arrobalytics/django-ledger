@@ -358,7 +358,7 @@ class DjangoLedgerSecurityMixIn(LoginRequiredMixin, PermissionRequiredMixin):
         if self.AUTHORIZED_ENTITY_MODEL is None:
             if raise_exception:
                 raise Http404()
-            return
+            return None
         return self.AUTHORIZED_ENTITY_MODEL
 
     def get_authorized_entity_instance_name(self) -> Optional[str]:

@@ -1559,7 +1559,7 @@ class InvoiceModelAbstract(
     def delete(self, force_db_delete: bool = False, using=None, keep_parents=False):
         if not force_db_delete:
             self.mark_as_canceled(commit=True)
-            return
+            return None
         if not self.can_delete():
             raise InvoiceModelValidationError(
                 message=_(f'Invoice {self.invoice_number} cannot be deleted...')
