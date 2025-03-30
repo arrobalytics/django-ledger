@@ -275,17 +275,17 @@ def get_localtime(tz=None) -> datetime:
 
 def get_localdate() -> date:
     """
-        Fetches the current local date, optionally considering time zone settings.
+    Fetches the current local date, optionally considering time zone settings.
 
-        This function retrieves the current local date. If the global settings indicate
-        the use of time zones (`USE_TZ` is True), the date is determined based on the
-        local time zone. Otherwise, the date is based on the system's local time without
-        any time zone consideration.
+    This function retrieves the current local date. If the global settings indicate
+    the use of time zones (`USE_TZ` is True), the date is determined based on the
+    local time zone. Otherwise, the date is based on the system's local time without
+    any time zone consideration.
 
-        Returns:
-        -------
-        date
-            The current local date, adjusted for the time zone setting if applicable.
+    Returns:
+    -------
+    date
+        The current local date, adjusted for the time zone setting if applicable.
     """
     if global_settings.USE_TZ:
         return localdate()

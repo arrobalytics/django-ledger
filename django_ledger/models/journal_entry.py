@@ -471,17 +471,17 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
     @property
     def entity_last_closing_date(self) -> Optional[date]:
         """
-            Retrieves the last closing date for an entity, if available.
+        Retrieves the last closing date for an entity, if available.
 
-            This property returns the date of the most recent closing event
-            associated with the entity. If no closing date exists, the
-            result will be None.
+        This property returns the date of the most recent closing event
+        associated with the entity. If no closing date exists, the
+        result will be None.
 
-            Returns:
-            -------
-            Optional[date]
-                The date of the last closing event, or None if no closing
-                date is available.
+        Returns:
+        -------
+        Optional[date]
+            The date of the last closing event, or None if no closing
+            date is available.
         """
         return self.get_entity_last_closing_date()
 

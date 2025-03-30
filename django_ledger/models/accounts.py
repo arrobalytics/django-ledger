@@ -525,17 +525,17 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
     @property
     def entity_slug(self):
         """
-            Retrieve the slug value associated with the entity.
+        Retrieve the slug value associated with the entity.
 
-            This property method returns the value of the private attribute
-            '_entity_slug' for the current instance. The purpose of the
-            slug is typically to provide a URL-friendly string representing
-            the entity.
+        This property method returns the value of the private attribute
+        '_entity_slug' for the current instance. The purpose of the
+        slug is typically to provide a URL-friendly string representing
+        the entity.
 
-            Returns:
-            -------
-            Any
-                The value of the '_entity_slug' attribute.
+        Returns:
+        -------
+        Any
+            The value of the '_entity_slug' attribute.
         """
         return getattr(self, '_entity_slug')
 
