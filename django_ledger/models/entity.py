@@ -1120,7 +1120,7 @@ class EntityModelAbstract(MP_Node,
             for root_acc, acc_model_list in root_maps.items():
                 roles_set = set(account_model.role for account_model in acc_model_list)
                 for i, account_model in enumerate(acc_model_list):
-                    account_model.role_default = True if account_model.role in roles_set else False
+                    account_model.role_default = account_model.role in roles_set
 
                     try:
                         roles_set.remove(account_model.role)

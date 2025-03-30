@@ -384,7 +384,7 @@ class EntityUnitMixIn:
         context['unit_slug'] = unit_slug
 
         by_unit = any([
-            True if unit_slug else False,
+            bool(unit_slug),
             self.request.GET.get('by_unit') is not None
         ])
 
@@ -444,7 +444,7 @@ class DigestContextMixIn:
                 io_digest = entity_model.digest(user_model=self.request.user,
                                                 to_date=to_date,
                                                 unit_slug=unit_slug,
-                                                by_period=True if by_period else False,
+                                                by_period=bool(by_period),
                                                 process_ratios=True,
                                                 process_roles=True,
                                                 process_groups=True)
@@ -459,7 +459,7 @@ class DigestContextMixIn:
                     to_date=to_date,
                     from_date=from_date,
                     unit_slug=unit_slug,
-                    by_period=True if by_period else False,
+                    by_period=bool(by_period),
                     process_ratios=True,
                     process_roles=True,
                     process_groups=True

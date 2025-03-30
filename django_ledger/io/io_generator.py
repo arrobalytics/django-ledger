@@ -453,7 +453,7 @@ class EntityDataGenerator(LoggingMixIn):
                 item_id=generate_random_item_id(),
                 entity=self.entity_model,
                 for_inventory=True,
-                is_product_or_service=True if random() > 0.6 else False,
+                is_product_or_service=random() > 0.6,
                 sku=generate_random_sku(),
                 upc=generate_random_upc(),
                 earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
