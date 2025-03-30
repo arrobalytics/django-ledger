@@ -211,8 +211,7 @@ class EntityDataGenerator(LoggingMixIn):
                 self.MAX_DAYS_FORWARD
             ))
 
-        if next_timestamp > self.localtime:
-            next_timestamp = self.localtime
+        next_timestamp = min(next_timestamp, self.localtime)
         return next_timestamp
 
     def create_coa(self):
@@ -728,8 +727,7 @@ class EntityDataGenerator(LoggingMixIn):
             avg_cost = item_model.get_average_cost()
             if item_model.is_product():
                 if item_model.inventory_received is not None and item_model.inventory_received > 0.0:
-                    if quantity > item_model.inventory_received:
-                        quantity = item_model.inventory_received
+                    quantity = min(quantity, item_model.inventory_received)
 
                     # reducing inventory qty...
                     item_model.inventory_received -= quantity
