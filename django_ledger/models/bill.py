@@ -1364,7 +1364,6 @@ class BillModelAbstract(
                      itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None,
                      commit: bool = False,
                      **kwargs):
-
         """
         Marks BillModel as Paid.
 

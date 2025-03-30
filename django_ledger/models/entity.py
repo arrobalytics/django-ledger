@@ -1233,7 +1233,6 @@ class EntityModelAbstract(MP_Node,
                              order_by: Optional[tuple[str]] = ('code',),
                              active: bool = True) -> tuple[
         ChartOfAccountModelQuerySet, dict[ChartOfAccountModel, AccountModelQuerySet]]:
-
         """
         Fetches all the AccountModels associated with the EntityModel grouped by ChartOfAccountModel.
 
@@ -1798,7 +1797,6 @@ class EntityModelAbstract(MP_Node,
                        coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                        date_draft: Optional[date] = None,
                        commit: bool = True):
-
         """
         Creates a new InvoiceModel for the EntityModel instance.
         Invoice will have DRAFT status.
@@ -2009,7 +2007,6 @@ class EntityModelAbstract(MP_Node,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                             bank_account_model_kwargs: Optional[dict] = None,
                             commit: bool = True):
-
         """
         Create a bank account entry for the entity model with specified attributes and validation.
 
@@ -2339,7 +2336,6 @@ class EntityModelAbstract(MP_Node,
                             expense_account: Optional[Union[UUID, AccountModel]] = None,
                             coa_model: Optional[Union[ChartOfAccountModel, UUID, str]] = None,
                             commit: bool = True) -> ItemModel:
-
         """
         Creates a new items of type EXPENSE.
 

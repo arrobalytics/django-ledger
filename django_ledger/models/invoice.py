@@ -574,7 +574,6 @@ class InvoiceModelAbstract(
         return f'Invoice {self.invoice_number} account adjustment.'
 
     def get_migration_data(self, queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
-
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
 

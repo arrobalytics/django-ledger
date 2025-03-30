@@ -678,7 +678,6 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                        raise_exception: bool = True,
                        commit: bool = True,
                        **kwargs):
-
         """
         Marks the current EstimateModel instance as In Review.
 
@@ -996,7 +995,6 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                      date_void: Optional[date] = None,
                      raise_exception: bool = True,
                      **kwargs):
-
         """
         Marks the current EstimateModel instance as Void.
 
@@ -1117,7 +1115,6 @@ class EstimateModelAbstract(CreateUpdateMixIn,
                          queryset: Optional[Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None,
                          aggregate_on_db: bool = False,
                          lazy_agg: bool = False):
-
         """
         Returns all ItemTransactionModels associated with the EstimateModel and a total aggregate.
 

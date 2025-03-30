@@ -409,7 +409,6 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
     # ### ItemizeMixIn implementation END...
     def update_state(self, itemtxs_qs: Optional[
         Union[ItemTransactionModelQuerySet, list[ItemTransactionModel]]] = None) -> tuple:
-
         """
         Updates the state of the PurchaseOrderModel.
 

@@ -257,7 +257,6 @@ class IOCursor:
                post_new_ledgers: bool = False,
                post_journal_entries: bool = False,
                **kwargs):
-
         """
         Commits the compiled blueprint transactions into the database. This action is irreversible and if journal
         entries are posted, the books will be immediately impacted by the new transactions. It is encouraged NOT to

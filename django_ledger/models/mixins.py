@@ -552,7 +552,6 @@ class AccrualMixIn(models.Model):
                       je_timestamp: Optional[Union[str, date, datetime]] = None,
                       raise_exception: bool = True,
                       **kwargs):
-
         """
         Migrates the current Accruable financial instrument into the books. The main objective of the migrate_state
         method is to determine the JournalEntry and TransactionModels necessary to accurately reflect the financial

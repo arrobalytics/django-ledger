@@ -1357,7 +1357,6 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
                force_verify: bool = False,
                raise_exception: bool = True,
                **kwargs) -> tuple[TransactionModelQuerySet, bool]:
-
         """
         Verifies the validity of the Journal Entry model instance.
 
