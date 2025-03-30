@@ -293,7 +293,7 @@ class IncomeStatementReport(BaseReportSupport):
     def get_pdf_filename(self,
                          from_dt: Optional[Union[datetime, date]] = None,
                          to_dt: Optional[Union[datetime, date]] = None,
-                         dt_strfmt: str = '%Y%m%d',):
+                         dt_strfmt: str = '%Y%m%d'):
         if from_dt:
             from_dt = from_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
