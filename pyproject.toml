@@ -45,3 +45,78 @@ text = "GPLv3 License"
 
 [project.optional-dependencies]
 dev = ["sphinx~=4.5.0", "behave~=1.2.6", "pipenv-setup", "pylint", "furo"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 119
+exclude = [
+    "**/migrations/*.py",
+    ".venv",
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "**/manage.py",
+]
+# output-format = "grouped"
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN", # type annotations
+    "FBT", # boolean trap
+    "ARG", # no unused arguments
+    "CPY", # copyright notices
+    "F401",
+    "COM812",
+    "E721",
+    "D107",
+    "RUF012",
+    "FIX002",
+    "DJ001",
+    "D203",
+    "D212",
+    "COM812",
+    "TD003",
+    "G004",
+    "BLE001",
+    "D100",
+    "D200",
+    "S311"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/**.py" = ["D100", "D101", "D102", "D103", "E501", "RUF012"]
+"**/tests/**/*.py" = ["S101", "E501", "PLR0917", "ISC001", "D100", "D101", "D102", "PLR0913", "PLR2004","ERA001"]
+"**/*serializer*.py" = ["N815"]
+"**/views.py" = ["N815"]
+"**/__init__.py" = ["F403"]
+"**/models.py" = ["COM819"]
+"**/views/*.py" = ["D101","D102"]
+"**/docs/*.py" = ["INP001"]
+"**/*.ipynb" = ["E402", "D103","S105"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["ninja.Query", "ninja.Depends", "ninja.File"]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.pep8-naming]
+classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
+
+[tool.ruff.format]
+# Prefer single quotes over double quotes.
+quote-style = "single"
