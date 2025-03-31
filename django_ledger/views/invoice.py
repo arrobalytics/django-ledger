@@ -36,8 +36,10 @@ from django_ledger.forms.invoice import (
     get_invoice_itemtxs_formset_class,
 )
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel, EstimateModel, LedgerModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.estimate import EstimateModel
 from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

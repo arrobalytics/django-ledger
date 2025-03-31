@@ -11,7 +11,7 @@ from django.forms import BaseModelFormSet, ModelForm, Select, TextInput, Validat
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import check_tx_balance
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.transactions import TransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES

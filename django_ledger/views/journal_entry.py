@@ -31,8 +31,9 @@ from django_ledger.forms.journal_entry import (
 )
 from django_ledger.forms.transactions import get_transactionmodel_formset_class
 from django_ledger.io.io_core import get_localtime
-from django_ledger.models import EntityModel, LedgerModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
+from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

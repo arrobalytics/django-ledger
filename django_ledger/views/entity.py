@@ -18,7 +18,9 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, R
 from django_ledger.forms.entity import EntityModelCreateForm, EntityModelUpdateForm
 from django_ledger.io.io_core import get_localdate, get_localtime
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models import EntityModel, ItemTransactionModel, TransactionModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.items import ItemTransactionModel
+from django_ledger.models.transactions import TransactionModel
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,
     DateReportMixIn,

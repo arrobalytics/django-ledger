@@ -13,8 +13,8 @@ from django.views.generic import CreateView, ListView, RedirectView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.bank_account import BankAccountCreateForm, BankAccountUpdateForm
-from django_ledger.models import EntityModel
 from django_ledger.models.bank_account import BankAccountModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

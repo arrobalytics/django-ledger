@@ -6,15 +6,15 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 from random import randint
-from typing import Optional
 
 from django.forms import CheckboxInput, ChoiceField, HiddenInput, ModelForm, Select, TextInput, ValidationError
 from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
 from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
-from django_ledger.models import ChartOfAccountModel, EntityModel
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

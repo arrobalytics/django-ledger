@@ -6,7 +6,6 @@ A Bank Account refers to the financial institution which holds financial assets 
 A bank account usually holds cash, which is a Current Asset. Transactions may be imported using the open financial
 format specification OFX into a staging area for final disposition into the EntityModel ledger.
 """
-from typing import Optional
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -16,7 +15,7 @@ from django.db.models import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CreateUpdateMixIn, FinancialAccountInfoMixin
+from django_ledger.models.mixins import CreateUpdateMixIn, FinancialAccountInfoMixin
 from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()

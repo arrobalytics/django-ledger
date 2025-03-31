@@ -23,7 +23,7 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.ledger import LedgerModelCreateForm, LedgerModelUpdateForm
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,

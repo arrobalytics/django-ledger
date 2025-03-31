@@ -15,7 +15,7 @@ from django.views.generic import CreateView, DetailView, ListView, RedirectView,
 
 from django_ledger.forms.unit import EntityUnitModelCreateForm, EntityUnitModelUpdateForm
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel, EntityUnitModel
+from django_ledger.models.entity import EntityModel, EntityUnitModel
 from django_ledger.views.financial_statement import FiscalYearIncomeStatementView
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,

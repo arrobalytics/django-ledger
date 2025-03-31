@@ -31,7 +31,9 @@ from django_ledger.forms.purchase_order import (
     ReviewPurchaseOrderModelUpdateForm,
     get_po_itemtxs_formset_class,
 )
-from django_ledger.models import EstimateModel, ItemTransactionModel, PurchaseOrderModel
+from django_ledger.models.estimate import EstimateModel
+from django_ledger.models.items import ItemTransactionModel
+from django_ledger.models.purchase_order import PurchaseOrderModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

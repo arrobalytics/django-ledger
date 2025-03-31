@@ -11,7 +11,9 @@ from calendar import month_name
 from django.http import JsonResponse
 from django.views.generic import View
 
-from django_ledger.models import BillModel, EntityModel, InvoiceModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.invoice import InvoiceModel
 from django_ledger.utils import accruable_net_summary
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn, EntityUnitMixIn
 

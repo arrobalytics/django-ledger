@@ -20,7 +20,9 @@ from django_ledger.forms.app_filters import ActivityFilterForm, EntityFilterForm
 from django_ledger.forms.feedback import BugReportForm, RequestNewFeatureForm
 from django_ledger.io import ROLES_ORDER_ALL
 from django_ledger.io.io_core import get_localdate, validate_activity
-from django_ledger.models import BillModel, InvoiceModel, JournalEntryModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.settings import (
     DJANGO_LEDGER_CURRENCY_SYMBOL,
     DJANGO_LEDGER_FINANCIAL_ANALYSIS,
@@ -71,7 +73,7 @@ def currency_format(value):
 @register.filter(name='percentage')
 def percentage(value):
     if value is not None:
-        return '{0:,.2f}%'.format(value * 100)
+        return f'{value * 100:,.2f}%'
     return None
 
 
@@ -359,7 +361,7 @@ def default_entity(context):
             form_id=identity,
             current_entity_uuid=entity_uuid
         )
-    except (TypeError, KeyError) as e:
+    except (TypeError, KeyError):
         default_entity_form = EntityFilterForm(
             user_model=user,
             form_id=identity,

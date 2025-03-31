@@ -1,7 +1,7 @@
 from django.forms import ModelForm, TextInput, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityUnitModel
+from django_ledger.models.entity import EntityUnitModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

@@ -19,7 +19,6 @@ ________
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Dict, Optional, Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model
@@ -33,15 +32,14 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
 from django_ledger.io.io_core import get_localdate, get_localtime
-from django_ledger.models import (
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.items import (
     ItemModel,
     ItemModelQuerySet,
     ItemTransactionModelQuerySet,
     Manager,
     QuerySet,
-    lazy_loader,
 )
-from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import (
     AccrualMixIn,
     CreateUpdateMixIn,
@@ -57,6 +55,7 @@ from django_ledger.models.signals import (
     invoice_status_paid,
     invoice_status_void,
 )
+from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_INVOICE_NUMBER_PREFIX
 
 UserModel = get_user_model()

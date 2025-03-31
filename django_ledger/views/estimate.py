@@ -23,7 +23,7 @@ from django_ledger.forms.estimate import (
     EstimateModelCreateForm,
     ReadOnlyEstimateItemModelFormset,
 )
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.estimate import EstimateModel
 from django_ledger.views import DjangoLedgerSecurityMixIn
 

@@ -23,7 +23,7 @@ from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
-from django_ledger.models import JournalEntryModel
+from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 

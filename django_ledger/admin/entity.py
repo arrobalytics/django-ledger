@@ -9,8 +9,8 @@ from django.utils.html import format_html
 
 from django_ledger.admin.chart_of_accounts import ChartOfAccountsInLine
 from django_ledger.io.io_core import get_localtime
-from django_ledger.models import EntityUnitModel
 from django_ledger.models.entity import EntityManagementModel, EntityModel
+from django_ledger.models.unit import EntityUnitModel
 
 
 class EntityManagementInLine(TabularInline):

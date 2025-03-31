@@ -19,7 +19,9 @@ from django.forms import (
 )
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityUnitModel, ItemModel, ItemTransactionModel, PurchaseOrderModel
+from django_ledger.models.entity import EntityUnitModel
+from django_ledger.models.items import ItemModel, ItemTransactionModel
+from django_ledger.models.purchase_order import PurchaseOrderModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

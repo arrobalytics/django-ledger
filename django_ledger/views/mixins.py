@@ -19,8 +19,9 @@ from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import DayMixin, MonthMixin, YearMixin
 
-from django_ledger.models import BillModel, EntityModel, InvoiceModel
-from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
+from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel, EntityModelFiscalPeriodMixIn
+from django_ledger.models.invoice import InvoiceModel
 from django_ledger.settings import DJANGO_LEDGER_AUTHORIZED_SUPERUSER, DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 

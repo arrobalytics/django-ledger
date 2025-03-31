@@ -4,7 +4,7 @@ from uuid import UUID
 from django.forms import DateTimeInput, ModelForm, Select, Textarea, ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES

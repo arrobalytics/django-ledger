@@ -36,8 +36,10 @@ from django_ledger.forms.bill import (
     get_bill_itemtxs_formset_class,
 )
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, EntityModel, EstimateModel, PurchaseOrderModel
-from django_ledger.models.bill import BillModel
+from django_ledger.models.bill import BillModel, BillModelQuerySet
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.estimate import EstimateModel
+from django_ledger.models.purchase_order import PurchaseOrderModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 

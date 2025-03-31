@@ -2,8 +2,8 @@ from django.forms import ModelForm, Select, TextInput, ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, LIABILITY_CL_ACC_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE
-from django_ledger.models import BankAccountModel
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.bank_account import BankAccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

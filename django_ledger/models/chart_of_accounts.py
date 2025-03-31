@@ -66,9 +66,9 @@ from django_ledger.io import (
     ROOT_INCOME,
     ROOT_LIABILITIES,
 )
-from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.models.utils import lazy_loader
 
 UserModel = get_user_model()
 

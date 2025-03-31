@@ -27,7 +27,8 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet
+from django_ledger.models.bill import BillModelQuerySet
+from django_ledger.models.invoice import InvoiceModelQuerySet
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.items import ItemModel, ItemModelQuerySet, ItemTransactionModel, ItemTransactionModelQuerySet

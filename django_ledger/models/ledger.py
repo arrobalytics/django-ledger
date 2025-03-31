@@ -25,7 +25,6 @@ EntityModel -< LedgerModel -< JournalEntryModel -< TransactionModel
 """
 from datetime import date
 from string import ascii_lowercase, digits
-from typing import Optional
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -36,7 +35,6 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import IOMixIn
-from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
     ledger_hidden,
@@ -46,6 +44,7 @@ from django_ledger.models.signals import (
     ledger_unlocked,
     ledger_unposted,
 )
+from django_ledger.models.utils import lazy_loader
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 

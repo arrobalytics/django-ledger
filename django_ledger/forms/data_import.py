@@ -11,7 +11,8 @@ from django.forms import (
 )
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, ImportJobModel, StagedTransactionModel
+from django_ledger.models.data_import import ImportJobModel, StagedTransactionModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

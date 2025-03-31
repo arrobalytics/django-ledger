@@ -13,8 +13,9 @@ from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.account import AccountModelCreateForm, AccountModelUpdateForm
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import ChartOfAccountModel, EntityModel
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.views.mixins import (
     BaseDateNavigationUrlMixIn,
     DateReportMixIn,

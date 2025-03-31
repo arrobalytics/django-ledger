@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import DetailView, ListView
 
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 

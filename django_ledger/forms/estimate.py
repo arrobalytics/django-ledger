@@ -10,8 +10,10 @@ from django import forms
 from django.forms import BaseModelFormSet, ModelForm, Select, Textarea, TextInput, modelformset_factory
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import CustomerModel, EntityUnitModel, ItemModel, ItemTransactionModel
+from django_ledger.models.customer import CustomerModel
+from django_ledger.models.entity import EntityUnitModel
 from django_ledger.models.estimate import EstimateModel
+from django_ledger.models.items import ItemModel, ItemTransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

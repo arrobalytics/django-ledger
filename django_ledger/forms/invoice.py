@@ -21,7 +21,10 @@ from django.forms.models import BaseModelFormSet
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_RECEIVABLES, LIABILITY_CL_DEFERRED_REVENUE
-from django_ledger.models import AccountModel, CustomerModel, InvoiceModel, ItemModel, ItemTransactionModel
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.customer import CustomerModel
+from django_ledger.models.invoice import InvoiceModel
+from django_ledger.models.items import ItemModel, ItemTransactionModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

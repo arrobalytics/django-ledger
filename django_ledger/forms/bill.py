@@ -13,15 +13,11 @@ from django.forms import (
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.roles import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
-from django_ledger.models import (
-    AccountModel,
-    BillModel,
-    EntityModel,
-    EntityUnitModel,
-    ItemModel,
-    ItemTransactionModel,
-    VendorModel,
-)
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel, EntityUnitModel
+from django_ledger.models.items import ItemModel, ItemTransactionModel
+from django_ledger.models.vendor import VendorModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
 

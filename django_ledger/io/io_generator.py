@@ -39,23 +39,17 @@ from django_ledger.io.roles import (
     LIABILITY_CL_ACC_PAYABLE,
     LIABILITY_CL_DEFERRED_REVENUE,
 )
-from django_ledger.models import (
-    BankAccountModel,
-    BillModel,
-    ChartOfAccountModel,
-    CustomerModel,
-    EntityModel,
-    EntityUnitModel,
-    EstimateModel,
-    InvoiceModel,
-    InvoiceModelValidationError,
-    ItemModel,
-    ItemTransactionModel,
-    LoggingMixIn,
-    TransactionModel,
-    UnitOfMeasureModel,
-    VendorModel,
-)
+from django_ledger.models.bank_account import BankAccountModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+from django_ledger.models.customer import CustomerModel
+from django_ledger.models.entity import EntityModel, EntityUnitModel
+from django_ledger.models.estimate import EstimateModel
+from django_ledger.models.invoice import InvoiceModel, InvoiceModelValidationError
+from django_ledger.models.items import ItemModel, ItemTransactionModel, UnitOfMeasureModel
+from django_ledger.models.mixins import LoggingMixIn
+from django_ledger.models.transactions import TransactionModel
+from django_ledger.models.vendor import VendorModel
 from django_ledger.utils import generate_random_item_id, generate_random_sku, generate_random_upc
 
 try:

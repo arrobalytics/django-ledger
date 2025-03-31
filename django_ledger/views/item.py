@@ -28,7 +28,8 @@ from django_ledger.forms.item import (
     UnitOfMeasureModelCreateForm,
     UnitOfMeasureModelUpdateForm,
 )
-from django_ledger.models import EntityModel, ItemModel, UnitOfMeasureModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.items import ItemModel, UnitOfMeasureModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 # TODO: Create delete views...
