@@ -570,7 +570,8 @@ class PDFReportMixIn:
 
     def get_pdf_func_name(self):
         if not self.pdf_report_type:
-            raise NotImplementedError(f'Must define pdf_report_type from {self.PDFReportEnum.__name__}')
+            msg = f'Must define pdf_report_type from {self.PDFReportEnum.__name__}'
+            raise NotImplementedError(msg)
         return self.pdf_io_mixin_function_map[self.pdf_report_type]
 
     def get_pdf(self):

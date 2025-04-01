@@ -995,9 +995,8 @@ class PaymentTermsMixIn(models.Model):
         date
             The date when terms of payment starts.
         """
-        raise NotImplementedError(
-            f'Must implement get_terms_start_date() for {self.__class__.__name__}'
-        )
+        msg = f'Must implement get_terms_start_date() for {self.__class__.__name__}'
+        raise NotImplementedError(msg)
 
     def get_terms_net_90_plus(self) -> int:
         """
@@ -1219,8 +1218,8 @@ class LoggingMixIn:
 
     def get_logger_name(self):
         if self.LOGGER_NAME_ATTRIBUTE is None:
-            raise NotImplementedError(f'{self.__class__.__name__} must define LOGGER_NAME_ATTRIBUTE of implement '
-                                      'get_logger_name() function.')
+            msg = f'{self.__class__.__name__} must define LOGGER_NAME_ATTRIBUTE of implement get_logger_name() function.'
+            raise NotImplementedError(msg)
         return getattr(self, self.LOGGER_NAME_ATTRIBUTE)
 
     def get_logger(self) -> logging.Logger:
@@ -1371,7 +1370,8 @@ class ItemizeMixIn(models.Model):
             A list of ItemTransactionModel appended or created.
         """
         if operation == self.ITEMIZE_UPDATE:
-            raise NotImplementedError(f'Operation {operation} not yet implemented.')
+            msg = f'Operation {operation} not yet implemented.'
+            raise NotImplementedError(msg)
 
         if self.can_migrate_itemtxs():
             self.validate_itemtxs(itemtxs)
