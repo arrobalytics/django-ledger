@@ -233,7 +233,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         )
         return [
             (bsr, [
-                (r, sorted(list(l), key=lambda acc: acc.code)) for r, l in
+                (r, sorted(accounts_list, key=lambda acc: acc.code)) for r, accounts_list in
                 groupby(gb, key=lambda a: a.get_role_display())
             ]) for bsr, gb in accounts_gb
         ]

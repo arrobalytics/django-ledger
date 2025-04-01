@@ -93,7 +93,8 @@ def accruable_net_summary(queryset: QuerySet) -> dict:
     } for b in queryset]
     nets_collect.sort(key=lambda b: b['net_due_group'])
     nets_collect = {
-        g: float(sum(b['amount_open'] for b in l)) for g, l in groupby(nets_collect, key=lambda b: b['net_due_group'])
+        g: float(sum(b['amount_open'] for b in group_list))
+        for g, group_list in groupby(nets_collect, key=lambda b: b['net_due_group'])
     }
     nets.update(nets_collect)
     return nets

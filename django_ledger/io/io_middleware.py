@@ -59,8 +59,8 @@ class AccountRoleIOMiddleware:
 
     def process_roles(self):
 
-        for c, l in roles_module.ROLES_DIRECTORY.items():
-            for r in l:
+        for roles_list in roles_module.ROLES_DIRECTORY.values():
+            for r in roles_list:
                 acc_list = list(acc for acc in self.ACCOUNTS if acc['role'] == getattr(roles_module, r))
 
                 self.ROLES_ACCOUNTS[r] = acc_list
@@ -224,7 +224,7 @@ class BalanceSheetIOMiddleware:
     def digest(self):
         if 'group_account' in self.IO_DATA:
             gb_bs = {
-                bsr: list(l) for bsr, l in groupby(
+                bsr: list(grouped_list) for bsr, grouped_list in groupby(
                     chain.from_iterable(
                         [
                             self.IO_DATA['group_account']['GROUP_ASSETS'],

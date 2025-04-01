@@ -124,7 +124,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 
         # adding DEBITS and CREDITS...
         ce_txs_sum = {
-            k: sum(v.balance for v in l) for k, l in ce_txs_gb
+            k: sum(v.balance for v in txs) for k, txs in ce_txs_gb
         }
 
         if ce_txs_sum and ce_txs_sum[TransactionModel.DEBIT] != ce_txs_sum[TransactionModel.CREDIT]:
@@ -166,8 +166,8 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
             ] for (unit_model_id, activity), je_txs in ce_txs_gb.items()
         }
 
-        JournalEntryModel.objects.bulk_create(objs=chain([l for _, l in ce_txs_journal_entries.items()]))
-        TransactionModel.objects.bulk_create(objs=chain.from_iterable([l for _, l in ce_je_txs.items()]))
+        JournalEntryModel.objects.bulk_create(objs=chain([journal_entry for _, journal_entry in ce_txs_journal_entries.items()]))
+        TransactionModel.objects.bulk_create(objs=chain.from_iterable([txs for _, txs in ce_je_txs.items()]))
 
         for k, je_model in ce_txs_journal_entries.items():
             je_model.save(verify=True)

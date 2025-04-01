@@ -279,7 +279,7 @@ class IOCursor:
                 message=_('Transactions already committed')
             )
         qs = self.resolve_ledger_model_qs()
-        self.ledger_map = {l.ledger_xid: l for l in qs if l.ledger_xid} | {l.uuid: l for l in qs}
+        self.ledger_map = {ledger.ledger_xid: ledger for ledger in qs if ledger.ledger_xid} | {ledger.uuid: ledger for ledger in qs}
 
         # checks for any locked ledgers...
         for k, ledger_model in self.ledger_map.items():

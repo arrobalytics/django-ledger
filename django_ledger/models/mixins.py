@@ -686,7 +686,7 @@ class AccrualMixIn(models.Model):
             ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
 
             unit_amounts = {
-                u: sum(a[1] for a in l) for u, l in groupby(ua_gen, key=lambda x: x[0])
+                unit: sum(amount[1] for amount in group)for unit, group in groupby(ua_gen, key=lambda x: x[0])
             }
             total_amount = sum(unit_amounts.values())
 
