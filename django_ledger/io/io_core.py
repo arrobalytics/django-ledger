@@ -168,22 +168,22 @@ def diff_tx_data(tx_data: list, raise_exception: bool = True):
     TransactionModel = lazy_loader.get_txs_model()
 
     if isinstance(tx_data[0], TransactionModel):
-        credits = sum(tx.amount for tx in tx_data if tx.tx_type == CREDIT)
-        debits = sum(tx.amount for tx in tx_data if tx.tx_type == DEBIT)
+        total_credits = sum(tx.amount for tx in tx_data if tx.tx_type == CREDIT)
+        total_debits = sum(tx.amount for tx in tx_data if tx.tx_type == DEBIT)
         IS_TX_MODEL = True
     elif isinstance(tx_data[0], dict):
-        credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == CREDIT)
-        debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == DEBIT)
+        total_credits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == CREDIT)
+        total_debits = sum(tx['amount'] for tx in tx_data if tx['tx_type'] == DEBIT)
     else:
         msg = 'Only Dictionary or TransactionModel allowed.'
         raise ValidationError(msg)
 
-    is_valid = (credits == debits)
-    diff = credits - debits
+    is_valid = (total_credits == total_debits)
+    diff = total_credits - total_debits
 
     if not is_valid and abs(diff) > settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE and raise_exception:
         msg = (
-            f'Invalid tx data. Credits and debits must match. Currently cr: {credits}, db {debits}.'
+            f'Invalid tx data. Credits and debits must match. Currently cr: {total_credits}, db {total_debits}.'
             f'Max Tolerance {settings.DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE}'
         )
         raise TransactionNotInBalanceError(msg)

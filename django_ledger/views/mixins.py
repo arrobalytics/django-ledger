@@ -296,9 +296,9 @@ class SuccessUrlNextMixIn:
         return self.request.GET.get('next') is not None
 
     def get_success_url(self):
-        next = self.request.GET.get('next')
-        if next:
-            return next
+        next_url = self.request.GET.get('next')
+        if next_url:
+            return next_url
         return reverse('django_ledger:home')
 
 
