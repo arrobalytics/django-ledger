@@ -745,7 +745,7 @@ class AccrualMixIn(models.Model):
                 JournalEntryModel = lazy_loader.get_journal_entry_model()
                 TransactionModel = lazy_loader.get_txs_model()
 
-                unit_uuids = list(set(k[1] for k in idx_keys))
+                unit_uuids = list({k[1] for k in idx_keys})
 
                 if je_timestamp:
                     je_timestamp = validate_io_timestamp(dt=je_timestamp)

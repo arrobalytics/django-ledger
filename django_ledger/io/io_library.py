@@ -341,7 +341,7 @@ class IOCursor:
                 raise IOLibraryError(msg)
 
         instructions = self.compile_instructions()
-        account_codes = set(tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items()))
+        account_codes = {tx.account_code for tx in chain.from_iterable(tr for _, tr in instructions.items())}
         account_model_qs = self.resolve_account_model_qs(codes=account_codes)
         account_models = {
             acc.code: acc for acc in account_model_qs

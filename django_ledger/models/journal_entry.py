@@ -674,7 +674,7 @@ class JournalEntryModelAbstract(CreateUpdateMixIn):
             bool: True if all transactions have the same Chart of Accounts, otherwise False.
         """
         if len(txs_qs) > 0:
-            coa_count = len(set(tx.coa_id for tx in txs_qs))
+            coa_count = len({tx.coa_id for tx in txs_qs})
             is_valid = coa_count == 1
             if not is_valid and raise_exception:
                 raise JournalEntryValidationError(

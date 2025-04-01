@@ -1114,7 +1114,7 @@ class EntityModelAbstract(MP_Node,
             }
 
             for acc_model_list in root_maps.values():
-                roles_set = set(account_model.role for account_model in acc_model_list)
+                roles_set = {account_model.role for account_model in acc_model_list}
                 for i, account_model in enumerate(acc_model_list):
                     account_model.role_default = account_model.role in roles_set
 

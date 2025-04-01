@@ -392,7 +392,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         self.generate_slug(commit=False)
 
         root_accounts_qs = self.get_coa_root_accounts_qs()
-        existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
+        existing_root_roles = list({acc.role for acc in root_accounts_qs})
 
         if len(existing_root_roles) > 0:
             if raise_exception:
