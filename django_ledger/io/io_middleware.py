@@ -35,14 +35,14 @@ class AccountRoleIOMiddleware:
         self.ROLES_BALANCE_SHEET = {}
 
         if self.BY_PERIOD:
-            self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: {})
+            self.ROLES_BALANCES_BY_PERIOD = defaultdict(dict)
             self.DIGEST['role_balance_by_period'] = None
         if self.BY_UNIT:
-            self.ROLES_BALANCES_BY_UNIT = defaultdict(lambda: {})
+            self.ROLES_BALANCES_BY_UNIT = defaultdict(dict)
             self.DIGEST['role_balance_by_unit'] = None
 
         if self.BY_PERIOD and self.BY_UNIT:
-            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
+            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(dict)
 
     def digest(self):
 
@@ -105,15 +105,15 @@ class AccountGroupIOMiddleware:
         self.GROUPS_BALANCES = {}
 
         if self.BY_PERIOD:
-            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: {})
+            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(dict)
             self.IO_DIGEST[self.GROUP_BALANCE_BY_PERIOD_KEY] = None
 
         if self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_UNIT = defaultdict(lambda: {})
+            self.GROUPS_BALANCES_BY_UNIT = defaultdict(dict)
             self.IO_DIGEST[self.GROUP_BALANCE_BY_UNIT_KEY] = None
 
         if self.BY_PERIOD and self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
+            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(dict)
             self.IO_DIGEST[self.GROUP_BALANCE_BY_PERIOD_KEY] = None
 
     def digest(self):
@@ -172,13 +172,13 @@ class JEActivityIOMiddleware:
         self.ACTIVITY_BALANCES = {}
 
         if self.BY_PERIOD:
-            self.ACTIVITY_BALANCES_BY_PERIOD = defaultdict(lambda: {})
+            self.ACTIVITY_BALANCES_BY_PERIOD = defaultdict(dict)
             self.DIGEST['activity_balance_by_period'] = None
         if self.BY_UNIT:
-            self.ACTIVITY_BALANCES_BY_UNIT = defaultdict(lambda: {})
+            self.ACTIVITY_BALANCES_BY_UNIT = defaultdict(dict)
             self.DIGEST['activity_balance_by_unit'] = None
         if self.BY_PERIOD and self.BY_UNIT:
-            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
+            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(dict)
 
     def digest(self):
 
