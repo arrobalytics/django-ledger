@@ -169,7 +169,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         JournalEntryModel.objects.bulk_create(objs=chain([journal_entry for _, journal_entry in ce_txs_journal_entries.items()]))
         TransactionModel.objects.bulk_create(objs=chain.from_iterable([txs for _, txs in ce_je_txs.items()]))
 
-        for k, je_model in ce_txs_journal_entries.items():
+        for je_model in ce_txs_journal_entries.values():
             je_model.save(verify=True)
 
         self.ledger_model.lock(commit=True, raise_exception=True)

@@ -249,7 +249,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
             return True
 
         wrapped_model_info = self.get_wrapper_info
-        for model_class, model_id in wrapped_model_info.items():
+        for model_id in wrapped_model_info.values():
             try:
                 return getattr(self, model_id)
             except ObjectDoesNotExist:
@@ -311,7 +311,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         if self.has_wrapped_model_info():
             return getattr(self, self.additional_info[self._WRAPPED_MODEL_KEY]['model'])
 
-        for model_class, attr in self.get_wrapper_info.items():
+        for attr in self.get_wrapper_info.values():
             if getattr(self, attr, None):
                 return getattr(self, attr)
         return None

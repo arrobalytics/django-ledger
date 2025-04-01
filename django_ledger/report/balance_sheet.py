@@ -46,7 +46,7 @@ class BalanceSheetReport(BaseReportSupport):
                 'align': 'R'
             }
         }
-        for k, th in self.TABLE_HEADERS.items():
+        for th in self.TABLE_HEADERS.values():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
     def get_report_data(self) -> dict:
@@ -57,7 +57,7 @@ class BalanceSheetReport(BaseReportSupport):
 
     def print_section_data(self, section_data):
 
-        for r, d in section_data['roles'].items():
+        for d in section_data['roles'].values():
             # # print role name...
             self.set_font(self.FONT_FAMILY, style='U', size=self.FONT_SIZE)
             self.set_x(15)

@@ -761,7 +761,7 @@ class AccrualMixIn(models.Model):
                     ) for u in unit_uuids
                 }
 
-                for u, je in je_list.items():
+                for je in je_list.values():
                     je.clean(verify=False)
 
                 txs_list = [
@@ -786,7 +786,7 @@ class AccrualMixIn(models.Model):
                 check_tx_balance(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
-                for _, je in je_list.items():
+                for je in je_list.values():
                     # will independently verify and populate appropriate activity for JE.
                     je.clean(verify=True)
                     if je.is_verified():

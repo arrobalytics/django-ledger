@@ -225,7 +225,7 @@ class IOCursor:
                 )) for ledger_model, instructions in self.commit_plan.items()
             }
 
-            for ledger_model, txs in instructions.items():
+            for txs in instructions.values():
                 total_credits = sum(t.amount for t in txs if t.tx_type == CREDIT)
                 total_debits = sum(t.amount for t in txs if t.tx_type == DEBIT)
 

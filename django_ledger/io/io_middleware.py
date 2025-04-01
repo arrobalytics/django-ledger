@@ -247,7 +247,7 @@ class BalanceSheetIOMiddleware:
                 } for bs_role, gb in gb_bs.items()
             }
 
-            for bs_role, bs_role_data in bs_context.items():
+            for bs_role_data in bs_context.values():
                 for acc_role, role_data in bs_role_data['roles'].items():
                     role_data['total_balance'] = sum(a['balance'] for a in role_data['accounts'])
                     role_data['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc_role]
@@ -292,8 +292,8 @@ class IncomeStatementIOMiddleware:
                 }
             }
 
-            for activity, ic_section in self.IO_DATA[self.IC_DIGEST_KEY].items():
-                for section, acc_list in ic_section.items():
+            for ic_section in self.IO_DATA[self.IC_DIGEST_KEY].values():
+                for acc_list in ic_section.values():
                     for acc in acc_list:
                         acc['role_name'] = roles_module.ACCOUNT_LIST_ROLE_VERBOSE[acc['role']]
 

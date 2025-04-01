@@ -27,7 +27,7 @@ class CashFlowStatementReport(BaseReportSupport):
                 'style': 'B'
             }
         }
-        for k, th in self.TABLE_HEADERS.items():
+        for th in self.TABLE_HEADERS.values():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
     def get_report_data(self) -> dict:
@@ -140,7 +140,7 @@ class CashFlowStatementReport(BaseReportSupport):
         self.ln(7)
 
         cf_section = self.IO_DIGEST.IO_DATA['cash_flow_statement']['financing']
-        for _, sec in cf_section.items():
+        for sec in cf_section.values():
             self.set_x(50)
             self.print_section_title(
                 title=sec['description'],
@@ -168,7 +168,7 @@ class CashFlowStatementReport(BaseReportSupport):
         self.ln(7)
 
         cf_section = self.IO_DIGEST.IO_DATA['cash_flow_statement']['investing']
-        for _, sec in cf_section.items():
+        for sec in cf_section.values():
             self.set_x(50)
             self.print_section_title(
                 title=sec['description'],

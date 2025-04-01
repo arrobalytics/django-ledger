@@ -127,7 +127,7 @@ class BaseReportSupport(*load_support()):
         self.set_default_font()
 
     def print_headers(self):
-        for k, header in self.TABLE_HEADERS.items():
+        for header in self.TABLE_HEADERS.values():
             self.set_font(
                 family=self.FONT_FAMILY,
                 style=header.get('style', ''),

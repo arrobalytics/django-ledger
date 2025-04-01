@@ -1113,7 +1113,7 @@ class EntityModelAbstract(MP_Node,
                     ) for a in v] for k, v in CHART_OF_ACCOUNTS_ROOT_MAP.items()
             }
 
-            for root_acc, acc_model_list in root_maps.items():
+            for acc_model_list in root_maps.values():
                 roles_set = set(account_model.role for account_model in acc_model_list)
                 for i, account_model in enumerate(acc_model_list):
                     account_model.role_default = account_model.role in roles_set

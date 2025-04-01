@@ -47,7 +47,7 @@ class IncomeStatementReport(BaseReportSupport):
                 'style': 'B'
             }
         }
-        for k, th in self.TABLE_HEADERS.items():
+        for th in self.TABLE_HEADERS.values():
             th['width'] = self.get_string_width(th['title']) + th['spacing']
 
     def get_report_data(self) -> dict:
