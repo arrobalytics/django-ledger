@@ -610,7 +610,7 @@ ACCOUNT_LIST_ROLE_ORDER = [r[0] for r in chain.from_iterable([i[1] for i in ACCO
 ACCOUNT_LIST_ROLE_VERBOSE = {r[0]: r[1] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT])}
 
 ROLE_TUPLES = functools.reduce(operator.iadd, [[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], [])
-ROLE_DICT = dict([(t[0].lower(), [r[0] for r in t[1]]) for t in ACCOUNT_ROLE_CHOICES])
+ROLE_DICT = {t[0].lower(): [r[0] for r in t[1]] for t in ACCOUNT_ROLE_CHOICES}
 VALID_ROLES = [r[1] for r in ROLE_TUPLES]
 BS_ROLES = dict((r[1], r[0]) for r in ROLE_TUPLES)
 

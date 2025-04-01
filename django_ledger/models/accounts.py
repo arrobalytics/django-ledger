@@ -228,7 +228,7 @@ class AccountModelQuerySet(MP_NodeQuerySet):
                 and a list of accounts that fall into that role within the BS bucket.
         """
         accounts_gb = [
-            (r, sorted(list(gb), key=lambda acc: ROLES_ORDER_ALL.index(acc.role))) for r, gb in
+            (r, sorted(gb, key=lambda acc: ROLES_ORDER_ALL.index(acc.role))) for r, gb in
             groupby(self, key=lambda acc: acc.get_bs_bucket())
         ]
         return [

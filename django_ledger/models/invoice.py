@@ -243,7 +243,7 @@ class InvoiceModelAbstract(
     """
     This is the main abstract class which the InvoiceModel database will inherit from.
     The InvoiceModel inherits functionality from the following MixIns:
-    
+
         1. :func:`LedgerWrapperMixIn <django_ledger.models.mixins.LedgerWrapperMixIn>`
         2. :func:`PaymentTermsMixIn <django_ledger.models.mixins.PaymentTermsMixIn>`
         3. :func:`MarkdownNotesMixIn <django_ledger.models.mixins.MarkdownNotesMixIn>`

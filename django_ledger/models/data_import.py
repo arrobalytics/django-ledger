@@ -999,7 +999,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         if self.has_children():
             split_txs_qs = self.split_transaction_set.all()
             if all([txs.is_mapped() for txs in split_txs_qs]):
-                return set([txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH])
+                return {txs.account_model.role for txs in split_txs_qs if txs.account_model.role != ASSET_CA_CASH}
         return set()
 
     def get_prospect_je_activity_try(self, raise_exception: bool = True, force_update: bool = False) -> str | None:

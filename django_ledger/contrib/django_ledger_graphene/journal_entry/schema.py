@@ -31,5 +31,6 @@ class JournalEntryQuery(graphene.ObjectType):
                     entity_slug=slug_name,
                     user_model=info.context.user
                 ).for_ledger(ledger_pk=pk_ledger).order_by(sort)
+            return None
         else:
             return JournalEntryModel.objects.none()

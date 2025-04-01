@@ -35,6 +35,7 @@ class CustomerQuery(graphene.ObjectType):
                 entity_slug=slug_name,
                 user_model=info.context.user
             ).order_by('-updated')
+            return None
         else:
             return CustomerModel.objects.none()
 

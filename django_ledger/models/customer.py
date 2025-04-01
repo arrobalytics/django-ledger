@@ -141,7 +141,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
 
         1. :func:`ContactInfoMixIn <django_ledger.models.mixins.ContactInfoMixIn>`
         2. :func:`CreateUpdateMixIn <django_ledger.models.mixins.CreateUpdateMixIn>`
-    
+
     Attributes:
     __________
     uuid : UUID
