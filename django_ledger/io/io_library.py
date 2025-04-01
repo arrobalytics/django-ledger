@@ -347,7 +347,7 @@ class IOCursor:
             acc.code: acc for acc in account_model_qs
         }
 
-        for tx in chain.from_iterable(tr for _, tr in instructions.items()):
+        for tx in chain.from_iterable(tr for tr in instructions.values()):
             try:
                 tx.account_model = account_models[tx.account_code]
             except KeyError:
