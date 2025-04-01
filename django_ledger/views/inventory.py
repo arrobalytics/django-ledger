@@ -75,8 +75,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
     def recorded_inventory(self, queryset=None, as_values=True):
         entity_model: EntityModel = self.get_object()
         user_model = self.request.user
-        recorded_qs = entity_model.recorded_inventory(item_qs=queryset)
-        return recorded_qs
+        return entity_model.recorded_inventory(item_qs=queryset)
 
     def get_context_data(self, adjustment=None, counted_qs=None, recorded_qs=None, **kwargs):
         self.object = self.get_object()

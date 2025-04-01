@@ -26,11 +26,10 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
                               entity_model: EntityModel,
                               draft_date: date | datetime | None = None) -> PurchaseOrderModel:
         po_model = PurchaseOrderModel()
-        po_model = po_model.configure(entity_slug=entity_model,
+        return po_model.configure(entity_slug=entity_model,
                                       draft_date=draft_date,
                                       user_model=self.user_model,
                                       commit=True)
-        return po_model
 
     def get_purchase_orders(self, entity_model: EntityModel) -> list[PurchaseOrderModel]:
         return PurchaseOrderModel.objects.for_entity(entity_model, self.user_model)

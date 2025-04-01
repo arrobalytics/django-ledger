@@ -298,11 +298,10 @@ class BaseBillItemTransactionFormset(BaseModelFormSet):
 
 
 def get_bill_itemtxs_formset_class(bill_model: BillModel):
-    BillItemTransactionFormset = modelformset_factory(
+    return modelformset_factory(
         model=ItemTransactionModel,
         form=BillItemTransactionForm,
         formset=BaseBillItemTransactionFormset,
         can_delete=True,
         extra=5
     )
-    return BillItemTransactionFormset

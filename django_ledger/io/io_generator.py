@@ -205,8 +205,7 @@ class EntityDataGenerator(LoggingMixIn):
                 self.MAX_DAYS_FORWARD
             ))
 
-        next_timestamp = min(next_timestamp, self.localtime)
-        return next_timestamp
+        return min(next_timestamp, self.localtime)
 
     def create_coa(self):
         entity_model = self.entity_model

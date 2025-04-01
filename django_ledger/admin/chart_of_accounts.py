@@ -20,10 +20,9 @@ class AccountModelInLineFormSet(BaseInlineFormSet):
     def save_new(self, form, commit=True):
         setattr(form.instance, self.fk.name, self.instance)
         if commit:
-            account_model = AccountModel.add_root(
+            return AccountModel.add_root(
                 instance=super().save_new(form, commit=False)
             )
-            return account_model
         return super().save_new(form, commit=False)
 
 
@@ -124,8 +123,7 @@ class ChartOfAccountsModelAdmin(ModelAdmin):
         ordering = self.get_ordering(request)
         if ordering:
             qs = qs.order_by(*ordering)
-        qs = qs.select_related('entity').annotate(Count('accountmodel'))
-        return qs
+        return qs.select_related('entity').annotate(Count('accountmodel'))
 
     def account_model_count(self, obj):
         return obj.accountmodel__count

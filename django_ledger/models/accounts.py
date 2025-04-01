@@ -579,8 +579,7 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
             **kwargs
         )
         account_model.clean()
-        account_model = cls.add_root(instance=account_model)
-        return account_model
+        return cls.add_root(instance=account_model)
 
     @property
     def role_bs(self) -> str:

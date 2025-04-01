@@ -104,8 +104,7 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
                     quarter = self.request.GET[self.quarter_url_kwarg]
                 except KeyError:
                     raise Http404(_('No quarter specified'))
-        quarter = self.parse_quarter(quarter)
-        return quarter
+        return self.parse_quarter(quarter)
 
     def get_from_date(self, quarter: int | None = None, year: int | None = None, fy_start: int | None = None, **kwargs) -> date:
         return self.get_quarter_start_date(quarter, year, fy_start)

@@ -934,8 +934,7 @@ class EntityModelAbstract(MP_Node,
         """
         slug = slugify(name)
         suffix = ''.join(choices(ENTITY_RANDOM_SLUG_SUFFIX, k=8))
-        entity_slug = f'{slug}-{suffix}'
-        return entity_slug
+        return f'{slug}-{suffix}'
 
     def generate_slug(self,
                       commit: bool = False,
@@ -1513,14 +1512,13 @@ class EntityModelAbstract(MP_Node,
                             to_date: datetime | date | str,
                             **kwargs):
 
-        io_context = self.digest(
+        return self.digest(
             entity_model=self.slug,
             accounts=account_codes,
             to_date=to_date,
             **kwargs
         )
 
-        return io_context
 
     # ### LEDGER MANAGEMENT ####
     def get_ledgers(self, posted: bool | None = None):

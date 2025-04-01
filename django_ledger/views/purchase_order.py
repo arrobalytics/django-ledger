@@ -139,10 +139,9 @@ class PurchaseOrderModelCreateView(DjangoLedgerSecurityMixIn,
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
-        form = PurchaseOrderModelCreateForm(entity_slug=entity_slug,
+        return PurchaseOrderModelCreateForm(entity_slug=entity_slug,
                                             user_model=self.request.user,
                                             **self.get_form_kwargs())
-        return form
 
     def form_valid(self, form):
         po_model: PurchaseOrderModel = form.save(commit=False)

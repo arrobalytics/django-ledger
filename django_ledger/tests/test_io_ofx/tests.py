@@ -9,9 +9,8 @@ class SimpleOFXTest(DjangoLedgerBaseTest):
     BASE_PATH = 'django_ledger/tests/test_io_ofx/samples/'
 
     def get_sample_ofx(self, ofx_sample_name: str):
-        ofx = OFXFileManager(ofx_file_or_path=Path(self.BASE_PATH) / ofx_sample_name)
+        return OFXFileManager(ofx_file_or_path=Path(self.BASE_PATH) / ofx_sample_name)
 
-        return ofx
 
     def test_ofx_v1_with_intu_bid_field(self):
         """

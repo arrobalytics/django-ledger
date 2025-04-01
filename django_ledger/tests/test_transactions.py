@@ -101,13 +101,12 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
         TransactionModelFormSet = get_transactionmodel_formset_class(journal_entry_model=je_model)
 
-        txs_formset = TransactionModelFormSet(
+        return TransactionModelFormSet(
             entity_slug=entity_model.slug,
             user_model=self.user_model,
             je_model=je_model,
             ledger_pk=je_model.ledger_id,
         )
-        return txs_formset
 
     def test_valid_formset(self):
         """

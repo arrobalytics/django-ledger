@@ -103,5 +103,4 @@ def accruable_net_summary(queryset: QuerySet) -> dict:
 def get_end_date_from_session(entity_slug: str, request) -> date:
     session_end_date_filter = get_end_date_session_key(entity_slug)
     end_date = request.session.get(session_end_date_filter)
-    end_date = parse_date(end_date) if end_date else get_localdate()
-    return end_date
+    return parse_date(end_date) if end_date else get_localdate()

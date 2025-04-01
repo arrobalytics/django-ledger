@@ -583,11 +583,10 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         )
         account_model.clean()
 
-        account_model = self.insert_account(
+        return self.insert_account(
             account_model=account_model,
             root_account_qs=root_account_qs
         )
-        return account_model
 
     # ACTIONS -----
     # TODO: use these methods once multi CoA features are enabled...

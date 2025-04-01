@@ -26,10 +26,9 @@ class EntityUnitModelInLineFormSet(BaseInlineFormSet):
     def save_new(self, form, commit=True):
         setattr(form.instance, self.fk.name, self.instance)
         if commit:
-            unit_model = EntityUnitModel.add_root(
+            return EntityUnitModel.add_root(
                 instance=super().save_new(form, commit=False)
             )
-            return unit_model
         return super().save_new(form, commit=False)
 
 

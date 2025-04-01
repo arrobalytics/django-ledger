@@ -233,8 +233,7 @@ class BalanceSheetReport(BaseReportSupport):
             to_dt = to_dt.strftime(dt_strfmt if dt_strfmt else self.IO_DIGEST.get_strftime_format())
         else:
             to_dt = self.IO_DIGEST.get_to_datetime(fmt=dt_strfmt, as_str=True)
-        f_name = f'{self.get_report_title()}_BalanceSheetStatement_{to_dt}.pdf'
-        return f_name
+        return f'{self.get_report_title()}_BalanceSheetStatement_{to_dt}.pdf'
 
     def create_pdf_report(self):
         self.print_headers()

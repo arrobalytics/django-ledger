@@ -304,8 +304,7 @@ class IncomeStatementReport(BaseReportSupport):
         else:
             to_dt = self.IO_DIGEST.get_to_datetime(fmt=dt_strfmt, as_str=True)
 
-        f_name = f'{self.get_report_title()}_IncomeStatement_{from_dt}_{to_dt}.pdf'
-        return f_name
+        return f'{self.get_report_title()}_IncomeStatement_{from_dt}_{to_dt}.pdf'
 
     def create_pdf_report(self):
         self.print_headers()

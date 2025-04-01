@@ -166,8 +166,7 @@ class LedgerModelAdmin(ModelAdmin):
     def get_entity_model(self, request) -> EntityModel:
         entity_slug = request.GET.get('entity_slug')
         entity_model_qs = EntityModel.objects.for_user(user_model=request.user)
-        entity_model = get_object_or_404(entity_model_qs, slug__exact=entity_slug)
-        return entity_model
+        return get_object_or_404(entity_model_qs, slug__exact=entity_slug)
 
     def has_add_permission(self, request):
         if request.GET.get('entity_slug') is not None:
