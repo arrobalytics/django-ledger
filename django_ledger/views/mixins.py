@@ -437,10 +437,7 @@ class DigestContextMixIn:
                 from_date = context['from_date']
 
             # gets the unit if view inherits EntityUnitMixIn...
-            if hasattr(self, 'get_unit_slug'):
-                unit_slug = getattr(self, 'get_unit_slug')()
-            else:
-                unit_slug = None
+            unit_slug = getattr(self, 'get_unit_slug')() if hasattr(self, 'get_unit_slug') else None
 
             if self.IO_DIGEST_UNBOUNDED:
                 io_digest = entity_model.digest(user_model=self.request.user,

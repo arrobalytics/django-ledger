@@ -395,12 +395,7 @@ def session_entity_name(context, request=None):
 def activity_filter(context):
     request = context['request']
     activity = request.GET.get('activity')
-    if activity:
-        activity_form = ActivityFilterForm(initial={
-            'activity': activity
-        })
-    else:
-        activity_form = ActivityFilterForm()
+    activity_form = ActivityFilterForm(initial={'activity': activity}) if activity else ActivityFilterForm()
 
     return {
         'activity_form': activity_form,

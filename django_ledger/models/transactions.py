@@ -400,10 +400,7 @@ class TransactionModelManager(Manager):
         - If `user_model` is provided, only transactions accessible by the user are included.
         - Supports flexible filtering by accepting different forms of `entity_slug`.
         """
-        if user_model:
-            qs = self.for_user(user_model=user_model)
-        else:
-            qs = self.get_queryset()
+        qs = self.for_user(user_model=user_model) if user_model else self.get_queryset()
 
         if isinstance(entity_slug, EntityModel):
             return qs.filter(journal_entry__ledger__entity=entity_slug)

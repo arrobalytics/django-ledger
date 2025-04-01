@@ -695,10 +695,7 @@ class AccrualMixIn(models.Model):
                 k: (v / total_amount) if progress and total_amount else Decimal('0.00') for k, v in unit_amounts.items()
             }
 
-            if not void:
-                new_state = self.get_state(commit=commit)
-            else:
-                new_state = self.void_state(commit=commit)
+            new_state = self.get_state(commit=commit) if not void else self.void_state(commit=commit)
 
             amount_paid_split = self.split_amount(
                 amount=new_state['amount_paid'],

@@ -417,10 +417,7 @@ class EntityModelFiscalPeriodMixIn:
             Fiscal year as an integer or string, depending on as_str parameter.
         """
         fy_start_month = self.get_fy_start_month()
-        if dt.month >= fy_start_month:
-            y = dt.year
-        else:
-            y = dt.year - 1
+        y = dt.year if dt.month >= fy_start_month else dt.year - 1
         if as_str:
             return str(y)
         return y

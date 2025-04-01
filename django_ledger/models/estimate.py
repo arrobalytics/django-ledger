@@ -1435,18 +1435,12 @@ class EstimateModelAbstract(CreateUpdateMixIn,
         return invoice_qs
 
     def get_po_amount(self, po_qs: PurchaseOrderModelQuerySet = None) -> dict:
-        if not po_qs:
-            po_qs = self.purchaseordermodel_set.all().active()
-        else:
-            po_qs = self.validate_po_queryset(po_qs=po_qs)
+        po_qs = self.purchaseordermodel_set.all().active() if not po_qs else self.validate_po_queryset(po_qs=po_qs)
 
         return po_qs.aggregate(po_amount__sum=Coalesce(Sum('po_amount'), 0.0, output_field=models.FloatField()))
 
     def get_billed_amount(self, bill_qs: BillModelQuerySet | None = None) -> dict:
-        if not bill_qs:
-            bill_qs = self.billmodel_set.all().active()
-        else:
-            bill_qs = self.validate_bill_queryset(bill_qs=bill_qs)
+        bill_qs = self.billmodel_set.all().active() if not bill_qs else self.validate_bill_queryset(bill_qs=bill_qs)
 
         return bill_qs.aggregate(
             bill_amount_due__sum=Coalesce(Sum('amount_due'), 0.0, output_field=models.FloatField()),
