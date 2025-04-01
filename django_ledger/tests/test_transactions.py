@@ -40,7 +40,7 @@ class TransactionModelFormTest(DjangoLedgerBaseTest):
     def test_valid_data(self):
         entity_model: EntityModel = self.get_random_entity_model()
 
-        account_model = str(self.get_random_account(entity_model=entity_model, balance_type='credit').uuid),
+        account_model = str(self.get_random_account(entity_model=entity_model, balance_type='credit').uuid)
         random_tx_type = choice([tx_type[0] for tx_type in TransactionModel.TX_TYPE])
 
         form_data = {
