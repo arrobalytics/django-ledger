@@ -834,13 +834,7 @@ class StagedTransactionModelAbstract(CreateUpdateMixIn):
         ]):
             return True
 
-        if all([
-            self.is_children(),
-            self.parent.bundle_split is False if self.parent_id else False
-        ]):
-            return True
-
-        return False
+        return bool(all([self.is_children(), self.parent.bundle_split is False if self.parent_id else False]))
 
     def can_have_account(self) -> bool:
         """

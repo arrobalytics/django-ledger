@@ -436,14 +436,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
         return self.hidden is True
 
     def can_delete(self) -> bool:
-        if all([
-            not self.is_locked(),
-            not self.is_posted(),
-            not self.has_wrapped_model_info(),
-            not self.has_jes_in_locked_period()
-        ]):
-            return True
-        return False
+        return bool(all([not self.is_locked(), not self.is_posted(), not self.has_wrapped_model_info(), not self.has_jes_in_locked_period()]))
 
     def post(self, commit: bool = False, raise_exception: bool = True, **kwargs):
         """

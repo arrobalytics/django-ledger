@@ -169,9 +169,7 @@ class LedgerModelAdmin(ModelAdmin):
         return get_object_or_404(entity_model_qs, slug__exact=entity_slug)
 
     def has_add_permission(self, request):
-        if request.GET.get('entity_slug') is not None:
-            return True
-        return False
+        return request.GET.get('entity_slug') is not None
 
     def add_view(self, request, form_url='', extra_context=None):
         entity_model = self.get_entity_model(request)
