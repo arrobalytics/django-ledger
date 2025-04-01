@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
@@ -68,6 +69,17 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'TEST_CHARSET': 'UTF8',  # if your normal db is utf8
+        'NAME': ':memory:',  # in memory
+        'TEST_NAME': ':memory:',  # in memory
+    }
+
+    DEBUG = False  # might accelerate a bit
+    TEMPLATE_DEBUG = False  # tables don't get created automatically for me
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
