@@ -384,7 +384,6 @@ class AccountModelManager(MP_NodeManager):
         EntityModel = lazy_loader.get_entity_model()
 
         if isinstance(entity_model, EntityModel):
-            entity_model = entity_model
             qs = qs.filter(coa_model__entity=entity_model)
         elif isinstance(entity_model, str):
             qs = qs.filter(coa_model__entity__slug__exact=entity_model)
