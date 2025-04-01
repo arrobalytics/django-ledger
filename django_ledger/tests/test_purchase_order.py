@@ -7,7 +7,8 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from django_ledger.models import EntityModel, PurchaseOrderModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.purchase_order import PurchaseOrderModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.purchase_order import urlpatterns as po_urls
 

@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 
 from django_ledger.io.io_core import IOValidationError
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 

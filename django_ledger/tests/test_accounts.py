@@ -5,8 +5,8 @@ from django.urls import reverse
 
 from django_ledger.forms.account import AccountModelCreateForm
 from django_ledger.io import CREDIT, roles
-from django_ledger.models import EntityModel
 from django_ledger.models.accounts import AccountModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.account import urlpatterns as account_urls
 

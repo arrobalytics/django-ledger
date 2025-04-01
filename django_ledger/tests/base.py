@@ -3,7 +3,7 @@ from decimal import Decimal
 from itertools import cycle
 from logging import DEBUG, getLogger
 from random import choice, randint
-from typing import Literal, Optional
+from typing import Literal
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -14,8 +14,11 @@ from django.test.client import Client
 from django.utils.timezone import get_default_timezone
 
 from django_ledger.io.io_generator import EntityDataGenerator
-from django_ledger.models import AccountModel, AccountModelQuerySet, JournalEntryModel, LedgerModel, TransactionModel
+from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.entity import EntityModel, EntityModelQuerySet, UserModel
+from django_ledger.models.journal_entry import JournalEntryModel
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.transactions import TransactionModel
 
 UserModel = get_user_model()
 

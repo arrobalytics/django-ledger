@@ -14,7 +14,9 @@ from django_ledger.io.roles import (
     LIABILITY_CL_ACC_PAYABLE,
     LIABILITY_CL_DEFERRED_REVENUE,
 )
-from django_ledger.models import BillModel, EntityModel, VendorModel
+from django_ledger.models.bill import BillModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.vendor import VendorModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.bill import urlpatterns as bill_urls
 

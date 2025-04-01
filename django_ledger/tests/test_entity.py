@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import EntityModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.tests.base import DjangoLedgerBaseTest
 from django_ledger.urls.entity import urlpatterns as entity_urls
 

@@ -12,15 +12,11 @@ from django_ledger.forms.transactions import (
     get_transactionmodel_formset_class,
 )
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import (
-    AccountModel,
-    EntityModel,
-    JournalEntryModel,
-    JournalEntryValidationError,
-    LedgerModel,
-    TransactionModel,
-    TransactionModelValidationError,
-)
+from django_ledger.models.accounts import AccountModel
+from django_ledger.models.entity import EntityModel
+from django_ledger.models.journal_entry import JournalEntryModel, JournalEntryValidationError
+from django_ledger.models.ledger import LedgerModel
+from django_ledger.models.transactions import TransactionModel, TransactionModelValidationError
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 UserModel = get_user_model()

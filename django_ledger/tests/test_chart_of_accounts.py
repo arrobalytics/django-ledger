@@ -1,4 +1,5 @@
-from django_ledger.models import ChartOfAccountModel, EntityModelValidationError
+from django_ledger.models.chart_of_accounts import ChartOfAccountModel
+from django_ledger.models.entity import EntityModelValidationError
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
 
