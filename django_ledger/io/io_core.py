@@ -225,9 +225,9 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
 
         while not is_valid:
             tx_type_choice = choice([DEBIT, CREDIT])
-            txs_candidates = list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice)
+            txs_candidates = [tx for tx in tx_data if tx['tx_type'] == tx_type_choice]
             if len(txs_candidates) > 0:
-                tx = choice(list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice))
+                tx = choice([tx for tx in tx_data if tx['tx_type'] == tx_type_choice])
                 if any([diff > 0 and tx_type_choice == DEBIT,
                         diff < 0 and tx_type_choice == CREDIT]):
                     if IS_TX_MODEL:

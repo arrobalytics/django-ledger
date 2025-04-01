@@ -61,7 +61,7 @@ class AccountRoleIOMiddleware:
 
         for roles_list in roles_module.ROLES_DIRECTORY.values():
             for r in roles_list:
-                acc_list = list(acc for acc in self.ACCOUNTS if acc['role'] == getattr(roles_module, r))
+                acc_list = [acc for acc in self.ACCOUNTS if acc['role'] == getattr(roles_module, r)]
 
                 self.ROLES_ACCOUNTS[r] = acc_list
                 self.ROLES_BALANCES[r] = sum(acc['balance'] for acc in acc_list)

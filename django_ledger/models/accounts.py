@@ -227,10 +227,10 @@ class AccountModelQuerySet(MP_NodeQuerySet):
                 and the second element is a list of tuples where each sub-tuple contains a role display
                 and a list of accounts that fall into that role within the BS bucket.
         """
-        accounts_gb = list(
+        accounts_gb = [
             (r, sorted(list(gb), key=lambda acc: ROLES_ORDER_ALL.index(acc.role))) for r, gb in
             groupby(self, key=lambda acc: acc.get_bs_bucket())
-        )
+        ]
         return [
             (bsr, [
                 (r, sorted(accounts_list, key=lambda acc: acc.code)) for r, accounts_list in

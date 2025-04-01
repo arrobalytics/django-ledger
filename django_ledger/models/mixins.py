@@ -682,7 +682,7 @@ class AccrualMixIn(models.Model):
 
             # tuple ( unit_uuid, total_amount ) sorted by uuid...
             # sorting before group by...
-            ua_gen = list((k[1], v) for k, v in progress_item_idx.items())
+            ua_gen = [(k[1], v) for k, v in progress_item_idx.items()]
             ua_gen.sort(key=lambda a: str(a[0]) if a[0] else '')
 
             unit_amounts = {

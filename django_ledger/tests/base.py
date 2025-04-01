@@ -65,7 +65,7 @@ class DjangoLedgerBaseTest(TestCase):
                 email=cls.USER_EMAIL,
             )
 
-        cls.FY_STARTS = list(str(i) for i in range(1, 13))
+        cls.FY_STARTS = [str(i) for i in range(1, 13)]
         cls.TEST_DATA = list()
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
         cls.ENTITY_MODEL_QUERYSET: EntityModelQuerySet | None = None

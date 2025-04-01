@@ -597,7 +597,7 @@ class EntityModelClosingEntryMixIn:
             # if closing entry is in cache...
             if ce_ser:
                 ce_qs_serde_gen = serializers.deserialize(format='json', stream_or_string=ce_ser)
-                return list(ce.object for ce in ce_qs_serde_gen)
+                return [ce.object for ce in ce_qs_serde_gen]
             return None
 
         return self.save_closing_entry_cache_for_date(

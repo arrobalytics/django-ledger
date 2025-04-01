@@ -606,7 +606,7 @@ ROLES_ORDER_LIABILITIES = [a[0] for a in ACCOUNT_ROLE_CHOICES[1][1]]
 ROLES_ORDER_CAPITAL = [a[0] for a in ACCOUNT_ROLE_CHOICES[2][1]]
 ROLES_ORDER_ALL = list(chain.from_iterable([ROLES_ORDER_ASSETS, ROLES_ORDER_LIABILITIES, ROLES_ORDER_CAPITAL]))
 
-ACCOUNT_LIST_ROLE_ORDER = list(r[0] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT]))
+ACCOUNT_LIST_ROLE_ORDER = [r[0] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT])]
 ACCOUNT_LIST_ROLE_VERBOSE = {r[0]: r[1] for r in chain.from_iterable([i[1] for i in ACCOUNT_CHOICES_NO_ROOT])}
 
 ROLE_TUPLES = functools.reduce(operator.iadd, [[(r[0].lower(), s[0]) for s in r[1]] for r in ACCOUNT_ROLE_CHOICES], [])
