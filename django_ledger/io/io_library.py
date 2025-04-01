@@ -9,11 +9,11 @@ This module contains classes and functions used to document, dispatch and commit
 """
 import enum
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
-from typing import Callable, Dict, List, Optional, Set, Union
 from uuid import UUID
 
 from django.core.exceptions import ValidationError

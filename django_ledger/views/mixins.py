@@ -8,7 +8,6 @@ Contributions to this module:
 
 from calendar import monthrange
 from datetime import date, timedelta
-from typing import Optional, Tuple
 
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, ValidationError

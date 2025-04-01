@@ -18,7 +18,6 @@ financial statement production in the Django Ledger framework.
 """
 
 from datetime import date, datetime
-from typing import List, Optional, Set, Union
 from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model

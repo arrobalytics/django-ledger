@@ -12,7 +12,6 @@ or further processing.
 """
 
 from decimal import Decimal
-from typing import Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError

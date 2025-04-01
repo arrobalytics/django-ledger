@@ -42,7 +42,6 @@ accurate record-keeping and reporting.
 
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Dict, Optional, Union
 from uuid import uuid4
 
 from django.apps import apps

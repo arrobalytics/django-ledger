@@ -1,5 +1,3 @@
-from typing import Dict, Optional
-
 from django.contrib.staticfiles import finders
 from django.core.exceptions import ValidationError
 

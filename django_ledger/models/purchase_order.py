@@ -14,7 +14,6 @@ Void. The PurchaseOrderModel also keeps track of when these states take place.
 """
 from datetime import date
 from string import ascii_uppercase, digits
-from typing import Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model

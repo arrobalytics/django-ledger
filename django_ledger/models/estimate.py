@@ -13,7 +13,6 @@ to produce more specific financial reports associated with a specific scope of w
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
-from typing import Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
@@ -28,9 +27,9 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModelQuerySet
-from django_ledger.models.invoice import InvoiceModelQuerySet
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
+from django_ledger.models.invoice import InvoiceModelQuerySet
 from django_ledger.models.items import ItemModel, ItemModelQuerySet, ItemTransactionModel, ItemTransactionModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, ItemizeMixIn, MarkdownNotesMixIn
 from django_ledger.models.purchase_order import PurchaseOrderModelQuerySet

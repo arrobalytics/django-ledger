@@ -49,7 +49,6 @@ Roles serve several purposes:
 """
 from itertools import groupby
 from random import randint
-from typing import List, Optional, Union
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError

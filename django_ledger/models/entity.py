@@ -24,7 +24,6 @@ from decimal import Decimal
 from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Dict, List, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model

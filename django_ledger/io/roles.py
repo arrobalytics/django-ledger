@@ -6,15 +6,14 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
+import functools
+import operator
 import sys
 from itertools import chain
-from typing import List, Set, Union
 
 from django.utils.translation import gettext as _
 
 from django_ledger.exceptions import InvalidRoleError
-import functools
-import operator
 
 mod = sys.modules[__name__]
 

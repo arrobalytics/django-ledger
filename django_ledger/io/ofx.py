@@ -6,8 +6,6 @@ Contributions to this module:
 Miguel Sanda <msanda@arrobalytics.com>
 """
 
-from typing import Dict, List, Optional
-
 from django.core.exceptions import ValidationError
 from ofxtools import OFXTree
 from ofxtools.models.bank import STMTRS

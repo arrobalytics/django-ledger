@@ -29,7 +29,6 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from itertools import chain
-from typing import Dict, List, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 
 from django.core.exceptions import FieldError, ObjectDoesNotExist, ValidationError
@@ -64,7 +63,7 @@ from django_ledger.models.signals import (
     journal_entry_unlocked,
     journal_entry_unposted,
 )
-from django_ledger.models.transactions import TransactionModel, TransactionModelQuerySet
+from django_ledger.models.transactions import TransactionModelQuerySet
 from django_ledger.settings import (
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
     DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX,

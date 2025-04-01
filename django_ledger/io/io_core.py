@@ -93,7 +93,6 @@ from datetime import date, datetime, timedelta
 from itertools import groupby
 from pathlib import Path
 from random import choice
-from typing import Dict, List, Optional, Set, Tuple, Union
 from zoneinfo import ZoneInfo
 
 from django.conf import settings as global_settings

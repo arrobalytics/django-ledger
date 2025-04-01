@@ -7,7 +7,6 @@ Contributions to this module:
 """
 from collections import defaultdict
 from datetime import datetime
-from typing import Dict, Optional
 
 from django.core.exceptions import ValidationError
 

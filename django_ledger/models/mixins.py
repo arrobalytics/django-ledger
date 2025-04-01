@@ -10,7 +10,6 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import groupby
-from typing import Dict, Optional, Union
 from uuid import UUID
 
 from django.conf import settings
