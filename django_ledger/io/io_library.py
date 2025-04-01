@@ -230,10 +230,11 @@ class IOCursor:
                 total_debits = sum(t.amount for t in txs if t.tx_type == DEBIT)
 
                 if total_credits != total_debits:
-                    raise IOCursorValidationError(
-                        message=_('Total transactions Credits and Debits must be equal. '
-                                  'Got CREDITs: {} and DEBITs: {}.'.format(total_credits, total_debits))
+                    msg = _('Total transactions Credits and Debits must be equal. Got CREDITs: %s and DEBITs: %s.') % (
+                        total_credits,
+                        total_debits
                     )
+                    raise IOCursorValidationError(msg)
 
             self.instructions = instructions
         return self.instructions
