@@ -215,7 +215,7 @@ class EntityModelDetailBaseView(DjangoLedgerSecurityMixIn,
         context['header_subtitle_icon'] = 'mdi:monitor-dashboard'
 
         unit_slug = context.get('unit_slug', self.get_unit_slug())
-        KWARGS = dict(entity_slug=self.kwargs['entity_slug'])
+        KWARGS = {'entity_slug': self.kwargs['entity_slug']}
 
         if unit_slug:
             KWARGS['unit_slug'] = unit_slug

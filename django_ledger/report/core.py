@@ -16,7 +16,7 @@ class PDFReportValidationError(ValidationError):
 
 
 def load_support():
-    support = list()
+    support = []
     if DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
         support.append(FPDF)
     return support

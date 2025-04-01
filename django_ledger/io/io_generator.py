@@ -359,7 +359,7 @@ class EntityDataGenerator(LoggingMixIn):
     def create_products(self):
         self.logger.info('Creating entity product items...')
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
-        product_models = list()
+        product_models = []
         for i in range(product_count):
             # is Product....
             product_models.append(ItemModel(
@@ -375,7 +375,7 @@ class EntityDataGenerator(LoggingMixIn):
                 inventory_account=choice(self.accounts_by_role[ASSET_CA_INVENTORY]),
                 earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                 cogs_account=choice(self.accounts_by_role[COGS]),
-                additional_info=dict()
+                additional_info={}
             ))
 
         for product in product_models:
@@ -387,7 +387,7 @@ class EntityDataGenerator(LoggingMixIn):
     def create_services(self):
         self.logger.info('Creating entity service items...')
         product_count = randint(self.PRODUCTS_MIN, self.PRODUCTS_MAX)
-        service_item_models = list()
+        service_item_models = []
         for i in range(product_count):
             service_item_models.append(ItemModel(
                 name=f'Service #{randint(1000, 9999)}',
@@ -401,7 +401,7 @@ class EntityDataGenerator(LoggingMixIn):
                 is_product_or_service=True,
                 earnings_account=choice(self.accounts_by_role[INCOME_OPERATIONAL]),
                 cogs_account=choice(self.accounts_by_role[COGS]),
-                additional_info=dict()
+                additional_info={}
             ))
 
         for service in service_item_models:
@@ -531,7 +531,7 @@ class EntityDataGenerator(LoggingMixIn):
             payable_account=choice(self.accounts_by_role[LIABILITY_CL_ACC_PAYABLE]),
             terms=choice(BillModel.TERM_CHOICES_VALID),
             date_draft=date_draft,
-            additional_info=dict(),
+            additional_info={},
             commit=True
         )
 
@@ -706,12 +706,12 @@ class EntityDataGenerator(LoggingMixIn):
             prepaid_account=choice(self.accounts_by_role[ASSET_CA_RECEIVABLES]),
             payable_account=choice(self.accounts_by_role[LIABILITY_CL_DEFERRED_REVENUE]),
             date_draft=date_draft,
-            additional_info=dict(),
+            additional_info={},
             commit=True
         )
         self.logger.info(f'Creating entity invoice {invoice_model.invoice_number}...')
 
-        invoice_items = list()
+        invoice_items = []
 
         for i in range(randint(1, 10)):
             item_model: ItemModel = choice(self.product_models)

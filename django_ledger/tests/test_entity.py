@@ -65,7 +65,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
 
         for entity_model in self.ENTITY_MODEL_QUERYSET:
             for path, kwargs in self.ENTITY_URL_PATTERN.items():
-                url_kwargs = dict()
+                url_kwargs = {}
                 if 'entity_slug' in kwargs:
                     url_kwargs['entity_slug'] = entity_model.slug
                 if 'year' in kwargs:

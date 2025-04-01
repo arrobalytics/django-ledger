@@ -30,19 +30,19 @@ class AccountRoleIOMiddleware:
 
         self.ACCOUNTS = io_data['accounts']
 
-        self.ROLES_ACCOUNTS = dict()
-        self.ROLES_BALANCES = dict()
-        self.ROLES_BALANCE_SHEET = dict()
+        self.ROLES_ACCOUNTS = {}
+        self.ROLES_BALANCES = {}
+        self.ROLES_BALANCE_SHEET = {}
 
         if self.BY_PERIOD:
-            self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
+            self.ROLES_BALANCES_BY_PERIOD = defaultdict(lambda: {})
             self.DIGEST['role_balance_by_period'] = None
         if self.BY_UNIT:
-            self.ROLES_BALANCES_BY_UNIT = defaultdict(lambda: dict())
+            self.ROLES_BALANCES_BY_UNIT = defaultdict(lambda: {})
             self.DIGEST['role_balance_by_unit'] = None
 
         if self.BY_PERIOD and self.BY_UNIT:
-            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
+            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
 
     def digest(self):
 
@@ -101,19 +101,19 @@ class AccountGroupIOMiddleware:
 
         self.DIGEST_ACCOUNTS = io_data['accounts']
 
-        self.GROUPS_ACCOUNTS = dict()
-        self.GROUPS_BALANCES = dict()
+        self.GROUPS_ACCOUNTS = {}
+        self.GROUPS_BALANCES = {}
 
         if self.BY_PERIOD:
-            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
+            self.GROUPS_BALANCES_BY_PERIOD = defaultdict(lambda: {})
             self.IO_DIGEST[self.GROUP_BALANCE_BY_PERIOD_KEY] = None
 
         if self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_UNIT = defaultdict(lambda: dict())
+            self.GROUPS_BALANCES_BY_UNIT = defaultdict(lambda: {})
             self.IO_DIGEST[self.GROUP_BALANCE_BY_UNIT_KEY] = None
 
         if self.BY_PERIOD and self.BY_UNIT:
-            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
+            self.GROUPS_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
             self.IO_DIGEST[self.GROUP_BALANCE_BY_PERIOD_KEY] = None
 
     def digest(self):
@@ -168,17 +168,17 @@ class JEActivityIOMiddleware:
         self.BY_UNIT = by_unit
 
         self.ACCOUNTS = io_data['accounts']
-        self.ACTIVITY_ACCOUNTS = dict()
-        self.ACTIVITY_BALANCES = dict()
+        self.ACTIVITY_ACCOUNTS = {}
+        self.ACTIVITY_BALANCES = {}
 
         if self.BY_PERIOD:
-            self.ACTIVITY_BALANCES_BY_PERIOD = defaultdict(lambda: dict())
+            self.ACTIVITY_BALANCES_BY_PERIOD = defaultdict(lambda: {})
             self.DIGEST['activity_balance_by_period'] = None
         if self.BY_UNIT:
-            self.ACTIVITY_BALANCES_BY_UNIT = defaultdict(lambda: dict())
+            self.ACTIVITY_BALANCES_BY_UNIT = defaultdict(lambda: {})
             self.DIGEST['activity_balance_by_unit'] = None
         if self.BY_PERIOD and self.BY_UNIT:
-            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: dict())
+            self.ROLES_BALANCES_BY_PERIOD_AND_UNIT = defaultdict(lambda: {})
 
     def digest(self):
 
@@ -361,7 +361,7 @@ class CashFlowStatementIOMiddleware:
 
     def operating(self):
         group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]
-        operating_activities = dict()
+        operating_activities = {}
         operating_activities['GROUP_CFS_NET_INCOME'] = {
             'description': 'Net Income',
             'balance': group_balances['GROUP_CFS_NET_INCOME']
@@ -398,13 +398,13 @@ class CashFlowStatementIOMiddleware:
 
         net_cash_by_op_activities = sum(i['balance'] for g, i in operating_activities.items())
         self.IO_DATA[self.CFS_DIGEST_KEY]['operating'] = operating_activities
-        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity'] = dict(
-            OPERATING=net_cash_by_op_activities
-        )
+        self.IO_DATA[self.CFS_DIGEST_KEY]['net_cash_by_activity'] = {
+            'OPERATING': net_cash_by_op_activities
+        }
 
     def financing(self):
         # group_balances = self.IO_DIGEST[GroupContextManager.GROUP_BALANCE_KEY]
-        financing_activities = dict()
+        financing_activities = {}
         financing_activities['GROUP_CFS_FIN_ISSUING_EQUITY'] = {
             'description': 'Common Stock, Preferred Stock and Capital Raised',
             'balance': sum(a['balance'] for a in self.CASH_ACCOUNTS if a['activity'] == self.JE_MODEL.FINANCING_EQUITY)
@@ -429,7 +429,7 @@ class CashFlowStatementIOMiddleware:
 
     def investing(self):
         group_balances = self.IO_DATA[AccountGroupIOMiddleware.GROUP_BALANCE_KEY]
-        investing_activities = dict()
+        investing_activities = {}
         investing_activities['GROUP_CFS_INVESTING_SECURITIES'] = {
             'description': 'Purchase, Maturity and Sales of Investments & Securities',
             'balance': sum(
@@ -455,7 +455,7 @@ class CashFlowStatementIOMiddleware:
         self.IO_DATA[self.CFS_DIGEST_KEY]['net_income'] = group_balances['GROUP_CFS_NET_INCOME']
 
     def digest(self):
-        self.IO_DATA[self.CFS_DIGEST_KEY] = dict()
+        self.IO_DATA[self.CFS_DIGEST_KEY] = {}
         self.check_io_digest()
         self.operating()
         self.financing()

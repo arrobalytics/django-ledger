@@ -286,7 +286,7 @@ class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):
     def configure_for_wrapper_model(self, model_instance, commit: bool = False):
 
         if self.additional_info is None:
-            self.additional_info = dict()
+            self.additional_info = {}
 
         wrapper_info = self.get_wrapper_info
         self.additional_info[self._WRAPPED_MODEL_KEY] = {

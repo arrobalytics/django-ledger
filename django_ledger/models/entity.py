@@ -2024,7 +2024,7 @@ class EntityModelAbstract(MP_Node,
             The newly created and optionally saved instance of the bank account model.
         """
         if bank_account_model_kwargs is None:
-            bank_account_model_kwargs = dict()
+            bank_account_model_kwargs = {}
 
         if account_type not in BankAccountModel.VALID_ACCOUNT_TYPES:
             raise EntityModelValidationError(
@@ -2597,7 +2597,7 @@ class EntityModelAbstract(MP_Node,
 
         adj = self.inventory_adjustment(counted_qs, recorded_qs_values)
 
-        updated_items = list()
+        updated_items = []
         for (uuid, name, uom), i in adj.items():
             item_model: ItemModel = recorded_qs.get(uuid__exact=uuid)
             item_model.inventory_received = i['counted']
@@ -2666,7 +2666,7 @@ class EntityModelAbstract(MP_Node,
         else:
             coa_model = self.get_default_coa()
 
-        ROLES_NEEDED = list()
+        ROLES_NEEDED = []
         if not cash_account:
             ROLES_NEEDED.append(roles_module.ASSET_CA_CASH)
 
@@ -2701,7 +2701,7 @@ class EntityModelAbstract(MP_Node,
         if not description:
             description = f'Capital Deposit on {je_timestamp.isoformat()}...'
 
-        txs = list()
+        txs = []
         txs.append({
             'account': cash_account,
             'tx_type': DEBIT,
@@ -2774,7 +2774,7 @@ class EntityModelAbstract(MP_Node,
 
     def fetch_closing_entry_dates_meta(self, as_date: bool = True) -> list[date]:
         if self.META_KEY_CLOSING_ENTRY_DATES not in self.meta:
-            return list()
+            return []
         date_list = self.meta[self.META_KEY_CLOSING_ENTRY_DATES]
         if as_date:
             if self._CLOSING_ENTRY_DATES is None:
@@ -3250,9 +3250,9 @@ def entitymodel_presave(instance: EntityModel, **kwargs):
     if not instance.slug:
         instance.generate_slug(commit=False)
     if not instance.meta:
-        instance.meta = dict()
+        instance.meta = {}
     if instance.META_KEY_CLOSING_ENTRY_DATES not in instance.meta:
-        instance.meta[instance.META_KEY_CLOSING_ENTRY_DATES] = list()
+        instance.meta[instance.META_KEY_CLOSING_ENTRY_DATES] = []
 
 
 pre_save.connect(receiver=entitymodel_presave, sender=EntityModel)

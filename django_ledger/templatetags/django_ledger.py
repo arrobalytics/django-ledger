@@ -414,7 +414,7 @@ def date_picker(context, nav_url=None, date_picker_id=None):
         date_picker_id = f'djl-datepicker-{randint(10000, 99999)}'
 
     if 'date_picker_ids' not in context:
-        context['date_picker_ids'] = list()
+        context['date_picker_ids'] = []
     context['date_picker_ids'].append(date_picker_id)
 
     date_navigation_url = nav_url if nav_url else context.get('date_navigation_url')
@@ -514,7 +514,7 @@ def feedback_button(context, button_size_class: str = 'is-small', color_class: s
 
 @register.inclusion_tag('django_ledger/components/period_navigator.html', takes_context=True)
 def period_navigation(context, base_url: str):
-    kwargs = dict()
+    kwargs = {}
     entity_slug = context['view'].kwargs['entity_slug']
     kwargs['entity_slug'] = entity_slug
 
@@ -530,7 +530,7 @@ def period_navigation(context, base_url: str):
     if context['view'].kwargs.get('coa_slug'):
         kwargs['coa_slug'] = context['view'].kwargs.get('coa_slug')
 
-    ctx = dict()
+    ctx = {}
     ctx['year'] = context['year']
     ctx['has_year'] = context.get('has_year')
     ctx['has_quarter'] = context.get('has_quarter')
@@ -568,7 +568,7 @@ def period_navigation(context, base_url: str):
     ctx['current_month_url'] = reverse(f'django_ledger:{base_url}-month',
                                        kwargs=KWARGS_CURRENT_MONTH)
 
-    quarter_urls = list()
+    quarter_urls = []
     ctx['quarter'] = context.get('quarter')
     for Q in range(1, 5):
         kwargs['quarter'] = Q
@@ -580,7 +580,7 @@ def period_navigation(context, base_url: str):
     del kwargs['quarter']
     ctx['quarter_urls'] = quarter_urls
 
-    month_urls = list()
+    month_urls = []
     ctx['month'] = context.get('month')
     for M in range(1, 13):
         kwargs['month'] = M
@@ -603,7 +603,7 @@ def period_navigation(context, base_url: str):
 def navigation_menu(context, style):
     ENTITY_SLUG = context['view'].kwargs.get('entity_slug')
 
-    ctx = dict()
+    ctx = {}
     ctx['style'] = style
     if ENTITY_SLUG:
         ctx['entity_slug'] = ENTITY_SLUG

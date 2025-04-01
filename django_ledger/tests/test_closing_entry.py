@@ -39,7 +39,7 @@ class ClosingEntryModelTests(DjangoLedgerBaseTest):
         closing_entry_model = choice(entity_model.get_closing_entries())
 
         for path, kwargs in self.URL_PATTERNS.items():
-            url_kwargs = dict()
+            url_kwargs = {}
             url_kwargs['entity_slug'] = entity_model.slug
             if 'year' in kwargs:
                 url_kwargs['year'] = closing_entry_model.closing_date.year

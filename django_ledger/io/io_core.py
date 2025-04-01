@@ -1206,7 +1206,7 @@ class IODatabaseMixIn:
 
         from_date, to_date = validate_dates(from_date, to_date)
 
-        io_state = dict()
+        io_state = {}
         io_state['io_model'] = self
         io_state['from_date'] = from_date
         io_state['to_date'] = to_date

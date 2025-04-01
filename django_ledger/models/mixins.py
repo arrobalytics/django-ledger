@@ -458,7 +458,7 @@ class AccrualMixIn(models.Model):
         """
         running_alloc = 0
         SPLIT_LEN = len(unit_split) - 1
-        split_results = dict()
+        split_results = {}
         for i, (u, p) in enumerate(unit_split.items()):
             if i == SPLIT_LEN:
                 split_results[(account_uuid, u, account_balance_type)] = amount - running_alloc
@@ -716,7 +716,7 @@ class AccrualMixIn(models.Model):
                 account_balance_type='credit'
             )
 
-            new_ledger_state = dict()
+            new_ledger_state = {}
             new_ledger_state.update(amount_paid_split)
             new_ledger_state.update(amount_prepaid_split)
             new_ledger_state.update(amount_unearned_split)

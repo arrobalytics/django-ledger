@@ -30,7 +30,7 @@ class DjangoLedgerBaseTest(TestCase):
     DAYS_FORWARD = 9 * 30
     TX_QUANTITY = 50
     user_model = None
-    TEST_DATA = list()
+    TEST_DATA = []
     CLIENT = None
     TZ = None
     N = 1
@@ -66,7 +66,7 @@ class DjangoLedgerBaseTest(TestCase):
             )
 
         cls.FY_STARTS = [str(i) for i in range(1, 13)]
-        cls.TEST_DATA = list()
+        cls.TEST_DATA = []
         cls.CAPITAL_CONTRIBUTION = Decimal('50000.00')
         cls.ENTITY_MODEL_QUERYSET: EntityModelQuerySet | None = None
 

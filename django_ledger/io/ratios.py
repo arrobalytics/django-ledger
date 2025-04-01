@@ -26,7 +26,7 @@ class FinancialRatioManager:
         self.net_sales = io_data['group_balance']['GROUP_NET_SALES']
         self.net_profit = io_data['group_balance']['GROUP_NET_PROFIT']
         self.gross_profit = io_data['group_balance']['GROUP_GROSS_PROFIT']
-        self.RATIOS = dict()
+        self.RATIOS = {}
 
     def digest(self):
         self.quick_ratio()

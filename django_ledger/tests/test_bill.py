@@ -40,7 +40,7 @@ class BillModelTests(DjangoLedgerBaseTest):
         bill_model = choice(entity_model.get_bills())
 
         for path, kwargs in self.URL_PATTERNS.items():
-            url_kwargs = dict()
+            url_kwargs = {}
             url_kwargs['entity_slug'] = entity_model.slug
             if 'bill_pk' in kwargs:
                 url_kwargs['bill_pk'] = bill_model.uuid

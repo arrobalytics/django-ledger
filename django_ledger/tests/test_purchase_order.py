@@ -50,7 +50,7 @@ class PurchaseOrderModelTests(DjangoLedgerBaseTest):
 
         self.assertEqual(len(self.URL_PATTERNS), 15)
         for path, kwargs in self.URL_PATTERNS.items():
-            url_kwargs = dict()
+            url_kwargs = {}
             url_kwargs['entity_slug'] = entity_model.slug
             if 'po_pk' in kwargs:
                 url_kwargs['po_pk'] = po_model.uuid

@@ -102,8 +102,8 @@ class IOCursor:
         self.blueprints = defaultdict(list)
         self.ledger_model_qs: LedgerModelQuerySet | None = None
         self.account_model_qs: AccountModelQuerySet | None = None
-        self.ledger_map = dict()
-        self.commit_plan = dict()
+        self.ledger_map = {}
+        self.commit_plan = {}
         self.instructions = None
         self.__COMMITTED: bool = False
 
@@ -355,7 +355,7 @@ class IOCursor:
                     message=_(f'Account code {tx.account_code} not found. Is account available and not locked?')
                 )
 
-        results = dict()
+        results = {}
         for ledger_model, tr_items in instructions.items():
             if ledger_model._state.adding:
                 ledger_model.save()
@@ -407,7 +407,7 @@ class IOBluePrint:
     def __init__(self, name: str | None = None, precision_decimals: int = 2):
         self.name = name
         self.precision_decimals = precision_decimals
-        self.registry = list()
+        self.registry = []
 
     def get_name(self, entity_model: EntityModel) -> str:
         """
