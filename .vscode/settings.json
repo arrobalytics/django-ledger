@@ -1,0 +1,10 @@
+{
+    "python.testing.unittestArgs": [
+        "--settings",
+        "dev_env.settings",
+        "--pattern",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestEnabled": true
+}
