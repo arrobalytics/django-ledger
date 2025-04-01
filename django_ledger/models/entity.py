@@ -258,7 +258,7 @@ class EntityModelFiscalPeriodMixIn:
         fy_start_month = fy_start_month if fy_start_month else self.get_fy_start_month()
         return date(year, fy_start_month, 1)
 
-    def get_fy_end(self, year: int, fy_start_month: int = None) -> date:
+    def get_fy_end(self, year: int, fy_start_month: int | None = None) -> date:
         """
         The fiscal year ending date of the EntityModel, according to its settings.
 
@@ -282,7 +282,7 @@ class EntityModelFiscalPeriodMixIn:
         me = 12 if fy_start_month == 1 else fy_start_month - 1
         return date(ye, me, monthrange(ye, me)[1])
 
-    def get_quarter_start(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+    def get_quarter_start(self, year: int, quarter: int, fy_start_month: int | None = None) -> date:
         """
         The fiscal year quarter starting date of the EntityModel, according to its settings.
 
@@ -313,7 +313,7 @@ class EntityModelFiscalPeriodMixIn:
             year_start = year + 1
         return date(year_start, quarter_month_start, 1)
 
-    def get_quarter_end(self, year: int, quarter: int, fy_start_month: int = None) -> date:
+    def get_quarter_end(self, year: int, quarter: int, fy_start_month: int | None = None) -> date:
         """
         The fiscal year quarter ending date of the EntityModel, according to its settings.
 
@@ -344,7 +344,7 @@ class EntityModelFiscalPeriodMixIn:
             year_end += 1
         return date(year_end, quarter_month_end, monthrange(year_end, quarter_month_end)[1])
 
-    def get_fiscal_year_dates(self, year: int, fy_start_month: int = None) -> tuple[date, date]:
+    def get_fiscal_year_dates(self, year: int, fy_start_month: int | None = None) -> tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year start and end dates.
 
@@ -369,7 +369,7 @@ class EntityModelFiscalPeriodMixIn:
         ed = self.get_fy_end(year, fy_start_month)
         return sd, ed
 
-    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int = None) -> tuple[date, date]:
+    def get_fiscal_quarter_dates(self, year: int, quarter: int, fy_start_month: int | None = None) -> tuple[date, date]:
         """
         Convenience method to get in one shot both, fiscal year quarter start and end dates.
 

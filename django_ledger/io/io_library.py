@@ -450,7 +450,7 @@ class IOBluePrint:
             message='Amounts must be float, Decimal or int.'
         )
 
-    def credit(self, account_code: str, amount: float | Decimal, description: str = None):
+    def credit(self, account_code: str, amount: float | Decimal, description: str | None = None):
         """
         Registers a CREDIT to the specified account..
 
@@ -471,7 +471,7 @@ class IOBluePrint:
                 description=description
             ))
 
-    def debit(self, account_code: str, amount: float | Decimal, description: str = None):
+    def debit(self, account_code: str, amount: float | Decimal, description: str | None = None):
         """
         Registers a DEBIT to the specified account.
 

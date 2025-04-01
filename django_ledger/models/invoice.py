@@ -1078,7 +1078,7 @@ class InvoiceModelAbstract(
 
     # REVIEW...
     def mark_as_review(self,
-                       date_in_review: date = None,
+                       date_in_review: date | None = None,
                        itemtxs_qs=None,
                        commit: bool = False,
                        **kwargs):
@@ -1171,7 +1171,7 @@ class InvoiceModelAbstract(
     def mark_as_approved(self,
                          entity_slug,
                          user_model,
-                         date_approved: date = None,
+                         date_approved: date | None = None,
                          commit: bool = False,
                          force_migrate: bool = False,
                          raise_exception: bool = True,
@@ -1277,7 +1277,7 @@ class InvoiceModelAbstract(
     def mark_as_paid(self,
                      entity_slug: str,
                      user_model,
-                     date_paid: date = None,
+                     date_paid: date | None = None,
                      commit: bool = False,
                      **kwargs):
         """
@@ -1349,7 +1349,7 @@ class InvoiceModelAbstract(
         """
         return f'djl-{self.uuid}-invoice-mark-as-paid'
 
-    def get_mark_as_paid_url(self, entity_slug: str = None):
+    def get_mark_as_paid_url(self, entity_slug: str | None = None):
         """
         InvoiceModel Mark-as-Paid action URL.
 
@@ -1496,7 +1496,7 @@ class InvoiceModelAbstract(
 
     # CANCEL
     def mark_as_canceled(self,
-                         date_canceled: date = None,
+                         date_canceled: date | None = None,
                          commit: bool = False,
                          **kwargs):
         """

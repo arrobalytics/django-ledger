@@ -62,7 +62,7 @@ class BillModelTests(DjangoLedgerBaseTest):
             self.assertEqual(response.status_code, 302, msg=f'{path} view is not protected.')
             self.assertEqual(redirect_path, login_path, msg=f'{path} view not redirecting to correct auth URL.')
 
-    def create_bill(self, amount: Decimal, draft_date: date = None, is_accrued: bool = False) -> tuple[
+    def create_bill(self, amount: Decimal, draft_date: date | None = None, is_accrued: bool = False) -> tuple[
         EntityModel, BillModel]:
         entity_model: EntityModel = choice(self.ENTITY_MODEL_QUERYSET)
         vendor_model: VendorModel = choice(entity_model.get_vendors())

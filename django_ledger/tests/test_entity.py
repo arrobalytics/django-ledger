@@ -54,7 +54,7 @@ class EntityModelTests(DjangoLedgerBaseTest):
 #         for entity_model in self.ENTITY_MODEL_QUERYSET:
 
     # UI Tests....
-    def test_ui_protected_views(self, test_date: date = None):
+    def test_ui_protected_views(self, test_date: date | None = None):
         """
         All Entity Model views must have user authenticated.
         If not, user must be redirected to login page.

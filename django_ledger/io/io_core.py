@@ -925,7 +925,7 @@ class IODatabaseMixIn:
                       to_date: date | datetime | str | None = None,
                       from_date: date | datetime | str | None = None,
                       equity_only: bool = False,
-                      activity: str = None,
+                      activity: str | None = None,
                       role: set[str] | list[str] | None = None,
                       accounts: set[str] | list[str] | None = None,
                       signs: bool = True,

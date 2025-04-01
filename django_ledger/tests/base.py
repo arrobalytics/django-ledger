@@ -113,7 +113,7 @@ class DjangoLedgerBaseTest(TestCase):
         cls.CLIENT.logout()
 
     @classmethod
-    def refresh_test_data(cls, n: int = None):
+    def refresh_test_data(cls, n: int | None = None):
         N = n if n else cls.N
         cls.TEST_DATA = [cls.get_random_entity_data() for _ in range(N)]
 

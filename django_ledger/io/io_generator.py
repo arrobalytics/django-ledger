@@ -195,7 +195,7 @@ class EntityDataGenerator(LoggingMixIn):
         if create_closing_entry:
             self.create_closing_entry()
 
-    def get_next_timestamp(self, prev_timestamp: date | datetime = None) -> date:
+    def get_next_timestamp(self, prev_timestamp: date | datetime | None = None) -> date:
         if not prev_timestamp:
             prev_timestamp = self.start_date
 
@@ -219,7 +219,7 @@ class EntityDataGenerator(LoggingMixIn):
         entity_model.populate_default_coa(coa_model=coa_model, activate_accounts=True)
         self.default_coa = coa_model
 
-    def create_entity_units(self, nb_units: int = None):
+    def create_entity_units(self, nb_units: int | None = None):
         self.logger.info('Creating entity units...')
         nb_units = nb_units if nb_units else self.NB_UNITS
 

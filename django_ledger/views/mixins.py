@@ -38,23 +38,23 @@ class ContextFromToDateMixin:
 
 class YearlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalPeriodMixIn):
 
-    def get_from_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
+    def get_from_date(self, year: int | None = None, fy_start: int | None = None, **kwargs) -> date:
         return self.get_year_start_date(year, fy_start)
 
-    def get_to_date(self, year: int = None, fy_start: int = None, **kwargs) -> date:
+    def get_to_date(self, year: int | None = None, fy_start: int | None = None, **kwargs) -> date:
         return self.get_year_end_date(year, fy_start)
 
-    def get_from_to_dates(self, year: int = None, fy_start: int = None, **kwargs) -> tuple[date, date]:
+    def get_from_to_dates(self, year: int | None = None, fy_start: int | None = None, **kwargs) -> tuple[date, date]:
         from_date = self.get_from_date(year, fy_start, **kwargs)
         to_date = self.get_to_date(year, fy_start, **kwargs)
         return from_date, to_date
 
-    def get_year_start_date(self, year: int = None, fy_start: int = None) -> date:
+    def get_year_start_date(self, year: int | None = None, fy_start: int | None = None) -> date:
         if not year:
             year = self.get_year()
         return self.get_fy_start(year, fy_start)
 
-    def get_year_end_date(self, year: int = None, fy_start: int = None) -> date:
+    def get_year_end_date(self, year: int | None = None, fy_start: int | None = None) -> date:
         if not year:
             year = self.get_year()
         return self.get_fy_end(year, fy_start)
@@ -108,29 +108,29 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
         quarter = self.parse_quarter(quarter)
         return quarter
 
-    def get_from_date(self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs) -> date:
+    def get_from_date(self, quarter: int | None = None, year: int | None = None, fy_start: int | None = None, **kwargs) -> date:
         return self.get_quarter_start_date(quarter, year, fy_start)
 
-    def get_to_date(self, quarter: int = None, year: int = None, fy_start: int = None, **kwargs) -> date:
+    def get_to_date(self, quarter: int | None = None, year: int | None = None, fy_start: int | None = None, **kwargs) -> date:
         return self.get_quarter_end_date(quarter, year, fy_start)
 
     def get_from_to_dates(self,
-                          quarter: int = None,
-                          year: int = None,
-                          fy_start: int = None,
+                          quarter: int | None = None,
+                          year: int | None = None,
+                          fy_start: int | None = None,
                           **kwargs) -> tuple[date, date]:
         from_date = self.get_from_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
         to_date = self.get_to_date(quarter=quarter, year=year, fy_start=fy_start, **kwargs)
         return from_date, to_date
 
-    def get_quarter_start_date(self, quarter: int = None, year: int = None, fy_start: int = None) -> date:
+    def get_quarter_start_date(self, quarter: int | None = None, year: int | None = None, fy_start: int | None = None) -> date:
         if not year:
             year = self.get_year()
         if not quarter:
             quarter = self.get_quarter()
         return self.get_quarter_start(year, quarter, fy_start)
 
-    def get_quarter_end_date(self, quarter: int = None, year: int = None, fy_start: int = None) -> date:
+    def get_quarter_end_date(self, quarter: int | None = None, year: int | None = None, fy_start: int | None = None) -> date:
         if not year:
             year = self.get_year()
         if not quarter:
@@ -166,28 +166,28 @@ class QuarterlyReportMixIn(YearMixin, ContextFromToDateMixin, EntityModelFiscalP
 
 class MonthlyReportMixIn(YearlyReportMixIn, ContextFromToDateMixin, MonthMixin):
 
-    def get_from_date(self, month: int = None, year: int = None, **kwargs) -> date:
+    def get_from_date(self, month: int | None = None, year: int | None = None, **kwargs) -> date:
         return self.get_month_start_date(month=month, year=year)
 
-    def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
+    def get_to_date(self, month: int | None = None, year: int | None = None, **kwargs) -> date:
         return self.get_month_end_date(month=month, year=year)
 
     def get_from_to_dates(self,
-                          month: int = None,
-                          year: int = None,
+                          month: int | None = None,
+                          year: int | None = None,
                           **kwargs) -> tuple[date, date]:
         from_date = self.get_from_date(month=month, year=year, **kwargs)
         to_date = self.get_to_date(month=month, year=year, **kwargs)
         return from_date, to_date
 
-    def get_month_start_date(self, month: int = None, year: int = None) -> date:
+    def get_month_start_date(self, month: int | None = None, year: int | None = None) -> date:
         if not month:
             month = int(self.get_month())
         if not year:
             year = self.get_year()
         return date(year=year, month=month, day=1)
 
-    def get_month_end_date(self, month: int = None, year: int = None) -> date:
+    def get_month_end_date(self, month: int | None = None, year: int | None = None) -> date:
         if not month:
             month = int(self.get_month())
         if not year:
@@ -242,13 +242,13 @@ class DateReportMixIn(MonthlyReportMixIn, ContextFromToDateMixin, DayMixin):
             day=self.get_day()
         )
 
-    def get_from_date(self, month: int = None, year: int = None, **kwargs) -> date:
+    def get_from_date(self, month: int | None = None, year: int | None = None, **kwargs) -> date:
         return self.get_date()
 
-    def get_to_date(self, month: int = None, year: int = None, **kwargs) -> date:
+    def get_to_date(self, month: int | None = None, year: int | None = None, **kwargs) -> date:
         return self.get_date()
 
-    def get_from_to_dates(self, month: int = None, year: int = None, **kwargs) -> tuple[date, date]:
+    def get_from_to_dates(self, month: int | None = None, year: int | None = None, **kwargs) -> tuple[date, date]:
         dt = self.get_from_date(month=month, year=year, **kwargs)
         return dt, dt
 
@@ -260,7 +260,7 @@ class FromToDatesParseMixIn:
     DJL_NO_FROM_DATE_RAISE_404: bool = True
     DJL_NO_TO_DATE_RAISE_404: bool = True
 
-    def get_from_date(self, query_param: str = None) -> date:
+    def get_from_date(self, query_param: str | None = None) -> date:
         if not query_param:
             query_param = self.DJL_FROM_DATE_PARAM
         parsed_date = self.parse_date_from_query_param(query_param)
@@ -268,7 +268,7 @@ class FromToDatesParseMixIn:
             raise Http404(_(f'Must provide {query_param} date parameter.'))
         return parsed_date
 
-    def get_to_date(self, query_param: str = None) -> date:
+    def get_to_date(self, query_param: str | None = None) -> date:
         if not query_param:
             query_param = self.DJL_TO_DATE_PARAM
         parsed_date = self.parse_date_from_query_param(query_param)
@@ -276,7 +276,7 @@ class FromToDatesParseMixIn:
             raise Http404(_(f'Must provide {query_param} date parameter.'))
         return parsed_date
 
-    def get_from_to_dates(self, query_param: str = None) -> tuple[date, date]:
+    def get_from_to_dates(self, query_param: str | None = None) -> tuple[date, date]:
         from_date = self.get_from_date(query_param)
         to_date = self.get_to_date(query_param)
         return from_date, to_date

@@ -950,7 +950,7 @@ class PurchaseOrderModelAbstract(CreateUpdateMixIn,
 
     # FULFILL...
     def mark_as_fulfilled(self,
-                          date_fulfilled: date = None,
+                          date_fulfilled: date | None = None,
                           po_items: ItemTransactionModelQuerySet | list[ItemTransactionModel] = None,
                           commit: bool = False,
                           **kwargs):

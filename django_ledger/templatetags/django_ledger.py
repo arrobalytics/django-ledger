@@ -445,7 +445,7 @@ def chart_container(chart_id, endpoint=None):
 
 
 @register.inclusion_tag('django_ledger/components/modals.html', takes_context=True)
-def modal_action(context, model, http_method: str = 'post', entity_slug: str = None):
+def modal_action(context, model, http_method: str = 'post', entity_slug: str | None = None):
     if not entity_slug:
         entity_slug = context['view'].kwargs['entity_slug']
     action_url = model.get_mark_as_paid_url(entity_slug=entity_slug)
@@ -499,7 +499,7 @@ def fin_ratio_threshold_class(value, ratio):
 
 
 @register.inclusion_tag('django_ledger/components/feedback_button.html', takes_context=True)
-def feedback_button(context, button_size_class: str = 'is-small', color_class: str = 'is-success', icon_id: str = None):
+def feedback_button(context, button_size_class: str = 'is-small', color_class: str = 'is-success', icon_id: str | None = None):
     bug_modal_html_id = f'djl-bug-button-{randint(10000, 99999)}'
     feature_modal_html_id = f'djl-feature-button-{randint(10000, 99999)}'
     bug_form = BugReportForm()

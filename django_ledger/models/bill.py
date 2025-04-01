@@ -427,7 +427,7 @@ class BillModelAbstract(
                   user_model: UserModel | None = None,
                   date_draft: date | datetime | None = None,
                   ledger_posted: bool = False,
-                  ledger_name: str = None,
+                  ledger_name: str | None = None,
                   commit: bool = False,
                   commit_ledger: bool = False):
         """
