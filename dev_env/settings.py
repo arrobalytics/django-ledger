@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_ledger',
+    'debug_toolbar',
 ]
 
 if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
@@ -30,6 +31,7 @@ if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
     ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -133,3 +135,11 @@ CACHES = {
     }
 }
 
+# django-debug-toolbar needs to know on which IPs we should be showing the toolbar
+INTERNAL_IPS = ('127.0.0.1',)
+# # nuclear option to force toolbar to show always
+# def show_toolbar(request):
+#     return True
+# DEBUG_TOOLBAR_CONFIG = {
+#     "SHOW_TOOLBAR_CALLBACK" : show_toolbar,
+# }

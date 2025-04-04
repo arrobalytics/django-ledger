@@ -10,6 +10,7 @@ ofxtools = ">=0.9.5"
 markdown = ">=3.4.1"
 faker = ">=15.3.3"
 pillow = ">=9.3.0"
+django-debug-toolbar = "*"
 
 [graphql]
 django-filter = ">=2.1.0"
