@@ -1,7 +1,6 @@
 from django.test import override_settings
 from django_ledger.tests.base import DjangoLedgerBaseTest
 
-
 class FundFeatureTests(DjangoLedgerBaseTest):
     def test_fund_feature_enablement(self):
         from importlib import reload
@@ -21,5 +20,6 @@ class FundFeatureTests(DjangoLedgerBaseTest):
             self.assertTrue(dl_settings.DJANGO_LEDGER_USE_FUNDS)                # and it's overridden to True
 
 
+@override_settings(DJANGO_LEDGER_USE_FUNDS=True)
 class FundModelTests(DjangoLedgerBaseTest):
     pass
