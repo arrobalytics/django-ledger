@@ -6,7 +6,7 @@
     "configurations": [        
         {
             "name": "DJL RunServer",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/manage.py",
             "args": [
