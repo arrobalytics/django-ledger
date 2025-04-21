@@ -248,6 +248,14 @@ After setting up your development environment you may run tests.
 python manage.py test django_ledger
 ```
 
+## Running tests inside Visual Studio Core
+If you want to run tests inside Visual Studio Core you will need to create an `.env` file inside `dev_env` with the following content:
+
+```
+MANAGE_PY_PATH=./manage.py
+DJANGO_SETTINGS_MODULE=dev_env.settings
+```
+
 # Screenshots
 
 ![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
