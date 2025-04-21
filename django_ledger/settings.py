@@ -2,6 +2,8 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 """
+
+import importlib
 import logging
 from decimal import Decimal
 
@@ -10,21 +12,14 @@ from django.conf import settings
 logger = logging.getLogger('Django Ledger Logger')
 logger.setLevel(logging.INFO)
 
-try:
-    from graphene import __version__
-    from graphene_django import __version__
-    from oauth2_provider import __version__
+DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = all(
+    [
+        importlib.util.find_spec(module) is not None
+        for module in ["graphene", "graphene_django", "oauth2_provider"]
+    ]
+)
 
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = False
-
-try:
-    from fpdf import FPDF
-
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = False
+DJANGO_LEDGER_PDF_SUPPORT_ENABLED = importlib.util.find_spec("fpdf") is not None
 
 logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
 
