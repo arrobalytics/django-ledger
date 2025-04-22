@@ -1442,6 +1442,10 @@ class IODatabaseMixIn:
         ]
 
         for tx, txm_kwargs in txs_models:
+            if not getattr(tx, 'ledger_id', None):
+                tx.ledger_id = je_model.ledger_id
+            if not getattr(tx, 'timestamp', None):
+                tx.timestamp = je_model.timestamp
             staged_tx_model = txm_kwargs.get('staged_tx_model')
             if staged_tx_model:
                 staged_tx_model.transaction_model = tx
