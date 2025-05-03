@@ -43,20 +43,20 @@
                                     <div class="column is-12">
                                         <h3 class="is-size-3">{% trans 'Bill State' %}</h3>
                                         <p>{{ bill_model.cash_account }}:
-                                            ${{ bill_model.get_amount_cash | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.get_amount_cash | currency_format }}</p>
                                         <p>{{ bill_model.prepaid_account }}:
-                                            ${{ bill_model.get_amount_prepaid | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.get_amount_prepaid | currency_format }}</p>
                                         <p>{{ bill_model.unearned_account }}:
-                                            ${{ bill_model.get_amount_unearned | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.get_amount_unearned | currency_format }}</p>
                                     </div>
                                     <div class="column is-12">
                                         <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
                                         <p>{{ bill_model.cash_account }}:
-                                            ${{ bill_model.amount_paid | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.amount_paid | currency_format }}</p>
                                         <p>{{ bill_model.prepaid_account }}:
-                                            ${{ bill_model.amount_receivable | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.amount_receivable | currency_format }}</p>
                                         <p>{{ bill_model.unearned_account }}:
-                                            ${{ bill_model.amount_unearned | currency_format }}</p>
+                                            {% currency_symbol %}{{ bill_model.amount_unearned | currency_format }}</p>
                                     </div>
                                     {% now "Y" as current_year %}
                                     {% now "m" as current_month %}

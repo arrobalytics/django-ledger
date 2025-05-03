@@ -42,20 +42,20 @@
                                     <div class="column is-12">
                                         <h3 class="is-size-3">{% trans 'Invoice State' %}</h3>
                                         <p>{{ invoice.cash_account }}:
-                                            ${{ invoice.get_amount_cash | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.get_amount_cash | currency_format }}</p>
                                         <p>{{ invoice.prepaid_account }}:
-                                            ${{ invoice.get_amount_prepaid | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.get_amount_prepaid | currency_format }}</p>
                                         <p>{{ invoice.unearned_account }}:
-                                            ${{ invoice.get_amount_unearned | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.get_amount_unearned | currency_format }}</p>
                                     </div>
                                     <div class="column is-12">
                                         <h3 class="is-size-3">{% trans 'Ledger State' %}</h3>
                                         <p>{{ invoice.cash_account }}:
-                                            ${{ invoice.amount_paid | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.amount_paid | currency_format }}</p>
                                         <p>{{ invoice.prepaid_account }}:
-                                            ${{ invoice.amount_receivable | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.amount_receivable | currency_format }}</p>
                                         <p>{{ invoice.unearned_account }}:
-                                            ${{ invoice.amount_unearned | currency_format }}</p>
+                                            {% currency_symbol %}{{ invoice.amount_unearned | currency_format }}</p>
                                     </div>
                                     {% now "Y" as current_year %}
                                     {% now "m" as current_month %}

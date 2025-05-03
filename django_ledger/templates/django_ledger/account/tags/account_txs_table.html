@@ -16,8 +16,8 @@
             <tr class="has-text-centered">
                 <td>{{ tx.journal_entry.je_number }}</td>
                 <td>{{ tx.journal_entry.timestamp }}</td>
-                <td>{% if tx.tx_type == 'credit' %}${{ tx.amount | currency_format }}{% endif %}</td>
-                <td>{% if tx.tx_type == 'debit' %}${{ tx.amount | currency_format }}{% endif %}</td>
+                <td>{% if tx.tx_type == 'credit' %}{% currency_symbol %}{{ tx.amount | currency_format }}{% endif %}</td>
+                <td>{% if tx.tx_type == 'debit' %}{% currency_symbol %}{{ tx.amount | currency_format }}{% endif %}</td>
                 <td>{{ tx.description }}</td>
                 <td>{{ tx.journal_entry.entity_unit.name }}</td>
                 <td>
@@ -51,8 +51,8 @@
         <tr class="has-text-weight-bold">
             <td></td>
             <td class="has-text-right">Total</td>
-            <td class="has-text-centered">${{ total_credits | currency_format }}</td>
-            <td class="has-text-centered">${{ total_debits | currency_format }}</td>
+            <td class="has-text-centered">{% currency_symbol %}{{ total_credits | currency_format }}</td>
+            <td class="has-text-centered">{% currency_symbol %}{{ total_debits | currency_format }}</td>
             <td></td>
             <td></td>
             <td></td>
