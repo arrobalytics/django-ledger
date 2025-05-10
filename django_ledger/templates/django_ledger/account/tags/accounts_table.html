@@ -51,11 +51,11 @@
                                 <td>{{ account.get_balance_type_display }}</td>
                                 <td class="has-text-centered">
                                     {% if account.is_active %}
-                                        <span class="icon has-text-success-dark">
+                                        <span class="icon has-text-success">
                                         {% icon 'ant-design:check-circle-filled' 24 %}
                                     </span>
                                     {% else %}
-                                        <span class="icon has-text-danger-dark">
+                                        <span class="icon has-text-danger">
                                         {% icon 'mdi:dangerous' 24 %}
                                     </span>
                                     {% endif %}
@@ -63,11 +63,11 @@
 
                                 <td class="has-text-centered">
                                     {% if account.is_locked %}
-                                        <span class="icon has-text-success-dark">
+                                        <span class="icon has-text-success">
                                         {% icon 'ooui:lock' 24 %}
                                     </span>
                                     {% else %}
-                                        <span class="icon has-text-danger-dark">
+                                        <span class="icon has-text-danger">
                                         {% icon 'ooui:un-lock' 24 %}
                                     </span>
                                     {% endif %}
@@ -75,13 +75,9 @@
 
                                 <td class="has-text-centered">
                                     {% if account.role_default %}
-                                        <span class="icon has-text-success-dark">
-                                        {% icon 'ant-design:check-circle-filled' 24 %}
-                                    </span>
-                                    {% elif not account.role_default %}
-                                        <span class="icon has-text-danger-dark">
-                                        {% icon 'mdi:dangerous' 24 %}
-                                    </span>
+                                        <span class="icon has-text-success">
+                                            {% icon 'ant-design:check-circle-filled' 24 %}
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td>

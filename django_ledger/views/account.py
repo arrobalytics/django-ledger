@@ -76,6 +76,15 @@ class AccountModelListView(BaseAccountModelBaseView, ListView):
     }
     active_only = False
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        coa_model: ChartOfAccountModel = self.get_coa_model()
+        context['page_title'] = f'{coa_model.name} Accounts'
+        context['header_title'] = f'{coa_model.name} Accounts'
+        context['header_subtitle'] = self.get_authorized_entity_instance_name()
+        context['header_subtitle_icon'] = 'ic:twotone-account-tree'
+        return context
+
     def get_queryset(self):
         qs = super().get_queryset()
         if self.active_only:

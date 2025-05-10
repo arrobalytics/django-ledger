@@ -22,8 +22,8 @@
                 <td>{{ invoice.get_status_action_date }}</td>
                 <td>{{ invoice.get_invoice_status_display }}</td>
                 <td>{{ invoice.customer.customer_name }}</td>
-                <td>${{ invoice.amount_due | currency_format }}</td>
-                <td>${{ invoice.amount_paid | currency_format }}</td>
+                <td>{% currency_symbol %}{{ invoice.amount_due | currency_format }}</td>
+                <td>{% currency_symbol %}{{ invoice.amount_paid | currency_format }}</td>
                 <td>
                     {% if invoice.is_past_due %}
                         <span class="icon is-small has-text-danger">{% icon 'bi:check-circle-fill' 24 %}</span>
