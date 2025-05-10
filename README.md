@@ -31,6 +31,9 @@ Created and developed by [Miguel Sanda](https://www.miguelsanda.com).
 
 ## Getting Involved
 
+All pull requests are welcome, as long as they address bugfixes, enhancements, new ideas, or add value to the project in any shape or form.
+Please refrain from submitting pull requests that focus solely on code linting, refactoring, or similar cosmetic changes.
+
 - **Feature Requests/Bug Reports**: Open an issue in the repository
 - **For software customization, advanced features and consulting services**:
   [Contact us](https://www.miguelsanda.com/work-with-me/) or email msanda@arrobalytics.com

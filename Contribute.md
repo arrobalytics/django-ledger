@@ -2,6 +2,9 @@
 
 Thank you for your interest in contributing to Django Ledger. Before submitting your contribution, please review the following guidelines:
 
+All pull requests are welcome, as long as they address bugfixes, enhancements, new ideas, or add value to the project in any shape or form.
+Please refrain from submitting pull requests that focus solely on code linting, refactoring, or similar cosmetic changes.
+
 ## 1. Contributor License Agreement (CLA)
 All contributors must sign our Contributor License Agreement. This agreement ensures that:
 - You grant us a perpetual, worldwide, non-exclusive, royalty-free license to use your contributions.
