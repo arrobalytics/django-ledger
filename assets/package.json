@@ -1,36 +1,37 @@
 {
   "dependencies": {
-    "iconify-icon": "^2.2.0",
-    "@types/lodash": "^4.14.202",
+    "@types/lodash": "^4.17.16",
+    "@vue/compiler-sfc": "^3.5.13",
     "animate.css": "^4.1.1",
-    "axios": "^1.7.9",
-    "bulma": "^1.0.3",
-    "chart.js": "^4.4.7",
+    "axios": "^1.9.0",
+    "bulma": "^1.0.4",
+    "chart.js": "^4.4.9",
+    "iconify-icon": "^2.3.0",
     "json-schema": "^0.4.0",
     "pikaday": "^1.8.2",
     "scss-tokenizer": "^0.4.3",
-    "trim-newlines": "^4.0.2",
+    "trim-newlines": "^4.1.1",
     "vue": "^3.5.13",
-    "@vue/compiler-sfc": "^3.5.13",
     "vue-loader": "^17.4.2"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
     "file-loader": "^6.2.0",
-    "less": "^4.2.1",
-    "less-loader": "^12.2.0",
-    "sass": "^1.83.1",
-    "sass-loader": "^13.3.2",
+    "less": "^4.3.0",
+    "less-loader": "^12.3.0",
+    "sass": "^1.88.0",
+    "sass-loader": "^13.3.3",
     "style-loader": "^4.0.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.7.2",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
     "url-loader": "^4.1.1",
-    "webpack": "^5.97.1",
+    "webpack": "^5.99.8",
     "webpack-cli": "^6.0.1"
   },
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch"
   },
-  "main": "../django_ledger/static/django_ledger/bundle/djetler.bundle.js"
+  "main": "../django_ledger/static/django_ledger/bundle/djetler.bundle.js",
+  "packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
 }
