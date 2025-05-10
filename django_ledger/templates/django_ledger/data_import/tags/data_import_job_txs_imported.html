@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load django_ledger %}
 
 <div class="table-container">
     <table class="table is-narrow is-fullwidth is-bordered django-ledger-table-bottom-margin-75">
@@ -20,7 +21,7 @@
                 <td>{{ imported_tx.date_posted }}</td>
                 <td>{{ imported_tx.name }}</td>
                 <td class="{% if imported_tx.get_amount < 0.00 %}has-text-danger{% endif %} has-text-centered">
-                    ${{ imported_tx.get_amount }}</td>
+                    {% currency_symbol %}{{ imported_tx.get_amount }}</td>
                 <td>{% if imported_tx.activity %}
                     {{ imported_tx.get_activity_display }}
                 {% endif %}</td>
