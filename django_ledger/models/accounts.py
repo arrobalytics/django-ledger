@@ -65,7 +65,7 @@ from django_ledger.io.roles import (
     GROUP_ASSETS, GROUP_LIABILITIES, GROUP_CAPITAL, GROUP_INCOME, GROUP_EXPENSES, GROUP_COGS,
     ROOT_GROUP, BS_BUCKETS, ROOT_ASSETS, ROOT_LIABILITIES,
     ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
-    ROLES_ORDER_ALL
+    ROLES_ORDER_ALL, ASSET_CA_CASH
 )
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
@@ -160,6 +160,10 @@ class AccountModelQuerySet(MP_NodeQuerySet):
         if isinstance(codes, str):
             codes = [codes]
         return self.filter(code__in=codes)
+
+    def cash(self):
+        """Retrieve accounts that are of type ASSET_CA_CASH."""
+        return self.filter(role__exact=ASSET_CA_CASH)
 
     def expenses(self):
         """
