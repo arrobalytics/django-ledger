@@ -1168,6 +1168,13 @@ class FinancialAccountInfoMixin(models.Model):
 
     VALID_ACCOUNT_TYPES = tuple(atc[0] for atc in ACCOUNT_TYPE_CHOICES)
 
+    financial_institution = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_('Financial Institution'),
+        help_text=_('Name of the financial institution (i.e. Bank Name).')
+    )
     account_number = models.CharField(max_length=30, null=True, blank=True,
                                       validators=[
                                           int_list_validator(sep='', message=_('Only digits allowed'))
@@ -1185,6 +1192,11 @@ class FinancialAccountInfoMixin(models.Model):
 
     class Meta:
         abstract = True
+
+    def get_account_last_digits(self, n=4):
+        if not self.account_number:
+            return
+        return self.account_number[-n:]
 
     def get_account_type_from_ofx(self, ofx_type):
         return self.ACCOUNT_TYPE_OFX_MAPPING.get(

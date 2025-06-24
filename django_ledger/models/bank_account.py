@@ -12,7 +12,7 @@ from uuid import uuid4
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q, QuerySet, Manager
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
@@ -55,7 +55,7 @@ class BankAccountModelQuerySet(QuerySet):
         return self.filter(hidden=True)
 
 
-class BankAccountModelManager(models.Manager):
+class BankAccountModelManager(Manager):
     """
     Custom defined Model Manager for the BankAccountModel.
     """
@@ -180,6 +180,12 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
 
     def __str__(self):
         return f'{self.get_account_type_display()} Bank Account: {self.name}'
+
+    def can_hide(self) -> bool:
+        return self.hidden is False
+
+    def can_unhide(self) -> bool:
+        return self.hidden is True
 
     def can_activate(self) -> bool:
         return self.active is False
