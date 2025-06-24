@@ -23,7 +23,10 @@ from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 from markdown import markdown
 
-from django_ledger.io import ASSET_CA_CASH, LIABILITY_CL_ST_NOTES_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE
+from django_ledger.io import (
+    ASSET_CA_CASH, LIABILITY_CL_ST_NOTES_PAYABLE, LIABILITY_LTL_MORTGAGE_PAYABLE,
+    LIABILITY_CL_ACC_PAYABLE, LIABILITY_CL_OTHER, LIABILITY_LTL_NOTES_PAYABLE
+)
 from django_ledger.io.io_core import validate_io_timestamp, check_tx_balance, get_localtime, get_localdate
 from django_ledger.models.utils import lazy_loader
 
@@ -1123,22 +1126,45 @@ class FinancialAccountInfoMixin(models.Model):
 
     ACCOUNT_CHECKING = 'checking'
     ACCOUNT_SAVINGS = 'savings'
+    ACCOUNT_MONEY_MKT = 'money_market'
+    ACCOUNT_CERT_DEPOSIT = 'cert_deposit'
     ACCOUNT_CREDIT_CARD = 'credit_card'
+    ACCOUNT_ST_LOAN = 'st_loan'
+    ACCOUNT_LT_LOAN = 'lt_loan'
     ACCOUNT_MORTGAGE = 'mortgage'
+    ACCOUNT_OTHER = 'other'
 
-    ACCOUNT_TYPE_ROLE_MAPPING = {
+    ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING = {
         ACCOUNT_CHECKING: ASSET_CA_CASH,
         ACCOUNT_SAVINGS: ASSET_CA_CASH,
-        ACCOUNT_CREDIT_CARD: LIABILITY_CL_ST_NOTES_PAYABLE,
-        ACCOUNT_MORTGAGE: LIABILITY_LTL_MORTGAGE_PAYABLE
+        ACCOUNT_MONEY_MKT: ASSET_CA_CASH,
+        ACCOUNT_CERT_DEPOSIT: ASSET_CA_CASH,
+        ACCOUNT_CREDIT_CARD: LIABILITY_CL_ACC_PAYABLE,
+        ACCOUNT_ST_LOAN: LIABILITY_CL_ST_NOTES_PAYABLE,
+        ACCOUNT_LT_LOAN: LIABILITY_LTL_NOTES_PAYABLE,
+        ACCOUNT_MORTGAGE: LIABILITY_LTL_MORTGAGE_PAYABLE,
+        ACCOUNT_OTHER: LIABILITY_CL_OTHER
     }
 
     ACCOUNT_TYPE_CHOICES = [
         (ACCOUNT_CHECKING, _('Checking')),
         (ACCOUNT_SAVINGS, _('Savings')),
+        (ACCOUNT_MONEY_MKT, _('Money Market')),
+        (ACCOUNT_CERT_DEPOSIT, _('Certificate of Deposit')),
         (ACCOUNT_CREDIT_CARD, _('Credit Card')),
+        (ACCOUNT_ST_LOAN, _('Short Term Loan')),
+        (ACCOUNT_LT_LOAN, _('Long Term Loan')),
         (ACCOUNT_MORTGAGE, _('Mortgage')),
+        (ACCOUNT_OTHER, _('Other')),
     ]
+
+    ACCOUNT_TYPE_OFX_MAPPING = {
+        'CHECKING': ACCOUNT_CHECKING,
+        'SAVINGS': ACCOUNT_SAVINGS,
+        'MONEYMRKT': ACCOUNT_MONEY_MKT,
+        'CREDITLINE': ACCOUNT_CREDIT_CARD,
+        'CD': ACCOUNT_CERT_DEPOSIT
+    }
 
     VALID_ACCOUNT_TYPES = tuple(atc[0] for atc in ACCOUNT_TYPE_CHOICES)
 
@@ -1159,6 +1185,11 @@ class FinancialAccountInfoMixin(models.Model):
 
     class Meta:
         abstract = True
+
+    def get_account_type_from_ofx(self, ofx_type):
+        return self.ACCOUNT_TYPE_OFX_MAPPING.get(
+            ofx_type, self.ACCOUNT_OTHER
+        )
 
 
 class TaxInfoMixIn(models.Model):

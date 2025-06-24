@@ -111,8 +111,6 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         A user defined name for the bank account as a String.
     entity_model: EntityModel
         The EntityModel associated with the BankAccountModel instance.
-    bank_account_type: str
-        The bank account type as a String according to the OFX specification.
     account_model: AccountModel
         The AccountModel associated with the BankAccountModel instance. Must be an account with role ASSET_CA_CASH.
     active: bool
@@ -121,15 +119,6 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
         Determines whether the BackAccountModel instance bank account is hidden. Defaults to False.
     """
 
-    BANK_ACCOUNT_TYPE_CHOICES = [
-        ('CHECKING', _('Checking')),
-        ('SAVINGS', _('Savings')),
-        ('MONEYMRKT', _('Money Market')),
-        ('CREDITLINE', _('Credit Card')),
-        ('CD', _('Certificate of Deposit')),
-    ]
-    BANK_ACCOUNT_TYPES = [ba[0] for ba in BANK_ACCOUNT_TYPE_CHOICES]
-
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
 
     # todo: rename to account_name?...
@@ -137,17 +126,12 @@ class BankAccountModelAbstract(FinancialAccountInfoMixin, CreateUpdateMixIn):
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,
                                      verbose_name=_('Entity Model'))
-    bank_account_type = models.CharField(
-        null=True,
-        blank=True,
-        max_length=150,
-        verbose_name=_('Bank Account Type'),
-        help_text=_('Type of bank account. Eg: Savings, Checking, Credit Card')
-    )
-    account_model = models.OneToOneField('django_ledger.AccountModel',
+
+    account_model = models.ForeignKey('django_ledger.AccountModel',
                                       on_delete=models.RESTRICT,
                                       help_text=_(
-                                          'Account model be used to map transactions from financial institution'),
+                                          'Account model be used to map transactions from financial institution'
+                                      ),
                                       verbose_name=_('Associated Account Model'))
     active = models.BooleanField(default=False)
     hidden = models.BooleanField(default=False)

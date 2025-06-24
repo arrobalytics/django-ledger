@@ -82,7 +82,7 @@ class OFXFileManager:
         """
         acc_type = self.get_account_data()['account'].accttype
 
-        if acc_type not in BankAccountModel.BANK_ACCOUNT_TYPES:
+        if acc_type not in ['CHECKING', 'SAVINGS', 'MONEYMRKT', 'CREDITLINE', 'CD']:
             raise OFXImportValidationError(f'Account type "{acc_type}" is not supported.')
         return acc_type
 
