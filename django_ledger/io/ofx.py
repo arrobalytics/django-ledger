@@ -68,7 +68,7 @@ class OFXFileManager:
     def get_routing_number(self):
         return self.get_account_data()['account'].bankid
 
-    def get_account_type(self):
+    def get_ofx_account_type(self):
         """
         Gets the account type as defined in the OFX (Open Financial Exchange) specification.
 
@@ -85,6 +85,9 @@ class OFXFileManager:
         if acc_type not in ['CHECKING', 'SAVINGS', 'MONEYMRKT', 'CREDITLINE', 'CD']:
             raise OFXImportValidationError(f'Account type "{acc_type}" is not supported.')
         return acc_type
+
+    def get_account_type(self):
+        return BankAccountModel.ACCOUNT_TYPE_OFX_MAPPING[self.get_ofx_account_type()]
 
     def get_account_txs(self):
         acc_statement = next(iter(

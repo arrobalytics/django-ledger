@@ -1185,18 +1185,25 @@ class FinancialAccountInfoMixin(models.Model):
                                       ], verbose_name=_('Routing Number'))
     aba_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('ABA Number'))
     swift_number = models.CharField(max_length=30, null=True, blank=True, verbose_name=_('SWIFT Number'))
-    account_type = models.CharField(choices=ACCOUNT_TYPE_CHOICES,
-                                    max_length=20,
-                                    default=ACCOUNT_CHECKING,
-                                    verbose_name=_('Account Type'))
+    account_type = models.CharField(
+        choices=ACCOUNT_TYPE_CHOICES,
+        max_length=20,
+        default=ACCOUNT_CHECKING,
+        verbose_name=_('Account Type')
+    )
 
     class Meta:
         abstract = True
 
-    def get_account_last_digits(self, n=4):
+    def get_account_last_digits(self, n=4) -> str:
         if not self.account_number:
-            return
-        return self.account_number[-n:]
+            return 'Not Available'
+        return f'*{self.account_number[-n:]}'
+
+    def get_routing_last_digits(self, n=4) -> str:
+        if not self.routing_number:
+            return 'Not Available'
+        return f'*{self.routing_number[-n:]}'
 
     def get_account_type_from_ofx(self, ofx_type):
         return self.ACCOUNT_TYPE_OFX_MAPPING.get(
