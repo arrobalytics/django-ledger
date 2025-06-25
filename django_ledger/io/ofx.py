@@ -7,6 +7,7 @@ Miguel Sanda <msanda@arrobalytics.com>
 """
 
 from typing import List, Optional, Dict
+from django_ledger.models.bank_account import BankAccountModel
 
 from django.core.exceptions import ValidationError
 from ofxtools import OFXTree
@@ -63,6 +64,30 @@ class OFXFileManager:
 
     def get_account_number(self):
         return self.get_account_data()['account'].acctid
+
+    def get_routing_number(self):
+        return self.get_account_data()['account'].bankid
+
+    def get_ofx_account_type(self):
+        """
+        Gets the account type as defined in the OFX (Open Financial Exchange) specification.
+
+        Returns:
+            str: One of the following standardized account types:
+                - 'CHECKING'   - Standard checking account
+                - 'SAVINGS'    - Savings account
+                - 'MONEYMRKT'  - Money Market account
+                - 'CREDITLINE' - Credit line account
+                - 'CD'         - Certificate of Deposit
+        """
+        acc_type = self.get_account_data()['account'].accttype
+
+        if acc_type not in ['CHECKING', 'SAVINGS', 'MONEYMRKT', 'CREDITLINE', 'CD']:
+            raise OFXImportValidationError(f'Account type "{acc_type}" is not supported.')
+        return acc_type
+
+    def get_account_type(self):
+        return BankAccountModel.ACCOUNT_TYPE_OFX_MAPPING[self.get_ofx_account_type()]
 
     def get_account_txs(self):
         acc_statement = next(iter(

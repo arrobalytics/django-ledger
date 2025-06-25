@@ -2048,7 +2048,7 @@ class EntityModelAbstract(MP_Node,
         account_model_qs = self.get_coa_accounts(coa_model=coa_model, active=True)
         account_model_qs = account_model_qs.with_roles(
             roles=[
-                BankAccountModel.ACCOUNT_TYPE_ROLE_MAPPING[account_type]
+                BankAccountModel.ACCOUNT_TYPE_DEFAULT_ROLE_MAPPING[account_type]
             ]
         ).is_role_default()
 

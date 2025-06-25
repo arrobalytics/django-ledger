@@ -32,7 +32,7 @@ class ImportJobModelViewBaseView(DjangoLedgerSecurityMixIn):
                                                   'bank_account_model__entity_model',
                                                   'bank_account_model__account_model',
                                                   'bank_account_model__account_model__coa_model')
-        return super().get_queryset()
+        return self.queryset
 
 
 class ImportJobModelCreateView(ImportJobModelViewBaseView, FormView):
