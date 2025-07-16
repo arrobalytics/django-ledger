@@ -334,7 +334,7 @@ cursor.dispatch('sale_blueprint',
 
 ## Commit Your Instructions
 Not recommended to post both ledger and journal entries. Posted transactions will immediately hit the books.
-**result** contains resulting ledger models, journal entries and transactions fro the committed 
+**result** contains resulting ledger models, journal entries and transactions from the committed 
 
 
 ```python
@@ -350,7 +350,7 @@ result = cursor.commit(
 # result
 ```
 
-### Get Financial Statement Report Data fro Ledger Model
+### Get Financial Statement Report Data from Ledger Model
 
 Balance Sheet
 
