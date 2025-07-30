@@ -787,7 +787,6 @@ class EntityModelAbstract(MP_Node,
     meta = models.JSONField(default=dict, null=True, blank=True)
     objects = EntityModelManager.from_queryset(queryset_class=EntityModelQuerySet)()
 
-    node_order_by = ['uuid']
 
     class Meta:
         abstract = True

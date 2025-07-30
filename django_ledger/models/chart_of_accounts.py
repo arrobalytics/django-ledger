@@ -535,7 +535,7 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
             root_account_qs=root_account_qs
         )
 
-        account_root_node.add_child(instance=account_model)
+        account_root_node.add_child(instance=account_model, pos='last-child')
         coa_accounts_qs = self.get_non_root_coa_accounts_qs()
         return coa_accounts_qs.get(uuid__exact=account_model.uuid)
 
