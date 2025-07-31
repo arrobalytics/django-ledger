@@ -12,7 +12,7 @@ or further processing.
 """
 
 from decimal import Decimal
-from typing import Optional, Set, Dict, List
+from typing import Optional, Set, Dict, List, Union
 from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError
@@ -24,6 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
 from django_ledger.models import JournalEntryModel
+from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 
@@ -128,8 +129,12 @@ class ImportJobModelManager(Manager):
 
         )
 
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
         qs = self.for_user(user_model)
+        if isinstance(entity_slug, EntityModel):
+            return qs.filter(
+            Q(bank_account_model__entity_model=entity_slug)
+        )
         return qs.filter(
             Q(bank_account_model__entity_model__slug__exact=entity_slug)
         )
