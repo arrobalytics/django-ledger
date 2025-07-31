@@ -136,7 +136,6 @@ class EntityUnitModelAbstract(MP_Node,
     hidden = models.BooleanField(default=False, verbose_name=_('Is Hidden'))
 
     objects = EntityUnitModelManager.from_queryset(queryset_class=EntityUnitModelQuerySet)()
-    node_order_by = ['uuid']
 
     class Meta:
         abstract = True

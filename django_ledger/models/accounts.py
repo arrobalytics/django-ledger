@@ -439,7 +439,6 @@ class AccountModelAbstract(MP_Node, CreateUpdateMixIn):
                                   on_delete=models.CASCADE,
                                   verbose_name=_('Chart of Accounts'))
     objects = AccountModelManager()
-    node_order_by = ['uuid']
 
     class Meta:
         abstract = True
