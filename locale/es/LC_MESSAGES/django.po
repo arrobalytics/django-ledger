@@ -1,0 +1,4188 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-12 02:13-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? "
+"1 : 2;\n"
+#: django_ledger/forms/account.py:72
+msgid "Alpha Numeric (auto generated if not provided)..."
+msgstr ""
+
+#: django_ledger/forms/account.py:76
+msgid "Account Name..."
+msgstr ""
+
+#: django_ledger/forms/account.py:104
+msgid "Position"
+msgstr ""
+
+#: django_ledger/forms/account.py:109
+msgid "Relative to"
+msgstr ""
+
+#: django_ledger/forms/auth.py:15
+msgid "Password"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:60
+#: django_ledger/forms/bank_account.py:108
+msgid "Enter account name..."
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:64
+msgid "Enter account number..."
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:68
+msgid "Enter routing number..."
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:72
+msgid "Enter ABA number..."
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:76
+msgid "Enter SWIFT number..."
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:86 django_ledger/models/accounts.py:432
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:24
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:21
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:10
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:46
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:10
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:46
+msgid "Account Name"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:87 django_ledger/models/mixins.py:1181
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:8
+msgid "Account Number"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:88 django_ledger/models/mixins.py:1192
+msgid "Account Type"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:89
+msgid "CoA Account"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:90 django_ledger/models/mixins.py:1186
+msgid "ABA Number"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:91 django_ledger/models/mixins.py:1185
+msgid "Routing Number"
+msgstr ""
+
+#: django_ledger/forms/bank_account.py:92
+msgid "Make Active"
+msgstr ""
+
+#: django_ledger/forms/bill.py:49 django_ledger/forms/invoice.py:64
+#: django_ledger/models/bill.py:380 django_ledger/models/invoice.py:349
+#: django_ledger/models/purchase_order.py:219
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:26
+msgid "Draft Date"
+msgstr ""
+
+#: django_ledger/forms/bill.py:50
+msgid "Payable Account"
+msgstr ""
+
+#: django_ledger/forms/bill.py:51
+msgid "Prepaid Expenses Account"
+msgstr ""
+
+#: django_ledger/forms/bill.py:56
+msgid "Bill Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/bill.py:131
+msgid "Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/bill.py:152
+msgid "Bill Progress Amount (%)"
+msgstr ""
+
+#: django_ledger/forms/bill.py:153 django_ledger/forms/invoice.py:118
+msgid "Will this Bill be Accrued?"
+msgstr ""
+
+#: django_ledger/forms/bill.py:154
+#: django_ledger/templates/django_ledger/includes/card_markdown.html:9
+msgid "Notes"
+msgstr ""
+
+#: django_ledger/forms/chart_of_accounts.py:35
+#: django_ledger/forms/chart_of_accounts.py:72
+msgid "Name"
+msgstr ""
+
+#: django_ledger/forms/chart_of_accounts.py:36
+#: django_ledger/forms/chart_of_accounts.py:73
+#: django_ledger/models/data_import.py:169 django_ledger/models/items.py:1144
+#: django_ledger/models/journal_entry.py:374
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:9
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:11
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:14
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:49
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:14
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:49
+msgid "Description"
+msgstr ""
+
+#: django_ledger/forms/closing_entry.py:15
+msgid "Cannot create a closing entry with a future date."
+msgstr ""
+
+#: django_ledger/forms/closing_entry.py:28
+msgid "Closing Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/closing_entry.py:34
+msgid "Select a Closing Date"
+msgstr ""
+
+#: django_ledger/forms/closing_entry.py:51
+msgid "Closing Entry Notes"
+msgstr ""
+
+#: django_ledger/forms/customer.py:40
+#, python-format
+msgid "Example: 3.50% should be entered as 0.035"
+msgstr ""
+
+#: django_ledger/forms/data_import.py:43
+msgid "What's this import about?..."
+msgstr ""
+
+#: django_ledger/forms/data_import.py:51
+msgid "Select the bank account to import transactions from."
+msgstr ""
+
+#: django_ledger/forms/data_import.py:130
+msgid "Cannot import and split at the same time"
+msgstr ""
+
+#: django_ledger/forms/data_import.py:164
+msgid "Import job does not belong to this entity"
+msgstr ""
+
+#: django_ledger/forms/entity.py:20
+msgid "Populate Default CoA"
+msgstr ""
+
+#: django_ledger/forms/entity.py:21
+msgid "Activate All Accounts"
+msgstr ""
+
+#: django_ledger/forms/entity.py:22
+msgid "Fill With Sample Data?"
+msgstr ""
+
+#: django_ledger/forms/entity.py:27
+msgid "Please provide a valid name for new Entity."
+msgstr ""
+
+#: django_ledger/forms/entity.py:29
+msgid "Looks like this entity name is too short..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:62 django_ledger/forms/entity.py:137
+#: django_ledger/models/entity.py:767
+msgid "Entity Name"
+msgstr ""
+
+#: django_ledger/forms/entity.py:68 django_ledger/forms/entity.py:143
+msgid "Entity name..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:74 django_ledger/forms/entity.py:149
+msgid "Address line 1"
+msgstr ""
+
+#: django_ledger/forms/entity.py:78 django_ledger/forms/entity.py:154
+msgid "Address line 2"
+msgstr ""
+
+#: django_ledger/forms/entity.py:82 django_ledger/forms/entity.py:159
+#: django_ledger/models/mixins.py:111
+msgid "City"
+msgstr ""
+
+#: django_ledger/forms/entity.py:86 django_ledger/forms/entity.py:164
+msgid "State"
+msgstr ""
+
+#: django_ledger/forms/entity.py:90 django_ledger/forms/entity.py:169
+#: django_ledger/models/mixins.py:113
+msgid "Zip Code"
+msgstr ""
+
+#: django_ledger/forms/entity.py:94 django_ledger/forms/entity.py:174
+#: django_ledger/models/mixins.py:114
+msgid "Country"
+msgstr ""
+
+#: django_ledger/forms/entity.py:98
+msgid "Phone number..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:102
+msgid "Entity email..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:106
+msgid "http://www.mywebsite.com..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:179
+msgid "Email..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:185
+msgid "Phone..."
+msgstr ""
+
+#: django_ledger/forms/entity.py:191
+msgid "Website..."
+msgstr ""
+
+#: django_ledger/forms/estimate.py:47
+msgid "Estimate title..."
+msgstr ""
+
+#: django_ledger/forms/feedback.py:9
+msgid "Desktop"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:10
+msgid "Tablet"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:11
+msgid "Mobile"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:15
+msgid "How to reproduce?"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:23
+msgid "What did you expect?"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:36
+msgid "What device are you using?"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:41
+msgid "Is your feature request related to a problem? Please describe."
+msgstr ""
+
+#: django_ledger/forms/feedback.py:49
+msgid "Describe the solution you'd like"
+msgstr ""
+
+#: django_ledger/forms/feedback.py:57
+msgid "Describe alternatives you've considered"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:63
+msgid "Invoice Terms"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:65
+msgid "Deferred Revenue Account"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:66
+msgid "Receivable Account"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:72
+msgid "Invoice Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/invoice.py:117
+msgid "Progress Amount 0.00 -> 1.00 (percent)"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:119
+#: django_ledger/templates/django_ledger/purchase_order/po_detail.html:38
+msgid "Amount Received"
+msgstr ""
+
+#: django_ledger/forms/invoice.py:129
+msgid "Paid Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/item.py:120
+msgid "Product Name"
+msgstr ""
+
+#: django_ledger/forms/item.py:121
+msgid "Product Type"
+msgstr ""
+
+#: django_ledger/forms/item.py:210
+msgid "Service Name"
+msgstr ""
+
+#: django_ledger/forms/item.py:211
+msgid "Sold as Unit?"
+msgstr ""
+
+#: django_ledger/forms/item.py:261
+msgid "The item name..."
+msgstr ""
+
+#: django_ledger/forms/item.py:277
+msgid "The UPC code of the item, if any..."
+msgstr ""
+
+#: django_ledger/forms/item.py:287
+msgid "Expense Name"
+msgstr ""
+
+#: django_ledger/forms/item.py:376
+msgid "Inventory Name"
+msgstr ""
+
+#: django_ledger/forms/journal_entry.py:37
+msgid "Cannot create new Journal Entries on a locked Ledger."
+msgstr ""
+
+#: django_ledger/forms/journal_entry.py:64 django_ledger/models/entity.py:3181
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:95
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:9
+msgid "Entity Unit"
+msgstr ""
+
+#: django_ledger/forms/journal_entry.py:76
+msgid ""
+"Invalid timestamp {self.cleaned_data[\"timestamp\"]} due to Closing Entries."
+msgstr ""
+
+#: django_ledger/forms/ledger.py:43 django_ledger/models/ledger.py:193
+msgid "Ledger External ID"
+msgstr ""
+
+#: django_ledger/forms/purchase_order.py:34
+msgid "Is this an inventory purchase?"
+msgstr ""
+
+#: django_ledger/forms/purchase_order.py:59
+msgid "Fulfillment Date (YYYY-MM-DD)..."
+msgstr ""
+
+#: django_ledger/forms/purchase_order.py:66
+msgid "PO Status"
+msgstr ""
+
+#: django_ledger/forms/purchase_order.py:67
+msgid "Mark as Fulfilled"
+msgstr ""
+
+#: django_ledger/forms/purchase_order.py:68
+msgid "PO Notes"
+msgstr ""
+
+#: django_ledger/forms/transactions.py:77
+msgid "Credits and Debits do not balance."
+msgstr ""
+
+#: django_ledger/forms/unit.py:17
+msgid "Unit name must be at least 10 characters long"
+msgstr ""
+
+#: django_ledger/forms/utils.py:17
+msgid "Must provide all City/State/Zip/Country"
+msgstr ""
+
+#: django_ledger/io/io_core.py:588
+#, python-brace-format
+msgid "IODatabaseMixIn not compatible with {self.__class__.__name__} model."
+msgstr ""
+
+#: django_ledger/io/io_core.py:1367 django_ledger/io/io_core.py:1373
+#, python-brace-format
+msgid ""
+"Cannot commit transactions. The journal entry date {je_timestamp} is on a "
+"closed period."
+msgstr ""
+
+#: django_ledger/io/io_core.py:1379
+msgid "Cannot commit on locked ledger"
+msgstr ""
+
+#: django_ledger/io/io_core.py:1415
+msgid "Invalid timestamp type {type(je_timestamp)}"
+msgstr ""
+
+#: django_ledger/io/io_core.py:1418
+#, python-brace-format
+msgid "Unable to retrieve Journal Entry model with Timestamp {je_timestamp}"
+msgstr ""
+
+#: django_ledger/io/io_core.py:1592 django_ledger/io/io_core.py:1721
+#: django_ledger/io/io_core.py:1838 django_ledger/io/io_core.py:1962
+msgid "PDF support not enabled. Install PDF support from Pipfile."
+msgstr ""
+
+#: django_ledger/io/io_generator.py:87
+#, python-brace-format
+msgid ""
+"User {user_model} must have admin privileges for entity model {entity_model}."
+msgstr ""
+
+#: django_ledger/io/io_library.py:203
+msgid "Ledger Model must be a string or UUID or LedgerModel"
+msgstr ""
+
+#: django_ledger/io/io_library.py:235
+msgid ""
+"Total transactions Credits and Debits must be equal. Got CREDITs: {} and "
+"DEBITs: {}."
+msgstr ""
+
+#: django_ledger/io/io_library.py:281
+msgid "Transactions already committed"
+msgstr ""
+
+#: django_ledger/io/io_library.py:290
+#, python-brace-format
+msgid "Cannot transact on a locked ledger: {ledger_model}"
+msgstr ""
+
+#: django_ledger/io/io_library.py:307
+msgid "Cannot commit transactions to a non-existing ledger"
+msgstr ""
+
+#: django_ledger/io/io_library.py:327
+#, python-brace-format
+msgid "Cannot commit transactions to a non-existing ledger_xid {k}"
+msgstr ""
+
+#: django_ledger/io/io_library.py:335
+#, python-brace-format
+msgid "Ledger UUID {k} not found."
+msgstr ""
+
+#: django_ledger/io/io_library.py:356
+#, python-brace-format
+msgid ""
+"Account code {tx.account_code} not found. Is account available and not "
+"locked?"
+msgstr ""
+
+#: django_ledger/io/roles.py:437 django_ledger/io/roles.py:523
+msgid "Current Asset"
+msgstr ""
+
+#: django_ledger/io/roles.py:438 django_ledger/io/roles.py:524
+msgid "Marketable Securities"
+msgstr ""
+
+#: django_ledger/io/roles.py:439 django_ledger/io/roles.py:525
+#: django_ledger/templates/django_ledger/entity/entity_dashboard.html:50
+msgid "Receivables"
+msgstr ""
+
+#: django_ledger/io/roles.py:440 django_ledger/io/roles.py:526
+#: django_ledger/models/items.py:521 django_ledger/views/inventory.py:45
+msgid "Inventory"
+msgstr ""
+
+#: django_ledger/io/roles.py:441 django_ledger/io/roles.py:527
+msgid "Uncollectibles"
+msgstr ""
+
+#: django_ledger/io/roles.py:442 django_ledger/io/roles.py:528
+msgid "Prepaid"
+msgstr ""
+
+#: django_ledger/io/roles.py:443 django_ledger/io/roles.py:529
+msgid "Other Liquid Assets"
+msgstr ""
+
+#: django_ledger/io/roles.py:446 django_ledger/io/roles.py:532
+msgid "Notes Receivable"
+msgstr ""
+
+#: django_ledger/io/roles.py:447 django_ledger/io/roles.py:533
+msgid "Land"
+msgstr ""
+
+#: django_ledger/io/roles.py:448 django_ledger/io/roles.py:534
+msgid "Securities"
+msgstr ""
+
+#: django_ledger/io/roles.py:451 django_ledger/io/roles.py:537
+msgid "Buildings"
+msgstr ""
+
+#: django_ledger/io/roles.py:452 django_ledger/io/roles.py:538
+msgid "Buildings - Accum. Depreciation"
+msgstr ""
+
+#: django_ledger/io/roles.py:453 django_ledger/io/roles.py:539
+msgid "Plant"
+msgstr ""
+
+#: django_ledger/io/roles.py:454 django_ledger/io/roles.py:540
+msgid "Plant - Accum. Depreciation"
+msgstr ""
+
+#: django_ledger/io/roles.py:455 django_ledger/io/roles.py:541
+#: django_ledger/models/items.py:509
+msgid "Equipment"
+msgstr ""
+
+#: django_ledger/io/roles.py:456 django_ledger/io/roles.py:542
+msgid "Equipment - Accum. Depreciation"
+msgstr ""
+
+#: django_ledger/io/roles.py:459 django_ledger/io/roles.py:545
+msgid "Intangible Assets"
+msgstr ""
+
+#: django_ledger/io/roles.py:460 django_ledger/io/roles.py:546
+msgid "Intangible Assets - Accum. Amortization"
+msgstr ""
+
+#: django_ledger/io/roles.py:461 django_ledger/io/roles.py:547
+msgid "Other Assets"
+msgstr ""
+
+#: django_ledger/io/roles.py:466 django_ledger/io/roles.py:552
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:52
+msgid "Accounts Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:467 django_ledger/io/roles.py:553
+msgid "Wages Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:468 django_ledger/io/roles.py:554
+msgid "Interest Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:469 django_ledger/io/roles.py:555
+msgid "Taxes Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:470 django_ledger/io/roles.py:556
+msgid "Short Term Notes Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:471 django_ledger/io/roles.py:557
+msgid "Current Maturities of Long Tern Debt"
+msgstr ""
+
+#: django_ledger/io/roles.py:472 django_ledger/io/roles.py:558
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:51
+msgid "Deferred Revenue"
+msgstr ""
+
+#: django_ledger/io/roles.py:473 django_ledger/io/roles.py:559
+msgid "Other Liabilities"
+msgstr ""
+
+#: django_ledger/io/roles.py:476 django_ledger/io/roles.py:562
+msgid "Long Term Notes Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:477 django_ledger/io/roles.py:563
+msgid "Bonds Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:478 django_ledger/io/roles.py:564
+msgid "Mortgage Payable"
+msgstr ""
+
+#: django_ledger/io/roles.py:483 django_ledger/io/roles.py:569
+msgid "Capital"
+msgstr ""
+
+#: django_ledger/io/roles.py:484 django_ledger/io/roles.py:570
+msgid "Common Stock"
+msgstr ""
+
+#: django_ledger/io/roles.py:485 django_ledger/io/roles.py:571
+msgid "Preferred Stock"
+msgstr ""
+
+#: django_ledger/io/roles.py:486 django_ledger/io/roles.py:572
+msgid "Other Equity Adjustments"
+msgstr ""
+
+#: django_ledger/io/roles.py:487 django_ledger/io/roles.py:573
+msgid "Dividends & Distributions to Shareholders"
+msgstr ""
+
+#: django_ledger/io/roles.py:490 django_ledger/io/roles.py:578
+msgid "Operational Income"
+msgstr ""
+
+#: django_ledger/io/roles.py:491 django_ledger/io/roles.py:579
+msgid "Investing/Passive Income"
+msgstr ""
+
+#: django_ledger/io/roles.py:492 django_ledger/io/roles.py:580
+msgid "Interest Income"
+msgstr ""
+
+#: django_ledger/io/roles.py:493 django_ledger/io/roles.py:581
+msgid "Capital Gain/Loss Income"
+msgstr ""
+
+#: django_ledger/io/roles.py:494 django_ledger/io/roles.py:582
+msgid "Other Income"
+msgstr ""
+
+#: django_ledger/io/roles.py:497 django_ledger/io/roles.py:587
+msgid "Cost of Goods Sold"
+msgstr ""
+
+#: django_ledger/io/roles.py:500 django_ledger/io/roles.py:590
+msgid "Regular Expense"
+msgstr ""
+
+#: django_ledger/io/roles.py:501 django_ledger/io/roles.py:591
+msgid "Interest Expense - Short Term Debt"
+msgstr ""
+
+#: django_ledger/io/roles.py:502 django_ledger/io/roles.py:592
+msgid "Interest Expense - Long Term Debt"
+msgstr ""
+
+#: django_ledger/io/roles.py:503 django_ledger/io/roles.py:593
+msgid "Tax Expense"
+msgstr ""
+
+#: django_ledger/io/roles.py:504 django_ledger/io/roles.py:594
+msgid "Capital Expense"
+msgstr ""
+
+#: django_ledger/io/roles.py:505 django_ledger/io/roles.py:595
+msgid "Depreciation Expense"
+msgstr ""
+
+#: django_ledger/io/roles.py:506 django_ledger/io/roles.py:596
+msgid "Amortization Expense"
+msgstr ""
+
+#: django_ledger/io/roles.py:507 django_ledger/io/roles.py:597
+msgid "Other Expense"
+msgstr ""
+
+#: django_ledger/models/accounts.py:394
+#, python-format
+msgid "Account code must be alpha numeric, got {%s}"
+msgstr ""
+
+#: django_ledger/models/accounts.py:426
+#: django_ledger/models/transactions.py:447
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:12
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:47
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:12
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:47
+msgid "Credit"
+msgstr ""
+
+#: django_ledger/models/accounts.py:427
+#: django_ledger/models/transactions.py:448
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:13
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:48
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:13
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:48
+msgid "Debit"
+msgstr ""
+
+#: django_ledger/models/accounts.py:431
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:20
+msgid "Account Code"
+msgstr ""
+
+#: django_ledger/models/accounts.py:433
+msgid "Account Role"
+msgstr ""
+
+#: django_ledger/models/accounts.py:434
+msgid "Coa Role Default Account"
+msgstr ""
+
+#: django_ledger/models/accounts.py:435
+msgid "Account Balance Type"
+msgstr ""
+
+#: django_ledger/models/accounts.py:436
+#: django_ledger/models/journal_entry.py:392
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:28
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:25
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:13
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:14
+msgid "Locked"
+msgstr ""
+
+#: django_ledger/models/accounts.py:437
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:27
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:11
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:10
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:12
+msgid "Active"
+msgstr ""
+
+#: django_ledger/models/accounts.py:440
+#: django_ledger/models/chart_of_accounts.py:192
+msgid "Chart of Accounts"
+msgstr ""
+
+#: django_ledger/models/accounts.py:446
+#: django_ledger/models/transactions.py:463
+#: django_ledger/templates/django_ledger/bank_account/bank_account_update.html:13
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_txs_table.html:8
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:9
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:45
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:9
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:45
+msgid "Account"
+msgstr ""
+
+#: django_ledger/models/accounts.py:447
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:54
+msgid "Accounts"
+msgstr ""
+
+#: django_ledger/models/accounts.py:452
+msgid "Account codes must be unique for each Chart of Accounts Model."
+msgstr ""
+
+#: django_ledger/models/accounts.py:457
+msgid "Only one default account for role permitted."
+msgstr ""
+
+#: django_ledger/models/accounts.py:788
+msgid ""
+"Cannot lock account {self.code}: {self.name}. Active: {self.is_active()}"
+msgstr ""
+
+#: django_ledger/models/accounts.py:803
+msgid ""
+"Cannot unlock account {self.code}: {self.name}. Active: {self.is_active()}"
+msgstr ""
+
+#: django_ledger/models/accounts.py:831
+msgid ""
+"Cannot activate account {self.code}: {self.name}. Active: {self.is_active()}"
+msgstr ""
+
+#: django_ledger/models/accounts.py:858
+msgid ""
+"Cannot deactivate account {self.code}: {self.name}. Active: {self."
+"is_active()}"
+msgstr ""
+
+#: django_ledger/models/bank_account.py:128
+#: django_ledger/models/closing_entry.py:73
+#: django_ledger/models/closing_entry.py:390
+#: django_ledger/models/entity.py:3178 django_ledger/models/estimate.py:251
+msgid "Entity Model"
+msgstr ""
+
+#: django_ledger/models/bank_account.py:133
+msgid "Account model be used to map transactions from financial institution"
+msgstr ""
+
+#: django_ledger/models/bank_account.py:135
+msgid "Associated Account Model"
+msgstr ""
+
+#: django_ledger/models/bank_account.py:148 django_ledger/models/bill.py:464
+#: django_ledger/models/estimate.py:376 django_ledger/models/invoice.py:429
+#: django_ledger/models/purchase_order.py:303
+msgid "Must pass user_model when using entity_slug."
+msgstr ""
+
+#: django_ledger/models/bank_account.py:170
+msgid "Bank Account"
+msgstr ""
+
+#: django_ledger/models/bill.py:343 django_ledger/models/estimate.py:223
+#: django_ledger/models/invoice.py:300
+#: django_ledger/models/purchase_order.py:192
+msgid "Draft"
+msgstr ""
+
+#: django_ledger/models/bill.py:344 django_ledger/models/estimate.py:224
+#: django_ledger/models/invoice.py:301
+#: django_ledger/models/purchase_order.py:193
+msgid "In Review"
+msgstr ""
+
+#: django_ledger/models/bill.py:345 django_ledger/models/estimate.py:225
+#: django_ledger/models/invoice.py:302
+#: django_ledger/models/purchase_order.py:194
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:49
+msgid "Approved"
+msgstr ""
+
+#: django_ledger/models/bill.py:346 django_ledger/models/invoice.py:303
+msgid "Paid"
+msgstr ""
+
+#: django_ledger/models/bill.py:347 django_ledger/models/estimate.py:228
+#: django_ledger/models/invoice.py:305 django_ledger/models/items.py:1042
+#: django_ledger/models/purchase_order.py:196
+msgid "Canceled"
+msgstr ""
+
+#: django_ledger/models/bill.py:348 django_ledger/models/estimate.py:227
+#: django_ledger/models/invoice.py:304
+#: django_ledger/models/purchase_order.py:197
+#: django_ledger/templates/django_ledger/bills/bill_void.html:25
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:196
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:179
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:112
+msgid "Void"
+msgstr ""
+
+#: django_ledger/models/bill.py:356
+msgid "Bill Number"
+msgstr ""
+
+#: django_ledger/models/bill.py:360
+msgid "Bill Status"
+msgstr ""
+
+#: django_ledger/models/bill.py:361
+msgid "External Reference Number"
+msgstr ""
+
+#: django_ledger/models/bill.py:364 django_ledger/models/vendor.py:191
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:12
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:10
+msgid "Vendor"
+msgstr ""
+
+#: django_ledger/models/bill.py:368
+msgid "Bill Additional Info"
+msgstr ""
+
+#: django_ledger/models/bill.py:372
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:85
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:8
+msgid "Bill Items"
+msgstr ""
+
+#: django_ledger/models/bill.py:378 django_ledger/models/invoice.py:347
+#: django_ledger/models/purchase_order.py:235
+msgid "Associated Customer Job/Estimate"
+msgstr ""
+
+#: django_ledger/models/bill.py:381 django_ledger/models/invoice.py:350
+#: django_ledger/models/purchase_order.py:220
+msgid "In Review Date"
+msgstr ""
+
+#: django_ledger/models/bill.py:382 django_ledger/models/invoice.py:351
+#: django_ledger/models/purchase_order.py:221
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:38
+msgid "Approved Date"
+msgstr ""
+
+#: django_ledger/models/bill.py:383 django_ledger/models/invoice.py:352
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:138
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:126
+msgid "Paid Date"
+msgstr ""
+
+#: django_ledger/models/bill.py:384 django_ledger/models/invoice.py:353
+#: django_ledger/models/purchase_order.py:222
+msgid "Void Date"
+msgstr ""
+
+#: django_ledger/models/bill.py:385 django_ledger/models/invoice.py:354
+#: django_ledger/models/purchase_order.py:224
+msgid "Canceled Date"
+msgstr ""
+
+#: django_ledger/models/bill.py:392 django_ledger/models/entity.py:3170
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:11
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:61
+msgid "Bill"
+msgstr ""
+
+#: django_ledger/models/bill.py:393
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:84
+msgid "Bills"
+msgstr ""
+
+#: django_ledger/models/bill.py:1139
+#, python-format
+msgid "Do you want to mark Bill %s as Draft?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1247
+#, python-format
+msgid "Do you want to mark Bill %s as In Review?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1357
+#, python-format
+msgid "Do you want to mark Bill %s as Approved?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1483
+#, python-format
+msgid "Do you want to mark Bill %s as Paid?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1586
+#, python-format
+msgid "Do you want to void Bill %s?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1659
+#, python-format
+msgid "Do you want to mark Bill %s as Canceled?"
+msgstr ""
+
+#: django_ledger/models/bill.py:1668
+#, python-brace-format
+msgid "Bill {self.bill_number} cannot be deleted..."
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:182
+#: django_ledger/models/entity.py:794 django_ledger/models/entity.py:3236
+#: django_ledger/models/purchase_order.py:217
+msgid "Entity"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:184
+#: django_ledger/models/items.py:128 django_ledger/models/items.py:541
+#: django_ledger/models/unit.py:135
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:23
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:12
+msgid "Is Active"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:185
+msgid "CoA Description"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:191
+msgid "Chart of Account"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:261
+#, python-brace-format
+msgid ""
+"The account model {account_model} is not part of the chart of accounts {self."
+"name}."
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:363
+#, python-brace-format
+msgid "CoA {self.uuid} already has a slug"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:616
+#, python-brace-format
+msgid "The Chart of Accounts {self.slug} is already default"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:622
+#, python-brace-format
+msgid "The Chart of Accounts {self.slug} cannot be marked as default"
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:678
+msgid "The Chart of Accounts is currently active."
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:705
+msgid "The Chart of Accounts is currently not active."
+msgstr ""
+
+#: django_ledger/models/chart_of_accounts.py:851
+msgid "Default Chart of Accounts cannot be deactivated."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:75
+msgid "Closing Date"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:76
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:10
+msgid "Is Posted"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:88
+msgid "Only one Closing Entry for Date Allowed."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:205
+#, python-brace-format
+msgid "Closing Entry {self.closing_date} is already posted."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:224
+#, python-brace-format
+msgid "Are you sure you want to post Closing Entry dated {self.closing_date}?"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:242
+#, python-brace-format
+msgid "Closing Entry {self.closing_date} is not posted."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:268
+#, python-brace-format
+msgid ""
+"Are you sure you want to unpost Closing Entry dated {self.closing_date}?"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:286
+msgid "Cannot update transactions of a posted Closing Entry."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:299
+#, python-brace-format
+msgid ""
+"Are you sure you want to update all Closing Entry {self.closing_date} "
+"transactions? This action will delete existing closing entry transactions "
+"and create new ones."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:318
+msgid "Cannot delete a posted Closing Entry"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:333
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete Closing Entry {self.closing_date}? This "
+"action cannot be undone."
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:385
+msgid "Account Model"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:396
+#: django_ledger/models/journal_entry.py:388
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_txs_table.html:10
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:33
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:10
+msgid "Activity"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:399
+#: django_ledger/models/transactions.py:452
+msgid "Transaction Type"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:400
+msgid "Closing Entry Balance"
+msgstr ""
+
+#: django_ledger/models/closing_entry.py:410
+msgid "Closing Entry Model"
+msgstr ""
+
+#: django_ledger/models/customer.py:174
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:8
+msgid "Customer Number"
+msgstr ""
+
+#: django_ledger/models/customer.py:178
+msgid "Customer Entity"
+msgstr ""
+
+#: django_ledger/models/customer.py:189 django_ledger/models/estimate.py:252
+#: django_ledger/models/invoice.py:319
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:9
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:10
+msgid "Customer"
+msgstr ""
+
+#: django_ledger/models/data_import.py:172
+msgid "Associated Bank Account Model"
+msgstr ""
+
+#: django_ledger/models/data_import.py:176
+msgid "Ledger Model"
+msgstr ""
+
+#: django_ledger/models/data_import.py:179
+msgid "Import Job Completed"
+msgstr ""
+
+#: django_ledger/models/data_import.py:184
+msgid "Import Job Model"
+msgstr ""
+
+#: django_ledger/models/data_import.py:277
+#, python-brace-format
+msgid "Are you sure you want to delete Import Job {self.description}?"
+msgstr ""
+
+#: django_ledger/models/data_import.py:500
+msgid "Parent Transaction"
+msgstr ""
+
+#: django_ledger/models/data_import.py:503
+msgid "Date Posted"
+msgstr ""
+
+#: django_ledger/models/data_import.py:504
+msgid "Bundle Split Transactions"
+msgstr ""
+
+#: django_ledger/models/data_import.py:509
+msgid "Proposed Activity"
+msgstr ""
+
+#: django_ledger/models/data_import.py:528 django_ledger/models/unit.py:143
+msgid "Entity Unit Model"
+msgstr ""
+
+#: django_ledger/models/data_import.py:539
+msgid "Staged Transaction Model"
+msgstr ""
+
+#: django_ledger/models/data_import.py:931
+#, python-brace-format
+msgid "Staged Transaction {self.uuid} already split."
+msgstr ""
+
+#: django_ledger/models/data_import.py:1191
+msgid "Invalid Bank Account for LedgerModel. No matching Entity Model found."
+msgstr ""
+
+#: django_ledger/models/entity.py:435
+#, python-brace-format
+msgid ""
+"The Closing Entry Model {closing_entry_model} does not belong to Entity "
+"{self.name}"
+msgstr ""
+
+#: django_ledger/models/entity.py:439
+#, python-brace-format
+msgid "The Closing Entry Model date {closing_entry_model.closing_date} "
+msgstr ""
+
+#: django_ledger/models/entity.py:538
+#, python-brace-format
+msgid "Cannot create closing entry with a future date {closing_date}."
+msgstr ""
+
+#: django_ledger/models/entity.py:749
+msgid "January"
+msgstr ""
+
+#: django_ledger/models/entity.py:750
+msgid "February"
+msgstr ""
+
+#: django_ledger/models/entity.py:751
+msgid "March"
+msgstr ""
+
+#: django_ledger/models/entity.py:752
+msgid "April"
+msgstr ""
+
+#: django_ledger/models/entity.py:753
+msgid "May"
+msgstr ""
+
+#: django_ledger/models/entity.py:754
+msgid "June"
+msgstr ""
+
+#: django_ledger/models/entity.py:755
+msgid "July"
+msgstr ""
+
+#: django_ledger/models/entity.py:756
+msgid "August"
+msgstr ""
+
+#: django_ledger/models/entity.py:757
+msgid "September"
+msgstr ""
+
+#: django_ledger/models/entity.py:758
+msgid "October"
+msgstr ""
+
+#: django_ledger/models/entity.py:759
+msgid "November"
+msgstr ""
+
+#: django_ledger/models/entity.py:760
+msgid "December"
+msgstr ""
+
+#: django_ledger/models/entity.py:769
+msgid "Default Chart of Accounts"
+msgstr ""
+
+#: django_ledger/models/entity.py:776
+msgid "Admin"
+msgstr ""
+
+#: django_ledger/models/entity.py:780
+msgid "Managers"
+msgstr ""
+
+#: django_ledger/models/entity.py:783
+msgid "Use Accrual Method"
+msgstr ""
+
+#: django_ledger/models/entity.py:784
+msgid "Fiscal Year Start"
+msgstr ""
+
+#: django_ledger/models/entity.py:785
+msgid "Last Closing Entry Date"
+msgstr ""
+
+#: django_ledger/models/entity.py:795
+msgid "Entities"
+msgstr ""
+
+#: django_ledger/models/entity.py:864 django_ledger/models/entity.py:874
+#: django_ledger/models/entity.py:882
+msgid "Invalid Parent Entity. "
+msgstr ""
+
+#: django_ledger/models/entity.py:888
+msgid "Only slug, UUID or EntityModel allowed."
+msgstr ""
+
+#: django_ledger/models/entity.py:961
+#, python-brace-format
+msgid ""
+"Cannot replace existing slug {self.slug}. Use force_update=True if needed."
+msgstr ""
+
+#: django_ledger/models/entity.py:1360
+msgid "No default_coa found."
+msgstr ""
+
+#: django_ledger/models/entity.py:2045
+#, python-brace-format
+msgid ""
+"Invalid Account Type: choices are {BankAccountModel.VALID_ACCOUNT_TYPES}"
+msgstr ""
+
+#: django_ledger/models/entity.py:2843
+msgid ""
+"Closing books must be called by providing closing_date or "
+"closing_entry_model, not both."
+msgstr ""
+
+#: django_ledger/models/entity.py:2847
+msgid ""
+"Closing books must be called by providing closing_date or "
+"closing_entry_model."
+msgstr ""
+
+#: django_ledger/models/entity.py:3168
+#: django_ledger/models/journal_entry.py:407
+#: django_ledger/models/transactions.py:457
+msgid "Journal Entry"
+msgstr ""
+
+#: django_ledger/models/entity.py:3169
+msgid "Purchase Order"
+msgstr ""
+
+#: django_ledger/models/entity.py:3171 django_ledger/models/invoice.py:361
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:10
+msgid "Invoice"
+msgstr ""
+
+#: django_ledger/models/entity.py:3172
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:9
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:9
+msgid "Estimate"
+msgstr ""
+
+#: django_ledger/models/entity.py:3185
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:37
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:38
+msgid "Fiscal Year"
+msgstr ""
+
+#: django_ledger/models/entity.py:3228
+msgid "Read Permissions"
+msgstr ""
+
+#: django_ledger/models/entity.py:3229
+msgid "Read/Write Permissions"
+msgstr ""
+
+#: django_ledger/models/entity.py:3230
+msgid "No Permissions"
+msgstr ""
+
+#: django_ledger/models/entity.py:3240
+msgid "Manager"
+msgstr ""
+
+#: django_ledger/models/entity.py:3245
+msgid "Permission Level"
+msgstr ""
+
+#: django_ledger/models/estimate.py:226
+msgid "Completed"
+msgstr ""
+
+#: django_ledger/models/estimate.py:237
+msgid "Fixed Price"
+msgstr ""
+
+#: django_ledger/models/estimate.py:238
+msgid "Target Price"
+msgstr ""
+
+#: django_ledger/models/estimate.py:239
+msgid "Time & Materials"
+msgstr ""
+
+#: django_ledger/models/estimate.py:240 django_ledger/models/items.py:511
+#: django_ledger/models/mixins.py:1158
+msgid "Other"
+msgstr ""
+
+#: django_ledger/models/estimate.py:247
+msgid "Estimate Number"
+msgstr ""
+
+#: django_ledger/models/estimate.py:253
+msgid "Contract Terms"
+msgstr ""
+
+#: django_ledger/models/estimate.py:255
+msgid "Customer Estimate Title"
+msgstr ""
+
+#: django_ledger/models/estimate.py:258
+msgid "EstimateModel Title length must be greater than 5"
+msgstr ""
+
+#: django_ledger/models/estimate.py:262
+msgid "Estimate Model Status"
+msgstr ""
+
+#: django_ledger/models/estimate.py:265
+msgid "Date Draft"
+msgstr ""
+
+#: django_ledger/models/estimate.py:266
+msgid "Date In Review"
+msgstr ""
+
+#: django_ledger/models/estimate.py:267
+msgid "Date Approved"
+msgstr ""
+
+#: django_ledger/models/estimate.py:268
+msgid "Date Completed"
+msgstr ""
+
+#: django_ledger/models/estimate.py:269
+msgid "Date Canceled"
+msgstr ""
+
+#: django_ledger/models/estimate.py:270
+msgid "Date Void"
+msgstr ""
+
+#: django_ledger/models/estimate.py:275
+msgid "Total revenue estimate"
+msgstr ""
+
+#: django_ledger/models/estimate.py:276
+msgid "Estimated cost to complete the quoted work."
+msgstr ""
+
+#: django_ledger/models/estimate.py:282
+msgid "Labor Cost of labor estimate"
+msgstr ""
+
+#: django_ledger/models/estimate.py:283
+msgid "Estimated labor cost to complete the quoted work."
+msgstr ""
+
+#: django_ledger/models/estimate.py:289
+msgid "Material Cost Estimate"
+msgstr ""
+
+#: django_ledger/models/estimate.py:290
+msgid "Estimated material cost to complete the quoted work."
+msgstr ""
+
+#: django_ledger/models/estimate.py:296
+msgid "Equipment Cost Estimate"
+msgstr ""
+
+#: django_ledger/models/estimate.py:297 django_ledger/models/estimate.py:304
+msgid "Estimated equipment cost to complete the quoted work."
+msgstr ""
+
+#: django_ledger/models/estimate.py:303
+msgid "Other Cost Estimate"
+msgstr ""
+
+#: django_ledger/models/estimate.py:312
+msgid "Customer Job"
+msgstr ""
+
+#: django_ledger/models/estimate.py:313
+msgid "Customer Jobs"
+msgstr ""
+
+#: django_ledger/models/estimate.py:672
+#, python-format
+msgid "Do you want to mark Estimate %s as Draft?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:763
+#, python-format
+msgid "Do you want to mark Estimate %s as In Review?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:839
+#, python-format
+msgid "Do you want to mark Estimate %s as Approved?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:916
+#, python-format
+msgid "Do you want to mark Estimate %s as Completed?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:991
+#, python-format
+msgid "Do you want to mark Estimate %s as Canceled?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:1069
+#, python-format
+msgid "Do you want to mark Estimate %s as Void?"
+msgstr ""
+
+#: django_ledger/models/estimate.py:1324
+msgid "Cannot compute gross margin, total cost is zero."
+msgstr ""
+
+#: django_ledger/models/invoice.py:314
+msgid "Invoice Number"
+msgstr ""
+
+#: django_ledger/models/invoice.py:316
+msgid "Invoice Status"
+msgstr ""
+
+#: django_ledger/models/invoice.py:323 django_ledger/models/mixins.py:226
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:31
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:30
+msgid "Cash Account"
+msgstr ""
+
+#: django_ledger/models/invoice.py:327 django_ledger/models/mixins.py:232
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:42
+msgid "Prepaid Account"
+msgstr ""
+
+#: django_ledger/models/invoice.py:331 django_ledger/models/mixins.py:240
+msgid "Unearned Account"
+msgstr ""
+
+#: django_ledger/models/invoice.py:337
+msgid "Invoice Additional Info"
+msgstr ""
+
+#: django_ledger/models/invoice.py:341
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:84
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:8
+msgid "Invoice Items"
+msgstr ""
+
+#: django_ledger/models/invoice.py:362
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:99
+#: django_ledger/templates/django_ledger/invoice/invoice_list.html:15
+msgid "Invoices"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1070
+#, python-format
+msgid "Do you want to mark Invoice %s as Draft?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1161
+#, python-format
+msgid "Do you want to mark Invoice %s as In Review?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1266
+#, python-format
+msgid "Do you want to mark Invoice %s as Approved?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1375
+#, python-format
+msgid "Do you want to mark Invoice %s as Paid?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1482
+#, python-format
+msgid "Do you want to mark Invoice %s as Void?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1557
+#, python-format
+msgid "Do you want to mark Invoice %s as Canceled?"
+msgstr ""
+
+#: django_ledger/models/invoice.py:1566
+#, python-brace-format
+msgid "Invoice {self.invoice_number} cannot be deleted..."
+msgstr ""
+
+#: django_ledger/models/items.py:126
+msgid "Unit of Measure Name"
+msgstr ""
+
+#: django_ledger/models/items.py:127
+msgid "UoM Abbreviation"
+msgstr ""
+
+#: django_ledger/models/items.py:134
+msgid "UoM Entity"
+msgstr ""
+
+#: django_ledger/models/items.py:507
+msgid "Labor"
+msgstr ""
+
+#: django_ledger/models/items.py:508
+msgid "Material"
+msgstr ""
+
+#: django_ledger/models/items.py:510
+msgid "Lump Sum"
+msgstr ""
+
+#: django_ledger/models/items.py:520
+msgid "Expense"
+msgstr ""
+
+#: django_ledger/models/items.py:522
+msgid "Service"
+msgstr ""
+
+#: django_ledger/models/items.py:523
+msgid "Product"
+msgstr ""
+
+#: django_ledger/models/items.py:527
+msgid "Item Name"
+msgstr ""
+
+#: django_ledger/models/items.py:529
+msgid "Internal ID"
+msgstr ""
+
+#: django_ledger/models/items.py:530
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:9
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:9
+msgid "Item Number"
+msgstr ""
+
+#: django_ledger/models/items.py:535
+msgid "Unit of Measure"
+msgstr ""
+
+#: django_ledger/models/items.py:538
+msgid "SKU Code"
+msgstr ""
+
+#: django_ledger/models/items.py:539
+msgid "UPC Code"
+msgstr ""
+
+#: django_ledger/models/items.py:546
+msgid "Default monetary value per unit of measure"
+msgstr ""
+
+#: django_ledger/models/items.py:549
+msgid "Is an item for inventory"
+msgstr ""
+
+#: django_ledger/models/items.py:550
+msgid "It is an item you require for your inventory."
+msgstr ""
+
+#: django_ledger/models/items.py:552
+msgid "Is a product or service."
+msgstr ""
+
+#: django_ledger/models/items.py:554
+msgid "Is a product or service you sell or provide to customers."
+msgstr ""
+
+#: django_ledger/models/items.py:563
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:11
+msgid "Inventory Account"
+msgstr ""
+
+#: django_ledger/models/items.py:565
+msgid "Inventory account where cost will be capitalized."
+msgstr ""
+
+#: django_ledger/models/items.py:572
+msgid "Total inventory received."
+msgstr ""
+
+#: django_ledger/models/items.py:578
+msgid "Total value of inventory received."
+msgstr ""
+
+#: django_ledger/models/items.py:583
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:12
+msgid "COGS Account"
+msgstr ""
+
+#: django_ledger/models/items.py:585
+msgid "COGS account where cost will be recognized on Income Statement."
+msgstr ""
+
+#: django_ledger/models/items.py:591
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:14
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:14
+msgid "Earnings Account"
+msgstr ""
+
+#: django_ledger/models/items.py:593
+msgid "Earnings account where revenue will be recognized on Income Statement."
+msgstr ""
+
+#: django_ledger/models/items.py:599
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:11
+msgid "Expense Account"
+msgstr ""
+
+#: django_ledger/models/items.py:601
+msgid "Expense account where cost will be recognized on Income Statement."
+msgstr ""
+
+#: django_ledger/models/items.py:607
+msgid "Item Additional Info"
+msgstr ""
+
+#: django_ledger/models/items.py:613
+msgid "Item Entity"
+msgstr ""
+
+#: django_ledger/models/items.py:804
+msgid "Items must have an associated expense accounts."
+msgstr ""
+
+#: django_ledger/models/items.py:806
+msgid "Expenses must have a type."
+msgstr ""
+
+#: django_ledger/models/items.py:819
+msgid "Products must have Inventory, COGS & Earnings accounts."
+msgstr ""
+
+#: django_ledger/models/items.py:821
+msgid "Product must not be labor..."
+msgstr ""
+
+#: django_ledger/models/items.py:831
+msgid "Services must have COGS & Earnings accounts."
+msgstr ""
+
+#: django_ledger/models/items.py:842
+msgid "Items for inventory must have Inventory & COGS accounts."
+msgstr ""
+
+#: django_ledger/models/items.py:844
+msgid "Inventory items must have a type."
+msgstr ""
+
+#: django_ledger/models/items.py:1038
+msgid "Not Ordered"
+msgstr ""
+
+#: django_ledger/models/items.py:1039
+msgid "Ordered"
+msgstr ""
+
+#: django_ledger/models/items.py:1040
+msgid "In Transit"
+msgstr ""
+
+#: django_ledger/models/items.py:1041
+msgid "Received"
+msgstr ""
+
+#: django_ledger/models/items.py:1050 django_ledger/models/journal_entry.py:380
+msgid "Associated Entity Unit"
+msgstr ""
+
+#: django_ledger/models/items.py:1053
+msgid "Item Model"
+msgstr ""
+
+#: django_ledger/models/items.py:1058
+msgid "Bill Model"
+msgstr ""
+
+#: django_ledger/models/items.py:1063
+msgid "Invoice Model"
+msgstr ""
+
+#: django_ledger/models/items.py:1068
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:97
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:21
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:10
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:19
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:96
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:19
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:20
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:51
+msgid "Quantity"
+msgstr ""
+
+#: django_ledger/models/items.py:1072
+msgid "Cost Per Unit"
+msgstr ""
+
+#: django_ledger/models/items.py:1079
+msgid "Total Amount QTY x UnitCost"
+msgstr ""
+
+#: django_ledger/models/items.py:1087
+msgid "Purchase Order Model"
+msgstr ""
+
+#: django_ledger/models/items.py:1090
+msgid "PO Quantity"
+msgstr ""
+
+#: django_ledger/models/items.py:1091
+msgid "Authorized item quantity for purchasing."
+msgstr ""
+
+#: django_ledger/models/items.py:1095
+msgid "PO Unit Cost"
+msgstr ""
+
+#: django_ledger/models/items.py:1096
+msgid "Purchase Order unit cost."
+msgstr ""
+
+#: django_ledger/models/items.py:1103
+msgid "Authorized maximum item cost per Purchase Order"
+msgstr ""
+
+#: django_ledger/models/items.py:1104
+msgid "Maximum authorized cost per Purchase Order."
+msgstr ""
+
+#: django_ledger/models/items.py:1110
+msgid "PO Item Status"
+msgstr ""
+
+#: django_ledger/models/items.py:1116
+msgid "Customer Estimate"
+msgstr ""
+
+#: django_ledger/models/items.py:1120
+msgid "Estimated/Contract Quantity"
+msgstr ""
+
+#: django_ledger/models/items.py:1124
+msgid "Estimate/Contract Cost per Unit."
+msgstr ""
+
+#: django_ledger/models/items.py:1131
+msgid "Total Estimate/Contract Cost."
+msgstr ""
+
+#: django_ledger/models/items.py:1135
+msgid "Estimate/Contract Revenue per Unit."
+msgstr ""
+
+#: django_ledger/models/items.py:1142
+msgid "Total Estimate/Contract Revenue."
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:348
+#: django_ledger/models/journal_entry.py:349
+msgid "Operating"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:351
+msgid "Investing"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:352
+msgid "Purchase/Disposition of PPE"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:353
+msgid "Purchase/Disposition of Securities"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:354
+msgid "Investing Activity Other"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:356
+msgid "Financing"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:357
+msgid "Payoff of Short Term Debt"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:358
+msgid "Payoff of Long Term Debt"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:359
+msgid "Issuance of Common Stock, Preferred Stock or Capital Contribution"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:360
+msgid "Dividends or Distributions to Shareholders"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:361
+msgid "Financing Activity Other"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:372
+msgid "Journal Entry Number"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:373
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:9
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:8
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:8
+msgid "Timestamp"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:390
+msgid "Origin"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:391
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:18
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:12
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:13
+msgid "Posted"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:396 django_ledger/models/ledger.py:213
+#: django_ledger/models/mixins.py:220
+msgid "Ledger"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:408
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:19
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:10
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:32
+#: django_ledger/views/journal_entry.py:91
+msgid "Journal Entries"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:813
+msgid "Cannot post an empty Journal Entry."
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:1485
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete JournalEntry Model {self.je_number} on "
+"Ledger {self.ledger.name}?"
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:1503
+#, python-brace-format
+msgid "JournalEntryModel {self.uuid} cannot be deleted..."
+msgstr ""
+
+#: django_ledger/models/journal_entry.py:1776
+#, python-brace-format
+msgid "Cannot add Journal Entries to locked LedgerModel {instance.ledger_id}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:194
+msgid "User Defined Ledger ID"
+msgstr ""
+
+#: django_ledger/models/ledger.py:195
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:9
+msgid "Ledger Name"
+msgstr ""
+
+#: django_ledger/models/ledger.py:199
+msgid "Ledger Entity"
+msgstr ""
+
+#: django_ledger/models/ledger.py:200
+msgid "Posted Ledger"
+msgstr ""
+
+#: django_ledger/models/ledger.py:201
+msgid "Locked Ledger"
+msgstr ""
+
+#: django_ledger/models/ledger.py:202
+msgid "Hidden Ledger"
+msgstr ""
+
+#: django_ledger/models/ledger.py:214
+msgid "Ledgers"
+msgstr ""
+
+#: django_ledger/models/ledger.py:277
+#, python-brace-format
+msgid "earliest_timestamp not present in LedgerModel {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:461
+#, python-brace-format
+msgid "Ledger {self.name} cannot be posted. UUID: {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:497
+#, python-brace-format
+msgid "Ledger {self.uuid} cannot be unposted."
+msgstr ""
+
+#: django_ledger/models/ledger.py:526
+#, python-brace-format
+msgid "Ledger {self.name} cannot be locked. UUID: {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:560
+#, python-brace-format
+msgid "Ledger {self.name} cannot be un-locked. UUID: {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:579
+#, python-brace-format
+msgid "Ledger {self.name} cannot be hidden. UUID: {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:597
+#, python-brace-format
+msgid "Ledger {self.name} cannot be un-hidden. UUID: {self.uuid}"
+msgstr ""
+
+#: django_ledger/models/ledger.py:614
+msgid ""
+"LedgerModel {self.name} cannot be deleted because posted is {self."
+"is_posted()} "
+msgstr ""
+
+#: django_ledger/models/ledger.py:626
+#, python-brace-format
+msgid ""
+"Journal Entries with date {earliest_date} cannot be deleted because of "
+"latest closing "
+msgstr ""
+
+#: django_ledger/models/ledger.py:742
+msgid ""
+"Are you sure you want to delete Ledger {self.name} from Entity {self."
+"get_entity_name()}?"
+msgstr ""
+
+#: django_ledger/models/mixins.py:52
+msgid "Slug field must contain at least 10 characters."
+msgstr ""
+
+#: django_ledger/models/mixins.py:109
+msgid "Address Line 1"
+msgstr ""
+
+#: django_ledger/models/mixins.py:110
+msgid "Address Line 2"
+msgstr ""
+
+#: django_ledger/models/mixins.py:112
+msgid "State/Province"
+msgstr ""
+
+#: django_ledger/models/mixins.py:115
+msgid "Email"
+msgstr ""
+
+#: django_ledger/models/mixins.py:116
+msgid "Website"
+msgstr ""
+
+#: django_ledger/models/mixins.py:117
+msgid "Phone Number"
+msgstr ""
+
+#: django_ledger/models/mixins.py:181
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:67
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:84
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:105
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:13
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:58
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:75
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:96
+msgid "Amount Due"
+msgstr ""
+
+#: django_ledger/models/mixins.py:186
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:120
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:133
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:111
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:121
+msgid "Amount Paid"
+msgstr ""
+
+#: django_ledger/models/mixins.py:192
+msgid "Amount Receivable"
+msgstr ""
+
+#: django_ledger/models/mixins.py:197
+msgid "Amount Unearned"
+msgstr ""
+
+#: django_ledger/models/mixins.py:202
+msgid "Amount Earned"
+msgstr ""
+
+#: django_ledger/models/mixins.py:205
+msgid "Accrue"
+msgstr ""
+
+#: django_ledger/models/mixins.py:209
+msgid "Progress Amount"
+msgstr ""
+
+#: django_ledger/models/mixins.py:978
+msgid "Terms"
+msgstr ""
+
+#: django_ledger/models/mixins.py:979
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:72
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:89
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:110
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:63
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:80
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:101
+msgid "Due Date"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1087
+msgid "Markdown Notes"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1150
+msgid "Checking"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1151
+msgid "Savings"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1152
+msgid "Money Market"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1153
+msgid "Certificate of Deposit"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1154
+msgid "Credit Card"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1155
+msgid "Short Term Loan"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1156
+msgid "Long Term Loan"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1157
+msgid "Mortgage"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1175
+msgid "Financial Institution"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1176
+msgid "Name of the financial institution (i.e. Bank Name)."
+msgstr ""
+
+#: django_ledger/models/mixins.py:1180 django_ledger/models/mixins.py:1184
+msgid "Only digits allowed"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1187
+msgid "SWIFT Number"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1218
+msgid "Tax Registration Number"
+msgstr ""
+
+#: django_ledger/models/mixins.py:1238
+msgid "Sales Tax Rate"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:195
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:53
+msgid "Fulfilled"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:201
+msgid "Purchase Order Number"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:203
+msgid "Purchase Order Title"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:207
+msgid "PO Title must be greater than 5"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:210
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:27
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:33
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:39
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:51
+msgid "Purchase Order Amount"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:214
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:41
+msgid "Received Amount"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:223
+msgid "Fulfillment Date"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:229
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:8
+msgid "Purchase Order Items"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:742
+#, python-format
+msgid "Do you want to mark Purchase Order %s as Draft?"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:815
+#, python-format
+msgid "Do you want to mark Purchase Order %s as In Review?"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:882
+#, python-format
+msgid "Do you want to mark Purchase Order %s as Approved?"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:948
+#, python-format
+msgid "Do you want to mark Purchase Order %s as Canceled?"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:1045
+#, python-format
+msgid "Do you want to mark Purchase Order %s as Fulfilled?"
+msgstr ""
+
+#: django_ledger/models/purchase_order.py:1123
+#, python-format
+msgid "Do you want to mark Purchase Order %s as Void?"
+msgstr ""
+
+#: django_ledger/models/transactions.py:88
+#: django_ledger/models/transactions.py:97
+msgid ""
+"Account list must be a list of AccountModel, UUID or str objects (codes)."
+msgstr ""
+
+#: django_ledger/models/transactions.py:458
+msgid "Journal Entry to be associated with this transaction."
+msgstr ""
+
+#: django_ledger/models/transactions.py:464
+msgid "Account from Chart of Accounts to be associated with this transaction."
+msgstr ""
+
+#: django_ledger/models/transactions.py:471
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:22
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:11
+msgid "Amount"
+msgstr ""
+
+#: django_ledger/models/transactions.py:472
+msgid "Amount of the transaction."
+msgstr ""
+
+#: django_ledger/models/transactions.py:479
+msgid "Transaction Description"
+msgstr ""
+
+#: django_ledger/models/transactions.py:480
+msgid "A description to be included with this individual transaction."
+msgstr ""
+
+#: django_ledger/models/transactions.py:482
+msgid "Cleared"
+msgstr ""
+
+#: django_ledger/models/transactions.py:483
+msgid "Reconciled"
+msgstr ""
+
+#: django_ledger/models/transactions.py:489
+msgid "Transaction"
+msgstr ""
+
+#: django_ledger/models/transactions.py:490
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:91
+msgid "Transactions"
+msgstr ""
+
+#: django_ledger/models/transactions.py:597
+msgid "Transactions cannot be linked to root accounts."
+msgstr ""
+
+#: django_ledger/models/transactions.py:605
+#, python-brace-format
+msgid ""
+"Cannot create or modify transactions on account model {instance.account}."
+msgstr ""
+
+#: django_ledger/models/transactions.py:609
+msgid "Cannot modify transactions on locked journal entries."
+msgstr ""
+
+#: django_ledger/models/unit.py:133
+msgid "Unit Entity"
+msgstr ""
+
+#: django_ledger/models/unit.py:136
+msgid "Is Hidden"
+msgstr ""
+
+#: django_ledger/models/vendor.py:181
+msgid "Vendor Entity"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/account_create.html:10
+#: django_ledger/templates/django_ledger/account/account_list.html:19
+#: django_ledger/views/account.py:107
+msgid "Create Account"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/account_detail.html:14
+msgid "Account Transaction List Report"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/account_list.html:10
+msgid "CoA Account List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/account_list.html:21
+msgid "Back to CoA List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/account_txs_table.html:29
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:30
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:89
+#: django_ledger/templates/django_ledger/bank_account/tags/bank_accounts_table.html:39
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:16
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:13
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:36
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:13
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_list_table.html:38
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:16
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:38
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:13
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:27
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:57
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:15
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:51
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:112
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:186
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:260
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:321
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_table.html:39
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:16
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:16
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:95
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:15
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:15
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:11
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:33
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:14
+msgid "Actions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:25
+msgid "CoA"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:26
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:25
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:13
+msgid "Balance Type"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:29
+msgid "CoA Role Default"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:96
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:64
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:58
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:119
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:193
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:267
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:328
+msgid "Detail"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:98
+#: django_ledger/templates/django_ledger/bank_account/bank_account_update.html:23
+#: django_ledger/templates/django_ledger/bank_account/tags/bank_accounts_table.html:49
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:46
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:154
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:48
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:63
+#: django_ledger/templates/django_ledger/data_import/import_job_update.html:14
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_list_table.html:48
+#: django_ledger/templates/django_ledger/entity/entity_update.html:16
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:56
+#: django_ledger/templates/django_ledger/expense/expense_update.html:23
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:43
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:66
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:60
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:121
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:195
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:269
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:330
+#: django_ledger/templates/django_ledger/inventory/inventory_item_update.html:23
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:38
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:40
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:137
+#: django_ledger/templates/django_ledger/journal_entry/je_detail.html:34
+#: django_ledger/templates/django_ledger/product/product_update.html:23
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:42
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:61
+#: django_ledger/templates/django_ledger/service/service_update.html:23
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:42
+#: django_ledger/templates/django_ledger/unit/unit_list.html:34
+#: django_ledger/templates/django_ledger/unit/unit_update.html:22
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:41
+#: django_ledger/templates/django_ledger/uom/uom_update.html:24
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:63
+msgid "Update"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:101
+#: django_ledger/templates/django_ledger/bank_account/tags/bank_accounts_table.html:52
+msgid "Activate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:105
+msgid "Deactivate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:109
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:43
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:64
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:76
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:105
+msgid "Lock"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/account/tags/accounts_table.html:113
+#: django_ledger/templates/django_ledger/journal_entry/je_detail.html:29
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:80
+msgid "Unlock"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/auth/login.html:28
+#: django_ledger/views/auth.py:20
+msgid "Login"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_create.html:12
+#: django_ledger/views/bank_account.py:44
+msgid "Create Bank Account"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_create.html:22
+#: django_ledger/templates/django_ledger/bills/bill_create.html:33
+#: django_ledger/templates/django_ledger/estimate/estimate_create.html:22
+#: django_ledger/templates/django_ledger/expense/expense_create.html:23
+#: django_ledger/templates/django_ledger/inventory/inventory_item_create.html:23
+#: django_ledger/templates/django_ledger/invoice/invoice_create.html:38
+#: django_ledger/templates/django_ledger/product/product_create.html:24
+#: django_ledger/templates/django_ledger/purchase_order/po_create.html:27
+#: django_ledger/templates/django_ledger/service/service_create.html:24
+#: django_ledger/templates/django_ledger/unit/unit_create.html:22
+#: django_ledger/templates/django_ledger/uom/uom_create.html:24
+msgid "Create"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_create.html:25
+#: django_ledger/templates/django_ledger/bank_account/bank_account_update.html:26
+#: django_ledger/templates/django_ledger/data_import/data_import_job_list.html:13
+#: django_ledger/templates/django_ledger/data_import/data_import_job_txs.html:20
+#: django_ledger/templates/django_ledger/entity/entity_update.html:20
+#: django_ledger/templates/django_ledger/estimate/estimate_create.html:25
+#: django_ledger/templates/django_ledger/expense/expense_create.html:26
+#: django_ledger/templates/django_ledger/expense/expense_update.html:26
+#: django_ledger/templates/django_ledger/inventory/inventory_item_create.html:26
+#: django_ledger/templates/django_ledger/inventory/inventory_item_update.html:26
+#: django_ledger/templates/django_ledger/product/product_create.html:27
+#: django_ledger/templates/django_ledger/product/product_update.html:26
+#: django_ledger/templates/django_ledger/service/service_create.html:27
+#: django_ledger/templates/django_ledger/service/service_update.html:26
+#: django_ledger/templates/django_ledger/unit/unit_create.html:24
+#: django_ledger/templates/django_ledger/unit/unit_update.html:24
+#: django_ledger/templates/django_ledger/uom/uom_create.html:27
+#: django_ledger/templates/django_ledger/uom/uom_update.html:27
+msgid "Back"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_list.html:14
+msgid "New Bank Account"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_update.html:14
+msgid "Routing"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/bank_account_update.html:15
+msgid "ABA"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bank_account/tags/bank_accounts_table.html:55
+msgid "Inactivate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_create.html:11
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:27
+#: django_ledger/views/bill.py:52
+msgid "Create Bill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_create.html:19
+#: django_ledger/templates/django_ledger/bills/bill_create.html:20
+msgid "Bill for"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_create.html:37
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:205
+#: django_ledger/templates/django_ledger/components/modals.html:11
+#: django_ledger/templates/django_ledger/components/modals_v2.html:9
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:188
+#: django_ledger/templates/django_ledger/invoice/invoice_create.html:42
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:121
+msgid "Cancel"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_delete.html:27
+#: django_ledger/templates/django_ledger/bills/bill_void.html:24
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_delete.html:18
+#: django_ledger/templates/django_ledger/customer/customer_create.html:25
+#: django_ledger/templates/django_ledger/customer/customer_update.html:25
+#: django_ledger/templates/django_ledger/data_import/import_job_delete.html:17
+#: django_ledger/templates/django_ledger/entity/entity_delete.html:22
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:48
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:51
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:51
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:54
+#: django_ledger/templates/django_ledger/invoice/invoice_delete.html:23
+#: django_ledger/templates/django_ledger/journal_entry/je_delete.html:17
+#: django_ledger/templates/django_ledger/ledger/ledger_delete.html:18
+#: django_ledger/templates/django_ledger/product/product_delete.html:19
+#: django_ledger/templates/django_ledger/purchase_order/po_delete.html:23
+#: django_ledger/templates/django_ledger/service/service_delete.html:19
+#: django_ledger/templates/django_ledger/uom/uom_delete.html:27
+#: django_ledger/templates/django_ledger/vendor/vendor_create.html:24
+#: django_ledger/templates/django_ledger/vendor/vendor_update.html:24
+msgid "Go Back"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_delete.html:28
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:25
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_delete.html:19
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:60
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:46
+#: django_ledger/templates/django_ledger/data_import/import_job_delete.html:18
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_list_table.html:50
+#: django_ledger/templates/django_ledger/entity/entitiy_list.html:22
+#: django_ledger/templates/django_ledger/entity/entity_delete.html:23
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:25
+#: django_ledger/templates/django_ledger/invoice/invoice_delete.html:24
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:23
+#: django_ledger/templates/django_ledger/journal_entry/je_delete.html:18
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:88
+#: django_ledger/templates/django_ledger/ledger/ledger_delete.html:19
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:131
+#: django_ledger/templates/django_ledger/product/product_delete.html:20
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:44
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:103
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:25
+#: django_ledger/templates/django_ledger/purchase_order/po_delete.html:24
+#: django_ledger/templates/django_ledger/service/service_delete.html:20
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:44
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:43
+#: django_ledger/templates/django_ledger/uom/uom_delete.html:28
+msgid "Delete"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:19
+#: django_ledger/templates/django_ledger/bills/bill_update.html:24
+#: django_ledger/views/bill.py:214
+msgid "Bill List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:63
+msgid "Accrued"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:71
+msgid "You Still Owe"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:94
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:18
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:8
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:18
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:9
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:9
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:94
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:18
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:10
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:18
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:50
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:8
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:10
+msgid "Item"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:96
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:22
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:11
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:20
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:95
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:20
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:19
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:9
+msgid "Unit Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:98
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:127
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:24
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:67
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:39
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:62
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:91
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:11
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:97
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:115
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:22
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:58
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:62
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:85
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:62
+msgid "Total"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:99
+msgid "PO"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:115
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:45
+msgid "View PO"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:144
+#: django_ledger/templates/django_ledger/bills/bill_update.html:66
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:30
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:131
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:65
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:49
+#: django_ledger/templates/django_ledger/unit/unit_detail.html:25
+#: django_ledger/views/financial_statement.py:59
+msgid "Balance Sheet"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:146
+#: django_ledger/templates/django_ledger/bills/bill_update.html:71
+#: django_ledger/templates/django_ledger/financial_statements/income_statement.html:31
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:133
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:70
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:52
+#: django_ledger/templates/django_ledger/unit/unit_detail.html:27
+msgid "Income Statement"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:148
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:31
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:135
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:55
+#: django_ledger/templates/django_ledger/unit/unit_detail.html:29
+msgid "Cash Flow Statement"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:155
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:141
+msgid "Balance Sheet PDF"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:158
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:144
+msgid "Income Statement PDF"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:161
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:147
+msgid "Cash Flow Statement PDF"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_detail.html:171
+msgid "Bill Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_list.html:18
+msgid "Latest Bills"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_list.html:95
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:73
+#: django_ledger/templates/django_ledger/estimate/estimate_list.html:95
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:97
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:98
+#: django_ledger/templates/django_ledger/purchase_order/po_list.html:96
+msgid "Go to month:"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_list.html:98
+#: django_ledger/templates/django_ledger/bills/bill_list.html:110
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:76
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:88
+#: django_ledger/templates/django_ledger/estimate/estimate_list.html:98
+#: django_ledger/templates/django_ledger/estimate/estimate_list.html:110
+#: django_ledger/templates/django_ledger/invoice/invoice_list.html:94
+#: django_ledger/templates/django_ledger/invoice/invoice_list.html:106
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:100
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:112
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:101
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:113
+#: django_ledger/templates/django_ledger/purchase_order/po_list.html:99
+#: django_ledger/templates/django_ledger/purchase_order/po_list.html:111
+msgid "All"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_list.html:107
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:85
+#: django_ledger/templates/django_ledger/estimate/estimate_list.html:107
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:109
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:110
+#: django_ledger/templates/django_ledger/purchase_order/po_list.html:108
+msgid "Go to year:"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:19
+msgid "Save Bill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:22
+msgid "Back to Bill Detail"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:26
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:26
+#: django_ledger/templates/django_ledger/purchase_order/po_detail.html:20
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:29
+msgid "Go To Dashboard"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:38
+#: django_ledger/templates/django_ledger/bills/bill_update.html:44
+msgid "Bill State"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:53
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:52
+msgid "Ledger State"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:76
+msgid "Bill Ledger"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:80
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:79
+msgid "Ledger Journal Entries"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:83
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:82
+msgid "Lock Ledger"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:85
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:84
+msgid "Unlock Ledger"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:87
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:86
+msgid "Force Migrate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/bill_update.html:98
+msgid "Bill Configuration"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:16
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:14
+msgid "Due in"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:44
+#: django_ledger/templates/django_ledger/entity/entitiy_list.html:20
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:38
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:85
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:22
+#: django_ledger/templates/django_ledger/unit/unit_list.html:32
+msgid "View"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:49
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:187
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:43
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:170
+msgid "Mark as Paid"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:53
+msgid "Mark as Canceled"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:66
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:83
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:104
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:132
+msgid "This bill is"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:75
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:92
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:113
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:66
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:83
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:104
+msgid "Is Accrued"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:100
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:129
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:141
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:91
+msgid "External Ref"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:122
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:113
+msgid "Progressed"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:160
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:62
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:143
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:67
+msgid "Mark as Draft"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:169
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:71
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:152
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:76
+msgid "Mark as Review"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:178
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:85
+msgid "Mark as Approved"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/includes/card_bill.html:217
+msgid "New Bill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:19
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:10
+msgid "PO Qty"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:20
+#: django_ledger/templates/django_ledger/purchase_order/po_detail.html:31
+msgid "PO Amount"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:23
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_txs_table.html:9
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:32
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:33
+#: django_ledger/templates/django_ledger/financial_statements/income_statement.html:28
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:23
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:11
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:14
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_txs_table.html:11
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:21
+#: django_ledger/templates/django_ledger/transactions/tags/txs_table.html:11
+msgid "Unit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:79
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:74
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:69
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:101
+msgid "New Item"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_item_formset.html:81
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_update.html:19
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_txs_table.html:81
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:76
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:70
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:55
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:102
+msgid "Save"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:9
+msgid "Number"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:10
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:12
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:12
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:15
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:23
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:12
+msgid "Status"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:11
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:13
+msgid "Status Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:14
+msgid "Payments"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/bills/tags/bill_table.html:15
+msgid "Past Due"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/coa_create.html:10
+#: django_ledger/views/chart_of_accounts.py:51
+msgid "Create Chart of Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/coa_list.html:17
+msgid "Show Inactive"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/coa_list.html:20
+msgid "Show Active"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:12
+msgid "DEFAULT"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:16
+msgid "Entity Default"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:31
+msgid "Total Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:32
+msgid "Active Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:35
+msgid "Locked Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:38
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:12
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:17
+msgid "Created"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:41
+msgid "Updated"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:41
+msgid "ago"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:58
+msgid "Add Account"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:65
+msgid "Mark as Default"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:71
+msgid "Mark as Inactive"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/chart_of_accounts/includes/coa_card.html:76
+msgid "Mark as Active"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_create.html:9
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_create.html:20
+#: django_ledger/views/closing_entry.py:72
+msgid "Create Closing Entry"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_create.html:24
+msgid "Back To Closing Entries"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_detail.html:15
+msgid "Back to Closing Entry List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_detail.html:29
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_update.html:29
+msgid "Closing Entry Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:16
+msgid "Closing Entries"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/closing_entry_list.html:18
+msgid "Latest Closing Entries"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:10
+msgid "Closing Entry"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:14
+msgid "Created:"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:15
+msgid "Transaction Count:"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:18
+msgid "Go To"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:28
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:51
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:76
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:67
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:113
+msgid "Post"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:37
+msgid "Update Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:46
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:55
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:82
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:71
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:117
+msgid "UnPost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/includes/card_closing_entry.html:53
+msgid "Update Notes"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:9
+msgid "Closing Entry Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:11
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:15
+msgid "Txs Count"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_table.html:43
+msgid "Details"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_txs_table.html:11
+msgid "TX Type"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/closing_entry/tags/closing_entry_txs_table.html:12
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:14
+msgid "Balance"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/date_picker.html:5
+msgid "Select Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/feedback_button.html:7
+msgid "Feedback"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/feedback_button.html:10
+#: django_ledger/templates/django_ledger/components/feedback_button.html:24
+msgid "Report a Bug"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/feedback_button.html:12
+msgid "Request a Feature"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/feedback_button.html:56
+msgid "Request a New Feature"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/modals.html:21
+#: django_ledger/templates/django_ledger/components/modals.html:24
+msgid "Mark As Paid"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/modals_v2.html:11
+msgid "Confirm"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/period_navigator.html:26
+msgid "Month"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/period_navigator.html:37
+#: django_ledger/templates/django_ledger/includes/widget_ic.html:17
+msgid "thru"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/components/period_navigator.html:41
+msgid "Go To Current Month"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/customer_create.html:11
+#: django_ledger/templates/django_ledger/customer/customer_create.html:23
+msgid "Create Customer"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/customer_list.html:15
+msgid "New Customer"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/customer_update.html:11
+#: django_ledger/templates/django_ledger/customer/customer_update.html:23
+msgid "Update Customer"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/includes/card_customer.html:9
+msgid "Customer Information"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/includes/card_customer.html:28
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:83
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:102
+#: django_ledger/templates/django_ledger/vendor/includes/card_vendor.html:28
+msgid "Edit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:10
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:11
+msgid "Address"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/customer/tags/customer_table.html:12
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:13
+msgid "Hidden"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/data_import_job_list.html:10
+msgid "Import OFX File"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/data_import_job_txs.html:10
+msgid "Pending Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/data_import_job_txs.html:14
+msgid "Imported Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/import_job_create.html:40
+msgid "No file uploaded"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/import_job_create.html:49
+msgid "Upload"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/import_job_update.html:18
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_txs_table.html:86
+msgid "Import Job List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_list_table.html:52
+msgid "Manage"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_txs_imported.html:33
+msgid "View JE"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/data_import/tags/data_import_job_txs_table.html:57
+msgid "Transaction Activity"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/entitiy_list.html:13
+#: django_ledger/views/entity.py:47
+msgid "My Entities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/entitiy_list.html:27
+#: django_ledger/templates/django_ledger/entity/home.html:20
+msgid "New Entity"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/entity_create.html:19
+msgid "New Entity Information"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/entity_dashboard.html:83
+msgid "Payables"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/includes/card_entity.html:16
+msgid "Accrual Method"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/includes/card_entity.html:20
+msgid "Cash Method"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/entity/includes/card_entity.html:26
+msgid "Last Closing Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:17
+msgid "Revenue Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:24
+msgid "Cost Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:31
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:16
+msgid "Profit Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:38
+msgid "Gross Margin Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:50
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:8
+msgid "Estimate Items"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:69
+msgid "Purchase Orders"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:75
+msgid "Initiate PO"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:90
+msgid "Initiate Bill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_detail.html:105
+msgid "Initiate Invoice"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_list.html:18
+msgid "Latest Estimates"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/estimate_update.html:19
+msgid "Save Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:14
+msgid "Estimated Revenue"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:19
+msgid "Cost Breakdown"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:21
+msgid "Labor Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:24
+msgid "Materials Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:27
+msgid "Equipment Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:30
+msgid "Other Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:32
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:23
+msgid "Total Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:35
+msgid "Estimated Gross Margin"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:40
+msgid "Cost Progress"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:44
+msgid "Invoice Progress"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:48
+msgid "Received Progress"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/card_estimate.html:80
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:161
+msgid "Approve"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:12
+msgid "Unit Sale Price"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:13
+msgid "Total Cost Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_item_table.html:14
+msgid "Total Revenue Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:11
+msgid "Title"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:14
+msgid "Sales Price"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/includes/estimate_table.html:15
+#, python-format
+msgid "GM%%"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:21
+msgid "Unit Sales Price"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:22
+msgid "Business Unit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/estimate/tags/ce_item_formset.html:24
+msgid "Total Revenue"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/expense/expense_list.html:12
+msgid "The Things I Pay For"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:8
+msgid "Expense Number"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/expense/tags/expense_item_table.html:10
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:10
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:11
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:11
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:8
+msgid "UOM"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:54
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:57
+#: django_ledger/templates/django_ledger/financial_statements/income_statement.html:56
+msgid "By Unit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/balance_sheet.html:57
+#: django_ledger/templates/django_ledger/financial_statements/cash_flow.html:60
+#: django_ledger/templates/django_ledger/financial_statements/income_statement.html:59
+msgid "Download PDF"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:26
+msgid "Balance Through"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:76
+msgid "Total:"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:107
+msgid "Retained Earnings"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:118
+msgid "Total EQUITY"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/balance_sheet_statement.html:128
+msgid "Total Equity + Liabilities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:10
+msgid "Cash from Operating Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:27
+msgid "Noncash Charges to Non-current Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:48
+msgid "Noncash Charges to Current Accounts"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:91
+msgid "Net Cash Provided by Operating Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:102
+msgid "Cash from Financing Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:141
+msgid "Net Cash Provided by Financing Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:152
+msgid "Cash from Investing Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:178
+msgid "Net Cash Provided by Investing Activities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:191
+msgid "Net Cashflow"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/cash_flow_statement.html:199
+msgid "Net Cash From"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:20
+msgid "Operating Revenues"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:74
+msgid "Net Operating Revenues"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:82
+msgid "Less: Cost of Goods Sold"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:135
+msgid "Net COGS"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:148
+msgid "Gross Profit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:156
+msgid "Operating Expenses"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:208
+msgid "Net Operating Expenses"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:222
+msgid "Net Operating Income (Loss)"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:230
+msgid "Other Revenues"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:282
+msgid "Net Other Revenues"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:291
+msgid "Other Expenses"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:343
+msgid "Net Other Expenses"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:356
+msgid "Net Other Income (Loss)"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:370
+msgid "through"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/financial_statements/tags/income_statement.html:372
+msgid "Net Income"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/card_markdown.html:20
+msgid "No available notes to display..."
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/nav.html:37
+msgid "Logout"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_bs.html:5
+msgid "Assets"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_bs.html:8
+msgid "Liabilities"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_bs.html:11
+msgid "Equity"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_bs.html:14
+msgid "Cash"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_ic.html:5
+msgid "Revenue"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_ic.html:8
+msgid "Expenses"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_ic.html:11
+msgid "Earnings (Loss)"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/includes/widget_ic.html:14
+msgid "Accounting Period"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/inventory/inventory_item_list.html:12
+msgid "My Inventory Items"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/inventory/inventory_recount.html:60
+msgid "Recount Inventory"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/inventory/inventory_recount.html:62
+msgid "Update Inventory"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:8
+msgid "Inventory Number"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/inventory/tags/inventory_item_table.html:13
+msgid "Action"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:53
+msgid "Invoice Info"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:57
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:74
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:95
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:120
+msgid "This invoice is"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/includes/card_invoice.html:200
+msgid "New Invoice"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_create.html:11
+msgid "Invoice for Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_create.html:16
+#: django_ledger/templates/django_ledger/purchase_order/po_create.html:17
+msgid "Back to Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_create.html:24
+#: django_ledger/views/invoice.py:68
+msgid "Create Invoice"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:19
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:24
+#: django_ledger/views/invoice.py:45
+msgid "Invoice List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:41
+msgid "Accounts Receivable"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_detail.html:157
+msgid "Invoice Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_list.html:17
+msgid "Latest Invoices"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:19
+msgid "Save Invoice"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:22
+msgid "Back to Invoice Detail"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:37
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:43
+msgid "Invoice State"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:75
+msgid "Invoice Ledger"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/invoice_update.html:97
+msgid "Invoice Configuration"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/invoice/tags/invoice_item_formset.html:21
+msgid "Available"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:6
+#: django_ledger/views/journal_entry.py:153
+msgid "Journal Entry Detail"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:15
+msgid "Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/includes/card_journal_entry.html:47
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:70
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:109
+msgid "UnLock"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_create.html:8
+#: django_ledger/views/journal_entry.py:54
+msgid "Create Journal Entry"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_detail.html:14
+msgid "Journal Entry Transactions"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_detail.html:20
+msgid "Edit TXS"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_detail.html:24
+msgid "Ledger List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_detail_txs.html:59
+msgid "Done"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:126
+msgid "Back to Ledger List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:131
+msgid "Lock All"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/je_list.html:136
+msgid "Post All"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/journal_entry/tags/je_table.html:8
+msgid "Document Number"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:127
+msgid "Show All Ledgers"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:131
+msgid "Show Only Visible Ledgers"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:135
+msgid "Show Current Ledgers"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/ledger_list.html:138
+msgid "Back to Dashboard"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:11
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:42
+msgid "Reports"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:12
+msgid "Earliest JE Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:15
+msgid "Locked by Closing Entry"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:122
+msgid "Hide"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/ledger/tags/ledgers_table.html:126
+msgid "UnHide"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/product/product_list.html:12
+msgid "Products List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:8
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:8
+msgid "Type"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:12
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:12
+msgid "SKU"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/product/tags/product_table.html:13
+#: django_ledger/templates/django_ledger/service/tags/services_table.html:13
+msgid "UPC"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:19
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:42
+msgid "Contract"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:32
+msgid "Review Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:43
+msgid "Paid Amount"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:48
+msgid "Fulfilled Date"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:94
+msgid "Fulfill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/card_po.html:135
+msgid "New PO"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:28
+msgid "Bill Paid?"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_item_formset.html:61
+msgid "View Bill"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/includes/po_table.html:40
+msgid " Delete"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_create.html:12
+msgid "PO for Estimate"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_detail.html:16
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:27
+#: django_ledger/views/purchase_order.py:43
+msgid "PO List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_list.html:18
+msgid "Latest Purchase Orders"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:22
+msgid "Save PO"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:25
+msgid "Back to PO Detail"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:52
+msgid "Avg Unit Price"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/po_update.html:53
+msgid "Total Contracted Cost"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:13
+msgid "Billed"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/purchase_order/tags/po_item_table.html:41
+msgid "Total PO Amount"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/service/service_list.html:12
+msgid "Service List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/unit/unit_create.html:12
+msgid "Create Entity Unit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/unit/unit_detail.html:19
+#: django_ledger/templates/django_ledger/unit/unit_list.html:28
+msgid "JE Document Prefix"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/unit/unit_detail.html:23
+#: django_ledger/views/entity.py:210
+msgid "Dashboard"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/unit/unit_list.html:13
+msgid "Entity Units List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/unit/unit_update.html:12
+msgid "Update Entity Unit"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/uom/tags/uom_table.html:9
+msgid "Abbreviation"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/uom/uom_list.html:13
+msgid "Unit of Measures List"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/vendor/includes/card_vendor.html:9
+msgid "Vendor Info"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/vendor/tags/vendor_table.html:9
+msgid "Vendor Number"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/vendor/vendor_create.html:10
+#: django_ledger/templates/django_ledger/vendor/vendor_create.html:22
+msgid "Create Vendor"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/vendor/vendor_list.html:14
+msgid "New Vendor"
+msgstr ""
+
+#: django_ledger/templates/django_ledger/vendor/vendor_update.html:10
+#: django_ledger/templates/django_ledger/vendor/vendor_update.html:22
+msgid "Update Vendor"
+msgstr ""
+
+#: django_ledger/views/account.py:72
+msgid "Entity Accounts"
+msgstr ""
+
+#: django_ledger/views/account.py:100
+msgid "WARNING: The chart of accounts list is inactive."
+msgstr ""
+
+#: django_ledger/views/account.py:153
+msgid "Update Account"
+msgstr ""
+
+#: django_ledger/views/account.py:154
+#, python-brace-format
+msgid "Update Account: {self.object.code} - {self.object.name}"
+msgstr ""
+
+#: django_ledger/views/bank_account.py:33
+msgid "Bank Accounts"
+msgstr ""
+
+#: django_ledger/views/bank_account.py:76
+msgid "Update Bank Account"
+msgstr ""
+
+#: django_ledger/views/chart_of_accounts.py:52
+msgid "Create Chart of Account"
+msgstr ""
+
+#: django_ledger/views/chart_of_accounts.py:118
+msgid "Successfully updated {} Default Chart of Account to "
+msgstr ""
+
+#: django_ledger/views/closing_entry.py:48
+msgid "Closing Entry List"
+msgstr ""
+
+#: django_ledger/views/closing_entry.py:169
+msgid "Delete Closing Entry"
+msgstr ""
+
+#: django_ledger/views/customer.py:35
+msgid "Customer List"
+msgstr ""
+
+#: django_ledger/views/customer.py:48
+msgid "Create New Customer"
+msgstr ""
+
+#: django_ledger/views/customer.py:77
+msgid "Customer Update"
+msgstr ""
+
+#: django_ledger/views/data_import.py:40
+msgid "Create Import Job"
+msgstr ""
+
+#: django_ledger/views/data_import.py:84
+msgid "Data Import Jobs"
+msgstr ""
+
+#: django_ledger/views/data_import.py:120
+#, python-brace-format
+msgid "Successfully updated Import Job {self.object.description}"
+msgstr ""
+
+#: django_ledger/views/data_import.py:150
+msgid "Import Job Staged Txs"
+msgstr ""
+
+#: django_ledger/views/entity.py:57
+msgid "Create Entity"
+msgstr ""
+
+#: django_ledger/views/entity.py:136
+msgid "Delete Entity "
+msgstr ""
+
+#: django_ledger/views/estimate.py:40
+msgid "Customer Estimates"
+msgstr ""
+
+#: django_ledger/views/estimate.py:53
+msgid "Create Customer Estimate"
+msgstr ""
+
+#: django_ledger/views/estimate.py:87
+msgid "Customer Estimate Detail"
+msgstr ""
+
+#: django_ledger/views/estimate.py:140
+msgid "Customer Estimate Update"
+msgstr ""
+
+#: django_ledger/views/financial_statement.py:113
+#: django_ledger/views/financial_statement.py:114
+msgid "Income Statement: "
+msgstr ""
+
+#: django_ledger/views/financial_statement.py:173
+#: django_ledger/views/financial_statement.py:174
+msgid "Cash Flow Statement: "
+msgstr ""
+
+#: django_ledger/views/home.py:27
+msgid "My Dashboard"
+msgstr ""
+
+#: django_ledger/views/inventory.py:46
+msgid "Inventory Status"
+msgstr ""
+
+#: django_ledger/views/inventory.py:47
+msgid "Ordered/In Transit/On Hand"
+msgstr ""
+
+#: django_ledger/views/inventory.py:84 django_ledger/views/inventory.py:85
+msgid "Inventory Recount"
+msgstr ""
+
+#: django_ledger/views/invoice.py:412
+msgid "Delete Invoice "
+msgstr ""
+
+#: django_ledger/views/item.py:43
+msgid "Unit of Measures"
+msgstr ""
+
+#: django_ledger/views/item.py:54
+msgid "Create Unit of Measure"
+msgstr ""
+
+#: django_ledger/views/item.py:85
+#, python-brace-format
+msgid "User {self.request.user.username} cannot access entity {entity_slug}."
+msgstr ""
+
+#: django_ledger/views/item.py:95
+#, python-brace-format
+msgid ""
+"The Unit of Measure {unit_abbr} already created for Entity {entity_model."
+"name}."
+msgstr ""
+
+#: django_ledger/views/item.py:103
+msgid "Update Unit of Measure"
+msgstr ""
+
+#: django_ledger/views/item.py:175
+msgid "Products"
+msgstr ""
+
+#: django_ledger/views/item.py:187
+msgid "Create New Product"
+msgstr ""
+
+#: django_ledger/views/item.py:219
+msgid "Update Product"
+msgstr ""
+
+#: django_ledger/views/item.py:297
+msgid "Services"
+msgstr ""
+
+#: django_ledger/views/item.py:309
+msgid "Create New Service"
+msgstr ""
+
+#: django_ledger/views/item.py:340
+msgid "Update Service"
+msgstr ""
+
+#: django_ledger/views/item.py:416
+msgid "Expense Items"
+msgstr ""
+
+#: django_ledger/views/item.py:428
+msgid "Create New Expense Item"
+msgstr ""
+
+#: django_ledger/views/item.py:460
+msgid "Update Expense Item"
+msgstr ""
+
+#: django_ledger/views/item.py:501
+msgid "Inventory Items"
+msgstr ""
+
+#: django_ledger/views/item.py:513
+msgid "Create New Inventory Item"
+msgstr ""
+
+#: django_ledger/views/item.py:549
+msgid "Update Inventory Item"
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:110
+msgid "Locked Journal Entry. Must unlock ledger to add new Journal Entries."
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:131
+msgid "Update Journal Entry"
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:175
+msgid "Edit Transactions"
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:192
+msgid "Locked Journal Entry. Must unlock to Edit."
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:220
+msgid "Cannot update a Locked Journal Entry."
+msgstr ""
+
+#: django_ledger/views/journal_entry.py:227
+msgid "Journal Entry has not been posted."
+msgstr ""
+
+#: django_ledger/views/ledger.py:43
+msgid "Entity Ledgers"
+msgstr ""
+
+#: django_ledger/views/ledger.py:95
+msgid "Create Ledger"
+msgstr ""
+
+#: django_ledger/views/ledger.py:144
+msgid "Update Ledger: "
+msgstr ""
+
+#: django_ledger/views/ledger.py:225
+msgid "Ledger Balance Sheet: "
+msgstr ""
+
+#: django_ledger/views/ledger.py:273
+msgid "Ledger Income Statement: "
+msgstr ""
+
+#: django_ledger/views/ledger.py:326
+msgid "Ledger Cash Flow Statement: "
+msgstr ""
+
+#: django_ledger/views/mixins.py:92
+msgid "Invalid quarter number"
+msgstr ""
+
+#: django_ledger/views/mixins.py:94
+#, python-brace-format
+msgid "Invalid quarter format. Cannot parse {quarter} into integer."
+msgstr ""
+
+#: django_ledger/views/mixins.py:106
+msgid "No quarter specified"
+msgstr ""
+
+#: django_ledger/views/mixins.py:265 django_ledger/views/mixins.py:273
+#, python-brace-format
+msgid "Must provide {query_param} date parameter."
+msgstr ""
+
+#: django_ledger/views/mixins.py:286
+#, python-brace-format
+msgid "Invalid {query_param} {param_date} provided"
+msgstr ""
+
+#: django_ledger/views/mixins.py:327
+msgid "ENTITY_SLUG_URL_KWARG must be provided."
+msgstr ""
+
+#: django_ledger/views/purchase_order.py:83
+msgid "Create Purchase Order"
+msgstr ""
+
+#: django_ledger/views/purchase_order.py:408
+msgid "Delete Purchase Order "
+msgstr ""
+
+#: django_ledger/views/unit.py:39
+msgid "Entity Unit List"
+msgstr ""
+
+#: django_ledger/views/unit.py:50
+msgid "Entity Unit Detail"
+msgstr ""
+
+#: django_ledger/views/unit.py:62
+msgid "Entity Unit Create"
+msgstr ""
+
+#: django_ledger/views/unit.py:93
+msgid "Entity Unit Update"
+msgstr ""
+
+#: django_ledger/views/vendor.py:34
+msgid "Vendor List"
+msgstr ""
+
+#: django_ledger/views/vendor.py:50
+msgid "Create New Vendor"
+msgstr ""
+
+#: django_ledger/views/vendor.py:77
+msgid "Vendor Update"
+msgstr ""
