@@ -251,6 +251,30 @@ After setting up your development environment you may run tests.
 python manage.py test django_ledger
 ```
 
+# Adding new localization
+
+1. Choose the desired locale in the form `ll` or `ll_CC` as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-locale-name). For example, to translate to `Spanish (Mexico)`, your string would be `es_MX`. To translate to `French`, you choose `fr`.
+2. Generate the *.po file containing all the strings that need translation for your selected locale using the command `django-admin makemessages -l <ll|ll_CC>`. Examples:
+
+    ```bash
+    $ django-admin makemessages -l es_MX
+    $ django-admin makemessages -l fr
+    ```
+3. Open your generated file: `locale/<ll|ll_CC>/LC_MESSAGES/django.po` and add your translations inside the `msgstr` placeholders.
+4. Compile the messages using:
+    ```bash
+    $ django-admin compilemessages
+    ```
+5. Open the `dev_env/settings.py` file and change `LANGUAGE_CODE` to your new language code. It's in the format `ll-cc` or `ll`, as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-language-code). Examples:
+    ```python
+    LANGUAGE_CODE = 'es-mx'
+    ```
+    or
+    ```python
+    LANGUAGE_CODE = 'fr'
+    ```
+  6. Run the server with `python manage.py runserver`. Your strings should show up in your selected locale and language.
+
 # Screenshots
 
 ![django ledger entity dashboard](https://us-east-1.linodeobjects.com/django-ledger/public/img/django_ledger_entity_dashboard.png)
