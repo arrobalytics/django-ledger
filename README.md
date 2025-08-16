@@ -253,27 +253,63 @@ python manage.py test django_ledger
 
 # Adding new localization
 
-1. Choose the desired locale in the form `ll` or `ll_CC` as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-locale-name). For example, to translate to `Spanish (Mexico)`, your string would be `es_MX`. To translate to `French`, you choose `fr`.
-2. Generate the *.po file containing all the strings that need translation for your selected locale using the command `django-admin makemessages -l <ll|ll_CC>`. Examples:
+- Choose the desired locale in the form `ll` or `ll_CC` as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-locale-name). For example, to translate to a region/country specific language like `Spanish (Mexico)`, your `ll_CC` string should be `es_MX`. To translate to `French` (international, not region/country specific), you just use the `ll` string `fr`.
+
+1. Generate the *.po file containing all the strings that need translation for your selected locale using the command `django-admin makemessages -l <ll|ll_CC>`. Examples:
 
     ```bash
-    $ django-admin makemessages -l es_MX
-    $ django-admin makemessages -l fr
+    $ django-admin makemessages -l es_MX --ignore assets/node_modules
+    $ django-admin makemessages -l fr --ignore assets/node_modules
     ```
-3. Open your generated file: `locale/<ll|ll_CC>/LC_MESSAGES/django.po` and add your translations inside the `msgstr` placeholders.
-4. Compile the messages using:
+
+    Note: The `node_modules` folder needs to be explicitly ignored because it is traversed by default, but it contains hundreds of unrelated external dependencies that do not contain strings for django to translate. Plus, many of those files contain bytes that can't be decoded, which can show several warnings or errors.
+
+1. If you also added gettext calls to javascript or typescript, you need additional steps:
+
+    - First, you add your gettext calls to js and ts files. For example
+    
+        ```typescript
+        let i_and_e = gettext('Income and Expenses')
+        ```
+    - Then, you compile the typescript code (assuming you already installed all the required dependencies):
+
+        ```bash
+        $ cd assets/
+        $ npm run build
+        $ cd ../
+        ```
+
+    - Now you generate the javascript specific po file by analyzing only the Django Ledger specific js and ts files:
+
+        ```bash
+        $ django-admin makemessages -l es_MX -d djangojs --ignore assets/node_modules --extension=js,ts
+        ```
+
+1. Open your generated localization files:
+  
+    - From *.py, *.html files: `locale/<ll|ll_CC>/LC_MESSAGES/django.po`
+    - From *.js, *.ts files: `locale/<ll|ll_CC>/LC_MESSAGES/djangojs.po`
+  
+    Translate the English strings to your desired language inside the `msgstr` placeholders. Make sure to fix fuzzy strings too, if you find any, because they are ambigous strings and won't show up unless fixed.
+
+1. Compile the translated messages using:
+
     ```bash
     $ django-admin compilemessages
     ```
-5. Open the `dev_env/settings.py` file and change `LANGUAGE_CODE` to your new language code. It's in the format `ll-cc` or `ll`, as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-language-code). Examples:
+
+1. Open the `dev_env/settings.py` file and change `LANGUAGE_CODE` to your new language code. It's in the format `ll-cc` or `ll`, as described in the [official Django documentation](https://docs.djangoproject.com/en/5.2/topics/i18n/#term-language-code). Examples:
+
     ```python
     LANGUAGE_CODE = 'es-mx'
     ```
+
     or
+
     ```python
     LANGUAGE_CODE = 'fr'
     ```
-  6. Run the server with `python manage.py runserver`. Your strings should show up in your selected locale and language.
+1. Run the server with `python manage.py runserver`. Your strings should show up in your selected locale and language.
 
 # Screenshots
 
