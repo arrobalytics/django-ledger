@@ -13,7 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from treebeard.forms import MoveNodeForm
 
 from django_ledger.io import ACCOUNT_CHOICES_NO_ROOT
-from django_ledger.models import ChartOfAccountModel, EntityModel
+from django_ledger.models import ChartOfAccountModel
 from django_ledger.models.accounts import AccountModel
 from django_ledger.settings import DJANGO_LEDGER_FORM_INPUT_CLASSES
 
@@ -24,8 +24,6 @@ class AccountModelCreateForm(ModelForm):
 
     Attributes
     ----------
-    ENTITY_MODEL : Model
-        The entity model being used in the form.
     COA_MODEL : Model
         The Chart of Account Model being used in the form.
     """

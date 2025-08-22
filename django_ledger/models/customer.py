@@ -6,16 +6,30 @@ A Customer refers to the person or entity that buys product and services. When i
 created before it can be assigned to the InvoiceModel. Only customers who are active can be assigned to new Invoices.
 """
 
+import os
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models, transaction, IntegrityError
 from django.db.models import Q, F, QuerySet, Manager
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_CUSTOMER_NUMBER_PREFIX
+
+
+def customer_picture_upload_to(instance, filename):
+    """
+    Stores pictures under: customer_pictures/<customer_number>/<sanitized-filename>.<ext>
+    """
+    if not instance.customer_number:
+        instance.generate_customer_number(commit=False)
+    customer_number = instance.customer_number
+    name, ext = os.path.splitext(filename)
+    safe_name = slugify(name)
+    return f'customer_pictures/{customer_number}/{safe_name}{ext.lower()}'
 
 
 class CustomerModelQueryset(QuerySet):
@@ -170,8 +184,16 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    customer_code = models.SlugField(
+        max_length=50,
+        unique=True,
+        null=True,
+        blank=True,
+        verbose_name='User defined customer code'
+    )
     customer_name = models.CharField(max_length=100)
-    customer_number = models.CharField(max_length=30, editable=False, verbose_name=_('Customer Number'))
+    customer_number = models.CharField(max_length=30, editable=False, verbose_name=_('Customer Number'),
+                                       help_text='System generated customer number.')
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      editable=False,
                                      on_delete=models.CASCADE,
@@ -179,6 +201,7 @@ class CustomerModelAbstract(ContactInfoMixIn, TaxCollectionMixIn, CreateUpdateMi
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
+    picture = models.ImageField(upload_to=customer_picture_upload_to, null=True, blank=True)
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
