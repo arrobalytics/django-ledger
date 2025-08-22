@@ -23,6 +23,7 @@ class CustomerModelForm(ModelForm):
         model = CustomerModel
         fields = [
             'customer_name',
+            'customer_code',
             'address_1',
             'address_2',
             'city',
@@ -42,6 +43,10 @@ class CustomerModelForm(ModelForm):
         widgets = {
             'customer_name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'customer_code': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': 'Ex: CDR-78987-2025...'
             }),
             'address_1': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES

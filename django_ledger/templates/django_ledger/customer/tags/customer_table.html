@@ -8,6 +8,7 @@
             <th class="has-text-centered">{% trans 'Customer Number' %}</th>
             <th class="has-text-centered">{% trans 'Customer' %}</th>
             <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Customer Code' %}</th>
             <th class="has-text-centered">{% trans 'Active' %}</th>
             <th class="has-text-centered">{% trans 'Hidden' %}</th>
             <th class="has-text-centered">{% trans 'Actions' %}</th>
@@ -19,6 +20,7 @@
                 <td>{{ customer.customer_number }}</td>
                 <td>{{ customer.customer_name }}</td>
                 <td>{{ customer.address_1 }}</td>
+                <td>{% if customer.customer_code %}{{ customer.customer_code }}{% endif %}</td>
                 <td>
                     {% if customer.active %}
                         <span class="icon has-text-success-dark">

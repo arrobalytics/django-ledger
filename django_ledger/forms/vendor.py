@@ -22,6 +22,7 @@ class VendorModelForm(ModelForm):
         model = VendorModel
         fields = [
             'vendor_name',
+            'vendor_code',
             'address_1',
             'address_2',
             'city',
@@ -38,6 +39,10 @@ class VendorModelForm(ModelForm):
         widgets = {
             'vendor_name': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES
+            }),
+            'vendor_code': TextInput(attrs={
+                'class': DJANGO_LEDGER_FORM_INPUT_CLASSES,
+                'placeholder': 'Ex: GRB-67987-2025...'
             }),
             'address_1': TextInput(attrs={
                 'class': DJANGO_LEDGER_FORM_INPUT_CLASSES

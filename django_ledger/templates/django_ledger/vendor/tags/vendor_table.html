@@ -9,6 +9,7 @@
             <th class="has-text-centered">{% trans 'Vendor Number' %}</th>
             <th class="has-text-centered">{% trans 'Vendor' %}</th>
             <th class="has-text-centered">{% trans 'Address' %}</th>
+            <th class="has-text-centered">{% trans 'Code' %}</th>
             <th class="has-text-centered">{% trans 'Active' %}</th>
             <th class="has-text-centered">{% trans 'Hidden' %}</th>
             <th class="has-text-centered">{% trans 'Actions' %}</th>
@@ -20,6 +21,7 @@
                 <td>{{ vendor.vendor_number }}</td>
                 <td>{{ vendor.vendor_name }}</td>
                 <td>{{ vendor.address_1 }}</td>
+                <td>{% if vendor.vendor_code %}{{ vendor.vendor_code }}{% endif %}</td>
                 <td>
                     {% if vendor.active %}
                         <span class="icon has-text-success-dark">
@@ -31,6 +33,7 @@
                                     </span>
                     {% endif %}
                 </td>
+
                 <td>
                     {% if vendor.hidden %}
                         <span class="icon has-text-success-dark">
