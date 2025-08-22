@@ -10,17 +10,27 @@ Vendors can be flagged as active/inactive or hidden. Vendors who no longer condu
 whether temporarily or indefinitely may be flagged as inactive (i.e. active is False). Hidden Vendors will not show up
 as an option in the UI, but can still be used programmatically (via API).
 """
-
+import os
 from uuid import uuid4
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models, transaction, IntegrityError
-from django.db.models import Q, F, QuerySet
+from django.db.models import Q, F, QuerySet, Manager
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX
+
+
+def vendor_picture_upload_to(instance, filename):
+    if not instance.customer_number:
+        instance.generate_customer_number(commit=False)
+    vendor_number = instance.customer_number
+    name, ext = os.path.splitext(filename)
+    safe_name = slugify(name)
+    return f'vendor_pictures/{vendor_number}/{safe_name}{ext.lower()}'
 
 
 class VendorModelValidationError(ValidationError):
@@ -83,7 +93,7 @@ class VendorModelQuerySet(QuerySet):
         )
 
 
-class VendorModelManager(models.Manager):
+class VendorModelManager(Manager):
     """
     Custom defined VendorModel Manager, which defines many methods for initial query of the Database.
     """
@@ -173,15 +183,27 @@ class VendorModelAbstract(ContactInfoMixIn,
 
     """
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
-    vendor_number = models.CharField(max_length=30, null=True, blank=True)
+    vendor_code = models.SlugField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name='User defined vendor code.'
+    )
+    vendor_number = models.CharField(max_length=30,
+                                     null=True,
+                                     blank=True,
+                                     editable=False,
+                                     verbose_name=_('Vendor Number'), help_text='System generated vendor number.')
     vendor_name = models.CharField(max_length=100)
 
     entity_model = models.ForeignKey('django_ledger.EntityModel',
                                      on_delete=models.CASCADE,
-                                     verbose_name=_('Vendor Entity'))
+                                     verbose_name=_('Vendor Entity'),
+                                     editable=False)
     description = models.TextField()
     active = models.BooleanField(default=True)
     hidden = models.BooleanField(default=False)
+    picture = models.ImageField(upload_to=vendor_picture_upload_to, null=True, blank=True)
 
     additional_info = models.JSONField(null=True, blank=True, default=dict)
 
@@ -215,7 +237,7 @@ class VendorModelAbstract(ContactInfoMixIn,
         Returns
         -------
         bool
-            True if vendor number can be generated, else False.
+            True if the vendor number can be generated, else False.
         """
         return all([
             self.entity_model_id,
