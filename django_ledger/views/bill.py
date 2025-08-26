@@ -253,8 +253,6 @@ class BillModelDetailView(BillModelModelBaseView, DetailView):
         title = f'Bill {bill_model.bill_number}'
         context['page_title'] = title
         context['header_title'] = title
-
-        bill_model: BillModel = self.object
         bill_items_qs, item_data = bill_model.get_itemtxs_data()
         context['itemtxs_qs'] = bill_items_qs
         context['total_amount__sum'] = item_data['total_amount__sum']

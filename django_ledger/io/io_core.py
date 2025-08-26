@@ -224,18 +224,29 @@ def check_tx_balance(tx_data: list, perform_correction: bool = False) -> bool:
 
         while not is_valid:
             tx_type_choice = choice([DEBIT, CREDIT])
-            txs_candidates = list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice)
+
+            if IS_TX_MODEL:
+                txs_candidates = list(tx for tx in tx_data if tx.tx_type == tx_type_choice)
+            else:
+                txs_candidates = list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice)
+
             if len(txs_candidates) > 0:
-                tx = choice(list(tx for tx in tx_data if tx['tx_type'] == tx_type_choice))
-                if any([diff > 0 and tx_type_choice == DEBIT,
-                        diff < 0 and tx_type_choice == CREDIT]):
+
+                tx = choice(txs_candidates)
+
+                if any([
+                    diff > 0 and tx_type_choice == DEBIT,
+                    diff < 0 and tx_type_choice == CREDIT
+                ]):
                     if IS_TX_MODEL:
                         tx.amount += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:
                         tx['amount'] += settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
 
-                elif any([diff < 0 and tx_type_choice == DEBIT,
-                          diff > 0 and tx_type_choice == CREDIT]):
+                elif any([
+                    diff < 0 and tx_type_choice == DEBIT,
+                    diff > 0 and tx_type_choice == CREDIT
+                ]):
                     if IS_TX_MODEL:
                         tx.amount -= settings.DJANGO_LEDGER_TRANSACTION_CORRECTION
                     else:

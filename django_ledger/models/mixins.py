@@ -787,7 +787,7 @@ class AccrualMixIn(models.Model):
                     check_tx_balance(tx_data=[tx for ui, tx in txs_list if uid == ui], perform_correction=True)
 
                 # validates all txs as a whole (for safety)...
-                txs = [tx for ui, tx in txs_list]
+                txs = [tx for _, tx in txs_list]
                 check_tx_balance(tx_data=txs, perform_correction=True)
                 TransactionModel.objects.bulk_create(txs)
 
@@ -1065,14 +1065,18 @@ class PaymentTermsMixIn(models.Model):
             return self.TERMS_NET_90
         return self.TERMS_NET_90_PLUS
 
+    def set_due_date(self, force_update: bool = False):
+        if self.date_due is None or force_update:
+            terms_start_date = self.get_terms_start_date()
+            if terms_start_date:
+                if self.terms != self.TERMS_ON_RECEIPT:
+                    self.date_due = terms_start_date + self.get_terms_timedelta()
+                else:
+                    self.date_due = terms_start_date
+
     def clean(self):
         super().clean()
-        terms_start_date = self.get_terms_start_date()
-        if terms_start_date:
-            if self.terms != self.TERMS_ON_RECEIPT:
-                self.date_due = terms_start_date + self.get_terms_timedelta()
-            else:
-                self.date_due = terms_start_date
+        self.set_due_date()
 
 
 class MarkdownNotesMixIn(models.Model):
