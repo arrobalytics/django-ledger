@@ -309,6 +309,11 @@ class InvoiceModelAbstract(
     """
 
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity_model = models.ForeignKey('django_ledger.EntityModel',
+                                     on_delete=models.CASCADE,
+                                     null=True,
+                                     blank=True,
+                                     editable=False)
     invoice_number = models.SlugField(max_length=20,
                                       editable=False,
                                       verbose_name=_('Invoice Number'))
@@ -567,7 +572,8 @@ class InvoiceModelAbstract(
         """
         return f'Invoice {self.invoice_number} account adjustment.'
 
-    def get_migration_data(self, queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def get_migration_data(self,
+                           queryset: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
 
         """
         Fetches necessary item transaction data to perform a migration into the LedgerModel.
@@ -600,7 +606,8 @@ class InvoiceModelAbstract(
             'total_amount').annotate(
             account_unit_total=Sum('total_amount'))
 
-    def update_amount_due(self, itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
+    def update_amount_due(self,
+                          itemtxs_qs: Optional[ItemTransactionModelQuerySet] = None) -> ItemTransactionModelQuerySet:
         """
         Updates the InvoiceModel amount due.
 
@@ -1834,6 +1841,9 @@ class InvoiceModel(InvoiceModelAbstract):
 def invoicemodel_presave(instance: InvoiceModel, **kwargs):
     if instance.can_generate_invoice_number():
         instance.generate_invoice_number(commit=False)
+
+    if not instance.entity_model_id:
+        instance.entity_model = instance.ledger.entity
 
 
 pre_save.connect(receiver=invoicemodel_presave, sender=InvoiceModel)

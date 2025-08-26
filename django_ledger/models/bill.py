@@ -353,6 +353,13 @@ class BillModelAbstract(
 
     # todo: implement Void Bill (& Invoice)....
     uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    entity_model = models.ForeignKey(
+        'django_ledger.EntityModel',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        editable=False
+    )
     bill_number = models.SlugField(max_length=20, verbose_name=_('Bill Number'), editable=False)
     bill_status = models.CharField(max_length=10,
                                    choices=BILL_STATUS,
@@ -1926,6 +1933,9 @@ class BillModel(BillModelAbstract):
 def billmodel_presave(instance: BillModel, **kwargs):
     if instance.can_generate_bill_number():
         instance.generate_bill_number(commit=False)
+
+    if not instance.entity_model_id:
+        instance.entity_model = instance.ledger.entity
 
 
 pre_save.connect(receiver=billmodel_presave, sender=BillModel)
