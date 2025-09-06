@@ -23,15 +23,16 @@ layer as possible in order to minimize the amount of data being pulled for analy
 The Django Ledger core model follows the following structure:
 EntityModel -< LedgerModel -< JournalEntryModel -< TransactionModel
 """
+import warnings
 from datetime import date
 from string import ascii_lowercase, digits
 from typing import Optional
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.db.models import Q, Min, F, Count
+from django.db.models import Q, Min, F, Count, Manager, QuerySet
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -46,6 +47,7 @@ from django_ledger.models.signals import (
     ledger_hidden,
     ledger_unhidden
 )
+from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 LEDGER_ID_CHARS = ascii_lowercase + digits
 
@@ -54,75 +56,130 @@ class LedgerModelValidationError(ValidationError):
     pass
 
 
-class LedgerModelQuerySet(models.QuerySet):
+class LedgerModelQuerySet(QuerySet):
     """
-    Custom defined LedgerModel QuerySet.
+    Custom QuerySet for filtering LedgerModel instances based on specific fields.
+
+    Provides predefined filtering methods to simplify working with ledger data.
+    These filters allow querying for entries that are locked, unlocked, posted,
+    unposted, hidden, visible, or current.
+
+    Methods
+    -------
+    locked()
+        Filters instances based on the 'locked' attribute set to `True`.
+    unlocked()
+        Filters instances based on the 'locked' attribute set to `False`.
+    posted()
+        Filters a queryset to include only posted entries with 'posted' set to `True`.
+    unposted()
+        Filters a queryset to include only unposted entries with 'posted' set to `False`.
+    hidden()
+        Filters a queryset to include only items marked as hidden.
+    visible()
+        Filters out hidden items from the queryset.
+    current()
+        Filters the queryset to include items where the earliest timestamp
+        comes after the entity's last closing date or is null.
     """
 
-    def locked(self):
+    def for_user(self, user_model) -> 'LedgerModelQuerySet':
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
+
+    def locked(self) -> 'LedgerModelQuerySet':
         """
-        Filters the QuerySet to only locked LedgerModel.
+        Filters instances based on the 'locked' attribute.
+
+        This method returns a new instance where the 'locked' attribute is set to `True`.
 
         Returns
         -------
         LedgerModelQuerySet
-            A QuerySet with applied filters.
+            A new instance filtered with the attribute 'locked' set to `True`.
         """
         return self.filter(locked=True)
 
-    def unlocked(self):
+    def unlocked(self) -> 'LedgerModelQuerySet':
         """
-        Filters the QuerySet to only un-locked LedgerModel.
+        Filters and returns an instance where the `locked` attribute is set to `False`.
 
         Returns
         -------
         LedgerModelQuerySet
-            A QuerySet with applied filters.
+            A new or modified instance of the object with the filter applied.
         """
         return self.filter(locked=False)
 
-    def posted(self):
+    def posted(self) -> 'LedgerModelQuerySet':
         """
-        Filters the QuerySet to only posted LedgerModel.
+        Filters a queryset to include only posted entries.
 
         Returns
         -------
         LedgerModelQuerySet
-            A QuerySet with applied filters.
+            A new queryset instance containing only objects with
+            the `posted` field set to True.
         """
         return self.filter(posted=True)
 
-    def unposted(self):
+    def unposted(self) -> 'LedgerModelQuerySet':
         """
-        Filters the QuerySet to only un-posted LedgerModel.
+        Filters a queryset or a similar iterable-like object to include only items that
+        have the attribute `posted` set to `True`. This method returns a new instance
+        containing the filtered results.
 
         Returns
         -------
         LedgerModelQuerySet
-            A QuerySet with applied filters.
+            A new instance containing only the filtered results with `posted` set to True.
         """
         return self.filter(posted=True)
 
-    def hidden(self):
+    def hidden(self) -> 'LedgerModelQuerySet':
+        """
+        Filters the queryset to include only objects marked as hidden.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A filtered queryset containing only objects with the `hidden` attribute
+            set to True.
+        """
         return self.filter(hidden=True)
 
-    def visible(self):
+    def visible(self) -> 'LedgerModelQuerySet':
+        """
+        Filters out hidden items from the queryset.
+
+        Ensures that only items with the `hidden` attribute set to `False`
+        are included in the returned queryset.
+
+        Returns
+        -------
+        LedgerModelQuerySet
+            A queryset containing only visible items.
+        """
         return self.filter(hidden=False)
 
-    def current(self):
+    def current(self) -> 'LedgerModelQuerySet':
         return self.filter(
             Q(earliest_timestamp__date__gt=F('entity__last_closing_date'))
             | Q(earliest_timestamp__isnull=True)
         )
 
 
-class LedgerModelManager(models.Manager):
+class LedgerModelManager(Manager):
     """
     A custom-defined LedgerModelManager that implements custom QuerySet methods related to the LedgerModel.
     """
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def get_queryset(self) -> LedgerModelQuerySet:
+        qs = LedgerModelQuerySet(self.model, using=self._db)
         return qs.select_related('entity').annotate(
             Count('journal_entries'),
             _entity_slug=F('entity__slug'),
@@ -130,40 +187,45 @@ class LedgerModelManager(models.Manager):
                                    filter=Q(journal_entries__posted=True)),
         )
 
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model):
+    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> LedgerModelQuerySet:
         """
         Returns a QuerySet of LedgerModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         LedgerModelQuerySet
             A Filtered LedgerModelQuerySet.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity=entity_slug)
+        EntityModel = lazy_loader.get_entity_model()
+
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug)
-        )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise LedgerModelValidationError(
+                message='Must provide entity slug, EntityModel, or UUID parameter'
+            )
+        return qs
 
 
 class LedgerModelAbstract(CreateUpdateMixIn, IOMixIn):

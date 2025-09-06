@@ -227,8 +227,7 @@ class ProductUpdateView(ProductItemModelModelBaseView, UpdateView):
 
     def get_queryset(self):
         return ItemModel.objects.for_entity(
-            entity_slug=self.AUTHORIZED_ENTITY_MODEL,
-            user_model=self.request.user
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
         ).products()
 
     def get_form(self, form_class=None):
@@ -348,8 +347,7 @@ class ServiceUpdateView(ServiceItemModelModelBaseView, UpdateView):
 
     def get_queryset(self):
         return ItemModel.objects.for_entity(
-            entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user
+            entity_model=self.kwargs['entity_slug']
         ).services()
 
     def get_form(self, form_class=None):

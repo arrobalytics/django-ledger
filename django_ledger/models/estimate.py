@@ -10,6 +10,7 @@ Once approved, the user may initiate purchase orders, bills and invoices that wi
 for tracking purposes. It is however not required to always have an EstimateModel, but recommended in order to be able
 to produce more specific financial reports associated with a specific scope of work.
 """
+import warnings
 from datetime import date
 from decimal import Decimal
 from string import ascii_uppercase, digits
@@ -27,7 +28,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet
+from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModelQuerySet, ItemModel
@@ -41,7 +42,8 @@ from django_ledger.models.signals import (
     estimate_status_completed,
     estimate_status_in_review
 )
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX
+from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_ESTIMATE_NUMBER_PREFIX, \
+    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 ESTIMATE_NUMBER_CHARS = ascii_uppercase + digits
 
@@ -56,6 +58,14 @@ class EstimateModelQuerySet(models.QuerySet):
     """
     A custom-defined LedgerModelManager that implements custom QuerySet methods related to the EstimateModel.
     """
+
+    def for_user(self, user_model):
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
 
     def approved(self):
         """
@@ -116,40 +126,57 @@ class EstimateModelManager(models.Manager):
     A custom defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
     """
 
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
+    def for_entity(self, entity_model: Union[EntityModel, str, UUID], **kwargs):
         """
-        Fetches a QuerySet of EstimateModels associated with a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        Filters the queryset based on the given entity model.
+
+        This method allows filtering the queryset by an `entity_model` parameter, which can
+        be of type `EntityModel`, `str`, or `UUID`. It also handles deprecated behavior if
+        `user_model` is passed in the `kwargs`.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
+        entity_model : EntityModel, str, UUID
+            Specifies the entity against which the queryset should be filtered. Accepts an
+            `EntityModel` instance, a string (representing the entity slug), or a UUID
+            (representing the entity ID).
+        **kwargs
+            Additional keyword arguments. Supports a deprecated `user_model` argument for
+            backward compatibility.
 
         Returns
         -------
-        EstimateModelQuerySet
-            Returns a EstimateModelQuerySet with applied filters.
+        QuerySet
+            A Django QuerySet filtered according to the given entity model.
+
+        Raises
+        ------
+        EstimateModelValidationError
+            If `entity_model` is of an unsupported type.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, EntityModel):
-            return qs.filter(
-                Q(entity=entity_slug)
+        EntityModel = lazy_loader.get_entity(entity_model)
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug)
-        )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise EstimateModelValidationError(
+                message='entoty_model must be either a string, UUID or an EntityModel'
+            )
+        return qs
 
 
 class EstimateModelAbstract(CreateUpdateMixIn,

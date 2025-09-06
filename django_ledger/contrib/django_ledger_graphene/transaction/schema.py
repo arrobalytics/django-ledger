@@ -29,7 +29,7 @@ class TransactionsQuery(graphene.ObjectType):
     def resolve_all_transactions(self, info, slug_name, pk_je, pk_ledger, **kwargs):
         if info.context.user.is_authenticated:
             return TransactionModel.objects.for_entity(
-                entity_slug=slug_name,
+                entity_model=slug_name,
                 user_model=info.context.user,
             ).for_journal_entry(je_model=pk_je).order_by('account__code')
         else:

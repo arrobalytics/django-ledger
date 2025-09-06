@@ -14,7 +14,7 @@ ________
 >>> ledger_model, bill_model = bill_model.configure(entity_slug=entity_slug, user_model=user_model)
 >>> bill_model.save()
 """
-
+import warnings
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Union, Optional, Tuple, Dict, List
@@ -49,7 +49,8 @@ from django_ledger.models.signals import (
     bill_status_void,
 )
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX)
+from django_ledger.settings import (DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_BILL_NUMBER_PREFIX,
+                                    DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR)
 
 UserModel = get_user_model()
 
@@ -65,6 +66,32 @@ class BillModelQuerySet(QuerySet):
     due ,overdue, approved or in draft stage. All these separate functions will assist in making such queries and
     building customized reports.
     """
+
+    def for_user(self, user_model) -> 'BillModelQuerySet':
+        """
+        Fetches a QuerySet of BillModels that the UserModel as access to.
+        May include BillModels from multiple Entities.
+
+        The user has access to bills if:
+            1. Is listed as Manager of Entity.
+            2. Is the Admin of the Entity.
+
+        Parameters
+        __________
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Returns
+        _______
+        BillModelQuerySet
+            Returns a BillModelQuerySet with applied filters.
+        """
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(ledger__entity__admin=user_model) |
+            Q(ledger__entity__managers__in=[user_model])
+        )
 
     def draft(self):
         """
@@ -162,7 +189,7 @@ class BillModelQuerySet(QuerySet):
         """
         return self.filter(date_due__lt=get_localdate())
 
-    def unpaid(self):
+    def unpaid(self) -> 'BillModelQuerySet':
         """
         Unpaid bills are those that are approved but have not received 100% of the amount due.
         Equivalent to approved().
@@ -177,51 +204,19 @@ class BillModelQuerySet(QuerySet):
 
 class BillModelManager(Manager):
     """
-    A custom defined BillModelManager that will act as an interface to handling the initial DB queries
+    A custom-defined BillModelManager that will act as an interface to handling the initial DB queries
     to the BillModel. The default "get_queryset" has been overridden to refer the custom defined
     "BillModelQuerySet".
     """
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def get_queryset(self) -> BillModelQuerySet:
+        qs = BillModelQuerySet(self.model, using=self._db)
         return qs.select_related(
             'ledger',
             'ledger__entity'
         )
 
-    def for_user(self, user_model) -> BillModelQuerySet:
-        """
-        Fetches a QuerySet of BillModels that the UserModel as access to.
-        May include BillModels from multiple Entities.
-
-        The user has access to bills if:
-            1. Is listed as Manager of Entity.
-            2. Is the Admin of the Entity.
-
-        Parameters
-        __________
-        user_model
-            Logged in and authenticated django UserModel instance.
-
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> bill_model_qs = BillModel.objects.for_user(user_model=request_user)
-
-        Returns
-        _______
-        BillModelQuerySet
-            Returns a BillModelQuerySet with applied filters.
-        """
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(ledger__entity__admin=user_model) |
-            Q(ledger__entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug, user_model) -> BillModelQuerySet:
+    def for_entity(self, entity_slug, **kwargs) -> BillModelQuerySet:
         """
         Fetches a QuerySet of BillModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -233,18 +228,22 @@ class BillModelManager(Manager):
         user_model
             Logged in and authenticated django UserModel instance.
 
-        Examples
-        ________
-            >>> request_user = request.user
-            >>> slug = kwargs['entity_slug'] # may come from request kwargs
-            >>> bill_model_qs = BillModel.objects.for_entity(user_model=request_user, entity_slug=slug)
-
         Returns
         _______
         BillModelQuerySet
             Returns a BillModelQuerySet with applied filters.
         """
-        qs = self.for_user(user_model)
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
         if isinstance(entity_slug, EntityModel):
             return qs.filter(
                 Q(ledger__entity=entity_slug)
@@ -369,6 +368,26 @@ class BillModelAbstract(
     vendor = models.ForeignKey('django_ledger.VendorModel',
                                on_delete=models.CASCADE,
                                verbose_name=_('Vendor'))
+
+    cash_account = models.ForeignKey('django_ledger.AccountModel',
+                                     on_delete=models.RESTRICT,
+                                     null=True,
+                                     blank=True,
+                                     verbose_name=_('Cash Account'),
+                                     related_name=f'{REL_NAME_PREFIX}_cash_account')
+    prepaid_account = models.ForeignKey('django_ledger.AccountModel',
+                                        on_delete=models.RESTRICT,
+                                        null=True,
+                                        blank=True,
+                                        verbose_name=_('Prepaid Account'),
+                                        related_name=f'{REL_NAME_PREFIX}_prepaid_account')
+    unearned_account = models.ForeignKey('django_ledger.AccountModel',
+                                         on_delete=models.RESTRICT,
+                                         null=True,
+                                         blank=True,
+                                         verbose_name=_('Unearned Account'),
+                                         related_name=f'{REL_NAME_PREFIX}_unearned_account')
+
     additional_info = models.JSONField(blank=True,
                                        null=True,
                                        default=dict,
@@ -1180,6 +1199,7 @@ class BillModelAbstract(
 
         if not itemtxs_qs.count():
             raise BillModelValidationError(message=f'Cannot review a {self.__class__.__name__} without items...')
+
         if not self.amount_due:
             raise BillModelValidationError(
                 f'Bill {self.bill_number} cannot be marked as in review. Amount due must be greater than 0.'

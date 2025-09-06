@@ -96,8 +96,7 @@ class TransactionModelFormSetTest(DjangoLedgerBaseTest):
 
             # get a journal entry that has transactions...
             je_model = JournalEntryModel.objects.for_entity(
-                entity_slug=entity_model,
-                user_model=self.user_model
+                entity_model=entity_model
             ).annotate(
                 txs_count=Count('transactionmodel')).filter(
                 txs_count__gt=0).order_by('-timestamp').first()

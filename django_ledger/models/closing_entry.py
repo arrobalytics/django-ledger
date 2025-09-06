@@ -247,7 +247,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.posted = False
 
         TransactionModel.objects.for_entity(
-            entity_slug=self.entity_model_id
+            entity_model=self.entity_model_id
         ).for_ledger(ledger_model=self.ledger_model).delete()
 
         self.ledger_model.journal_entries.all().delete()
@@ -321,7 +321,7 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
         self.ledger_model.unpost(commit=True, raise_exception=True)
 
         TransactionModel.objects.for_entity(
-            entity_slug=self.entity_model_id
+            entity_model=self.entity_model_id
         ).for_ledger(ledger_model=self.ledger_model).delete()
 
         return self.ledger_model.delete()

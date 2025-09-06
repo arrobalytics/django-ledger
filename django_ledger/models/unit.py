@@ -20,11 +20,11 @@ Key advantages of EntityUnits:
        flexibility to track inventory, expenses, or income associated with distinct
        business units.
 """
-
+import warnings
 from random import choices
 from string import ascii_lowercase, digits, ascii_uppercase
 from typing import Optional
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -37,6 +37,7 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 ENTITY_UNIT_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -46,9 +47,14 @@ class EntityUnitModelValidationError(ValidationError):
 
 
 class EntityUnitModelQuerySet(MP_NodeQuerySet):
-    """
-    A custom defined EntityUnitModel Queryset.
-    """
+
+    def for_user(self, user_model) -> 'EntityUnitModelQuerySet':
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity__admin=user_model) |
+            Q(entity__managers__in=[user_model])
+        )
 
 
 class EntityUnitModelManager(MP_NodeManager):
@@ -60,41 +66,60 @@ class EntityUnitModelManager(MP_NodeManager):
             _entity_name=F('entity__name'),
         )
 
-    def for_user(self, user_model):
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(entity__admin=user_model) |
-            Q(entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, entity_slug: str, user_model):
+    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs):
         """
-        Fetches a QuerySet of EntityUnitModels associated with a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        Filter the queryset based on the provided entity model, its slug, or its UUID.
+
+        Provides functionality to filter entities within a queryset by comparing either
+        an EntityModel instance, its slug, or its UUID. This method also handles optional
+        deprecated behavior for filtering by the 'user_model' for backward compatibility.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
+        entity_model : EntityModel | str | UUID
+            An entity filter criterion that could be a specific EntityModel instance, a
+            string representing the entity slug, or a UUID corresponding to the entity.
+
+        **kwargs : dict, optional
+            Additional keyword arguments. If the 'user_model' parameter is provided,
+            a deprecation warning is issued, and the functionality temporarily delegates
+            to legacy behavior based on the value of 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR'.
 
         Returns
         -------
-        EntityUnitModelQuerySet
-            Returns a EntityUnitModelQuerySet with applied filters.
-        """
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity=entity_slug)
+        QuerySet
+            A queryset filtered based on the provided entity criteria.
 
+        Raises
+        ------
+        EntityUnitModelValidationError
+            Raised when the `entity_model` parameter does not match any of the accepted types
+            (EntityModel, str, or UUID) and fails validation.
+        """
+        EntityModel = lazy_loader.get_entity_model()
+
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug)
-        )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise EntityUnitModelValidationError(
+                message='Must pass EntityModel, slug or UUID'
+            )
+        return qs
 
 
 class EntityUnitModelAbstract(MP_Node,

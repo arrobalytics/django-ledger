@@ -2,6 +2,7 @@
 Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 """
+from typing import Optional
 
 from django.contrib import messages
 from django.core.exceptions import ImproperlyConfigured, ValidationError
@@ -10,18 +11,19 @@ from django.views.generic import UpdateView, ListView, RedirectView, CreateView
 from django.views.generic.detail import SingleObjectMixin
 
 from django_ledger.forms.chart_of_accounts import ChartOfAccountsModelUpdateForm, ChartOfAccountsModelCreateForm
+from django_ledger.models import EntityModel, ChartOfAccountModelQuerySet
 from django_ledger.models.chart_of_accounts import ChartOfAccountModel
 from django_ledger.views.mixins import DjangoLedgerSecurityMixIn
 
 
 class ChartOfAccountModelModelBaseViewMixIn(DjangoLedgerSecurityMixIn):
-    queryset = None
+    queryset: Optional[ChartOfAccountModelQuerySet] = None
 
     def get_queryset(self):
         if self.queryset is None:
-            entity_model = self.get_authorized_entity_instance()
-            self.queryset = entity_model.chartofaccountmodel_set.all().order_by('-updated')
-        return super().get_queryset()
+            entity_model: EntityModel = self.get_authorized_entity_instance()
+            self.queryset: ChartOfAccountModelQuerySet = entity_model.chartofaccountmodel_set.all().order_by('-updated')
+        return self.queryset
 
 
 class ChartOfAccountModelListView(ChartOfAccountModelModelBaseViewMixIn, ListView):

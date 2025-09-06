@@ -730,14 +730,12 @@ class IODatabaseMixIn:
             if unit_slug:
 
                 txs_queryset_init = TransactionModel.objects.for_entity(
-                    user_model=user_model,
-                    entity_slug=entity_slug or self.slug
+                    entity_model=entity_slug or self.slug
                 ).for_unit(unit_slug=unit_slug)
 
             else:
                 txs_queryset_init = TransactionModel.objects.for_entity(
-                    user_model=user_model,
-                    entity_slug=self
+                    entity_model=self
                 )
         elif self.is_entity_unit_model():
             if not entity_slug:
@@ -745,8 +743,7 @@ class IODatabaseMixIn:
                     'Calling digest from Entity Unit requires entity_slug explicitly for safety')
 
             txs_queryset_init = TransactionModel.objects.for_entity(
-                user_model=user_model,
-                entity_slug=entity_slug,
+                entity_model=entity_slug
             ).for_unit(unit_slug=unit_slug or self)
 
         elif self.is_ledger_model():
@@ -755,8 +752,7 @@ class IODatabaseMixIn:
                     'Calling digest from Ledger Model requires entity_slug explicitly for safety')
 
             txs_queryset_init = TransactionModel.objects.for_entity(
-                entity_slug=entity_slug,
-                user_model=user_model,
+                entity_model=entity_slug
             ).for_ledger(ledger_model=self)
 
         else:
@@ -899,6 +895,10 @@ class IODatabaseMixIn:
             'account__coa_model__slug',
             'tx_type',
         ]
+
+        if kwargs.get('for_test'):
+            VALUES.append('journal_entry__ledger_id')
+            VALUES.append('journal_entry__ledger__entity_id')
 
         ANNOTATE = {'balance': Sum('amount')}
         if io_result.is_bounded:

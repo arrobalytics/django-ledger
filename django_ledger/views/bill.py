@@ -87,8 +87,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                 return HttpResponseBadRequest()
 
             po_qs = PurchaseOrderModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.kwargs['entity_slug'],
             ).prefetch_related('itemtransactionmodel_set')
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
             po_itemtxs_qs = po_model.itemtransactionmodel_set.filter(
@@ -157,8 +156,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
                 return HttpResponseBadRequest()
             item_uuids = item_uuids.split(',')
             po_qs = PurchaseOrderModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.kwargs['entity_slug'],
             )
             po_model: PurchaseOrderModel = get_object_or_404(po_qs, uuid__exact=po_pk)
 

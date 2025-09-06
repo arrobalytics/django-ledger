@@ -33,8 +33,7 @@ class InvoiceModelModelViewQuerySetMixIn:
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = InvoiceModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.kwargs['entity_slug']
             ).select_related('customer', 'ledger').order_by('-created')
         return super().get_queryset()
 

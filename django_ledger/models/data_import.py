@@ -10,7 +10,7 @@ application. It introduces two primary models to facilitate the import and proce
 or further processing.
 
 """
-
+import warnings
 from decimal import Decimal
 from typing import Optional, Set, Dict, List, Union
 from uuid import uuid4, UUID
@@ -27,6 +27,7 @@ from django_ledger.models import JournalEntryModel
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
+from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 
 class ImportJobModelValidationError(ValidationError):
@@ -34,7 +35,34 @@ class ImportJobModelValidationError(ValidationError):
 
 
 class ImportJobModelQuerySet(QuerySet):
-    pass
+
+    def for_user(self, user_model) -> 'ImportJobModelQuerySet':
+        """
+        Filters the queryset based on the user's permissions for accessing the data
+        related to bank accounts and entities they manage or administer.
+
+        This method first retrieves the default queryset. If the user is a superuser,
+        the query will return the full queryset without any filters. Otherwise, the
+        query will be limited to the entities that the user either administers or is
+        listed as a manager for.
+
+        Parameters
+        ----------
+        user_model : User
+            The user model instance whose permissions determine the filtering of the queryset.
+
+        Returns
+        -------
+        QuerySet
+            A filtered queryset based on the user's role and associated permissions.
+        """
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(bank_account_model__entity_model__admin=user_model) |
+            Q(bank_account_model__entity_model__managers__in=[user_model])
+
+        )
 
 
 class ImportJobModelManager(Manager):
@@ -49,7 +77,7 @@ class ImportJobModelManager(Manager):
 
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> ImportJobModelQuerySet:
         """
         Generates a QuerySet with annotated data for ImportJobModel.
 
@@ -100,44 +128,29 @@ class ImportJobModelManager(Manager):
             'ledger_model'
         )
 
-    def for_user(self, user_model):
-        """
-        Filters the queryset based on the user's permissions for accessing the data
-        related to bank accounts and entities they manage or administer.
-
-        This method first retrieves the default queryset. If the user is a superuser,
-        the query will return the full queryset without any filters. Otherwise, the
-        query will be limited to the entities that the user either administers or is
-        listed as a manager for.
-
-        Parameters
-        ----------
-        user_model : User
-            The user model instance whose permissions determine the filtering of the queryset.
-
-        Returns
-        -------
-        QuerySet
-            A filtered queryset based on the user's role and associated permissions.
-        """
+    def for_entity(self, entity_model: Union[EntityModel, str, UUID], **kwargs) -> ImportJobModelQuerySet:
         qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-        return qs.filter(
-            Q(bank_account_model__entity_model__admin=user_model) |
-            Q(bank_account_model__entity_model__managers__in=[user_model])
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
 
-        )
-
-    def for_entity(self, entity_slug: Union[EntityModel, str], user_model):
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, EntityModel):
-            return qs.filter(
-            Q(bank_account_model__entity_model=entity_slug)
-        )
-        return qs.filter(
-            Q(bank_account_model__entity_model__slug__exact=entity_slug)
-        )
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(bank_account_model__entity_model=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(bank_account_model__entity_model_id=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(bank_account_model__slug__exact=entity_model)
+        else:
+            ImportJobModelValidationError(
+                message=_('Must pass EntityModel, slug or UUID'),
+            )
+        return qs
 
 
 class ImportJobModelAbstract(CreateUpdateMixIn):

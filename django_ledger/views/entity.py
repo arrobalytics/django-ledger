@@ -151,8 +151,7 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
         ).delete()
 
         TransactionModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
+            entity_model=self.kwargs['entity_slug']
         ).delete()
 
         return super().form_valid(form=form)

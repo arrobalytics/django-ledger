@@ -105,9 +105,8 @@ class ReceivableNetAPIView(DjangoLedgerSecurityMixIn, EntityUnitMixIn, View):
     def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             invoice_qs = InvoiceModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=request.user,
-            ).unpaid()
+                entity_model=self.kwargs['entity_slug']
+            ).for_user(self.request.user).unpaid()
 
             # todo: implement this...
             # unit_slug = self.get_unit_slug()

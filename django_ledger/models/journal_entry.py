@@ -25,6 +25,7 @@ The JournalEntryModel is also responsible for validating the Financial Activity 
 business. Whenever an account with ASSET_CA_CASH role is involved in a Journal Entry (see roles for more details), the
 JE is responsible for programmatically determine the kind of operation for the JE (Operating, Financing, Investing).
 """
+import warnings
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
@@ -41,6 +42,7 @@ from django.urls import reverse
 from django.utils.timezone import localtime
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.io import roles
 from django_ledger.io.io_core import get_localtime
 from django_ledger.io.roles import (
     ASSET_CA_CASH, GROUP_CFS_FIN_DIVIDENDS, GROUP_CFS_FIN_ISSUING_EQUITY,
@@ -59,13 +61,12 @@ from django_ledger.models.signals import (
     journal_entry_posted,
     journal_entry_unposted
 )
-from django_ledger.models.transactions import TransactionModelQuerySet, TransactionModel
+from django_ledger.models.transactions import TransactionModelQuerySet
 from django_ledger.settings import (
     DJANGO_LEDGER_JE_NUMBER_PREFIX,
     DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX
+    DJANGO_LEDGER_JE_NUMBER_NO_UNIT_PREFIX, DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 )
-from django_ledger.io import roles
 
 
 class JournalEntryValidationError(ValidationError):
@@ -82,7 +83,33 @@ class JournalEntryModelQuerySet(QuerySet):
     locked entries, and querying entries associated with specific ledgers.
     """
 
-    def create(self, verify_on_save: bool = False, force_create: bool = False, **kwargs):
+    def for_user(self, user_model) -> 'JournalEntryModelQuerySet':
+        """
+        Filters the JournalEntryModel queryset for the given user.
+
+        - Superusers will have access to all journal entries.
+        - Other authenticated users will only see entries for entities where
+          they are admins or managers.
+
+        Parameters
+        ----------
+        user_model : UserModel
+            An authenticated Django user object.
+
+        Returns
+        -------
+        JournalEntryModelQuerySet
+            A filtered queryset restricted by the user's entity relationships.
+        """
+        if user_model.is_superuser:
+            return self
+
+        return self.filter(
+            Q(ledger__entity__admin=user_model) |  # Entries for entities where the user is admin
+            Q(ledger__entity__managers__in=[user_model])  # Entries for entities where the user is a manager
+        )
+
+    def create(self, verify_on_save: bool = False, force_create: bool = False, **kwargs) -> 'JournalEntryModelQuerySet':
         """
         Creates a new Journal Entry while enforcing business logic validations.
 
@@ -124,7 +151,7 @@ class JournalEntryModelQuerySet(QuerySet):
         obj.save(force_insert=True, using=self.db, verify=verify_on_save)
         return obj
 
-    def posted(self):
+    def posted(self) -> 'JournalEntryModelQuerySet':
         """
         Filters the QuerySet to include only "posted" Journal Entries.
 
@@ -135,7 +162,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=True)
 
-    def unposted(self):
+    def unposted(self) -> 'JournalEntryModelQuerySet':
         """
         Filters the QuerySet to include only "unposted" Journal Entries.
 
@@ -146,7 +173,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(posted=False)
 
-    def locked(self):
+    def locked(self) -> 'JournalEntryModelQuerySet':
         """
         Filters the QuerySet to include only "locked" Journal Entries.
 
@@ -157,7 +184,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(locked=True)
 
-    def unlocked(self):
+    def unlocked(self) -> 'JournalEntryModelQuerySet':
         """
         Filters the QuerySet to include only "unlocked" Journal Entries.
 
@@ -168,7 +195,7 @@ class JournalEntryModelQuerySet(QuerySet):
         """
         return self.filter(locked=False)
 
-    def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]):
+    def for_ledger(self, ledger_pk: Union[str, UUID, LedgerModel]) -> 'JournalEntryModelQuerySet':
         """
         Filters the QuerySet to include Journal Entries associated with a specific Ledger.
 
@@ -223,34 +250,7 @@ class JournalEntryModelManager(Manager):
             txs_count=Count('transactionmodel')  # Annotates the count of transactions
         )
 
-    def for_user(self, user_model) -> JournalEntryModelQuerySet:
-        """
-        Filters the JournalEntryModel queryset for the given user.
-
-        - Superusers will have access to all journal entries.
-        - Other authenticated users will only see entries for entities where
-          they are admins or managers.
-
-        Parameters
-        ----------
-        user_model : UserModel
-            An authenticated Django user object.
-
-        Returns
-        -------
-        JournalEntryModelQuerySet
-            A filtered queryset restricted by the user's entity relationships.
-        """
-        qs = self.get_queryset()
-        if user_model.is_superuser:
-            return qs
-
-        return qs.filter(
-            Q(ledger__entity__admin=user_model) |  # Entries for entities where the user is admin
-            Q(ledger__entity__managers__in=[user_model])  # Entries for entities where the user is a manager
-        )
-
-    def for_entity(self, entity_slug: Union[str, EntityModel], user_model) -> JournalEntryModelQuerySet:
+    def for_entity(self, entity_model: EntityModel | str | UUID, **kwargs) -> JournalEntryModelQuerySet:
         """
         Filters the JournalEntryModel queryset for a specific entity and user.
 
@@ -260,24 +260,36 @@ class JournalEntryModelManager(Manager):
 
         Parameters
         ----------
-        entity_slug : str or EntityModel
+        entity_model : str or EntityModel
             The slug of the entity (or an instance of `EntityModel`) used for filtering.
-        user_model : UserModel
-            An authenticated Django user object.
-
         Returns
         -------
         JournalEntryModelQuerySet
             A customized queryset containing journal entries associated with the
             given entity and restricted by the user's access permissions.
         """
-        qs = self.for_user(user_model)
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
 
-        # Handle the `entity_slug` as either a string or an EntityModel instance
-        if isinstance(entity_slug, EntityModel):
-            return qs.filter(ledger__entity=entity_slug)
-
-        return qs.filter(ledger__entity__slug__iexact=entity_slug)  # Case-insensitive slug match
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(ledger__entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(ledger__entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(ledger__entity_id=entity_model)
+        else:
+            raise JournalEntryValidationError(
+                message='Must provide EntityModel, slug or UUID',
+            )
+        return qs
 
 
 class ActivityEnum(Enum):

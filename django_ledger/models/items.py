@@ -18,6 +18,7 @@ ItemsTransactionModels constitute the way multiple items and used resources are 
 Purchase Orders and Estimates. Each transaction will record the unit of measure and quantity of each resource.
 Totals will be calculated and associated with the containing model at the time of update.
 """
+import warnings
 from decimal import Decimal
 from string import ascii_lowercase, digits
 from uuid import uuid4, UUID
@@ -31,9 +32,11 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import (DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
-                                    DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
-                                    DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX)
+from django_ledger.settings import (
+    DJANGO_LEDGER_TRANSACTION_MAX_TOLERANCE, DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_EXPENSE_NUMBER_PREFIX, DJANGO_LEDGER_INVENTORY_NUMBER_PREFIX,
+    DJANGO_LEDGER_PRODUCT_NUMBER_PREFIX, DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+)
 
 ITEM_LIST_RANDOM_SLUG_SUFFIX = ascii_lowercase + digits
 
@@ -153,6 +156,14 @@ class ItemModelQuerySet(QuerySet):
     """
     A custom-defined ItemModelQuerySet that implements custom QuerySet methods related to the ItemModel.
     """
+
+    def for_user(self, user_model):
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(entity__managers__in=[user_model]) |
+            Q(entity__admin=user_model)
+        )
 
     def active(self):
         """
@@ -292,39 +303,70 @@ class ItemModelManager(Manager):
     A custom defined ItemModelManager that implement custom QuerySet methods related to the ItemModel
     """
 
-    def for_entity(self, entity_slug, user_model):
+    def get_queryset(self):
+        return ItemModelQuerySet(self.model, using=self._db).select_related('uom')
+
+    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs):
         """
-        Returns a QuerySet of ItemModel associated with a specific EntityModel & UserModel.
-        May pass an instance of EntityModel or a String representing the EntityModel slug.
+        Filters the queryset for a specific entity based on the provided entity identifier.
+
+        This method modifies the queryset to include only those items associated with the
+        specified entity. The entity can be identified using an instance of `EntityModel`,
+        a string representing the entity's slug, or a UUID. If an invalid type is provided for
+        the `entity_model` parameter, an exception will be raised. Additionally, deprecated
+        behavior for the `user_model` parameter is supported if allowed, though its usage
+        is discouraged.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
-            The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
+        entity_model : EntityModel | str | UUID
+            The entity identifier. It can be:
+            - An instance of `EntityModel`
+            - A string representing the entity's slug
+            - A UUID representing the entity's unique identifier
+        kwargs : dict
+            Optional keyword arguments.
+            - user_model (deprecated): An alternative user model for filtering, if set, a
+              deprecation warning will be issued.
 
         Returns
         -------
-        ItemModelQuerySet
-            A Filtered ItemModelQuerySet.
+        QuerySet
+            The filtered queryset containing items associated with the specified entity.
+
+        Raises
+        ------
+        ItemModelValidationError
+            If the `entity_model` parameter is not an instance of `EntityModel`, a string, or a UUID.
+
+        Warnings
+        --------
+        DeprecationWarning
+            The `user_model` parameter is deprecated and will be removed in a future release.
         """
+        EntityModel = lazy_loader.get_entity_model()
         qs = self.get_queryset()
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity=entity_slug) &
-                (
-                        Q(entity__managers__in=[user_model]) |
-                        Q(entity__admin=user_model)
-                )
-            ).select_related('uom')
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
-            (
-                    Q(entity__managers__in=[user_model]) |
-                    Q(entity__admin=user_model)
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        ).select_related('uom')
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise ItemModelValidationError(
+                message='entity_model parameter must be of type str or EntityModel or UUID'
+            )
+        return qs
 
     def for_entity_active(self, entity_slug, user_model):
         """

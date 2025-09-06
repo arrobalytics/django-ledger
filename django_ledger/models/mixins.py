@@ -231,8 +231,6 @@ class AccrualMixIn(models.Model):
                                         null=True,
                                         verbose_name=_('Prepaid Account'),
                                         related_name=f'{REL_NAME_PREFIX}_prepaid_account')
-
-    # todo: rename to payable account...
     unearned_account = models.ForeignKey('django_ledger.AccountModel',
                                          on_delete=models.RESTRICT,
                                          blank=True,

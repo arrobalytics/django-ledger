@@ -25,8 +25,7 @@ class EstimateModelCreateForm(forms.ModelForm):
 
     def get_customer_queryset(self):
         return CustomerModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG,
         ).active()
 
     class Meta:
@@ -121,8 +120,7 @@ class BaseEstimateItemModelFormset(BaseModelFormSet):
         )
 
         unit_qs = EntityUnitModel.objects.for_entity(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG
         )
 
         for form in self.forms:

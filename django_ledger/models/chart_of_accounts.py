@@ -39,11 +39,11 @@ roles to create comprehensive financial statements.
 This structure ensures a clear and organized approach to financial management within Django Ledger, facilitating
 accurate record-keeping and reporting.
 """
-
+import warnings
 from random import choices
 from string import ascii_lowercase, digits
 from typing import Optional, Union, Dict
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.apps import apps
 from django.contrib.auth import get_user_model
@@ -61,6 +61,7 @@ from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROO
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
+from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
 UserModel = get_user_model()
 
@@ -75,21 +76,54 @@ class ChartOfAccountsModelValidationError(ValidationError):
 
 class ChartOfAccountModelQuerySet(QuerySet):
 
-    def active(self):
+    def active(self) -> 'ChartOfAccountModelQuerySet':
         """
         QuerySet method to retrieve active items.
         """
         return self.filter(active=True)
 
+    def not_active(self) -> 'ChartOfAccountModelQuerySet':
+        """≤
+        QuerySet method to retrieve not active items.
+        """
+        return self.filter(active=False)
+
+    def for_user(self, user_model) -> 'ChartOfAccountModelQuerySet':
+        """
+        Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
+        multiple Entities. The user has access to bills if:
+        1. Is listed as Manager of Entity.
+        2. Is the Admin of the Entity.
+
+        Parameters
+        ----------
+        user_model
+            Logged in and authenticated django UserModel instance.
+
+        Returns
+        -------
+        ChartOfAccountQuerySet
+            Returns a ChartOfAccountQuerySet with applied filters.
+        """
+
+        if user_model.is_superuser:
+            return self
+
+        return self.filter(
+            (
+                    Q(entity__admin=user_model) |
+                    Q(entity__managers__in=[user_model])
+            )
+        )
 
 class ChartOfAccountModelManager(Manager):
     """
-    A custom defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
+    A custom-defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
     to the ChartOfAccountModel.
     """
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def get_queryset(self) -> ChartOfAccountModelQuerySet:
+        qs = ChartOfAccountModelQuerySet(self.model, using=self._db)
         return qs.annotate(
             _entity_slug=F('entity__slug'),
             accountmodel_total__count=Count(
@@ -109,32 +143,9 @@ class ChartOfAccountModelManager(Manager):
             ),
         ).select_related('entity')
 
-    def for_user(self, user_model) -> ChartOfAccountModelQuerySet:
-        """
-        Fetches a QuerySet of ChartOfAccountModel that the UserModel as access to. May include ChartOfAccountModel from
-        multiple Entities. The user has access to bills if:
-        1. Is listed as Manager of Entity.
-        2. Is the Admin of the Entity.
 
-        Parameters
-        ----------
-        user_model
-            Logged in and authenticated django UserModel instance.
 
-        Returns
-        -------
-        ChartOfAccountQuerySet
-            Returns a ChartOfAccountQuerySet with applied filters.
-        """
-        qs = self.get_queryset()
-        return qs.filter(
-            (
-                    Q(entity__admin=user_model) |
-                    Q(entity__managers__in=[user_model])
-            )
-        )
-
-    def for_entity(self, entity_model, user_model) -> ChartOfAccountModelQuerySet:
+    def for_entity(self, entity_model: Union['EntityModel | str | UUID'], **kwargs) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -153,10 +164,29 @@ class ChartOfAccountModelManager(Manager):
         ChartOfAccountQuerySet
             Returns a ChartOfAccountQuerySet with applied filters.
         """
-        qs = self.for_user(user_model)
-        if isinstance(entity_model, lazy_loader.get_entity_model()):
+
+        EntityModel = lazy_loader.get_entity_model()
+
+        qs = self.get_queryset()
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
             return qs.filter(entity=entity_model)
-        return qs.filter(entity__slug__iexact=entity_model)
+        elif isinstance(entity_model, str):
+            return qs.filter(entity__slug=entity_model)
+        elif isinstance(entity_model, UUID):
+            return qs.filter(entity_id=entity_model)
+        raise ChartOfAccountsModelValidationError(
+            message='Must pass an instance of EntityModel, String or UUID for entity_slug.'
+        )
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
@@ -598,7 +628,6 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         account_qs.update(locked=False)
         return account_qs
 
-
     def mark_as_default(self, commit: bool = False, raise_exception: bool = False, **kwargs):
         """
         Marks the current Chart of Accounts instances as default for the EntityModel.
@@ -839,6 +868,7 @@ class ChartOfAccountModel(ChartOfAccountModelAbstract):
     """
     Base ChartOfAccounts Model
     """
+
     class Meta(ChartOfAccountModelAbstract.Meta):
         abstract = False
 

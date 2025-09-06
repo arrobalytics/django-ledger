@@ -138,8 +138,7 @@ class EntityDataGenerator(LoggingMixIn):
 
         self.logger.info('Checking for existing transactions...')
         txs_qs = TransactionModel.objects.for_entity(
-            entity_slug=self.entity_model,
-            user_model=self.user_model
+            entity_model=self.entity_model
         )
 
         if txs_qs.count() > 0 and not force_populate:

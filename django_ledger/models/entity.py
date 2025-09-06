@@ -24,7 +24,7 @@ from decimal import Decimal
 from itertools import zip_longest
 from random import choices
 from string import ascii_lowercase, digits
-from typing import Tuple, Union, Optional, List, Dict, Set
+from typing import Tuple, Union, Optional, List, Dict, Set, Self
 from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
@@ -71,7 +71,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
     Inherits from the Materialized Path Node QuerySet Class from Django Treebeard.
     """
 
-    def hidden(self):
+    def hidden(self) -> 'EntityModelQuerySet':
         """
         A QuerySet of all hidden EntityModel.
 
@@ -82,7 +82,7 @@ class EntityModelQuerySet(MP_NodeQuerySet):
         """
         return self.filter(hidden=True)
 
-    def visible(self):
+    def visible(self) -> 'EntityModelQuerySet':
         """
         A Queryset of all visible EntityModel.
 
@@ -108,7 +108,7 @@ class EntityModelManager(MP_NodeManager):
 
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> EntityModelQuerySet:
         """Sets the custom queryset as the default."""
         qs = EntityModelQuerySet(
             self.model,
@@ -1547,7 +1547,7 @@ class EntityModelAbstract(MP_Node,
             return qs
 
         JournalEntryModel = lazy_loader.get_journal_entry_model()
-        qs = JournalEntryModel.objects.for_entity(entity_slug=self)
+        qs = JournalEntryModel.objects.for_entity(entity_model=self)
         if posted:
             return qs.posted()
         return qs

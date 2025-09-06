@@ -25,7 +25,7 @@ class LedgerQuery(graphene.ObjectType):
             if not sort:
                 sort = '-updated'
             return LedgerModel.objects.for_entity(
-                entity_slug=slug_name,
+                entity_model=slug_name,
                 user_model=info.context.user
             ).order_by(sort)
         else:

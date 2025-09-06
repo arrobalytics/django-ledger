@@ -19,7 +19,7 @@ from django.utils.dateparse import parse_date
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
-from django_ledger.models import EntityModel, InvoiceModel, BillModel
+from django_ledger.models import EntityModel, InvoiceModel, BillModel, LedgerModel
 from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
 from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED, DJANGO_LEDGER_AUTHORIZED_SUPERUSER
 
@@ -424,11 +424,13 @@ class DigestContextMixIn:
                       to_date=None,
                       **kwargs):
 
-        if any([self.IO_DIGEST_UNBOUNDED,
-                self.IO_DIGEST_BOUNDED]):
+        if any([
+            self.IO_DIGEST_UNBOUNDED,
+            self.IO_DIGEST_BOUNDED
+        ]):
 
             by_period = self.request.GET.get('by_period')
-            entity_model: EntityModel = self.object
+            io_model: EntityModel | LedgerModel = self.object
             if not to_date:
                 to_date = context['to_date']
             if not from_date:
@@ -441,19 +443,22 @@ class DigestContextMixIn:
                 unit_slug = None
 
             if self.IO_DIGEST_UNBOUNDED:
-                io_digest = entity_model.digest(user_model=self.request.user,
-                                                to_date=to_date,
-                                                unit_slug=unit_slug,
-                                                by_period=True if by_period else False,
-                                                process_ratios=True,
-                                                process_roles=True,
-                                                process_groups=True)
+                io_digest = io_model.digest(
+                    user_model=self.request.user,
+                    entity_slug=io_model.entity_slug if isinstance(io_model, LedgerModel) else None,
+                    to_date=to_date,
+                    unit_slug=unit_slug,
+                    by_period=True if by_period else False,
+                    process_ratios=True,
+                    process_roles=True,
+                    process_groups=True
+                )
 
                 context[self.get_io_manager_unbounded_context_name()] = io_digest
                 context[self.get_io_digest_unbounded_context_name()] = io_digest.get_io_data()
 
             if self.IO_DIGEST_BOUNDED:
-                io_digest_equity = entity_model.digest(
+                io_digest_equity = io_model.digest(
                     user_model=self.request.user,
                     equity_only=True,
                     to_date=to_date,
@@ -489,9 +494,8 @@ class UnpaidElementsMixIn:
             to_date = context['to_date'] if not to_date else to_date
 
             qs = InvoiceModel.objects.for_entity(
-                user_model=self.request.user,
-                entity_slug=self.kwargs['entity_slug']
-            ).approved().filter(
+                entity_model=self.kwargs['entity_slug']
+            ).for_user(self.request.user).approved().filter(
                 Q(date_approved__gte=from_date) &
                 Q(date_approved__lte=to_date)
             ).select_related('customer').order_by('date_due')
