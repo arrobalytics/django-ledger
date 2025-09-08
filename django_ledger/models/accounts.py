@@ -69,6 +69,7 @@ from django_ledger.io.roles import (
     ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
     ROLES_ORDER_ALL, ASSET_CA_CASH
 )
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
@@ -341,40 +342,56 @@ class AccountModelManager(MP_NodeManager):
             _entity_slug=F('coa_model__entity__slug'),
         )
 
+    @deprecated_for_entity_behavior
     def for_entity(
             self,
-            entity_model: Union['EntityModel | str | UUID'],
-            coa_slug: Optional['ChartOfAccountModel | str | UUID'] = None,
+            entity_model: Union['EntityModel | str | UUID'] = None,
+            coa_model: Optional['ChartOfAccountModel | str | UUID'] = None,
             **kwargs
     ) -> AccountModelQuerySet:
         """
-        Filters and returns an AccountModelQuerySet based on the provided entity model and
-        optional Chart of Accounts (COA) slug. Validates the input type for the entity model
-        and optionally supports deprecated behavior for user_model.
+        Filters the queryset for an entity and, optionally, a chart of account (COA) model.
 
-        Parameters:
-            entity_model (Union[EntityModel, str, UUID]): The entity model instance, entity slug,
-                or UUID to filter the queryset.
-            coa_slug (Optional[str]): The Chart of Accounts slug. Defaults to None, which applies
-                the default COA slug associated with the entity.
-            **kwargs: Additional arguments that may include 'user_model'. The 'user_model' parameter
-                is deprecated and a warning will be raised on its usage.
+        The method refines the queryset based on the provided `entity_model` and, optionally,
+        the `coa_model`. If a deprecated `user_model` is specified in keyword arguments,
+        a warning is issued. The method supports `EntityModel`, `str`, and `UUID` types
+        for both `entity_model` and `coa_model`. A validation error is raised for unsupported types.
 
-        Returns:
-            AccountModelQuerySet: A filtered queryset based on the provided entity model and COA slug.
+        Parameters
+        ----------
+        entity_model : Union['EntityModel', str, UUID]
+            The entity model used for filtering the queryset. Could be an instance of
+            `EntityModel`, a string (slug), or a UUID.
+        coa_model : Optional[Union['ChartOfAccountModel', str, UUID]], optional
+            The COA model used for filtering the queryset. Can be an instance of
+            `ChartOfAccountModel`, a string (slug), or a UUID. If None, default Entity ChartOfAccounts is used.
+            Defaults to None.
+        **kwargs : dict
+            Additional keyword arguments. A deprecated argument `user_model` can be passed
+            for backward compatibility.
 
-        Raises:
-            AccountModelValidationError: Raised when the entity_model is neither an instance of
-                EntityModel nor a String for the entity slug.
+        Returns
+        -------
+        AccountModelQuerySet
+            A queryset filtered by the input entity model and, optionally, the chart of
+            account model.
 
-        Notes:
-            The 'user_model' parameter is deprecated and should be replaced by using the for_user
-            method chained with for_entity. Deprecation warnings are issued if used.
+        Raises
+        ------
+        AccountModelValidationError
+            If an invalid type is passed for either `entity_model` or `coa_model`.
+
+        Warns
+        -----
+        DeprecationWarning
+            If the `user_model` parameter is passed in the keyword arguments and the
+            application relies on deprecated behavior.
         """
         EntityModel = lazy_loader.get_entity_model()
         ChartOfAccountModel = lazy_loader.get_coa_model()
 
         qs = self.get_queryset()
+
         if 'user_model' in kwargs:
             warnings.warn(
                 'user_model parameter is deprecated and will be removed in a future release. '
@@ -396,13 +413,13 @@ class AccountModelManager(MP_NodeManager):
                 message='Must pass an instance of EntityModel, String or UUID for entity_model.'
             )
 
-        if coa_slug:
-            if isinstance(coa_slug, ChartOfAccountModel):
-                qs = qs.filter(coa_model=coa_slug)
-            elif isinstance(coa_slug, str):
-                qs = qs.filter(coa_model__slug__exact=coa_slug)
-            elif isinstance(coa_slug, UUID):
-                qs = qs.filter(coa_model__uuid__exact=coa_slug)
+        if coa_model:
+            if isinstance(coa_model, ChartOfAccountModel):
+                qs = qs.filter(coa_model=coa_model)
+            elif isinstance(coa_model, str):
+                qs = qs.filter(coa_model__slug__exact=coa_model)
+            elif isinstance(coa_model, UUID):
+                qs = qs.filter(coa_model__uuid__exact=coa_model)
             else:
                 raise AccountModelValidationError(
                     message='Must pass an instance of ChartOfAccountModel, String or UUID for coa_model.'

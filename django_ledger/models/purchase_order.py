@@ -31,6 +31,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
 from django_ledger.models.bill import BillModel, BillModelQuerySet
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModel, ItemTransactionModelQuerySet, ItemModelQuerySet, ItemModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn, ItemizeMixIn
@@ -115,7 +116,8 @@ class PurchaseOrderModelManager(Manager):
     A custom defined PurchaseOrderModel Manager.
     """
 
-    def for_entity(self, entity_model: EntityModel | str | UUID, **kwargs) -> PurchaseOrderModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> PurchaseOrderModelQuerySet:
         """
         Fetches a QuerySet of PurchaseOrderModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.

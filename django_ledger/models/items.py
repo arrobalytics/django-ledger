@@ -21,6 +21,7 @@ Totals will be calculated and associated with the containing model at the time o
 import warnings
 from decimal import Decimal
 from string import ascii_lowercase, digits
+from typing import Dict
 from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -30,6 +31,7 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, 
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
@@ -46,65 +48,83 @@ class ItemModelValidationError(ValidationError):
 
 
 class UnitOfMeasureModelQuerySet(QuerySet):
-    pass
 
-
-# UNIT OF MEASURES MODEL....
-class UnitOfMeasureModelManager(Manager):
-    """
-    A custom defined QuerySet Manager for the UnitOfMeasureModel.
-    """
-
-    def for_entity(self, entity_slug: str, user_model) -> QuerySet:
-        """
-        Fetches the UnitOfMeasureModels associated with the provided EntityModel and UserModel.
-
-        Parameters
-        ----------
-        entity_slug: str or EntityModel
-            The EntityModel slug or EntityModel used to filter the QuerySet.
-        user_model: UserModel
-            The Django UserModel to check permissions.
-
-        Returns
-        -------
-        QuerySet
-            A QuerySet with applied filters.
-        """
-        qs = self.get_queryset()
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(entity=entity_slug) &
-                (
-                        Q(entity__admin=user_model) |
-                        Q(entity__managers__in=[user_model])
-                )
-            )
-        return qs.filter(
-            Q(entity__slug__exact=entity_slug) &
+    def for_user(self, user_model) -> 'UnitOfMeasureModelQuerySet':
+        return self.filter(
             (
                     Q(entity__admin=user_model) |
                     Q(entity__managers__in=[user_model])
             )
         )
 
-    def for_entity_active(self, entity_slug: str, user_model):
+
+# UNIT OF MEASURES MODEL....
+class UnitOfMeasureModelManager(Manager):
+    """
+    A custom-defined QuerySet Manager for the UnitOfMeasureModel.
+    """
+
+    def get_queryset(self) -> UnitOfMeasureModelQuerySet:
+        return UnitOfMeasureModelQuerySet(self.model, using=self._db)
+
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> UnitOfMeasureModelQuerySet:
         """
-        Fetches the Active UnitOfMeasureModels associated with the provided EntityModel and UserModel.
+        Fetches the UnitOfMeasureModels associated with the provided EntityModel and UserModel.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The EntityModel slug or EntityModel used to filter the QuerySet.
-        user_model: UserModel
-            The Django UserModel to check permissions.
 
         Returns
         -------
         QuerySet
             A QuerySet with applied filters.
         """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+
+        EntityModel = lazy_loader.get_entity_model()
+        qs = self.get_queryset()
+
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(entity__slug=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise ItemModelValidationError(
+                message='Must pass EntityModel, slug or UUID'
+            )
+        return qs
+
+    @deprecated_for_entity_behavior
+    def for_entity_active(
+            self, entity_model: 'EntityModel | str | UUID' = None,
+            **kwargs) -> UnitOfMeasureModelQuerySet:
+        """
+        Fetches the Active UnitOfMeasureModels associated with the provided EntityModel and UserModel.
+
+        Parameters
+        ----------
+        entity_model: str or EntityModel
+            The EntityModel slug or EntityModel used to filter the QuerySet.
+        Returns
+        -------
+        QuerySet
+            A QuerySet with applied filters.
+        """
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(is_active=True)
 
 
@@ -157,7 +177,7 @@ class ItemModelQuerySet(QuerySet):
     A custom-defined ItemModelQuerySet that implements custom QuerySet methods related to the ItemModel.
     """
 
-    def for_user(self, user_model):
+    def for_user(self, user_model) -> 'ItemModelQuerySet':
         if user_model.is_superuser:
             return self
         return self.filter(
@@ -176,7 +196,7 @@ class ItemModelQuerySet(QuerySet):
         """
         return self.filter(is_active=True)
 
-    def products(self):
+    def products(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that only qualify as products.
 
@@ -193,7 +213,7 @@ class ItemModelQuerySet(QuerySet):
             Q(item_role=ItemModel.ITEM_ROLE_PRODUCT)
         )
 
-    def services(self):
+    def services(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that only qualify as services.
 
@@ -210,7 +230,7 @@ class ItemModelQuerySet(QuerySet):
             Q(item_role=ItemModel.ITEM_ROLE_SERVICE)
         )
 
-    def expenses(self):
+    def expenses(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that only qualify as expenses.
 
@@ -226,7 +246,7 @@ class ItemModelQuerySet(QuerySet):
             ) | Q(item_role=ItemModel.ITEM_ROLE_EXPENSE)
         )
 
-    def inventory_wip(self):
+    def inventory_wip(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that only qualify as inventory.
         These types of items cannot be sold as they are not considered a finished product.
@@ -243,7 +263,7 @@ class ItemModelQuerySet(QuerySet):
             ) | Q(item_role=ItemModel.ITEM_ROLE_INVENTORY)
         )
 
-    def inventory_all(self):
+    def inventory_all(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that only qualify as inventory.
         These types of items may be finished or unfinished.
@@ -271,7 +291,7 @@ class ItemModelQuerySet(QuerySet):
             )
         )
 
-    def bills(self):
+    def bills(self) -> 'ItemModelQuerySet':
         """
         Filters the QuerySet to ItemModels that are eligible only for bills..
 
@@ -288,13 +308,13 @@ class ItemModelQuerySet(QuerySet):
             Q(for_inventory=True)
         )
 
-    def invoices(self):
+    def invoices(self) -> 'ItemModelQuerySet':
         return self.filter(is_product_or_service=True)
 
-    def estimates(self):
+    def estimates(self) -> 'ItemModelQuerySet':
         return self.invoices()
 
-    def purchase_orders(self):
+    def purchase_orders(self) -> 'ItemModelQuerySet':
         return self.inventory_all()
 
 
@@ -303,46 +323,38 @@ class ItemModelManager(Manager):
     A custom defined ItemModelManager that implement custom QuerySet methods related to the ItemModel
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> ItemModelQuerySet:
         return ItemModelQuerySet(self.model, using=self._db).select_related('uom')
 
-    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs):
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
-        Filters the queryset for a specific entity based on the provided entity identifier.
+        Marks the `for_entity` method as deprecated in behavior and provides an updated usage approach.
 
-        This method modifies the queryset to include only those items associated with the
-        specified entity. The entity can be identified using an instance of `EntityModel`,
-        a string representing the entity's slug, or a UUID. If an invalid type is provided for
-        the `entity_model` parameter, an exception will be raised. Additionally, deprecated
-        behavior for the `user_model` parameter is supported if allowed, though its usage
-        is discouraged.
+        This method allows querying a `QuerySet` filtered by various representations of an entity, such as an
+        instance of `EntityModel`, a string slug, or a UUID. Leveraging this method with deprecated parameters
+        may lead to a warning and compatibility concerns in future releases.
 
         Parameters
         ----------
-        entity_model : EntityModel | str | UUID
-            The entity identifier. It can be:
-            - An instance of `EntityModel`
-            - A string representing the entity's slug
-            - A UUID representing the entity's unique identifier
+        entity_model : EntityModel | str | UUID, optional
+            The entity to filter the queryset by. Can be an instance of `EntityModel`, a slug (`str`), or
+            a unique identifier (`UUID`). If not provided, no filtering is applied.
         kwargs : dict
-            Optional keyword arguments.
-            - user_model (deprecated): An alternative user model for filtering, if set, a
-              deprecation warning will be issued.
+            Additional keyword arguments, though currently only the `user_model` parameter is recognized but
+            deprecated. The `user_model` behavior will be removed in future releases.
 
         Returns
         -------
-        QuerySet
-            The filtered queryset containing items associated with the specified entity.
+        ItemModelQuerySet
+            A filtered queryset corresponding to the specified entity.
 
         Raises
         ------
         ItemModelValidationError
-            If the `entity_model` parameter is not an instance of `EntityModel`, a string, or a UUID.
-
-        Warnings
-        --------
+            If the `entity_model` parameter is not of type `EntityModel`, `str`, or `UUID`.
         DeprecationWarning
-            The `user_model` parameter is deprecated and will be removed in a future release.
+            When the `user_model` parameter is used, indicating behavior slated for future removal.
         """
         EntityModel = lazy_loader.get_entity_model()
         qs = self.get_queryset()
@@ -368,27 +380,30 @@ class ItemModelManager(Manager):
             )
         return qs
 
-    def for_entity_active(self, entity_slug, user_model):
+    @deprecated_for_entity_behavior
+    def for_entity_active(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of Active ItemModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity(
+            entity_model=entity_model,
+            **kwargs
+        )
         return qs.filter(is_active=True)
 
-    def for_invoice(self, entity_slug, user_model):
+    @deprecated_for_entity_behavior
+    def for_invoice(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for InvoiceModels for a specific EntityModel &
         UserModel. These types of items qualify as products or services sold.
@@ -396,20 +411,19 @@ class ItemModelManager(Manager):
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_model=entity_model, **kwargs)
         return qs.filter(is_product_or_service=True)
 
-    def for_bill(self, entity_slug, user_model):
+    @deprecated_for_entity_behavior
+    def for_bill(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for BillModels for a specific EntityModel &
         UserModel. These types of items qualify as expenses or inventory purchases.
@@ -417,10 +431,8 @@ class ItemModelManager(Manager):
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
@@ -428,8 +440,8 @@ class ItemModelManager(Manager):
             A Filtered ItemModelQuerySet.
         """
         qs = self.for_entity_active(
-            entity_slug=entity_slug,
-            user_model=user_model
+            entity_model=entity_model,
+            **kwargs
         )
         return qs.filter(
             (
@@ -439,7 +451,8 @@ class ItemModelManager(Manager):
             Q(for_inventory=True)
         )
 
-    def for_po(self, entity_slug, user_model):
+    @deprecated_for_entity_behavior
+    def for_po(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for PurchaseOrders for a specific EntityModel &
         UserModel. These types of items qualify as inventory purchases.
@@ -447,20 +460,19 @@ class ItemModelManager(Manager):
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.inventory_all()
 
-    def for_estimate(self, entity_slug: str, user_model):
+    @deprecated_for_entity_behavior
+    def for_estimate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for EstimateModels for a specific EntityModel &
         UserModel. These types of items qualify as products.
@@ -468,17 +480,15 @@ class ItemModelManager(Manager):
 
         Parameters
         ----------
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            The request UserModel to check for privileges.
 
         Returns
         -------
         ItemModelQuerySet
             A Filtered ItemModelQuerySet.
         """
-        qs = self.for_entity_active(entity_slug=entity_slug, user_model=user_model)
+        qs = self.for_entity_active(entity_model=entity_model, **kwargs)
         return qs.products()
 
 
@@ -891,25 +901,110 @@ class ItemModelAbstract(CreateUpdateMixIn):
 
 
 # ITEM TRANSACTION MODELS...
-class ItemTransactionModelQuerySet(QuerySet):
 
-    def is_received(self):
+class ItemTransactionModelValidationError(ValidationError):
+    pass
+
+
+class ItemTransactionModelQuerySet(QuerySet):
+    """
+    QuerySet class for handling ItemTransactionModel-specific database queries.
+
+    This class extends Django's QuerySet to provide additional methods
+    to filter and retrieve specific subsets of ItemTransactionModel entries
+    based on various criteria such as user permissions, transaction status,
+    or custom aggregate calculations.
+    """
+
+    def for_user(self, user_model) -> 'ItemTransactionModelQuerySet':
+        """
+        Filters the queryset based on the provided user model.
+
+        This method restricts the queryset to items associated with the specified
+        user. If the user is a superuser, all items in the queryset are returned.
+        Otherwise, only items managed or administered by the user are included.
+
+        Parameters
+        ----------
+        user_model : UserModel
+            The user model instance used to filter the queryset.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            The filtered queryset containing items accessible by the given user.
+        """
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(item_model__entity__admin=user_model) |
+            Q(item_model__entity__managers__in=[user_model])
+        )
+
+    def is_received(self) -> 'ItemTransactionModelQuerySet':
+        """
+        Filters the queryset to include only items with the status 'received'.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            A queryset containing only the items with the status 'received'.
+        """
         return self.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
-    def in_transit(self):
+    def in_transit(self) -> 'ItemTransactionModelQuerySet':
+        """
+        Filters and retrieves items in the "in transit" status.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            A queryset containing items whose status is "in transit".
+        """
         return self.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
 
-    def is_ordered(self):
+    def is_ordered(self) -> 'ItemTransactionModelQuerySet':
+        """
+        Filters the queryset to include only items with the status "ORDERED".
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            A filtered queryset containing items with the status "ORDERED".
+        """
         return self.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
-    def is_orphan(self):
+    def is_orphan(self) -> 'ItemTransactionModelQuerySet':
+        """
+        Filters the query set for items that are considered "orphan", meaning
+        they are not linked to any bill, purchase order, or cost estimate models.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            A filtered query set containing only the orphan items.
+        """
         return self.filter(
             Q(bill_model_id__isnull=True) &
             Q(po_model_id__isnull=True) &
             Q(ce_model_id__isnull=True)
         )
 
-    def get_estimate_aggregate(self):
+    def get_estimate_aggregate(self) -> Dict[str, int]:
+        """
+        Calculate aggregated estimates for cost, revenue, and total items.
+
+        This method computes the sum of `ce_cost_estimate` and `ce_revenue_estimate`
+        for all elements in the iterable, as well as the total number of items.
+
+        Returns
+        -------
+        Dict[str, int]
+            A dictionary containing the following keys:
+                - 'ce_cost_estimate__sum': The total sum of all `ce_cost_estimate` values.
+                - 'ce_revenue_estimate__sum': The total sum of all `ce_revenue_estimate` values.
+                - 'total_items': The total count of items in the iterable.
+        """
         return {
             'ce_cost_estimate__sum': sum(i.ce_cost_estimate for i in self),
             'ce_revenue_estimate__sum': sum(i.ce_revenue_estimate for i in self),
@@ -919,51 +1014,260 @@ class ItemTransactionModelQuerySet(QuerySet):
 
 class ItemTransactionModelManager(Manager):
 
-    def for_user(self, user_model):
+    def get_queryset(self) -> ItemTransactionModelQuerySet:
+        """
+        Provides a custom queryset for the related ItemTransactionModel.
+
+        This method ensures that the queryset returned is an instance of the custom
+        ItemTransactionModelQuerySet configured for operations on the specific model.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            An instance of ItemTransactionModelQuerySet customized for the model.
+        """
+        return ItemTransactionModelQuerySet(self.model, using=self._db)
+
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemTransactionModelQuerySet:
+        """
+        A method to filter the queryset for a specified entity. The filtering can be performed
+        using an entity model, a slug string, or a UUID. Older deprecated parameters can still
+        be utilized if certain conditions are met. This method applies the necessary filters
+        to the queryset based on the entity information provided.
+
+        Parameters
+        ----------
+        entity_model : EntityModel | str | UUID, optional
+            The entity for which the queryset is being filtered. It can be an instance of
+            EntityModel, a string representing the entity slug, or a UUID corresponding to
+            the entity's identifier.
+        **kwargs :
+            Arbitrary keyword arguments. A specific argument, `user_model`, is deprecated
+            and will trigger a warning if used.
+
+        Returns
+        -------
+        ItemTransactionModelQuerySet
+            The queryset filtered for the specified entity.
+
+        Raises
+        ------
+        ItemTransactionModelValidationError
+            Raised when `entity_model` is not an instance of EntityModel, a string, or a UUID.
+
+        Warnings
+        --------
+        DeprecationWarning
+            Issued if `user_model` parameter is passed via kwargs. Users are encouraged to update
+            their implementation to utilize `for_user(user_model).for_entity(entity_model)`
+            to avoid this warning.
+
+        Notes
+        -----
+        - Deprecation behavior of certain parameters depends on the `DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR` flag.
+        - If `entity_model` is None, the method raises an error as entity identification is required.
+        """
+        EntityModel = lazy_loader.get_entity_model()
+
         qs = self.get_queryset()
-        return qs.filter(
-            Q(item_model__entity__admin=user_model) |
-            Q(item_model__entity__managers__in=[user_model])
-        )
-
-    def for_entity(self, user_model, entity_slug):
-        qs = self.for_user(user_model)
-        if isinstance(entity_slug, lazy_loader.get_entity_model()):
-            return qs.filter(
-                Q(item_model__entity=entity_slug)
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
             )
-        return qs.filter(
-            Q(item_model__entity__slug__exact=entity_slug)
-        )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
 
-    def for_bill(self, user_model, entity_slug, bill_pk):
-        qs = self.for_entity(user_model=user_model, entity_slug=entity_slug)
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(item_model__entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(item_model__entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(item_model__entity_id=entity_model)
+        else:
+            raise ItemTransactionModelValidationError(
+                message='Must pass EntityModel, slug or UUID'
+            )
+        return qs
+
+    @deprecated_for_entity_behavior
+    def for_bill(self, bill_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs, ):
+        """
+        This function provides filters for fetching data related to a specific bill, based on a given
+        bill primary key, along with optional parameters for an associated entity model.
+
+        Parameters
+        ----------
+        bill_pk : UUID
+            The primary key of the bill to filter.
+        entity_model : EntityModel | str | UUID.
+            Represents the associated entity model, which could be provided as an instance,
+            identifier, or string.
+        **kwargs : dict
+            Additional filtering or query parameters.
+
+        Returns
+        -------
+        QuerySet
+            A filtered queryset containing data relevant to the specified bill and optional entity
+            constraints.
+
+        Deprecated
+        ----------
+        This function is deprecated in favor of using entity behavior. Please refer to the
+        documentation for updated usage guidelines.
+        """
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(bill_model_id__exact=bill_pk)
 
-    def for_invoice(self, entity_slug: str, invoice_pk, user_model):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+    @deprecated_for_entity_behavior
+    def for_invoice(self, invoice_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        """
+        Marks the behavior as deprecated when filtering queries for a specific invoice.
+
+        This method provides functionality to filter a queryset based on a specified
+        invoice primary key and an entity model. It is marked as deprecated in favor
+        of other entity behavior methods.
+
+        Parameters
+        ----------
+        invoice_pk : UUID
+            The primary key of the invoice to filter the queryset by.
+        entity_model : EntityModel | str | UUID
+            The entity to filter the queryset for. This can be an instance of
+            EntityModel, a UUID, or a string representation of the entity.
+        **kwargs : dict
+            Additional filtering parameters to apply to the queryset.
+
+        Returns
+        -------
+        QuerySet
+            A filtered queryset containing objects associated with the specified invoice.
+
+        Raises
+        ------
+        Any exceptions raised during the call to `for_entity` or filtering process.
+
+        Notes
+        -----
+        The method is slated for deprecation and should be replaced with preferred
+        methods for filtering querysets by entity behavior in the future.
+        """
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(invoice_model_id__exact=invoice_pk)
 
-    def for_po(self, entity_slug, user_model, po_pk):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
+    @deprecated_for_entity_behavior
+    def for_po(self, po_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        """
+        Filters and retrieves entity records associated with a specific purchase order (PO) and entity model.
+
+        This method applies additional filtering to an existing queryset by matching the given PO primary
+        key (UUID) with records tied to the corresponding PO model. It leverages an extended filter for
+        entity behavior but is marked deprecated in favor of using alternative entity filtering methods.
+
+        Parameters
+        ----------
+        po_pk : UUID
+            The primary key identifier for the purchase order.
+        entity_model : EntityModel or str or UUID
+            The model representing the associated entity. If not provided, an alternate behavior based on
+            `kwargs` or contextual settings will apply.
+        **kwargs : dict, optional
+            Additional keyword arguments provided for extended filtering.
+
+        Returns
+        -------
+        QuerySet
+            A filtered queryset containing records that match the specified PO `po_pk` and entity model
+            criteria.
+
+        Raises
+        ------
+        None explicitly documented; refer to underlying methods (`for_entity`) for any potential errors.
+
+        Warnings
+        --------
+        This method is deprecated and may be removed in future versions. Use alternative entity filtering
+        methods where applicable.
+        """
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    def for_estimate(self, user_model, entity_slug, cj_pk):
-        qs = self.for_entity(entity_slug=entity_slug, user_model=user_model)
-        return self.filter(ce_model_id__exact=cj_pk)
+    @deprecated_for_entity_behavior
+    def for_estimate(self, cj_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        """
+        Marks the method as deprecated for estimating behavior in relation to an entity.
 
-    def for_contract(self, user_model, entity_slug, ce_pk):
+        This method is intended to filter a queryset based on a specific entity and a unique
+        identifier (`cj_pk`). It's discouraged to use this method in new implementations as
+        it has been marked deprecated.
+
+        Parameters
+        ----------
+        cj_pk : UUID
+            The unique identifier for the entity model to filter on.
+        entity_model : EntityModel | str | UUID
+            The entity model, which may be provided either as an `EntityModel` instance,
+            a string representing its identifier, or a `UUID`. Defaults to `None`.
+        **kwargs : dict
+            Additional keyword arguments to pass to the entity filtering mechanism.
+
+        Returns
+        -------
+        QuerySet
+            The filtered queryset based on the provided `cj_pk` and the optional
+            `entity_model`.
+
+        Raises
+        ------
+        TypeError
+            If the input parameters are invalid or incompatible with the filtering process.
         """
-        Returns all ItemTransactionModels associated with an EstimateModel.
-        @param user_model: UserModel requesting data.
-        @param entity_slug: EntityModel slug field value.
-        @param ce_pk: EstimateModel UUID.
-        @return: ItemTransactionModel QuerySet
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
+        return qs.filter(ce_model_id__exact=cj_pk)
+
+    @deprecated_for_entity_behavior
+    def for_contract(self, ce_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
-        qs = self.for_entity(
-            entity_slug=entity_slug,
-            user_model=user_model
-        )
+        Provides a method to filter querysets based on the contract entity model to which they are associated.
+
+        Methods
+        -------
+        for_contract(ce_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs)
+            Filters a queryset to include records associated with a specific contract entity
+            model by its primary key and optionally narrows it down further using an entity model
+            and additional query parameters.
+
+        Parameters
+        ----------
+        ce_pk : UUID
+            The unique identifier (primary key) of the contract entity model to filter by.
+        entity_model : 'EntityModel | str | UUID'
+            An optional entity model object, string representation, or primary key to use
+            for filtering the queryset.
+        **kwargs : dict
+            Additional keyword arguments that can be passed to further refine the filtered queryset.
+
+        Returns
+        -------
+        qs : QuerySet
+            A filtered queryset containing records associated with the specified contract entity
+            model and additional filter conditions.
+
+        Raises
+        ------
+        Exception
+            Any exception raised while applying additional filters to the queryset or querying
+            against the database.
+
+        Deprecated
+        ----------
+        This function is deprecated for entity behavior.
+        """
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(
             Q(ce_model_id__exact=ce_pk) |
             Q(po_model__ce_model_id__exact=ce_pk) |
@@ -972,9 +1276,18 @@ class ItemTransactionModelManager(Manager):
         )
 
     # INVENTORY METHODS....
-    def for_entity_inventory(self, entity_slug):
-        qs = self.get_queryset()
-        return qs.filter(item_model__entity__slug__exact=entity_slug)
+    @deprecated_for_entity_behavior
+    def for_entity_inventory(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        EntityModel = lazy_loader.get_entity_model()
+
+        qs = self.for_entity(entity_model=entity_model, **kwargs)
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(item_model__entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(item_model__entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(item_model__entity_id=entity_model)
+        return qs
 
     # Todo move this to QuerySet....
     def inventory_count(self, entity_slug):
@@ -1025,8 +1338,9 @@ class ItemTransactionModelManager(Manager):
                                   output_field=DecimalField(decimal_places=3)), Value(0.0), output_field=DecimalField())
         )
 
-    def inventory_pipeline(self, entity_slug):
-        qs = self.for_entity_inventory(entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_pipeline(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.for_entity_inventory(entity_model=entity_model, **kwargs)
         return qs.filter(
             Q(item_model__for_inventory=True) &
             Q(bill_model__isnull=False) &
@@ -1037,8 +1351,9 @@ class ItemTransactionModelManager(Manager):
             ])
         )
 
-    def inventory_pipeline_aggregate(self, entity_slug: str):
-        qs = self.inventory_pipeline(entity_slug=entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_pipeline_aggregate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.inventory_pipeline(entity_model=entity_model, **kwargs)
         return qs.values(
             'item_model__name',
             'item_model__uom__name',
@@ -1047,20 +1362,24 @@ class ItemTransactionModelManager(Manager):
             total_value=Sum('total_amount')
         )
 
-    def inventory_pipeline_ordered(self, entity_slug):
-        qs = self.inventory_pipeline(entity_slug=entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_pipeline_ordered(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
-    def inventory_pipeline_in_transit(self, entity_slug):
-        qs = self.inventory_pipeline(entity_slug=entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_pipeline_in_transit(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
 
-    def inventory_pipeline_received(self, entity_slug):
-        qs = self.inventory_pipeline(entity_slug=entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_pipeline_received(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
-    def inventory_invoiced(self, entity_slug):
-        qs = self.for_entity_inventory(entity_slug)
+    @deprecated_for_entity_behavior
+    def inventory_invoiced(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
+        qs = self.for_entity_inventory(entity_model=entity_model, **kwargs)
         return qs.filter(
             Q(item_model__for_inventory=True) &
             Q(invoice_model__isnull=False)

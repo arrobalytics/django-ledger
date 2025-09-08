@@ -6,7 +6,6 @@ Contributions to this module:
     * Miguel Sanda <msanda@arrobalytics.com>
 """
 
-
 from django.contrib import messages
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.http import HttpResponseRedirect, HttpResponseForbidden
@@ -102,20 +101,17 @@ class EstimateModelDetailView(DjangoLedgerSecurityMixIn, EstimateModelModelViewQ
 
         # PO Model Queryset...
         po_qs = ce_model.purchaseordermodel_set.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
+            entity_model=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.purchaseordermodel_set.none()
         context['estimate_po_model_queryset'] = po_qs
 
         invoice_qs = ce_model.invoicemodel_set.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
+            entity_model=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.invoicemodel_set.none()
         context['estimate_invoice_model_queryset'] = invoice_qs
 
         bill_qs = ce_model.billmodel_set.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
+            entity_model=self.kwargs['entity_slug']
         ) if ce_model.is_approved() else ce_model.billmodel_set.none()
         context['estimate_bill_model_queryset'] = bill_qs
 

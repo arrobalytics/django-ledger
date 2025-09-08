@@ -51,7 +51,7 @@ class InventoryListView(DjangoLedgerSecurityMixIn, ListView):
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = ItemTransactionModel.objects.inventory_pipeline_aggregate(
-                entity_slug=self.kwargs['entity_slug'],
+                entity_model=self.AUTHORIZED_ENTITY_MODEL
             )
         return super().get_queryset()
 
@@ -73,8 +73,7 @@ class InventoryRecountView(DjangoLedgerSecurityMixIn, DetailView):
         return ItemTransactionModel.objects.inventory_count(entity_slug=entity_slug)
 
     def recorded_inventory(self, queryset=None, as_values=True):
-        entity_model: EntityModel = self.get_object()
-        user_model = self.request.user
+        entity_model: EntityModel = self.AUTHORIZED_ENTITY_MODEL
         recorded_qs = entity_model.recorded_inventory(item_qs=queryset)
         return recorded_qs
 

@@ -28,7 +28,6 @@ except ImportError:
 
 logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
 
-
 ## MODEL ABSTRACTS ##
 # DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
 # DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
@@ -162,4 +161,4 @@ DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
         },
     }
 }
-DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR', True)
+DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR', False)

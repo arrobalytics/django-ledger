@@ -60,6 +60,7 @@ from django_ledger.io import (ROOT_COA, ROOT_GROUP_LEVEL_2, ROOT_GROUP_META, ROO
                               ROOT_INCOME, ROOT_COGS, ROOT_EXPENSES)
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
@@ -116,6 +117,7 @@ class ChartOfAccountModelQuerySet(QuerySet):
             )
         )
 
+
 class ChartOfAccountModelManager(Manager):
     """
     A custom-defined ChartOfAccountModelManager that will act as an interface to handling the initial DB queries
@@ -143,9 +145,10 @@ class ChartOfAccountModelManager(Manager):
             ),
         ).select_related('entity')
 
-
-
-    def for_entity(self, entity_model: Union['EntityModel | str | UUID'], **kwargs) -> ChartOfAccountModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self,
+                   entity_model: Union['EntityModel | str | UUID'] = None,
+                   **kwargs) -> ChartOfAccountModelQuerySet:
         """
         Fetches a QuerySet of ChartOfAccountsModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -155,9 +158,6 @@ class ChartOfAccountModelManager(Manager):
 
         entity_slug: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-
-        user_model
-            Logged in and authenticated django UserModel instance.
 
         Returns
         -------
@@ -179,14 +179,16 @@ class ChartOfAccountModelManager(Manager):
                 qs = qs.for_user(kwargs['user_model'])
 
         if isinstance(entity_model, EntityModel):
-            return qs.filter(entity=entity_model)
+            qs = qs.filter(entity=entity_model)
         elif isinstance(entity_model, str):
-            return qs.filter(entity__slug=entity_model)
+            qs = qs.filter(entity__slug=entity_model)
         elif isinstance(entity_model, UUID):
-            return qs.filter(entity_id=entity_model)
-        raise ChartOfAccountsModelValidationError(
-            message='Must pass an instance of EntityModel, String or UUID for entity_slug.'
-        )
+            qs = qs.filter(entity_id=entity_model)
+        else:
+            raise ChartOfAccountsModelValidationError(
+                message='Must pass an instance of EntityModel, String or UUID for entity_slug.'
+            )
+        return qs
 
 
 class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):

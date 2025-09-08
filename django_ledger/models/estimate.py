@@ -28,7 +28,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader
+from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader, deprecated_for_entity_behavior
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModelQuerySet, ItemModel
@@ -123,10 +123,11 @@ class EstimateModelQuerySet(models.QuerySet):
 
 class EstimateModelManager(models.Manager):
     """
-    A custom defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
+    A custom-defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
     """
 
-    def for_entity(self, entity_model: Union[EntityModel, str, UUID], **kwargs):
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs) -> EstimateModelQuerySet:
         """
         Filters the queryset based on the given entity model.
 
@@ -154,7 +155,8 @@ class EstimateModelManager(models.Manager):
         EstimateModelValidationError
             If `entity_model` is of an unsupported type.
         """
-        EntityModel = lazy_loader.get_entity(entity_model)
+        EntityModel = lazy_loader.get_entity_model()
+
         qs = self.get_queryset()
         if 'user_model' in kwargs:
             warnings.warn(
@@ -174,7 +176,7 @@ class EstimateModelManager(models.Manager):
             qs = qs.filter(entity_id=entity_model)
         else:
             raise EstimateModelValidationError(
-                message='entoty_model must be either a string, UUID or an EntityModel'
+                message='entity_model must be either a string, UUID or an EntityModel'
             )
         return qs
 

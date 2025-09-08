@@ -31,7 +31,7 @@
                           value="{{ invoice.get_progress_percent }}"
                           max="100">{{ invoice.get_progress | percentage }}
                 </progress>
-                {% modal_action invoice 'get' entity_slug %}#}
+                {% modal_action invoice 'get' entity_slug %}
             </div>
             <footer class="card-footer">
                 <a href="{% url 'django_ledger:invoice-detail' entity_slug=entity_slug invoice_pk=invoice.uuid %}"

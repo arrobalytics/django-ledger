@@ -29,7 +29,7 @@ class PurchaseOrderModelModelViewQuerySetMixIn(DjangoLedgerSecurityMixIn):
     def get_queryset(self):
         if self.queryset is None:
             self.queryset = PurchaseOrderModel.objects.for_entity(
-                entity_model=self.get_authorized_entity_instance(),
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
             ).select_related('entity', 'ce_model')
         return super().get_queryset()
 
@@ -87,8 +87,7 @@ class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, Cre
         response = super(PurchaseOrderModelCreateView, self).get(request, entity_slug, **kwargs)
         if self.for_estimate and 'ce_pk' in self.kwargs:
             estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=entity_slug,
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
             )
             estimate_model: EstimateModel = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             if not estimate_model.can_bind():
@@ -105,8 +104,7 @@ class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, Cre
                                                      'ce_pk': self.kwargs['ce_pk']
                                                  })
             estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL
             ).select_related('customer')
             estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             context['estimate_model'] = estimate_model
@@ -120,23 +118,25 @@ class PurchaseOrderModelCreateView(PurchaseOrderModelModelViewQuerySetMixIn, Cre
 
     def get_form(self, form_class=None):
         entity_slug = self.kwargs['entity_slug']
-        form = PurchaseOrderModelCreateForm(entity_slug=entity_slug,
-                                            user_model=self.request.user,
-                                            **self.get_form_kwargs())
+        form = PurchaseOrderModelCreateForm(
+            entity_slug=entity_slug,
+            user_model=self.request.user,
+            **self.get_form_kwargs()
+        )
         return form
 
     def form_valid(self, form):
         po_model: PurchaseOrderModel = form.save(commit=False)
         po_model = po_model.configure(
             entity_slug=self.kwargs['entity_slug'],
-            user_model=self.request.user)
+            user_model=self.request.user
+        )
 
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
-            )
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            ).for_user(user_model=self.request.user)
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             po_model.action_bind_estimate(estimate_model=estimate_model, commit=False)
         return super().form_valid(form=form)

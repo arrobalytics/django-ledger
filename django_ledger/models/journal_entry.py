@@ -52,6 +52,7 @@ from django_ledger.io.roles import (
     validate_roles
 )
 from django_ledger.models.accounts import CREDIT, DEBIT
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.entity import EntityStateModel, EntityModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn
@@ -250,7 +251,8 @@ class JournalEntryModelManager(Manager):
             txs_count=Count('transactionmodel')  # Annotates the count of transactions
         )
 
-    def for_entity(self, entity_model: EntityModel | str | UUID, **kwargs) -> JournalEntryModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> JournalEntryModelQuerySet:
         """
         Filters the JournalEntryModel queryset for a specific entity and user.
 

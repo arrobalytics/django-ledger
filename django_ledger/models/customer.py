@@ -16,6 +16,7 @@ from django.db.models import Q, F, QuerySet, Manager
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, TaxCollectionMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
@@ -127,7 +128,8 @@ class CustomerModelManager(Manager):
     CustomerModel.
     """
 
-    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> CustomerModelQueryset:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> CustomerModelQueryset:
         """
         Fetches a QuerySet of CustomerModel associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
@@ -136,9 +138,6 @@ class CustomerModelManager(Manager):
         __________
         entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
-
 
         Returns
         -------

@@ -6,19 +6,12 @@ This module implements the BillModel, which represents an Invoice received from 
 the Vendor states the amount owed by the recipient for the purposes of supplying goods and/or services.
 In addition to tracking the bill amount, it tracks the paid and due amount.
 
-Examples
-________
->>> user_model = request.user  # django UserModel
->>> entity_slug = kwargs['entity_slug'] # may come from view kwargs
->>> bill_model = BillModel()
->>> ledger_model, bill_model = bill_model.configure(entity_slug=entity_slug, user_model=user_model)
->>> bill_model.save()
 """
 import warnings
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Union, Optional, Tuple, Dict, List
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -31,6 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.io.io_core import get_localtime, get_localdate
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
 from django_ledger.models.mixins import (
@@ -216,17 +210,16 @@ class BillModelManager(Manager):
             'ledger__entity'
         )
 
-    def for_entity(self, entity_slug, **kwargs) -> BillModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> BillModelQuerySet:
         """
         Fetches a QuerySet of BillModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.
 
         Parameters
         __________
-        entity_slug: str or EntityModel
+        entity_model: str or EntityModel
             The entity slug or EntityModel used for filtering the QuerySet.
-        user_model
-            Logged in and authenticated django UserModel instance.
 
         Returns
         _______
@@ -244,14 +237,17 @@ class BillModelManager(Manager):
             if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
                 qs = qs.for_user(kwargs['user_model'])
 
-        if isinstance(entity_slug, EntityModel):
-            return qs.filter(
-                Q(ledger__entity=entity_slug)
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(ledger__entity=entity_model)
+        elif isinstance(entity_model, str):
+            qs =  qs.filter(ledger__entity__slug__exact=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(ledger__entity_id=entity_model)
+        else:
+            raise BillModelValidationError(
+                'Must pass EntityModel, slug or UUID'
             )
-        elif isinstance(entity_slug, str):
-            return qs.filter(
-                Q(ledger__entity__slug__exact=entity_slug)
-            )
+        return qs
 
 
 class BillModelAbstract(

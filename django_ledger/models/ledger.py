@@ -38,6 +38,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.signals import (
     ledger_posted,
@@ -187,7 +188,8 @@ class LedgerModelManager(Manager):
                                    filter=Q(journal_entries__posted=True)),
         )
 
-    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> LedgerModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> LedgerModelQuerySet:
         """
         Returns a QuerySet of LedgerModels associated with a specific EntityModel & UserModel.
         May pass an instance of EntityModel or a String representing the EntityModel slug.

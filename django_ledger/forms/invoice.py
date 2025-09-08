@@ -42,7 +42,6 @@ class InvoiceModelCreateForEstimateForm(ModelForm):
         ]):
 
             account_qs = AccountModel.objects.for_entity(
-                user_model=self.USER_MODEL,
                 entity_model=self.ENTITY_SLUG
             ).for_invoice()
 

@@ -495,7 +495,9 @@ class UnpaidElementsMixIn:
 
             qs = InvoiceModel.objects.for_entity(
                 entity_model=self.kwargs['entity_slug']
-            ).for_user(self.request.user).approved().filter(
+            ).for_user(
+                user_model=self.request.user
+            ).approved().filter(
                 Q(date_approved__gte=from_date) &
                 Q(date_approved__lte=to_date)
             ).select_related('customer').order_by('date_due')
@@ -512,14 +514,16 @@ class UnpaidElementsMixIn:
             to_date = context['to_date'] if not to_date else to_date
 
             qs = BillModel.objects.for_entity(
-                user_model=self.request.user,
-                entity_slug=self.kwargs['entity_slug']
+                entity_model=self.kwargs['entity_slug']
+            ).for_user(
+                user_model=self.request.user
             ).unpaid().filter(
                 Q(date_approved__gte=from_date) &
                 Q(date_approved__lte=to_date)
             ).select_related('vendor').order_by('date_due')
 
             unit_slug = self.get_unit_slug()
+
             if unit_slug:
                 qs = qs.filter(ledger__journal_entries__entity_unit__slug__exact=unit_slug)
 

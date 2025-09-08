@@ -95,8 +95,7 @@ class AccountModelTests(DjangoLedgerBaseTest):
         self.assertEqual(response_create.status_code, 302)
         self.assertTrue(AccountModel.objects.for_entity(
             entity_model=entity_model,
-            user_model=self.user_model,
-            coa_slug=entity_model.default_coa_slug,
+            coa_model=entity_model.default_coa_slug,
         ).with_codes(codes=NEW_ACCOUNT_CODE).exists())
 
         # cannot create an account with same code again...

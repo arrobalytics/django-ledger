@@ -20,10 +20,14 @@ from django.db.models import Q, F, QuerySet, Manager
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 
+from django_ledger.models.deprecations import deprecated_for_entity_behavior
 from django_ledger.models.mixins import ContactInfoMixIn, CreateUpdateMixIn, FinancialAccountInfoMixin, TaxInfoMixIn
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING, DJANGO_LEDGER_VENDOR_NUMBER_PREFIX, \
+from django_ledger.settings import (
+    DJANGO_LEDGER_DOCUMENT_NUMBER_PADDING,
+    DJANGO_LEDGER_VENDOR_NUMBER_PREFIX,
     DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
+)
 
 
 def vendor_picture_upload_to(instance, filename):
@@ -111,7 +115,8 @@ class VendorModelManager(Manager):
     providing additional support for filtering based on associated EntityModel or EntityModel slug.
     """
 
-    def for_entity(self, entity_model: 'EntityModel | str | UUID', **kwargs) -> VendorModelQuerySet:
+    @deprecated_for_entity_behavior
+    def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> VendorModelQuerySet:
         """
             Filters the queryset for a given entity model.
 
