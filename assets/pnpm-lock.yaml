@@ -32,6 +32,9 @@ importers:
       iconify-icon:
         specifier: ^2.3.0
         version: 2.3.0
+      less:
+        specifier: ^4.4.1
+        version: 4.4.1
       moment:
         specifier: ^2.30.1
         version: 2.30.1
@@ -57,9 +60,6 @@ importers:
       file-loader:
         specifier: ^6.2.0
         version: 6.2.0(webpack@5.99.8)
-      less:
-        specifier: ^4.4.1
-        version: 4.4.1
       less-loader:
         specifier: ^12.3.0
         version: 12.3.0(less@4.4.1)(webpack@5.99.8)

@@ -8,8 +8,8 @@
                 <p class="subtitle has-text-grey has-text-right">
                     <span class="icon">{% icon "bi:cash-stack" 16 %}</span>
                     {% trans 'Invoice' %}</p>
-                <p class="title">{{ invoice.customer.customer_name }}</p>
-                <p class="subtitle has-text-weight-light">{{ invoice.customer.address_1 }}</p>
+                <h2 class="title">{{ invoice.customer.customer_name }}</h2>
+                <h3 class="has-text-weight-light">{{ invoice.customer.address_1 }}</h3>
                 {% if not invoice.is_past_due %}
                     <p class="is-size-5 has-text-info">{% trans 'Due in' %}: {{ invoice.date_due | timeuntil }}</p>
                 {% else %}

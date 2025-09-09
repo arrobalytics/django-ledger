@@ -57,78 +57,74 @@ DJANGO_LEDGER_FINANCIAL_ANALYSIS = {
         'current_ratio': {
             'good_incremental': True,
             'ranges': {
-                'healthy': 2,
-                'watch': 1,
-                'warning': .5,
-                'critical': .25
+                'healthy': 2.0,
+                'watch': 1.5,
+                'warning': 1.0,
+                'critical': 0.5,
             }
         },
         'quick_ratio': {
             'good_incremental': True,
             'ranges': {
-                'healthy': 2,
-                'watch': 1,
-                'warning': .5,
-                'critical': .25
+                'healthy': 1.5,
+                'watch': 1.0,
+                'warning': 0.5,
+                'critical': 0.25
             }
         },
         'debt_to_equity': {
             'good_incremental': False,
             'ranges': {
-                'healthy': 0,
-                'watch': .25,
-                'warning': .5,
-                'critical': 1
+                'healthy': 0.5,
+                'watch': 1.0,
+                'warning': 1.5,
+                'critical': 2.0
             }
         },
         'return_on_equity': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .07,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.15,
+                'watch': 0.10,
+                'warning': 0.05,
+                'critical': 0.00
             }
         },
         'return_on_assets': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.05,
+                'watch': 0.03,
+                'warning': 0.02,
+                'critical': 0.01
             }
         },
         'net_profit_margin': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.10,
+                'watch': 0.05,
+                'warning': 0.03,
+                'critical': 0.01
             }
         },
         'gross_profit_margin': {
             'good_incremental': True,
             'ranges': {
-                'healthy': .10,
-                'watch': .06,
-                'warning': .04,
-                'critical': .02
+                'healthy': 0.50,
+                'watch': 0.30,
+                'warning': 0.20,
+                'critical': 0.10
             }
         },
     }
 }
-DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR', False)
-DJANGO_LEDGER_THEME = getattr(settings, 'DJANGO_LEDGER_THEME', 'lux')
 
-if DJANGO_LEDGER_THEME not in [
-    'lux',
-    'minty'
-]:
-    raise Exception(f'DJANGO_LEDGER_THEME {DJANGO_LEDGER_THEME} is not supported')
+DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR = getattr(settings, 'DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR', False)
+DJANGO_LEDGER_THEME = getattr(settings, 'DJANGO_LEDGER_THEME', 'litera')
 
 ## MODEL ABSTRACTS ##
+
 # DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
 # DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
 # DJANGO_LEDGER_TRANSACTION_MODEL = getattr(settings, 'DJANGO_LEDGER_TRANSACTION_MODEL', 'django_ledger.TransactionModel')

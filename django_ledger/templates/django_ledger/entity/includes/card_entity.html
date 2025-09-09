@@ -5,10 +5,13 @@
 
 <div class="card">
     <div class="card-content">
-        <p class="title has-text-weight-light">
-            <span class="icon is-medium">{% icon "ic:baseline-business" 36 %}</span>{{ entity.name }}
-        </p>
-        <p class="subtitle">{{ entity.address_1 }}</p>
+        <h1 class="is-size-3 has-text-weight-light">
+            <span class="icon is-medium">
+                {% icon "ic:baseline-business" 36 %}
+            </span>{{ entity.name }}
+        </h1>
+        <h2>{{ entity.address_1 }}</h2>
+
         <h3 class="is-size-4 has-text-weight-light">
             {% if entity.is_accrual_method %}
                 <span class="icon is-medium has-text-info">
@@ -19,11 +22,14 @@
                     {% icon 'bi:cash-stack' 24 %}</span>
                 {% trans 'Cash Method' %}
             {% endif %}
-
         </h3>
 
         <h4>Created: {{ entity.created | timesince }} ago</h4>
-        <p class="is-italic">{% trans 'Last Closing Date' %}: {{ entity.last_closing_date }}</p>
+        {% if entity.last_closing_date %}
+            <p class="is-italic">{% trans 'Last Closing Date' %}:
+                {{ entity.last_closing_date }}
+            </p>
+        {% endif %}
     </div>
     <footer class="card-footer">
         <a href="{{ entity.get_dashboard_url }}" class="card-footer-item">Dashboard</a>

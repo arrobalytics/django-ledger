@@ -135,6 +135,7 @@ class BillModelCreateView(BillModelModelBaseView, CreateView):
         bill_model: BillModel = form.save(commit=False)
         ledger_model, bill_model = bill_model.configure(
             entity_slug=self.AUTHORIZED_ENTITY_MODEL.slug,
+            user_model=self.request.user,
             commit_ledger=True
         )
 
