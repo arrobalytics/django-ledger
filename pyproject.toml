@@ -14,6 +14,7 @@ maintainers = [
 dependencies = [
     "django>=4.2",
     "django-treebeard>=4.7.1",
+    "faker>=37.6.0",
     "fpdf2>=2.8.4",
     "markdown>=3.9",
     "ofxtools>=0.9.5",
@@ -45,4 +46,6 @@ dev = ["sphinx~=4.5.0", "behave~=1.2.6", "pipenv-setup", "pylint", "furo"]
 [dependency-groups]
 dev = [
     "django-debug-toolbar>=6.0.0",
+    "jupyterlab>=3.5.3",
+    "notebook>=6.5.7",
 ]

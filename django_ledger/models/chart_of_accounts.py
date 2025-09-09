@@ -283,50 +283,52 @@ class ChartOfAccountModelAbstract(SlugNameMixIn, CreateUpdateMixIn):
         """
         self.generate_slug(commit=False)
 
-        root_accounts_qs = self.get_coa_root_accounts_qs()
-        existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
+        if not self.is_configured():
+            root_accounts_qs = self.get_coa_root_accounts_qs()
+            existing_root_roles = list(set(acc.role for acc in root_accounts_qs))
 
-        if len(existing_root_roles) > 0:
-            if raise_exception:
-                raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
-            return
+            if len(existing_root_roles) > 0:
+                if raise_exception:
+                    raise ChartOfAccountsModelValidationError(message=f'Root Nodes already Exist in CoA {self.uuid}...')
+                return
 
-        if ROOT_COA not in existing_root_roles:
-            # add coa root...
-            role_meta = ROOT_GROUP_META[ROOT_COA]
-            account_pk = uuid4()
-            root_account = AccountModel(
-                uuid=account_pk,
-                code=role_meta['code'],
-                name=role_meta['title'],
-                coa_model=self,
-                role=ROOT_COA,
-                role_default=True,
-                active=False,
-                locked=True,
-                balance_type=role_meta['balance_type']
-            )
-            AccountModel.add_root(instance=root_account)
+            if ROOT_COA not in existing_root_roles:
+                # add coa root...
+                role_meta = ROOT_GROUP_META[ROOT_COA]
+                account_pk = uuid4()
+                root_account = AccountModel(
+                    uuid=account_pk,
+                    code=role_meta['code'],
+                    name=role_meta['title'],
+                    coa_model=self,
+                    role=ROOT_COA,
+                    role_default=True,
+                    active=False,
+                    locked=True,
+                    balance_type=role_meta['balance_type']
+                )
+                AccountModel.add_root(instance=root_account)
 
-            # must retrieve root model after added pero django-treebeard documentation...
-            coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
+                # must retrieve root model after added pero django-treebeard documentation...
+                coa_root_account_model = AccountModel.objects.get(uuid__exact=account_pk)
 
-            for root_role in ROOT_GROUP_LEVEL_2:
-                if root_role not in existing_root_roles:
-                    account_pk = uuid4()
-                    role_meta = ROOT_GROUP_META[root_role]
-                    coa_root_account_model.add_child(
-                        instance=AccountModel(
-                            uuid=account_pk,
-                            code=role_meta['code'],
-                            name=role_meta['title'],
-                            coa_model=self,
-                            role=root_role,
-                            role_default=True,
-                            active=False,
-                            locked=True,
-                            balance_type=role_meta['balance_type']
-                        ))
+                for root_role in ROOT_GROUP_LEVEL_2:
+                    if root_role not in existing_root_roles:
+                        account_pk = uuid4()
+                        role_meta = ROOT_GROUP_META[root_role]
+                        coa_root_account_model.add_child(
+                            instance=AccountModel(
+                                uuid=account_pk,
+                                code=role_meta['code'],
+                                name=role_meta['title'],
+                                coa_model=self,
+                                role=root_role,
+                                role_default=True,
+                                active=False,
+                                locked=True,
+                                balance_type=role_meta['balance_type']
+                            ))
+                self.configured = True
 
     def get_coa_root_accounts_qs(self) -> AccountModelQuerySet:
         """
