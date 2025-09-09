@@ -31,8 +31,10 @@ Created and developed by [Miguel Sanda](https://www.miguelsanda.com).
 
 ## Getting Involved
 
-All pull requests are welcome, as long as they address bugfixes, enhancements, new ideas, or add value to the project in any shape or form.
-Please refrain from submitting pull requests that focus solely on code linting, refactoring, or similar cosmetic changes.
+All pull requests are welcome, as long as they address bugfixes, enhancements, new ideas, or add value to the project in
+any shape or form.
+Please refrain from submitting pull requests that focus solely on code linting, refactoring, or similar cosmetic
+changes.
 
 - **Feature Requests/Bug Reports**: Open an issue in the repository
 - **For software customization, advanced features and consulting services**:
@@ -153,7 +155,15 @@ python manage.py runserver
   if you followed this installation guide).
 * Use your superuser credentials to login.
 
-# How To Set Up Django Ledger for Development
+## Deprecated behavior setting (v0.8.0+)
+
+Starting with version v0.8.0, Django Ledger introduces the DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR setting to control
+access to deprecated features and legacy behaviors.
+
+- Default: False (deprecated features are disabled by default)
+- To temporarily keep using deprecated features while you transition, set this to True in your Django settings.
+
+## Setting Up Django Ledger for Development
 
 Django Ledger comes with a basic development environment already configured under __dev_env/__ folder not to be used
 for production environments. If you want to contribute to the project perform the following steps:
