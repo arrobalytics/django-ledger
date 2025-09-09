@@ -12,12 +12,6 @@
  * Released under the MIT License
  */
 
-/*!
- * Pikaday
- *
- * Copyright © 2014 David Bushell | BSD & MIT license | https://github.com/Pikaday/Pikaday
- */
-
 /**
 * (c) Iconify
 *
@@ -29,7 +23,3 @@
 * @license MIT
 * @version 2.3.0
 */
-
-//! moment.js
-
-//! moment.js locale configuration
