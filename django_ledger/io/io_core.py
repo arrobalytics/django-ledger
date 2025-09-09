@@ -120,7 +120,6 @@ from django_ledger.io.io_middleware import (
 )
 from django_ledger.io.ratios import FinancialRatioManager
 from django_ledger.models.utils import lazy_loader
-from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED
 
 UserModel = get_user_model()
 
@@ -1598,10 +1597,6 @@ class IOReportMixIn:
             memory or in saved PDF format. If the `save_pdf` option is enabled, the PDF
             report is saved at the specified location.
         """
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            raise IOValidationError(
-                message=_('PDF support not enabled. Install PDF support from Pipfile.')
-            )
 
         io_digest = self.digest_balance_sheet(
             to_date=to_date,
@@ -1727,10 +1722,6 @@ class IOReportMixIn:
             generated income statement report. If `save_pdf` is True, the report will also
             be saved as a PDF file at the specified location.
         """
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            raise IOValidationError(
-                message=_('PDF support not enabled. Install PDF support from Pipfile.')
-            )
 
         io_digest = self.digest_income_statement(
             from_date=from_date,
@@ -1844,10 +1835,6 @@ class IOReportMixIn:
         IOValidationError
             If PDF support is not enabled in the system's Django ledger configuration.
         """
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            raise IOValidationError(
-                message=_('PDF support not enabled. Install PDF support from Pipfile.')
-            )
 
         io_digest = self.digest_cash_flow_statement(
             from_date=from_date,
@@ -1968,11 +1955,6 @@ class IOReportMixIn:
         IOValidationError
             Raised if PDF support is not enabled in the application configuration.
         """
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            raise IOValidationError(
-                message=_('PDF support not enabled. Install PDF support from Pipfile.')
-            )
-
         io_digest = self.digest_financial_statements(
             from_date=from_date,
             to_date=to_date,

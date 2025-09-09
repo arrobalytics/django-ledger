@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('django_ledger', '0024_billmodel_entity_model_invoicemodel_entity_model'),
     ]
@@ -14,17 +13,23 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='billmodel',
             name='cash_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='bill_cash_account', to='django_ledger.accountmodel', verbose_name='Cash Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='bill_cash_account', to='django_ledger.accountmodel',
+                                    verbose_name='Cash Account'),
         ),
         migrations.AlterField(
             model_name='billmodel',
             name='prepaid_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='bill_prepaid_account', to='django_ledger.accountmodel', verbose_name='Prepaid Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='bill_prepaid_account', to='django_ledger.accountmodel',
+                                    verbose_name='Prepaid Account'),
         ),
         migrations.AlterField(
             model_name='billmodel',
             name='unearned_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='bill_unearned_account', to='django_ledger.accountmodel', verbose_name='Unearned Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='bill_unearned_account', to='django_ledger.accountmodel',
+                                    verbose_name='Unearned Account'),
         ),
         migrations.AlterField(
             model_name='customermodel',
@@ -39,17 +44,23 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='invoicemodel',
             name='cash_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='invoice_cash_account', to='django_ledger.accountmodel', verbose_name='Cash Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='invoice_cash_account', to='django_ledger.accountmodel',
+                                    verbose_name='Cash Account'),
         ),
         migrations.AlterField(
             model_name='invoicemodel',
             name='prepaid_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='invoice_prepaid_account', to='django_ledger.accountmodel', verbose_name='Prepaid Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='invoice_prepaid_account', to='django_ledger.accountmodel',
+                                    verbose_name='Prepaid Account'),
         ),
         migrations.AlterField(
             model_name='invoicemodel',
             name='unearned_account',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT, related_name='invoice_unearned_account', to='django_ledger.accountmodel', verbose_name='Unearned Account'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.RESTRICT,
+                                    related_name='invoice_unearned_account', to='django_ledger.accountmodel',
+                                    verbose_name='Unearned Account'),
         ),
         migrations.AlterField(
             model_name='vendormodel',

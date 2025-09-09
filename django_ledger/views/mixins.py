@@ -21,7 +21,7 @@ from django.views.generic.dates import YearMixin, MonthMixin, DayMixin
 
 from django_ledger.models import EntityModel, InvoiceModel, BillModel, LedgerModel
 from django_ledger.models.entity import EntityModelFiscalPeriodMixIn
-from django_ledger.settings import DJANGO_LEDGER_PDF_SUPPORT_ENABLED, DJANGO_LEDGER_AUTHORIZED_SUPERUSER
+from django_ledger.settings import DJANGO_LEDGER_AUTHORIZED_SUPERUSER
 
 
 class ContextFromToDateMixin:
@@ -603,8 +603,6 @@ class PDFReportMixIn:
         return ctx['to_date']
 
     def get_pdf_response(self) -> HttpResponse:
-        if not DJANGO_LEDGER_PDF_SUPPORT_ENABLED:
-            return HttpResponseNotFound(content='PDF format is not supported')
         pdf = self.get_pdf()
         response = HttpResponse(
             bytes(pdf.output()),

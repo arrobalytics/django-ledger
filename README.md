@@ -33,8 +33,9 @@ Created and developed by [Miguel Sanda](https://www.miguelsanda.com).
 
 All pull requests are welcome, as long as they address bugfixes, enhancements, new ideas, or add value to the project in
 any shape or form.
-Please refrain from submitting pull requests that focus solely on code linting, refactoring, or similar cosmetic
-changes.
+
+Please refrain from submitting pull requests that focus solely on code linting, auto-generated code,
+refactoring, or similar cosmetic non-value add changes.
 
 - **Feature Requests/Bug Reports**: Open an issue in the repository
 - **For software customization, advanced features and consulting services**:
@@ -61,56 +62,12 @@ is [here](https://docs.djangoproject.com/en/4.2/intro/tutorial01/#creating-a-pro
 Make sure you refer to the django version you are using.
 
 The easiest way to start is to use the zero-config Django Ledger starter template. See
-details [here](https://github.com/arrobalytics/django-ledger-starter). Otherwise, you may create your
-project from scratch.
+details [here](https://github.com/arrobalytics/django-ledger-starter).
+Otherwise, you may create your project from scratch.
 
-To create a new Django Ledger project:
+## Adding Django Ledger to an existing project.
 
-* Make sure you have the latest version of python [here](https://www.python.org/) (recommended).
-
-* Install Django:
-
-```shell
-pip install django
-```
-
-* Install Python [Pipenv](https://pipenv.pypa.io/en/latest/) (python package manager):
-
-```shell script
-pip install pipenv
-```
-
-* Go to your desired development folder and create a new django project:
-
-```shell
-django-admin startproject django_ledger_project && cd django_ledger_project
-```
-
-* Install Django on you virtual environment.
-
-```shell
-pipenv install django
-```
-
-* Install Django Ledger
-
-```shell script
-pipenv install "django-ledger[graphql,pdf]"
-```
-
-Alternatively, you can use:
-
-```shell script
-pipenv install django-ledger\[graphql,pdf\]
-```
-
-* Activate your new virtual environment:
-
-```shell
-pipenv shell
-```
-
-* Add django_ledger to INSTALLED_APPS in you new Django Project.
+### Add django_ledger to INSTALLED_APPS in you new Django Project.
 
 ```python
 INSTALLED_APPS = [
@@ -120,16 +77,10 @@ INSTALLED_APPS = [
 ]
 ```
 
-* Perform database migrations:
+### Perform database migrations:
 
 ```shell
 python manage.py migrate
-```
-
-* Add Django SuperUser and follow the prompts.
-
-```shell
-python manage.py createsuperuser
 ```
 
 * Add URLs to your project's __urls.py__:
@@ -144,7 +95,7 @@ urlpatterns = [
 ]
 ```
 
-* Run your project:
+### Run your project:
 
 ```shell
 python manage.py runserver

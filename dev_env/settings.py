@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
 
-from django_ledger.settings import DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED
-
 BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
     SECRET_KEY = 'djangoledger1234!DoNotUse!BadIdea!VeryInsecure!'
+
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', '192.168.1.102', 'localhost']
@@ -22,12 +21,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_ledger',
 ]
-
-if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
-    INSTALLED_APPS += [
-        'graphene_django',
-        'oauth2_provider'
-    ]
 
 if DEBUG:
     INSTALLED_APPS += [
@@ -121,20 +114,6 @@ LOGIN_URL = '/auth/login/'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-
-if DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED:
-    GRAPHENE = {
-        'SCHEMA': 'django_ledger.contrib.django_ledger_graphene.api.schema',
-        'SCHEMA_OUTPUT': '../django_ledger/contrib/django_ledger_graphene/schema.graphql',  # defaults to schema.json,
-        # 'SCHEMA_INDENT': 2,  # Defaults to None (displays all data on a single line)
-        # 'MIDDLEWARE': [
-        #     'graphql_jwt.middleware.JSONWebTokenMiddleware',
-        # ],
-    }
-
-    OAUTH2_PROVIDER = {
-        'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
-    }
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

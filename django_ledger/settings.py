@@ -10,24 +10,6 @@ from django.conf import settings
 logger = logging.getLogger('Django Ledger Logger')
 logger.setLevel(logging.INFO)
 
-try:
-    from graphene import __version__
-    from graphene_django import __version__
-    from oauth2_provider import __version__
-
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED = False
-
-try:
-    from fpdf import FPDF
-
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = True
-except ImportError:
-    DJANGO_LEDGER_PDF_SUPPORT_ENABLED = False
-
-logger.info(f'Django Ledger GraphQL Enabled: {DJANGO_LEDGER_GRAPHQL_SUPPORT_ENABLED}')
-
 ## MODEL ABSTRACTS ##
 # DJANGO_LEDGER_ACCOUNT_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.AccountModel')
 # DJANGO_LEDGER_CHART_OF_ACCOUNTS_MODEL = getattr(settings, 'DJANGO_LEDGER_ACCOUNT_MODEL', 'django_ledger.ChartOfAccountModel')
