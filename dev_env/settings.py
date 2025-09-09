@@ -59,6 +59,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django_ledger.context.django_ledger_context'
             ],
         },
     },
@@ -125,6 +126,8 @@ CACHES = {
         'LOCATION': 'redis://127.0.0.1:6379',
     }
 }
+
+# DJANGO_LEDGER_THEME = 'minty'
 
 # LOGGING = {
 #     'version': 1,

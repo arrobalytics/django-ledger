@@ -77,6 +77,21 @@ INSTALLED_APPS = [
 ]
 ```
 
+### Add Django Ledger Context Preprocessor
+
+```python
+TEMPLATES = [
+    {
+        'OPTIONS': {
+            'context_processors': [
+                '...',
+                'django_ledger.context.django_ledger_context'  # Add this line to a context_processors list..
+            ],
+        },
+    },
+]
+```
+
 ### Perform database migrations:
 
 ```shell
