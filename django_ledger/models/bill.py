@@ -24,7 +24,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, ASSET_CA_PREPAID, LIABILITY_CL_ACC_PAYABLE
 from django_ledger.io.io_core import get_localtime, get_localdate
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModel, ItemModelQuerySet
 from django_ledger.models.mixins import (
@@ -210,7 +210,7 @@ class BillModelManager(Manager):
             'ledger__entity'
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> BillModelQuerySet:
         """
         Fetches a QuerySet of BillModels associated with a specific EntityModel & UserModel.

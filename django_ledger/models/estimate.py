@@ -28,7 +28,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io.io_core import get_localdate
-from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader, deprecated_for_entity_behavior
+from django_ledger.models import BillModelQuerySet, InvoiceModelQuerySet, lazy_loader, deprecated_entity_slug_behavior
 from django_ledger.models.customer import CustomerModel
 from django_ledger.models.entity import EntityModel, EntityStateModel
 from django_ledger.models.items import ItemTransactionModelQuerySet, ItemTransactionModel, ItemModelQuerySet, ItemModel
@@ -126,7 +126,7 @@ class EstimateModelManager(models.Manager):
     A custom-defined EstimateModelManager that that implements custom QuerySet methods related to the EstimateModel.
     """
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs) -> EstimateModelQuerySet:
         """
         Filters the queryset based on the given entity model.

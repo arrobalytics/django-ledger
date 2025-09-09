@@ -37,7 +37,7 @@ from django_ledger.models import (
     InvoiceModel,
     LedgerModel
 )
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.unit import EntityUnitModel
 from django_ledger.models.utils import lazy_loader
@@ -386,7 +386,7 @@ class TransactionModelManager(Manager):
             'account__coa_model',  # Pre-loads the Chart of Accounts related to the Account.
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> TransactionModelQuerySet:
         """
         Filters transactions for a specific entity, optionally scoped to a specific user.

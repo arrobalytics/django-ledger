@@ -36,7 +36,7 @@ from treebeard.mp_tree import MP_Node, MP_NodeManager, MP_NodeQuerySet
 
 from django_ledger.io.io_core import IOMixIn
 from django_ledger.models import lazy_loader
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
@@ -67,7 +67,7 @@ class EntityUnitModelManager(MP_NodeManager):
             _entity_name=F('entity__name'),
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
         Filter the queryset based on the provided entity model, its slug, or its UUID.

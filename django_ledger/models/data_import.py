@@ -23,7 +23,7 @@ from django.db.models.signals import pre_save
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.io import ASSET_CA_CASH, CREDIT, DEBIT
-from django_ledger.models import JournalEntryModel, deprecated_for_entity_behavior
+from django_ledger.models import JournalEntryModel, deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
@@ -128,7 +128,7 @@ class ImportJobModelManager(Manager):
             'ledger_model'
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: Union[EntityModel, str, UUID] = None, **kwargs) -> ImportJobModelQuerySet:
         qs = self.get_queryset()
         if 'user_model' in kwargs:

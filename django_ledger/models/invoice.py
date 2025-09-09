@@ -37,7 +37,7 @@ from django_ledger.models import (
     lazy_loader, ItemTransactionModelQuerySet,
     ItemModelQuerySet, ItemModel, QuerySet, Manager
 )
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.entity import EntityModel
 from django_ledger.models.mixins import (
     CreateUpdateMixIn, AccrualMixIn,
@@ -200,7 +200,7 @@ class InvoiceModelManager(Manager):
             'ledger__entity'
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> InvoiceModelQuerySet:
         """
         Returns a QuerySet of InvoiceModels associated with a specific EntityModel & UserModel.

@@ -315,8 +315,7 @@ class PurchaseOrderModelUpdateView(PurchaseOrderModelModelViewQuerySetMixIn, Upd
 
         if form.has_changed():
             po_items_qs = ItemTransactionModel.objects.for_po(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user,
+                entity_model=self.kwargs['entity_slug'],
                 po_pk=po_model.uuid,
             ).select_related('bill_model')
 

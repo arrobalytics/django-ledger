@@ -31,7 +31,7 @@ from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, Value, 
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
@@ -67,7 +67,7 @@ class UnitOfMeasureModelManager(Manager):
     def get_queryset(self) -> UnitOfMeasureModelQuerySet:
         return UnitOfMeasureModelQuerySet(self.model, using=self._db)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> UnitOfMeasureModelQuerySet:
         """
         Fetches the UnitOfMeasureModels associated with the provided EntityModel and UserModel.
@@ -108,7 +108,7 @@ class UnitOfMeasureModelManager(Manager):
             )
         return qs
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity_active(
             self, entity_model: 'EntityModel | str | UUID' = None,
             **kwargs) -> UnitOfMeasureModelQuerySet:
@@ -326,7 +326,7 @@ class ItemModelManager(Manager):
     def get_queryset(self) -> ItemModelQuerySet:
         return ItemModelQuerySet(self.model, using=self._db).select_related('uom')
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Marks the `for_entity` method as deprecated in behavior and provides an updated usage approach.
@@ -380,7 +380,7 @@ class ItemModelManager(Manager):
             )
         return qs
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity_active(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of Active ItemModel associated with a specific EntityModel & UserModel.
@@ -402,7 +402,7 @@ class ItemModelManager(Manager):
         )
         return qs.filter(is_active=True)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_invoice(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for InvoiceModels for a specific EntityModel &
@@ -422,7 +422,7 @@ class ItemModelManager(Manager):
         qs = self.for_entity_active(entity_model=entity_model, **kwargs)
         return qs.filter(is_product_or_service=True)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_bill(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for BillModels for a specific EntityModel &
@@ -451,7 +451,7 @@ class ItemModelManager(Manager):
             Q(for_inventory=True)
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_po(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for PurchaseOrders for a specific EntityModel &
@@ -471,7 +471,7 @@ class ItemModelManager(Manager):
         qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.inventory_all()
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_estimate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemModelQuerySet:
         """
         Returns a QuerySet of ItemModels that can only be used for EstimateModels for a specific EntityModel &
@@ -1028,7 +1028,7 @@ class ItemTransactionModelManager(Manager):
         """
         return ItemTransactionModelQuerySet(self.model, using=self._db)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> ItemTransactionModelQuerySet:
         """
         A method to filter the queryset for a specified entity. The filtering can be performed
@@ -1093,7 +1093,7 @@ class ItemTransactionModelManager(Manager):
             )
         return qs
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_bill(self, bill_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs, ):
         """
         This function provides filters for fetching data related to a specific bill, based on a given
@@ -1123,7 +1123,7 @@ class ItemTransactionModelManager(Manager):
         qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(bill_model_id__exact=bill_pk)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_invoice(self, invoice_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
         Marks the behavior as deprecated when filtering queries for a specific invoice.
@@ -1159,7 +1159,7 @@ class ItemTransactionModelManager(Manager):
         qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(invoice_model_id__exact=invoice_pk)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_po(self, po_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
         Filters and retrieves entity records associated with a specific purchase order (PO) and entity model.
@@ -1196,7 +1196,7 @@ class ItemTransactionModelManager(Manager):
         qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(po_model__uuid__exact=po_pk)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_estimate(self, cj_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
         Marks the method as deprecated for estimating behavior in relation to an entity.
@@ -1229,7 +1229,7 @@ class ItemTransactionModelManager(Manager):
         qs = self.for_entity(entity_model=entity_model, **kwargs)
         return qs.filter(ce_model_id__exact=cj_pk)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_contract(self, ce_pk: UUID, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         """
         Provides a method to filter querysets based on the contract entity model to which they are associated.
@@ -1276,7 +1276,7 @@ class ItemTransactionModelManager(Manager):
         )
 
     # INVENTORY METHODS....
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity_inventory(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         EntityModel = lazy_loader.get_entity_model()
 
@@ -1289,10 +1289,10 @@ class ItemTransactionModelManager(Manager):
             qs = qs.filter(item_model__entity_id=entity_model)
         return qs
 
-    # Todo move this to QuerySet....
-    def inventory_count(self, entity_slug):
+    @deprecated_entity_slug_behavior
+    def inventory_count(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         PurchaseOrderModel = lazy_loader.get_purchase_order_model()
-        qs = self.for_entity_inventory(entity_slug)
+        qs = self.for_entity_inventory(entity_model=entity_model, **kwargs)
         qs = qs.filter(
             Q(item_model__for_inventory=True) &
             (
@@ -1338,7 +1338,7 @@ class ItemTransactionModelManager(Manager):
                                   output_field=DecimalField(decimal_places=3)), Value(0.0), output_field=DecimalField())
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_pipeline(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.for_entity_inventory(entity_model=entity_model, **kwargs)
         return qs.filter(
@@ -1351,7 +1351,7 @@ class ItemTransactionModelManager(Manager):
             ])
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_pipeline_aggregate(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.inventory_pipeline(entity_model=entity_model, **kwargs)
         return qs.values(
@@ -1362,22 +1362,22 @@ class ItemTransactionModelManager(Manager):
             total_value=Sum('total_amount')
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_pipeline_ordered(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_ORDERED)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_pipeline_in_transit(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_IN_TRANSIT)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_pipeline_received(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.inventory_pipeline(entity_model=entity_model)
         return qs.filter(po_item_status=ItemTransactionModel.STATUS_RECEIVED)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def inventory_invoiced(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs):
         qs = self.for_entity_inventory(entity_model=entity_model, **kwargs)
         return qs.filter(

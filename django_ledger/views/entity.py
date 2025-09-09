@@ -146,8 +146,7 @@ class EntityDeleteView(DjangoLedgerSecurityMixIn, EntityModelModelViewQuerySetMi
         entity_model.save(update_fields=['default_coa'])
 
         ItemTransactionModel.objects.for_entity(
-            user_model=self.request.user,
-            entity_slug=self.kwargs['entity_slug']
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
         ).delete()
 
         TransactionModel.objects.for_entity(

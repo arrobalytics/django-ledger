@@ -96,8 +96,7 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
                                                      'ce_pk': self.kwargs['ce_pk']
                                                  })
             estimate_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
             ).select_related('customer')
             estimate_model = get_object_or_404(estimate_qs, uuid__exact=self.kwargs['ce_pk'])
             context['estimate_model'] = estimate_model
@@ -137,8 +136,8 @@ class InvoiceModelCreateView(DjangoLedgerSecurityMixIn, InvoiceModelModelViewQue
         if self.for_estimate:
             ce_pk = self.kwargs['ce_pk']
             estimate_model_qs = EstimateModel.objects.for_entity(
-                entity_slug=self.kwargs['entity_slug'],
-                user_model=self.request.user)
+                entity_model=self.AUTHORIZED_ENTITY_MODEL,
+            )
 
             estimate_model = get_object_or_404(estimate_model_qs, uuid__exact=ce_pk)
             invoice_model.bind_estimate(estimate_model=estimate_model, commit=False)

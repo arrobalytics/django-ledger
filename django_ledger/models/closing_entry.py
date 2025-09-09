@@ -3,19 +3,22 @@ Django Ledger created by Miguel Sanda <msanda@arrobalytics.com>.
 Copyright© EDMA Group Inc licensed under the GPLv3 Agreement.
 """
 import warnings
-from datetime import datetime, time
+from datetime import datetime, time, date
+from decimal import Decimal
 from itertools import groupby, chain
 from typing import Optional
 from uuid import uuid4, UUID
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q, Count
+from django.db.models import Q, Manager, QuerySet, Count
+from django.db.models.signals import pre_save
 from django.urls import reverse
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext_lazy as _
 
-from django_ledger.models import EntityModel, deprecated_for_entity_behavior
+from django_ledger.models import EntityModel, deprecated_entity_slug_behavior, lazy_loader
 from django_ledger.models.journal_entry import JournalEntryModel
 from django_ledger.models.ledger import LedgerModel
 from django_ledger.models.mixins import CreateUpdateMixIn, MarkdownNotesMixIn
@@ -27,7 +30,7 @@ class ClosingEntryValidationError(ValidationError):
     pass
 
 
-class ClosingEntryModelQuerySet(models.QuerySet):
+class ClosingEntryModelQuerySet(QuerySet):
 
     def for_user(self, user_model):
         if user_model.is_superuser:
@@ -44,7 +47,7 @@ class ClosingEntryModelQuerySet(models.QuerySet):
         return self.filter(posted=False)
 
 
-class ClosingEntryModelManager(models.Manager):
+class ClosingEntryModelManager(Manager):
 
     def get_queryset(self) -> ClosingEntryModelQuerySet:
         qs = ClosingEntryModelQuerySet(self.model, using=self._db)
@@ -52,7 +55,7 @@ class ClosingEntryModelManager(models.Manager):
             ce_txs_count=Count('closingentrytransactionmodel')
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: EntityModel | str | UUID = None, **kwargs) -> ClosingEntryModelQuerySet:
 
         qs = self.get_queryset()
@@ -373,3 +376,175 @@ class ClosingEntryModelAbstract(CreateUpdateMixIn, MarkdownNotesMixIn):
 class ClosingEntryModel(ClosingEntryModelAbstract):
     class Meta(ClosingEntryModelAbstract.Meta):
         abstract = False
+
+
+def closingentrymodel_presave(instance: ClosingEntryModel, **kwargs):
+    instance.create_entry_ledger(commit=False)
+
+
+pre_save.connect(closingentrymodel_presave, sender=ClosingEntryModel)
+
+
+class ClosingEntryTransactionModelQuerySet(QuerySet):
+
+    def for_user(self, user_model) -> 'ClosingEntryTransactionModelQuerySet':
+        if user_model.is_superuser:
+            return self
+        return self.filter(
+            Q(closing_entry_model__entity_model__admin=user_model) |
+            Q(closing_entry_model__entity_model__managers__in=[user_model])
+        )
+
+    def for_closing_date(self, closing_date: date) -> 'ClosingEntryTransactionModelQuerySet':
+        return self.filter(
+            closing_entry_model__closing_date__exact=closing_date
+        )
+
+
+class ClosingEntryTransactionModelManager(Manager):
+
+    def get_queryset(self) -> ClosingEntryTransactionModelQuerySet:
+        return ClosingEntryTransactionModelQuerySet(self.model, using=self._db)
+
+    @deprecated_entity_slug_behavior
+    def for_entity(self, entity_model: EntityModel | str | UUID = None,
+                   **kwargs) -> ClosingEntryTransactionModelQuerySet:
+        EntityModel = lazy_loader.get_entity(entity_model)
+
+        qs = self.get_queryset()
+
+        if 'user_model' in kwargs:
+            warnings.warn(
+                'user_model parameter is deprecated and will be removed in a future release. '
+                'Use for_user(user_model).for_entity(entity_model) instead to keep current behavior.',
+                DeprecationWarning,
+                stacklevel=2
+            )
+            if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
+                qs = qs.for_user(kwargs['user_model'])
+
+        if isinstance(entity_model, EntityModel):
+            qs = qs.filter(closing_entry_model__entity_model=entity_model)
+        elif isinstance(entity_model, UUID):
+            qs = qs.filter(closing_entry_model__entity_model_id=entity_model)
+        elif isinstance(entity_model, str):
+            qs = qs.filter(closing_entry_model__slug__exact=entity_model)
+        else:
+            raise ClosingEntryValidationError(
+                message=_('Must pass EntityModel or UUID or str')
+            )
+        return qs
+
+
+class ClosingEntryTransactionModelAbstract(CreateUpdateMixIn):
+    uuid = models.UUIDField(default=uuid4, editable=False, primary_key=True)
+    closing_entry_model = models.ForeignKey('django_ledger.ClosingEntryModel',
+                                            on_delete=models.CASCADE)
+    account_model = models.ForeignKey('django_ledger.AccountModel',
+                                      on_delete=models.RESTRICT,
+                                      verbose_name=_('Account Model'))
+    unit_model = models.ForeignKey('django_ledger.EntityUnitModel',
+                                   null=True,
+                                   blank=True,
+                                   on_delete=models.RESTRICT,
+                                   verbose_name=_('Entity Model'))
+
+    activity = models.CharField(max_length=20,
+                                choices=JournalEntryModel.ACTIVITIES,
+                                null=True,
+                                blank=True,
+                                verbose_name=_('Activity'))
+    tx_type = models.CharField(choices=TransactionModel.TX_TYPE,
+                               max_length=10,
+                               verbose_name=_('Transaction Type'))
+    balance = models.DecimalField(verbose_name=_('Closing Entry Balance'),
+                                  max_digits=20,
+                                  decimal_places=6,
+                                  validators=[MinValueValidator(limit_value=Decimal('0.00'))])
+
+    objects = ClosingEntryTransactionModelManager.from_queryset(queryset_class=ClosingEntryTransactionModelQuerySet)()
+
+    class Meta:
+        abstract = True
+        ordering = ['-created']
+        verbose_name = _('Closing Entry Model')
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'closing_entry_model',
+                    'account_model',
+                    'unit_model',
+                    'activity'
+                ],
+                name='unique_closing_entry'
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    'closing_entry_model',
+                    'account_model',
+                    'unit_model',
+                ],
+                condition=Q(activity=None),
+                name='unique_ce_opt_1'
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    'closing_entry_model',
+                    'account_model',
+                    'activity',
+                ],
+                condition=Q(unit_model=None),
+                name='unique_ce_opt_2'
+            ),
+            models.UniqueConstraint(
+                fields=[
+                    'closing_entry_model',
+                    'account_model'
+                ],
+                condition=Q(unit_model=None) & Q(activity=None),
+                name='unique_ce_opt_3'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['closing_entry_model']),
+            models.Index(fields=['account_model'])
+        ]
+
+    def __str__(self):
+        return f'{self.__class__.__name__}: {self.closing_entry_model.closing_date.strftime("%D")} | {self.balance}'
+
+    def is_debit(self) -> bool:
+        return self.tx_type == TransactionModel.DEBIT
+
+    def is_credit(self) -> bool:
+        return self.tx_type == TransactionModel.CREDIT
+
+    def adjust_tx_type_for_negative_balance(self):
+        if self.balance < Decimal('0.00'):
+            if self.is_credit():
+                self.tx_type = TransactionModel.DEBIT
+            elif self.is_debit():
+                self.tx_type = TransactionModel.CREDIT
+            self.balance = abs(self.balance)
+
+    def get_html_id(self) -> str:
+        return f'closing-entry-txs-{self.uuid}'
+
+    def clean(self):
+        self.adjust_tx_type_for_negative_balance()
+
+
+class ClosingEntryTransactionModel(ClosingEntryTransactionModelAbstract):
+    """
+    Base ClosingEntryModel Class
+    """
+
+    class Meta(ClosingEntryTransactionModelAbstract.Meta):
+        abstract = False
+
+
+def closingentrytransactionmodel_presave(instance: ClosingEntryTransactionModel, **kwargs):
+    instance.adjust_tx_type_for_negative_balance()
+
+
+pre_save.connect(closingentrytransactionmodel_presave, sender=ClosingEntryTransactionModel)

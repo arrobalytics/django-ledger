@@ -235,8 +235,7 @@ class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
         self.ENTITY_SLUG = entity_slug
 
         items_qs = ItemModel.objects.for_invoice(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG
         )
 
         for form in self.forms:
@@ -250,8 +249,7 @@ class BaseInvoiceItemTransactionFormset(BaseModelFormSet):
     def get_queryset(self):
         if not self.queryset:
             self.queryset = ItemTransactionModel.objects.for_invoice(
-                entity_slug=self.ENTITY_SLUG,
-                user_model=self.USER_MODEL,
+                entity_model=self.ENTITY_SLUG,
                 invoice_pk=self.INVOICE_MODEL.uuid
             )
         else:

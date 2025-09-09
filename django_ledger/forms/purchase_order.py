@@ -155,8 +155,7 @@ class BasePurchaseOrderItemFormset(BaseModelFormSet):
         self.PO_MODEL = po_model
 
         items_qs = ItemModel.objects.for_po(
-            entity_slug=self.ENTITY_SLUG,
-            user_model=self.USER_MODEL
+            entity_model=self.ENTITY_SLUG,
         )
 
         unit_qs = EntityUnitModel.objects.for_entity(

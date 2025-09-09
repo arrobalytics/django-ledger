@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 
 from django_ledger.models import CreateUpdateMixIn, FinancialAccountInfoMixin
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
@@ -74,7 +74,7 @@ class BankAccountModelManager(Manager):
     def get_queryset(self) -> BankAccountModelQuerySet:
         return BankAccountModelQuerySet(self.model, using=self._db)
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self, entity_model: 'EntityModel | str | UUID' = None, **kwargs) -> BankAccountModelQuerySet:
         """
         Allows only the authorized user to query the BankAccountModel for a given EntityModel.

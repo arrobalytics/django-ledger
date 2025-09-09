@@ -69,7 +69,7 @@ from django_ledger.io.roles import (
     ROOT_CAPITAL, ROOT_INCOME, ROOT_EXPENSES, ROOT_COA, VALID_PARENTS,
     ROLES_ORDER_ALL, ASSET_CA_CASH
 )
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn
 from django_ledger.models.utils import lazy_loader
 from django_ledger.settings import (
@@ -342,7 +342,7 @@ class AccountModelManager(MP_NodeManager):
             _entity_slug=F('coa_model__entity__slug'),
         )
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(
             self,
             entity_model: Union['EntityModel | str | UUID'] = None,

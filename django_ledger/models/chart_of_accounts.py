@@ -62,7 +62,7 @@ from django_ledger.io import (
 )
 from django_ledger.models import lazy_loader
 from django_ledger.models.accounts import AccountModel, AccountModelQuerySet
-from django_ledger.models.deprecations import deprecated_for_entity_behavior
+from django_ledger.models.deprecations import deprecated_entity_slug_behavior
 from django_ledger.models.mixins import CreateUpdateMixIn, SlugNameMixIn
 from django_ledger.settings import DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR
 
@@ -167,7 +167,7 @@ class ChartOfAccountModelManager(Manager):
             )
         ).select_related('entity')
 
-    @deprecated_for_entity_behavior
+    @deprecated_entity_slug_behavior
     def for_entity(self,
                    entity_model: Union['EntityModel | str | UUID'] = None,
                    **kwargs) -> ChartOfAccountModelQuerySet:

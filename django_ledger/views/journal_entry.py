@@ -259,7 +259,7 @@ class BaseJournalEntryActionView(
 
     def get_queryset(self):
         return JournalEntryModel.objects.for_entity(
-            entity_slug=self.get_authorized_entity_instance()
+            entity_model=self.AUTHORIZED_ENTITY_MODEL
         ).for_ledger(ledger_pk=self.kwargs['ledger_pk'])
 
     def get_redirect_url(self, *args, **kwargs):

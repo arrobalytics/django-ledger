@@ -12,7 +12,7 @@ if DJANGO_LEDGER_USE_DEPRECATED_BEHAVIOR:
     )
 
 
-def deprecated_for_entity_behavior(func=None, *, message=None):
+def deprecated_entity_slug_behavior(func=None, *, message=None):
     """
     Decorator for for_entity(...) methods to warn about the deprecated `entity_slug` argument
     and optionally map it to `entity_model` for backward compatibility.
@@ -34,7 +34,7 @@ def deprecated_for_entity_behavior(func=None, *, message=None):
 
     if func is None:
         # Called as @deprecated_for_entity_behavior(...)
-        return lambda f: deprecated_for_entity_behavior(f, message=message)
+        return lambda f: deprecated_entity_slug_behavior(f, message=message)
 
     @wraps(func)
     def wrapper(*args, **kwargs):
