@@ -198,3 +198,4 @@ tzdata==2025.2 \
     # via
     #   django
     #   faker
+myst_parser==4.0.1
