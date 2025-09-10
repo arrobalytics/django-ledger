@@ -48,7 +48,7 @@ dev = [
     "notebook>=6.5.7",
 ]
 readthedocs = [
-    "furo>=2025.7.19",
     "myst-parser>=4.0.1",
+    "renku-sphinx-theme>=0.5.0",
     "sphinx>=8.2.3",
 ]
