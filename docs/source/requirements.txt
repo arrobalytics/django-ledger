@@ -198,4 +198,5 @@ tzdata==2025.2 \
     # via
     #   django
     #   faker
-myst_parser==4.0.1
+myst_parser==4.0.1 \
+    --hash=sha256:9134e88959ec3b5780aedf8a99680ea242869d012e8821db3126d427edc9c95d
