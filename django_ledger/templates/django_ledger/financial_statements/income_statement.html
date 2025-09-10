@@ -35,7 +35,10 @@
                             {% else %}Fiscal Year {{ year }}
                             {% endif %}</h2>
                         <h3 class="is-size-4 is-italic has-font-weight-light">
-                            {{ from_date | date:'m/d/Y' }} - {{ to_date | date:'m/d/Y' }}
+                            {% if month %}{% trans 'For the month ended' %} {{ to_date | date:'F j, Y' }}
+                                {% elif quarter %}{% trans 'For the quarter ended' %} {{ to_date | date:'F j, Y' }}
+                                {% else %}{% trans 'For the fiscal year ended' %} {{ to_date | date:'F j, Y' }}
+                            {% endif %}
                         </h3>
                     </div>
                 </div>
